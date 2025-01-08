@@ -3952,9 +3952,19 @@ func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.Workflow
 }
 
 func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrategy {
-	if tmpl != nil && tmpl.RetryStrategy != nil {
-		return tmpl.RetryStrategy
+	if tmpl != nil {
+		if tmpl.RetryStrategy != nil {
+			return tmpl.RetryStrategy
+		}
+
+		for _, hook := range woc.execWf.Spec.Hooks {
+			// exit hook will be executed in runOnExitNode
+			if hook.Template == tmpl.Name {
+				return nil
+			}
+		}
 	}
+
 	return woc.execWf.Spec.RetryStrategy
 }
 
