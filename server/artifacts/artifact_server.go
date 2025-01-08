@@ -127,6 +127,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			a.serverInternalError(err, w)
 			return
 		}
+
+		if wf == nil {
+			a.httpBadRequestError(w)
+			return
+		}
 	case "archived-workflows":
 		uid := id
 		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
@@ -134,6 +139,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		wf, err = a.wfArchive.GetWorkflow(uid, "", "")
 		if err != nil {
 			a.serverInternalError(err, w)
+			return
+		}
+
+		if wf == nil {
+			a.httpBadRequestError(w)
 			return
 		}
 
@@ -266,6 +276,10 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 		a.httpFromError(err, w)
 		return
 	}
+	if wf == nil {
+		a.httpBadRequestError(w)
+		return
+	}
 	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -302,6 +316,11 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	wf, err := a.wfArchive.GetWorkflow(uid, "", "")
 	if err != nil {
 		a.httpFromError(err, w)
+		return
+	}
+
+	if wf == nil {
+		a.httpBadRequestError(w)
 		return
 	}
 
