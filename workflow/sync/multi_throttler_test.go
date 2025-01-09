@@ -178,3 +178,27 @@ func TestTotalAllowNamespaceLimit(t *testing.T) {
 	throttler.Add("c/0", 8, time.Now())
 	assert.True(t, throttler.Admit("c/0"))
 }
+
+func TestPriorityAcrossNamespaces(t *testing.T) {
+	throttler := NewMultiThrottler(3, 1, func(Key) {})
+	throttler.Add("a/0", 0, time.Now())
+	throttler.Add("a/1", 0, time.Now())
+	throttler.Add("a/2", 0, time.Now())
+	throttler.Add("b/0", 1, time.Now())
+	throttler.Add("b/1", 1, time.Now())
+	throttler.Add("b/2", 1, time.Now())
+
+	assert.True(t, throttler.Admit("a/0"))
+	assert.True(t, throttler.Admit("b/0"))
+	assert.False(t, throttler.Admit("a/1"))
+	assert.False(t, throttler.Admit("a/2"))
+	assert.True(t, throttler.Admit("b/0"))
+	assert.False(t, throttler.Admit("b/1"))
+	assert.False(t, throttler.Admit("b/2"))
+	throttler.Remove("a/0")
+	assert.False(t, throttler.Admit("b/1"))
+	assert.True(t, throttler.Admit("a/1"))
+	throttler.Remove("b/0")
+	assert.True(t, throttler.Admit("b/1"))
+	assert.False(t, throttler.Admit("a/2"))
+}
