@@ -910,6 +910,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		key, _ := controller.wfQueue.Get()
 		controller.wfQueue.Done(key)
+		controller.wfQueue.Forget(key)
 	}
 	assert.Equal(0, controller.wfQueue.Len())
 
