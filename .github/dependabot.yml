@@ -16,19 +16,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
-    ignore:
-      # temporarily ignore until https://github.com/actions/download-artifact/issues/249 is resolved
-      - dependency-name: "actions/download-artifact"
-      - dependency-name: "actions/upload-artifact"
-
-  - package-ecosystem: "npm"
-    directory: "/ui"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-    ignore:
-      - dependency-name: raw-loader
-      - dependency-name: style-loader
-      - dependency-name: react-router-dom
-      - dependency-name: "@types/react-router-dom"
-    open-pull-requests-limit: 10
+    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
+    open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - github_actions
+    commit-message:
+      prefix: chore(deps-dev)
