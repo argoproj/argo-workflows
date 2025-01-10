@@ -24,5 +24,7 @@ You can configure this globally using [workflow defaults](default-workflow-specs
 !!! Warning "It is easy to make a workflow need root unintentionally"
     You may find that user's workflows have been written to require root with seemingly innocuous code. E.g. `mkdir /my-dir` would require root.
 
-!!! Note "You must use volumes for output artifacts"
-    If you use `runAsNonRoot` - you cannot have output artifacts on base layer (e.g. `/tmp`). You must use a volume (e.g. [empty dir](empty-dir.md)).
+!!! Note "You must use volumes for output artifacts (v3.3 or earlier)"
+    If you use `runAsNonRoot` in versions v3.3 or earlier, you cannot have output artifacts on base layer (e.g. `/tmp`). You must use a volume (e.g. [empty dir](empty-dir.md)).
+    In versions later than v3.3, the [Emissary executor](https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary)
+    allows artifacts on the base layer with `runAsNonRoot`.
