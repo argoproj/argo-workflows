@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: script-interpolation
+  labels:
+    workflows.argoproj.io/test: dangerous-interpolation
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: message
+  templates:
+    - name: main
+      script:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        source: "HELLO {{workflow.parameters.message}}"

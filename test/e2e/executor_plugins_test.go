@@ -84,6 +84,18 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 		})
 }
 
+func (s *ExecutorPluginsSuite) TestWorkflowRejectedByValidatingAdmissionPolicy() {
+	s.Run("Rejects workflow with interpolation in script template", func() {
+		s.Given().
+			Exec("kubectl", []string{"apply", "-f", "testdata/vap/dangerous-interpolation-script.yaml"}, fixtures.ErrorOutput("denied request: Dangerous interpolation detected"))
+	})
+
+	s.Run("Rejects workflow with interpolation in container template", func() {
+		s.Given().
+			Exec("kubectl", []string{"apply", "-f", "testdata/vap/dangerous-interpolation-container.yaml"}, fixtures.ErrorOutput("denied request: Dangerous interpolation detected"))
+	})
+}
+
 func TestExecutorPluginsSuite(t *testing.T) {
 	suite.Run(t, new(ExecutorPluginsSuite))
 }

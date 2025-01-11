@@ -6,5 +6,7 @@ resources:
   - hello-executor-plugin-serviceaccount.yaml
   - hello-executor-plugin.service-account-token-secret.yaml
   - hello-executor-plugin-configmap.yaml
+  - ../../../../examples/argo-dangerous-interpolation-vap.yaml
+  - argo-dangerous-interpolation-vap-binding.yaml
 
 namespace: argo

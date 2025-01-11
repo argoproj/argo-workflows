@@ -18,7 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -666,77 +665,6 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.e().DELETE("/api/v1/archived-workflows/" + uid).
 			Expect().
 			Status(200)
-	})
-}
-
-func (s *ArgoServerSuite) TestWorkflowRejectedByValidatingAdmissionPolicy() {
-	ctx := context.Background()
-
-	s.Run("Create ValidatingAdmissionPolicy", func() {
-		obj, err := fixtures.LoadObject("@functional/argo-dangerous-interpolation-vap.yaml")
-		s.Require().NoError(err)
-		_, err = s.KubeClient.AdmissionregistrationV1().ValidatingAdmissionPolicies().Create(ctx, obj.(*admissionv1.ValidatingAdmissionPolicy), metav1.CreateOptions{})
-		s.Require().NoError(err)
-	})
-	s.T().Cleanup(func() {
-		_ = s.KubeClient.AdmissionregistrationV1().ValidatingAdmissionPolicies().Delete(ctx, "argo-dangerous-interpolation-vap", metav1.DeleteOptions{})
-	})
-
-	s.Run("Create ValidatingAdmissionPolicyBinding", func() {
-		obj, err := fixtures.LoadObject("@functional/argo-dangerous-interpolation-vap-binding.yaml")
-		s.Require().NoError(err)
-		_, err = s.KubeClient.AdmissionregistrationV1().ValidatingAdmissionPolicyBindings().Create(ctx, obj.(*admissionv1.ValidatingAdmissionPolicyBinding), metav1.CreateOptions{})
-		s.Require().NoError(err)
-	})
-	s.T().Cleanup(func() {
-		_ = s.KubeClient.AdmissionregistrationV1().ValidatingAdmissionPolicyBindings().Delete(ctx, "argo-dangerous-interpolation-vap-binding", metav1.DeleteOptions{})
-	})
-
-	// Sleep to wait for VAP to be created
-	time.Sleep(2 * time.Second)
-
-	workflow := `{
-		"workflow": {
-			"metadata": {
-				"name": "test",
-				"labels": { "workflows.argoproj.io/test": "dangerous-interpolation" }
-			},
-			"spec": {
-				"arguments": {
-					"parameters": [{ "name": "message", "value": "foo" }]
-				},
-				"entrypoint": "run-workflow",
-				"templates": [{
-					"name": "run-workflow",
-					%s
-				}]
-			}
-		}
-	}`
-	s.Run("Rejects workflow with interpolation in script template", func() {
-		s.e().POST("/api/v1/workflows/argo").
-			WithText(fmt.Sprintf(workflow, `"script": {
-				"image": "argoproj/argosay:v2",
-				"command": ["sh", "-c"],
-				"source": "echo message: {{workflow.parameters.message}}"
-			}`)).
-			Expect().
-			Status(400).
-			Body().
-			Contains("denied request: Dangerous interpolation detected")
-	})
-
-	s.Run("Rejects workflow with interpolation in container template", func() {
-		s.e().POST("/api/v1/workflows/argo").
-			WithText(fmt.Sprintf(workflow, `"container": {
-				"image": "argoproj/argosay:v2",
-				"command": ["sh", "-c"],
-				"args": ["echo message: {{workflow.parameters.message}}"]
-			}`)).
-			Expect().
-			Status(400).
-			Body().
-			Contains("denied request: Dangerous interpolation detected")
 	})
 }
 

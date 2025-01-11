@@ -22,19 +22,22 @@ spec:
   validations:
     - expression: |
         !object.spec.templates.exists(t,
+          // Check "container" and "script" templates by aggregating the command/args/source
+          // fields and seeing if any match the regex
           (
             t.?container.command.orValue([])
             + t.?container.args.orValue([])
             + t.?script.command.orValue([])
             + [t.?script.source.orValue("")]
           ).exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
+
+          // Check "containerset" templates by iterating over each container, aggregating the
+          // command/args, and seeing if any match the regex.
           // TODO: Should be able to eliminate this duplication once we can use transformList: https://github.com/kubernetes/kubernetes/pull/128593
           || t.?containerSet.optMap(cs,
             cs.containers.exists(c,
-              (
-                c.?command.orValue([])
-                + c.?args.orValue([])
-              ).exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
+              (c.?command.orValue([]) + c.?args.orValue([]))
+              .exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
             )
           ).orValue(false)
         )

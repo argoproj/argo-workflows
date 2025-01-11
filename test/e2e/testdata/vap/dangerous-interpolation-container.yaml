@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: container-interpolation
+  labels:
+    workflows.argoproj.io/test: dangerous-interpolation
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: message
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - "{{workflow.parameters.message}}"
