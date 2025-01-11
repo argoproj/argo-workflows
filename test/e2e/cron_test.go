@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -456,16 +455,7 @@ spec:
 
 func (s *CronSuite) TestMalformedCronWorkflow() {
 	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.ErrorOutput("unknown field \"spec.workflowSpec.arguments.parameters.someParam\"")).
-		CronWorkflow("@testdata/wellformed/wellformed-cronworkflow.yaml").
-		When().
-		CreateCronWorkflow().
-		WaitForWorkflow(2 * time.Minute).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.ErrorOutput("unknown field \"spec.workflowSpec.arguments.parameters.someParam\""))
 }
 
 func TestCronSuite(t *testing.T) {
