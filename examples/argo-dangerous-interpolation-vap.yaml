@@ -21,23 +21,23 @@ spec:
       resources:   ["workflows"]
   validations:
     - expression: |
-        !object.spec.templates.map(template,
+        !object.spec.templates.exists(template,
           // Aggregate all command/args/source fields for all containers into a 2D array,
           // since CEL doesn't support array flattening.
           // For "container" and "script" templates, there's only one container,
           // so the first array will have a single entry.
           // For "containerSet" templates, the first array could have many entries.
-          [
-            template.?container.command.orValue([])
-            + template.?container.args.orValue([])
-            + template.?script.command.orValue([])
-            + [template.?script.source.orValue("")]
-          ]
-          + template.?containerSet.optMap(containerSet,
-            containerSet.containers.map(c, c.?command.orValue([]) + c.?args.orValue([]))
-          ).orValue([])
-        ).exists(templateValues,
-          templateValues.exists(containerValues,
+          (
+            [ template.?container.command.orValue([])
+              + template.?container.args.orValue([])
+              + template.?script.command.orValue([])
+              + [template.?script.source.orValue("")]
+            ] + template.?containerSet.optMap(containerSet,
+              containerSet.containers.map(c,
+                c.?command.orValue([]) + c.?args.orValue([])
+              )
+            ).orValue([])
+          ).exists(containerValues,
             containerValues.exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
           )
         )
