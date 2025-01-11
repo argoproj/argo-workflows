@@ -21,24 +21,24 @@ spec:
       resources:   ["workflows"]
   validations:
     - expression: |
-        !object.spec.templates.exists(t,
-          // Check "container" and "script" templates by aggregating the command/args/source
-          // fields and seeing if any match the regex
-          (
-            t.?container.command.orValue([])
-            + t.?container.args.orValue([])
-            + t.?script.command.orValue([])
-            + [t.?script.source.orValue("")]
-          ).exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
-
-          // Check "containerset" templates by iterating over each container, aggregating the
-          // command/args, and seeing if any match the regex.
-          // TODO: Should be able to eliminate this duplication once we can use transformList: https://github.com/kubernetes/kubernetes/pull/128593
-          || t.?containerSet.optMap(cs,
-            cs.containers.exists(c,
-              (c.?command.orValue([]) + c.?args.orValue([]))
-              .exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
-            )
-          ).orValue(false)
+        !object.spec.templates.map(template,
+          // Aggregate all command/args/source fields for all containers into a 2D array,
+          // since CEL doesn't support array flattening.
+          // For "container" and "script" templates, there's only one container,
+          // so the first array will have a single entry.
+          // For "containerSet" templates, the first array could have many entries.
+          [
+            template.?container.command.orValue([])
+            + template.?container.args.orValue([])
+            + template.?script.command.orValue([])
+            + [template.?script.source.orValue("")]
+          ]
+          + template.?containerSet.optMap(containerSet,
+            containerSet.containers.map(c, c.?command.orValue([]) + c.?args.orValue([]))
+          ).orValue([])
+        ).exists(templateValues,
+          templateValues.exists(containerValues,
+            containerValues.exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
+          )
         )
       message: "Dangerous interpolation detected"
