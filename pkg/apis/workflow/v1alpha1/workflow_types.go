@@ -666,6 +666,8 @@ type Template struct {
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Plugin is a plugin template
+	// Note: the structure of a plugin template is free-form, so we need to have
+	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
 
@@ -1506,6 +1508,9 @@ type WorkflowStep struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	// Note: This struct is defined recursively, since the inline template can potentially contain
+	// steps/DAGs that also has an "inline" field. Kubernetes doesn't allow recursive types, so we
+	// need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
 
@@ -1516,6 +1521,8 @@ type WorkflowStep struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// WithItems expands a step into multiple parallel steps from the items in the list
+	// Note: The structure of WithItems is free-form, so we need
+	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,5,rep,name=withItems"`
@@ -3189,6 +3196,8 @@ type DAGTask struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	// Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively,
+	// so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Inline *Template `json:"inline,omitempty" protobuf:"bytes,14,opt,name=inline"`
 
@@ -3202,6 +3211,8 @@ type DAGTask struct {
 	Dependencies []string `json:"dependencies,omitempty" protobuf:"bytes,5,rep,name=dependencies"`
 
 	// WithItems expands a task into multiple parallel tasks from the items in the list
+	// Note: The structure of WithItems is free-form, so we need
+	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,6,rep,name=withItems"`

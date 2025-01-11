@@ -983,7 +983,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
-| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
+| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>Note: The structure of WithItems is free-form, so we need</br>"x-kubernetes-preserve-unknown-fields: true" in the validation schema.</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
 | withParam | string| `string` |  | | WithParam expands a task into multiple parallel tasks from the value in the parameter,</br>which is expected to be a JSON list. |  |
 | withSequence | [Sequence](#sequence)| `Sequence` |  | |  |  |
 

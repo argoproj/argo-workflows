@@ -1207,6 +1207,8 @@ definitions:
             withItems:
                 description: |-
                     WithItems expands a task into multiple parallel tasks from the items in the list
+                    Note: The structure of WithItems is free-form, so we need
+                    "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
                     +kubebuilder:validation:Schemaless
                     +kubebuilder:pruning:PreserveUnknownFields
                 items:
