@@ -28,4 +28,4 @@ spec:
       container:
         image: argoproj/argosay:v1
         command: [ sleep ]
-        args: [ "10" ]
+        args: [ "5" ]
