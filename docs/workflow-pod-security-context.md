@@ -26,5 +26,5 @@ You can configure this globally using [workflow defaults](default-workflow-specs
 
 !!! Note "You must use volumes for output artifacts (v3.3 or earlier)"
     If you use `runAsNonRoot` in versions v3.3 or earlier, you cannot have output artifacts on base layer (e.g. `/tmp`). You must use a volume (e.g. [empty dir](empty-dir.md)).
-    In versions later than v3.3, the [Emissary executor](https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary)
+    In versions later than v3.3, the [Emissary executor](workflow-executors.md#emissary-emissary)
     allows artifacts on the base layer with `runAsNonRoot`.
