@@ -34,7 +34,7 @@ spec:
         withParam: "{{inputs.parameters.os-list}}"
 
   - name: cat-os-release
-    displayName: "schneckel-{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
+    displayName: "os-{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
     inputs:
       parameters:
       - name: image
