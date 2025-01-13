@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **daemon** | **Boolean** | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  [optional]
 **dag** | [**IoArgoprojWorkflowV1alpha1DAGTemplate**](IoArgoprojWorkflowV1alpha1DAGTemplate.md) |  |  [optional]
 **data** | [**IoArgoprojWorkflowV1alpha1Data**](IoArgoprojWorkflowV1alpha1Data.md) |  |  [optional]
+**displayName** | **String** | DisplayName is a human readable name for the template. |  [optional]
 **executor** | [**IoArgoprojWorkflowV1alpha1ExecutorConfig**](IoArgoprojWorkflowV1alpha1ExecutorConfig.md) |  |  [optional]
 **failFast** | **Boolean** | FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with &#x60;withItems&#x60;, etc. |  [optional]
 **hostAliases** | [**List&lt;io.kubernetes.client.openapi.models.V1HostAlias&gt;**](io.kubernetes.client.openapi.models.V1HostAlias.md) | HostAliases is an optional list of hosts and IPs that will be injected into the pod spec |  [optional]
