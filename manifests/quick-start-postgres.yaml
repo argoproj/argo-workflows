@@ -2757,7 +2757,6 @@ rules:
   - secrets
   verbs:
   - get
-  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -3080,12 +3079,12 @@ rules:
   - delete
 - apiGroups:
   - ""
-  resourceNames:
-  - argo-workflows-agent-ca-certificates
   resources:
   - secrets
   verbs:
   - get
+  - watch
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
