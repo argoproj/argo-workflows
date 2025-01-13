@@ -1730,6 +1730,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`daemon`|`boolean`|Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
 |`data`|[`Data`](#data)|Data is a data template|
+|`displayName`|`string`|DisplayName is a human readable name for the template.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`failFast`|`boolean`|FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|

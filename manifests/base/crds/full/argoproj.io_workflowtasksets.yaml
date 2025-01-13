@@ -4308,6 +4308,8 @@ spec:
                       - source
                       - transformation
                       type: object
+                    displayName:
+                      type: string
                     executor:
                       properties:
                         serviceAccountName:

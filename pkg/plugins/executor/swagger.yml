@@ -4341,6 +4341,9 @@ definitions:
                 $ref: '#/definitions/DAGTemplate'
             data:
                 $ref: '#/definitions/Data'
+            displayName:
+                description: DisplayName is a human readable name for the template.
+                type: string
             executor:
                 $ref: '#/definitions/ExecutorConfig'
             failFast:

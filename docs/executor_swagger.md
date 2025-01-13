@@ -3817,6 +3817,7 @@ of the first container processes are calculated.
 | daemon | boolean| `bool` |  | | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |
 | dag | [DAGTemplate](#d-a-g-template)| `DAGTemplate` |  | |  |  |
 | data | [Data](#data)| `Data` |  | |  |  |
+| displayName | string| `string` |  | | DisplayName is a human readable name for the template. |  |
 | executor | [ExecutorConfig](#executor-config)| `ExecutorConfig` |  | |  |  |
 | failFast | boolean| `bool` |  | | FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this</br>template is expanded with `withItems`, etc. |  |
 | hostAliases | [][HostAlias](#host-alias)| `[]*HostAlias` |  | | HostAliases is an optional list of hosts and IPs that will be injected into the pod spec</br>+patchStrategy=merge</br>+patchMergeKey=ip |  |

@@ -11084,6 +11084,10 @@
           "description": "Data is a data template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Data"
         },
+        "displayName": {
+          "description": "DisplayName is a human readable name for the template.",
+          "type": "string"
+        },
         "executor": {
           "description": "Executor holds configurations of the executor container.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
