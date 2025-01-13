@@ -174,7 +174,7 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 }
 
 // SubmitWorkflow validates and submits a single workflow and overrides some of the fields of the workflow
-func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, wfDefaults *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
+	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, wfDefaults, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, err
 	}

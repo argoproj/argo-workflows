@@ -13,6 +13,7 @@ spec:
         args:
           - echo
           - '{{workflow.labels.arg-name}}'
+          - '{{workflow.labels.default-label}}'
   workflowMetadata:
     labels:
       arg-name: myLabelArg

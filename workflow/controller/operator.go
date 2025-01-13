@@ -1242,17 +1242,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				woc.updated = true
 			}
 			woc.markNodeError(node.Name, errors.New("", "pod deleted"))
-			// Set pod's child(container) error if pod deleted
-			for _, childNodeID := range node.Children {
-				childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
-				if err != nil {
-					woc.log.Errorf("was unable to obtain node for %s", childNodeID)
-					continue
-				}
-				if childNode.Type == wfv1.NodeTypeContainer {
-					woc.markNodeError(childNode.Name, errors.New("", "container deleted"))
-				}
-			}
+			// Mark all its children(container) as deleted if pod deleted
+			woc.markAllContainersDeleted(node.ID)
 		}
 	}
 	return nil, !taskResultIncomplete
@@ -1268,6 +1259,28 @@ func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
 	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+}
+
+// markAllContainersDeleted mark all its children(container) as deleted
+func (woc *wfOperationCtx) markAllContainersDeleted(nodeID string) {
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
+	if err != nil {
+		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		return
+	}
+
+	for _, childNodeID := range node.Children {
+		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
+		if err != nil {
+			woc.log.Errorf("was unable to obtain node for %s", childNodeID)
+			continue
+		}
+		if childNode.Type == wfv1.NodeTypeContainer {
+			woc.markNodeError(childNode.Name, errors.New("", "container deleted"))
+			// Recursively mark successor node(container) as deleted
+			woc.markAllContainersDeleted(childNodeID)
+		}
+	}
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
@@ -2807,6 +2820,26 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 	return node, nil
 }
 
+func (woc *wfOperationCtx) findLeafNodeWithType(boundaryID string, nodeType wfv1.NodeType) *wfv1.NodeStatus {
+	var leafNode *wfv1.NodeStatus
+	var dfs func(nodeID string)
+	dfs = func(nodeID string) {
+		node, err := woc.wf.Status.Nodes.Get(nodeID)
+		if err != nil {
+			woc.log.Errorf("was unable to obtain node for %s", nodeID)
+			return
+		}
+		if node.Type == nodeType {
+			leafNode = node
+		}
+		for _, childID := range node.Children {
+			dfs(childID)
+		}
+	}
+	dfs(boundaryID)
+	return leafNode
+}
+
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
@@ -2818,7 +2851,14 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	if node != nil && (tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps) {
 		// Check failFast
 		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			if woc.getActivePods(node.ID) == 0 {
+				if tmpl.GetType() == wfv1.TemplateTypeSteps {
+					if leafStepGroupNode := woc.findLeafNodeWithType(node.ID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
+						woc.markNodePhase(leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+					}
+				}
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			}
 			return ErrParallelismReached
 		}
 
@@ -2829,7 +2869,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		}
 	}
 
-	// if we are about to execute a pod, make sure our parent hasn't reached it's limit
+	// if we are about to execute a pod, make sure our parent hasn't reached its limit
 	if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 		boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
 		if err != nil {
@@ -2847,7 +2887,14 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 		// Check failFast
 		if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
-			woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			if woc.getActivePods(boundaryID) == 0 {
+				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
+					if leafStepGroupNode := woc.findLeafNodeWithType(boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
+						woc.markNodePhase(leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+					}
+				}
+				woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			}
 			return ErrParallelismReached
 		}
 
@@ -3978,7 +4025,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		// Validate the execution wfSpec
 		err := waitutil.Backoff(retry.DefaultRetry,
 			func() (bool, error) {
-				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(validationErr), validationErr
 				}

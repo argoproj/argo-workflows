@@ -22,7 +22,7 @@ func TestIsLeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
+	val, err := te.GetInt64GaugeValue(telemetry.InstrumentIsLeader.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
@@ -38,7 +38,7 @@ func TestNotLeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
+	val, err := te.GetInt64GaugeValue(telemetry.InstrumentIsLeader.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }
