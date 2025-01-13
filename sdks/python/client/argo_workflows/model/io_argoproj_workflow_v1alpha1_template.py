@@ -142,6 +142,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'daemon': (bool,),  # noqa: E501
             'dag': (IoArgoprojWorkflowV1alpha1DAGTemplate,),  # noqa: E501
             'data': (IoArgoprojWorkflowV1alpha1Data,),  # noqa: E501
+            'display_name': (str,),  # noqa: E501
             'executor': (IoArgoprojWorkflowV1alpha1ExecutorConfig,),  # noqa: E501
             'fail_fast': (bool,),  # noqa: E501
             'host_aliases': ([HostAlias],),  # noqa: E501
@@ -189,6 +190,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'daemon': 'daemon',  # noqa: E501
         'dag': 'dag',  # noqa: E501
         'data': 'data',  # noqa: E501
+        'display_name': 'displayName',  # noqa: E501
         'executor': 'executor',  # noqa: E501
         'fail_fast': 'failFast',  # noqa: E501
         'host_aliases': 'hostAliases',  # noqa: E501
@@ -271,6 +273,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             daemon (bool): Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
             dag (IoArgoprojWorkflowV1alpha1DAGTemplate): [optional]  # noqa: E501
             data (IoArgoprojWorkflowV1alpha1Data): [optional]  # noqa: E501
+            display_name (str): DisplayName is a human readable name for the template.. [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
             fail_fast (bool): FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.. [optional]  # noqa: E501
             host_aliases ([HostAlias]): HostAliases is an optional list of hosts and IPs that will be injected into the pod spec. [optional]  # noqa: E501
@@ -391,6 +394,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             daemon (bool): Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
             dag (IoArgoprojWorkflowV1alpha1DAGTemplate): [optional]  # noqa: E501
             data (IoArgoprojWorkflowV1alpha1Data): [optional]  # noqa: E501
+            display_name (str): DisplayName is a human readable name for the template.. [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
             fail_fast (bool): FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.. [optional]  # noqa: E501
             host_aliases ([HostAlias]): HostAliases is an optional list of hosts and IPs that will be injected into the pod spec. [optional]  # noqa: E501
