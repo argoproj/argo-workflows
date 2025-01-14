@@ -242,11 +242,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	f := func(key string) { wfc.wfQueue.AddRateLimited(key) }
-	return sync.ChainThrottler{
-		sync.NewThrottler(wfc.Config.Parallelism, sync.SingleBucket, f),
-		sync.NewThrottler(wfc.Config.NamespaceParallelism, sync.NamespaceBucket, f),
-	}
+	f := func(key string) { wfc.wfQueue.Add(key) }
+	return sync.NewMultiThrottler(wfc.Config.Parallelism, wfc.Config.NamespaceParallelism, f)
 }
 
 // runGCcontroller runs the workflow garbage collector controller
@@ -482,6 +479,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
+		log.Infof("Adding workflow %s/%s", un.GetNamespace(), un.GetName())
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
