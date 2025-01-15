@@ -88,6 +88,8 @@ rules:
       - secrets
     verbs:
       - get
+      - watch
+      - list
   - apiGroups:
       - argoproj.io
     resources:

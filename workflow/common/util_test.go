@@ -237,13 +237,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
-	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
@@ -255,6 +255,14 @@ type mockConfigMapStore struct {
 
 func (cs mockConfigMapStore) GetByKey(key string) (interface{}, bool, error) {
 	return cs.getByKey(key)
+}
+
+type mockSecretStore struct {
+	getByKey func(key string) (interface{}, bool, error)
+}
+
+func (ss mockSecretStore) GetByKey(key string) (interface{}, bool, error) {
+	return ss.getByKey(key)
 }
 
 func TestOverridableTemplateInputParamsValue(t *testing.T) {
@@ -288,12 +296,12 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
@@ -346,13 +354,108 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	globalParams := map[string]string{paramName: "overrideValue"}
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
+}
+
+func TestOverridableTemplateInputParamsValueBySecret(t *testing.T) {
+	tmpl := wfv1.Template{}
+	tmpl.Name = "artifact-printing"
+
+	paramName := "value-from-param"
+
+	overrideSecretName := "override-secret-name"
+	overrideSecretKey := "override-secret-key"
+	overrideSecretValue := "override-secret-value"
+
+	secretStore := mockSecretStore{}
+	secretStore.getByKey = func(key string) (interface{}, bool, error) {
+		return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{LabelKeySecretType: LabelValueTypeSecretParameter}},
+			Data: map[string][]byte{overrideSecretKey: []byte(overrideSecretValue)},
+		}, true, nil
+	}
+
+	tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, Value: wfv1.AnyStringPtr("abc")}}
+
+	valueArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, Value: wfv1.AnyStringPtr("override")}}}
+	valueFromArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, ValueFrom: &wfv1.ValueFrom{SecretKeyRef: &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: overrideSecretName,
+		},
+		Key: overrideSecretKey,
+	}}}}}
+
+	globalParams := make(map[string]string)
+	localParams := make(map[string]string)
+
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", nil, secretStore)
+	require.NoError(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
+
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", nil, secretStore)
+	require.NoError(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideSecretValue)
+}
+
+func TestOverridableTemplateInputParamsValueFromBySecret(t *testing.T) {
+	tmpl := wfv1.Template{}
+	tmpl.Name = "artifact-printing"
+
+	paramName := "value-from-param"
+
+	secretName := "secret-map-name"
+	secretKey := "secret-map-key"
+	secretValue := "secret-map-value"
+
+	overrideSecretName := "override-secret-name"
+	overrideSecretKey := "override-secret-key"
+	overrideSecretValue := "override-secret-value"
+
+	secretStore := mockSecretStore{}
+	secretStore.getByKey = func(key string) (interface{}, bool, error) {
+		return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{LabelKeySecretType: LabelValueTypeSecretParameter}},
+			Data: map[string][]byte{secretKey: []byte(secretValue), overrideSecretKey: []byte(overrideSecretValue)},
+		}, true, nil
+	}
+
+	tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, ValueFrom: &wfv1.ValueFrom{
+		SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: secretName,
+			},
+			Key: secretKey,
+		},
+	}}}
+
+	valueArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, Value: wfv1.AnyStringPtr("override")}}}
+	valueFromArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, ValueFrom: &wfv1.ValueFrom{SecretKeyRef: &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: overrideSecretName,
+		},
+		Key: overrideSecretKey,
+	}}}}}
+
+	globalParams := map[string]string{paramName: "overrideValue"}
+	localParams := make(map[string]string)
+
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", nil, secretStore)
+	require.NoError(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
+
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", nil, secretStore)
+	require.NoError(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideSecretValue)
 }

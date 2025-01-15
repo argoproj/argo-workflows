@@ -7069,6 +7069,12 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
 						},
 					},
+					"secretKeyRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecretKeyRef is secret selector for input parameter configuration",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
@@ -7087,7 +7093,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom", "k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom", "k8s.io/api/core/v1.ConfigMapKeySelector", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 

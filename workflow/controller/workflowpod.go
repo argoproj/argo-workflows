@@ -366,7 +366,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
-		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer(), woc.controller.secretInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}

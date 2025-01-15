@@ -109,5 +109,5 @@ rules:
     - secrets
   verbs:
     - get
-  resourceNames:
-    - argo-workflows-agent-ca-certificates
+    - watch
+    - list

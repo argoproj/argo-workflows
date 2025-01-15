@@ -13,6 +13,8 @@ Workflow is the definition of a workflow resource
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
@@ -148,6 +150,10 @@ Workflow is the definition of a workflow resource
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -467,6 +473,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
@@ -620,6 +628,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -920,6 +932,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
@@ -1073,6 +1087,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -1417,6 +1435,10 @@ Arguments to a template
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -2186,6 +2208,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
@@ -2265,6 +2289,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -2746,6 +2774,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
@@ -2821,6 +2851,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-outputs.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
@@ -3665,6 +3697,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-parameters.yaml)
@@ -3686,6 +3720,10 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
@@ -3721,6 +3759,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
+|`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|SecretKeyRef is secret selector for input parameter configuration|
 |`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
 
 ## Counter
@@ -3784,6 +3823,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-artifacts.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-parameters.yaml)
@@ -3817,6 +3858,10 @@ MetricLabel is a single label for a prometheus metric
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
@@ -4572,6 +4617,8 @@ _No description available_
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-parameters.yaml)
@@ -4593,6 +4640,10 @@ _No description available_
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
@@ -4692,6 +4743,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
+
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
 
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
@@ -4846,6 +4899,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -5353,6 +5410,8 @@ A single application container that you want to run within a pod.
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
@@ -5466,6 +5525,10 @@ A single application container that you want to run within a pod.
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -6307,6 +6370,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
@@ -6450,6 +6515,10 @@ ImageVolumeSource represents a image volume resource.
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
@@ -6834,6 +6903,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-parameters.yaml)
@@ -6855,6 +6926,10 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 

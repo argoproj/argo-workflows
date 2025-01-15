@@ -3,6 +3,8 @@ set -eu -o pipefail
 
 # Load the configmaps that contains the parameter values used for certain examples.
 kubectl apply -f examples/configmaps/simple-parameters-configmap.yaml
+# Load the secrets that contains the parameter values used for certain examples.
+kubectl apply -f examples/secrets/simple-parameters-secret.yaml
 
 echo "Checking for banned images..."
 grep -lR 'workflows.argoproj.io/test' examples/*  | while read f ; do

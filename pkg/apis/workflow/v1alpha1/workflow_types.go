@@ -907,6 +907,9 @@ type ValueFrom struct {
 	// ConfigMapKeyRef is configmap selector for input parameter configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,9,opt,name=configMapKeyRef"`
 
+	// SecretKeyRef is secret selector for input parameter configuration
+	SecretKeyRef *apiv1.SecretKeySelector `json:"secretKeyRef,omitempty" protobuf:"bytes,10,opt,name=secretKeyRef"`
+
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 
