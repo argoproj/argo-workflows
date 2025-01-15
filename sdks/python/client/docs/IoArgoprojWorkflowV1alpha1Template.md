@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **active_deadline_seconds** | **str** |  | [optional] 
 **affinity** | [**Affinity**](Affinity.md) |  | [optional] 
+**annotations** | **{str: (str,)}** | Annotations is a list of annotations to add to the template at runtime | [optional] 
 **archive_location** | [**IoArgoprojWorkflowV1alpha1ArtifactLocation**](IoArgoprojWorkflowV1alpha1ArtifactLocation.md) |  | [optional] 
 **automount_service_account_token** | **bool** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. | [optional] 
 **container** | [**Container**](Container.md) |  | [optional] 
@@ -14,7 +15,6 @@ Name | Type | Description | Notes
 **daemon** | **bool** | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness | [optional] 
 **dag** | [**IoArgoprojWorkflowV1alpha1DAGTemplate**](IoArgoprojWorkflowV1alpha1DAGTemplate.md) |  | [optional] 
 **data** | [**IoArgoprojWorkflowV1alpha1Data**](IoArgoprojWorkflowV1alpha1Data.md) |  | [optional] 
-**display_name** | **str** | DisplayName is a human readable name for the template. | [optional] 
 **executor** | [**IoArgoprojWorkflowV1alpha1ExecutorConfig**](IoArgoprojWorkflowV1alpha1ExecutorConfig.md) |  | [optional] 
 **fail_fast** | **bool** | FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with &#x60;withItems&#x60;, etc. | [optional] 
 **host_aliases** | [**[HostAlias]**](HostAlias.md) | HostAliases is an optional list of hosts and IPs that will be injected into the pod spec | [optional] 

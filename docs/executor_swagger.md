@@ -3810,6 +3810,7 @@ of the first container processes are calculated.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | activeDeadlineSeconds | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | affinity | [Affinity](#affinity)| `Affinity` |  | |  |  |
+| annotations | map of string| `map[string]string` |  | | Annotations is a list of annotations to add to the template at runtime |  |
 | archiveLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
 | automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.</br>ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
@@ -3817,7 +3818,6 @@ of the first container processes are calculated.
 | daemon | boolean| `bool` |  | | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |
 | dag | [DAGTemplate](#d-a-g-template)| `DAGTemplate` |  | |  |  |
 | data | [Data](#data)| `Data` |  | |  |  |
-| displayName | string| `string` |  | | DisplayName is a human readable name for the template. |  |
 | executor | [ExecutorConfig](#executor-config)| `ExecutorConfig` |  | |  |  |
 | failFast | boolean| `bool` |  | | FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this</br>template is expanded with `withItems`, etc. |  |
 | hostAliases | [][HostAlias](#host-alias)| `[]*HostAlias` |  | | HostAliases is an optional list of hosts and IPs that will be injected into the pod spec</br>+patchStrategy=merge</br>+patchMergeKey=ip |  |

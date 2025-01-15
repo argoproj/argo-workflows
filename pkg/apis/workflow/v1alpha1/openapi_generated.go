@@ -6646,11 +6646,20 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"displayName": {
+					"annotations": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DisplayName is a human readable name for the template.",
-							Type:        []string{"string"},
-							Format:      "",
+							Description: "Annotations is a list of annotations to add to the template at runtime",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},

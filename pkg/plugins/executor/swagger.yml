@@ -4323,6 +4323,11 @@ definitions:
                 $ref: '#/definitions/IntOrString'
             affinity:
                 $ref: '#/definitions/Affinity'
+            annotations:
+                additionalProperties:
+                    type: string
+                description: Annotations is a list of annotations to add to the template at runtime
+                type: object
             archiveLocation:
                 $ref: '#/definitions/ArtifactLocation'
             automountServiceAccountToken:
@@ -4341,9 +4346,6 @@ definitions:
                 $ref: '#/definitions/DAGTemplate'
             data:
                 $ref: '#/definitions/Data'
-            displayName:
-                description: DisplayName is a human readable name for the template.
-                type: string
             executor:
                 $ref: '#/definitions/ExecutorConfig'
             failFast:

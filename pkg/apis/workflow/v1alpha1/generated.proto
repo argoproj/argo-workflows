@@ -1753,8 +1753,8 @@ message Template {
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
 
-  // DisplayName is a human readable name for the template.
-  optional string displayName = 44;
+  // Annotations is a list of annotations to add to the template at runtime
+  map<string, string> annotations = 44;
 }
 
 // TemplateRef is a reference of template resource.

@@ -1358,6 +1358,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
+                    annotations={
+                        "key": "key_example",
+                    },
                     archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -3051,7 +3054,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
-                    display_name="display_name_example",
                     executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                         service_account_name="service_account_name_example",
                     ),
@@ -6180,6 +6182,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -7873,7 +7878,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
-                        display_name="display_name_example",
                         executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                             service_account_name="service_account_name_example",
                         ),
@@ -12892,6 +12896,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
+                    annotations={
+                        "key": "key_example",
+                    },
                     archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -14585,7 +14592,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
-                    display_name="display_name_example",
                     executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                         service_account_name="service_account_name_example",
                     ),
@@ -17714,6 +17720,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -19407,7 +19416,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
-                        display_name="display_name_example",
                         executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                             service_account_name="service_account_name_example",
                         ),
@@ -24332,6 +24340,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
+                    annotations={
+                        "key": "key_example",
+                    },
                     archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -26025,7 +26036,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
-                    display_name="display_name_example",
                     executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                         service_account_name="service_account_name_example",
                     ),
@@ -29154,6 +29164,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -30847,7 +30860,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
-                        display_name="display_name_example",
                         executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                             service_account_name="service_account_name_example",
                         ),

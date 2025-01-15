@@ -473,6 +473,10 @@ spec:
                               x-kubernetes-list-type: atomic
                           type: object
                       type: object
+                    annotations:
+                      additionalProperties:
+                        type: string
+                      type: object
                     archiveLocation:
                       properties:
                         archiveLogs:
@@ -4308,8 +4312,6 @@ spec:
                       - source
                       - transformation
                       type: object
-                    displayName:
-                      type: string
                     executor:
                       properties:
                         serviceAccountName:

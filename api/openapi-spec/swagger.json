@@ -11056,6 +11056,13 @@
           "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
+        "annotations": {
+          "description": "Annotations is a list of annotations to add to the template at runtime",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "archiveLocation": {
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
@@ -11083,10 +11090,6 @@
         "data": {
           "description": "Data is a data template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Data"
-        },
-        "displayName": {
-          "description": "DisplayName is a human readable name for the template.",
-          "type": "string"
         },
         "executor": {
           "description": "Executor holds configurations of the executor container.",
