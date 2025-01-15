@@ -1,7 +1,7 @@
 import {EMPTY, from, Observable, of} from 'rxjs';
 import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
-import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
+import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {ResubmitOpts, RetryOpts} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {uiUrl} from '../base';
@@ -253,9 +253,8 @@ export const WorkflowsService = {
     getContainerLogs(workflow: Workflow, podName: string, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
 
-        // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
-        // that the Workflow and associated pods have been deleted
-        if (archived) {
+        // If our workflow was deleted, try to get logs from artifacts.
+        if (!isWorkflowInCluster(workflow)) {
             return getLogsFromArtifact();
         }
 
