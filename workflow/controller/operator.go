@@ -1413,10 +1413,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			continue
 		}
 		switch {
-		case c.State.Waiting != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
-		case c.State.Running != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
 			message := fmt.Sprintf("%s: %s (exit code %d): %s", c.Name, c.State.Terminated.Reason, exitCode, c.State.Terminated.Message)
@@ -1430,6 +1426,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			default:
 				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message)
 			}
+		case pod.Status.Phase == apiv1.PodFailed:
+			woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, `Pod Failed whilst container running`)
+		case c.State.Waiting != nil:
+			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
+		case c.State.Running != nil:
+			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
 		}
 	}
 
