@@ -29,15 +29,39 @@ type Config struct {
 }
 
 type Metrics struct {
-	// Ensures mutual exclusion in workflows map
-	Mutex sync.RWMutex
-
 	// Evil context for compatibility with legacy context free interfaces
 	Ctx       context.Context
 	otelMeter *metric.Meter
 	config    *Config
 
-	AllInstruments map[string]*Instrument
+	// Ensures mutual exclusion in instruments
+	mutex       sync.RWMutex
+	instruments map[string]*Instrument
+}
+
+func (m *Metrics) AddInstrument(name string, inst *Instrument) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.instruments[name] = inst
+}
+
+func (m *Metrics) GetInstrument(name string) *Instrument {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	inst, ok := m.instruments[name]
+	if !ok {
+		return nil
+	}
+	return inst
+}
+
+// IterateROInstruments iterates over every instrument for Read-Only purposes
+func (m *Metrics) IterateROInstruments(fn func(i *Instrument)) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	for _, i := range m.instruments {
+		fn(i)
+	}
 }
 
 func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *Config, extraOpts ...metricsdk.Option) (*Metrics, error) {
@@ -81,10 +105,10 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 
 	meter := provider.Meter(serviceName)
 	metrics := &Metrics{
-		Ctx:            ctx,
-		otelMeter:      &meter,
-		config:         config,
-		AllInstruments: make(map[string]*Instrument),
+		Ctx:         ctx,
+		otelMeter:   &meter,
+		config:      config,
+		instruments: make(map[string]*Instrument),
 	}
 
 	return metrics, nil
