@@ -1953,14 +1953,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Update displayName from processedTmpl
-	if node != nil && processedTmpl.DisplayName != "" {
-		if !displayNameRegex.MatchString(processedTmpl.DisplayName) {
+	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
+		if !displayNameRegex.MatchString(displayName) {
 			err = fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 
-		woc.log.Debugf("Updating node %s display name to %s", node.DisplayName, processedTmpl.DisplayName)
-		woc.setNodeDisplayName(node, processedTmpl.DisplayName)
+		woc.log.Debugf("Updating node %s display name to %s", node.DisplayName, displayName)
+		woc.setNodeDisplayName(node, displayName)
 	}
 
 	// Check if this is a fulfilled node for synchronization.
