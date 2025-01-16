@@ -447,6 +447,10 @@ dist/manifests/%: manifests/%
 
 # lint/test/etc
 
+.PHONE: manifests-validate
+manifests-validate:
+	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
+
 $(GOPATH)/bin/golangci-lint: Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
