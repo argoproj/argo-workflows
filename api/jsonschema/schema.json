@@ -4980,14 +4980,6 @@
           "type": "integer"
         }
       },
-      "required": [
-        "active",
-        "lastScheduledTime",
-        "conditions",
-        "succeeded",
-        "failed",
-        "phase"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest": {
@@ -5032,7 +5024,7 @@
         },
         "inline": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
-          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
         "name": {
           "description": "Name is the name of the target",
@@ -5055,7 +5047,7 @@
           "type": "string"
         },
         "withItems": {
-          "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
+          "description": "WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
           },
@@ -7126,7 +7118,7 @@
         },
         "plugin": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin",
-          "description": "Plugin is a plugin template"
+          "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
@@ -8142,7 +8134,7 @@
         },
         "inline": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
-          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an \"inline\" field. Kubernetes doesn't allow recursive types, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
         "name": {
           "description": "Name of the step",
@@ -8165,7 +8157,7 @@
           "type": "string"
         },
         "withItems": {
-          "description": "WithItems expands a step into multiple parallel steps from the items in the list",
+          "description": "WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
           },

@@ -983,7 +983,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
-| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list |  |
+| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>Note: The structure of WithItems is free-form, so we need</br>"x-kubernetes-preserve-unknown-fields: true" in the validation schema.</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
 | withParam | string| `string` |  | | WithParam expands a task into multiple parallel tasks from the value in the parameter,</br>which is expected to be a JSON list. |  |
 | withSequence | [Sequence](#sequence)| `Sequence` |  | |  |  |
 
@@ -1856,7 +1856,6 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 
 > +protobuf.options.(gogoproto.goproto_stringer)=false
-+kubebuilder:validation:Type=object
   
 
 
@@ -2511,10 +2510,7 @@ be cluster-scoped, so there is no namespace field.
 ### <span id="parallel-steps"></span> ParallelSteps
 
 
-> +kubebuilder:validation:Type=array
   
-
-
 
 [interface{}](#interface)
 
@@ -3391,7 +3387,7 @@ cause implementors to also use a fixed point implementation.
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
-| source | string| `string` |  | | Source contains the source code of the script to execute |  |
+| source | string| `string` |  | | Source contains the source code of the script to execute</br>+optional |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
 | stdinOnce | boolean| `bool` |  | | Whether the container runtime should close the stdin channel after it has been opened by</br>a single attach. When stdin is true the stdin stream will remain open across multiple attach</br>sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the</br>first client attaches to stdin, and then remains open and accepts data until the client disconnects,</br>at which time stdin is closed and remains closed until the container is restarted. If this</br>flag is false, a container processes that reads from stdin will never receive an EOF.</br>Default is false</br>+optional |  |

@@ -186,6 +186,14 @@ var NoError = func(t *testing.T, output string, err error) {
 	require.NoError(t, err, output)
 }
 
+var ErrorOutput = func(contains string) func(t *testing.T, output string, err error) {
+	return func(t *testing.T, output string, err error) {
+		t.Helper()
+		require.Error(t, err)
+		assert.Contains(t, output, contains)
+	}
+}
+
 var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
 		t.Helper()

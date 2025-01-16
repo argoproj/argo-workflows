@@ -11,10 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -458,25 +455,7 @@ spec:
 
 func (s *CronSuite) TestMalformedCronWorkflow() {
 	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
-		CronWorkflow("@testdata/wellformed/wellformed-cronworkflow.yaml").
-		When().
-		CreateCronWorkflow().
-		WaitForWorkflow(2*time.Minute).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		}).
-		ExpectAuditEvents(
-			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
-			1,
-			func(t *testing.T, e []corev1.Event) {
-				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
-				assert.Equal(t, "Malformed", e[0].Reason)
-				assert.Equal(t, "cannot restore slice from map", e[0].Message)
-			},
-		)
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.ErrorOutput("unknown field \"spec.workflowSpec.arguments.parameters.someParam\""))
 }
 
 func TestCronSuite(t *testing.T) {
