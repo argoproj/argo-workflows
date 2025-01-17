@@ -34,7 +34,7 @@ helm repo add minio https://charts.min.io/ # official minio Helm charts
 helm repo update
 ```
 
-By default, this chart will deploy **16 replicas**, each requiring **16Gi of memory** and **500Gi of disk space** on your cluster. You can modify those values to fit the capacities of your environment, declaring `MEMORY_REQ`, `SPACE_REQ`, and `REPLICAS`.
+By default, this chart will deploy *16 replicas, each requiring 16Gi of memory and 500Gi of disk space on your cluster. You can modify those values to fit the capacities of your environment, declaring `MEMORY_REQ`, `SPACE_REQ`, and `REPLICAS`.
 
 ```bash
 export MEMORY_REQ=4Gi
