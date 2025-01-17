@@ -1,7 +1,7 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../../../shared/base';
@@ -58,6 +58,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
@@ -126,6 +127,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     // save history and localStorage
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
         const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
@@ -135,7 +140,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         }
         storage.setItem('options', options, {} as WorkflowListRenderOptions);
 
-        const params = new URLSearchParams();
+        const params = new URLSearchParams(history.location.search);
         phases?.forEach(phase => params.append('phase', phase));
         labels?.forEach(label => params.append('label', label));
         if (pagination.offset) {
@@ -346,10 +351,26 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                     )}
                 </div>
             </div>
-            <SlidingPanel isShown={!!getSidePanel()} onClose={() => navigation.goto('.', {sidePanel: null})}>
+            <SlidingPanel
+                isShown={!!getSidePanel()}
+                onClose={() => {
+                    const qParams: {[key: string]: string | null} = {
+                        sidePanel: null
+                    };
+                    // Remove any lingering query params
+                    for (const key of queryParams.keys()) {
+                        qParams[key] = null;
+                    }
+                    // Add back the pagination and namespace params.
+                    qParams.limit = pagination.limit.toString();
+                    qParams.offset = pagination.offset || null;
+                    qParams.namespace = namespace;
+                    navigation.goto('.', qParams);
+                }}>
                 {getSidePanel() === 'submit-new-workflow' && (
                     <WorkflowCreator
                         namespace={nsUtils.getNamespaceWithDefault(namespace)}
+                        history={history}
                         onCreate={wf => navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
                     />
                 )}

@@ -1205,7 +1205,12 @@ definitions:
                 description: When is an expression in which the task should conditionally execute
                 type: string
             withItems:
-                description: WithItems expands a task into multiple parallel tasks from the items in the list
+                description: |-
+                    WithItems expands a task into multiple parallel tasks from the items in the list
+                    Note: The structure of WithItems is free-form, so we need
+                    "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+                    +kubebuilder:validation:Schemaless
+                    +kubebuilder:pruning:PreserveUnknownFields
                 items:
                     $ref: '#/definitions/Item'
                 type: array
@@ -2034,9 +2039,7 @@ definitions:
             TODO: Rename to Int32OrString
         type: object
     Item:
-        description: |-
-            +protobuf.options.(gogoproto.goproto_stringer)=false
-            +kubebuilder:validation:Type=object
+        description: +protobuf.options.(gogoproto.goproto_stringer)=false
         title: |-
             Item expands a single workflow step into multiple parallel steps
             The value of Item can be a map, string, bool, or number
@@ -2571,9 +2574,7 @@ definitions:
             uid:
                 $ref: '#/definitions/UID'
         type: object
-    ParallelSteps:
-        description: +kubebuilder:validation:Type=array
-        type: object
+    ParallelSteps: {}
     Parameter:
         description: Parameter indicate a passed string parameter to a service template with an optional default value
         properties:
@@ -3839,7 +3840,9 @@ definitions:
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             source:
-                description: Source contains the source code of the script to execute
+                description: |-
+                    Source contains the source code of the script to execute
+                    +optional
                 type: string
             startupProbe:
                 $ref: '#/definitions/Probe'

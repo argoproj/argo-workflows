@@ -159,6 +159,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                         entrypoint={template.spec.entrypoint}
                         templates={template.spec.templates || []}
                         workflowParameters={template.spec.arguments.parameters || []}
+                        history={history}
                     />
                 </SlidingPanel>
             )}

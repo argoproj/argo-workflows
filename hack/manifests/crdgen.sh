@@ -8,7 +8,7 @@ add_header() {
   mv tmp "$1"
 }
 
-controller-gen crd:maxDescLen=0 paths=./pkg/apis/... output:dir=manifests/base/crds/full
+controller-gen crd:maxDescLen=0,generateEmbeddedObjectMeta=true paths=./pkg/apis/... output:dir=manifests/base/crds/full
 
 find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do
   # remove junk fields

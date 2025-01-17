@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl} from '../shared/base';
@@ -29,6 +29,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
+    const isFirstRender = useRef(true);
     const [namespace] = useState(match.params.namespace);
     const [name] = useState(match.params.name);
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -47,18 +48,20 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('cron-workflows/{namespace}/{name}', {
-                    namespace,
-                    name,
-                    sidePanel,
-                    tab
-                })
-            ),
-        [namespace, name, sidePanel, tab]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('cron-workflows/{namespace}/{name}', {
+                namespace,
+                name,
+                sidePanel,
+                tab
+            })
+        );
+    }, [namespace, name, sidePanel, tab]);
 
     useEffect(() => {
         services.cronWorkflows

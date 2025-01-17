@@ -1,7 +1,7 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
@@ -33,6 +33,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
@@ -49,16 +50,18 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     );
 
     // save history
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace,
-                    sidePanel
-                })
-            ),
-        [namespace, sidePanel]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace,
+                sidePanel
+            })
+        );
+    }, [namespace, sidePanel]);
 
     // internal state
     const [error, setError] = useState<Error>();

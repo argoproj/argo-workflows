@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parallelism-dag-fail-fast
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      parallelism: 2
+      failFast: true
+      dag:
+        tasks:
+          - name: task1
+            template: fail
+          - name: task2
+            template: sleep
+    - name: fail
+      container:
+        image: alpine:latest
+        command: [ sh, -c ]
+        args: ["exit 1"]
+    - name: sleep
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["sleep 5"]

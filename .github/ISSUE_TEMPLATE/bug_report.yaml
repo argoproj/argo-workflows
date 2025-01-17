@@ -31,7 +31,7 @@ body:
   - type: textarea
     id: failing-workflow
     attributes:
-      label: Paste a minimal workflow that reproduces the issue. We must be able to run the workflow; don't enter a workflows that uses private images.
+      label: Paste a minimal workflow that reproduces the issue. We must be able to run the workflow; don't enter a workflow that uses private images.
       description: A [minimal reproduction](https://stackoverflow.com/help/minimal-reproducible-example) is essential to debugging and prioritizing your issue
       render: YAML
     validations:
@@ -59,4 +59,3 @@ body:
 
         Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
         See [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information.
-
