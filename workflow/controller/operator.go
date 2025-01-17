@@ -3452,9 +3452,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		var requestUrl string
 
 		if port == "" {
-			requestUrl = "http://" + url + "/api/workflows/suspend/event"
+			requestUrl = "http://" + url + "/api/workflow-histories/suspend/event"
 		} else {
-			requestUrl = "http://" + url + ":" + port + "/api/workflows/suspend/event"
+			requestUrl = "http://" + url + ":" + port + "/api/workflow-histories/suspend/event"
 		}
 		woc.log.Infof("flops url : %s", requestUrl)
 		nodeInfo := NodeInfo{

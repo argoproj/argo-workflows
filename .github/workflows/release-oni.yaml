@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*-oni
+    branches:
+      - oni-*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Build & push linux
+    if: github.repository == 'devos-asgard/argo-workflows'
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        platform: [ linux/amd64 ]
+        target: [ workflow-controller, argocli, argoexec ]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        with:
+          version: v0.10.4
+
+      - name: Cache Docker layers
+        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        id: cache
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
+
+      - name: Login to Harbor
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: harbor-devops.coruscant.opsnow.com
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Buildx
+        env:
+          OPSNOW_COM: ${{ secrets.OPSNOW_COM }}
+          PLATFORM: ${{ matrix.platform }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -eux
+          tag=$(basename $GITHUB_REF)
+          if [ $tag = "main" ]; then
+            tag="latest"
+          fi
+          # copied verbatim from Makefile
+          GIT_COMMIT=$(git rev-parse HEAD || echo unknown)
+          GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
+          GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+          tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
+          image_name="${OPSNOW_COM}/${TARGET}:${tag}-${tag_suffix}"
+
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --output "type=image,push=true" \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
+            --platform="${PLATFORM}" \
+            --target $TARGET \
+            --provenance=false \
+            --tag $image_name .
+
+  push-images:
+    name: Push manifest with all images
+    if: github.repository == 'devos-asgard/argo-workflows'
+    runs-on: ubuntu-24.04
+    needs: [ build-linux ]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Login to Harbor
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: harbor-devops.coruscant.opsnow.com
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
+        with:
+          cosign-release: 'v2.2.3'
+
+      - name: Push Image
+        env:
+          OPSNOW_COM: ${{ secrets.OPSNOW_COM }}
+          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+        run: |
+          : ${DOCKER_CONFIG:=~/.docker}
+          echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
+
+          opsnow_com=$OPSNOW_COM
+
+          tag=$(basename $GITHUB_REF)
+          if [ $tag = "main" ]; then
+            tag="latest"
+          fi
+
+          targets="workflow-controller argoexec argocli"
+          for target in $targets; do
+            image_name="${opsnow_com}/${target}:${tag}"
+
+            docker manifest create $image_name ${image_name}-linux-amd64
+            docker manifest push $image_name
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY $image_name
+          done
