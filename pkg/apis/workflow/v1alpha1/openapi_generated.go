@@ -1417,6 +1417,13 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"cap": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -2391,7 +2398,6 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "phase"},
 			},
 		},
 		Dependencies: []string{
@@ -2423,7 +2429,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa).",
+							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
@@ -2457,7 +2463,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"withItems": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithItems expands a task into multiple parallel tasks from the items in the list",
+							Description: "WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -4804,8 +4810,9 @@ func schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type:   ParallelSteps{}.OpenAPISchemaType(),
-				Format: ParallelSteps{}.OpenAPISchemaFormat(),
+				Description: "swagger:ignore",
+				Type:        ParallelSteps{}.OpenAPISchemaType(),
+				Format:      ParallelSteps{}.OpenAPISchemaFormat(),
 			},
 		},
 	}
@@ -5818,7 +5825,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"name", "source"},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
@@ -6431,7 +6438,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"plugin": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Plugin is a plugin template",
+							Description: "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Plugin"),
 						},
 					},
@@ -8210,7 +8217,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa).",
+							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an \"inline\" field. Kubernetes doesn't allow recursive types, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
@@ -8229,7 +8236,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"withItems": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithItems expands a step into multiple parallel steps from the items in the list",
+							Description: "WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
