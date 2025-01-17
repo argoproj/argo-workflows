@@ -6,7 +6,6 @@
 # injection vulnerabilities (https://owasp.org/www-community/attacks/Command_Injection).
 #
 # This policy will only work when using the full CRDs (https://argo-workflows.readthedocs.io/en/latest/installation/#full-crds).
-# You must create a ValidatingAdmissionPolicyBinding to use it.
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
