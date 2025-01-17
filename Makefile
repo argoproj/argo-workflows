@@ -51,7 +51,7 @@ endif
 # -- install & run options
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo false || echo true)
+PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
 UI                    ?= false # start the UI with HTTP
 UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
