@@ -2040,6 +2040,10 @@ type Backoff struct {
 	// However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
 	// This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
+	// Cap is a limit on revised values of the duration parameter. If a
+	// multiplication by the factor parameter would make the duration
+	// exceed the cap then the duration is set to the cap
+	Cap string `json:"cap,omitempty" protobuf:"varint,4,opt,name=cap"`
 }
 
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
