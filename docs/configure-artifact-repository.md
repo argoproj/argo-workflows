@@ -34,7 +34,7 @@ helm repo add minio https://charts.min.io/ # official minio Helm charts
 helm repo update
 ```
 
-By default, this chart will deploy *16 replicas, each requiring 16Gi of memory and 500Gi of disk space on your cluster. You can modify those values to fit the capacities of your environment, declaring `MEMORY_REQ`, `SPACE_REQ`, and `REPLICAS`.
+By default, this chart deploys 16 replicas, each requiring 16 GiB of memory and 500 GiB of disk space on your cluster. You can modify these values to match your environment's capacities by declaring the MEMORY_REQ, SPACE_REQ, and REPLICAS variables:
 
 ```bash
 export MEMORY_REQ=4Gi
@@ -42,7 +42,11 @@ export SPACE_REQ=20Gi
 export REPLICAS=4
 ```
 
-If you need to access the MinIO UI from outside the cluster, configure the service as a LoadBalancer to expose port 9001 with `--set consoleService.type=LoadBalancer`.
+To access the MinIO UI from outside the cluster, configure the service as a LoadBalancer to expose port 9001 by using the following option:
+
+```bash
+--set consoleService.type=LoadBalancer
+```
 
 Finalize the install by installing the Helm release:
 
