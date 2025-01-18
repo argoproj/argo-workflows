@@ -157,13 +157,13 @@ spec:
   - container:
       image: argoproj/argosay:v2
       command: [sh, -c]
-      args: ["sleep 1; cat /upload/testUpload; cat /upload/testUpload.txt > /upload/testUpload.txt"]
+      args: ["sleep 1; cat /upload/testInput.txt > /upload/testUpload.txt"]
       name: ""
       resources: {}
     inputs:
       artifacts:
       - name: testUpload
-        path: /upload/testUpload.txt
+        path: /upload/testInput.txt
     metadata: {}
     name: upload-testupload
     outputs:
