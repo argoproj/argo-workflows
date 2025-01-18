@@ -128,6 +128,7 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 		return strings.Contains(image, "argoexec:") ||
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
+			image == "quay.io/argoproj/argocli:latest" ||
 			discouraged(image) ||
 			(isExample && (image == "busybox" || image == "python:alpine3.6"))
 	}
