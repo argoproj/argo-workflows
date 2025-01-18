@@ -27,10 +27,11 @@ type Facade struct {
 	insecureSkipVerify bool
 	headers            []string
 	httpClient         *http.Client
+	proxy              func(*http.Request) (*url.URL, error)
 }
 
-func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
-	return Facade{baseUrl, authorization, insecureSkipVerify, headers, httpClient}
+func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client, proxy func(*http.Request) (*url.URL, error)) Facade {
+	return Facade{baseUrl, authorization, insecureSkipVerify, headers, httpClient, proxy}
 }
 
 func (h Facade) Get(ctx context.Context, in, out interface{}, path string) error {
@@ -67,10 +68,15 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return nil, err
+	}
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
 			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: h.insecureSkipVerify,
 				},
@@ -113,10 +119,15 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return err
+	}
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
 			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: h.insecureSkipVerify,
 				},
@@ -179,4 +190,11 @@ func parseHeaders(headerStrings []string) (http.Header, error) {
 		headers.Add(items[0], items[1])
 	}
 	return headers, nil
+}
+
+func (h *Facade) proxyFunc() func(*http.Request) (*url.URL, error) {
+	if h.proxy != nil {
+		return h.proxy
+	}
+	return http.ProxyFromEnvironment
 }
