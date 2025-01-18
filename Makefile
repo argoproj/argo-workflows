@@ -38,7 +38,7 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
-ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins,examples
+ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
 
 # should we build the static files?

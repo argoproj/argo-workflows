@@ -31,7 +31,7 @@ func (s *ExamplesSuite) TestExampleWorkflows() {
 			if _, ok := wf.GetLabels()["workflows.argoproj.io/test"]; ok {
 				s.T().Logf("Found example workflow at %s with test label\n", path)
 				s.Given().
-					Workflow(&wf).
+					ExampleWorkflow(&wf).
 					When().
 					SubmitWorkflow().
 					WaitForWorkflow(fixtures.ToBeSucceeded)

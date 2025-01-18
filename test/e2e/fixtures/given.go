@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -42,20 +41,20 @@ type Given struct {
 //
 // 1. A file name if it starts with "@"
 // 2. Raw YAML.
-// 3. An already parsed wfv1.Workflow object
-func (g *Given) Workflow(wf interface{}) *Given {
+func (g *Given) Workflow(text string) *Given {
 	g.t.Helper()
-	switch v := wf.(type) {
-	case *wfv1.Workflow:
-		g.wf = v
-		g.checkLabels(v)
-	case string:
-		g.wf = &wfv1.Workflow{}
-		g.readResource(v, g.wf)
-	default:
-		g.t.Fatalf("Unsupported input: %s", reflect.TypeOf(wf).String())
-	}
-	g.checkImages(g.wf)
+	g.wf = &wfv1.Workflow{}
+	g.readResource(text, g.wf)
+	g.checkImages(g.wf, false)
+	return g
+}
+
+// Load parsed Workflow that's assumed to be from the "examples/" directory
+func (g *Given) ExampleWorkflow(wf *wfv1.Workflow) *Given {
+	g.t.Helper()
+	g.wf = wf
+	g.checkLabels(wf)
+	g.checkImages(g.wf, true)
 	return g
 }
 
@@ -93,25 +92,29 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	}
 }
 
-func (g *Given) checkImages(wf interface{}) {
+// Check if given Workflow, WorkflowTemplate, or CronWorkflow uses forbidden images.
+// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
+// downloaded or evicted. To keep tests fast and reliable you must use allowed images.
+// Workflows from the examples/ folder are given special treatment and allowed to use a wider range of images.
+func (g *Given) checkImages(wf interface{}, isExample bool) {
 	g.t.Helper()
 	var defaultImage string
 	var templates []wfv1.Template
 	switch baseTemplate := wf.(type) {
 	case *wfv1.Workflow:
+		templates = baseTemplate.Spec.Templates
 		if baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "" {
 			defaultImage = baseTemplate.Spec.TemplateDefaults.Container.Image
-			templates = baseTemplate.Spec.Templates
 		}
 	case *wfv1.WorkflowTemplate:
+		templates = baseTemplate.Spec.Templates
 		if baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "" {
 			defaultImage = baseTemplate.Spec.TemplateDefaults.Container.Image
-			templates = baseTemplate.Spec.Templates
 		}
 	case *wfv1.CronWorkflow:
+		templates = baseTemplate.Spec.WorkflowSpec.Templates
 		if baseTemplate.Spec.WorkflowSpec.TemplateDefaults != nil && baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container != nil && baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container.Image != "" {
 			defaultImage = baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container.Image
-			templates = baseTemplate.Spec.WorkflowSpec.Templates
 		}
 	default:
 		g.t.Fatalf("Unsupported checkImage workflow type: %s", wf)
@@ -119,12 +122,14 @@ func (g *Given) checkImages(wf interface{}) {
 
 	// discouraged
 	discouraged := func(image string) bool {
-		return image == "python:alpine3.6"
+		return image == "python:alpine3.6" && !isExample
 	}
-	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
-	// downloaded or evicted. To keep tests fast and reliable you must use allowed images.
 	allowed := func(image string) bool {
-		return strings.Contains(image, "argoexec:") || image == "argoproj/argosay:v1" || image == "argoproj/argosay:v2" || discouraged(image)
+		return strings.Contains(image, "argoexec:") ||
+			image == "argoproj/argosay:v1" ||
+			image == "argoproj/argosay:v2" ||
+			discouraged(image) ||
+			(isExample && (image == "busybox" || image == "python:alpine3.6"))
 	}
 	for _, t := range templates {
 		container := t.Container
@@ -178,7 +183,7 @@ func (g *Given) WorkflowTemplate(text string) *Given {
 	g.t.Helper()
 	wfTemplate := &wfv1.WorkflowTemplate{}
 	g.readResource(text, wfTemplate)
-	g.checkImages(wfTemplate)
+	g.checkImages(wfTemplate, false)
 	g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	return g
 }
@@ -187,7 +192,7 @@ func (g *Given) CronWorkflow(text string) *Given {
 	g.t.Helper()
 	g.cronWf = &wfv1.CronWorkflow{}
 	g.readResource(text, g.cronWf)
-	g.checkImages(g.cronWf)
+	g.checkImages(g.cronWf, false)
 	return g
 }
 
