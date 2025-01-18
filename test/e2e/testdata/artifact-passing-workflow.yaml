@@ -20,7 +20,7 @@ spec:
 
   - name: create-message
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["echo ':) Hello Argo!' | tee /tmp/hello_world.txt"]
     outputs:
@@ -40,6 +40,6 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["cat /tmp/message"]

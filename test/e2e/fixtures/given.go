@@ -1,13 +1,11 @@
 package fixtures
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,16 +118,11 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 		g.t.Fatalf("Unsupported checkImage workflow type: %s", wf)
 	}
 
-	// discouraged
-	discouraged := func(image string) bool {
-		return image == "python:alpine3.6" && !isExample
-	}
 	allowed := func(image string) bool {
 		return strings.Contains(image, "argoexec:") ||
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
-			discouraged(image) ||
 			(isExample && (image == "busybox" || image == "python:alpine3.6"))
 	}
 	for _, t := range templates {
@@ -147,9 +140,6 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			// (⎈ |docker-desktop:argo)➜  ~ time docker run --rm argoproj/argosay:v2
 			// docker run --rm argoproj/argosay˜:v2  0.21s user 0.10s system 16% cpu 1.912 total
 			// docker run --rm argoproj/argosay:v1  0.17s user 0.08s system 31% cpu 0.784 total
-			if discouraged(image) {
-				_, _ = fmt.Println(color.Ize(color.Yellow, "DISCOURAGED IMAGE: "+g.t.Name()+" is using "+image))
-			}
 		}
 	}
 }
