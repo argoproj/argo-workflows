@@ -18,7 +18,7 @@ spec:
             args: ["echo", "hi"]
           - name: c2
             image: argoproj/argosay:v2
-            args:
+            command:
               - invalid
               - command
           - name: c3
