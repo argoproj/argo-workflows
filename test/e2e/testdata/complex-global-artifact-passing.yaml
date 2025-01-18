@@ -173,7 +173,7 @@ spec:
         path: /upload/testUpload.txt
 
   - container:
-      image: alpine:3.18.4
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["sleep 1; cat /upload/testUpdate.txt"]
       name: ""
