@@ -21,8 +21,7 @@ spec:
   - name: create-message
     container:
       image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["echo ':) Hello Argo!' | tee /tmp/hello_world.txt"]
+      args: ["echo", ":) Hello Argo!", "/tmp/hello_world.txt"]
     outputs:
       artifacts:
       # generate hello artifact from /tmp/hello_world.txt
@@ -41,5 +40,4 @@ spec:
         path: /tmp/message
     container:
       image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["cat /tmp/message"]
+      args: ["cat", "/tmp/message"]

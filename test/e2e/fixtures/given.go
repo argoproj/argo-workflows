@@ -215,6 +215,7 @@ func (g *Given) Exec(name string, args []string, block func(t *testing.T, output
 	return g
 }
 
+// Use Kubectl to server-side apply the given file
 func (g *Given) KubectlApply(file string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
 	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), block)

@@ -691,7 +691,7 @@ spec:
         source: |
           sleep 1
           echo 'Welcome' > result.txt
-          [ "{{retries}}" != "2" ]
+          [ "{{retries}}" = "2" ]
       retryStrategy: 
         limit: 2
       outputs:

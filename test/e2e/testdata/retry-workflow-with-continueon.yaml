@@ -55,4 +55,4 @@ spec:
           - name: exitCode
       container:
         image: argoproj/argosay:v2
-        command: [ sh, "-c", "exit {{inputs.parameters.exitCode}}" ]
+        args: [ "exit", "{{inputs.parameters.exitCode}}" ]

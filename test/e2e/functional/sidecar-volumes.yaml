@@ -28,8 +28,7 @@ spec:
     sidecars:
     - name: sidevol
       image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["echo 'it works' > /mnt/vol/test-art"]
+      args: ["echo", "it works", "/mnt/vol/test-art"]
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
