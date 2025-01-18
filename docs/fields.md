@@ -3515,6 +3515,7 @@ GitArtifact is the location of an git artifact
 |`depth`|`integer`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
 |`disableSubmodules`|`boolean`|DisableSubmodules disables submodules during git clone|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
+|`githubApp`|[`GithubAppAuth`](#githubappauth)|GithubApp is the GitHub App authentication method|
 |`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
 |`insecureSkipTLS`|`boolean`|InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
@@ -4441,6 +4442,18 @@ TarStrategy will tar and gzip the file or directory when saving
 ## ZipStrategy
 
 ZipStrategy will unzip zipped input artifacts
+
+## GithubAppAuth
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`appID`|`integer`|AppID is the GitHub App ID|
+|`baseURL`|`string`|BaseURL is the GitHub API base URL|
+|`installationID`|`integer`|InstallationID is the GitHub App installation ID|
+|`privateKeySecret`|[`SecretKeySelector`](#secretkeyselector)|PrivateKeySecret is the secret selector to the GitHub App private key|
 
 ## HTTPAuth
 

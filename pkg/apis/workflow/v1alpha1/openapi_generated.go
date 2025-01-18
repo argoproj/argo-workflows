@@ -67,6 +67,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSBucket":                     schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Gauge":                         schema_pkg_apis_workflow_v1alpha1_Gauge(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact":                   schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GithubAppAuth":                 schema_pkg_apis_workflow_v1alpha1_GithubAppAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact":                  schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository":        schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSConfig":                    schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref),
@@ -2921,8 +2922,55 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"githubApp": {
+						SchemaProps: spec.SchemaProps{
+							Description: "GithubApp is the GitHub App authentication method",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GithubAppAuth"),
+						},
+					},
 				},
 				Required: []string{"repo"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GithubAppAuth", "k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_GithubAppAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"installationID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InstallationID is the GitHub App installation ID",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"appID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AppID is the GitHub App ID",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"privateKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PrivateKeySecret is the secret selector to the GitHub App private key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"baseURL": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BaseURL is the GitHub API base URL",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 		Dependencies: []string{

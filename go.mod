@@ -15,6 +15,7 @@ require (
 	github.com/argoproj/argo-events v1.9.1
 	github.com/argoproj/pkg v0.13.7-0.20240704113442-a69fd34a8117
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
+	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
@@ -29,6 +30,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-containerregistry v0.17.0
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20220720195016-31786c6cbb82
+	github.com/google/go-github/v29 v29.0.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -89,13 +91,12 @@ require (
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.2 // indirect
-	github.com/bradleyfalzon/ghinstallation v1.1.1 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/evilmonkeyinc/jsonpath v0.8.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
@@ -106,7 +107,6 @@ require (
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-github/v29 v29.0.3 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

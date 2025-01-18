@@ -35,6 +35,7 @@ type ArtifactDriver struct {
 	Username              string
 	Password              string
 	SSHPrivateKey         string
+	SSHUser               string
 	InsecureIgnoreHostKey bool
 	InsecureSkipTLS       bool
 	DisableSubmodules     bool
@@ -61,8 +62,8 @@ func GetUser(url string) string {
 	return "git"
 }
 
-func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, error) {
-	if g.SSHPrivateKey != "" {
+func (g *ArtifactDriver) auth() (func(), transport.AuthMethod, error) {
+	if g.SSHPrivateKey != "" && g.SSHUser != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
 			return nil, nil, err
@@ -75,7 +76,7 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 		if err != nil {
 			return nil, nil, err
 		}
-		auth := &ssh2.PublicKeys{User: sshUser, Signer: signer}
+		auth := &ssh2.PublicKeys{User: g.SSHUser, Signer: signer}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
@@ -131,7 +132,8 @@ func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
 	sshUser := GetUser(a.Repo)
-	closer, auth, err := g.auth(sshUser)
+	g.SSHUser = sshUser
+	closer, auth, err := g.auth()
 	if err != nil {
 		return err
 	}
