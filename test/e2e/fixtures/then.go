@@ -129,6 +129,15 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	return t
 }
 
+func (t *Then) ExpectWorkflowListFromCronWorkflow(block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
+	t.t.Helper()
+	if t.cronWf == nil {
+		t.t.Fatal("No cron workflow to match against")
+	}
+	labelSelector := common.LabelKeyCronWorkflow + "=" + t.cronWf.Name
+	return t.ExpectWorkflowList(metav1.ListOptions{LabelSelector: labelSelector}, block)
+}
+
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	t.t.Helper()
 	_, _ = fmt.Println("Listing workflows")

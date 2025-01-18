@@ -721,7 +721,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(mutex.getCurrentPending(), 1)
 		assert.Len(semaphore.getCurrentHolders(), 1)
 		assert.Len(semaphore.getCurrentPending(), 1)
-		syncManager.CheckWorkflowExistence()
+		syncManager.CheckWorkflowExistence(ctx)
 		assert.Empty(mutex.getCurrentHolders())
 		assert.Len(mutex.getCurrentPending(), 1)
 		assert.Empty(semaphore.getCurrentHolders())
