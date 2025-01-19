@@ -454,8 +454,7 @@ spec:
 }
 
 func (s *CronSuite) TestMalformedCronWorkflow() {
-	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.ErrorOutput("unknown field \"spec.workflowSpec.arguments.parameters.someParam\""))
+	s.Given().KubectlApply("testdata/malformed/malformed-cronworkflow.yaml", fixtures.ErrorOutput(".spec.workflowSpec.arguments.parameters: expected list"))
 }
 
 func TestCronSuite(t *testing.T) {

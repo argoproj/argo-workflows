@@ -51,7 +51,7 @@ endif
 # -- install & run options
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
+PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
 UI                    ?= false # start the UI with HTTP
 UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
@@ -607,10 +607,6 @@ test-cli: ./dist/argo
 
 test-%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
-
-.PHONY: test-examples
-test-examples:
-	./hack/test-examples.sh
 
 .PHONY: test-%-sdk
 test-%-sdk:
