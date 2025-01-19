@@ -84,7 +84,7 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     },
     spec: {
         workflowMetadata: {labels},
-        schedule: '* * * * *',
+        schedules: ['* * * * *'],
         workflowSpec: {
             entrypoint,
             arguments: argumentz,
