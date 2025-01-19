@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: daily-job
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  # run daily at 2am
+  schedule: "0 2 * * *"
+  workflowSpec:
+    workflowTemplateRef:
+      name: job
