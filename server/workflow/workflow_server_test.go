@@ -812,13 +812,13 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 	assert.True(t, *wf.Spec.Suspend)
-  assert.Contains(t, wf.Labels, common.LabelKeyActor)
-  assert.Equal(t, string(creator.ActionSuspend), wf.Labels[common.LabelKeyAction])
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionSuspend), wf.Labels[common.LabelKeyAction])
 	wf, err = server.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{Name: wf.Name, Namespace: wf.Namespace})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
-  assert.Contains(t, wf.Labels, common.LabelKeyActor)
-  assert.Equal(t, string(creator.ActionResume), wf.Labels[common.LabelKeyAction])
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionResume), wf.Labels[common.LabelKeyAction])
 	assert.Nil(t, wf.Spec.Suspend)
 }
 
@@ -853,8 +853,8 @@ func TestTerminateWorkflow(t *testing.T) {
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
-  assert.Contains(t, wf.Labels, common.LabelKeyActor)
-  assert.Equal(t, string(creator.ActionTerminate), wf.Labels[common.LabelKeyAction])
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionTerminate), wf.Labels[common.LabelKeyAction])
 	require.NoError(t, err)
 
 	rsmWfReq = workflowpkg.WorkflowTerminateRequest{
@@ -875,8 +875,8 @@ func TestStopWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 	assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
-  assert.Contains(t, wf.Labels, common.LabelKeyActor)
-  assert.Equal(t, string(creator.ActionStop), wf.Labels[common.LabelKeyAction])
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionStop), wf.Labels[common.LabelKeyAction])
 }
 
 func TestResubmitWorkflow(t *testing.T) {
