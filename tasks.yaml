@@ -1,98 +1,77 @@
-apiVersion: kit/v1
-kind: Tasks
-metadata:
-  annotations:
-    help: |
-      Install `kit` by following https://github.com/kitproj/kit#install.
-
-      Run `kit up` to start argo.
-
-      - `env PROFILE=mysql kit up` to start with MySQL.
-      - `env PROFILE=plugins ARGO_EXECUTOR_PLUGINS=true kit up` to start with plugins.
-      - `env PROFILE=sso ARGO_AUTH_MODE=sso kit up` to start with SSO.
-
-      The app will be up-and-running between 15s and 1m later (if hot compiled or cold).
-      Any changes made to the source code will be automatically recompiled and the app restarted, typically within a few seconds.
-  name: argo-workflows
-spec:
-  tasks:
-    - name: go-deps
-      command: go mod download
-    - name: install
-      command: sh -c "make install PROFILE=$PROFILE"
-      env:
-        - PROFILE=minimal
-      dependencies: go-deps
-      watch: manifests
-      mutex: docker
-    - name: build-controller
-      command: make ./dist/workflow-controller
-      watch: cmd/workflow-controller config errors persist pkg util workflow
-      dependencies: go-deps
-      mutex: build
-    - name: port-forward
-      command: ./hack/port-forward.sh
-      ports: 9000
-      dependencies: install
-    - name: controller
-      command: ./dist/workflow-controller
-      dependencies: install build-controller port-forward
-      env:
-        - ARGO_EXECUTOR_PLUGINS=false
-        - ARGO_NAMESPACE=argo
-        - ARGO_NAMESPACED=true
-        - ARGO_MANAGED_NAMESPACE=argo
-        - ARGO_LOGLEVEL=info
-        - ARGO_REMOVE_PVC_PROTECTION_FINALIZER=true
-        - ARGO_PROGRESS_PATCH_TICK_DURATION=7s
-        - DEFAULT_REQUEUE_TIME=1s
-        - LEADER_ELECTION_IDENTITY=local
-        - ALWAYS_OFFLOAD_NODE_STATUS=false
-        - OFFLOAD_NODE_STATUS_TTL=30s
-        - WORKFLOW_GC_PERIOD=30s
-        - UPPERIO_DB_DEBUG=1
-        - ARCHIVED_WORKFLOW_GC_PERIOD=30s
-      ports: "9090"
-    - name: build-argo
-      command: make ./dist/argo
-      dependencies: go-deps
-      env:
-        - STATIC_FILES=false
-      watch: cmd/argo config errors persist pkg util server workflow
-      mutex: build
-    - name: server
-      command: ./dist/argo server
-      dependencies: build-argo port-forward
-      env:
-        - ARGO_X_FRAME_OPTIONS=SAMEORIGIN
-        - ARGO_SECURE=false
-        - ARGO_NAMESPACE=argo
-        - ARGO_NAMESPACED=true
-        - ARGO_LOGLEVEL=info
-        - ARGO_AUTH_MODE=hybrid
-        - ARGO_MANAGED_NAMESPACE=argo
-        - UPPERIO_DB_DEBUG=1
-      ports: "2746"
-    - name: ui-deps
-      command: yarn install
-      workingDir: ui
-      watch: ui/package.json ui/yarn.lock
-    - name: ui
-      command: yarn start
-      workingDir: ui
-      dependencies: ui-deps
-      ports: "8080"
-    - name: executor
-      command: make argoexec-image
-      watch: cmd/argoexec config errors pkg util workflow
-      mutex: docker
-    - name: example
-      command: kubectl create -f examples/hello-world.yaml
-      dependencies: install
-      mutex: docker
-    - name: build
-      dependencies: build-controller build-argo
-    - name: pre-up
-      dependencies: build install executor example
-    - name: up
-      dependencies: pre-up controller server ui
+tasks:
+  build:
+    dependencies: build-controller build-argo
+  build-argo:
+    command: make ./dist/argo
+    dependencies: go-deps
+    env:
+      STATIC_FILES: "false"
+    mutex: build
+  build-controller:
+    command: make ./dist/workflow-controller
+    dependencies: go-deps
+    mutex: build
+  controller:
+    command: ./dist/workflow-controller
+    dependencies: install build-controller port-forward
+    env:
+      ALWAYS_OFFLOAD_NODE_STATUS: "false"
+      ARCHIVED_WORKFLOW_GC_PERIOD: 30s
+      ARGO_EXECUTOR_PLUGINS: "false"
+      ARGO_LOGLEVEL: info
+      ARGO_MANAGED_NAMESPACE: argo
+      ARGO_NAMESPACE: argo
+      ARGO_NAMESPACED: "true"
+      ARGO_PROGRESS_PATCH_TICK_DURATION: 7s
+      ARGO_REMOVE_PVC_PROTECTION_FINALIZER: "true"
+      DEFAULT_REQUEUE_TIME: 1s
+      LEADER_ELECTION_IDENTITY: local
+      OFFLOAD_NODE_STATUS_TTL: 30s
+      UPPERIO_DB_DEBUG: "1"
+      WORKFLOW_GC_PERIOD: 30s
+    ports: "9090"
+  example:
+    command: kubectl create -f examples/hello-world.yaml
+    dependencies: install
+    mutex: docker
+  executor:
+    command: make argoexec-image
+    mutex: docker
+  go-deps:
+    command: go mod download
+  install:
+    command: sh -c "make install PROFILE=$PROFILE"
+    dependencies: go-deps
+    env:
+      PROFILE: minimal
+    mutex: docker
+  port-forward:
+    command: ./hack/port-forward.sh
+    dependencies: install
+    ports: "9000"
+  pre-up:
+    dependencies: build install executor example
+  server:
+    command: ./dist/argo server
+    dependencies: build-argo port-forward
+    env:
+      ARGO_AUTH_MODE: hybrid
+      ARGO_LOGLEVEL: info
+      ARGO_MANAGED_NAMESPACE: argo
+      ARGO_NAMESPACE: argo
+      ARGO_NAMESPACED: "true"
+      ARGO_SECURE: "false"
+      ARGO_X_FRAME_OPTIONS: SAMEORIGIN
+      UPPERIO_DB_DEBUG: "1"
+    ports: "2746"
+  ui:
+    command: yarn start
+    dependencies: ui-deps
+    ports: "8080"
+    workingDir: ui
+  ui-deps:
+    command: yarn install
+    workingDir: ui
+  up:
+    command: sleep 999999
+    dependencies: pre-up controller server ui

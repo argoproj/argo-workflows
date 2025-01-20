@@ -13,7 +13,7 @@ sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl cluster-info
 
 # install kit
-curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
+go install kitproj/kit@v0.1.72
 
 # install protocol buffer compiler (protoc)
 sudo apt update
