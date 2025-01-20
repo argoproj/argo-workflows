@@ -1,19 +1,17 @@
 tasks:
   build:
-    dependencies: build-controller build-argo
-  build-argo:
+    dependencies: build-controller build-cli build-executor
+  build-cli:
     command: make ./dist/argo
-    dependencies: go-deps
     env:
       STATIC_FILES: "false"
     mutex: build
   build-controller:
     command: make ./dist/workflow-controller
-    dependencies: go-deps
     mutex: build
   controller:
     command: ./dist/workflow-controller
-    dependencies: install build-controller port-forward
+    dependencies: build-controller port-forward
     env:
       ALWAYS_OFFLOAD_NODE_STATUS: "false"
       ARCHIVED_WORKFLOW_GC_PERIOD: 30s
@@ -34,14 +32,11 @@ tasks:
     command: kubectl create -f examples/hello-world.yaml
     dependencies: install
     mutex: docker
-  executor:
+  build-executor:
     command: make argoexec-image
     mutex: docker
-  go-deps:
-    command: go mod download
   install:
-    command: sh -c "make install PROFILE=$PROFILE"
-    dependencies: go-deps
+    sh:  make install PROFILE=$PROFILE
     env:
       PROFILE: minimal
     mutex: docker
@@ -49,11 +44,9 @@ tasks:
     command: ./hack/port-forward.sh
     dependencies: install
     ports: "9000"
-  pre-up:
-    dependencies: build install executor example
   server:
     command: ./dist/argo server
-    dependencies: build-argo port-forward
+    dependencies: build-cli port-forward
     env:
       ARGO_AUTH_MODE: hybrid
       ARGO_LOGLEVEL: info
@@ -74,4 +67,4 @@ tasks:
     workingDir: ui
   up:
     command: sleep 999999
-    dependencies: pre-up controller server ui
+    dependencies: example controller server ui build-executor

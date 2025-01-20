@@ -532,11 +532,7 @@ dist/argosay:
 
 .PHONY: kit
 kit: Makefile
-ifeq ($(shell command -v kit),)
-	@echo "Downloading Kit"
-	go install kitproj/kit@v0.1.72
-endif
-
+	go install github.com/kitproj/kit@v0.1.72
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
