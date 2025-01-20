@@ -1767,7 +1767,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
-|`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template|
+|`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
@@ -2488,6 +2488,7 @@ Backoff is a backoff strategy to use within retryStrategy
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`cap`|`string`|Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
 |`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.|
@@ -3311,13 +3312,13 @@ WorkflowStep is a reference to a template to execute in a series of step
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
-|`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
+|`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an "inline" field. Kubernetes doesn't allow recursive types, so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`name`|`string`|Name of the step|
 |~~`onExit`~~|~~`string`~~|~~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
-|`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a step into multiple parallel steps from the items in the list|
+|`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`withParam`|`string`|WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a step into a numeric sequence|
 
@@ -4082,13 +4083,13 @@ DAGTask represents a node in the graph during DAG execution
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`depends`|`string`|Depends are name of other targets which this depends on|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task|
-|`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
+|`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`name`|`string`|Name is the name of the target|
 |~~`onExit`~~|~~`string`~~|~~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
 |`when`|`string`|When is an expression in which the task should conditionally execute|
-|`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a task into multiple parallel tasks from the items in the list|
+|`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a task into a numeric sequence|
 

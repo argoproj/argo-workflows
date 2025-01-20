@@ -1037,6 +1037,15 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			// Note that timeToWait should equal to duration for the first retry attempt.
 			timeToWait = baseDuration * time.Duration(math.Pow(float64(*retryStrategyBackoffFactor), float64(len(childNodeIds)-1)))
 		}
+		if retryStrategy.Backoff.Cap != "" {
+			capDuration, err := wfv1.ParseStringToDuration(retryStrategy.Backoff.Cap)
+			if err != nil {
+				return nil, false, err
+			}
+			if timeToWait > capDuration {
+				timeToWait = capDuration
+			}
+		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
