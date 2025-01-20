@@ -41,7 +41,7 @@ func Label(ctx context.Context, obj metav1.Object, userLabelKey string, userEmai
 		} else {
 			labels.UnLabel(obj, preferredUsernameLabelKey)
 		}
-		if action != "" {
+		if action != ActionNone {
 			labels.Label(obj, common.LabelKeyAction, dnsFriendly(string(action)))
 		} else {
 			labels.UnLabel(obj, common.LabelKeyAction)
@@ -57,7 +57,7 @@ func Label(ctx context.Context, obj metav1.Object, userLabelKey string, userEmai
 }
 
 func LabelCreator(ctx context.Context, obj metav1.Object) {
-	Label(ctx, obj, common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername, "")
+	Label(ctx, obj, common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername, ActionNone)
 }
 
 func LabelActor(ctx context.Context, obj metav1.Object, action ActionType) {

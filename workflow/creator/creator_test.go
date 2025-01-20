@@ -40,10 +40,10 @@ func TestLabelCreator(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		LabelActor(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf, ActionResume)
 		require.NotEmpty(t, wf.Labels)
-		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator], "creator is truncated")
-		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
-		assert.Equal(t, "username", wf.Labels[common.LabelKeyCreatorPreferredUsername], "username is matching")
-		assert.Equal(t, ActionResume, wf.Labels[common.LabelKeyAction])
+		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyActor], "creator is truncated")
+		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyActorEmail], "'@' is replaced by '.at.'")
+		assert.Equal(t, "username", wf.Labels[common.LabelKeyActorPreferredUsername], "username is matching")
+		assert.Equal(t, "Resume", wf.Labels[common.LabelKeyAction])
 	})
 	t.Run("TooLongHyphen", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
