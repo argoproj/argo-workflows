@@ -90,7 +90,7 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	creator.LabelCreator(ctx, req.CronWorkflow)
+	creator.LabelActor(ctx, req.CronWorkflow, creator.ActionUpdate)
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
 	if err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults); err != nil {

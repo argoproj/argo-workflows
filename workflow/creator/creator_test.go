@@ -43,7 +43,7 @@ func TestLabelCreator(t *testing.T) {
 		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator], "creator is truncated")
 		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
 		assert.Equal(t, "username", wf.Labels[common.LabelKeyCreatorPreferredUsername], "username is matching")
-		assert.Equal(t, wf.Labels[common.LabelKeyAction], ActionResume)
+		assert.Equal(t, ActionResume, wf.Labels[common.LabelKeyAction])
 	})
 	t.Run("TooLongHyphen", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
