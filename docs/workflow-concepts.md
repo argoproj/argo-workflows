@@ -119,6 +119,7 @@ Example:
 A [Plugin Template](plugins.md) allows you to reference an executor plugin.
 
 Example:
+
 ```yaml
   - name: main
     plugin:
