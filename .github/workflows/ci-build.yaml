@@ -61,7 +61,6 @@ jobs:
               - sdks/**
               # example test suite
               - examples/**
-              - hack/test-examples.sh
             codegen:
               - *common
               # generated files
@@ -362,6 +361,8 @@ jobs:
             POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
           make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
         timeout-minutes: 5
+      - name: Validate release manifests
+        run: make manifests-validate
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
 
