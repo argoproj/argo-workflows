@@ -126,7 +126,7 @@ Example:
         text: "{{workflow.name}} finished!"
 ```
 
-##### [ContainerSet](fields.md#containersettemplate)
+##### [Container Set](fields.md#containersettemplate)
 
 A [container set template](container-set-template.md) is similar to a normal container or script template, but allows you to specify multiple containers to run within a single pod.
 
