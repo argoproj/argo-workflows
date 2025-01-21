@@ -4,7 +4,7 @@ This page serves as an introduction to the core concepts of Argo Workflows.
 
 ## The `Workflow`
 
-The [`Workflow`](fields.md#workflow) is the most important resource in Argo Workflwos and serves two important functions:
+The [`Workflow`](fields.md#workflow) is the most important resource in Argo Workflows and serves two important functions:
 
 1. It defines the workflow to be executed.
 1. It stores the state of the workflow.
