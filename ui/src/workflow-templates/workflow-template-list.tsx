@@ -62,13 +62,29 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
             isFirstRender.current = false;
             return;
         }
-        history.push(
-            historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                namespace,
-                sidePanel
-            })
-        );
-    }, [namespace, sidePanel]);
+        const params = new URLSearchParams();
+        if (sidePanel) {
+            params.set('sidePanel', 'true');
+        }
+        if (namePattern) {
+            params.set('namePattern', namePattern);
+        }
+        if (labels.length > 0) {
+            params.set('labels', labels.join(','));
+        }
+        if (pagination.offset) {
+            params.set('offset', pagination.offset);
+        }
+        if (pagination.limit !== 500) {
+            params.set('limit', pagination.limit.toString());
+        }
+        history.push({
+            pathname: historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace
+            }),
+            search: params.toString()
+        });
+    }, [namespace, sidePanel, namePattern, labels, pagination.offset, pagination.limit]);
 
     // internal state
     const [error, setError] = useState<Error>();
