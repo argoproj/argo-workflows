@@ -90,19 +90,22 @@ spec:
               parameters:
                 - name: commands
                   value: >
-                    echo 'Cloning the {{workflow.parameters.repo}} repository...' && git clone --depth 1 --branch {{workflow.parameters.branch}} {{workflow.parameters.repo}} .
+                    echo 'Cloning the {{workflow.parameters.repo}}
+                    repository...' && git clone --depth 1 --branch
+                    {{=sprig.trimPrefix("refs/heads/",inputs.parameters.branch)}}
+                    {{workflow.parameters.repo}}
 
         - - name: build-cli # Builds the Argo CLI
-            template: golang-step
+            template: generic-golang
             arguments:
               parameters:
                 - name: commands
                   value: >
-                    echo 'Installing dependencies...' && apt-get update && apt-get install -y curl sudo 
-
-                    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs && npm install -g yarn@latest # Install Node.js, npm and yarn
-
-                    cd /work && echo 'Building Argo CLI...' && make cli STATIC_FILES=false # Change to the work directory, Build the Argo CLI
+                    echo 'Installing dependencies...'
+                    apt-get update && apt-get install -y curl sudo 
+                    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                    apt-get install -y nodejs && npm install -g yarn@latest
+                    echo 'Building Argo CLI...' && make cli STATIC_FILES=false
 
         - - name: create-exec-image # Builds the Argo Exec image
             template: create-image
@@ -126,34 +129,30 @@ spec:
                 - name: tag
                   value: "{{workflow.parameters.tag}}"
 
-        - - name: run-tests # Runs unit tests for Argo Workflows
-            template: golang-step
+        - - name: run-tests-collect-coverage # Runs unit tests and collects coverage
+            template: generic-golang
             arguments:
               parameters:
                 - name: commands
                   value: >
-                    echo 'Running unit tests...' && make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out' # Run unit tests
-
-          - name: run-coverage # Collects code coverage for Argo Workflows in parallel
-            template: golang-step
-            arguments:
-              parameters:
-                - name: commands
-                  value: >
-                    echo 'Collecting code coverage...'&& make coverage STATIC_FILES=false && echo 'Code coverage report:' && go tool cover -func=coverage.out # Run and collect code coverage
+                    echo 'Running unit tests and collecting coverage...' && make
+                    test STATIC_FILES=false GOTEST='go test -p 20
+                    -covermode=atomic -coverprofile=/work/coverage.out' && echo
+                    'Generating code coverage report...' && go tool cover
+                    -func=/work/coverage.out
 
         - - name: e2e-tests-dag # Runs E2E tests in parallel, withParam loops through the test matrix creating a task for each test
             template: e2e-tests-dag
             arguments:
               parameters:
                 - name: image
-                  value: "{{workflow.parameters.image}}"
+                  value: "{{workflow.parameters.image}}" # Docker image prefix
                 - name: exec-path
-                  value: "{{workflow.parameters.exec-path}}"
+                  value: "{{workflow.parameters.exec-path}}" # Path for the Argo Exec
                 - name: cli-path
-                  value: "{{workflow.parameters.cli-path}}"
+                  value: "{{workflow.parameters.cli-path}}" # Path for the Argo CLI
                 - name: tag
-                  value: "{{workflow.parameters.tag}}"
+                  value: "{{workflow.parameters.tag}}" # Tag for the images
                 - name: test
                   value: "{{item.test}}" # Extracts the test name from the test matrix
                 - name: install_k3d_version
@@ -174,17 +173,49 @@ spec:
               parameters:
                 - name: commands
                   value: >
-                    echo 'Installing dependencies...' && apt-get update && apt-get install -y curl apt-transport-https ca-certificates gnupg lsb-release sudo
+                    echo 'Installing dependencies...' && apt-get update &&
+                    apt-get install -y curl apt-transport-https ca-certificates
+                    gnupg lsb-release sudo
 
-                    echo 'Downloading and configuring Docker...' && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable' | tee /etc/apt/sources.list.d/docker.list > /dev/null && apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io # Docker, CLI and containerd
+                    echo "Downloading and configuring Docker..." && curl -fsSL
+                    https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor
+                    -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-                    echo 'Waiting for Docker daemon to be ready...' && until docker info; do sleep 3; done
+                    echo "deb [arch=amd64
+                    signed-by=/usr/share/keyrings/docker-archive-keyring.gpg]
+                    https://download.docker.com/linux/ubuntu $(lsb_release -cs)
+                    stable" | tee /etc/apt/sources.list.d/docker.list >
+                    /dev/null && apt-get update && apt-get install -y docker-ce
+                    docker-ce-cli containerd.io
 
-                    echo 'Pulling the CLI and exec images...' && docker pull {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}} && docker pull {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}} && docker images # Pull the exec and CLI images, verify the pulled images
+                    echo 'Waiting for Docker daemon to be ready...' && until
+                    docker info; do sleep 3; done
 
-                    echo 'Tagging and pushing the images to Docker Hub...' && docker tag {{workflow.parameters.image}}{{workflow.parameters.cli-path}} {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}} && docker tag {{workflow.parameters.image}}{{workflow.parameters.exec-path}} {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}} # Tag the exec and CLI images
+                    echo 'Pulling the CLI and exec images...'
 
-                    docker push {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}} && docker push {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}} # Push the exec and CLI images
+                    docker pull
+                    {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}}
+
+                    docker pull
+                    {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}}
+
+                    docker images
+
+                    echo 'Tagging and pushing the images to Docker Hub...'
+
+                    docker tag
+                    {{workflow.parameters.image}}{{workflow.parameters.cli-path}}
+                    {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}}
+
+                    docker tag
+                    {{workflow.parameters.image}}{{workflow.parameters.exec-path}}
+                    {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}}
+
+                    docker push
+                    {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}}
+
+                    docker push
+                    {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}}
                 - name: cpu
                   value: "8"
                 - name: memory
@@ -196,13 +227,23 @@ spec:
               parameters:
                 - name: commands
                   value: >
-                    echo 'Installing dependencies...' && apt-get update && apt-get install -y curl
+                    echo 'Installing dependencies...' && apt-get update &&
+                    apt-get install -y curl
 
-                    curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && mv kustomize /usr/local/bin/ && kustomize version && cd manifests/base # Install kustomize, Move kustomize to the bin directory, # Check kustomize version and move to the base directory
+                    curl -s
+                    "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
+                    | bash && mv kustomize /usr/local/bin/ && kustomize version
+                    && cd manifests/base
 
-                    echo 'Updating kustomization.yaml with the new image tags...' && kustomize edit set image {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}} && kustomize edit set image {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}} # Update the exec and CLI images in the kustomization.yaml
+                    echo 'Updating kustomization.yaml with the new image
+                    tags...' && kustomize edit set image
+                    {{workflow.parameters.image}}{{workflow.parameters.cli-path}}:{{workflow.parameters.tag}}
+                    && kustomize edit set image
+                    {{workflow.parameters.image}}{{workflow.parameters.exec-path}}:{{workflow.parameters.tag}}
 
-                    echo 'Verifying the updated kustomization.yaml...' && kustomize build . && echo 'Updated kustomization.yaml:' && cat kustomization.yaml # Verify and output the updated kustomization.yaml
+                    echo 'Verifying the updated kustomization.yaml...' &&
+                    kustomize build . && echo 'Updated kustomization.yaml:' &&
+                    cat kustomization.yaml
 
         - - name: commit-manifests # Commits and pushes the updated kustomization.yaml to the git repository
             template: generic-git # Generic Git image for running tasks
@@ -210,11 +251,19 @@ spec:
               parameters:
                 - name: commands
                   value: >
-                    echo "Configuring git user email and name..." && git config --global user.email "{{workflow.parameters.email}}" && git config --global user.name "{{workflow.parameters.name}}"
+                    cd {{workflow.parameters.path}} # Change to the root path of the repository
 
-                    echo "Staging all changes..." && git add -A && echo "Committing changes..." && git commit -m "Updated image to {{workflow.parameters.tag}}"
+                    echo "Configuring git user email and name..." && git config
+                    --global user.email "{{workflow.parameters.email}}" && git
+                    config --global user.name "{{workflow.parameters.name}}"
 
-                    echo "Pushing changes to the repository..." && git push https://${GITHUB_TOKEN}@{{=sprig.trimPrefix("https://",workflow.parameters.repo)}}.git HEAD:{{=sprig.trimPrefix("refs/heads/",workflow.parameters.branch)}}
+                    echo "Staging all changes..." && git add -A && echo
+                    "Committing changes..." && git commit -m "Updated image to
+                    {{workflow.parameters.tag}}"
+
+                    echo "Pushing changes to the repository..." && git push 
+                    https://${GITHUB_TOKEN}@{{=sprig.trimPrefix("https://",workflow.parameters.repo)}}.git 
+                    HEAD:{{=sprig.trimPrefix("refs/heads/",workflow.parameters.branch)}}
 
         - - name: start-argocd-sync # Starts the Argo CD sync for the application
             template: generic-ubuntu
@@ -222,15 +271,23 @@ spec:
               parameters:
                 - name: commands
                   value: >
-                    echo "Installing dependencies..." && apt-get update && apt-get install -y curl sudo
+                    echo "Installing dependencies..." && apt-get update &&
+                    apt-get install -y curl sudo
 
-                    curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 && sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd && rm argocd-linux-amd64 # Download and Install Argo CD then remove the downloaded file
+                    curl -sSL -o argocd-linux-amd64
+                    https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+                    && sudo install -m 555 argocd-linux-amd64
+                    /usr/local/bin/argocd && rm argocd-linux-amd64 # Download
+                    and Install Argo CD then remove the downloaded file
 
-                    echo "Logging in to Argo CD..." && argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+                    echo "Logging in to Argo CD..." && argocd login
+                    $ARGOCD_SERVER --username $ARGOCD_USERNAME --password
+                    $ARGOCD_PASSWORD
 
-                    echo "Syncing the application..." && argocd app sync {{workflow.parameters.path}} # Sync the application
+                    echo "Syncing the application..." && argocd app sync
+                    {{workflow.parameters.path}}
 
-    - name: golang-step # Reusable Go step for building, testing, and running Go commands
+    - name: generic-golang # Reusable Go step for building, testing, and running Go commands
       inputs:
         parameters:
           - name: commands # Go container commands
@@ -240,8 +297,8 @@ spec:
         name: ""
         image: golang:1.23 # Go image for building Go projects
         command:
-          - /bin/sh
-          - "-c"
+          - /bin/sh # Shell command
+          - "-c" # Command flag
         args:
           - "{{inputs.parameters.commands}}" # Parameterized step commands
         workingDir: /work/ # Working directory
@@ -250,8 +307,8 @@ spec:
             value: "on" # Enable Go modules
         resources: # Adjust resources as needed
           requests:
-            cpu: "16"
-            memory: 16Gi
+            cpu: "12"
+            memory: 32Gi
         volumeMounts: # Shared volume mounts between tasks
           - name: work # Shared working volume
             mountPath: /work # Mount path
@@ -290,20 +347,20 @@ spec:
             value: /.docker # Docker config path
         resources: # Adjust as needed
           requests:
-            cpu: "16"
-            memory: 16Gi
+            cpu: "12"
+            memory: 32Gi
         volumeMounts: # Shared volume mounts between tasks
           - name: work # Shared working volume
             mountPath: /work # Mount path
           - name: docker-config # Ensure to mount this volume - it holds the Docker registry API key
             mountPath: /.docker # Using this mount path
         readinessProbe: # Readiness probe for the buildkit container
-          exec:
+          exec: # Exec probe
             command:
-              - sh
-              - "-c"
+              - sh # Shell command
+              - "-c" # Command flag
               - buildctl debug workers # Check if the buildkit workers are running
-      volumes:
+      volumes: # Shared volume mounts between tasks
         - name: docker-config # Ensure this volume is configured
           secret: # Docker registry API key secret
             secretName: docker-config # This secret holds the API key to your Docker registry
@@ -337,113 +394,144 @@ spec:
                   value: "{{inputs.parameters.use-api}}"
                 - name: commands
                   value: >
-                    echo "Installing dependencies..." && apt-get update && apt-get install -y curl apt-transport-https ca-certificates gnupg lsb-release sudo golang make socat git
+                    echo "Installing dependencies..." && apt-get update &&
+                    apt-get install -y curl apt-transport-https ca-certificates
+                    gnupg lsb-release sudo golang make socat git
 
-                    echo "export PATH=$PATH:/usr/local/go/bin" | tee -a # Add Go to the PATH
+                    echo "export PATH=$PATH:/usr/local/go/bin" | tee -a 
 
-                    go version && make --version && sudo apt-get install -y lsof # Check Go and Make versions, install lsof to check controller/API status
+                    go version && make --version && sudo apt-get install -y lsof
 
-                    echo "Installing k3d..." && curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+                    echo "Installing k3d..." && curl -s
+                    https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
+                    | bash &&
 
-                    echo "Installing kubectl..." && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                    echo "Installing kubectl..." && curl -LO
+                    "https://dl.k8s.io/release/$(curl -L -s
+                    https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
-                    chmod +x kubectl && mv kubectl /usr/local/bin/ # Make kubectl executable, move kubectl to the bin directory
+                    chmod +x kubectl && mv kubectl /usr/local/bin/
 
-                    echo "Downloading and configuring Docker..." && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                    echo "Downloading and configuring Docker..." && curl -fsSL
+                    https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor
+                    -o /usr/share/keyrings/docker-archive-keyring.gpg &&
 
-                    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io # Install Docker, CLI and containerd
+                    echo "deb [arch=amd64
+                    signed-by=/usr/share/keyrings/docker-archive-keyring.gpg]
+                    https://download.docker.com/linux/ubuntu $(lsb_release -cs)
+                    stable" | tee /etc/apt/sources.list.d/docker.list >
+                    /dev/null && apt-get update && apt-get install -y docker-ce
+                    docker-ce-cli containerd.io &&
 
-                    echo "Waiting for Docker daemon to be ready..." && until docker info; do sleep 3; done
+                    echo "Waiting for Docker daemon to be ready..." && until
+                    docker info; do sleep 3; done
 
-                    echo "Checking for SDK requirements: {{inputs.parameters.test}}"
+                    echo "Checking for SDK requirements:
+                    {{inputs.parameters.test}}"
 
-                    if [ "{{inputs.parameters.test}}" = "test-java-sdk" ]; then # Check for Java SDK
+                    if [ "{{inputs.parameters.test}}" = "test-java-sdk" ]; then
+                    # Check for Java SDK
                       echo "Installing Java..."
                       apt-get update && apt-get install -y openjdk-8-jdk maven
-                      java -version # Check Java version
-                    elif [ "{{inputs.parameters.test}}" = "test-python-sdk" ]; then # Check for Python SDK
+                      java -version
+                    elif [ "{{inputs.parameters.test}}" = "test-python-sdk" ];
+                    then
                       echo "Installing Python..."
-                      apt-get update && apt-get install -y python3 python3-pip
-                      python3 --version # Check Python version
+                      apt-get update && apt-get install -y python3 python3-pip python3-venv
+                      ln -s /usr/bin/python3 /usr/bin/python
+                      python --version 
+                      python3 -m venv venv
+                      source venv/bin/activate
                     else
                       echo "No SDK installation required."
                     fi
 
-                    echo "Creating k3d cluster..." && k3d cluster create argocluster --kubeconfig-switch-context --image rancher/k3s:{{inputs.parameters.install_k3d_version}} &&
+                    echo "Creating k3d cluster..." 
 
-                    echo "Waiting for k3d cluster to be ready..." && until kubectl cluster-info; do sleep 3; done
+                    k3d cluster create argocluster --kubeconfig-switch-context
+                    --image
+                    rancher/k3s:{{inputs.parameters.install_k3d_version}}
 
-                    echo "k3d is ready, Merging kubeconfig and switching context to k3d cluster..." && k3d kubeconfig merge argocluster --kubeconfig-switch-context && kubectl version # Check kubectl version
+                    echo "Waiting for k3d cluster to be ready..." && until
+                    kubectl cluster-info; do sleep 3; done
 
-                    echo "Pulling images from docker hub..." && docker pull {{inputs.parameters.image}}{{inputs.parameters.exec-path}}:{{workflow.parameters.tag}} && docker pull {{inputs.parameters.image}}{{inputs.parameters.cli-path}}:{{workflow.parameters.tag}} # Pull the exec and CLI images
+                    echo "k3d is ready, Merging kubeconfig and switching context
+                    to k3d cluster..." && k3d kubeconfig merge argocluster
+                    --kubeconfig-switch-context && kubectl version
 
-                    docker images && echo "Loading images into k3s cluster..." && docker save {{inputs.parameters.image}}{{inputs.parameters.exec-path}}:{{workflow.parameters.tag}} -o /tmp/argoexec.tar && docker save {{inputs.parameters.image}}{{inputs.parameters.cli-path}}:{{workflow.parameters.tag}} -o /tmp/argocli.tar # Save the exec and CLI images
+                    echo "Pulling images from docker hub..."
 
-                    set -eux && docker load < /tmp/argoexec.tar && docker load < /tmp/argocli.tar # # Exit on error, verbose output mode, Load the exec and CLI images
+                    docker pull
+                    {{inputs.parameters.image}}{{inputs.parameters.exec-path}}:{{workflow.parameters.tag}}
 
-                    k3d image import {{inputs.parameters.image}}{{inputs.parameters.exec-path}}:{{workflow.parameters.tag}} -c argocluster && k3d image import {{inputs.parameters.image}}{{inputs.parameters.cli-path}}:{{workflow.parameters.tag}} -c argocluster # Import the exec and CLI images into k3d
+                    docker pull
+                    {{inputs.parameters.image}}{{inputs.parameters.cli-path}}:{{workflow.parameters.tag}}
 
-                    echo "Setting up the hosts file..." && sudo tee -a /etc/hosts <<EOF
-                    127.0.0.1 dex
-                    127.0.0.1 minio
-                    127.0.0.1 postgres
-                    127.0.0.1 mysql
-                    127.0.0.1 azurite
-                    EOF
+                    docker images && echo "Loading images into k3s cluster..."
 
-                    echo "Installing manifests..." && make install PROFILE={{inputs.parameters.profile}} STATIC_FILES=false
+                    docker save
+                    {{inputs.parameters.image}}{{inputs.parameters.exec-path}}:{{workflow.parameters.tag}}
+                    -o /tmp/argoexec.tar
 
-                    echo "Building the controller..." && make controller kit STATIC_FILES=false
+                    docker save
+                    {{inputs.parameters.image}}{{inputs.parameters.cli-path}}:{{workflow.parameters.tag}}
+                    -o /tmp/argocli.tar
+
+                    set -eux
+
+                    docker load < /tmp/argoexec.tar
+
+                    docker load < /tmp/argocli.tar
+
+                    k3d image import
+                    {{inputs.parameters.image}}{{inputs.parameters.exec-path}}:{{workflow.parameters.tag}}
+                    -c argocluster
+
+                    k3d image import
+                    {{inputs.parameters.image}}{{inputs.parameters.cli-path}}:{{workflow.parameters.tag}}
+                    -c argocluster
+
+                    echo "Setting up the hosts file..."
+
+                    echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
+
+                    echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+
+                    echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+
+                    echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
+
+                    echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
+
+                    echo "Installing manifests..." && make install
+                    PROFILE={{inputs.parameters.profile}} STATIC_FILES=false
+
+                    echo "Building the controller..." && make controller kit
+                    STATIC_FILES=false
 
                     if {{inputs.parameters.use-api}}; then
                       echo "Building the CLI..." && make cli STATIC_FILES=false
                     fi
 
-                    echo "Starting argo workflow controller & API..." && make start PROFILE={{inputs.parameters.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API={{inputs.parameters.use-api}} UI=false POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
+                    echo "Starting argo workflow controller & API..." && make
+                    start PROFILE={{inputs.parameters.profile}} AUTH_MODE=client
+                    STATIC_FILES=false LOG_LEVEL=info
+                    API={{inputs.parameters.use-api}} UI=false
+                    POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
 
                     make wait PROFILE={{inputs.parameters.profile}}
-                    API={{inputs.parameters.use-api}} # Wait for the controller to start
+                    API={{inputs.parameters.use-api}}
 
-                    echo "Wait for MinIO..." && until lsof -i :9000 > /dev/null ; do sleep 10s ; done
+                    echo "Wait for MinIO..." && until lsof -i :9000 > /dev/null
+                    ; do sleep 10s ; done
 
-                    echo "Running E2E {{inputs.parameters.test}} tests..." && make {{inputs.parameters.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
+                    echo "Running E2E {{inputs.parameters.test}} tests..." &&
+                    make {{inputs.parameters.test}} E2E_SUITE_TIMEOUT=20m
+                    STATIC_FILES=false
                 - name: cpu
-                  value: "16"
+                  value: "14"
                 - name: memory
-                  value: "16Gi"
-                - name: working-dir
-                  value: /work/{{inputs.parameters.test}}/
-
-          - name: failed-e2e-test # Failure template for failed E2E tests
-            template: generic-ubuntu # Generic Ubuntu image for running tasks
-            arguments:
-              parameters:
-                - name: commands
-                  value: >
-                    echo "Installing dependencies..." && apt-get update && apt-get install -y curl sudo systemd
-
-                    echo "Installing kubectl..." && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && chmod +x kubectl && mv kubectl /usr/local/bin/ 
-
-                    echo "Failure debug {{inputs.parameters.test}} - k3s logs:" && journalctl -u k3s
-
-                    echo "Failure debug {{inputs.parameters.test}} - Describe MinIO/MySQL deployment:" && set -eux && kubectl get deploy && kubectl describe deploy
-
-                    echo "Failure debug {{inputs.parameters.test}} - Describe MinIO/MySQL pods:" && kubectl get pods -l '!workflows.argoproj.io/workflow' && kubectl describe pods -l '!workflows.argoproj.io/workflow'
-
-                    echo "Failure debug {{inputs.parameters.test}} - MinIO/MySQL logs:" && kubectl logs -l '!workflows.argoproj.io/workflow' --prefix
-
-                    echo "Failure debug {{inputs.parameters.test}} - Controller/API logs:" && [ -e /tmp/argo.log ] && cat /tmp/argo.log || echo "No logs found"
-
-                    echo "Failure debug {{inputs.parameters.test}} - Describe Workflows:" && kubectl get wf && kubectl describe wf
-
-                    echo "Failure debug {{inputs.parameters.test}} - Describe Workflow pods:" && kubectl get pods -l workflows.argoproj.io/workflow && kubectl describe pods -l workflows.argoproj.io/workflow
-
-                    echo "Failure debug {{inputs.parameters.test}} - Workflow Pod logs:" && kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
-                - name: working-dir
-                  value: /work/{{inputs.parameters.test}}/
-            dependencies: # Failure template dependency
-              - prepare-deploy-to-cluster-run-e2e-tests # Failure template requires the E2E tests task
-            when: "{{tasks.prepare-deploy-to-cluster-run-e2e-tests.outputs.result}} != 'Succeeded'" # Failure template condition - only runs when the E2E tests fail
+                  value: 64Gi
 
     - name: generic-ubuntu # Generic Ubuntu image for running tasks
       inputs:
@@ -458,7 +546,7 @@ spec:
           - name: test
             default: "test-executor"
           - name: install_k3d_version
-            default: "v1.31.0-k3s1"
+            default: "v1.31.2-k3s1"
           - name: profile
             default: "minimal"
           - name: use-api
@@ -470,16 +558,13 @@ spec:
           - name: commands
             description: "Commands to run"
           - name: cpu
-            default: "2"
+            default: "1"
           - name: memory
-            default: "4Gi"
-          - name: working-dir
-            default: "/work"
-            description: "Working directory"
+            default: "2Gi"
 
-      podSpecPatch: |
+      podSpecPatch: | # Pod spec patch for dynamic resource allocation
         containers:
-          - name: main
+          - name: main # Referring to this container (main)
             resources:
               requests:
                 cpu: "{{inputs.parameters.cpu}}" # Parameterized CPU request
@@ -490,12 +575,12 @@ spec:
         name: ""
         image: ubuntu:latest # Ubuntu image for running tasks
         command:
-          - sh
-          - "-c"
+          - sh # Shell command
+          - "-c" # Command flag
         args:
           - >
             {{inputs.parameters.commands}} # Run the commands
-        workingDir: "{{inputs.parameters.working-dir}}" # Working directory
+        workingDir: /work/{{workflow.parameters.path}} # Working directory - root path of the repository
         env:
           - name: DOCKER_HOST # Docker host URL
             value: tcp://localhost:2375 # Docker host URL
@@ -538,7 +623,7 @@ spec:
     - name: approval # Approval task for manual approval
       inputs:
         parameters:
-          - name: approve
+          - name: approve # Approval parameter
             default: "NO" # Default value for approval
             enum:
               - "YES" # Approval options
@@ -584,10 +669,6 @@ spec:
               secretKeyRef: # Secret key reference
                 name: github-token # Secret name
                 key: token # Secret key
-        resources: # Adjust resources as needed
-          requests:
-            cpu: "2"
-            memory: 4Gi
         volumeMounts: # Shared volume mounts between tasks
           - name: work # Shared working volume
             mountPath: /work # Mount path
@@ -596,7 +677,7 @@ spec:
   arguments:
     parameters:
       - name: repo
-        value: https://github.com/argoproj/argo-workflows.git # Repository URL
+        value: https://github.com/argoproj/argo-workflows # Repository URL
       - name: branch
         value: refs/heads/main # Branch name from the webhook payload (e.g., refs/heads/main, refs/heads/feature-branch)
       - name: name
@@ -618,79 +699,79 @@ spec:
           [
             {
               "test": "test-executor", # Test name
-              "install_k3d_version": "v1.31.0-k3s1", # K3d version
+              "install_k3d_version": "v1.31.2-k3s1", # K3S version
               "profile": "minimal", # E2E test profile
               "use-api": false # Is the API required
             },
             {
               "test": "test-corefunctional",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "minimal",
               "use-api": false
             },
             {
               "test": "test-functional",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "minimal",
               "use-api": false
             },
             {
               "test": "test-api",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "mysql",
               "use-api": true
             },
             {
               "test": "test-cli",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "mysql",
               "use-api": true
             },
             {
               "test": "test-cron",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "minimal",
               "use-api": false
             },
             {
               "test": "test-examples",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "minimal",
               "use-api": false
             },
             {
               "test": "test-plugins",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "plugins",
               "use-api": false
             },
             {
               "test": "test-java-sdk",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "minimal",
               "use-api": true
             },
             {
               "test": "test-python-sdk",
-              "install_k3d_version": "v1.31.0-k3s1",
+              "install_k3d_version": "v1.31.2-k3s1",
               "profile": "minimal",
               "use-api": true
             },
             {
               "test": "test-executor",
-              "install_k3d_version": "v1.28.13-k3s1",
+              "install_k3d_version": "v1.29.10-k3s1",
               "profile": "minimal",
               "use-api": false
             },
             {
               "test": "test-corefunctional",
-              "install_k3d_version": "v1.28.13-k3s1",
+              "install_k3d_version": "v1.29.10-k3s1",
               "profile": "minimal",
               "use-api": false
             },
             {
               "test": "test-functional",
-              "install_k3d_version": "v1.28.13-k3s1",
+              "install_k3d_version": "v1.29.10-k3s1",
               "profile": "minimal",
               "use-api": false
             }
