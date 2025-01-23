@@ -1,6 +1,6 @@
 # Annotations
 
-Argo Workflows now supports annotations as a new field in workflow templates. Annotations can be used to add metadata to workflows, which can be useful for various purposes, such as changing the node name in the UI.
+Argo Workflows now supports annotations as a new field in workflow templates. 
 
 ## Adding Annotations to a template
 
@@ -25,9 +25,9 @@ spec:
 
 In this example, the annotation `workflows.argoproj.io/display-name` is used to change the node name in the UI to "my-custom-display-name".
 
-## Templatable Annotations
+## Annotation Templates
 
-Annotations in Argo Workflows can also be templated using parameters. This allows you to dynamically set annotation values based on input parameters.
+Annotations can also be created dynamically using parameters. This allows you to dynamically set annotation values based on input parameters.
 
 Here is an example:
 
