@@ -18,14 +18,14 @@ type MalformedResourcesSuite struct {
 }
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
-	s.Given().Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflow.yaml"}, fixtures.ErrorOutput("unknown field \"spec.arguments.parameters.someParam\""))
+	s.Given().KubectlApply("testdata/malformed/malformed-workflow.yaml", fixtures.ErrorOutput(".spec.arguments.parameters: expected list"))
 }
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.ErrorOutput("unknown field \"spec.arguments.parameters.someParam\"")).
-		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflowtemplate.yaml"}, fixtures.NoError).
-		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-workflow-template-ref.yaml"}, fixtures.NoError).
+		KubectlApply("testdata/malformed/malformed-workflowtemplate.yaml", fixtures.ErrorOutput(".spec.arguments.parameters: expected list")).
+		KubectlApply("testdata/wellformed/wellformed-workflowtemplate.yaml", fixtures.NoError).
+		KubectlApply("testdata/wellformed/wellformed-workflow-with-workflow-template-ref.yaml", fixtures.NoError).
 		When().
 		WaitForWorkflow().
 		Then().
@@ -37,8 +37,8 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.ErrorOutput("unknown field \"spec.arguments.parameters.someParam\"")).
-		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-workflow-template-ref.yaml"}, fixtures.NoError).
+		KubectlApply("testdata/malformed/malformed-workflowtemplate.yaml", fixtures.ErrorOutput(".spec.arguments.parameters: expected list")).
+		KubectlApply("testdata/wellformed/wellformed-workflow-with-malformed-workflow-template-ref.yaml", fixtures.NoError).
 		When().
 		WaitForWorkflow().
 		Then().
@@ -51,9 +51,9 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 
 func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.ErrorOutput("unknown field \"spec.arguments.parameters.someParam\"")).
-		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
-		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
+		KubectlApply("testdata/malformed/malformed-clusterworkflowtemplate.yaml", fixtures.ErrorOutput(".spec.arguments.parameters: expected list")).
+		KubectlApply("testdata/wellformed/wellformed-clusterworkflowtemplate.yaml", fixtures.NoError).
+		KubectlApply("testdata/wellformed/wellformed-workflow-with-cluster-workflow-template-ref.yaml", fixtures.NoError).
 		When().
 		WaitForWorkflow().
 		Then().
@@ -65,8 +65,8 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 
 func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplateRef() {
 	s.Given().
-		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.ErrorOutput("unknown field \"spec.arguments.parameters.someParam\"")).
-		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
+		KubectlApply("testdata/malformed/malformed-clusterworkflowtemplate.yaml", fixtures.ErrorOutput(".spec.arguments.parameters: expected list")).
+		KubectlApply("testdata/wellformed/wellformed-workflow-with-malformed-cluster-workflow-template-ref.yaml", fixtures.NoError).
 		When().
 		WaitForWorkflow().
 		Then().
