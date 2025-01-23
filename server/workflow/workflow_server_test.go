@@ -9,6 +9,7 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 const unlabelled = `{
@@ -813,15 +815,17 @@ func TestRetryWorkflow(t *testing.T) {
 func TestSuspendResumeWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
-	if assert.NoError(t, err) {
-		assert.NotNil(t, wf)
-		assert.Equal(t, true, *wf.Spec.Suspend)
-		wf, err = server.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{Name: wf.Name, Namespace: wf.Namespace})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wf)
-			assert.Nil(t, wf.Spec.Suspend)
-		}
-	}
+	require.NoError(t, err)
+	assert.NotNil(t, wf)
+	assert.True(t, *wf.Spec.Suspend)
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionSuspend), wf.Labels[common.LabelKeyAction])
+	wf, err = server.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{Name: wf.Name, Namespace: wf.Namespace})
+	require.NoError(t, err)
+	assert.NotNil(t, wf)
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionResume), wf.Labels[common.LabelKeyAction])
+	assert.Nil(t, wf.Spec.Suspend)
 }
 
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
@@ -872,10 +876,11 @@ func TestStopWorkflow(t *testing.T) {
 	assert.NoError(t, err)
 	rsmWfReq := workflowpkg.WorkflowStopRequest{Name: wf.Name, Namespace: wf.Namespace}
 	wf, err = server.StopWorkflow(ctx, &rsmWfReq)
-	if assert.NoError(t, err) {
-		assert.NotNil(t, wf)
-		assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
-	}
+	require.NoError(t, err)
+	assert.NotNil(t, wf)
+	assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
+	assert.Contains(t, wf.Labels, common.LabelKeyActor)
+	assert.Equal(t, string(creator.ActionStop), wf.Labels[common.LabelKeyAction])
 }
 
 func TestResubmitWorkflow(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -14,6 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
@@ -103,9 +105,10 @@ metadata:
 		})
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
-			if assert.NoError(t, err) {
-				assert.NotNil(t, cronWf)
-			}
+			assert.Contains(t, cronWf.Labels, common.LabelKeyActor)
+			assert.Equal(t, string(creator.ActionUpdate), cronWf.Labels[common.LabelKeyAction])
+			require.NoError(t, err)
+			assert.NotNil(t, cronWf)
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
 			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &unlabelled})

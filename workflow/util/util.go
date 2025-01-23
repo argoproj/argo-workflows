@@ -372,6 +372,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
 			wf.Spec.Suspend = pointer.BoolPtr(true)
+			creator.LabelActor(ctx, wf, creator.ActionSuspend)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {
 				return false, nil
@@ -409,7 +410,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 		uiMsg = fmt.Sprintf("Resumed by: %v", uim)
 	}
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg})
+		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg}, creator.ActionResume)
 	} else {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
@@ -450,7 +451,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 				if err != nil {
 					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
-
+				creator.LabelActor(ctx, wf, creator.ActionResume)
 				_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 				if err != nil {
 					if apierr.IsConflict(err) {
@@ -525,7 +526,7 @@ func AddParamToGlobalScope(wf *wfv1.Workflow, log *log.Entry, param wfv1.Paramet
 	return wfUpdated
 }
 
-func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
+func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues, action creator.ActionType) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
 		return err
@@ -599,7 +600,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 		if err != nil {
 			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 		}
-
+		creator.LabelActor(ctx, wf, action)
 		_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 		if err != nil {
 			if apierr.IsConflict(err) {
@@ -678,7 +679,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	}
 	// Apply creator labels based on the authentication information of the current request,
 	// regardless of the creator labels of the original Workflow.
-	creator.Label(ctx, &newWF)
+	creator.LabelCreator(ctx, &newWF)
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
 	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
@@ -1128,7 +1129,7 @@ func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface,
 // Or terminates a single resume step referenced by nodeFieldSelector
 func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
+		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message}, creator.ActionStop)
 	}
 	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyStop)
 }
@@ -1148,6 +1149,21 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 		"spec": map[string]interface{}{
 			"shutdown": strategy,
 		},
+	}
+	var action creator.ActionType
+	switch strategy {
+	case wfv1.ShutdownStrategyTerminate:
+		action = creator.ActionTerminate
+	case wfv1.ShutdownStrategyStop:
+		action = creator.ActionStop
+	default:
+		action = creator.ActionNone
+	}
+	userActionLabel := creator.UserActionLabel(ctx, action)
+	if userActionLabel != nil {
+		patchObj["metadata"] = map[string]interface{}{
+			"labels": userActionLabel,
+		}
 	}
 	var err error
 	patch, err := json.Marshal(patchObj)
@@ -1173,7 +1189,7 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 
 func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, values SetOperationValues) error {
 	if nodeFieldSelector != "" {
-		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, values)
+		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, values, creator.ActionNone)
 	}
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }

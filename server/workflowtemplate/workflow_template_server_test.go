@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 const unlabelled = `{
@@ -268,9 +270,10 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 			Namespace: "default",
 			Template:  &wftObj1,
 		})
-		if assert.NoError(t, err) {
-			assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
-		}
+		require.NoError(t, err)
+		assert.Contains(t, wftRsp.Labels, common.LabelKeyActor)
+		assert.Equal(t, string(creator.ActionUpdate), wftRsp.Labels[common.LabelKeyAction])
+		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
