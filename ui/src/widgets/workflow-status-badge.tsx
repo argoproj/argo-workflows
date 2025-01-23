@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl} from '../shared/base';
@@ -11,6 +11,7 @@ import {services} from '../shared/services';
 import './workflow-status-badge.scss';
 
 export function WorkflowStatusBadge({history, match}: RouteComponentProps<any>) {
+    const isFirstRender = useRef(true);
     const queryParams = new URLSearchParams(location.search);
     const namespace = match.params.namespace;
     const name = queryParams.get('name');
@@ -26,6 +27,10 @@ export function WorkflowStatusBadge({history, match}: RouteComponentProps<any>) 
     const [phase, setPhase] = useState<NodePhase>('');
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         const w = new RetryWatch(
             () => services.workflows.watch({namespace, name, labels: [label]}),
             () => setDisplayName(null),

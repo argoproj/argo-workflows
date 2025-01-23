@@ -25,6 +25,16 @@ You can use Kustomize to patch your preferred [configurations](managed-namespace
 
 You can install Argo Workflows using the community maintained [Helm charts](https://github.com/argoproj/argo-helm).
 
+### Full CRDs
+
+The official release manifests come with stripped-down CRDs that omit validation information.
+This is a workaround for [Kubernetes size limitations](https://github.com/kubernetes/kubernetes/issues/82292) when using client-side apply.
+As of version 3.7, the full CRDs can be installed using [server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) via the following command:
+
+```bash
+kubectl apply --server-side --kustomize https://github.com/argoproj/argo-workflows/manifests/base/crds/full?ref=v3.7.0
+```
+
 ## Installation options
 
 Determine your base installation option.

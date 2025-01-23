@@ -35,7 +35,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo)
+	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo, nil)
 	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{

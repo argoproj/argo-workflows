@@ -242,11 +242,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	f := func(key string) { wfc.wfQueue.AddRateLimited(key) }
-	return sync.ChainThrottler{
-		sync.NewThrottler(wfc.Config.Parallelism, sync.SingleBucket, f),
-		sync.NewThrottler(wfc.Config.NamespaceParallelism, sync.NamespaceBucket, f),
-	}
+	f := func(key string) { wfc.wfQueue.Add(key) }
+	return sync.NewMultiThrottler(wfc.Config.Parallelism, wfc.Config.NamespaceParallelism, f)
 }
 
 // runGCcontroller runs the workflow garbage collector controller
@@ -263,7 +260,7 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
+	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer, wfc.Config.WorkflowDefaults)
 	cronController.Run(ctx)
 }
 
@@ -482,6 +479,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
+		log.Infof("Adding workflow %s/%s", un.GetNamespace(), un.GetName())
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }

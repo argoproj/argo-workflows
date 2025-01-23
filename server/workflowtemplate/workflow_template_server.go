@@ -43,10 +43,10 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 		return nil, sutils.ToStatusError(fmt.Errorf("workflow template was not found in the request body"), codes.InvalidArgument)
 	}
 	wts.instanceIDService.Label(req.Template)
-	creator.Label(ctx, req.Template)
+	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{})
+	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -177,10 +177,10 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 
 func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wts.instanceIDService.Label(req.Template)
-	creator.Label(ctx, req.Template)
+	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -195,10 +195,11 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
+	creator.LabelActor(ctx, req.Template, creator.ActionUpdate)
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{})
+	err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}

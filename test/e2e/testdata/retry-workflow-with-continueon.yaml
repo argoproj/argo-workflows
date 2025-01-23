@@ -54,5 +54,5 @@ spec:
         parameters:
           - name: exitCode
       container:
-        image: alpine:3.7
-        command: [ sh, "-c", "exit {{inputs.parameters.exitCode}}" ]
+        image: argoproj/argosay:v2
+        args: [ "exit", "{{inputs.parameters.exitCode}}" ]

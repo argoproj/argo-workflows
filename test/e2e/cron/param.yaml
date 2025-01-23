@@ -25,6 +25,5 @@ spec:
           parameters:
             - name: message
         container:
-          image: python:alpine3.6
-          command: ["sh", -c]
-          args: ["echo {{inputs.parameters.message}}"]
+          image: argoproj/argosay:v2
+          args: ["echo", "{{inputs.parameters.message}}"]
