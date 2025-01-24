@@ -2632,6 +2632,24 @@ type GitArtifact struct {
 
 	// InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
 	InsecureSkipTLS bool `json:"insecureSkipTLS,omitempty" protobuf:"varint,12,opt,name=insecureSkipTLS"`
+
+	// GithubApp is the GitHub App authentication method
+	GithubAppAuth *GithubAppAuth `json:"githubApp,omitempty" protobuf:"bytes,13,opt,name=githubApp"`
+}
+
+type GithubAppAuth struct {
+
+	// InstallationID is the GitHub App installation ID
+	InstallationID int64 `json:"installationID,omitempty" protobuf:"varint,1,opt,name=installationID"`
+
+	// AppID is the GitHub App ID
+	AppID int64 `json:"appID,omitempty" protobuf:"varint,2,opt,name=appID"`
+
+	// PrivateKeySecret is the secret selector to the GitHub App private key
+	PrivateKeySecret *apiv1.SecretKeySelector `json:"privateKeySecret,omitempty" protobuf:"bytes,3,opt,name=privateKeySecret"`
+
+	// BaseURL is the GitHub API base URL
+	BaseURL string `json:"baseURL,omitempty" protobuf:"bytes,4,opt,name=baseURL"`
 }
 
 func (g *GitArtifact) HasLocation() bool {

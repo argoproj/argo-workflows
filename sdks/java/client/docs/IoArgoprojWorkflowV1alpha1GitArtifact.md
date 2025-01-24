@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **depth** | **Integer** | Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip |  [optional]
 **disableSubmodules** | **Boolean** | DisableSubmodules disables submodules during git clone |  [optional]
 **fetch** | **List&lt;String&gt;** | Fetch specifies a number of refs that should be fetched before checkout |  [optional]
+**githubApp** | [**IoArgoprojWorkflowV1alpha1GithubAppAuth**](IoArgoprojWorkflowV1alpha1GithubAppAuth.md) |  |  [optional]
 **insecureIgnoreHostKey** | **Boolean** | InsecureIgnoreHostKey disables SSH strict host key checking during git clone |  [optional]
 **insecureSkipTLS** | **Boolean** | InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections |  [optional]
 **passwordSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]

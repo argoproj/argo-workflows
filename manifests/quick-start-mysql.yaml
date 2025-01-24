@@ -207,6 +207,30 @@ spec:
                               items:
                                 type: string
                               type: array
+                            githubApp:
+                              properties:
+                                appID:
+                                  format: int64
+                                  type: integer
+                                baseURL:
+                                  type: string
+                                installationID:
+                                  format: int64
+                                  type: integer
+                                privateKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      default: ""
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
                             insecureIgnoreHostKey:
                               type: boolean
                             insecureSkipTLS:
@@ -757,6 +781,30 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              githubApp:
+                                properties:
+                                  appID:
+                                    format: int64
+                                    type: integer
+                                  baseURL:
+                                    type: string
+                                  installationID:
+                                    format: int64
+                                    type: integer
+                                  privateKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        default: ""
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                type: object
                               insecureIgnoreHostKey:
                                 type: boolean
                               insecureSkipTLS:
@@ -1396,6 +1444,30 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                githubApp:
+                                  properties:
+                                    appID:
+                                      format: int64
+                                      type: integer
+                                    baseURL:
+                                      type: string
+                                    installationID:
+                                      format: int64
+                                      type: integer
+                                    privateKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          default: ""
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
                                 insecureIgnoreHostKey:
                                   type: boolean
                                 insecureSkipTLS:
@@ -2142,6 +2214,30 @@ spec:
                           items:
                             type: string
                           type: array
+                        githubApp:
+                          properties:
+                            appID:
+                              format: int64
+                              type: integer
+                            baseURL:
+                              type: string
+                            installationID:
+                              format: int64
+                              type: integer
+                            privateKeySecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  default: ""
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                              x-kubernetes-map-type: atomic
+                          type: object
                         insecureIgnoreHostKey:
                           type: boolean
                         insecureSkipTLS:

@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/client-go/util/homedir"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -47,6 +48,13 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 			driver := &ArtifactDriver{Username: "alexec", Password: token}
 			require.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/private-test-repo.git"}))
 			assert.FileExists(t, path+"/README.md")
+		})
+		t.Run("GithubApp", func(t *testing.T) {
+			privateKey, err := os.ReadFile(homedir.HomeDir() + "/.ssh/id_rsa")
+			require.NoError(t, err)
+
+			driver := &ArtifactDriver{GithubApp: &GithubApp{InstallationID: 123, PrivateKey: string(privateKey), ID: 456, BaseURL: "https://api.github.com"}}
+			require.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/private-test-repo.git"}))
 		})
 	})
 	t.Run("PublicRepo", func(t *testing.T) {
@@ -201,4 +209,29 @@ func TestGetUser(t *testing.T) {
 			assert.Equal(t, sshUser, tt.user)
 		})
 	}
+}
+
+func TestAuth(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		driver *ArtifactDriver
+		expect interface{}
+	}{
+		{
+			name: "basic auth",
+			driver: &ArtifactDriver{
+				Username: "alexec",
+				Password: "password",
+			},
+			expect: &http.BasicAuth{"alexec", "password"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+
+			_, auth, err := tt.driver.auth()
+			require.Equal(t, tt.expect, auth)
+			require.NoError(t, err)
+		})
+	}
+
 }

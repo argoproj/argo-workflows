@@ -724,6 +724,23 @@ message GitArtifact {
 
   // InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
   optional bool insecureSkipTLS = 12;
+
+  // GithubApp is the GitHub App authentication method
+  optional GithubAppAuth githubApp = 13;
+}
+
+message GithubAppAuth {
+  // InstallationID is the GitHub App installation ID
+  optional int64 installationID = 1;
+
+  // AppID is the GitHub App ID
+  optional int64 appID = 2;
+
+  // PrivateKeySecret is the secret selector to the GitHub App private key
+  optional k8s.io.api.core.v1.SecretKeySelector privateKeySecret = 3;
+
+  // BaseURL is the GitHub API base URL
+  optional string baseURL = 4;
 }
 
 // HDFSArtifact is the location of an HDFS artifact

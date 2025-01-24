@@ -1649,6 +1649,8 @@ definitions:
                 items:
                     type: string
                 type: array
+            githubApp:
+                $ref: '#/definitions/GithubAppAuth'
             insecureIgnoreHostKey:
                 description: InsecureIgnoreHostKey disables SSH strict host key checking during git clone
                 type: boolean
@@ -1697,6 +1699,22 @@ definitions:
             Represents a volume that is populated with the contents of a git repository.
             Git repo volumes do not support ownership management.
             Git repo volumes support SELinux relabeling.
+        type: object
+    GithubAppAuth:
+        properties:
+            appID:
+                description: AppID is the GitHub App ID
+                format: int64
+                type: integer
+            baseURL:
+                description: BaseURL is the GitHub API base URL
+                type: string
+            installationID:
+                description: InstallationID is the GitHub App installation ID
+                format: int64
+                type: integer
+            privateKeySecret:
+                $ref: '#/definitions/SecretKeySelector'
         type: object
     GlusterfsVolumeSource:
         description: Glusterfs volumes do not support ownership management or SELinux relabeling.

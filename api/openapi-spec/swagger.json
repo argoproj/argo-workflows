@@ -9296,6 +9296,10 @@
             "type": "string"
           }
         },
+        "githubApp": {
+          "description": "GithubApp is the GitHub App authentication method",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GithubAppAuth"
+        },
         "insecureIgnoreHostKey": {
           "description": "InsecureIgnoreHostKey disables SSH strict host key checking during git clone",
           "type": "boolean"
@@ -9326,6 +9330,27 @@
         },
         "usernameSecret": {
           "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GithubAppAuth": {
+      "type": "object",
+      "properties": {
+        "appID": {
+          "description": "AppID is the GitHub App ID",
+          "type": "integer"
+        },
+        "baseURL": {
+          "description": "BaseURL is the GitHub API base URL",
+          "type": "string"
+        },
+        "installationID": {
+          "description": "InstallationID is the GitHub App installation ID",
+          "type": "integer"
+        },
+        "privateKeySecret": {
+          "description": "PrivateKeySecret is the secret selector to the GitHub App private key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }

@@ -1463,6 +1463,7 @@ PDs support ownership management and SELinux relabeling.
 | depth | uint64 (formatted integer)| `uint64` |  | | Depth specifies clones/fetches should be shallow and include the given</br>number of commits from the branch tip |  |
 | disableSubmodules | boolean| `bool` |  | | DisableSubmodules disables submodules during git clone |  |
 | fetch | []string| `[]string` |  | | Fetch specifies a number of refs that should be fetched before checkout |  |
+| githubApp | [GithubAppAuth](#github-app-auth)| `GithubAppAuth` |  | |  |  |
 | insecureIgnoreHostKey | boolean| `bool` |  | | InsecureIgnoreHostKey disables SSH strict host key checking during git clone |  |
 | insecureSkipTLS | boolean| `bool` |  | | InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections |  |
 | passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
@@ -1493,6 +1494,24 @@ into the Pod's container.
 | directory | string| `string` |  | | directory is the target directory name.</br>Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the</br>git repository.  Otherwise, if specified, the volume will contain the git repository in</br>the subdirectory with the given name.</br>+optional |  |
 | repository | string| `string` |  | | repository is the URL |  |
 | revision | string| `string` |  | | revision is the commit hash for the specified revision.</br>+optional |  |
+
+
+
+### <span id="github-app-auth"></span> GithubAppAuth
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| appID | int64 (formatted integer)| `int64` |  | | AppID is the GitHub App ID |  |
+| baseURL | string| `string` |  | | BaseURL is the GitHub API base URL |  |
+| installationID | int64 (formatted integer)| `int64` |  | | InstallationID is the GitHub App installation ID |  |
+| privateKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
 
 
