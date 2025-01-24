@@ -193,13 +193,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 		}
 		return wf, err
 	} else {
-		var runWf *wfv1.Workflow
-		err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-			var err error
-			runWf, err = wfIf.Create(ctx, wf, metav1.CreateOptions{})
-			return !errorsutil.IsTransientErr(err), err
-		})
-		return runWf, err
+		return wfIf.Create(ctx, wf, metav1.CreateOptions{})
 	}
 }
 
