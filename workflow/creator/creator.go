@@ -103,7 +103,7 @@ func UserActionLabel(ctx context.Context, action ActionType) map[string]string {
 		res[common.LabelKeyActor] = dnsFriendly(claims.Subject)
 	}
 	if claims.Email != "" {
-		res[common.LabelKeyActorEmail] = dnsFriendly(claims.Email)
+		res[common.LabelKeyActorEmail] = dnsFriendly(strings.Replace(claims.Email, "@", ".at.", 1))
 	}
 	if claims.PreferredUsername != "" {
 		res[common.LabelKeyActorPreferredUsername] = dnsFriendly(claims.PreferredUsername)
