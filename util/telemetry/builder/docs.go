@@ -64,14 +64,15 @@ func metricsDocsLines(metrics *metricsList, attribs *attributesList) string {
 	var out bytes.Buffer
 	outWriter := io.Writer(&out)
 	markdown := md.NewMarkdown(outWriter)
+	markdown.PlainText("")
 	for _, metric := range *metrics {
-		markdown.PlainText("")
 		markdown.H4(md.Code(metric.displayName()))
 		markdown.PlainText("")
 		markdown.PlainTextf("%s.", metric.Description)
 		if metric.ExtendedDescription != "" {
 			markdown.PlainText(strings.Trim(metric.ExtendedDescription, " \n\t\r"))
 		}
+		markdown.PlainText("")
 
 		if len(metric.Attributes) > 0 {
 			rows := [][]string{}
@@ -89,6 +90,7 @@ func metricsDocsLines(metrics *metricsList, attribs *attributesList) string {
 			)
 		} else {
 			markdown.PlainText("This metric has no attributes.")
+			markdown.PlainText("")
 		}
 		if len(metric.DefaultBuckets) > 0 {
 			buckets := ""
@@ -103,6 +105,7 @@ func metricsDocsLines(metrics *metricsList, attribs *attributesList) string {
 
 		if metric.Notes != "" {
 			markdown.PlainText(strings.Trim(metric.Notes, " \n\t\r"))
+			markdown.PlainText("")
 		}
 	}
 	markdown.Build()

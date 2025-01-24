@@ -250,7 +250,7 @@ A counter of the number of times a CronWorkflow has triggered its `concurrencyPo
 
 |      attribute       |                                   explanation                                    |
 |----------------------|----------------------------------------------------------------------------------|
-| `name`               | ⚠️ The name of the CronWorkflow                                                  |
+| `name`               | ⚠️ The name of the CronWorkflow                                                   |
 | `namespace`          | The namespace that the CronWorkflow is in                                        |
 | `concurrency_policy` | The concurrency policy which was triggered, will be either `Forbid` or `Replace` |
 
@@ -261,7 +261,7 @@ Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
 
 |  attribute  |                explanation                |
 |-------------|-------------------------------------------|
-| `name`      | ⚠️ The name of the CronWorkflow           |
+| `name`      | ⚠️ The name of the CronWorkflow            |
 | `namespace` | The namespace that the CronWorkflow is in |
 
 #### `deprecated_feature`
@@ -313,6 +313,7 @@ A gauge indicating if this Controller is the [leader](high-availability.md#workf
 
 - `1` if leader or in standalone mode via [`LEADER_ELECTION_DISABLE=true`](environment-variables.md#controller).
 - `0` otherwise, indicating that this controller is a standby that is not currently running workflows.
+
 This metric has no attributes.
 
 #### `k8s_request_duration`
@@ -353,7 +354,9 @@ A count of log messages emitted by the controller by log level: `error`, `warn` 
 A histogram of durations of operations.
 An operation is a single workflow reconciliation loop within the workflow-controller.
 It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
+
 This metric has no attributes.
+
 The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` modifier in the `metricsConfig` block.
 
 #### `pod_missing`
@@ -589,22 +592,22 @@ A histogram of the runtime of workflows using `workflowTemplateRef` only.
 Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
 
-|    attribute    |                         explanation                          |
-|-----------------|--------------------------------------------------------------|
+|    attribute    |                         explanation                         |
+|-----------------|-------------------------------------------------------------|
 | `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
-| `namespace`     | The namespace that the WorkflowTemplate is in                |
-| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate      |
+| `namespace`     | The namespace that the WorkflowTemplate is in               |
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate     |
 
 #### `workflowtemplate_triggered_total`
 
 A counter of workflows using `workflowTemplateRef` only, as they enter each phase.
 Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 
-|    attribute    |                         explanation                          |
-|-----------------|--------------------------------------------------------------|
+|    attribute    |                         explanation                         |
+|-----------------|-------------------------------------------------------------|
 | `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
-| `namespace`     | The namespace that the WorkflowTemplate is in                |
-| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate      |
+| `namespace`     | The namespace that the WorkflowTemplate is in               |
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate     |
 <!-- Generated documentation END -->
 
 ### Metric types
