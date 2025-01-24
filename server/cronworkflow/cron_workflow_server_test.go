@@ -58,7 +58,8 @@ metadata:
 	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	userEmailLabel := "my-sub.at.your.org"
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
@@ -79,6 +80,7 @@ metadata:
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
@@ -107,6 +109,7 @@ metadata:
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
 			assert.Contains(t, cronWf.Labels, common.LabelKeyActor)
 			assert.Equal(t, string(creator.ActionUpdate), cronWf.Labels[common.LabelKeyAction])
+			assert.Equal(t, userEmailLabel, cronWf.Labels[common.LabelKeyActorEmail])
 			require.NoError(t, err)
 			assert.NotNil(t, cronWf)
 		})
