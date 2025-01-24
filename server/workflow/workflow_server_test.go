@@ -678,7 +678,7 @@ func TestCreateWorkflow(t *testing.T) {
 	assert.NotNil(t, wf)
 	assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 	assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-  assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
+	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 }
 
 type testWatchWorkflowServer struct {
@@ -817,13 +817,13 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	assert.True(t, *wf.Spec.Suspend)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionSuspend), wf.Labels[common.LabelKeyAction])
-  assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
+	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
 	wf, err = server.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{Name: wf.Name, Namespace: wf.Namespace})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionResume), wf.Labels[common.LabelKeyAction])
-  assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
+	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
 	assert.Nil(t, wf.Spec.Suspend)
 }
 
@@ -860,7 +860,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionTerminate), wf.Labels[common.LabelKeyAction])
-  assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
+	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
 	require.NoError(t, err)
 
 	rsmWfReq = workflowpkg.WorkflowTerminateRequest{
@@ -883,7 +883,7 @@ func TestStopWorkflow(t *testing.T) {
 	assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionStop), wf.Labels[common.LabelKeyAction])
-  assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
+	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
 }
 
 func TestResubmitWorkflow(t *testing.T) {
@@ -963,7 +963,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-    assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
+		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
 		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
@@ -975,7 +975,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-    assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
+		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
 	t.Run("SubmitFromClusterWorkflowTemplate", func(t *testing.T) {
 		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
@@ -987,6 +987,6 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-    assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
+		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
 }
