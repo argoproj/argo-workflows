@@ -36,7 +36,7 @@ func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *c
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
 	c.instanceIDService.Label(req.CronWorkflow)
-	creator.Label(ctx, req.CronWorkflow)
+	creator.LabelCreator(ctx, req.CronWorkflow)
 	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
@@ -63,7 +63,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 		return nil, sutils.ToStatusError(fmt.Errorf("cron workflow was not found in the request body"), codes.NotFound)
 	}
 	c.instanceIDService.Label(req.CronWorkflow)
-	creator.Label(ctx, req.CronWorkflow)
+	creator.LabelCreator(ctx, req.CronWorkflow)
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
 	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults)
@@ -90,6 +90,7 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	creator.LabelActor(ctx, req.CronWorkflow, creator.ActionUpdate)
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
 	if err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults); err != nil {
