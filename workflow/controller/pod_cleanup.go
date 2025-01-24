@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"slices"
+
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -37,9 +39,10 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 		if !nodePhase.Fulfilled() {
 			continue
 		}
-		switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase) {
+		switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase, pod.Finalizers) {
 		case deletePod:
 			woc.controller.queuePodForCleanupAfter(pod.Namespace, pod.Name, deletePod, delay)
+		case removeFinalizer:
 		case labelPodCompleted:
 			woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, labelPodCompleted)
 		}
@@ -52,6 +55,7 @@ func determinePodCleanupAction(
 	strategy wfv1.PodGCStrategy,
 	workflowPhase wfv1.WorkflowPhase,
 	podPhase apiv1.PodPhase,
+	finalizers []string,
 ) podCleanupAction {
 	switch {
 	case !selector.Matches(labels.Set(podLabels)): // if the pod will never be deleted, label it now
@@ -70,6 +74,15 @@ func determinePodCleanupAction(
 		return labelPodCompleted
 	case workflowPhase.Completed():
 		return labelPodCompleted
+	case hasOurFinalizer(finalizers):
+		return removeFinalizer
 	}
 	return ""
+}
+
+func hasOurFinalizer(finalizers []string) bool {
+	if finalizers != nil {
+		return slices.Contains(finalizers, common.FinalizerPodStatus)
+	}
+	return false
 }
