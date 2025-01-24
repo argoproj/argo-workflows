@@ -88,6 +88,7 @@ nav:
           - walk-through/exit-handlers.md
           - walk-through/timeouts.md
           # template types
+          - walk-through/annotations.md
           - walk-through/suspending.md
           - walk-through/kubernetes-resources.md
           # container configuration

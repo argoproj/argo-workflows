@@ -150,6 +150,8 @@ spec:
 
   # This template is the same as in the previous example
   - name: cat-os-release
+    annotations: 
+      workflows.argoproj.io/display-name: "os-{{inputs.parameters.image}}-{{inputs.parameters.tag}}" # this sets a custom name for the node in the UI, based on the template's parameters
     inputs:
       parameters:
       - name: image

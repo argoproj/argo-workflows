@@ -1961,6 +1961,17 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
 
+	// Update displayName from processedTmpl
+	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
+		if !displayNameRegex.MatchString(displayName) {
+			err = fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		}
+
+		woc.log.Debugf("Updating node %s display name to %s", node.DisplayName, displayName)
+		woc.setNodeDisplayName(node, displayName)
+	}
+
 	// Check if this is a fulfilled node for synchronization.
 	// If so, release synchronization and return this node. No more logic will be executed.
 	if node != nil {
@@ -2507,6 +2518,7 @@ func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
+var displayNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
@@ -3226,8 +3238,8 @@ func parseLoopIndex(s string) int {
 }
 
 func (n loopNodes) Less(i, j int) bool {
-	left := parseLoopIndex(n[i].DisplayName)
-	right := parseLoopIndex(n[j].DisplayName)
+	left := parseLoopIndex(n[i].Name)
+	right := parseLoopIndex(n[j].Name)
 	return left < right
 }
 
@@ -4214,4 +4226,11 @@ func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 		}
 	}
 	return childrenIds
+}
+
+func (woc *wfOperationCtx) setNodeDisplayName(node *wfv1.NodeStatus, displayName string) {
+	nodeID := node.ID
+	newNode := node.DeepCopy()
+	newNode.DisplayName = displayName
+	woc.wf.Status.Nodes.Set(nodeID, *newNode)
 }
