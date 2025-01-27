@@ -14,6 +14,11 @@ import (
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"k8s.io/apimachinery/pkg/selection"
+)
+
+var (
+	workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 )
 
 func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {

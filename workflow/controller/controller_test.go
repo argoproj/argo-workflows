@@ -38,6 +38,7 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -314,7 +315,6 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
-		wfc.podCleanupQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
 
@@ -326,14 +326,15 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
-		wfc.podInformer = wfc.newPodInformer(ctx)
+		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
+
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
-		go wfc.podInformer.Run(ctx.Done())
+		go wfc.PodController.Run(ctx, 0)
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
@@ -343,7 +344,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		for _, c := range []cache.SharedIndexInformer{
 			wfc.wfInformer,
 			wfc.wftmplInformer.Informer(),
-			wfc.podInformer,
+			wfc.PodController.TestingPodInformer(),
 			wfc.cwftmplInformer.Informer(),
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
@@ -516,7 +517,7 @@ func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 					Phase: apiv1.PodRunning,
 				},
 			}, metav1.CreateOptions{})
-			_ = woc.controller.podInformer.GetStore().Add(pod)
+			_ = woc.controller.PodController.TestingPodInformer().GetStore().Add(pod)
 		}
 	}
 }
@@ -529,7 +530,7 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 	}
 	podObjs = append(podObjs, pods.Items...)
 	for _, pod := range podObjs {
-		err = woc.controller.podInformer.GetIndexer().Add(&pod)
+		err = woc.controller.PodController.TestingPodInformer().GetIndexer().Add(&pod)
 		if err != nil {
 			panic(err)
 		}
@@ -556,7 +557,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformer.GetStore().Update(updatedPod)
+			err = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -569,13 +570,13 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
-	for _, obj := range woc.controller.podInformer.GetStore().List() {
+	for _, obj := range woc.controller.PodController.TestingPodInformer().GetStore().List() {
 		pod := obj.(*apiv1.Pod)
 		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
-		err = woc.controller.podInformer.GetStore().Delete(obj)
+		err = woc.controller.PodController.TestingPodInformer().GetStore().Delete(obj)
 		if err != nil {
 			panic(err)
 		}
@@ -1153,10 +1154,10 @@ spec:
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	podCleanupKey := "test/my-wf/labelPodCompleted"
-	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
+	assert.Equal(t, 0, controller.PodController.TestingQueueNumRequeues(podCleanupKey))
 }
 
 func TestPodCleanupDeletePendingPodWhenTerminate(t *testing.T) {
@@ -1183,58 +1184,13 @@ spec:
 	makePodsPhase(ctx, woc, apiv1.PodPending)
 	woc.execWf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
-}
-
-func TestPodCleanupPatch(t *testing.T) {
-	wfc := &WorkflowController{}
-
-	pod := &apiv1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:          map[string]string{common.LabelKeyCompleted: "false"},
-			Finalizers:      []string{common.FinalizerPodStatus},
-			ResourceVersion: "123456",
-		},
-	}
-
-	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
-
-	// pod finalizer enabled, patch label
-	patch, err := wfc.getPodCleanupPatch(pod, true)
-	require.NoError(t, err)
-	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer enabled, do not patch label
-	patch, err = wfc.getPodCleanupPatch(pod, false)
-	require.NoError(t, err)
-	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer enabled, do not patch label, nil/empty finalizers
-	podWithNilFinalizers := &apiv1.Pod{}
-	patch, err = wfc.getPodCleanupPatch(podWithNilFinalizers, false)
-	require.NoError(t, err)
-	assert.Nil(t, patch)
-
-	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
-
-	// pod finalizer disabled, patch both
-	patch, err = wfc.getPodCleanupPatch(pod, true)
-	require.NoError(t, err)
-	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer disabled, do not patch label
-	patch, err = wfc.getPodCleanupPatch(pod, false)
-	require.NoError(t, err)
-	assert.Nil(t, patch)
 }
 
 func TestPendingPodWhenTerminate(t *testing.T) {
@@ -1270,7 +1226,7 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
@@ -1307,6 +1263,6 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
