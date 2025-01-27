@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **active_deadline_seconds** | **str** |  | [optional] 
 **affinity** | [**Affinity**](Affinity.md) |  | [optional] 
+**annotations** | **{str: (str,)}** | Annotations is a list of annotations to add to the template at runtime | [optional] 
 **archive_location** | [**IoArgoprojWorkflowV1alpha1ArtifactLocation**](IoArgoprojWorkflowV1alpha1ArtifactLocation.md) |  | [optional] 
 **automount_service_account_token** | **bool** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. | [optional] 
 **container** | [**Container**](Container.md) |  | [optional] 

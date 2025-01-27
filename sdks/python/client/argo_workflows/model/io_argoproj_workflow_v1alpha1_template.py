@@ -135,6 +135,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         return {
             'active_deadline_seconds': (str,),  # noqa: E501
             'affinity': (Affinity,),  # noqa: E501
+            'annotations': ({str: (str,)},),  # noqa: E501
             'archive_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
             'automount_service_account_token': (bool,),  # noqa: E501
             'container': (Container,),  # noqa: E501
@@ -182,6 +183,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
     attribute_map = {
         'active_deadline_seconds': 'activeDeadlineSeconds',  # noqa: E501
         'affinity': 'affinity',  # noqa: E501
+        'annotations': 'annotations',  # noqa: E501
         'archive_location': 'archiveLocation',  # noqa: E501
         'automount_service_account_token': 'automountServiceAccountToken',  # noqa: E501
         'container': 'container',  # noqa: E501
@@ -264,6 +266,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             active_deadline_seconds (str): [optional]  # noqa: E501
             affinity (Affinity): [optional]  # noqa: E501
+            annotations ({str: (str,)}): Annotations is a list of annotations to add to the template at runtime. [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
@@ -384,6 +387,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             active_deadline_seconds (str): [optional]  # noqa: E501
             affinity (Affinity): [optional]  # noqa: E501
+            annotations ({str: (str,)}): Annotations is a list of annotations to add to the template at runtime. [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
