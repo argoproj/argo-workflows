@@ -763,6 +763,9 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+
+	// Annotations is a list of annotations to add to the template at runtime
+	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
 }
 
 // SetType will set the template object based on template type.
@@ -827,6 +830,29 @@ func (tmpl *Template) GetOutputs() *Outputs {
 		return &tmpl.Outputs
 	}
 	return nil
+}
+
+func (tmpl *Template) GetAnnotations() map[string]string {
+	if tmpl != nil {
+		return tmpl.Annotations
+	}
+	return map[string]string{}
+}
+
+func (tmpl *Template) SetAnnotations(annotations map[string]string) {
+	tmpl.Annotations = annotations
+}
+
+func (tmpl *Template) GetDisplayName() string {
+	displayName, ok := tmpl.GetAnnotations()[string(TemplateAnnotationDisplayName)]
+	if ok {
+		return displayName
+	}
+	return ""
+}
+
+func (tmpl *Template) SetDisplayName() {
+	tmpl.Annotations[string(TemplateAnnotationDisplayName)] = tmpl.Name
 }
 
 type Artifacts []Artifact
@@ -3969,3 +3995,9 @@ type NodeFlag struct {
 	// Retried tracks whether or not this node was retried by retryStrategy
 	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
 }
+
+type TemplateAnnotation string
+
+const (
+	TemplateAnnotationDisplayName TemplateAnnotation = "workflows.argoproj.io/display-name"
+)
