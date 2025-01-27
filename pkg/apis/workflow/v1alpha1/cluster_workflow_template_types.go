@@ -46,6 +46,13 @@ var _ TemplateHolder = &ClusterWorkflowTemplate{}
 func (cwftmpl *ClusterWorkflowTemplate) GetTemplateByName(name string) *Template {
 	for _, t := range cwftmpl.Spec.Templates {
 		if t.Name == name {
+			for _, v := range t.GetVolumeMounts() {
+				for _, vp := range cwftmpl.Spec.VolumeClaimTemplates {
+					if v.Name == vp.Name {
+						t.VolumeClaimTemplates = append(t.VolumeClaimTemplates, vp)
+					}
+				}
+			}
 			return &t
 		}
 	}
