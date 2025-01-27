@@ -1,17 +1,56 @@
 tasks:
   build:
-    dependencies: build-controller build-cli build-executor
+    dependencies:
+    - build-controller
+    - build-cli
+    - build-executor
   build-cli:
-    command: make ./dist/argo
+    command:
+    - make
+    - ./dist/argo
     env:
       STATIC_FILES: "false"
     mutex: build
+    watch:
+    - cmd/argo
+    - config
+    - errors
+    - persist
+    - pkg
+    - util
+    - server
+    - workflow
   build-controller:
-    command: make ./dist/workflow-controller
+    command:
+    - make
+    - ./dist/workflow-controller
     mutex: build
+    watch:
+    - cmd/workflow-controller
+    - config
+    - errors
+    - persist
+    - pkg
+    - util
+    - workflow
+  build-executor:
+    command:
+    - make
+    - argoexec-image
+    mutex: docker
+    watch:
+    - cmd/argoexec
+    - config
+    - errors
+    - pkg
+    - util
+    - workflow
   controller:
-    command: ./dist/workflow-controller
-    dependencies: build-controller port-forward
+    command:
+    - ./dist/workflow-controller
+    dependencies:
+    - build-controller
+    - port-forward
     env:
       ALWAYS_OFFLOAD_NODE_STATUS: "false"
       ARCHIVED_WORKFLOW_GC_PERIOD: 30s
@@ -27,26 +66,38 @@ tasks:
       OFFLOAD_NODE_STATUS_TTL: 30s
       UPPERIO_DB_DEBUG: "1"
       WORKFLOW_GC_PERIOD: 30s
-    ports: "9090"
+    ports:
+    - "9090"
   example:
-    command: kubectl create -f examples/hello-world.yaml
-    dependencies: install
-    mutex: docker
-  build-executor:
-    command: make argoexec-image
+    command:
+    - kubectl
+    - create
+    - -f
+    - examples/hello-world.yaml
+    dependencies:
+    - install
     mutex: docker
   install:
-    sh:  make install PROFILE=$PROFILE
     env:
       PROFILE: minimal
     mutex: docker
+    sh: make install PROFILE=$PROFILE
+    watch:
+    - manifests
   port-forward:
-    command: ./hack/port-forward.sh
-    dependencies: install
-    ports: "9000"
+    command:
+    - ./hack/port-forward.sh
+    dependencies:
+    - install
+    ports:
+    - "9000"
   server:
-    command: ./dist/argo server
-    dependencies: build-cli port-forward
+    command:
+    - ./dist/argo
+    - server
+    dependencies:
+    - build-cli
+    - port-forward
     env:
       ARGO_AUTH_MODE: hybrid
       ARGO_LOGLEVEL: info
@@ -56,15 +107,31 @@ tasks:
       ARGO_SECURE: "false"
       ARGO_X_FRAME_OPTIONS: SAMEORIGIN
       UPPERIO_DB_DEBUG: "1"
-    ports: "2746"
+    ports:
+    - "2746"
   ui:
-    command: yarn start
-    dependencies: ui-deps
-    ports: "8080"
+    command:
+    - yarn
+    - start
+    dependencies:
+    - ui-deps
+    ports:
+    - "8080"
+    watch:
+    - package.json
     workingDir: ui
   ui-deps:
-    command: yarn install
+    command:
+    - yarn
+    - install
     workingDir: ui
   up:
-    command: sleep 999999
-    dependencies: example controller server ui build-executor
+    command:
+    - sleep
+    - "999999"
+    dependencies:
+    - example
+    - controller
+    - server
+    - ui
+    - build-executor
