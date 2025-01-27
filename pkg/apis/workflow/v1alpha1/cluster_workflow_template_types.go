@@ -57,6 +57,11 @@ func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
 }
 
+// GetPodMetadata returns the PodMetadata of cluster workflow template.
+func (cwftmpl *ClusterWorkflowTemplate) GetPodMetadata() *Metadata {
+	return cwftmpl.Spec.PodMetadata
+}
+
 // GetWorkflowSpec returns the WorkflowSpec of cluster workflow template.
 func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
 	return &cwftmpl.Spec

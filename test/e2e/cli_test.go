@@ -1392,7 +1392,6 @@ func (s *CLISuite) TestCronCommands() {
 			assert.Contains(t, output, "5 5 5 * *")
 			assert.Contains(t, output, "Replace")
 			assert.Contains(t, output, "whalesay")
-			assert.NotContains(t, output, "argosay")
 		})
 	})
 	s.Run("Create Parameter Override", func() {

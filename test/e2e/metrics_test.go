@@ -99,7 +99,7 @@ func (s *MetricsSuite) TestDeprecatedCronSchedule() {
 		CronWorkflow(`@testdata/cronworkflow-deprecated-schedule.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(1 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").
@@ -184,7 +184,8 @@ func (s *MetricsSuite) TestCronCountersForbid() {
 		CronWorkflow(`@testdata/cronworkflow-metrics-forbid.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Wait(time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").
@@ -201,7 +202,8 @@ func (s *MetricsSuite) TestCronCountersReplace() {
 		CronWorkflow(`@testdata/cronworkflow-metrics-replace.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForNewWorkflow(fixtures.ToBeRunning).
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").

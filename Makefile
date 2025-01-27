@@ -39,6 +39,7 @@ E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
+BENCHMARK_COUNT       ?= 6
 
 # should we build the static files?
 ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
@@ -50,7 +51,7 @@ endif
 # -- install & run options
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
+PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
 UI                    ?= false # start the UI with HTTP
 UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
@@ -69,7 +70,6 @@ endif
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
-DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
@@ -93,7 +93,7 @@ AUTH_MODE                     := sso
 endif
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
-$(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
+$(info KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
 $(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
 
 override LDFLAGS += \
@@ -107,11 +107,14 @@ override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
 endif
 
 ifndef $(GOPATH)
-	GOPATH=$(shell go env GOPATH)
+	GOPATH:=$(shell go env GOPATH)
 	export GOPATH
 endif
 
 # -- file lists
+# These variables are only used as prereqs for the below targets, and we don't want to run them for other targets
+# because the "go list" calls are very slow
+ifneq (,$(filter dist/argoexec dist/workflow-controller dist/argo dist/argo-% docs/cli/argo.md,$(MAKECMDGOALS)))
 HACK_PKG_FILES_AS_PKGS ?= false
 ifeq ($(HACK_PKG_FILES_AS_PKGS),false)
 	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
@@ -123,6 +126,11 @@ else
 	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
+endif
+else
+	ARGOEXEC_PKG_FILES    :=
+	CLI_PKG_FILES         :=
+	CONTROLLER_PKG_FILES  :=
 endif
 
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
@@ -439,6 +447,10 @@ dist/manifests/%: manifests/%
 
 # lint/test/etc
 
+.PHONE: manifests-validate
+manifests-validate:
+	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
+
 $(GOPATH)/bin/golangci-lint: Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
@@ -472,13 +484,12 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) \
+		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
+		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
+		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-endif
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
 ifeq ($(UI_SECURE)$(PROFILE),truesso)
 	KUBE_NAMESPACE=$(KUBE_NAMESPACE) ./hack/update-sso-redirect-url.sh
@@ -526,18 +537,15 @@ ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
 	brew install kit
 else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
+	@echo "Downloading Kit"
+	curl -fsL --retry 99 "https://github.com/kitproj/kit/releases/download/v0.1.8/kit_0.1.8_$$(uname)_$$(uname -m | sed 's/aarch64/arm64/').tar.gz" | sudo tar -C /usr/local/bin -xzf - kit
 endif
 endif
 
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-ifeq ($(API),true)
-start: install controller kit cli
-else
-start: install controller kit
-endif
+start: kit
 else
 start: install kit
 endif
@@ -600,10 +608,6 @@ test-cli: ./dist/argo
 test-%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
-.PHONY: test-examples
-test-examples:
-	./hack/test-examples.sh
-
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
@@ -612,7 +616,7 @@ Test%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
 
 Benchmark%:
-	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -bench '$@' .
+	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .
 
 # clean
 
@@ -651,6 +655,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 
 # generates many other files (listers, informers, client etc).
+.PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(GOPATH)/bin/go-to-protobuf $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3

@@ -138,7 +138,7 @@ func validateHooks(hooks wfv1.LifecycleHooks, hookBaseName string) error {
 }
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, wfDefaults *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 	var wfSpecHolder wfv1.WorkflowSpecHolder
@@ -211,6 +211,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if wf.Spec.WorkflowMetadata != nil {
 		annotationSources = append(annotationSources, maps.Keys(wf.Spec.WorkflowMetadata.Annotations))
 		labelSources = append(labelSources, maps.Keys(wf.Spec.WorkflowMetadata.Labels), maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom))
+	}
+	if wfDefaults != nil && wfDefaults.Spec.WorkflowMetadata != nil {
+		annotationSources = append(annotationSources, maps.Keys(wfDefaults.Spec.WorkflowMetadata.Annotations))
+		labelSources = append(labelSources, maps.Keys(wfDefaults.Spec.WorkflowMetadata.Labels), maps.Keys(wfDefaults.Spec.WorkflowMetadata.LabelsFrom))
 	}
 	if wf.Spec.WorkflowTemplateRef != nil && wfSpecHolder.GetWorkflowSpec().WorkflowMetadata != nil {
 		annotationSources = append(annotationSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations))
@@ -331,7 +335,7 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) error {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, wfDefaults *wfv1.Workflow, opts ValidateOpts) error {
 	if len(wftmpl.Name) > maxCharsInObjectName {
 		return fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
 	}
@@ -345,11 +349,11 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 	}
 	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
 	opts.WorkflowTemplateValidation = true
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, wfDefaults, opts)
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) error {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, wfDefaults *wfv1.Workflow, opts ValidateOpts) error {
 	if len(cwftmpl.Name) > maxCharsInObjectName {
 		return fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
 	}
@@ -363,11 +367,11 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 	}
 	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
 	opts.WorkflowTemplateValidation = true
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, wfDefaults, opts)
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
-func ValidateCronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow) error {
+func ValidateCronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow, wfDefaults *wfv1.Workflow) error {
 	if len(cronWf.Spec.Schedules) > 0 && cronWf.Spec.Schedule != "" {
 		return fmt.Errorf("cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
 	}
@@ -397,7 +401,7 @@ func ValidateCronWorkflow(ctx context.Context, wftmplGetter templateresolution.W
 
 	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, wfDefaults, ValidateOpts{})
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
@@ -475,13 +479,14 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 
 	}
 
+	templateScope := tmplCtx.GetTemplateScope()
 	tmplID := getTemplateID(tmpl)
-	_, ok := ctx.results[tmplID]
+	_, ok := ctx.results[templateScope+tmplID]
 	if ok {
 		// we can skip the rest since it has been validated.
 		return nil
 	}
-	ctx.results[tmplID] = true
+	ctx.results[templateScope+tmplID] = true
 
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
@@ -958,7 +963,12 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
-			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
+			var args wfv1.ArgumentsProvider
+			args = &FakeArguments{}
+			if step.TemplateRef != nil {
+				args = &step.Arguments
+			}
+			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, args, workflowTemplateValidation)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -1351,7 +1361,13 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
 		}
 
-		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
+		var args wfv1.ArgumentsProvider
+		args = &FakeArguments{}
+		if task.TemplateRef != nil {
+			args = &task.Arguments
+		}
+
+		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, args, workflowTemplateValidation)
 
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())

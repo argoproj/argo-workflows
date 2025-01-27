@@ -23,6 +23,3 @@ You can configure this globally using [workflow defaults](default-workflow-specs
 
 !!! Warning "It is easy to make a workflow need root unintentionally"
     You may find that user's workflows have been written to require root with seemingly innocuous code. E.g. `mkdir /my-dir` would require root.
-
-!!! Note "You must use volumes for output artifacts"
-    If you use `runAsNonRoot` - you cannot have output artifacts on base layer (e.g. `/tmp`). You must use a volume (e.g. [empty dir](empty-dir.md)).

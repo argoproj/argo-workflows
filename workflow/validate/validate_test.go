@@ -46,14 +46,14 @@ func deleteWorkflowTemplate(name string) error {
 // its validation result.
 func validate(yamlStr string) error {
 	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 }
 
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
 func validateWorkflowTemplate(yamlStr string, opts ValidateOpts) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, opts)
+	err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, nil, opts)
 	return err
 }
 
@@ -1108,14 +1108,14 @@ func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// ensure we detect and reject path collisions
 	wf := unmarshalWf(volumeMountArtifactPathCollision)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 
 	require.ErrorContains(t, err, "already mounted")
 
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
 
-	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 
 	require.NoError(t, err)
 }
@@ -1332,7 +1332,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), nil, ValidateOpts{})
 
 	require.NoError(t, err)
 }
@@ -1359,9 +1359,9 @@ spec:
 func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
 	require.NoError(t, err)
-	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 
 	require.Error(t, err)
 }
@@ -1398,7 +1398,7 @@ spec:
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
 
 	require.NoError(t, err)
 }
@@ -1435,7 +1435,7 @@ spec:
 func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	wf := unmarshalWf(specBadSequenceCountAndEnd)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
 
 	require.Error(t, err)
 }
@@ -1453,11 +1453,11 @@ spec:
       image: docker/whalesay:{{user.username}}
 `
 
-// TestCustomTemplatVariable verifies custom template variable
-func TestCustomTemplatVariable(t *testing.T) {
+// TestCustomTemplateVariable verifies custom template variable
+func TestCustomTemplateVariable(t *testing.T) {
 	wf := unmarshalWf(customVariableInput)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
 
 	require.NoError(t, err)
 }
@@ -1538,6 +1538,56 @@ func TestNestedTemplateRef(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var templateRefTargetWithInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-target-with-input
+spec:
+  templates:
+  - name: A
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: alpine:3.11
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+var nestedTemplateRefWithError = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-ref-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+      - - name: call-A
+          templateRef:
+            name: template-ref-target
+            template: A
+      - - name: call-A-input
+          template: A
+  - name: A
+    steps:
+      - - name: call-B
+          templateRef:
+            name: template-ref-target-with-input
+            template: A
+`
+
+func TestNestedTemplateRefWithError(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefTarget)
+	require.NoError(t, err)
+	err = createWorkflowTemplateFromSpec(templateRefTargetWithInput)
+	require.NoError(t, err)
+	err = validate(nestedTemplateRefWithError)
+	require.EqualError(t, err, "templates.main.steps[1].call-A-input templates.A.steps[0].call-B templates.A inputs.parameters.message was not supplied")
+}
+
 var undefinedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1581,7 +1631,7 @@ spec:
 func TestValidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(validResourceWorkflow)
 
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 
 	require.NoError(t, err)
 }
@@ -1625,11 +1675,11 @@ spec:
 // TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 	require.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
-	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 	require.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
 }
 
@@ -1649,7 +1699,7 @@ spec:
 // TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
 func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 	require.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 }
 
@@ -1668,7 +1718,7 @@ spec:
     container:
       image: docker/whalesay
 `)
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 	require.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid label selector operator")
 }
 
@@ -1770,7 +1820,7 @@ spec:
 func TestAllowPlaceholderInVariableTakenFromInputs(t *testing.T) {
 	{
 		wf := unmarshalWf(allowPlaceholderInVariableTakenFromInputs)
-		err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+		err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 
 		require.NoError(t, err)
 	}
@@ -1829,7 +1879,7 @@ spec:
 // TestRuntimeResolutionOfVariableNames verifies an error against a workflow of an invalid resource.
 func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 
 	require.NoError(t, err)
 }
@@ -2790,19 +2840,19 @@ func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
 
 func TestMaxLengthName(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 	require.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, ValidateOpts{})
+	err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, nil, ValidateOpts{})
 	require.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwftmpl := &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl, ValidateOpts{})
+	err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl, nil, ValidateOpts{})
 	require.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
-	err = ValidateCronWorkflow(context.Background(), wftmplGetter, cwftmplGetter, cwf)
+	err = ValidateCronWorkflow(context.Background(), wftmplGetter, cwftmplGetter, cwf, nil)
 	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
 
@@ -3212,6 +3262,16 @@ func TestNodeNameParameterInterpoliates(t *testing.T) {
 }
 
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
+	wfDefaults := wfv1.Workflow{
+		Spec: wfv1.WorkflowSpec{
+			WorkflowMetadata: &wfv1.WorkflowMetadata{
+				Labels: map[string]string{
+					"default-label": "thisLabelIsFromWorkflowDefaults",
+				},
+			},
+		},
+	}
+
 	tests := []struct {
 		name             string
 		workflow         string
@@ -3262,7 +3322,7 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+			err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, &wfDefaults, ValidateOpts{})
 			if tt.expectedSuccess {
 				require.NoError(t, err)
 			} else {
@@ -3293,4 +3353,73 @@ func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
 	err := validate(spacedParameterWorkflowTemplate)
 	// Do not allow leading or trailing spaces in parameters
 	require.ErrorContains(t, err, "failed to resolve {{  workflow.thisdoesnotexist  }}")
+}
+
+var dynamicWorkflowTemplateARefB = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-a
+spec:
+  templates:
+  - name: template-a
+    inputs:
+      parameters:
+        - name: message
+    steps:
+      - - name: step-a
+          templateRef:
+            name: workflow-template-b
+            template: "{{ inputs.parameters.message }}"
+`
+
+var dynamicWorkflowTemplateRefB = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-b
+spec:
+  templates:
+  - name: template-b
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello from template"]
+`
+
+var dynamicTemplateRefWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dynamic-workflow-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    steps:
+      - - name: whalesay
+          templateRef:
+            name: workflow-template-a
+            template: template-a
+          arguments:
+            parameters:
+              - name: message
+                value: "template-b"
+`
+
+func TestDynamicWorkflowTemplateRef(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dynamicTemplateRefWorkflow)
+	wftmplA := wfv1.MustUnmarshalWorkflowTemplate(dynamicWorkflowTemplateARefB)
+	wftmplB := wfv1.MustUnmarshalWorkflowTemplate(dynamicWorkflowTemplateRefB)
+
+	err := createWorkflowTemplate(wftmplA)
+	require.NoError(t, err)
+	err = createWorkflowTemplate(wftmplB)
+	require.NoError(t, err)
+
+	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	require.NoError(t, err)
+
+	_ = deleteWorkflowTemplate(wftmplA.Name)
+	_ = deleteWorkflowTemplate(wftmplB.Name)
 }

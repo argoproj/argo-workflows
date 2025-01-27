@@ -50,7 +50,7 @@ spec:
       parameters:
         - name: item
     container:
-      image: centos:latest
+      image: argoproj/argosay:v2
       imagePullPolicy: Always
       command:
         - sh

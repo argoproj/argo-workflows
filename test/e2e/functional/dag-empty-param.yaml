@@ -22,12 +22,8 @@ spec:
 
   - name: gen-number-list
     script:
-      image: python:alpine3.6
-      command: [python]
-      source: |
-        import json
-        import sys
-        json.dump([i for i in range(0, -1)], sys.stdout)
+      image: argoproj/argosay:v2
+      args: ["echo", "[]"]
 
   - name: sleep-n-sec
     inputs:

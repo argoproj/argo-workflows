@@ -8,11 +8,9 @@ spec:
   templates:
   - name: hello
     container:
-      image: alpine:3.18
-      command: [sh, -c]
-      args: ["echo hello"]
+      image: argoproj/argosay:v2
+      args: ["echo", "hello"]
   - name: exit-handler
     container:
-      image: alpine:3.18
-      command: [sh, -c]
-      args: ["exit 1"]
+      image: argoproj/argosay:v2
+      args: ["exit", "1"]

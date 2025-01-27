@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
@@ -150,7 +151,7 @@ func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplat
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil), ctx
+	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil, nil), ctx
 }
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
@@ -263,6 +264,8 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 		req.Template.Spec.Templates[0].Container.Image = "alpine:latest"
 		cwftRsp, err := server.UpdateClusterWorkflowTemplate(ctx, req)
 		require.NoError(t, err)
+		assert.Contains(t, cwftRsp.Labels, common.LabelKeyActor)
+		assert.Equal(t, string(creator.ActionUpdate), cwftRsp.Labels[common.LabelKeyAction])
 		assert.Equal(t, "alpine:latest", cwftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {

@@ -118,16 +118,8 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, active, conditions, failed, last_scheduled_time, phase, succeeded, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowStatus - a model defined in OpenAPI
-
-        Args:
-            active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
-            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
-            failed (int): v3.6 and after: Failed counts how many times child workflows failed
-            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
-            phase (str): v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
-            succeeded (int): v3.6 and after: Succeeded counts how many times child workflows succeeded
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -160,6 +152,12 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow. [optional]  # noqa: E501
+            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have. [optional]  # noqa: E501
+            failed (int): v3.6 and after: Failed counts how many times child workflows failed. [optional]  # noqa: E501
+            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
+            phase (str): v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true. [optional]  # noqa: E501
+            succeeded (int): v3.6 and after: Succeeded counts how many times child workflows succeeded. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -187,12 +185,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.active = active
-        self.conditions = conditions
-        self.failed = failed
-        self.last_scheduled_time = last_scheduled_time
-        self.phase = phase
-        self.succeeded = succeeded
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -213,16 +205,8 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, active, conditions, failed, last_scheduled_time, phase, succeeded, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowStatus - a model defined in OpenAPI
-
-        Args:
-            active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
-            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
-            failed (int): v3.6 and after: Failed counts how many times child workflows failed
-            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
-            phase (str): v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
-            succeeded (int): v3.6 and after: Succeeded counts how many times child workflows succeeded
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -255,6 +239,12 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow. [optional]  # noqa: E501
+            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have. [optional]  # noqa: E501
+            failed (int): v3.6 and after: Failed counts how many times child workflows failed. [optional]  # noqa: E501
+            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
+            phase (str): v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true. [optional]  # noqa: E501
+            succeeded (int): v3.6 and after: Succeeded counts how many times child workflows succeeded. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -280,12 +270,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.active = active
-        self.conditions = conditions
-        self.failed = failed
-        self.last_scheduled_time = last_scheduled_time
-        self.phase = phase
-        self.succeeded = succeeded
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

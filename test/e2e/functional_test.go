@@ -159,7 +159,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestWorkflowRetention() {
-	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
 	s.Given().
 		Workflow("@testdata/exit-1.yaml").
 		When().
@@ -175,9 +174,7 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
-		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
-			return len(list) == 2
-		})
+		WaitForWorkflowListFailedCount(2)
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
@@ -1413,5 +1410,36 @@ func (s *FunctionalSuite) TestWorkflowExitHandlerCrashEnsureNodeIsPresent() {
 			assert.NotNil(t, hookNode.Inputs)
 			require.Len(t, hookNode.Inputs.Parameters, 1)
 			assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowParallelismStepFailFast() {
+	s.Given().
+		Workflow("@expectedfailures/parallelism-step-fail-fast.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "template has failed or errored children and failFast enabled", status.Message)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("[0]").Phase)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("step1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("step2").Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowParallelismDAGFailFast() {
+	s.Given().
+		Workflow("@expectedfailures/parallelism-dag-fail-fast.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "template has failed or errored children and failFast enabled", status.Message)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("task1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("task2").Phase)
 		})
 }
