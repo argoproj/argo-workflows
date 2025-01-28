@@ -1576,6 +1576,8 @@ _No description available_
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-step-level.yaml)
+
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
@@ -1583,6 +1585,8 @@ _No description available_
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-on-exit.yaml)
 </details>
 
 ### Fields
