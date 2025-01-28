@@ -57,7 +57,7 @@ type Controller struct {
 }
 
 // NewController creates a pod controller
-func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer /* podInformer coreinformers.PodInformer,  */, metrics *metrics.Metrics, callback podEventCallback) *Controller {
+func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
 	log := logrus.New()
 	podController := &Controller{
 		config:        config,
@@ -69,6 +69,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		callBack:      callback,
 		restConfig:    restConfig,
 	}
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	podController.podInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -100,7 +101,6 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 			},
 		},
 	)
-	go podController.podInformer.Run(ctx.Done())
 	return podController
 }
 
@@ -111,6 +111,7 @@ func (c *Controller) HasSynced() func() bool {
 // Run runs the pod controller
 func (c *Controller) Run(ctx context.Context, workers int) {
 	defer c.workqueue.ShutDown()
+	go c.podInformer.Run(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), c.HasSynced(), c.wfInformer.HasSynced) {
 		return
 	}
@@ -309,7 +310,6 @@ func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
-	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	return informer
 }
 

@@ -3,10 +3,11 @@ package controller
 import (
 	"time"
 
+	apiv1 "k8s.io/api/core/v1"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	apiv1 "k8s.io/api/core/v1"
 )
 
 func (woc *wfOperationCtx) getPodGCDelay(podGC *wfv1.PodGC) time.Duration {

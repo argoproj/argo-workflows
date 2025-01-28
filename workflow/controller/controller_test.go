@@ -334,7 +334,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
-		go wfc.PodController.Run(ctx, 0)
+		go wfc.PodController.Run(ctx, 0) // Zero workers so we can manually process next item
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
