@@ -5,11 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
 	"strings"
 
-	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -19,7 +17,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 )
 
@@ -42,21 +39,6 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 
 func isSubPath(path string, normalizedMountPath string) bool {
 	return strings.HasPrefix(path, normalizedMountPath+"/")
-}
-
-type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
-
-type WebsocketRoundTripper struct {
-	Dialer *websocket.Dialer
-	Do     RoundTripCallback
-}
-
-func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	conn, resp, err := d.Dialer.Dial(r.URL.String(), r.Header)
-	if err == nil {
-		defer util.Close(conn)
-	}
-	return resp, d.Do(conn, resp, err)
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor

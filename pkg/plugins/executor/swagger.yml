@@ -4332,6 +4332,11 @@ definitions:
                 $ref: '#/definitions/IntOrString'
             affinity:
                 $ref: '#/definitions/Affinity'
+            annotations:
+                additionalProperties:
+                    type: string
+                description: Annotations is a list of annotations to add to the template at runtime
+                type: object
             archiveLocation:
                 $ref: '#/definitions/ArtifactLocation'
             automountServiceAccountToken:
