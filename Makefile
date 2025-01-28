@@ -532,16 +532,7 @@ dist/argosay:
 
 .PHONY: kit
 kit: Makefile
-ifeq ($(shell command -v kit),)
-ifeq ($(shell uname),Darwin)
-	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
-	brew install kit
-else
-	@echo "Downloading Kit"
-	curl -fsL --retry 99 "https://github.com/kitproj/kit/releases/download/v0.1.8/kit_0.1.8_$$(uname)_$$(uname -m | sed 's/aarch64/arm64/').tar.gz" | sudo tar -C /usr/local/bin -xzf - kit
-endif
-endif
-
+	go install github.com/kitproj/kit@v0.1.79
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
