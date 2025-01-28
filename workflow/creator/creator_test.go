@@ -16,29 +16,44 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func TestLabel(t *testing.T) {
-	t.Run("Empty", func(t *testing.T) {
+func TestLabelCreator(t *testing.T) {
+	t.Run("EmptyCreator", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.TODO(), wf)
+		LabelCreator(context.TODO(), wf)
 		assert.Empty(t, wf.Labels)
 	})
-	t.Run("NotEmpty", func(t *testing.T) {
+	t.Run("EmptyActor", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf)
+		LabelActor(context.TODO(), wf, ActionResume)
+		assert.Empty(t, wf.Labels)
+	})
+	t.Run("NotEmptyCreator", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		LabelCreator(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator], "creator is truncated")
 		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
 		assert.Equal(t, "username", wf.Labels[common.LabelKeyCreatorPreferredUsername], "username is matching")
+		assert.Empty(t, wf.Labels[common.LabelKeyAction])
+	})
+	t.Run("NotEmptyActor", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		LabelActor(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf, ActionResume)
+		require.NotEmpty(t, wf.Labels)
+		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyActor], "creator is truncated")
+		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyActorEmail], "'@' is replaced by '.at.'")
+		assert.Equal(t, "username", wf.Labels[common.LabelKeyActorPreferredUsername], "username is matching")
+		assert.Equal(t, "Resume", wf.Labels[common.LabelKeyAction])
 	})
 	t.Run("TooLongHyphen", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("-", 63) + "y"}}), wf)
+		LabelCreator(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("-", 63) + "y"}}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, "y", wf.Labels[common.LabelKeyCreator])
 	})
 	t.Run("InvalidDNSNames", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}, PreferredUsername: "us#er@name#"}), wf)
+		LabelCreator(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}, PreferredUsername: "us#er@name#"}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("y", 35), wf.Labels[common.LabelKeyCreator])
 		assert.Equal(t, "us-er-name", wf.Labels[common.LabelKeyCreatorPreferredUsername], "username is truncated")
@@ -46,7 +61,7 @@ func TestLabel(t *testing.T) {
 	t.Run("InvalidDNSNamesWithMidDashes", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		sub := strings.Repeat("x", 20) + strings.Repeat("-", 70) + strings.Repeat("x", 20)
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: sub}}), wf)
+		LabelCreator(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: sub}}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("x", 20), wf.Labels[common.LabelKeyCreator])
 	})
@@ -113,7 +128,7 @@ func TestLabel(t *testing.T) {
 			},
 		} {
 			t.Run(testCase.name, func(t *testing.T) {
-				Label(context.WithValue(context.TODO(), auth.ClaimsKey, testCase.input.claims), testCase.input.wf)
+				LabelCreator(context.WithValue(context.TODO(), auth.ClaimsKey, testCase.input.claims), testCase.input.wf)
 				labels := testCase.input.wf.GetLabels()
 				for k, expectedValue := range testCase.output.creatorLabelsToHave {
 					assert.Equal(t, expectedValue, labels[k])

@@ -38,7 +38,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 		return nil, serverutils.ToStatusError(fmt.Errorf("cluster workflow template was not found in the request body"), codes.InvalidArgument)
 	}
 	cwts.instanceIDService.Label(req.Template)
-	creator.Label(ctx, req.Template)
+	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
 	err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
 	if err != nil {
@@ -104,7 +104,7 @@ func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx con
 
 func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateLintRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	cwts.instanceIDService.Label(req.Template)
-	creator.Label(ctx, req.Template)
+	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
 
 	err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{Lint: true})
@@ -119,6 +119,7 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	if req.Template == nil {
 		return nil, serverutils.ToStatusError(fmt.Errorf("ClusterWorkflowTemplate is not found in Request body"), codes.InvalidArgument)
 	}
+	creator.LabelActor(ctx, req.Template, creator.ActionUpdate)
 	err := cwts.instanceIDService.Validate(req.Template)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
