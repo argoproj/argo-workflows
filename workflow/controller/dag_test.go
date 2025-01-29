@@ -3201,7 +3201,7 @@ func TestLeafContinueOn(t *testing.T) {
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var dagOutputsReferTaskAggregatedOuputs = `
