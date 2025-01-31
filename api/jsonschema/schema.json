@@ -2873,6 +2873,9 @@
         },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "sendContentMd5": {
+          "type": "boolean"
         }
       },
       "title": "S3Artifact contains information about an S3 connection and bucket",

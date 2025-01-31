@@ -6917,6 +6917,9 @@
         },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "sendContentMd5", {
+          "type": "boolean"
         }
       }
     },
