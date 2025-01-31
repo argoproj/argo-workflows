@@ -1,21 +1,21 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
-import React, {useContext, useState} from 'react';
+import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
+import React, {useState} from 'react';
 
-import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
-import {Context} from '../../shared/context';
 import {Parameter, RetryOpts, Workflow} from '../../shared/models';
 import {services} from '../../shared/services';
 
 interface Props {
+    nodeId?: string;
     workflow: Workflow;
     isArchived: boolean;
     isWorkflowInCluster: boolean;
+    onRetrySuccess: () => void;
 }
 
 export function RetryWorkflowPanel(props: Props) {
-    const {navigation} = useContext(Context);
     const [overrideParameters, setOverrideParameters] = useState(false);
     const [restartSuccessful, setRestartSuccessful] = useState(false);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflow.spec.arguments.parameters || [])));
@@ -31,15 +31,14 @@ export function RetryWorkflowPanel(props: Props) {
         const opts: RetryOpts = {
             parameters,
             restartSuccessful,
-            nodeFieldSelector
+            nodeFieldSelector: props.nodeId ? `id=${props.nodeId}` : nodeFieldSelector
         };
 
         try {
-            const submitted =
-                props.isArchived && !props.isWorkflowInCluster
-                    ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
-                    : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
-            navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}#`)); // add # at the end to reset query params to close panel
+            props.isArchived && !props.isWorkflowInCluster
+                ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
+                : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
+            props.onRetrySuccess();
         } catch (err) {
             setError(err);
             setIsSubmitting(false);
@@ -48,9 +47,10 @@ export function RetryWorkflowPanel(props: Props) {
 
     return (
         <>
-            <h4>Retry Workflow</h4>
+            <h4>Retry {props.nodeId ? 'Node' : 'Workflow'}</h4>
             <h5>
                 {props.workflow.metadata.namespace}/{props.workflow.metadata.name}
+                {props.nodeId ? `/${props.nodeId}` : ''}
             </h5>
 
             {error && <ErrorNotice error={error} />}
@@ -82,13 +82,16 @@ export function RetryWorkflowPanel(props: Props) {
                     <label>Restart Successful</label>
                     <div className='columns small-9'>
                         <Checkbox checked={restartSuccessful} onChange={setRestartSuccessful} />
+                        <Tooltip content='Checking this box will re-run previously successful nodes as well'>
+                            <i className='fa fa-question-circle' style={{marginLeft: 4}} />
+                        </Tooltip>
                     </div>
                 </div>
 
-                {restartSuccessful && (
+                {restartSuccessful && !props.nodeId && (
                     <div key='node-field-selector' style={{marginBottom: 25}}>
                         <label>
-                            Node Field Selector to restart nodes. <a href='https://argo-workflows.readthedocs.io/en/latest/node-field-selector/'>See document</a>.
+                            <a href='https://argo-workflows.readthedocs.io/en/latest/node-field-selector/'>Node Field Selector</a> to restart nodes..
                         </label>
 
                         <div className='columns small-9'>
