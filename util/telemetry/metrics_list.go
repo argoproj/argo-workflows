@@ -194,7 +194,7 @@ var InstrumentPodsTotalCount = BuiltinInstrument{
 	name:        "pods_total_count",
 	description: "Total number of pods that have entered each phase",
 	unit:        "{pod}",
-	instType:    Int64ObservableGauge,
+	instType:    Int64Counter,
 	attributes: []BuiltinAttribute{
 		{
 			name: AttribPodPhase,

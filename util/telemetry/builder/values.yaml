@@ -222,7 +222,7 @@ metrics:
       The `reason` attribute is the value from the Reason message before the `:` in the message.
       This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
     unit: "{pod}"
-    type: Int64ObservableGauge
+    type: Int64Counter
   - name: QueueAddsCount
     description: A counter of additions to the work queues inside the controller
     extendedDescription: The rate of this shows how busy that area of the controller is
