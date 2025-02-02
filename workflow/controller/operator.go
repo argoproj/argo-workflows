@@ -257,16 +257,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			return
 		}
 		woc.updated = wfUpdate
-		if !acquired {
-			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
-				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-				phase := woc.wf.Status.Phase
-				if phase == wfv1.WorkflowUnknown {
-					phase = wfv1.WorkflowPending
-				}
-				woc.markWorkflowPhase(ctx, phase, msg)
-				return
+		if !acquired && !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
+			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
+			phase := woc.wf.Status.Phase
+			if phase == wfv1.WorkflowUnknown {
+				phase = wfv1.WorkflowPending
+				setWfPodNamesAnnotation(woc.wf)
 			}
+			woc.markWorkflowPhase(ctx, phase, msg)
+			return
 		}
 	}
 
@@ -4185,16 +4184,13 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name 
 	return secrets.TokenNameForServiceAccount(account), nil
 }
 
-// setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming
-// convention version
+// setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming convention version
 func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
-	podNameVersion := wfutil.GetPodNameVersion()
-
 	if wf.Annotations == nil {
 		wf.Annotations = map[string]string{}
 	}
 
-	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
+	wf.Annotations[common.AnnotationKeyPodNameVersion] = wfutil.GetPodNameVersion().String()
 }
 
 // getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.
