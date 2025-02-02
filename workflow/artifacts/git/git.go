@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
@@ -85,6 +87,20 @@ func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
 
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
+
+	// Azure DevOps requires multi_ack* capabilities which go-git does not currently support
+	// Workaround: removing these from UnsupportedCapabilities allows clones to work (see https://github.com/go-git/go-git/pull/613)
+	var newCaps []capability.Capability
+	if strings.Contains(a.Repo, "dev.azure.com") {
+		for _, c := range transport.UnsupportedCapabilities {
+			if c == capability.MultiACK || c == capability.MultiACKDetailed {
+				continue
+			}
+			newCaps = append(newCaps, c)
+		}
+		transport.UnsupportedCapabilities = newCaps
+	}
+
 	sshUser := GetUser(a.Repo)
 	closer, auth, err := g.auth(sshUser)
 	if err != nil {
