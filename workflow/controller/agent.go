@@ -271,30 +271,25 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, error) {
 	var sidecars []apiv1.Container
 	var volumes []apiv1.Volume
-	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
-	namespaces[woc.controller.namespace] = true
-	namespaces[woc.wf.Namespace] = true
-	for namespace := range namespaces {
-		for _, plug := range woc.controller.executorPlugins[namespace] {
-			s := plug.Spec.Sidecar
-			c := s.Container.DeepCopy()
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      volumeMountVarArgo.Name,
-				MountPath: volumeMountVarArgo.MountPath,
-				ReadOnly:  true,
-				// only mount the token for this plugin, not others
-				SubPath: c.Name,
-			})
-			if s.AutomountServiceAccountToken {
-				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
-				if err != nil {
-					return nil, nil, err
-				}
-				volumes = append(volumes, *volume)
-				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+	for _, plug := range woc.controller.executorPlugins[woc.wf.Namespace] {
+		s := plug.Spec.Sidecar
+		c := s.Container.DeepCopy()
+		c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+			Name:      volumeMountVarArgo.Name,
+			MountPath: volumeMountVarArgo.MountPath,
+			ReadOnly:  true,
+			// only mount the token for this plugin, not others
+			SubPath: c.Name,
+		})
+		if s.AutomountServiceAccountToken {
+			volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+			if err != nil {
+				return nil, nil, err
 			}
-			sidecars = append(sidecars, *c)
+			volumes = append(volumes, *volume)
+			c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
 		}
+		sidecars = append(sidecars, *c)
 	}
 	return sidecars, volumes, nil
 }
