@@ -118,7 +118,7 @@ The total is 3000 CPU, which is enough for `b + c`.
 * `b` needs 8Ki GPU, 100Gi memory, 200Ki GPU, runs for 5m
 
 In this case, `a` only has small requests, but the ContainerSet uses the total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
-This is a good example of when using a ContainerSet would not be efficient.
+This is a good example of when using a ContainerSet template would not be efficient.
 
 ## Inner `retryStrategy` usage
 
@@ -135,7 +135,7 @@ metadata:
   name: containerset-with-retrystrategy
   annotations:
     workflows.argoproj.io/description: |
-      This workflow creates a ContainerSet template with a retryStrategy.
+      This workflow creates a ContainerSet with a retryStrategy.
 spec:
   entrypoint: containerset-retrystrategy-example
   templates:
