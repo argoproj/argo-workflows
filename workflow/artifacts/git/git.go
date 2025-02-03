@@ -164,7 +164,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get resolve revision: %w", err)
 		}
-		if err := w.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(h.String())}); err != nil {
+		if err := w.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(h.String()), Force: true}); err != nil {
 			return fmt.Errorf("failed to checkout %q: %w", h, err)
 		}
 	}
