@@ -1,6 +1,7 @@
 # markdown-spellcheck dictionary
 000s
 0s
+100Gi
 100Mi
 100s
 10h
@@ -11,6 +12,7 @@
 1Mi
 1h
 1m
+200Ki
 2Gi
 2h
 30s
@@ -41,6 +43,7 @@ ClusterWorkflowTemplate
 Codespaces
 ConfigMap
 ConfigMaps
+ContainerSet
 Couler
 CronWorkflow
 CronWorkflows
@@ -100,6 +103,7 @@ PDBs
 PProf
 PVCs
 Peixuan
+PersistentVolumeClaims
 Ploomber
 Postgres
 PriorityClass
