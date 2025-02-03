@@ -2,9 +2,10 @@
 
 > v3.1 and after
 
-A ContainerSet template is similar to a normal container or script template, but it allows you to run multiple containers within a single Pod.
+A ContainerSet template is similar to a normal container template, but it allows you to run multiple containers within a single Pod.
 
-Since multiple containers run within a single Pod, they schedule on the same host. You can use cheap and fast `emptyDir` volumes instead of PersistentVolumeClaims (PVCs) to share data between steps.
+Since multiple containers run within a single Pod, they schedule on the same host.
+You can use cheap and fast `emptyDir` volumes instead of PersistentVolumeClaims (PVCs) to share data between steps.
 
 However, running all containers on the same host limits you to the host's resources.
 Running all containers simultaneously may use more resources than running them sequentially.
