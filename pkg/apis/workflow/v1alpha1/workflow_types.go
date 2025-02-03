@@ -2576,6 +2576,9 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// SendContentMd5 tells the driver to send MD5 header for object put.
+	SendContentMd5 bool `json:"sendContentMd5,omitempty" protobuf:"varint,13,opt,name=sendContentMd5"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
