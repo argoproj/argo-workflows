@@ -135,7 +135,7 @@ metadata:
   name: containerset-with-retrystrategy
   annotations:
     workflows.argoproj.io/description: |
-      This workflow creates a container set with a retryStrategy.
+      This workflow creates a ContainerSet template with a retryStrategy.
 spec:
   entrypoint: containerset-retrystrategy-example
   templates:
