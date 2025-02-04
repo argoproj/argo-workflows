@@ -1,6 +1,6 @@
 {
   "$id": "http://workflows.argoproj.io/workflows.json",
-  "$schema": "http://json-schema.org/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "definitions": {
     "eventsource.CreateEventSourceRequest": {
       "properties": {
