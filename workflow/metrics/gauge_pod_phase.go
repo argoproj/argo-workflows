@@ -31,9 +31,9 @@ func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
 	if m.callbacks.PodPhase != nil {
 		ppGauge := podPhaseGauge{
 			callback: m.callbacks.PodPhase,
-			gauge:    m.AllInstruments[namePodsPhase],
+			gauge:    m.GetInstrument(namePodsPhase),
 		}
-		return m.AllInstruments[namePodsPhase].RegisterCallback(m.Metrics, ppGauge.update)
+		return ppGauge.gauge.RegisterCallback(m.Metrics, ppGauge.update)
 	}
 	return nil
 }

@@ -100,10 +100,10 @@ func addWorkQueueMetrics(_ context.Context, m *Metrics) error {
 		return err
 	}
 	unfinishedCallback := queueUserdata{
-		gauge: m.AllInstruments[nameWorkersUnfinishedWork],
+		gauge: m.GetInstrument(nameWorkersUnfinishedWork),
 	}
-	m.AllInstruments[nameWorkersUnfinishedWork].SetUserdata(&unfinishedCallback)
-	err = m.AllInstruments[nameWorkersUnfinishedWork].RegisterCallback(m.Metrics, unfinishedCallback.update)
+	unfinishedCallback.gauge.SetUserdata(&unfinishedCallback)
+	err = unfinishedCallback.gauge.RegisterCallback(m.Metrics, unfinishedCallback.update)
 	if err != nil {
 		return err
 	}
@@ -118,10 +118,10 @@ func addWorkQueueMetrics(_ context.Context, m *Metrics) error {
 		return err
 	}
 	longestRunningCallback := queueUserdata{
-		gauge: m.AllInstruments[nameWorkersLongestRunning],
+		gauge: m.GetInstrument(nameWorkersLongestRunning),
 	}
-	m.AllInstruments[nameWorkersLongestRunning].SetUserdata(&longestRunningCallback)
-	err = m.AllInstruments[nameWorkersLongestRunning].RegisterCallback(m.Metrics, longestRunningCallback.update)
+	longestRunningCallback.gauge.SetUserdata(&longestRunningCallback)
+	err = longestRunningCallback.gauge.RegisterCallback(m.Metrics, longestRunningCallback.update)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (m *Metrics) RateLimiterWithBusyWorkers(ctx context.Context, workQueue work
 	queue := workersBusyRateLimiterWorkQueue{
 		RateLimitingInterface: workqueue.NewNamedRateLimitingQueue(workQueue, queueName),
 		workerType:            queueName,
-		busyGauge:             m.AllInstruments[nameWorkersBusy],
+		busyGauge:             m.GetInstrument(nameWorkersBusy),
 		ctx:                   ctx,
 	}
 	queue.newWorker(ctx)
@@ -221,7 +221,7 @@ func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[nameWorkersQueueDepth],
+		inst: m.GetInstrument(nameWorkersQueueDepth),
 	}
 }
 
@@ -229,7 +229,7 @@ func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[nameWorkersQueueAdds],
+		inst: m.GetInstrument(nameWorkersQueueAdds),
 	}
 }
 
@@ -237,7 +237,7 @@ func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[nameWorkersQueueLatency],
+		inst: m.GetInstrument(nameWorkersQueueLatency),
 	}
 }
 
@@ -245,7 +245,7 @@ func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[nameWorkersQueueDuration],
+		inst: m.GetInstrument(nameWorkersQueueDuration),
 	}
 }
 
@@ -253,7 +253,7 @@ func (m *Metrics) NewRetriesMetric(name string) workqueue.CounterMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[nameWorkersRetries],
+		inst: m.GetInstrument(nameWorkersRetries),
 	}
 }
 
@@ -261,7 +261,7 @@ func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.Settable
 	metric := queueMetric{
 		ctx:   m.Ctx,
 		name:  name,
-		inst:  m.AllInstruments[nameWorkersUnfinishedWork],
+		inst:  m.GetInstrument(nameWorkersUnfinishedWork),
 		value: ptr.To(float64(0.0)),
 	}
 	ud := getQueueUserdata(metric.inst)
@@ -273,7 +273,7 @@ func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue
 	metric := queueMetric{
 		ctx:   m.Ctx,
 		name:  name,
-		inst:  m.AllInstruments[nameWorkersLongestRunning],
+		inst:  m.GetInstrument(nameWorkersLongestRunning),
 		value: ptr.To(float64(0.0)),
 	}
 	ud := getQueueUserdata(metric.inst)
