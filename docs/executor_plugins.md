@@ -204,12 +204,7 @@ You'll see the workflow complete successfully.
 
 ### Discovery
 
-When a workflow is run, plugins are loaded from:
-
-* The workflow's namespace.
-* The Argo installation namespace (typically `argo`).
-
-If two plugins have the same name, only the one in the workflow's namespace is loaded.
+When a workflow is run, plugins are only loaded from the workflow's namespace.
 
 ### Secrets
 
