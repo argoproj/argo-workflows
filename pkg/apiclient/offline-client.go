@@ -11,8 +11,6 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
@@ -46,53 +44,6 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 		clusterWorkflowTemplates: map[string]*wfv1.ClusterWorkflowTemplate{},
 	}
 	workflowTemplateGetters := offlineWorkflowTemplateGetterMap{}
-
-	for _, basePath := range paths {
-		err := file.WalkManifests(basePath, func(path string, bytes []byte) error {
-			for _, pr := range common.ParseObjects(bytes, false) {
-				obj, err := pr.Object, pr.Err
-				if err != nil {
-					return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
-				}
-
-				if obj == nil {
-					continue // could not parse to kubernetes object
-				}
-
-				objName := obj.GetName()
-				namespace := obj.GetNamespace()
-
-				switch v := obj.(type) {
-				case *wfv1.ClusterWorkflowTemplate:
-					if _, ok := clusterWorkflowTemplateGetter.clusterWorkflowTemplates[objName]; ok {
-						return fmt.Errorf("duplicate ClusterWorkflowTemplate found: %q", objName)
-					}
-					clusterWorkflowTemplateGetter.clusterWorkflowTemplates[objName] = v
-
-				case *wfv1.WorkflowTemplate:
-					getter, ok := workflowTemplateGetters[namespace]
-					if !ok {
-						getter = &offlineWorkflowTemplateNamespacedGetter{
-							namespace:         namespace,
-							workflowTemplates: map[string]*wfv1.WorkflowTemplate{},
-						}
-						workflowTemplateGetters[namespace] = getter
-					}
-
-					if _, ok := getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName]; ok {
-						return fmt.Errorf("duplicate WorkflowTemplate found: %q", objName)
-					}
-					getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName] = v
-				}
-
-			}
-			return nil
-		})
-
-		if err != nil {
-			return nil, nil, err
-		}
-	}
 
 	return context.Background(), &offlineClient{
 		clusterWorkflowTemplateGetter:       clusterWorkflowTemplateGetter,
