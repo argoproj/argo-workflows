@@ -256,7 +256,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			return
 		}
-		woc.updated = wfUpdate
+		woc.updated = woc.updated || wfUpdate
 		if !acquired {
 			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
 				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
