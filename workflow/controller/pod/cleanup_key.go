@@ -1,4 +1,4 @@
-package controller
+package pod
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ type (
 )
 
 const (
+	noAction            podCleanupAction = ""
 	deletePod           podCleanupAction = "deletePod"
 	labelPodCompleted   podCleanupAction = "labelPodCompleted"
 	terminateContainers podCleanupAction = "terminateContainers"
