@@ -40,12 +40,43 @@ func ternary(condition bool, left, right change) change {
 }
 
 func (m migrate) Exec(ctx context.Context) (err error) {
+
+	dbType := dbTypeFor(m.session)
+
 	{
 		// poor mans SQL migration
-		_, err = m.session.SQL().Exec("create table if not exists schema_history(schema_version int not null)")
+		_, err = m.session.SQL().Exec("create table if not exists schema_history(schema_version int not null, primary key(schema_version))")
 		if err != nil {
 			return err
 		}
+
+		// Ensure the schema_history table has a primary key, creating it if necessary
+		// This logic is implemented separately from regular migrations to improve compatibility with databases running in strict or HA modes
+		dbIdentifierColumn := "table_schema"
+		if dbType == Postgres {
+			dbIdentifierColumn = "table_catalog"
+		}
+		rows, err := m.session.SQL().Query(
+			"select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = 'schema_history' and "+dbIdentifierColumn+" = ?",
+			m.session.Name())
+		if err != nil {
+			return err
+		}
+		defer func() {
+			tmpErr := rows.Close()
+			if err == nil {
+				err = tmpErr
+			}
+		}()
+		if !rows.Next() {
+			_, err := m.session.SQL().Exec("alter table schema_history add primary key(schema_version)")
+			if err != nil {
+				return err
+			}
+		} else if err := rows.Err(); err != nil {
+			return err
+		}
+
 		rs, err := m.session.SQL().Query("select schema_version from schema_history")
 		if err != nil {
 			return err
@@ -65,7 +96,6 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	dbType := dbTypeFor(m.session)
 
 	log.WithFields(log.Fields{"clusterName": m.clusterName, "dbType": dbType}).Info("Migrating database schema")
 
