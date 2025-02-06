@@ -74,3 +74,50 @@ Please check out the following resources if you are interested in contributing:
 * [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
 * [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
 * [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).
+
+#### Reviewing PRs
+
+Anybody can review a PR.
+If you are in a [designated role](#roles), add yourself as an "Assignee" to a PR if you plan to lead the review.
+If you are a Reviewer or below, then once you have approved a PR, request a review from one or more Approvers and above.
+
+#### Triaging Bugs
+
+New bugs need to be triaged to identify the highest priority ones.
+Any Member can triage bugs.
+
+Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`.
+If there's a new `P0` bug, notify the [`#argo-wf-contributors`](https://cloud-native.slack.com/archives/C0510EUH90V) Slack channel.
+
+Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
+Any bugs with 3-4 "👍" reactions should be labeled at least `P2`.
+Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Atype%2Fbug).
+
+If the issue is determined to be a user error and not a bug, remove the `type/bug` label (and the `type/regression` label, if applicable) and replace it with the `type/support` label.
+If more information is needed from the author to diagnose the issue, then apply the `problem/more information needed` label.
+
+Please only assign issues to members. New contributors are encouraged to work on a PR directly without being assigned.
+
+##### Staleness
+
+Only issues and PRs that have the [`problem/more information needed` label](https://github.com/argoproj/argo-workflows/labels/problem%2Fmore%20information%20needed) will be considered for staleness.
+
+If the author does not respond timely to a request for more information, the issue or PR will be automatically marked with the `problem/stale` label and a bot message.
+Subsequently, if there is still no response, it will be automatically closed as "not planned".
+
+See the [Stale Action configuration](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/stale.yaml) for more details.
+
+## Automated actions
+
+As a member (see [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md)) of the argo-project you can use the following comments on PRs to trigger actions:
+
+* `/retest` - re-run any failing test cases
+* `/test` - trigger the full test suite.
+Only use this for PRs where the test suite has not automatically triggered - this is almost always wasteful and will not make things pass that `/retest` doesn't pass.
+* `/cherry-pick <branchname>` - will [attempt to cherry-pick](https://github.com/googleapis/repo-automation-bots/tree/main/packages/cherry-pick-bot) this commit after it has been merged to the target branch.
+This can be used prior to merging and the PR will be created after the merge, or commented after merging for an immediate attempt.
+
+## Sustainability Effort
+
+Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
+Please see [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information.

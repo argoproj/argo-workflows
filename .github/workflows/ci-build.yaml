@@ -8,6 +8,9 @@ on:
   pull_request:
     branches:
       - "main"
+      - "release-*"
+  issue_comment:
+    types: [created]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +22,15 @@ permissions:
 jobs:
   changed-files:
     name: Get changed files
+    if: >
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        github.event.comment.author_association == 'MEMBER' &&
+        github.event.comment.body == '/test'
+      ) || (
+        github.event_name != 'issue_comment'
+      )
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
