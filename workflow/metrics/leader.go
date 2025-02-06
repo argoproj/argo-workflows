@@ -31,9 +31,9 @@ func addIsLeader(ctx context.Context, m *Metrics) error {
 	}
 	lGauge := leaderGauge{
 		callback: m.callbacks.IsLeader,
-		gauge:    m.AllInstruments[nameLeader],
+		gauge:    m.GetInstrument(nameLeader),
 	}
-	return m.AllInstruments[nameLeader].RegisterCallback(m.Metrics, lGauge.update)
+	return lGauge.gauge.RegisterCallback(m.Metrics, lGauge.update)
 }
 
 func (l *leaderGauge) update(_ context.Context, o metric.Observer) error {
