@@ -1,5 +1,46 @@
 # Changelog
 
+## v3.6.3 (2025-02-07)
+
+Full Changelog: [v3.6.2...v3.6.3](https://github.com/argoproj/argo-workflows/compare/v3.6.2...v3.6.3)
+
+### Selected Changes
+
+* [98eee45f3](https://github.com/argoproj/argo-workflows/commit/98eee45f321440b1e0c892a8f85af39e175447ed) chore(deps): bump golang.org/x/crypto from 0.26.0 to 0.31.0 in the go_modules group (#13992)
+* [d60d7dd84](https://github.com/argoproj/argo-workflows/commit/d60d7dd84ee04123fdf29c595551c0c336f577d0) chore(deps): bump github.com/go-git/go-git/v5 from 5.11.0 to 5.13.1 in the go_modules group (#14055)
+* [3732ce631](https://github.com/argoproj/argo-workflows/commit/3732ce6315983c4b498ffef08ffcc542393c59c1) fix: get logs from artifact when workflow deleted instead of archived. Fixes: #14083 (#14087)
+* [293b4a528](https://github.com/argoproj/argo-workflows/commit/293b4a5281fad022c282b1b3094a108fb1a5b84e) fix: ensure namespace parallelism and parallelism work together. Fixes  #10985 (#14039)
+* [939cefc19](https://github.com/argoproj/argo-workflows/commit/939cefc197bea17d0e4fce8122e974809b526713) fix: validate template of the same name. Fixes #13763 (#14043)
+* [59026f507](https://github.com/argoproj/argo-workflows/commit/59026f507bbb4499b62755d287341ae81c3e20bb) fix(controller): validation failed when dynamic templateRef is used in nested template (#14053)
+* [7a2986698](https://github.com/argoproj/argo-workflows/commit/7a2986698361c38beaac91e3cfbdf05b4f6e4879) fix(controller): step group stuck on running when exit hook has illegal expression (#14032)
+* [4729176e8](https://github.com/argoproj/argo-workflows/commit/4729176e82aa430f218e9f2867a71e4192a13b53) fix: ensure that nodes complete when workflow fails with `parallelism` and `failFast`. Fixes #13806 (#13827)
+* [bb3c0832b](https://github.com/argoproj/argo-workflows/commit/bb3c0832bcbe10bd1d8ac2b67074c71e0a8958a6) fix: mark all its children(container) as deleted if pod deleted. Fixes #13951 (#13978)
+* [f8012d4ec](https://github.com/argoproj/argo-workflows/commit/f8012d4ec36413115a344068e4aebd5f64b8b409) fix: cronOperator/serverResubmitWf retry create workflow on transient error. Fixes #13970 (#13971)
+* [c0ea4b0c4](https://github.com/argoproj/argo-workflows/commit/c0ea4b0c4ad2897d3203418313d4860684c81e5f) fix: Skip execution control for agent pod during pod reconciliation. Fixes #12726 (#12732)
+* [bd9b12487](https://github.com/argoproj/argo-workflows/commit/bd9b124878934e937d082441bd5db024b5fb07e3) fix: don't log non-errors as "Non-transient error: <nil>". Fixes #13881 (#13917)
+* [cf56b1821](https://github.com/argoproj/argo-workflows/commit/cf56b182104d548e7037fbaa981c5c02290a4813) fix: consistent variable substitution for `configMapKeyRef`. Fixes #13890 (#13921)
+* [c96c5dc7e](https://github.com/argoproj/argo-workflows/commit/c96c5dc7e6e3c8d6698c80c48ea3ad7aef2660ca) fix: locking in metrics (backport release-3.6) (#14156)
+* [2439becb9](https://github.com/argoproj/argo-workflows/commit/2439becb969b17fcf1d3ae18dd34be300663d7d1) fix(controller): task progress with mutexes not updated. Fixes #14148 (#14149)
+* [69b07e89b](https://github.com/argoproj/argo-workflows/commit/69b07e89bad42aa63d0dce93d3299df6d16e8dc8) fix: update upload-artifact and download-artifact (#14070)
+* [5bf74c3f8](https://github.com/argoproj/argo-workflows/commit/5bf74c3f8f945ec397747e26007f2e64c33e2838) feat: enable cherry-pick bot (#14151)
+* [d418c689c](https://github.com/argoproj/argo-workflows/commit/d418c689cbfc516170ab2f6c91b16cf6e1af378c) fix: archive fallback tests
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Alex Collins
+* Isitha Subasinghe
+* Mason Malone
+* Tianchu Zhao
+* Tim Collins
+* chengjoey
+* dependabot[bot]
+* gcp-cherry-pick-bot[bot]
+* jswxstw
+* shuangkun tian
+
+</details>
+
 ## v3.6.2 (2024-12-02)
 
 Full Changelog: [v3.6.0...v3.6.2](https://github.com/argoproj/argo-workflows/compare/v3.6.0...v3.6.2)
