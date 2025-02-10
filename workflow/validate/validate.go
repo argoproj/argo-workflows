@@ -959,12 +959,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
-			var args wfv1.ArgumentsProvider
-			args = &FakeArguments{}
-			if step.TemplateRef != nil {
-				args = &step.Arguments
-			}
-			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, args, workflowTemplateValidation)
+			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -1357,13 +1352,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
 		}
 
-		var args wfv1.ArgumentsProvider
-		args = &FakeArguments{}
-		if task.TemplateRef != nil {
-			args = &task.Arguments
-		}
-
-		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, args, workflowTemplateValidation)
+		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
 
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
