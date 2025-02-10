@@ -12,9 +12,6 @@ chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl cluster-info
 
-# install kit
-make kit
-
 # install protocol buffer compiler (protoc)
 sudo apt update
 sudo apt install -y protobuf-compiler
@@ -23,6 +20,9 @@ sudo apt install -y protobuf-compiler
 sudo chown vscode:vscode /home/vscode/go || true
 sudo chown vscode:vscode /home/vscode/go/src || true
 sudo chown vscode:vscode /home/vscode/go/src/github.com || true
+
+# install kit
+make kit
 
 # download dependencies and do first-pass compile
 kit build
