@@ -13,7 +13,7 @@ By using the `PriorityClass`, you can ensure that the Workflow Controller pod is
 
 ### Multiple Workflow Controller Replicas
 
-It is possible to run multiple replicas of the Workflow Controller to provide high-availability
+It is possible to run multiple replicas of the Workflow Controller to provide high-availability.
 Ensure that leader election is enabled (either by omitting the `LEADER_ELECTION_DISABLE` or setting it to `false`).
 
 Only one replica of the Workflow Controller will actively manage workflows at any given time.
