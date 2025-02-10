@@ -8,7 +8,6 @@ At a minimum, ensure that the Pods are not scheduled on the same node.
 
 Use a [Pod Disruption Budget](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets) to prevent all replicas from being replaced simultaneously.
 
-
 ## Workflow Controller
 
 In the event of a Workflow Controller Pod failure, the replacement Controller Pod will continue running Workflows when it is created.
@@ -35,6 +34,7 @@ When running Workflows at scale, the Kubernetes API may become unresponsive, cau
 ### Considerations
 
 A single replica of the Workflow Controller is recommended for most use cases due to:
+
 - The time taken to re-provision the controller Pod often being faster than the time for an existing Pod to win a leader election, especially when the cluster is under load.
 - Saving on the cost of extra Kubernetes resource allocations that aren't being used.
 
