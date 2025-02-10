@@ -1,13 +1,14 @@
 #!/usr/bin/env sh
 set -eux
 
-# install kubernetes
+# install kubernetes using the minimum tested version
+K8S_VERSION=$(./hack/k8s-versions.sh | head -n1)
 wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-k3d cluster get k3s-default || k3d cluster create --image rancher/k3s:v1.29.10-k3s1 --wait
+k3d cluster get k3s-default || k3d cluster create --image "rancher/k3s:${K8S_VERSION}-k3s1" --wait
 k3d kubeconfig merge --kubeconfig-merge-default
 
 # install kubectl
-curl -LO https://dl.k8s.io/release/v1.29.10/bin/linux/$(go env GOARCH)/kubectl
+curl -LO "https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/$(go env GOARCH)/kubectl"
 chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl cluster-info
