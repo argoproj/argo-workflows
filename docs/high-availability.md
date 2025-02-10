@@ -30,8 +30,8 @@ Use a [Pod Disruption Budget](https://kubernetes.io/docs/concepts/workloads/pods
 
 A single replica of the Workflow Controller is recommended for most use cases due to:
 
-- The time to re-provision the controller pod is often faster than the time for an existing pod to win a leader election, especially when the cluster is under load.
-- You save on the cost of extra Kubernetes resource allocations that aren't being used.
+- The time taken to re-provision the controller pod often being faster than the time for an existing pod to win a leader election, especially when the cluster is under load.
+- Saving on the cost of extra Kubernetes resource allocations that aren't being used.
 
 ## Argo Server
 
