@@ -47,10 +47,10 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    semaphore:
-      configMapKeyRef:
-        key: workflow
-        name: my-config
+    semaphores:
+      - configMapKeyRef:
+          key: workflow
+          name: my-config
   templates:
   - container:
       args:
@@ -98,10 +98,10 @@ metadata:
 spec:
  entrypoint: whalesay
  synchronization:
-   semaphore:
-     configMapKeyRef:
-       name: my-config
-       key: workflow
+   semaphores:
+     - configMapKeyRef:
+         name: my-config
+         key: workflow
  templates:
  - name: whalesay
    container:
@@ -163,10 +163,10 @@ spec:
     name: sleep-n-sec
     outputs: {}
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: template
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: template
+            name: my-config
 status:
   finishedAt: null
   nodes:
@@ -290,8 +290,8 @@ metadata:
 spec:
  entrypoint: whalesay
  synchronization:
-   mutex:
-     name: my-mutex
+   mutexes:
+     - name: my-mutex
  templates:
  - name: whalesay
    container:
@@ -344,7 +344,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(ctx, wfList.Items)
+		syncManager.Initialize(wfList.Items)
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
@@ -356,7 +356,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(ctx, wfList.Items)
+		syncManager.Initialize(wfList.Items)
 		assert.Empty(t, syncManager.syncLockMap)
 	})
 
@@ -767,8 +767,8 @@ spec:
           memory: 100Mi
     name: load-command
     synchronization:
-      mutex:
-        name: dag-2-task-1
+      mutexes:
+        - name: dag-2-task-1
   - container:
       args:
       - echo 'django command!'
@@ -783,10 +783,10 @@ spec:
           memory: 100Mi
     name: django-command
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: test-sem
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: test-sem
+            name: my-config
   ttlStrategy:
     secondsAfterCompletion: 600
 status:
@@ -906,8 +906,8 @@ spec:
   arguments: {}
   entrypoint: whalesay
   synchronization:
-    mutex:
-      name: my-mutex
+    mutexes:
+      - name: my-mutex
   templates:
   - container:
       args:
@@ -980,8 +980,8 @@ spec:
     name: acquire-lock
     outputs: {}
     synchronization:
-      mutex:
-        name: workflow
+      mutexes:
+        - name: workflow
 status:
   artifactGCStatus:
     notSpecified: true
@@ -1150,9 +1150,9 @@ func TestMutexMigration(t *testing.T) {
 
 		syncMgr.syncLockMap = make(map[string]semaphore)
 		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
-		syncMgr.Initialize(ctx, wfs)
+		syncMgr.Initialize(wfs)
 
-		syncItems, err := allSyncItems(ctx, wfMutex2.Spec.Synchronization)
+		syncItems, err := allSyncItems(wfMutex2.Spec.Synchronization)
 		require.NoError(err)
 		lockName, err := getLockName(syncItems[0], wfMutex2.Namespace)
 		require.NoError(err)
@@ -1193,9 +1193,9 @@ func TestMutexMigration(t *testing.T) {
 		assert.Equal(1, numFound)
 
 		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
-		syncMgr.Initialize(ctx, wfs)
+		syncMgr.Initialize(wfs)
 
-		syncItems, err := allSyncItems(ctx, wfMutex3.Spec.Templates[1].Synchronization)
+		syncItems, err := allSyncItems(wfMutex3.Spec.Templates[1].Synchronization)
 		require.NoError(err)
 		lockName, err := getLockName(syncItems[0], wfMutex3.Namespace)
 		require.NoError(err)

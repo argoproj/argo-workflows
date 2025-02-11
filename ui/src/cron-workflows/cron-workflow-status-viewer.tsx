@@ -21,18 +21,12 @@ export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec
                         title: 'Schedules',
                         value: (
                             <>
-                                {(spec.schedule ?? '') != '' ? (
+                                {spec.schedules.map(schedule => (
                                     <>
-                                        <code>{spec.schedule}</code> <PrettySchedule schedule={spec.schedule} />
+                                        <code>{schedule}</code> <PrettySchedule schedule={schedule} />
+                                        <br />
                                     </>
-                                ) : (
-                                    spec.schedules.map(schedule => (
-                                        <>
-                                            <code>{schedule}</code> <PrettySchedule schedule={schedule} />
-                                            <br />
-                                        </>
-                                    ))
-                                )}
+                                ))}
                             </>
                         )
                     },

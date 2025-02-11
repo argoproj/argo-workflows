@@ -38,19 +38,15 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                 <div className='columns small-2'>{wf.metadata.namespace}</div>
                 <div className='columns small-1'>{wf.spec.timezone}</div>
                 <div className='columns small-1'>
-                    {wf.spec.schedule != ''
-                        ? wf.spec.schedule
-                        : wf.spec.schedules.map(schedule => (
-                              <>
-                                  {schedule}
-                                  <br />
-                              </>
-                          ))}
+                    {wf.spec.schedules.map(schedule => (
+                        <>
+                            {schedule}
+                            <br />
+                        </>
+                    ))}
                 </div>
                 <div className='columns small-1'>
-                    {wf.spec.schedule != '' ? (
-                        <PrettySchedule schedule={wf.spec.schedule} />
-                    ) : (
+                    {
                         <>
                             {wf.spec.schedules.map(schedule => (
                                 <>
@@ -59,7 +55,7 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                                 </>
                             ))}
                         </>
-                    )}
+                    }
                 </div>
                 <div className='columns small-2'>
                     <Timestamp date={wf.metadata.creationTimestamp} displayISOFormat={props.displayISOFormatCreation} />
@@ -77,10 +73,6 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
 }
 
 function getCronNextScheduledTime(spec: CronWorkflowSpec): Date {
-    if (spec.schedule != '') {
-        return getNextScheduledTime(spec.schedule, spec.timezone);
-    }
-
     let out: Date;
     spec.schedules.forEach(schedule => {
         const next = getNextScheduledTime(schedule, spec.timezone);

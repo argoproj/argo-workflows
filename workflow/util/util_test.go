@@ -40,7 +40,7 @@ spec:
     entrypoint: whalesay
     templates:
     - name: whalesay
-      container: 
+      container:
         image: docker/whalesay:latest
         command: [cowsay]
         args: ["hello world"]
@@ -180,19 +180,19 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/suspend
   uid: 4f08d325-dc5a-43a3-9986-259e259e6ea3
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -364,16 +364,16 @@ kind: Workflow
 metadata:
   name: suspend-template
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
     - - arguments:
@@ -382,7 +382,7 @@ spec:
             value: '{{steps.approve.outputs.parameters.message}}'
         name: release
         template: whalesay
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -392,7 +392,7 @@ spec:
         valueFrom:
           supplied: {}
     suspend: {}
-  - 
+  -
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -741,22 +741,22 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
   uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
 spec:
-  
+
   entrypoint: foo
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: foo
     outputs: {}
     steps:
-    - - 
+    - -
         name: pass
         template: pass
-    - - 
+    - -
         name: fail
         template: fail
-  - 
+  -
     container:
       args:
       - exit 0
@@ -770,7 +770,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -1326,7 +1326,8 @@ kind: CronWorkflow
 metadata:
   name: example-integers
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowSpec:
     entrypoint: whalesay
     templates:

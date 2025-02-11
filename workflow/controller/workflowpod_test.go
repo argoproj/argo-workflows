@@ -864,13 +864,11 @@ func TestOutOfCluster(t *testing.T) {
 	}
 }
 
-// TestPriority verifies the ability to carry forward priorityClassName and priority.
-func TestPriority(t *testing.T) {
-	priority := int32(15)
+// TestPriorityClass verifies the ability to carry forward priorityClassName
+func TestPriorityClass(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc()
 	woc.execWf.Spec.Templates[0].PriorityClassName = "foo"
-	woc.execWf.Spec.Templates[0].Priority = &priority
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
@@ -880,7 +878,6 @@ func TestPriority(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "foo", pod.Spec.PriorityClassName)
-	assert.Equal(t, pod.Spec.Priority, &priority)
 }
 
 // TestSchedulerName verifies the ability to carry forward schedulerName.

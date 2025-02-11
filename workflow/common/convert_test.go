@@ -17,7 +17,8 @@ kind: CronWorkflow
 metadata:
   name: hello-world
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowMetadata:
     labels:
       label1: value1
@@ -90,7 +91,8 @@ metadata:
   labels:
     workflows.argoproj.io/controller-instanceid: test-controller
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowMetadata:
     labels:
       label1: value1

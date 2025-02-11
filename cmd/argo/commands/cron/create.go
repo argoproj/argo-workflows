@@ -61,7 +61,8 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 
 	for _, cronWf := range cronWorkflows {
 		if cliOpts.schedule != "" {
-			cronWf.Spec.Schedule = cliOpts.schedule
+			// This option replaces the schedule
+			cronWf.Spec.Schedules = []string{cliOpts.schedule}
 		}
 
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}

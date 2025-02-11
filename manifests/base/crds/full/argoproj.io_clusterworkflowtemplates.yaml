@@ -1986,9 +1986,6 @@ spec:
                       type: string
                     type: object
                 type: object
-              podPriority:
-                format: int32
-                type: integer
               podPriorityClassName:
                 type: string
               podSpecPatch:
@@ -2114,13 +2111,6 @@ spec:
                 type: boolean
               synchronization:
                 properties:
-                  mutex:
-                    properties:
-                      name:
-                        type: string
-                      namespace:
-                        type: string
-                    type: object
                   mutexes:
                     items:
                       properties:
@@ -2130,24 +2120,6 @@ spec:
                           type: string
                       type: object
                     type: array
-                  semaphore:
-                    properties:
-                      configMapKeyRef:
-                        properties:
-                          key:
-                            type: string
-                          name:
-                            default: ""
-                            type: string
-                          optional:
-                            type: boolean
-                        required:
-                        - key
-                        type: object
-                        x-kubernetes-map-type: atomic
-                      namespace:
-                        type: string
-                    type: object
                   semaphores:
                     items:
                       properties:
@@ -8573,9 +8545,6 @@ spec:
                     x-kubernetes-preserve-unknown-fields: true
                   podSpecPatch:
                     type: string
-                  priority:
-                    format: int32
-                    type: integer
                   priorityClassName:
                     type: string
                   resource:
@@ -11972,13 +11941,6 @@ spec:
                     type: object
                   synchronization:
                     properties:
-                      mutex:
-                        properties:
-                          name:
-                            type: string
-                          namespace:
-                            type: string
-                        type: object
                       mutexes:
                         items:
                           properties:
@@ -11988,24 +11950,6 @@ spec:
                               type: string
                           type: object
                         type: array
-                      semaphore:
-                        properties:
-                          configMapKeyRef:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                default: ""
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                            x-kubernetes-map-type: atomic
-                          namespace:
-                            type: string
-                        type: object
                       semaphores:
                         items:
                           properties:
@@ -19251,9 +19195,6 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     podSpecPatch:
                       type: string
-                    priority:
-                      format: int32
-                      type: integer
                     priorityClassName:
                       type: string
                     resource:
@@ -22650,13 +22591,6 @@ spec:
                       type: object
                     synchronization:
                       properties:
-                        mutex:
-                          properties:
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                          type: object
                         mutexes:
                           items:
                             properties:
@@ -22666,24 +22600,6 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        semaphore:
-                          properties:
-                            configMapKeyRef:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  default: ""
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
-                              x-kubernetes-map-type: atomic
-                            namespace:
-                              type: string
-                          type: object
                         semaphores:
                           items:
                             properties:
