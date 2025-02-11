@@ -8,10 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/humanize"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -49,10 +54,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -62,11 +67,11 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
-				assert.Greater(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestBasicTimezone", func() {
@@ -92,9 +97,6 @@ metadata:
 spec:
   schedule: "%s"
   timezone: "%s"
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
     entrypoint: whalesay
     templates:
@@ -103,11 +105,11 @@ spec:
           image: argoproj/argosay:v2`, scheduleInTestTimezone, testTimezone)).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
-				assert.Greater(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuspend", func() {
@@ -122,10 +124,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -153,10 +155,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -184,10 +186,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -198,12 +200,11 @@ spec:
           args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeRunning).
-			Wait(time.Minute). // wait for next scheduled time to ensure it's skipped by concurrencyPolicy
+			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Len(t, cronWf.Status.Active, 1)
-				assert.Less(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestBasicAllow", func() {
@@ -220,10 +221,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -234,7 +235,7 @@ spec:
           args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflowListCount(3*time.Minute, 2).
+			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Len(t, cronWf.Status.Active, 2)
@@ -252,10 +253,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -266,17 +267,17 @@ spec:
           args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeRunning).
-			WaitForNewWorkflow(fixtures.ToBeRunning).
-			WaitForCronWorkflow().
+			Wait(2*time.Minute + 20*time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Len(t, cronWf.Status.Active, 1)
 				require.NotNil(t, cronWf.Status.LastScheduledTime)
-				assert.Greater(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
+		var listOptions v1.ListOptions
+		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -288,10 +289,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -301,16 +302,16 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded).
-			WaitForNewWorkflow(fixtures.ToBeRunning).
-			WaitForWorkflowListCount(2*time.Minute, 1).
+			Wait(2*time.Minute+25*time.Second).
 			Then().
-			ExpectWorkflowListFromCronWorkflow(func(t *testing.T, wfList *wfv1.WorkflowList) {
+			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Len(t, wfList.Items, 1)
-				assert.Greater(t, wfList.Items[0].Status.FinishedAt.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
+		var listOptions v1.ListOptions
+		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -322,10 +323,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 1
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -336,13 +337,11 @@ spec:
           args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeFailed).
-			WaitForNewWorkflow(fixtures.ToBeRunning).
-			WaitForWorkflowListCount(2*time.Minute, 1).
+			Wait(2*time.Minute+25*time.Second).
 			Then().
-			ExpectWorkflowListFromCronWorkflow(func(t *testing.T, wfList *wfv1.WorkflowList) {
+			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Len(t, wfList.Items, 1)
-				assert.Greater(t, wfList.Items[0].Status.FinishedAt.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestStoppingConditionWithSucceeded", func() {
@@ -359,10 +358,10 @@ spec:
   failedJobsHistoryLimit: 2
   stopStrategy:
     expression: "cronworkflow.succeeded >= 1"
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -373,7 +372,7 @@ spec:
             command: [/argosay]`).
 			When().
 			CreateCronWorkflow().
-			WaitForCronWorkflowCompleted(3 * time.Minute).
+			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, int64(0), cronWf.Status.Failed)
@@ -393,10 +392,10 @@ spec:
   concurrencyPolicy: "Allow"
   stopStrategy:
     expression: "cronworkflow.failed >= 1"
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -407,7 +406,7 @@ spec:
           args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
-			WaitForCronWorkflowCompleted(3 * time.Minute).
+			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, int64(0), cronWf.Status.Succeeded)
@@ -431,10 +430,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -444,19 +443,51 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
-				assert.Greater(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }
 
+func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
+	options.LabelSelector = common.LabelKeyCronWorkflow + "=" + cronWfName
+}
+
 func (s *CronSuite) TestMalformedCronWorkflow() {
-	s.Given().KubectlApply("testdata/malformed/malformed-cronworkflow.yaml", fixtures.ErrorOutput(".spec.workflowSpec.arguments.parameters: expected list"))
+	s.Given().
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
+		When().
+		WaitForWorkflow(2*time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectAuditEvents(
+			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
+			1,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
+				assert.Equal(t, "Malformed", e[0].Reason)
+				assert.Equal(t, "cannot restore slice from map", e[0].Message)
+			},
+		)
 }
 
 func TestCronSuite(t *testing.T) {
+	// To ensure consistency, always start at the next 30 second mark
+	_, _, sec := time.Now().Clock()
+	var toWait time.Duration
+	if sec <= 30 {
+		toWait = time.Duration(30-sec) * time.Second
+	} else {
+		toWait = time.Duration(90-sec) * time.Second
+	}
+	log.Infof("Waiting %s to start", humanize.Duration(toWait))
+	time.Sleep(toWait)
 	suite.Run(t, new(CronSuite))
 }

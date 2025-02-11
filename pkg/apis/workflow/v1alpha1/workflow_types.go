@@ -554,12 +554,9 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
-// swagger:ignore
+// +kubebuilder:validation:Type=array
 type ParallelSteps struct {
-	// Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
-	// There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
-	// See the custom Unmarshaller below and ./hack/manifests/crd.go
-	Steps []WorkflowStep `json:"steps" protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -666,9 +663,6 @@ type Template struct {
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Plugin is a plugin template
-	// Note: the structure of a plugin template is free-form, so we need to have
-	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-	// +kubebuilder:pruning:PreserveUnknownFields
 	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
@@ -763,9 +757,6 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
-
-	// Annotations is a list of annotations to add to the template at runtime
-	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
 }
 
 // SetType will set the template object based on template type.
@@ -830,29 +821,6 @@ func (tmpl *Template) GetOutputs() *Outputs {
 		return &tmpl.Outputs
 	}
 	return nil
-}
-
-func (tmpl *Template) GetAnnotations() map[string]string {
-	if tmpl != nil {
-		return tmpl.Annotations
-	}
-	return map[string]string{}
-}
-
-func (tmpl *Template) SetAnnotations(annotations map[string]string) {
-	tmpl.Annotations = annotations
-}
-
-func (tmpl *Template) GetDisplayName() string {
-	displayName, ok := tmpl.GetAnnotations()[string(TemplateAnnotationDisplayName)]
-	if ok {
-		return displayName
-	}
-	return ""
-}
-
-func (tmpl *Template) SetDisplayName() {
-	tmpl.Annotations[string(TemplateAnnotationDisplayName)] = tmpl.Name
 }
 
 type Artifacts []Artifact
@@ -1511,7 +1479,7 @@ type Outputs struct {
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
-	// Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
+	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
 
 	// ExitCode holds the exit code of a script template
@@ -1534,10 +1502,6 @@ type WorkflowStep struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Inline is the template. Template must be empty if this is declared (and vice-versa).
-	// Note: This struct is defined recursively, since the inline template can potentially contain
-	// steps/DAGs that also has an "inline" field. Kubernetes doesn't allow recursive types, so we
-	// need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-	// +kubebuilder:pruning:PreserveUnknownFields
 	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
 
 	// Arguments hold arguments to the template
@@ -1547,10 +1511,6 @@ type WorkflowStep struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// WithItems expands a step into multiple parallel steps from the items in the list
-	// Note: The structure of WithItems is free-form, so we need
-	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,5,rep,name=withItems"`
 
 	// WithParam expands a step into multiple parallel steps from the value in the parameter,
@@ -2066,10 +2026,6 @@ type Backoff struct {
 	// However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
 	// This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
-	// Cap is a limit on revised values of the duration parameter. If a
-	// multiplication by the factor parameter would make the duration
-	// exceed the cap then the duration is set to the cap
-	Cap string `json:"cap,omitempty" protobuf:"varint,4,opt,name=cap"`
 }
 
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
@@ -3021,7 +2977,6 @@ type ScriptTemplate struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
 
 	// Source contains the source code of the script to execute
-	// +optional
 	Source string `json:"source" protobuf:"bytes,2,opt,name=source"`
 }
 
@@ -3226,9 +3181,6 @@ type DAGTask struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Inline is the template. Template must be empty if this is declared (and vice-versa).
-	// Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively,
-	// so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-	// +kubebuilder:pruning:PreserveUnknownFields
 	Inline *Template `json:"inline,omitempty" protobuf:"bytes,14,opt,name=inline"`
 
 	// Arguments are the parameter and artifact arguments to the template
@@ -3241,10 +3193,6 @@ type DAGTask struct {
 	Dependencies []string `json:"dependencies,omitempty" protobuf:"bytes,5,rep,name=dependencies"`
 
 	// WithItems expands a task into multiple parallel tasks from the items in the list
-	// Note: The structure of WithItems is free-form, so we need
-	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,6,rep,name=withItems"`
 
 	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
@@ -3460,11 +3408,6 @@ func (wf *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
-}
-
-// GetPodMetadata returns the PodMetadata of a workflow.
-func (wf *Workflow) GetPodMetadata() *Metadata {
-	return wf.Spec.PodMetadata
 }
 
 // GetWorkflowSpec returns the Spec of a workflow.
@@ -3995,9 +3938,3 @@ type NodeFlag struct {
 	// Retried tracks whether or not this node was retried by retryStrategy
 	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
 }
-
-type TemplateAnnotation string
-
-const (
-	TemplateAnnotationDisplayName TemplateAnnotation = "workflows.argoproj.io/display-name"
-)

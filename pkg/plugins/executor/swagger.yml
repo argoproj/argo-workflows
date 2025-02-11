@@ -328,7 +328,6 @@ definitions:
                     Must be a filesystem type supported by the host operating system.
                     Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
                     +optional
-                    +default="ext4"
                 type: string
             kind:
                 $ref: '#/definitions/AzureDataDiskKind'
@@ -337,7 +336,6 @@ definitions:
                     readOnly Defaults to false (read/write). ReadOnly here will force
                     the ReadOnly setting in VolumeMounts.
                     +optional
-                    +default=false
                 type: boolean
         title: AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
         type: object
@@ -360,12 +358,6 @@ definitions:
     Backoff:
         description: Backoff is a backoff strategy to use within retryStrategy
         properties:
-            cap:
-                description: |-
-                    Cap is a limit on revised values of the duration parameter. If a
-                    multiplication by the factor parameter would make the duration
-                    exceed the cap then the duration is set to the cap
-                type: string
             duration:
                 description: Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
                 type: string
@@ -1211,12 +1203,7 @@ definitions:
                 description: When is an expression in which the task should conditionally execute
                 type: string
             withItems:
-                description: |-
-                    WithItems expands a task into multiple parallel tasks from the items in the list
-                    Note: The structure of WithItems is free-form, so we need
-                    "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-                    +kubebuilder:validation:Schemaless
-                    +kubebuilder:pruning:PreserveUnknownFields
+                description: WithItems expands a task into multiple parallel tasks from the items in the list
                 items:
                     $ref: '#/definitions/Item'
                 type: array
@@ -1964,7 +1951,6 @@ definitions:
                     iscsiInterface is the interface Name that uses an iSCSI transport.
                     Defaults to 'default' (tcp).
                     +optional
-                    +default="default"
                 type: string
             lun:
                 description: lun represents iSCSI Target Lun number.
@@ -1993,22 +1979,6 @@ definitions:
                     is other than default (typically TCP ports 860 and 3260).
                 type: string
         title: Represents an ISCSI disk.
-        type: object
-    ImageVolumeSource:
-        properties:
-            pullPolicy:
-                $ref: '#/definitions/PullPolicy'
-            reference:
-                description: |-
-                    Required: Image or artifact reference to be used.
-                    Behaves in the same way as pod.spec.containers[*].image.
-                    Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
-                    More info: https://kubernetes.io/docs/concepts/containers/images
-                    This field is optional to allow higher level config management to default or override
-                    container images in workload controllers like Deployments and StatefulSets.
-                    +optional
-                type: string
-        title: ImageVolumeSource represents a image volume resource.
         type: object
     Inputs:
         description: Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -2045,7 +2015,9 @@ definitions:
             TODO: Rename to Int32OrString
         type: object
     Item:
-        description: +protobuf.options.(gogoproto.goproto_stringer)=false
+        description: |-
+            +protobuf.options.(gogoproto.goproto_stringer)=false
+            +kubebuilder:validation:Type=object
         title: |-
             Item expands a single workflow step into multiple parallel steps
             The value of Item can be a map, string, bool, or number
@@ -2537,7 +2509,7 @@ definitions:
                     $ref: '#/definitions/Parameter'
                 type: array
             result:
-                description: Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
+                description: Result holds the result (stdout) of a script template
                 type: string
         type: object
     OwnerReference:
@@ -2580,7 +2552,9 @@ definitions:
             uid:
                 $ref: '#/definitions/UID'
         type: object
-    ParallelSteps: {}
+    ParallelSteps:
+        description: +kubebuilder:validation:Type=array
+        type: object
     Parameter:
         description: Parameter indicate a passed string parameter to a service template with an optional default value
         properties:
@@ -2650,7 +2624,7 @@ definitions:
                     set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
                     exists.
                     More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-                    (Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).
+                    (Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.
                     +featureGate=VolumeAttributesClass
                     +optional
                 type: string
@@ -2943,8 +2917,7 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                     Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-
+                    This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
                     +listType=atomic
                     +optional
                 items:
@@ -2960,8 +2933,7 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                     Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-
+                    This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
                     +listType=atomic
                     +optional
                 items:
@@ -3091,14 +3063,12 @@ definitions:
                 $ref: '#/definitions/SeccompProfile'
             supplementalGroups:
                 description: |-
-                    A list of groups applied to the first process run in each container, in
-                    addition to the container's primary GID and fsGroup (if specified).  If
-                    the SupplementalGroupsPolicy feature is enabled, the
-                    supplementalGroupsPolicy field determines whether these are in addition
-                    to or instead of any group memberships defined in the container image.
-                    If unspecified, no additional groups are added, though group memberships
-                    defined in the container image may still be used, depending on the
-                    supplementalGroupsPolicy field.
+                    A list of groups applied to the first process run in each container, in addition
+                    to the container's primary GID, the fsGroup (if specified), and group memberships
+                    defined in the container image for the uid of the container process. If unspecified,
+                    no additional groups are added to any container. Note that group memberships
+                    defined in the container image for the uid of the container process are still effective,
+                    even if they are not included in this list.
                     Note that this field cannot be set when spec.os.name is windows.
                     +optional
                     +listType=atomic
@@ -3106,8 +3076,6 @@ definitions:
                     format: int64
                     type: integer
                 type: array
-            supplementalGroupsPolicy:
-                $ref: '#/definitions/SupplementalGroupsPolicy'
             sysctls:
                 description: |-
                     Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
@@ -3240,8 +3208,7 @@ definitions:
                 type: integer
             sources:
                 description: |-
-                    sources is the list of volume projections. Each entry in this list
-                    handles one source.
+                    sources is the list of volume projections
                     +optional
                     +listType=atomic
                 items:
@@ -3414,7 +3381,6 @@ definitions:
                     Default is /etc/ceph/keyring.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                     +optional
-                    +default="/etc/ceph/keyring"
                 type: string
             monitors:
                 description: |-
@@ -3430,7 +3396,6 @@ definitions:
                     Default is rbd.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                     +optional
-                    +default="rbd"
                 type: string
             readOnly:
                 description: |-
@@ -3447,7 +3412,6 @@ definitions:
                     Default is admin.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                     +optional
-                    +default="admin"
                 type: string
         title: Represents a Rados Block Device mount that lasts the lifetime of a pod.
         type: object
@@ -3468,14 +3432,6 @@ definitions:
                     Name must match the name of one entry in pod.spec.resourceClaims of
                     the Pod where this field is used. It makes that resource available
                     inside a container.
-                type: string
-            request:
-                description: |-
-                    Request is the name chosen for a request in the referenced claim.
-                    If empty, everything from the claim is made available, otherwise
-                    only the result of this request.
-
-                    +optional
                 type: string
         title: ResourceClaim references one entry in PodSpec.ResourceClaims.
         type: object
@@ -3688,7 +3644,6 @@ definitions:
                     Ex. "ext4", "xfs", "ntfs".
                     Default is "xfs".
                     +optional
-                    +default="xfs"
                 type: string
             gateway:
                 description: gateway is the host address of the ScaleIO API Gateway.
@@ -3716,7 +3671,6 @@ definitions:
                     storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
                     Default is ThinProvisioned.
                     +optional
-                    +default="ThinProvisioned"
                 type: string
             storagePool:
                 description: |-
@@ -3846,9 +3800,7 @@ definitions:
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             source:
-                description: |-
-                    Source contains the source code of the script to execute
-                    +optional
+                description: Source contains the source code of the script to execute
                 type: string
             startupProbe:
                 $ref: '#/definitions/Probe'
@@ -4255,12 +4207,6 @@ definitions:
                 type: string
         title: Represents a StorageOS persistent volume resource.
         type: object
-    SupplementalGroupsPolicy:
-        description: |-
-            SupplementalGroupsPolicy defines how supplemental groups
-            of the first container processes are calculated.
-            +enum
-        type: string
     SuppliedValueFrom:
         title: SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
         type: object
@@ -4332,11 +4278,6 @@ definitions:
                 $ref: '#/definitions/IntOrString'
             affinity:
                 $ref: '#/definitions/Affinity'
-            annotations:
-                additionalProperties:
-                    type: string
-                description: Annotations is a list of annotations to add to the template at runtime
-                type: object
             archiveLocation:
                 $ref: '#/definitions/ArtifactLocation'
             automountServiceAccountToken:
@@ -4857,8 +4798,6 @@ definitions:
                 $ref: '#/definitions/GlusterfsVolumeSource'
             hostPath:
                 $ref: '#/definitions/HostPathVolumeSource'
-            image:
-                $ref: '#/definitions/ImageVolumeSource'
             iscsi:
                 $ref: '#/definitions/ISCSIVolumeSource'
             name:
@@ -4938,7 +4877,7 @@ definitions:
         title: VolumeMount describes a mounting of a Volume within a container.
         type: object
     VolumeProjection:
-        description: Exactly one of these fields must be set.
+        description: Projection that may be projected along with other supported volume types
         properties:
             clusterTrustBundle:
                 $ref: '#/definitions/ClusterTrustBundleProjection'
@@ -4950,7 +4889,6 @@ definitions:
                 $ref: '#/definitions/SecretProjection'
             serviceAccountToken:
                 $ref: '#/definitions/ServiceAccountTokenProjection'
-        title: Projection that may be projected along with other supported volume types.
         type: object
     VolumeResourceRequirements:
         properties:

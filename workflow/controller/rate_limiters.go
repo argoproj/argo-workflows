@@ -22,14 +22,14 @@ func GetRequeueTime() time.Duration {
 
 type fixedItemIntervalRateLimiter struct{}
 
-func (r *fixedItemIntervalRateLimiter) When(string) time.Duration {
+func (r *fixedItemIntervalRateLimiter) When(interface{}) time.Duration {
 	return GetRequeueTime()
 }
 
-func (r *fixedItemIntervalRateLimiter) Forget(string) {}
+func (r *fixedItemIntervalRateLimiter) Forget(interface{}) {}
 
-func (r *fixedItemIntervalRateLimiter) NumRequeues(string) int {
+func (r *fixedItemIntervalRateLimiter) NumRequeues(interface{}) int {
 	return 1
 }
 
-var _ workqueue.TypedRateLimiter[string] = &fixedItemIntervalRateLimiter{}
+var _ workqueue.RateLimiter = &fixedItemIntervalRateLimiter{}
