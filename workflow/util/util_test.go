@@ -4173,6 +4173,6 @@ func TestRegressions(t *testing.T) {
 		newWf, _, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
 		require.NoError(t, err)
 		// we can't really handle exit handlers granually yet
-		assert.Len(t, newWf.Status.Nodes, 0)
+		assert.Empty(t, newWf.Status.Nodes)
 	})
 }
