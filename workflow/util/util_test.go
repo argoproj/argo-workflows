@@ -4170,7 +4170,9 @@ status:
 func TestRegressions(t *testing.T) {
 	t.Run("exit handler", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(onExitPanic)
-		_, _, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
+		newWf, _, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
 		require.NoError(t, err)
+		// we can't really handle exit handlers granually yet
+		assert.Len(t, newWf.Status.Nodes, 0)
 	})
 }
