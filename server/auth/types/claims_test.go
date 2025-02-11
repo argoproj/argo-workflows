@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -181,7 +180,9 @@ func TestGetCustomGroup(t *testing.T) {
 	t.Run("NoCustomGroupSet", func(t *testing.T) {
 		claims := &Claims{}
 		_, err := claims.GetCustomGroup(("ad_groups"))
-		require.EqualError(t, err, "no claim found for key: ad_groups")
+		if assert.Error(t, err) {
+			assert.EqualError(t, err, "no claim found for key: ad_groups")
+		}
 	})
 	t.Run("CustomGroupSet", func(t *testing.T) {
 		tGroup := []string{"my-group"}
@@ -193,8 +194,9 @@ func TestGetCustomGroup(t *testing.T) {
 			"ad_groups": tGroupsIf,
 		}}
 		groups, err := claims.GetCustomGroup(("ad_groups"))
-		require.NoError(t, err)
-		assert.Equal(t, []string{"my-group"}, groups)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"my-group"}, groups)
+		}
 	})
 	t.Run("CustomGroupNotString", func(t *testing.T) {
 		tGroup := []int{0}
@@ -206,7 +208,9 @@ func TestGetCustomGroup(t *testing.T) {
 			"ad_groups": tGroupsIf,
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
-		require.EqualError(t, err, "group name 0 was not a string")
+		if assert.Error(t, err) {
+			assert.EqualError(t, err, "group name 0 was not a string")
+		}
 	})
 	t.Run("CustomGroupNotSlice", func(t *testing.T) {
 		tGroup := "None"
@@ -214,7 +218,7 @@ func TestGetCustomGroup(t *testing.T) {
 			"ad_groups": tGroup,
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
-		require.Error(t, err)
+		assert.Error(t, err)
 	})
 }
 
@@ -240,7 +244,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 
 		claims := &Claims{}
 		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
-		assert.Equal(t, []string{"Everyone"}, groups)
-		require.NoError(t, err)
+		assert.Equal(t, groups, []string{"Everyone"})
+		assert.Equal(t, nil, err)
 	})
 }

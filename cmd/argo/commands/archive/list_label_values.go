@@ -18,28 +18,20 @@ func NewListLabelValueCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list-label-values",
 		Short: "get workflow label values in the archive",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			listOpts := &metav1.ListOptions{
 				LabelSelector: selector,
 			}
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
-			}
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			if err != nil {
-				return err
-			}
+			errors.CheckError(err)
 			labels, err := serviceClient.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: listOpts})
-			if err != nil {
-				return err
-			}
+			errors.CheckError(err)
 
 			for _, str := range labels.Items {
 				fmt.Printf("%s\n", str)
 			}
-			return nil
 		},
 	}
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to query on, allows 1 value (e.g. -l key1)")

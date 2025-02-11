@@ -2,12 +2,13 @@ package common
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 )
 
@@ -39,6 +41,21 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 
 func isSubPath(path string, normalizedMountPath string) bool {
 	return strings.HasPrefix(path, normalizedMountPath+"/")
+}
+
+type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
+
+type WebsocketRoundTripper struct {
+	Dialer *websocket.Dialer
+	Do     RoundTripCallback
+}
+
+func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	conn, resp, err := d.Dialer.Dial(r.URL.String(), r.Header)
+	if err == nil {
+		defer util.Close(conn)
+	}
+	return resp, d.Do(conn, resp, err)
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
@@ -80,10 +97,10 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 }
 
 // GetExecutorOutput returns the output of an remotecommand.Executor
-func GetExecutorOutput(ctx context.Context, exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
+func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdOut bytes.Buffer
 	var stdErr bytes.Buffer
-	err := exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+	err := exec.Stream(remotecommand.StreamOptions{
 		Stdout: &stdOut,
 		Stderr: &stdErr,
 		Tty:    false,
@@ -115,7 +132,7 @@ func overwriteWithArguments(argParam, inParam *wfv1.Parameter) {
 func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
 	if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 		if configMapStore != nil {
-			replaceMap := make(map[string]interface{})
+			replaceMap := make(map[string]string)
 			for k, v := range globalParams {
 				replaceMap[k] = v
 			}
@@ -207,7 +224,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 }
 
 // substituteConfigMapKeyRefParam performs template substitution for ConfigMapKeyRef
-func substituteConfigMapKeyRefParam(in string, replaceMap map[string]interface{}) (string, error) {
+func substituteConfigMapKeyRefParam(in string, replaceMap map[string]string) (string, error) {
 	tmpl, err := template.NewTemplate(in)
 	if err != nil {
 		return "", err
@@ -293,7 +310,7 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	} else if x := tmplHolder.GetTemplateRef(); x != nil {
 		return fmt.Sprintf("%T (%s/%s#%v)", tmplHolder, x.Name, x.Template, x.ClusterScope)
 	} else {
-		return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
+		return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/release-3.5/templates/)", tmplHolder)
 	}
 }
 
@@ -305,6 +322,35 @@ func IsDone(un *unstructured.Unstructured) bool {
 	return un.GetDeletionTimestamp() == nil &&
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
+}
+
+// CheckHookNode is used to determine if
+// a node was a hook node via its name.
+func CheckHookNode(nodeName string) bool {
+	names := strings.Split(nodeName, ".")
+	if len(names) == 2 {
+		return names[1] == "onExit"
+	}
+
+	if len(names) <= 2 {
+		return false
+	}
+
+	if names[len(names)-1] == "onExit" || names[len(names)-2] == "hooks" {
+		return true
+	}
+	return false
+}
+
+// CheckRetryNodeParent determines if a node is a retriable node,
+// that is if the node is the child of a retry node.
+func CheckRetryNodeParent(parentsMap map[string]*wfv1.NodeStatus, nodeID string) bool {
+	parent, found := parentsMap[nodeID]
+	if !found {
+		return false
+	}
+
+	return parent.Type == wfv1.NodeTypeRetry
 }
 
 // Check whether child hooked nodes Fulfilled

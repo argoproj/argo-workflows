@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/upper/db/v4"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -33,8 +32,9 @@ func Test_labelsClause(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, req := range tt.requirements {
 				got, err := requirementToCondition(tt.dbType, req, archiveTableName, archiveLabelsTableName, true)
-				require.NoError(t, err)
-				assert.Equal(t, tt.want, *got)
+				if assert.NoError(t, err) {
+					assert.Equal(t, tt.want, *got)
+				}
 			}
 		})
 	}

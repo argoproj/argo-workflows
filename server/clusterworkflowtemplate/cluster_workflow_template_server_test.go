@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/kubernetes/fake"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -16,7 +15,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
@@ -151,7 +149,7 @@ func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplat
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil, nil), ctx
+	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
@@ -164,9 +162,10 @@ func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
 			Template: tmpl,
 		}
 		resp, err := server.CreateClusterWorkflowTemplate(ctx, &req)
-		require.NoError(t, err)
-		assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
-		assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+		}
 	})
 	t.Run("With parameter values", func(t *testing.T) {
 		cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
@@ -175,11 +174,12 @@ func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
 		cwftReq.Template.Name = "foo-with-param-values"
 		assert.NotContains(t, cwftReq.Template.Labels, common.LabelKeyControllerInstanceID)
 		cwftRsp, err := server.CreateClusterWorkflowTemplate(ctx, &cwftReq)
-		require.NoError(t, err)
-		assert.NotNil(t, cwftRsp)
-		// ensure the label is added
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyCreator)
+		if assert.NoError(t, err) {
+			assert.NotNil(t, cwftRsp)
+			// ensure the label is added
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyCreator)
+		}
 	})
 }
 
@@ -189,16 +189,17 @@ func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 		cwftRsp, err := server.GetClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
 			Name: "cluster-workflow-template-whalesay-template2",
 		})
-		require.NoError(t, err)
-		assert.NotNil(t, cwftRsp)
-		assert.Equal(t, "cluster-workflow-template-whalesay-template2", cwftRsp.Name)
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
+		if assert.NoError(t, err) {
+			assert.NotNil(t, cwftRsp)
+			assert.Equal(t, "cluster-workflow-template-whalesay-template2", cwftRsp.Name)
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
+		}
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.GetClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
 			Name: "cluster-workflow-template-whalesay-template",
 		})
-		require.Error(t, err)
+		assert.Error(t, err)
 	})
 }
 
@@ -206,10 +207,11 @@ func TestWorkflowTemplateServer_ListClusterWorkflowTemplates(t *testing.T) {
 	server, ctx := getClusterWorkflowTemplateServer()
 	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateListRequest{}
 	cwftRsp, err := server.ListClusterWorkflowTemplates(ctx, &cwftReq)
-	require.NoError(t, err)
-	assert.Len(t, cwftRsp.Items, 2)
-	for _, item := range cwftRsp.Items {
-		assert.Contains(t, item.Labels, common.LabelKeyControllerInstanceID)
+	if assert.NoError(t, err) {
+		assert.Len(t, cwftRsp.Items, 2)
+		for _, item := range cwftRsp.Items {
+			assert.Contains(t, item.Labels, common.LabelKeyControllerInstanceID)
+		}
 	}
 }
 
@@ -219,13 +221,13 @@ func TestWorkflowTemplateServer_DeleteClusterWorkflowTemplate(t *testing.T) {
 		_, err := server.DeleteClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateDeleteRequest{
 			Name: "cluster-workflow-template-whalesay-template2",
 		})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.DeleteClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateDeleteRequest{
 			Name: "cluster-workflow-template-whalesay-template",
 		})
-		require.Error(t, err)
+		assert.Error(t, err)
 	})
 }
 
@@ -236,9 +238,10 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 		resp, err := server.LintClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateLintRequest{
 			Template: &cwftObj1,
 		})
-		require.NoError(t, err)
-		assert.Contains(t, resp.Labels, common.LabelKeyControllerInstanceID)
-		assert.Contains(t, resp.Labels, common.LabelKeyCreator)
+		if assert.NoError(t, err) {
+			assert.Contains(t, resp.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, resp.Labels, common.LabelKeyCreator)
+		}
 	})
 
 	t.Run("Without param values", func(t *testing.T) {
@@ -249,9 +252,10 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 			Template: tmpl,
 		}
 		resp, err := server.LintClusterWorkflowTemplate(ctx, &req)
-		require.NoError(t, err)
-		assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
-		assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+		}
 	})
 }
 
@@ -263,15 +267,14 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 		}
 		req.Template.Spec.Templates[0].Container.Image = "alpine:latest"
 		cwftRsp, err := server.UpdateClusterWorkflowTemplate(ctx, req)
-		require.NoError(t, err)
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyActor)
-		assert.Equal(t, string(creator.ActionUpdate), cwftRsp.Labels[common.LabelKeyAction])
-		assert.Equal(t, "alpine:latest", cwftRsp.Spec.Templates[0].Container.Image)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "alpine:latest", cwftRsp.Spec.Templates[0].Container.Image)
+		}
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
 			Template: &unlabelled,
 		})
-		require.Error(t, err)
+		assert.Error(t, err)
 	})
 }

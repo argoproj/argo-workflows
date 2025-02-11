@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -245,39 +245,12 @@ var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
 
 type WorkflowCompletionOkay bool
 
-func (w *When) listOptions() metav1.ListOptions {
-	w.t.Helper()
-	fieldSelector := ""
-	if w.wf != nil {
-		fieldSelector = "metadata.name=" + w.wf.Name
-	}
-
-	labelSelector := Label
-	if w.cronWf != nil {
-		labelSelector += "," + common.LabelKeyCronWorkflow + "=" + w.cronWf.Name
-	}
-	return metav1.ListOptions{LabelSelector: labelSelector, FieldSelector: fieldSelector}
-}
-
-func describeListOptions(opts metav1.ListOptions) string {
-	out := ""
-	if opts.FieldSelector != "" {
-		out += fmt.Sprintf("field selector '%s'", opts.FieldSelector)
-		if opts.LabelSelector != "" {
-			out += " and "
-		}
-	}
-	if opts.LabelSelector != "" {
-		out += fmt.Sprintf("label selector '%s'", opts.LabelSelector)
-	}
-	return out
-}
-
 // Wait for a workflow to meet a condition:
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
-//
-// * `metav1.ListOptions` - override label/field selectors
+// * `string` - either:
+//   - the workflow's name (not spaces)
+//   - or a new message (if it contain spaces) - default "to finish"
 //
 // * `WorkflowCompletionOkay“ (bool alias): if this is true, we won't stop checking for the other options
 //   - just because the Workflow completed
@@ -286,16 +259,19 @@ func describeListOptions(opts metav1.ListOptions) string {
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
+	workflowName := ""
+	if w.wf != nil {
+		workflowName = w.wf.Name
+	}
 	condition := ToBeDone
-	listOptions := w.listOptions()
 	var workflowCompletionOkay WorkflowCompletionOkay
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
 			// Note that we add the timeoutBias (defaults to 0), set by environment variable E2E_WAIT_TIMEOUT_BIAS
 			timeout = v + timeoutBias
-		case metav1.ListOptions:
-			listOptions = v
+		case string:
+			workflowName = v
 		case Condition:
 			condition = v
 		case WorkflowCompletionOkay:
@@ -306,13 +282,19 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 
 	start := time.Now()
-	_, _ = fmt.Printf("Waiting up to %s for workflow with %s\n", timeout, describeListOptions(listOptions))
+
+	fieldSelector := ""
+	if workflowName != "" {
+		fieldSelector = "metadata.name=" + workflowName
+	}
+
+	_, _ = fmt.Println("Waiting", timeout.String(), "for workflow", fieldSelector)
 
 	ctx := context.Background()
-
-	watch, err := w.client.Watch(ctx, listOptions)
+	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
+	watch, err := w.client.Watch(ctx, opts)
 	if err != nil {
-		w.t.Fatal(err)
+		w.t.Error(err)
 	}
 	defer watch.Stop()
 	timeoutCh := make(chan bool, 1)
@@ -351,29 +333,11 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 }
 
-// Waits for workflow to be created with different name than the current one
-func (w *When) WaitForNewWorkflow(condition Condition) *When {
+func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition func(list []wfv1.Workflow) bool) *When {
 	w.t.Helper()
-	if w.wf == nil {
-		w.t.Fatal("No previous workflow")
-	}
-	listOptions := w.listOptions()
-	listOptions.FieldSelector = "metadata.name!=" + w.wf.Name
-	w.wf = nil
-	return w.WaitForWorkflow(condition, WorkflowCompletionOkay(true), listOptions)
-}
-
-func (w *When) WaitForWorkflowListCount(timeout time.Duration, count int) *When {
-	w.t.Helper()
-	return w.waitForWorkflowListCount(timeout+timeoutBias, w.listOptions().LabelSelector, count)
-}
-
-func (w *When) waitForWorkflowListCount(timeout time.Duration, labelSelector string, count int) *When {
-	w.t.Helper()
-
+	timeout := defaultTimeout
 	start := time.Now()
-	opts := metav1.ListOptions{LabelSelector: labelSelector}
-	_, _ = fmt.Printf("Waiting up to %s for %d workflows with %s\n", timeout, count, describeListOptions(opts))
+	_, _ = fmt.Println("Waiting", timeout.String(), "for workflows", listOptions)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	for {
@@ -382,12 +346,12 @@ func (w *When) waitForWorkflowListCount(timeout time.Duration, labelSelector str
 			w.t.Errorf("timeout after %v waiting for condition", timeout)
 			return w
 		default:
-			wfList, err := w.client.List(ctx, opts)
+			wfList, err := w.client.List(ctx, listOptions)
 			if err != nil {
 				w.t.Error(err)
 				return w
 			}
-			if len(wfList.Items) == count {
+			if ok := condition(wfList.Items); ok {
 				_, _ = fmt.Printf("Condition met after %s\n", time.Since(start).Truncate(time.Second))
 				return w
 			}
@@ -397,55 +361,11 @@ func (w *When) waitForWorkflowListCount(timeout time.Duration, labelSelector str
 }
 
 func (w *When) WaitForWorkflowDeletion() *When {
-	w.t.Helper()
-	return w.WaitForWorkflowListCount(defaultTimeout, 0)
-}
-
-func (w *When) WaitForWorkflowListFailedCount(count int) *When {
-	w.t.Helper()
-	return w.waitForWorkflowListCount(defaultTimeout, Label+","+common.LabelKeyPhase+"=Failed", count)
-}
-
-func (w *When) WaitForCronWorkflowCompleted(timeout time.Duration) *When {
-	w.t.Helper()
-	return w.waitForCronWorkflow(timeout+timeoutBias, Label+","+common.LabelKeyCronWorkflowCompleted+"=true", false)
-}
-
-func (w *When) WaitForCronWorkflow() *When {
-	w.t.Helper()
-	return w.waitForCronWorkflow(defaultTimeout, Label, true)
-}
-
-func (w *When) waitForCronWorkflow(timeout time.Duration, labelSelector string, onlyActive bool) *When {
-	w.t.Helper()
-	if w.cronWf == nil {
-		w.t.Fatal("No cron workflow")
-	}
-	fieldSelector := "metadata.name=" + w.cronWf.Name
-	opts := metav1.ListOptions{LabelSelector: labelSelector, FieldSelector: fieldSelector}
-	start := time.Now()
-	_, _ = fmt.Printf("Waiting up to %s for cron workflow with %s\n", timeout, describeListOptions(opts))
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	for {
-		select {
-		case <-ctx.Done():
-			w.t.Errorf("timeout after %v waiting for condition", timeout)
-			return w
-		default:
-			cronWfList, err := w.cronClient.List(ctx, opts)
-			if err != nil {
-				w.t.Error(err)
-				return w
-			}
-			if len(cronWfList.Items) == 1 && (!onlyActive || len(cronWfList.Items[0].Status.Active) == 1) {
-				_, _ = fmt.Printf("Condition met after %s\n", time.Since(start).Truncate(time.Second))
-				return w
-			}
-		}
-		time.Sleep(time.Second)
-	}
-
+	fieldSelector := "metadata.name=" + w.wf.Name
+	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
+	return w.WaitForWorkflowList(opts, func(list []wfv1.Workflow) bool {
+		return len(list) == 0
+	})
 }
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
@@ -505,7 +425,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64Ptr(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)

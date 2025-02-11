@@ -20,12 +20,11 @@ import (
 
 // ArtifactDriver is a driver for HDFS
 type ArtifactDriver struct {
-	Addresses              []string // comma-separated name nodes
-	Path                   string
-	Force                  bool
-	HDFSUser               string
-	KrbOptions             *KrbOptions
-	DataTransferProtection string
+	Addresses  []string // comma-separated name nodes
+	Path       string
+	Force      bool
+	HDFSUser   string
+	KrbOptions *KrbOptions
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -74,7 +73,6 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if hasKrbCCache && (art.KrbServicePrincipalName == "" || art.KrbConfigConfigMap == nil) {
 		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipalName and %s.krbConfigConfigMap are required with %s.krbCCacheSecret", errPrefix, errPrefix, errPrefix)
 	}
-
 	return nil
 }
 
@@ -130,19 +128,18 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 	}
 
 	driver := ArtifactDriver{
-		Addresses:              art.Addresses,
-		Path:                   art.Path,
-		Force:                  art.Force,
-		HDFSUser:               art.HDFSUser,
-		KrbOptions:             krbOptions,
-		DataTransferProtection: art.DataTransferProtection,
+		Addresses:  art.Addresses,
+		Path:       art.Path,
+		Force:      art.Force,
+		HDFSUser:   art.HDFSUser,
+		KrbOptions: krbOptions,
 	}
 	return &driver, nil
 }
 
 // Load downloads artifacts from HDFS compliant storage
 func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.DataTransferProtection, driver.KrbOptions)
+	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
 	if err != nil {
 		return err
 	}
@@ -199,7 +196,7 @@ func (driver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error
 
 // Save saves an artifact to HDFS compliant storage
 func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.DataTransferProtection, driver.KrbOptions)
+	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
 	if err != nil {
 		return err
 	}

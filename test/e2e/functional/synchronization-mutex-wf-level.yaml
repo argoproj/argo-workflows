@@ -5,8 +5,8 @@ metadata:
 spec:
   entrypoint: main
   synchronization:
-    mutexes:
-      - name:  test
+    mutex:
+      name:  test
   templates:
     - name: main
       container:

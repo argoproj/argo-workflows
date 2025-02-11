@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,31 +16,14 @@ func TestCronWorkflowStatus_HasActiveUID(t *testing.T) {
 	assert.False(t, cwfStatus.HasActiveUID("foo"))
 }
 
-func TestCronWorkflowSpec_GetScheduleStrings(t *testing.T) {
+func TestCronWorkflowSpec_GetScheduleString(t *testing.T) {
 	cwfSpec := CronWorkflowSpec{
 		Timezone: "",
 		Schedule: "* * * * *",
 	}
-	ctx := context.Background()
-	assert.Equal(t, []string{"* * * * *"}, cwfSpec.GetSchedules(ctx))
-	assert.Equal(t, []string{"* * * * *"}, cwfSpec.GetSchedulesWithTimezone(ctx))
+
 	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleString())
 
 	cwfSpec.Timezone = "America/Los_Angeles"
-	assert.Equal(t, []string{"* * * * *"}, cwfSpec.GetSchedules(ctx))
-	assert.Equal(t, []string{"CRON_TZ=America/Los_Angeles * * * * *"}, cwfSpec.GetSchedulesWithTimezone(ctx))
-	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleString())
-	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *", cwfSpec.GetScheduleWithTimezoneString())
-
-	cwfSpec = CronWorkflowSpec{
-		Timezone:  "",
-		Schedules: []string{"* * * * *", "0 * * * *"},
-	}
-	assert.Equal(t, "* * * * *,0 * * * *", cwfSpec.GetScheduleString())
-
-	cwfSpec.Timezone = "America/Los_Angeles"
-	assert.Equal(t, []string{"* * * * *", "0 * * * *"}, cwfSpec.GetSchedules(ctx))
-	assert.Equal(t, []string{"CRON_TZ=America/Los_Angeles * * * * *", "CRON_TZ=America/Los_Angeles 0 * * * *"}, cwfSpec.GetSchedulesWithTimezone(ctx))
-	assert.Equal(t, "* * * * *,0 * * * *", cwfSpec.GetScheduleString())
-	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *,CRON_TZ=America/Los_Angeles 0 * * * *", cwfSpec.GetScheduleWithTimezoneString())
+	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *", cwfSpec.GetScheduleString())
 }

@@ -1,4 +1,5 @@
 //go:build functional
+// +build functional
 
 package e2e
 
@@ -50,7 +51,7 @@ spec:
       parameters:
         - name: item
     container:
-      image: argoproj/argosay:v2
+      image: centos:latest
       imagePullPolicy: Always
       command:
         - sh

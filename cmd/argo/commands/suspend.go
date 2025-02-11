@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 
@@ -20,11 +21,8 @@ func NewSuspendCommand() *cobra.Command {
 # Suspend the latest workflow:
   argo suspend @latest
 `,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
-			}
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, wfName := range args {
@@ -33,11 +31,10 @@ func NewSuspendCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				if err != nil {
-					return fmt.Errorf("Failed to suspended %s: %+v", wfName, err)
+					log.Fatalf("Failed to suspended %s: %+v", wfName, err)
 				}
 				fmt.Printf("workflow %s suspended\n", wfName)
 			}
-			return nil
 		},
 	}
 	return command

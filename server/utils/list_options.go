@@ -13,13 +13,12 @@ import (
 )
 
 type ListOptions struct {
-	Namespace, Name            string
-	NamePrefix, NameFilter     string
-	MinStartedAt, MaxStartedAt time.Time
-	LabelRequirements          labels.Requirements
-	Limit, Offset              int
-	ShowRemainingItemCount     bool
-	StartedAtAscending         bool
+	Namespace, Name, NamePrefix string
+	MinStartedAt, MaxStartedAt  time.Time
+	LabelRequirements           labels.Requirements
+	Limit, Offset               int
+	ShowRemainingItemCount      bool
+	StartedAtAscending          bool
 }
 
 func (l ListOptions) WithLimit(limit int) ListOptions {
@@ -52,11 +51,10 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
-func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter string) (ListOptions, error) {
+func BuildListOptions(options metav1.ListOptions, ns, namePrefix string) (ListOptions, error) {
 	if options.Continue == "" {
 		options.Continue = "0"
 	}
-
 	limit := int(options.Limit)
 
 	offset, err := strconv.Atoi(options.Continue)
@@ -125,7 +123,6 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter str
 		Namespace:              namespace,
 		Name:                   name,
 		NamePrefix:             namePrefix,
-		NameFilter:             nameFilter,
 		MinStartedAt:           minStartedAt,
 		MaxStartedAt:           maxStartedAt,
 		LabelRequirements:      requirements,

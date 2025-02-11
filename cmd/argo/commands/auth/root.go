@@ -8,8 +8,8 @@ func NewAuthCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "auth",
 		Short: "manage authentication settings",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.HelpFunc()(cmd, args)
 		},
 	}
 	command.AddCommand(NewTokenCommand())

@@ -3,17 +3,12 @@ package fixtures
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
-
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
@@ -26,7 +21,7 @@ import (
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -94,7 +89,7 @@ func (s *E2ESuite) TearDownSuite() {
 		_, _ = fmt.Println(color.Ize(color.Yellow, fmt.Sprintf("=== SLOW TEST:  %s", x)))
 	}
 	if s.T().Failed() {
-		s.T().Log("to learn how to diagnose failed tests: https://argo-workflows.readthedocs.io/en/latest/running-locally/#running-e2e-tests-locally")
+		s.T().Log("to learn how to diagnose failed tests: https://argo-workflows.readthedocs.io/en/release-3.5/running-locally/#running-e2e-tests-locally")
 	}
 }
 
@@ -132,7 +127,6 @@ func (s *E2ESuite) DeleteResources() {
 		return Label
 	}
 
-	pods := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
@@ -141,29 +135,13 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
-		pods,
+		{Version: "v1", Resource: "pods"},
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
 	for _, r := range resources {
 		for {
-			// remove finalizer from all the resources of the given GroupVersionResource
-			resourceInf := s.dynamicFor(pods)
-			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
-			s.CheckError(err)
-			for _, item := range resourceList.Items {
-				patch, err := json.Marshal(map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"finalizers": []string{},
-					},
-				})
-				s.CheckError(err)
-				_, err = resourceInf.Patch(ctx, item.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
-				if err != nil && !apierr.IsNotFound(err) {
-					s.CheckError(err)
-				}
-			}
-			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(2)}, metav1.ListOptions{LabelSelector: l(r)}))
 			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
 			if len(ls.Items) == 0 {
@@ -175,7 +153,7 @@ func (s *E2ESuite) DeleteResources() {
 
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
-		archive := s.Persistence.WorkflowArchive
+		archive := s.Persistence.workflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(utils.ListOptions{

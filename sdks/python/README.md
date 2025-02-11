@@ -2,10 +2,6 @@
 
 This is the Python SDK for Argo Workflows.
 
-> [!WARNING]
-> This SDK is deprecated and will be removed in version 3.7 of Argo Workflows.
-> We recommend migrating to [Hera](https://github.com/argoproj-labs/hera).
-
 ## Requirements
 
 Python >= 3.6
@@ -15,7 +11,7 @@ Python >= 3.6
 If you'd like to install the official releases of the SDK on PyPI, please run the following:
 
 ```sh
-pip install argo-workflows
+pip install argo-workflows==6.3.0rc2
 ```
 
 Otherwise, you can install the latest development version of the SDK via the following:

@@ -93,26 +93,26 @@ func TestFindOverlappingVolume(t *testing.T) {
 
 func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
 	_, err := SplitWorkflowYAMLFile([]byte(validWf), false)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
-	require.EqualError(t, err, `json: unknown field "doesNotExist"`)
+	assert.EqualError(t, err, `json: unknown field "doesNotExist"`)
 }
 
 func TestParseObjects(t *testing.T) {
-	assert.Len(t, ParseObjects([]byte(validWf), false), 1)
+	assert.Equal(t, 1, len(ParseObjects([]byte(validWf), false)))
 
 	res := ParseObjects([]byte(invalidWf), false)
-	assert.Len(t, res, 1)
+	assert.Equal(t, 1, len(res))
 	assert.NotNil(t, res[0].Object)
-	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
+	assert.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
 	assert.Empty(t, ParseObjects(invalidObj, false))
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
-	assert.Equal(t, "*v1alpha1.DAGTask invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", GetTemplateHolderString(&wfv1.DAGTask{}))
+	assert.Equal(t, "*v1alpha1.DAGTask invalid (https://argo-workflows.readthedocs.io/en/release-3.5/templates/)", GetTemplateHolderString(&wfv1.DAGTask{}))
 	assert.Equal(t, "*v1alpha1.DAGTask inlined", GetTemplateHolderString(&wfv1.DAGTask{Inline: &wfv1.Template{}}))
 	assert.Equal(t, "*v1alpha1.DAGTask (foo)", GetTemplateHolderString(&wfv1.DAGTask{Template: "foo"}))
 	assert.Equal(t, "*v1alpha1.DAGTask (foo/bar#false)", GetTemplateHolderString(&wfv1.DAGTask{TemplateRef: &wfv1.TemplateRef{
@@ -146,7 +146,7 @@ func TestIsDone(t *testing.T) {
 }
 
 func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
-	globalParams := map[string]interface{}{
+	globalParams := map[string]string{
 		"workflow.parameters.name": "simple-parameters",
 		"workflow.parameters.key":  "msg",
 	}
@@ -238,13 +238,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	localParams := make(map[string]string)
 
 	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
 	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
 }
@@ -289,12 +289,12 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	localParams := make(map[string]string)
 
 	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
 	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }
@@ -347,12 +347,12 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	localParams := make(map[string]string)
 
 	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
 	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }

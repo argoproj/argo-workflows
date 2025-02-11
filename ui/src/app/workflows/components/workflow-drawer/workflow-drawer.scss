@@ -1,0 +1,105 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-drawer {
+  font-size: 13px;
+  background-color: $argo-color-gray-1;
+  padding: 1.5em 15px;
+  border-radius: 0 0 3px 3px;
+  line-height: 30px;
+  width: 100%;
+  border-top: 1px solid $argo-color-gray-3;
+
+  &__section {
+    padding: 1em 0;
+    box-sizing: border-box;
+    border-top: 2px solid $argo-color-gray-3;
+
+    &:first-child {
+      padding-top: 0;
+      border-top: none;
+    }
+
+    &:last-child {
+      padding-bottom: 0;
+    }
+
+    &:only-child {
+      padding: 0;
+    }
+  }
+
+  &__message {
+
+    &--label {
+      margin-bottom: 1em;
+    }
+
+    &--content {
+      font-weight: 600;
+    }
+
+  }
+
+  &__labels {
+    &--list {
+      margin-top: 0.5em;
+    }
+  }
+
+  &__message {
+    border-top: none;
+  }
+
+  .tag {
+    line-height: normal;
+    background-color: $argo-color-gray-3;
+    border-radius: 3px;
+    height: auto;
+    margin: 0.5em 0;
+    margin-right: 10px;
+    display: flex;
+    overflow: hidden;
+    cursor: pointer;
+
+    &:hover {
+      .key {
+        color: $argo-color-teal-5;
+      }
+      .value {
+        color: $argo-color-gray-3;
+      }
+    }
+
+    .key, .value {
+      padding: 0.5em 8px;
+    }
+
+    .key {
+      color: $argo-color-gray-6;
+    }
+
+    .value {
+      color: white;
+      background-color: $argo-color-teal-5;
+    }
+  }
+
+  &__resourcesDuration {
+    &--value {
+      font-weight: 600;
+      margin-right: 0.5em;
+    }
+  }
+
+  &__conditions {
+    margin-top: 0.5em;
+
+    .condition-panel__type {
+      font-weight: 600;
+    }
+
+    .type {
+      font-weight: 600;
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "outDir": "./../../dist/app",
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "module": "ES2020", // must be ES2020+ for dynamic imports: https://github.com/Microsoft/TypeScript/issues/16675, https://github.com/webpack/webpack/issues/5703#issuecomment-357512412
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "target": "es5",
+        "jsx": "react",
+        "experimentalDecorators": true,
+        "noUnusedLocals": true,
+        "declaration": false,
+        "downlevelIteration": true,
+        "lib": [
+            "es2017",
+            "dom"
+        ]
+    },
+    "include": [
+        "./**/*"
+    ]
+}

@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
@@ -37,23 +38,19 @@ func NewResumeCommand() *cobra.Command {
 		
   argo resume --node-field-selector inputs.paramaters.myparam.value=abc		
 `,
-		Args: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 && resumeArgs.nodeFieldSelector == "" {
-				return errors.New("requires either node field selector or workflow")
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
 			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
-			}
+
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
 			selector, err := fields.ParseSelector(resumeArgs.nodeFieldSelector)
 			if err != nil {
-				return fmt.Errorf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
+				log.Fatalf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
 			for _, wfName := range args {
@@ -63,11 +60,10 @@ func NewResumeCommand() *cobra.Command {
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
-					return fmt.Errorf("Failed to resume %s: %+v", wfName, err)
+					log.Fatalf("Failed to resume %s: %+v", wfName, err)
 				}
 				fmt.Printf("workflow %s resumed\n", wfName)
 			}
-			return nil
 		},
 	}
 	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")

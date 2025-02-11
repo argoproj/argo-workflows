@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -20,7 +20,7 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 				"a": v1alpha1.NodeStatus{
 					ID:         "a",
 					BoundaryID: "a",
-					Daemoned:   ptr.To(true),
+					Daemoned:   pointer.BoolPtr(true),
 				},
 			},
 		},

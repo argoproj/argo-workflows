@@ -4,7 +4,7 @@ metadata:
   name: executor
   annotations:
     workflows.argoproj.io/description: |
-      Recommended minimum permissions for the `emissary` executor.
+      Recomended minimum permissions for the `emissary` executor.
 rules:
   - apiGroups:
       - argoproj.io

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -135,7 +136,7 @@ See %s`, help.ArgoServer()),
 				}
 
 			} else {
-				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
+				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/release-3.5/tls/")
 			}
 
 			modes := auth.Modes{}
@@ -146,7 +147,7 @@ See %s`, help.ArgoServer()),
 				}
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
+				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/release-3.5/argo-server-auth-mode/")
 			}
 
 			opts := apiserver.ArgoServerOpts{
@@ -190,8 +191,18 @@ See %s`, help.ArgoServer()),
 		},
 	}
 
+	defaultBaseHRef := os.Getenv("BASE_HREF")
+	if defaultBaseHRef == "" {
+		defaultBaseHRef = "/"
+	}
+
+	defaultAllowedLinkProtocol := []string{"http", "https"}
+	if protocol := os.Getenv("ALLOWED_LINK_PROTOCOL"); protocol != "" {
+		defaultAllowedLinkProtocol = strings.Split(protocol, ",")
+	}
+
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().StringVar(&baseHRef, "base-href", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /.")
+	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
@@ -207,7 +218,7 @@ See %s`, help.ArgoServer()),
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
-	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", []string{"http", "https"}, "Allowed protocols for links feature.")
+	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed protocols for links feature. Defaults to the environment variable ALLOWED_LINK_PROTOCOL: http,https")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
 	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")

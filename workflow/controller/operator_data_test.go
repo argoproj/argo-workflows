@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -237,6 +236,7 @@ func TestDataTemplateCreatesPod(t *testing.T) {
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("collect-artifact")
-	require.NotNil(t, node)
-	assert.Equal(t, wfv1.NodePending, node.Phase)
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	}
 }

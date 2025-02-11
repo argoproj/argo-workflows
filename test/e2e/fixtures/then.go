@@ -105,11 +105,10 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 					p = nil // i did not expect to need to nil the pod, but here we are
 				}
 			}
-			f(tt, n, p)
 		} else {
 			_, _ = fmt.Println("Did not find node")
-			t.t.Error("Did not find expected node")
 		}
+		f(tt, n, p)
 	})
 }
 
@@ -127,15 +126,6 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	}
 	block(t.t, cronWf)
 	return t
-}
-
-func (t *Then) ExpectWorkflowListFromCronWorkflow(block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
-	t.t.Helper()
-	if t.cronWf == nil {
-		t.t.Fatal("No cron workflow to match against")
-	}
-	labelSelector := common.LabelKeyCronWorkflow + "=" + t.cronWf.Name
-	return t.ExpectWorkflowList(metav1.ListOptions{LabelSelector: labelSelector}, block)
 }
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {

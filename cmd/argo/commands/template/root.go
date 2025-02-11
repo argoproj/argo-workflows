@@ -8,8 +8,8 @@ func NewTemplateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "template",
 		Short: "manipulate workflow templates",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.HelpFunc()(cmd, args)
 		},
 	}
 
@@ -18,7 +18,6 @@ func NewTemplateCommand() *cobra.Command {
 	command.AddCommand(NewCreateCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewLintCommand())
-	command.AddCommand(NewUpdateCommand())
 
 	return command
 }

@@ -2,7 +2,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv.url = "github:cachix/devenv";
     nix-filter.url = "github:numtide/nix-filter";
@@ -190,19 +190,19 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorHash = "sha256-DHqQigUi31GdCFsjvAu1jU1PRNuPW/f3ECrgVd6bvuk=";
+              vendorSha256 = "sha256-Ytl+++KUrFveoKRoSccwjCgozw4tFhjHxk8yDPQFRqo=";
               doCheck = false;
             };
 
             mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.42.2"; # upgrade this in the Makefile if upgraded here
+              version = "2.26.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-wwt7rhHWPlYtvudWKb8vk8t19MeN7AMfMugs0XeBDVk=";
+                sha256 = "sha256-3wJ7XY/wfVXB4nEHLqEtNRscow/KrAo79sr2OgJisSY=";
               };
               doCheck = false;
               vendorHash = "sha256-J7eL2AQ6v5nG2lZOSSZQOTKBhfk7GtDtqZ7Felo0l54=";
@@ -255,13 +255,13 @@
 
             controller-tools = pkgs.buildGoModule rec {
               pname = "controller-tools";
-              version = "0.14.0"; # upgrade this in the Makefile if upgraded here
+              version = "0.4.1"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes-sigs";
                 repo = "controller-tools";
                 rev = "v${version}";
-                sha256 = "sha256-G0jBQ12cpjfWGhXYppV9dB2n68bExi6ME9QbxXsUWvw=";
+                sha256 = "sha256-NQlSP9hRLXr+iZo0OeyF1MQs3PourQZN0I0v4Wv5dkE=";
               };
               vendorHash = "sha256-89hzPiqP++tQpPkcSvzc1tHxHcj5PI71RxxxUCgm0BI=";
               doCheck = false;
@@ -307,6 +307,17 @@
               doCheck = false;
             };
 
+            staticfiles = pkgs.buildGoPackage rec {
+              name = "staticfiles";
+              src = pkgs.fetchFromGitHub {
+                owner = "bouk";
+                repo = "staticfiles";
+                rev = "827d7f6389cd410d0aa3f3d472a4838557bf53dd";
+                sha256 = "0xarhmsqypl8036w96ssdzjv3k098p2d4mkmw5f6hkp1m3j67j61";
+              };
+
+              goPackagePath = "bou.ke/staticfiles";
+            };
             default = config.packages.${package.name};
           };
 
@@ -327,6 +338,7 @@
                 config.packages.k8sio-tools
                 config.packages.goreman
                 config.packages.stern
+                config.packages.staticfiles
                 config.packages.${package.name}
                 nodePackages.shell.nodeDependencies
                 gopls
@@ -356,6 +368,7 @@
                     config.packages.k8sio-tools
                     config.packages.goreman
                     config.packages.stern
+                    config.packages.staticfiles
                     config.packages.${package.name}
                     nodePackages.shell.nodeDependencies
                     gopls

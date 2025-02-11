@@ -9,7 +9,6 @@ import (
 	"github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned/typed/sensor/v1alpha1"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
@@ -68,7 +67,7 @@ func TestListSensors(t *testing.T) {
 
 	sensorList, err := server.ListSensors(ctx, request)
 
-	require.EqualError(t, err, "sensor client is not set", "Expected no error")
+	assert.EqualError(t, err, "sensor client is not set", "Expected no error")
 	assert.Nil(t, sensorList, "Expected sensor list to be nil")
 	assert.NotNil(t, mockClient, "Expected mock client to be not nil")
 	assert.Contains(t, err.Error(), "sensor client", "Expected error message to mention sensor client")
@@ -95,7 +94,7 @@ func TestListSensors_SensorClientNotSet(t *testing.T) {
 
 	sensorList, err := server.ListSensors(ctx, request)
 
-	require.Error(t, err, "Expected error")
+	assert.Error(t, err, "Expected error")
 	assert.Nil(t, sensorList, "Expected sensor list to be nil")
 	assert.Equal(t, "sensor client is not set", err.Error(), "Expected error message to match")
 }

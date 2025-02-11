@@ -1,5 +1,5 @@
 <!-- markdownlint-disable-next-line MD041 -->
-[![Security Status](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml/badge.svg?branch=main)](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml?query=branch%3Amain)
+[![Security Status](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml/badge.svg?branch=release-3.5)](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml?query=branch%3Arelease-3.5)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows/badge)](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows)
 [![FOSSA License Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows?ref=badge_shield)
@@ -22,11 +22,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Use Cases
 
-* [Machine Learning pipelines](use-cases/machine-learning.md)
-* [Data and batch processing](use-cases/data-processing.md)
-* [Infrastructure automation](use-cases/infrastructure-automation.md)
-* [CI/CD](use-cases/ci-cd.md)
-* [Other use cases](use-cases/other.md)
+* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/machine-learning/)
+* [Data and batch processing](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/data-processing/)
+* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/infrastructure-automation/)
+* [CI/CD](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/ci-cd/)
+* [Other use cases](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/other/)
 
 ## Why Argo Workflows?
 
@@ -74,8 +74,8 @@ Check out our [Java, Golang and Python clients](client-libraries.md).
 
 ## Quickstart
 
-* [Get started here](quick-start.md)
-* [Walk-through examples](walk-through/index.md)
+* [Get started here](https://argo-workflows.readthedocs.io/en/release-3.5/quick-start/)
+* [Walk-through examples](https://argo-workflows.readthedocs.io/en/release-3.5/walk-through/)
 
 ## Documentation
 
@@ -139,18 +139,11 @@ Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https:
 * [Argo Workflows and Pipelines - CI/CD, Machine Learning, and Other Kubernetes Workflows](https://youtu.be/UMaivwrAyTA)
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
 * [Argo Workflows vs Apache Airflow](http://bit.ly/30YNIvT)
-* [Beyond Prototypes: Production-Ready ML Systems with Metaflow and Argo](https://github.com/terrytangyuan/public-talks/tree/main/talks/kubecon-na-2023-metaflow-argo)
 * [CI/CD with Argo on Kubernetes](https://medium.com/@bouwe.ceunen/ci-cd-with-argo-on-kubernetes-28c1a99616a9)
 * [Define Your CI/CD Pipeline with Argo Workflows](https://haque-zubair.medium.com/define-your-ci-cd-pipeline-with-argo-workflows-25aefb02fa63)
-* [Distributed Machine Learning Patterns from Manning Publication](https://github.com/terrytangyuan/distributed-ml-patterns)
-* [Engineering Cloud Native AI Platform](https://github.com/terrytangyuan/public-talks/tree/main/talks/platform-con-2024-engineering-cloud-native-ai-platform)
-* [Managing Thousands of Automatic Machine Learning Experiments with Argo and Katib](https://github.com/terrytangyuan/public-talks/blob/main/talks/argocon-automl-experiments-2022)
-* [Revolutionizing Scientific Simulations with Argo Workflows](https://www.youtube.com/watch?v=BYVf7GhfiRg)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
-* [Scaling Kubernetes: Best Practices for Managing Large-Scale Batch Jobs with Spark and Argo Workflow](https://www.youtube.com/watch?v=KqEKRPjy4aE)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
-* [Production-Ready AI Platform on Kubernetes](https://github.com/terrytangyuan/public-talks/tree/main/talks/kubecon-europe-2024-production-ai-platform-on-k8s)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
 

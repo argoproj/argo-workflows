@@ -4,20 +4,14 @@ import (
 	"bytes"
 	"io"
 	"os/exec"
-	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleStartCloser(t *testing.T) {
-	shell := "sh"
-	if runtime.GOOS == "windows" {
-		shell = "pwsh.exe"
-	}
-	cmd := exec.Command(shell, "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
+	cmd := exec.Command("sh", "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
 	var stdoutWriter bytes.Buffer
 	slowWriter := SlowWriter{
 		&stdoutWriter,
@@ -27,18 +21,14 @@ func TestSimpleStartCloser(t *testing.T) {
 	cmd.Stdout = slowWriter
 
 	closer, err := StartCommand(cmd)
-	require.NoError(t, err)
-	err = cmd.Wait()
-	require.NoError(t, err)
+	assert.NoError(t, err)
+	err = cmd.Process.Release()
+	assert.NoError(t, err)
 	// Wait for echo command to exit before calling closer
 	time.Sleep(100 * time.Millisecond)
 	closer()
 
-	expected := "A123456789B123456789C123456789D123456789E123456789"
-	if runtime.GOOS == "windows" {
-		expected = "A123456789B123456789C123456789D123456789E123456789\\c\r\n"
-	}
-	assert.Equal(t, expected, stdoutWriter.String())
+	assert.Equal(t, "A123456789B123456789C123456789D123456789E123456789", stdoutWriter.String())
 }
 
 type SlowWriter struct {

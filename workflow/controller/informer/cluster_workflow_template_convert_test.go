@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,7 +14,7 @@ import (
 func Test_objectToClusterWorkflowTemplate(t *testing.T) {
 	t.Run("NotUnstructured", func(t *testing.T) {
 		v, err := objectToClusterWorkflowTemplate(&corev1.Status{})
-		require.EqualError(t, err, "malformed cluster workflow template: expected \"*unstructured.Unstructured\", got \"*v1.Status\"")
+		assert.EqualError(t, err, "malformed cluster workflow template: expected \"*unstructured.Unstructured\", got \"*v1.Status\"")
 		assert.NotNil(t, v)
 	})
 	t.Run("MalformedClusterWorkflowTemplate", func(t *testing.T) {
@@ -23,13 +22,14 @@ func Test_objectToClusterWorkflowTemplate(t *testing.T) {
 			"metadata": map[string]interface{}{"name": "my-name"},
 			"spec":     "ops",
 		}})
-		require.EqualError(t, err, "malformed cluster workflow template \"my-name\": cannot restore struct from: string")
-		require.NotNil(t, v)
-		assert.Equal(t, "my-name", v.Name)
+		assert.EqualError(t, err, "malformed cluster workflow template \"my-name\": cannot restore struct from: string")
+		if assert.NotNil(t, v) {
+			assert.Equal(t, "my-name", v.Name)
+		}
 	})
 	t.Run("ClusterWorkflowTemplate", func(t *testing.T) {
 		v, err := objectToClusterWorkflowTemplate(&unstructured.Unstructured{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, &wfv1.ClusterWorkflowTemplate{}, v)
 	})
 }

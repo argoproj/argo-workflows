@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,7 +26,7 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	for _, name := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			if ok, _ := waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet); !ok {
+			if !waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet) {
 				wfSuccessStatus = false
 			}
 			wg.Done()
@@ -39,7 +40,7 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 }
 
-func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) (bool, error) {
+func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
@@ -50,23 +51,20 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
 	if err != nil {
 		if status.Code(err) == codes.NotFound && ignoreNotFound {
-			return true, nil
+			return true
 		}
-		return false, nil
+		errors.CheckError(err)
+		return false
 	}
 	for {
 		event, err := stream.Recv()
 		if err == io.EOF {
 			log.Debug("Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
-			if err != nil {
-				return false, err
-			}
+			errors.CheckError(err)
 			continue
 		}
-		if err != nil {
-			return false, err
-		}
+		errors.CheckError(err)
 		if event == nil {
 			continue
 		}
@@ -76,9 +74,9 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
 			}
 			if wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError {
-				return false, nil
+				return false
 			}
-			return true, nil
+			return true
 		}
 	}
 }

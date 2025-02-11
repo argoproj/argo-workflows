@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -105,9 +104,9 @@ func TestSingleDependency(t *testing.T) {
 
 		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-		require.NoError(t, err)
+		assert.Nil(t, err)
 		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-		require.NoError(t, err)
+		assert.Nil(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
 		woc.operate(ctx)
@@ -198,7 +197,7 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -259,7 +258,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 
 	// Task B should not proceed, task A is still running
 	execute, proceed, err := d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
 
@@ -268,16 +267,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 
 	// Task B and C should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	execute, proceed, err = d.evaluateDependsLogic("C")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	// Other tasks should not
 	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
 
@@ -287,16 +286,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 
 	// Tasks should-execute-1 and should-execute-2 should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	execute, proceed, err = d.evaluateDependsLogic("should-execute-2")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	// Task should-not-execute should proceed, but not execute
 	execute, proceed, err = d.evaluateDependsLogic("should-not-execute")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
 
@@ -307,7 +306,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 
 	// Tasks should-execute-3 should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic("should-execute-3")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 }
@@ -365,7 +364,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 
 	// Task B should not proceed as task A is still running
 	execute, proceed, err := d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
 
@@ -378,7 +377,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 
 	// Task B should proceed, but not execute as none of the children have succeeded yet
 	execute, proceed, err = d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
 
@@ -387,7 +386,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 
 	// Task B should now proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 
@@ -401,7 +400,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
 	execute, proceed, err = d.evaluateDependsLogic("C")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
 
@@ -409,7 +408,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 
 	// Task C should now proceed and execute as all of B's children have failed
 	execute, proceed, err = d.evaluateDependsLogic("C")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 }
@@ -446,7 +445,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 
 	// Task B should proceed and execute
 	execute, proceed, err := d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 
@@ -458,7 +457,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 
 	// Task B should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 }
@@ -494,7 +493,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 
 	// Task B should proceed and execute
 	execute, proceed, err := d.evaluateDependsLogic("B")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 }
@@ -539,11 +538,11 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 		}
 
 		execute, proceed, err := d.evaluateDependsLogic("Run")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.True(t, proceed)
 		assert.True(t, execute)
 		execute, proceed, err = d.evaluateDependsLogic("NotRun")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.True(t, proceed)
 		assert.False(t, execute)
 	}
@@ -555,13 +554,13 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-one-will-fail2-jt776
 spec:
-
+  
   entrypoint: parameter-aggregation-one-will-fail2
   templates:
-  -
+  - 
     dag:
       tasks:
-      -
+      - 
         continueOn:
           failed: true
         name: generate
@@ -577,7 +576,7 @@ spec:
         name: one-will-fail
         template: one-will-fail
         withParam: '{{tasks.generate.outputs.result}}'
-      -
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -588,7 +587,7 @@ spec:
     metadata: {}
     name: parameter-aggregation-one-will-fail2
     outputs: {}
-  -
+  - 
     container:
       args:
       - |
@@ -609,7 +608,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  -
+  - 
     container:
       command:
       - cowsay
@@ -620,7 +619,7 @@ spec:
     metadata: {}
     name: whalesay
     outputs: {}
-  -
+  - 
     inputs: {}
     metadata: {}
     name: gen-number-list
@@ -816,7 +815,7 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -831,10 +830,10 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-one-will-fail-69x7k
 spec:
-
+  
   entrypoint: parameter-aggregation-one-will-fail
   templates:
-  -
+  - 
     dag:
       tasks:
       - arguments:
@@ -848,7 +847,7 @@ spec:
         withItems:
         - 1
         - 2
-      -
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -859,7 +858,7 @@ spec:
     metadata: {}
     name: parameter-aggregation-one-will-fail
     outputs: {}
-  -
+  - 
     container:
       args:
       - |
@@ -1039,7 +1038,7 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -1088,7 +1087,7 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -1101,27 +1100,27 @@ kind: Workflow
 metadata:
   name: dag-diamond-xfww2
 spec:
-
+  
   entrypoint: diamond
   shutdown: Terminate
   templates:
-  -
+  - 
     dag:
       tasks:
-      -
+      - 
         name: A
         template: echo
-      -
+      - 
         dependencies:
         - A
         name: B
         template: echo
-      -
+      - 
         dependencies:
         - A
         name: C
         template: echo
-      -
+      - 
         dependencies:
         - B
         - C
@@ -1326,7 +1325,7 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -1486,16 +1485,17 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 
 	retryNode, err := woc.wf.GetNodeByName("dag-diamond-dj7q5.A")
-	require.NoError(t, err)
-	assert.NotNil(t, retryNode)
-	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
-	assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
+		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
+	}
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
@@ -1675,20 +1675,22 @@ func TestRetryStrategyNodes(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 	retryNode, err := woc.wf.GetNodeByName("wf-retry-pol")
-	require.NoError(t, err)
-	assert.NotNil(t, retryNode)
-	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
+		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	}
 
 	onExitNode, err := woc.wf.GetNodeByName("wf-retry-pol.onExit")
-	require.NoError(t, err)
-	assert.NotNil(t, onExitNode)
-	assert.True(t, onExitNode.NodeFlag.Hooked)
-	assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, onExitNode)
+		assert.True(t, onExitNode.NodeFlag.Hooked)
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	}
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
@@ -1841,20 +1843,22 @@ func TestOnExitDAGPhase(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 	retryNode, err := woc.wf.GetNodeByName("dag-diamond-88trp")
-	require.NoError(t, err)
-	assert.NotNil(t, retryNode)
-	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
+		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	}
 
 	retryNode, err = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
-	require.NoError(t, err)
-	assert.NotNil(t, retryNode)
-	assert.True(t, retryNode.NodeFlag.Hooked)
-	assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
+		assert.True(t, retryNode.NodeFlag.Hooked)
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
@@ -1972,27 +1976,29 @@ func TestOnExitNonLeaf(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 	retryNode, err := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
-	require.NoError(t, err)
-	assert.NotNil(t, retryNode)
-	assert.True(t, retryNode.NodeFlag.Hooked)
-	assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
+		assert.True(t, retryNode.NodeFlag.Hooked)
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
 
 	_, err = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
-	require.Error(t, err)
+	assert.Error(t, err)
 
 	retryNode.Phase = wfv1.NodeSucceeded
 	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	retryNode, err = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
-	require.NoError(t, err)
-	assert.NotNil(t, retryNode)
-	assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
@@ -2091,9 +2097,10 @@ func TestDagOptionalInputArtifacts(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	optionalInputArtifactsNode, err := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
-	require.NoError(t, err)
-	assert.NotNil(t, optionalInputArtifactsNode)
-	assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, optionalInputArtifactsNode)
+		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
+	}
 }
 
 var testDagTargetTaskOnExit = `
@@ -2242,15 +2249,16 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 	onExitNode, err := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
-	require.NoError(t, err)
-	assert.NotNil(t, onExitNode)
-	assert.True(t, onExitNode.NodeFlag.Hooked)
-	assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, onExitNode)
+		assert.True(t, onExitNode.NodeFlag.Hooked)
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	}
 }
 
 var testEmptyWithParamDAG = `
@@ -2259,13 +2267,13 @@ kind: Workflow
 metadata:
   name: dag-hang-pcwmr
 spec:
-
+  
   entrypoint: dag
   templates:
-  -
+  - 
     dag:
       tasks:
-      -
+      - 
         name: scheduler
         template: job-scheduler
       - arguments:
@@ -2277,7 +2285,7 @@ spec:
         name: children
         template: whalesay
         withParam: '{{tasks.scheduler.outputs.parameters.scheduled-jobs}}'
-      -
+      - 
         dependencies:
         - children
         name: postprocess
@@ -2286,7 +2294,7 @@ spec:
     metadata: {}
     name: dag
     outputs: {}
-  -
+  - 
     container:
       args:
       - echo Decided not to schedule any jobs
@@ -2395,7 +2403,7 @@ func TestEmptyWithParamDAG(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -2408,14 +2416,14 @@ kind: Workflow
 metadata:
   name: reproduce-bug-9tpfr
 spec:
-
+  
   entrypoint: start
   serviceAccountName: argo-workflow
   templates:
-  -
+  - 
     dag:
       tasks:
-      -
+      - 
         name: gen-tasks
         template: gen-tasks
       - arguments:
@@ -2427,7 +2435,7 @@ spec:
         name: process-tasks
         template: process-tasks
         withParam: '{{tasks.gen-tasks.outputs.result}}'
-      -
+      - 
         dependencies:
         - process-tasks
         name: finish
@@ -2437,7 +2445,7 @@ spec:
     name: start
     outputs: {}
   - activeDeadlineSeconds: 300
-
+    
     inputs: {}
     metadata: {}
     name: gen-tasks
@@ -2460,7 +2468,7 @@ spec:
         set -e
         python3 -c 'import os, json; print(json.dumps([str(i) for i in range(10)]))'
   - activeDeadlineSeconds: 1800
-
+    
     inputs:
       parameters:
       - name: chunk
@@ -3072,7 +3080,7 @@ func TestFailsWithParamDAG(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -3085,16 +3093,16 @@ kind: Workflow
 metadata:
   name: build-wf-kpxvm
 spec:
-
+  
   entrypoint: test-workflow
   templates:
-  -
+  - 
     dag:
       tasks:
-      -
+      - 
         name: A
         template: ok
-      -
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -3105,7 +3113,7 @@ spec:
     metadata: {}
     name: test-workflow
     outputs: {}
-  -
+  - 
     container:
       args:
       - |
@@ -3365,11 +3373,14 @@ func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 	woc.operate(ctx)
 
 	dagNode := woc.wf.Status.Nodes.FindByDisplayName("parameter-aggregation-dag-h8b82")
-	require.NotNil(t, dagNode)
-	require.NotNil(t, dagNode.Outputs)
-	require.Len(t, dagNode.Outputs.Parameters, 2)
-	assert.Equal(t, `["1","2"]`, dagNode.Outputs.Parameters[0].Value.String())
-	assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
+	if assert.NotNil(t, dagNode) {
+		if assert.NotNil(t, dagNode.Outputs) {
+			if assert.Len(t, dagNode.Outputs.Parameters, 2) {
+				assert.Equal(t, `["1","2"]`, dagNode.Outputs.Parameters[0].Value.String())
+				assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
+			}
+		}
+	}
 }
 
 var dagHttpChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
@@ -3447,9 +3458,11 @@ func TestDagHttpChildrenAssigned(t *testing.T) {
 	assert.NotNil(t, dagNode)
 
 	dagNode = woc.wf.Status.Nodes.FindByDisplayName("good1")
-	require.NotNil(t, dagNode)
-	require.Len(t, dagNode.Children, 1)
-	assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
+	if assert.NotNil(t, dagNode) {
+		if assert.Len(t, dagNode.Children, 1) {
+			assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
+		}
+	}
 }
 
 var retryTypeDagTaskRunExitNodeAfterCompleted = `

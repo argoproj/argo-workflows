@@ -5,7 +5,6 @@ ARG GIT_TREE_STATE=unknown
 
 FROM golang:1.23-alpine3.19 as builder
 
-# libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
     git \
     make \
@@ -13,7 +12,6 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     gcc \
-    libc-dev \
     bash \
     mailcap
 
@@ -41,7 +39,7 @@ COPY api api
 
 RUN --mount=type=cache,target=/root/.yarn \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
-  NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
+  NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 

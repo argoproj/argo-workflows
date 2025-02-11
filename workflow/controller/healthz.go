@@ -36,7 +36,8 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		if !wfc.IsLeader() {
+		// the wfc.wfInformer is nil if it is not the leader
+		if wfc.wfInformer == nil {
 			log.Info("healthz: current pod is not the leader")
 			return nil
 		}

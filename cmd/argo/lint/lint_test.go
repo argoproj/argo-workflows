@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint/mocks"
@@ -68,13 +66,13 @@ spec:
 
 func TestLintFile(t *testing.T) {
 	file, err := os.CreateTemp("", "*.yaml")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
@@ -88,8 +86,8 @@ func TestLintFile(t *testing.T) {
 		Formatter: fmtr,
 	})
 
-	require.NoError(t, err)
-	assert.False(t, res.Success)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
@@ -97,13 +95,13 @@ func TestLintFile(t *testing.T) {
 
 func TestLintMultipleKinds(t *testing.T) {
 	file, err := os.CreateTemp("", "*.yaml")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
@@ -119,8 +117,8 @@ func TestLintMultipleKinds(t *testing.T) {
 		Formatter: fmtr,
 	})
 
-	require.NoError(t, err)
-	assert.False(t, res.Success)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "foo" (WorkflowTemplate): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
@@ -129,22 +127,22 @@ func TestLintMultipleKinds(t *testing.T) {
 
 func TestLintWithOutput(t *testing.T) {
 	file, err := os.CreateTemp("", "*.yaml")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
 	r, w, err := os.Pipe()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	_, err = w.Write(lintFileData)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	w.Close()
 	stdin := os.Stdin
 	defer func() { os.Stdin = stdin }()
 	os.Stdin = r
 
 	fmtr, err := GetFormatter("simple")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
@@ -172,8 +170,8 @@ func TestLintWithOutput(t *testing.T) {
 	mw.AssertCalled(t, "Write", []byte(expected[0]))
 	mw.AssertCalled(t, "Write", []byte(expected[1]))
 	mw.AssertCalled(t, "Write", []byte(expected[2]))
-	require.NoError(t, err)
-	assert.False(t, res.Success)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 2)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 2)
 	assert.Equal(t, strings.Join(expected, ""), res.Msg())
@@ -181,16 +179,16 @@ func TestLintWithOutput(t *testing.T) {
 
 func TestLintStdin(t *testing.T) {
 	r, w, err := os.Pipe()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	_, err = w.Write(lintFileData)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	w.Close()
 	stdin := os.Stdin
 	defer func() { os.Stdin = stdin }()
 	os.Stdin = r
 
 	fmtr, err := GetFormatter("simple")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
@@ -206,8 +204,8 @@ func TestLintStdin(t *testing.T) {
 		Formatter: fmtr,
 	})
 
-	require.NoError(t, err)
-	assert.False(t, res.Success)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
 	assert.Contains(t, res.msg, `stdin: in "steps-" (Workflow): lint error`)
 	assert.Contains(t, res.msg, `stdin: in "foo" (WorkflowTemplate): lint error`)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
@@ -215,19 +213,15 @@ func TestLintStdin(t *testing.T) {
 }
 
 func TestLintDeviceFile(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("device files not accessible in windows")
-	}
-
 	file, err := os.CreateTemp("", "*.yaml")
 	fd := file.Fd()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
@@ -243,8 +237,8 @@ func TestLintDeviceFile(t *testing.T) {
 		Formatter: fmtr,
 	})
 
-	require.NoError(t, err)
-	assert.False(t, res.Success)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, deviceFileName))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
@@ -288,15 +282,15 @@ func TestGetFormatter(t *testing.T) {
 			if test.formatterName != "" {
 				fmtr, err = GetFormatter(test.formatterName)
 				if test.expectedErr != nil {
-					require.EqualError(t, err, test.expectedErr.Error())
+					assert.EqualError(t, err, test.expectedErr.Error())
 					return
 				} else {
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}
 			}
 
 			r, err := Lint(context.Background(), &LintOptions{Formatter: fmtr})
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, test.expectedOutput, r.Msg())
 		})
 	}

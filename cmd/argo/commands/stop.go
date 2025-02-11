@@ -2,9 +2,10 @@ package commands
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"os"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -54,21 +55,17 @@ func NewStopCommand() *cobra.Command {
 
   argo stop --field-selector metadata.namespace=argo
 `,
-		Args: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 && !stopArgs.hasSelector() {
-				return errors.New("requires either selector or workflow")
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
 			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
-			}
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			stopArgs.namespace = client.Namespace()
 
-			return stopWorkflows(ctx, serviceClient, stopArgs, args)
+			err := stopWorkflows(ctx, serviceClient, stopArgs, args)
+			errors.CheckError(err)
 		},
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")

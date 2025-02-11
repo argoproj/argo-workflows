@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func tempFile(dir, prefix, suffix string) (*os.File, error) {
@@ -67,22 +67,22 @@ func TestTarDirectory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			log.Infof("Taring to %s", f.Name())
 
 			err = TarGzToWriter(tt.src, tt.level, bufio.NewWriter(f))
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
-			err = f.Close()
-			require.NoError(t, err)
-
 			err = os.Remove(f.Name())
-			require.NoError(t, err)
+			assert.NoError(t, err)
+
+			err = f.Close()
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -112,31 +112,31 @@ func TestTarFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := tempFile(os.TempDir()+"/argo-test", "file-"+tt.name+"-", "")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			_, err = data.WriteString("hello world")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			err = data.Close()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			dataTarPath := data.Name() + ".tgz"
 			f, err := os.Create(dataTarPath)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			log.Infof("Taring to %s", f.Name())
 
 			err = TarGzToWriter(data.Name(), tt.level, bufio.NewWriter(f))
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			err = os.Remove(data.Name())
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			err = f.Close()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			err = os.Remove(f.Name())
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -161,22 +161,22 @@ func TestZipDirectory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			log.Infof("Zipping to %s", f.Name())
 
 			err = ZipToWriter(tt.src, zip.NewWriter(f))
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
-			err = f.Close()
-			require.NoError(t, err)
-
 			err = os.Remove(f.Name())
-			require.NoError(t, err)
+			assert.NoError(t, err)
+
+			err = f.Close()
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -184,24 +184,24 @@ func TestZipDirectory(t *testing.T) {
 func TestZipFile(t *testing.T) {
 	t.Run("test_zip_file", func(t *testing.T) {
 		data, err := tempFile(os.TempDir()+"/argo-test", "file-random-", "")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		_, err = data.WriteString("hello world")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		err = data.Close()
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		dataZipPath := data.Name() + ".zip"
 		f, err := os.Create(dataZipPath)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		err = ZipToWriter(data.Name(), zip.NewWriter(f))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		err = os.Remove(data.Name())
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		err = f.Close()
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		err = os.Remove(f.Name())
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 }

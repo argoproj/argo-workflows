@@ -16,58 +16,30 @@ please [see here](http://bit.ly/argo-wf-cmty-mtng).
 
 ## Contributor Meetings (twice monthly)
 
-An opportunity for contributors and maintainers of Workflows and Events to discuss their current work and talk about what’s next. Feel free to join us!
-See the [Contributor Meeting doc](https://bit.ly/argo-data-weekly) for minutes, recordings, and more information.
-
-## Slack
-
-You can join the following channels on [CNCF Slack](https://argoproj.github.io/community/join-slack):
-
-* [`#argo-workflows`](https://cloud-native.slack.com/archives/C01QW9QSSSK): discussions focused mainly on use of Argo Workflows
-* [`#argo-wf-contributors`](https://cloud-native.slack.com/archives/C0510EUH90V): discussions focused mainly on development of Argo Workflows
-
-## Roles
-
-The Argo project currently has 4 designated [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md):
-
-* Member
-* Reviewer
-* Approver
-* Lead
-
-The Reviewer and Approver roles can optionally be scoped to an area of the code base (for example, UI or docs).
-
-Current roles for Reviewers and above can be found in [OWNERS](https://github.com/argoproj/argo-workflows/blob/main/OWNERS).
-
-If you are interested in formally joining the Argo project, [create a Membership request](https://github.com/argoproj/argoproj/issues/new?template=membership.md&title=REQUEST%3A%20New%20membership%20for%20%3Cyour-GH-handle%3E) in the [argoproj](https://github.com/argoproj/argoproj) repository as described in the [Membership](https://github.com/argoproj/argoproj/blob/main/community/membership.md) guide.
+A weekly opportunity for committers and maintainers of Workflows and Events to discuss their current work and
+talk about what’s next. Feel free to join us! For Contributor Meeting information, minutes and recordings
+please [see here](https://bit.ly/argo-data-weekly).
 
 ## How To Contribute
 
 We're always looking for contributors.
 
-### Authoring PRs
-
-* Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
-* Code contribution - investigate a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22), [high priority bugs](#triaging-bugs), or anything not assigned.
+* Documentation - something missing or unclear? Please submit a pull request!
+* Code contribution - investigate
+  a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
+  , or anything not assigned.
 * You can work on an issue without being assigned.
+* Join the `#argo-contributors` channel on [our Slack](https://argoproj.github.io/community/join-slack).
 
-#### Contributor Workshop
-
-Please check out the following resources if you are interested in contributing:
-
-* [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
-* [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
-* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).
-
-#### Running Locally
+### Running Locally
 
 To run Argo Workflows locally for development: [running locally](running-locally.md).
 
-#### Committing
+### Committing
 
 See the [Committing Guidelines](running-locally.md#committing).
 
-#### Dependencies
+### Dependencies
 
 Dependencies increase the risk of security issues and have on-going maintenance costs.
 
@@ -90,17 +62,18 @@ Example, should we add `fasttemplate`
 
 No, we should not add that dependency.
 
-#### Test Policy
+### Test Policy
 
 Changes without either unit or e2e tests are unlikely to be accepted.
 See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
 
-### Other Contributions
+### Contributor Workshop
 
-* [Reviewing PRs](#reviewing-prs)
-* Responding to questions in the [Slack](#slack) channels
-* Responding to questions in [Github Discussions](https://github.com/argoproj/argo-workflows/discussions)
-* [Triaging new bugs](#triaging-bugs)
+Please check out the following resources if you are interested in contributing:
+
+* [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
+* [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
+* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).
 
 #### Reviewing PRs
 

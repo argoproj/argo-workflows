@@ -4,24 +4,24 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_Validate(t *testing.T) {
 	t.Run("InvalidTemplate", func(t *testing.T) {
 		err := Validate("{{", func(tag string) error { return fmt.Errorf("") })
-		require.Error(t, err)
+		assert.Error(t, err)
 	})
 	t.Run("InvalidTag", func(t *testing.T) {
-		err := Validate("{{foo}}", func(tag string) error { return fmt.Errorf("%s", tag) })
-		require.EqualError(t, err, "foo")
+		err := Validate("{{foo}}", func(tag string) error { return fmt.Errorf(tag) })
+		assert.EqualError(t, err, "foo")
 	})
 	t.Run("Simple", func(t *testing.T) {
 		err := Validate("{{foo}}", func(tag string) error { return nil })
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 	t.Run("Expression", func(t *testing.T) {
-		err := Validate("{{=foo}}", func(tag string) error { return fmt.Errorf("%s", tag) })
-		require.NoError(t, err)
+		err := Validate("{{=foo}}", func(tag string) error { return fmt.Errorf(tag) })
+		assert.NoError(t, err)
 	})
 }

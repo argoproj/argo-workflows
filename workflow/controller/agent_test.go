@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -37,14 +36,14 @@ spec:
               failed: true
             arguments:
               parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
+  
     - name: http
       inputs:
         parameters:
           - name: url
       http:
        url: "{{inputs.parameters.url}}"
-
+      
 `)
 	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
@@ -94,7 +93,7 @@ status:
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
@@ -104,7 +103,7 @@ status:
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
@@ -120,7 +119,7 @@ status:
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
@@ -130,7 +129,7 @@ status:
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {

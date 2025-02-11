@@ -1,4 +1,5 @@
 //go:build executor
+// +build executor
 
 package e2e
 
@@ -7,7 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -36,16 +36,17 @@ func (s *SignalsSuite) TestStopBehavior() {
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
-			require.NotNil(t, nodeStatus)
-			assert.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
-
+			if assert.NotNil(t, nodeStatus) {
+				assert.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
+			}
 			nodeStatus = status.Nodes.FindByDisplayName("A.onExit")
-			require.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
 			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
-			require.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
 		})
 }
 
@@ -61,8 +62,9 @@ func (s *SignalsSuite) TestStopBehaviorWithDaemon() {
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("Daemon")
-			require.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
 		})
 }
 
@@ -78,8 +80,9 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
-			require.NotNil(t, nodeStatus)
-			assert.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
+			if assert.NotNil(t, nodeStatus) {
+				assert.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
+			}
 			nodeStatus = status.Nodes.FindByDisplayName("A.onExit")
 			assert.Nil(t, nodeStatus)
 			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
@@ -100,8 +103,9 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
-			require.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			}
 			nodeStatus = status.Nodes.FindByDisplayName("B")
 			assert.Nil(t, nodeStatus)
 		})
@@ -156,14 +160,15 @@ func (s *SignalsSuite) TestSignaledContainerSet() {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			assert.Contains(t, status.Message, "(exit code 137)")
 			one := status.Nodes.FindByDisplayName("one")
-			require.NotNil(t, one)
-			assert.Equal(t, wfv1.NodeFailed, one.Phase)
-			assert.Contains(t, one.Message, "(exit code 137)")
-
+			if assert.NotNil(t, one) {
+				assert.Equal(t, wfv1.NodeFailed, one.Phase)
+				assert.Contains(t, one.Message, "(exit code 137)")
+			}
 			two := status.Nodes.FindByDisplayName("two")
-			require.NotNil(t, two)
-			assert.Equal(t, wfv1.NodeFailed, two.Phase)
-			assert.Contains(t, two.Message, "(exit code 143)")
+			if assert.NotNil(t, two) {
+				assert.Equal(t, wfv1.NodeFailed, two.Phase)
+				assert.Contains(t, two.Message, "(exit code 143)")
+			}
 		})
 }
 
