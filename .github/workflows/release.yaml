@@ -95,7 +95,10 @@ jobs:
   build-windows:
     name: Build & push windows
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2022, windows-2025]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Docker Login
@@ -124,7 +127,7 @@ jobs:
 
           targets="argoexec"
           for target in $targets; do
-            image_name="${docker_org}/${target}:${tag}-windows"
+            image_name="${docker_org}/${target}:${tag}-${{ matrix.os }}"
             docker build \
               --build-arg GIT_COMMIT=$tag \
               --build-arg GIT_BRANCH=$branch \
@@ -187,8 +190,8 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
-              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
+              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows-2022 ${image_name}-windows-2025
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows-2022 quay.io/${image_name}-windows-2025
             else
               docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
