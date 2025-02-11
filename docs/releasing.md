@@ -56,7 +56,15 @@ this was successful.
 ## Update Changelog
 
 Once the tag is published, GitHub Actions will automatically open a PR to update the changelog. Once the PR is ready,
-you can approve it, enable auto-merge, and comment `/test` to run CI on it.
+you can approve it, enable auto-merge, and then run the following to force trigger the CI build:
+
+```bash
+git branch -D create-pull-request/changelog
+git fetch upstream
+git checkout --track upstream/create-pull-request/changelog
+git commit -s --allow-empty -m "chore: Force trigger CI"
+git push upstream create-pull-request/changelog
+```
 
 ## Announce on Slack
 
