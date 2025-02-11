@@ -1124,11 +1124,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 shutdown="shutdown_example",
                 suspend=True,
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                    mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                        database=True,
-                        name="name_example",
-                        namespace="namespace_example",
-                    ),
                     mutexes=[
                         IoArgoprojWorkflowV1alpha1Mutex(
                             database=True,
@@ -1136,17 +1131,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             namespace="namespace_example",
                         ),
                     ],
-                    semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                        config_map_key_ref=ConfigMapKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
-                        ),
-                        database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                            key="key_example",
-                        ),
-                        namespace="namespace_example",
-                    ),
                     semaphores=[
                         IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -5608,11 +5592,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            database=True,
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 database=True,
@@ -5620,17 +5599,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                key="key_example",
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -10500,11 +10468,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                database=True,
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     database=True,
@@ -10512,17 +10475,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                    key="key_example",
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -17414,11 +17366,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                database=True,
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     database=True,
@@ -17426,17 +17373,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                    key="key_example",
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -18865,11 +18801,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     shutdown="shutdown_example",
                     suspend=True,
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            database=True,
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 database=True,
@@ -18877,17 +18808,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                key="key_example",
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -23349,11 +23269,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                database=True,
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     database=True,
@@ -23361,17 +23276,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                    key="key_example",
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -28241,11 +28145,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 duration="duration_example",
                             ),
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                                mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                    database=True,
-                                    name="name_example",
-                                    namespace="namespace_example",
-                                ),
                                 mutexes=[
                                     IoArgoprojWorkflowV1alpha1Mutex(
                                         database=True,
@@ -28253,17 +28152,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         namespace="namespace_example",
                                     ),
                                 ],
-                                semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                    config_map_key_ref=ConfigMapKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
-                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                        key="key_example",
-                                    ),
-                                    namespace="namespace_example",
-                                ),
                                 semaphores=[
                                     IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                         config_map_key_ref=ConfigMapKeySelector(
@@ -30604,11 +30492,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 shutdown="shutdown_example",
                 suspend=True,
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                    mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                        database=True,
-                        name="name_example",
-                        namespace="namespace_example",
-                    ),
                     mutexes=[
                         IoArgoprojWorkflowV1alpha1Mutex(
                             database=True,
@@ -30616,17 +30499,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             namespace="namespace_example",
                         ),
                     ],
-                    semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                        config_map_key_ref=ConfigMapKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
-                        ),
-                        database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                            key="key_example",
-                        ),
-                        namespace="namespace_example",
-                    ),
                     semaphores=[
                         IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -35088,11 +34960,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            database=True,
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 database=True,
@@ -35100,17 +34967,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                key="key_example",
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -39980,11 +39836,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                database=True,
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     database=True,
@@ -39992,17 +39843,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                    key="key_example",
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -46894,11 +46734,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                database=True,
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     database=True,
@@ -46906,17 +46741,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                    key="key_example",
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -48345,11 +48169,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     shutdown="shutdown_example",
                     suspend=True,
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            database=True,
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 database=True,
@@ -48357,17 +48176,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                key="key_example",
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -52829,11 +52637,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                database=True,
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     database=True,
@@ -52841,17 +52644,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                    key="key_example",
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -57721,11 +57513,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 duration="duration_example",
                             ),
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                                mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                    database=True,
-                                    name="name_example",
-                                    namespace="namespace_example",
-                                ),
                                 mutexes=[
                                     IoArgoprojWorkflowV1alpha1Mutex(
                                         database=True,
@@ -57733,17 +57520,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         namespace="namespace_example",
                                     ),
                                 ],
-                                semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                    config_map_key_ref=ConfigMapKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
-                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
-                                        key="key_example",
-                                    ),
-                                    namespace="namespace_example",
-                                ),
                                 semaphores=[
                                     IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                         config_map_key_ref=ConfigMapKeySelector(

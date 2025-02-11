@@ -131,10 +131,9 @@ func TestMultipleMutexLock(t *testing.T) {
       - name: two
       - name: three
 `)
-		// Old style single mutex
 		wf1 := templatedWorkflow("one",
-			`    mutex:
-      name: one
+			`    mutexes:
+      - name: one
 `)
 		wf2 := templatedWorkflow("two",
 			`    mutexes:

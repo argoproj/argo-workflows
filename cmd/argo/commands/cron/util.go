@@ -23,7 +23,7 @@ import (
 func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	var nextRunTime time.Time
 	now := time.Now().UTC()
-	for _, schedule := range cwf.Spec.GetSchedulesWithTimezone(ctx) {
+	for _, schedule := range cwf.Spec.GetSchedulesWithTimezone() {
 		cronSchedule, err := cron.ParseStandard(schedule)
 		if err != nil {
 			return time.Time{}, err

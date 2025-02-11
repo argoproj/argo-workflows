@@ -167,7 +167,7 @@ const (
 // due to ambiguity. Currently we just assume workflow level.
 func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
 	if wf.Spec.Synchronization != nil {
-		syncItems, err := allSyncItems(ctx, wf.Spec.Synchronization)
+		syncItems, err := allSyncItems(wf.Spec.Synchronization)
 		if err != nil {
 			return ErrorLevel, err
 		}
@@ -185,7 +185,7 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 	var lastErr error
 	for _, template := range wf.Spec.Templates {
 		if template.Synchronization != nil {
-			syncItems, err := allSyncItems(ctx, template.Synchronization)
+			syncItems, err := allSyncItems(template.Synchronization)
 			if err != nil {
 				return ErrorLevel, err
 			}
@@ -279,7 +279,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	}
 
 	failedLockName := ""
-	syncItems, err := allSyncItems(ctx, syncLockRef)
+	syncItems, err := allSyncItems(syncLockRef)
 	if err != nil {
 		return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
 	}
@@ -475,7 +475,7 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 	sm.log.WithField("holderKey", holderKey).Info(ctx, "Release")
 	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
 	// should never have acquired anything if this errored
-	syncItems, _ := allSyncItems(ctx, syncRef)
+	syncItems, _ := allSyncItems(syncRef)
 
 	for _, syncItem := range syncItems {
 		lockName, err := syncItem.lockName(wf.Namespace)
