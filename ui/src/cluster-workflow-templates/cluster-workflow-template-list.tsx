@@ -1,7 +1,7 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
@@ -26,9 +26,10 @@ import './cluster-workflow-template-list.scss';
 export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
+    const isFirstRender = useRef(true);
     const [templates, setTemplates] = useState<models.ClusterWorkflowTemplate[]>();
     const [error, setError] = useState<Error>();
-    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
 
     async function fetchClusterWorkflowTemplates() {
         try {
@@ -42,10 +43,26 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
 
     useEffect(
         useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel'));
+            setSidePanel(p.get('sidePanel') === 'true');
         }),
         [history]
     );
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        const params = new URLSearchParams();
+        if (sidePanel) {
+            params.set('sidePanel', 'true');
+        }
+
+        history.push({
+            pathname: uiUrl('cluster-workflow-templates'),
+            search: params.toString()
+        });
+    }, [history, sidePanel]);
 
     useEffect(() => {
         fetchClusterWorkflowTemplates();
@@ -116,7 +133,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                         {
                             title: 'Create New Cluster Workflow Template',
                             iconClassName: 'fa fa-plus',
-                            action: () => setSidePanel('new')
+                            action: () => setSidePanel(true)
                         }
                     ]
                 }
