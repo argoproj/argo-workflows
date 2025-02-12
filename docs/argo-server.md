@@ -177,7 +177,7 @@ We recommend you put the Argo Server behind a load balancer, and that load balan
 Argo Server by default rate limits to 1000 per IP per second, you can configure it through `--api-rate-limit`.
 You can access additional information through the following headers.
 
-* `x-ratelimit-limit` - the rate limit ceiling that is applicable for the current request.
-* `x-ratelimit-remaining` - the number of requests left for the current rate-limit window.
-* `x-ratelimit-reset` - the time at which the rate limit resets, specified in UTC time.
+* `X-Rate-Limit-Limit` - the rate limit ceiling that is applicable for the current request.
+* `X-Rate-Limit-Remaining` - the number of requests left for the current rate-limit window.
+* `X-Rate-Limit-Reset` - the time at which the rate limit resets, specified in UTC time.
 * `Retry-After` - indicate when a client should retry requests (when the rate limit expires), in UTC time.
