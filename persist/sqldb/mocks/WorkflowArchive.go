@@ -64,17 +64,17 @@ func (_m *WorkflowArchive) CountWorkflows(options utils.ListOptions) (int64, err
 	return r0, r1
 }
 
-// DeleteExpiredWorkflows provides a mock function with given fields: ttl
-func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
-	ret := _m.Called(ttl)
+// DeleteExpiredWorkflows provides a mock function with given fields: ttl, keepPrefixes
+func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration, keepPrefixes []string) error {
+	ret := _m.Called(ttl, keepPrefixes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteExpiredWorkflows")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(time.Duration) error); ok {
-		r0 = rf(ttl)
+	if rf, ok := ret.Get(0).(func(time.Duration, []string) error); ok {
+		r0 = rf(ttl, keepPrefixes)
 	} else {
 		r0 = ret.Error(0)
 	}

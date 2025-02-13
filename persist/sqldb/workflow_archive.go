@@ -75,7 +75,7 @@ type WorkflowArchive interface {
 	GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error)
 	GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
-	DeleteExpiredWorkflows(ttl time.Duration) error
+	DeleteExpiredWorkflows(ttl time.Duration, keepPrefixes []string) error
 	IsEnabled() bool
 	ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error)
 	ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error)
@@ -462,12 +462,20 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	return nil
 }
 
-func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
-	rs, err := r.session.SQL().
+func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration, keepPrefixes []string) error {
+	deleter := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
-		Exec()
+		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds())))
+
+	for _, prefix := range keepPrefixes {
+		if prefix == "" {
+			continue
+		}
+		deleter = deleter.And(fmt.Sprintf("name not like '%s", prefix) + "%'")
+	}
+
+	rs, err := deleter.Exec()
 	if err != nil {
 		return err
 	}
