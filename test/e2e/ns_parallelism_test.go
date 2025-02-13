@@ -1,4 +1,4 @@
-//go:build corefunctional
+//go:build functional
 
 package e2e
 
@@ -16,7 +16,8 @@ type NamespaceParallelismSuite struct {
 	fixtures.E2ESuite
 }
 
-const wf = `apiVersion: argoproj.io/v1alpha1
+const wf = `
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -30,9 +31,9 @@ spec:
   templates:
   - name: hello-world
     container:
-      image: ubuntu:22.04
+      image: "argoproj/argosay:v2"
       command: [sleep]
-      args: ["240"]
+      args: ["60"]
 `
 
 func (s *NamespaceParallelismSuite) TestNamespaceParallelism() {
