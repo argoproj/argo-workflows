@@ -10541,6 +10541,10 @@
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
+        "sendContentMd5": {
+          "description": "SendContentMd5 tells the driver to send MD5 header for object put (setting this to true is required if you have object lock enabled on your bucket).",
+          "type": "boolean"
+        },
         "sessionTokenSecret": {
           "description": "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -10601,6 +10605,10 @@
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "sendContentMd5": {
+          "description": "SendContentMd5 tells the driver to send MD5 header for object put (setting this to true is required if you have object lock enabled on your bucket).",
+          "type": "boolean"
         },
         "sessionTokenSecret": {
           "description": "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant",

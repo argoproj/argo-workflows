@@ -1447,6 +1447,9 @@ message S3Bucket {
 
   // CASecret specifies the secret that contains the CA, used to verify the TLS connection
   optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
+
+  // SendContentMd5 tells the driver to send MD5 header for object put (setting this to true is required if you have object lock enabled on your bucket).
+  optional bool sendContentMd5 = 13;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
