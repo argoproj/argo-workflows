@@ -61,6 +61,7 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Clien
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
+		SendContentMd5: true,
 	}
 
 	if tr, err := argos3.GetDefaultTransport(opts); err == nil {
