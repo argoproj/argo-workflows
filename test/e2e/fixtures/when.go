@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -39,6 +40,7 @@ type When struct {
 	hydrator          hydrator.Interface
 	kubeClient        kubernetes.Interface
 	bearerToken       string
+	restConfig        *rest.Config
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -219,6 +221,7 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed
 		}), "to have failed pod"
 	}
+	ToBePending = ToHavePhase(wfv1.WorkflowPending)
 )
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
@@ -488,6 +491,28 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 	return w
 }
 
+func (w *When) AddNamespaceLimit(limit string) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	patchMap := make(map[string]interface{})
+	metadata := make(map[string]interface{})
+	labels := make(map[string]interface{})
+	labels["workflows.argoproj.io/namespace-parallelism-limit"] = limit
+	metadata["labels"] = labels
+	patchMap["metadata"] = metadata
+
+	bs, err := json.Marshal(patchMap)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+
+	_, err = w.kubeClient.CoreV1().Namespaces().Patch(ctx, "argo", types.MergePatchType, []byte(bs), metav1.PatchOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
 type PodCondition func(p *corev1.Pod) bool
 
 var (
@@ -717,6 +742,7 @@ func (w *When) Then() *Then {
 		hydrator:    w.hydrator,
 		kubeClient:  w.kubeClient,
 		bearerToken: w.bearerToken,
+		restConfig:  w.restConfig,
 	}
 }
 
@@ -736,5 +762,6 @@ func (w *When) Given() *Given {
 		cwfTemplates:      w.cwfTemplates,
 		cronWf:            w.cronWf,
 		kubeClient:        w.kubeClient,
+		restConfig:        w.restConfig,
 	}
 }
