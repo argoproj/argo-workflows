@@ -30,7 +30,7 @@ spec:
   templates:
   - name: hello-world
     container:
-      image: busybox
+			image: ubuntu:22.04
       command: [sleep]
       args: ["240"]
 `
