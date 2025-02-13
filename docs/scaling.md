@@ -70,6 +70,9 @@ args:
 
 This configuration allows the Controller to send an average of 50 queries per second, with a burst capacity of 75 queries per second before throttling is enforced.
 
+It is important to note that increasing these values can increase the load on the Kubernetes API server and that you must observe your Kubernetes API under load in order to determine whether or not the values you have chosen are correct for your needs.
+It is not possible to provide a one-size-fits-all recommendation for these values.
+
 ## Sharding
 
 ### One Install Per Namespace
