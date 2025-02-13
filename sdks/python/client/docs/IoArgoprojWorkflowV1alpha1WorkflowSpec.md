@@ -27,7 +27,6 @@ Name | Type | Description | Notes
 **pod_disruption_budget** | [**IoK8sApiPolicyV1PodDisruptionBudgetSpec**](IoK8sApiPolicyV1PodDisruptionBudgetSpec.md) |  | [optional] 
 **pod_gc** | [**IoArgoprojWorkflowV1alpha1PodGC**](IoArgoprojWorkflowV1alpha1PodGC.md) |  | [optional] 
 **pod_metadata** | [**IoArgoprojWorkflowV1alpha1Metadata**](IoArgoprojWorkflowV1alpha1Metadata.md) |  | [optional] 
-**pod_priority** | **int** | Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead. | [optional] 
 **pod_priority_class_name** | **str** | PriorityClassName to apply to workflow pods. | [optional] 
 **pod_spec_patch** | **str** | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | [optional] 
 **priority** | **int** | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | [optional] 

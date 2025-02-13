@@ -78,9 +78,9 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 			},
 			Spec: wfv1.WorkflowSpec{
 				Synchronization: &wfv1.Synchronization{
-					Semaphore: &wfv1.SemaphoreRef{
+					Semaphores: []*wfv1.SemaphoreRef{{
 						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{},
-					},
+					}},
 				},
 			},
 		})
@@ -97,9 +97,9 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 			},
 			Spec: wfv1.WorkflowSpec{
 				Synchronization: &wfv1.Synchronization{
-					Semaphore: &wfv1.SemaphoreRef{
+					Semaphores: []*wfv1.SemaphoreRef{{
 						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{},
-					},
+					}},
 				},
 			},
 		})

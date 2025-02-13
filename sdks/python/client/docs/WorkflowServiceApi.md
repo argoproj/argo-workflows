@@ -1052,7 +1052,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         "key": "key_example",
                     },
                 ),
-                pod_priority=1,
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
@@ -1112,24 +1111,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 shutdown="shutdown_example",
                 suspend=True,
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                    mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                        name="name_example",
-                        namespace="namespace_example",
-                    ),
                     mutexes=[
                         IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
                             namespace="namespace_example",
                         ),
                     ],
-                    semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                        config_map_key_ref=ConfigMapKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
-                        ),
-                        namespace="namespace_example",
-                    ),
                     semaphores=[
                         IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -4018,7 +4005,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     parallelism=1,
                     plugin={},
                     pod_spec_patch="pod_spec_patch_example",
-                    priority=1,
                     priority_class_name="priority_class_name_example",
                     resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                         action="action_example",
@@ -5529,24 +5515,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -8843,7 +8817,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -10354,24 +10327,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -15666,7 +15627,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -17177,24 +17137,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -18548,7 +18496,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                     ),
-                    pod_priority=1,
                     pod_priority_class_name="pod_priority_class_name_example",
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
@@ -18608,24 +18555,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     shutdown="shutdown_example",
                     suspend=True,
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -21514,7 +21449,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -23025,24 +22959,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -26339,7 +26261,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             parallelism=1,
                             plugin={},
                             pod_spec_patch="pod_spec_patch_example",
-                            priority=1,
                             priority_class_name="priority_class_name_example",
                             resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                                 action="action_example",
@@ -27850,24 +27771,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 duration="duration_example",
                             ),
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                                mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                    name="name_example",
-                                    namespace="namespace_example",
-                                ),
                                 mutexes=[
                                     IoArgoprojWorkflowV1alpha1Mutex(
                                         name="name_example",
                                         namespace="namespace_example",
                                     ),
                                 ],
-                                semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                    config_map_key_ref=ConfigMapKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
-                                    namespace="namespace_example",
-                                ),
                                 semaphores=[
                                     IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                         config_map_key_ref=ConfigMapKeySelector(
@@ -30131,7 +30040,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         "key": "key_example",
                     },
                 ),
-                pod_priority=1,
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
@@ -30191,24 +30099,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 shutdown="shutdown_example",
                 suspend=True,
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                    mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                        name="name_example",
-                        namespace="namespace_example",
-                    ),
                     mutexes=[
                         IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
                             namespace="namespace_example",
                         ),
                     ],
-                    semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                        config_map_key_ref=ConfigMapKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
-                        ),
-                        namespace="namespace_example",
-                    ),
                     semaphores=[
                         IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -33097,7 +32993,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     parallelism=1,
                     plugin={},
                     pod_spec_patch="pod_spec_patch_example",
-                    priority=1,
                     priority_class_name="priority_class_name_example",
                     resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                         action="action_example",
@@ -34608,24 +34503,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -37922,7 +37805,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -39433,24 +39315,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -44745,7 +44615,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -46256,24 +46125,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -47627,7 +47484,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                     ),
-                    pod_priority=1,
                     pod_priority_class_name="pod_priority_class_name_example",
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
@@ -47687,24 +47543,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     shutdown="shutdown_example",
                     suspend=True,
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                        mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                            name="name_example",
-                            namespace="namespace_example",
-                        ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                         ],
-                        semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                            config_map_key_ref=ConfigMapKeySelector(
-                                key="key_example",
-                                name="name_example",
-                                optional=True,
-                            ),
-                            namespace="namespace_example",
-                        ),
                         semaphores=[
                             IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -50593,7 +50437,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -52104,24 +51947,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                            mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                name="name_example",
-                                namespace="namespace_example",
-                            ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                             ],
-                            semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                config_map_key_ref=ConfigMapKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
-                                namespace="namespace_example",
-                            ),
                             semaphores=[
                                 IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -55418,7 +55249,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             parallelism=1,
                             plugin={},
                             pod_spec_patch="pod_spec_patch_example",
-                            priority=1,
                             priority_class_name="priority_class_name_example",
                             resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                                 action="action_example",
@@ -56929,24 +56759,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 duration="duration_example",
                             ),
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
-                                mutex=IoArgoprojWorkflowV1alpha1Mutex(
-                                    name="name_example",
-                                    namespace="namespace_example",
-                                ),
                                 mutexes=[
                                     IoArgoprojWorkflowV1alpha1Mutex(
                                         name="name_example",
                                         namespace="namespace_example",
                                     ),
                                 ],
-                                semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
-                                    config_map_key_ref=ConfigMapKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
-                                    namespace="namespace_example",
-                                ),
                                 semaphores=[
                                     IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                         config_map_key_ref=ConfigMapKeySelector(

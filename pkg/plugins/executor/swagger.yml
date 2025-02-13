@@ -4276,15 +4276,11 @@ definitions:
     Synchronization:
         description: Synchronization holds synchronization lock configuration
         properties:
-            mutex:
-                $ref: '#/definitions/Mutex'
             mutexes:
                 description: 'v3.6 and after: Mutexes holds the list of Mutex lock details'
                 items:
                     $ref: '#/definitions/Mutex'
                 type: array
-            semaphore:
-                $ref: '#/definitions/SemaphoreRef'
             semaphores:
                 description: 'v3.6 and after: Semaphores holds the list of Semaphores configuration'
                 items:
@@ -4414,10 +4410,6 @@ definitions:
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                     container fields which are not strings (e.g. resource limits).
                 type: string
-            priority:
-                description: Priority to apply to workflow pods.
-                format: int32
-                type: integer
             priorityClassName:
                 description: PriorityClassName to apply to workflow pods.
                 type: string

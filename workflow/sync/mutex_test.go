@@ -23,8 +23,8 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    mutex:
-      name: test
+    mutexes:
+      - name: test
   templates:
   - name: whalesay
     container:
@@ -42,9 +42,9 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    mutex:
-      namespace: other
-      name: test
+    mutexes:
+      - namespace: other
+        name: test
   templates:
   - name: whalesay
     container:
@@ -70,8 +70,8 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    mutex:
-      name: test
+    mutexes:
+      - name: test
   templates:
   - container:
       args:
@@ -119,10 +119,9 @@ func TestMutexLock(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
-		ctx := context.Background()
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(ctx, wfList.Items)
+		syncManager.Initialize(wfList.Items)
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
@@ -321,8 +320,8 @@ spec:
       name: ""
     name: acquire-lock
     synchronization:
-      mutex:
-        name: welcome
+      mutexes:
+        - name: welcome
 status:
   finishedAt: null
   nodes:

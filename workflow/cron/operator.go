@@ -143,7 +143,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
+	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
@@ -305,7 +305,7 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 }
 
 func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (bool, error) {
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	if err != nil {
 		return false, err
 	}
@@ -316,14 +316,14 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (boo
 	return false, nil
 }
 
-func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Context) (time.Time, error) {
+func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, error) {
 	// If the CronWorkflow schedule was just updated, then do not run any outstanding workflows.
 	if woc.cronWf.IsUsingNewSchedule() {
 		return time.Time{}, nil
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone(ctx) {
+		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone() {
 			var now time.Time
 			var cronSchedule cron.Schedule
 			now = time.Now()

@@ -23,11 +23,12 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
   uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
 spec:
-  schedule: '* * * * *'
+  schedules:
+    - '* * * * *'
   workflowSpec:
     entrypoint: argosay
     templates:
-    - 
+    -
       container:
         args:
         - echo
@@ -81,7 +82,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
   uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
 spec:
-  schedules: 
+  schedules:
   - '* * * * *'
   - '*/2 * * * *'
   workflowSpec:

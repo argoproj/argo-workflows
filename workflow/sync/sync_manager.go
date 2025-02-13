@@ -106,9 +106,9 @@ const (
 // a synchronization exists both at the template level
 // and at the workflow level -> impossible to upgrade correctly
 // due to ambiguity. Currently we just assume workflow level.
-func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
+func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
 	if wf.Spec.Synchronization != nil {
-		syncItems, err := allSyncItems(ctx, wf.Spec.Synchronization)
+		syncItems, err := allSyncItems(wf.Spec.Synchronization)
 		if err != nil {
 			return ErrorLevel, err
 		}
@@ -127,7 +127,7 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 	var lastErr error
 	for _, template := range wf.Spec.Templates {
 		if template.Synchronization != nil {
-			syncItems, err := allSyncItems(ctx, template.Synchronization)
+			syncItems, err := allSyncItems(template.Synchronization)
 			if err != nil {
 				return ErrorLevel, err
 			}
@@ -150,7 +150,7 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 	return ErrorLevel, lastErr
 }
 
-func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
+func (sm *Manager) Initialize(wfs []wfv1.Workflow) {
 	for _, wf := range wfs {
 		if wf.Status.Synchronization == nil {
 			continue
@@ -169,7 +169,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 				}
 
 				for _, holders := range holding.Holders {
-					level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Semaphore)
+					level, err := getWorkflowSyncLevelByName(&wf, holding.Semaphore)
 					if err != nil {
 						log.Warnf("cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
 						continue
@@ -189,7 +189,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 				if mutex == nil {
 					mutex := sm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
-						level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Mutex)
+						level, err := getWorkflowSyncLevelByName(&wf, holding.Mutex)
 						if err != nil {
 							log.Warnf("cannot obtain lock level for '%s' : %v", holding.Mutex, err)
 							continue
@@ -216,7 +216,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	}
 
 	failedLockName := ""
-	syncItems, err := allSyncItems(ctx, syncLockRef)
+	syncItems, err := allSyncItems(syncLockRef)
 	if err != nil {
 		return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
 	}
@@ -317,7 +317,7 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 	holderKey := getHolderKey(wf, nodeName)
 	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
 	// should never have acquired anything if this errored
-	syncItems, _ := allSyncItems(ctx, syncRef)
+	syncItems, _ := allSyncItems(syncRef)
 
 	for _, syncItem := range syncItems {
 		lockName, err := getLockName(syncItem, wf.Namespace)

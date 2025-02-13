@@ -3,7 +3,8 @@ kind: CronWorkflow
 metadata:
   name: sleep-when
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   when: "{{= cronworkflow.lastScheduledTime == nil || (now() - cronworkflow.lastScheduledTime).Seconds() > 360 }}"
   workflowSpec:

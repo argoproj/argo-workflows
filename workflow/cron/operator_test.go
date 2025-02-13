@@ -33,7 +33,8 @@ var scheduledWf = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedule: '* * * * *'
+    schedules:
+      - '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -57,7 +58,6 @@ var scheduledWf = `
 func TestRunOutstandingWorkflows(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
-	ctx := context.Background()
 	var toWait time.Duration
 	if sec <= 30 {
 		toWait = time.Duration(30-sec) * time.Second
@@ -80,7 +80,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
@@ -91,14 +91,14 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedule("0 * * * *")
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
@@ -119,7 +119,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
@@ -130,14 +130,14 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedule("0 * * * *")
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 }
@@ -174,7 +174,6 @@ status:
 func TestRunOutstandingWorkflowsAcrossTimezones(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
-	ctx := context.Background()
 	var toWait time.Duration
 	if sec <= 30 {
 		toWait = time.Duration(30-sec) * time.Second
@@ -196,7 +195,7 @@ func TestRunOutstandingWorkflowsAcrossTimezones(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	// The missedExecutionTime should be the current complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix()+60)
@@ -213,7 +212,7 @@ func TestRunOutstandingWorkflowsAcrossTimezones(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	// We're outside the window for execution now
 	assert.True(t, missedExecutionTime.IsZero())
@@ -234,7 +233,8 @@ var invalidWf = `
   metadata:
     name: hello-world
   spec:
-    schedule: '* * * * *'
+    schedules:
+      - '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -286,7 +286,8 @@ metadata:
 spec:
   concurrencyPolicy: Replace
   failedJobsHistoryLimit: 4
-  schedule: 10 * * 12737123 *
+  schedules:
+    - 10 * * 12737123 *
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
@@ -366,7 +367,8 @@ metadata:
 spec:
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 1
-  schedule: 41 12 * * *
+  schedules:
+    - 41 12 * * *
   successfulJobsHistoryLimit: 1
   timezone: America/New_York
   workflowSpec:
@@ -386,7 +388,6 @@ spec:
 
 func TestLastUsedSchedule(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	ctx := context.Background()
 	v1alpha1.MustUnmarshal([]byte(lastUsedSchedule), &cronWf)
 
 	cs := fake.NewSimpleClientset()
@@ -402,7 +403,7 @@ func TestLastUsedSchedule(t *testing.T) {
 		scheduledTimeFunc: inferScheduledTime,
 	}
 
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.Equal(t, time.Time{}, missedExecutionTime)
 
@@ -427,7 +428,8 @@ metadata:
 spec:
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 4
-  schedule: 0-36/1 21-22 * * *
+  schedules:
+    - 0-36/1 21-22 * * *
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
@@ -460,7 +462,6 @@ status:
 `
 
 func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
-	ctx := context.Background()
 	var cronWf v1alpha1.CronWorkflow
 	v1alpha1.MustUnmarshal([]byte(forbidMissedSchedule), &cronWf)
 	// StartingDeadlineSeconds is after the current second, so cron should be run
@@ -473,7 +474,7 @@ func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 			log:    logrus.WithFields(logrus.Fields{}),
 		}
 		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 		require.NoError(t, err)
 		assert.True(t, missedExecutionTime.IsZero())
 	})
@@ -540,7 +541,7 @@ func TestMultipleSchedules(t *testing.T) {
 	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
 }
 
-var specErrWithScheduleAndSchedules = `
+var specErrWithEmptySchedules = `
   apiVersion: argoproj.io/v1alpha1
   kind: CronWorkflow
   metadata:
@@ -552,10 +553,7 @@ var specErrWithScheduleAndSchedules = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedule: "* * * * *"
-    schedules:
-    - "* * * * *"
-    - "0 * * * *"
+    schedules: []
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -576,9 +574,9 @@ var specErrWithScheduleAndSchedules = `
     lastScheduledTime: "2020-02-28T19:05:00Z"
 `
 
-func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
+func TestSpecErrorWithEmptySchedules(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(specErrWithScheduleAndSchedules), &cronWf)
+	v1alpha1.MustUnmarshal([]byte(specErrWithEmptySchedules), &cronWf)
 
 	cs := fake.NewSimpleClientset()
 	ctx := context.Background()
@@ -599,7 +597,7 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
 	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
-	assert.Contains(t, submissionErrorCond.Message, "cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
+	assert.Contains(t, submissionErrorCond.Message, "cron workflow must have at least one schedule")
 }
 
 var specErrWithValidAndInvalidSchedules = `
@@ -667,7 +665,6 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
-	ctx := context.Background()
 	var toWait time.Duration
 	if sec <= 30 {
 		toWait = time.Duration(30-sec) * time.Second
@@ -691,7 +688,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
@@ -703,14 +700,14 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedules([]string{"0 * * * *,1 * * * *"})
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
@@ -732,7 +729,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
@@ -744,14 +741,14 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedules([]string{"0 * * * *,1 * * * *"})
-	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 }

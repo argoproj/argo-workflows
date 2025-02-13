@@ -14,18 +14,18 @@ spec:
 
     - name: load-command
       synchronization:
-        mutex:
-          name: task-1
+        mutexes:
+          - name: task-1
       container:
         image: argoproj/argosay:v2
         args: ["sleep", "2s"]
 
     - name: django-command
       synchronization:
-        semaphore:
-          configMapKeyRef:
-            name: my-config
-            key: workflow
+        semaphores:
+          - configMapKeyRef:
+              name: my-config
+              key: workflow
       container:
         image: argoproj/argosay:v2
         args: ["sleep", "2s"]

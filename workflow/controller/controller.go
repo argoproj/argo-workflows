@@ -419,7 +419,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(ctx, wfList.Items)
+	wfc.syncManager.Initialize(wfList.Items)
 
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
