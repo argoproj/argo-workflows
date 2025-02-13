@@ -3285,6 +3285,7 @@ cause implementors to also use a fixed point implementation.
 | region | string| `string` |  | | Region contains the optional bucket region |  |
 | roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| sendContentMd5 | boolean| `bool` |  | | SendContentMd5 tells the driver to send MD5 header for object put (setting this to true is required if you have object lock enabled on your bucket). |  |
 | sessionTokenSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
 

@@ -182,6 +182,7 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            send_content_md5 (bool): SendContentMd5 tells the driver to send MD5 header for object put (setting this to true is required if you have object lock enabled on your bucket).. [optional]  # noqa: E501
             session_token_secret (SecretKeySelector): [optional]  # noqa: E501
             use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
         """
@@ -277,6 +278,7 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            send_content_md5 (bool): SendContentMd5 tells the driver to send MD5 header for object put (setting this to true is required if you have object lock enabled on your bucket).. [optional]  # noqa: E501
             session_token_secret (SecretKeySelector): [optional]  # noqa: E501
             use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
         """
