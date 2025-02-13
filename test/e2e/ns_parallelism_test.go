@@ -1,3 +1,5 @@
+//go:build corefunctional
+
 package e2e
 
 import (
