@@ -138,11 +138,6 @@ func (c *Controller) GetPodPhaseMetrics() map[string]int64 {
 	return result
 }
 
-// // log something after calling this function maybe?
-// func podTerminating(pod *v1.Pod) bool {
-// 	return pod.DeletionTimestamp != nil
-// }
-
 // Check if owned pod's workflow no longer exists or workflow is in deletion
 func (c *Controller) podOrphaned(pod *v1.Pod) bool {
 	controllerRef := metav1.GetControllerOf(pod)
