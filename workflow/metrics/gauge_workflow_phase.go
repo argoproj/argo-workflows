@@ -26,9 +26,9 @@ func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
 	if m.callbacks.WorkflowPhase != nil {
 		wfpGauge := workflowPhaseGauge{
 			callback: m.callbacks.WorkflowPhase,
-			gauge:    m.AllInstruments[name],
+			gauge:    m.GetInstrument(name),
 		}
-		return m.AllInstruments[name].RegisterCallback(m.Metrics, wfpGauge.update)
+		return wfpGauge.gauge.RegisterCallback(m.Metrics, wfpGauge.update)
 	}
 	return nil
 	// TODO init all phases?

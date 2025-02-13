@@ -51,7 +51,7 @@ endif
 # -- install & run options
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
+PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
 UI                    ?= false # start the UI with HTTP
 UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
@@ -447,6 +447,10 @@ dist/manifests/%: manifests/%
 
 # lint/test/etc
 
+.PHONE: manifests-validate
+manifests-validate:
+	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
+
 $(GOPATH)/bin/golangci-lint: Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
@@ -528,16 +532,7 @@ dist/argosay:
 
 .PHONY: kit
 kit: Makefile
-ifeq ($(shell command -v kit),)
-ifeq ($(shell uname),Darwin)
-	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
-	brew install kit
-else
-	@echo "Downloading Kit"
-	curl -fsL --retry 99 "https://github.com/kitproj/kit/releases/download/v0.1.8/kit_0.1.8_$$(uname)_$$(uname -m | sed 's/aarch64/arm64/').tar.gz" | sudo tar -C /usr/local/bin -xzf - kit
-endif
-endif
-
+	go install github.com/kitproj/kit@v0.1.79
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
@@ -603,10 +598,6 @@ test-cli: ./dist/argo
 
 test-%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
-
-.PHONY: test-examples
-test-examples:
-	./hack/test-examples.sh
 
 .PHONY: test-%-sdk
 test-%-sdk:

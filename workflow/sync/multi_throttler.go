@@ -37,7 +37,7 @@ type QueueFunc func(Key)
 // NewMultiThrottler creates a new multi throttler for throttling both namespace and global parallelism, a parallelism value of zero disables throttling
 func NewMultiThrottler(parallelism int, namespaceParallelismLimit int, queue QueueFunc) Throttler {
 	namespaceParallelism := make(map[string]int)
-	m := &multiThrottler{
+	return &multiThrottler{
 		queue:                       queue,
 		namespaceParallelism:        namespaceParallelism,
 		namespaceParallelismDefault: namespaceParallelismLimit,
@@ -46,7 +46,6 @@ func NewMultiThrottler(parallelism int, namespaceParallelismLimit int, queue Que
 		pending:                     make(map[string]*priorityQueue),
 		lock:                        &sync.Mutex{},
 	}
-	return m
 }
 
 type multiThrottler struct {

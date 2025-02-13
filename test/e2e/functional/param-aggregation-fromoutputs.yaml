@@ -14,21 +14,9 @@ spec:
           - name: output1
             valueFrom:
               path: /tmp/fan_out.json
-      script:
-        command:
-          - python3
-        image: python:3.11
-        source: |-
-          import os
-          import sys
-          sys.path.append(os.getcwd())
-          import json
-          try: param1 = json.loads(r'''{{inputs.parameters.param1}}''')
-          except: param1 = r'''{{inputs.parameters.param1}}'''
-
-          with open('/tmp/fan_out.json', 'w') as f:
-              json.dump(param1, f)
-          print(json.dumps(param1))
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.param1}}", "/tmp/fan_out.json"]
     - dag:
         tasks:
           - arguments:
