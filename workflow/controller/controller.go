@@ -122,6 +122,7 @@ type WorkflowController struct {
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
+	nsInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
@@ -301,12 +302,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
+	if err != nil {
+		log.Fatal(err)
+	}
+	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
-	err := wfc.addWorkflowInformerHandlers(ctx)
+	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -326,6 +332,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wfc.runConfigMapWatcher(ctx)
 	}
 
+	go wfc.nsInformer.Run(ctx.Done())
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -339,6 +346,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
+		wfc.nsInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,

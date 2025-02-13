@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -35,6 +36,7 @@ type Given struct {
 	cronWf            *wfv1.CronWorkflow
 	kubeClient        kubernetes.Interface
 	bearerToken       string
+	restConfig        *rest.Config
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -230,5 +232,6 @@ func (g *Given) When() *When {
 		hydrator:          g.hydrator,
 		kubeClient:        g.kubeClient,
 		bearerToken:       g.bearerToken,
+		restConfig:        g.restConfig,
 	}
 }

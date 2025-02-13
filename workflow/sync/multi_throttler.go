@@ -23,6 +23,12 @@ type Throttler interface {
 	Admit(key Key) bool
 	// Remove notifies throttler that item processing is no longer needed
 	Remove(key Key)
+	// UpdateParallelism
+	UpdateParallelism(limit int)
+	// UpdateNamespaceParallelism updates the namespace parallelism
+	UpdateNamespaceParallelism(namespace string, limit int)
+	// ResetNamespaceParallelism sets the namespace parallelism to the default value
+	ResetNamespaceParallelism(namespace string)
 }
 
 type Key = string
@@ -31,7 +37,7 @@ type QueueFunc func(Key)
 // NewMultiThrottler creates a new multi throttler for throttling both namespace and global parallelism, a parallelism value of zero disables throttling
 func NewMultiThrottler(parallelism int, namespaceParallelismLimit int, queue QueueFunc) Throttler {
 	namespaceParallelism := make(map[string]int)
-	return &multiThrottler{
+	m := &multiThrottler{
 		queue:                       queue,
 		namespaceParallelism:        namespaceParallelism,
 		namespaceParallelismDefault: namespaceParallelismLimit,
@@ -40,6 +46,7 @@ func NewMultiThrottler(parallelism int, namespaceParallelismLimit int, queue Que
 		pending:                     make(map[string]*priorityQueue),
 		lock:                        &sync.Mutex{},
 	}
+	return m
 }
 
 type multiThrottler struct {
@@ -135,6 +142,26 @@ func (m *multiThrottler) Remove(key Key) {
 	delete(m.running, key)
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateParallelism(limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.totalParallelism = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateNamespaceParallelism(namespace string, limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.namespaceParallelism[namespace] = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.namespaceParallelism[namespace] = m.namespaceParallelismDefault
 }
 
 func (m *multiThrottler) queueThrottled() {
