@@ -58,7 +58,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				if err != nil {
 					return
 				}
-				updateNS(logger, ns, wfc.throttler.UpdateNamespaceParallelism)
+				updateNS(logger, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
 			},
 
 			UpdateFunc: func(old, newVal interface{}) {
@@ -70,7 +70,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				if err == nil && !limitChanged(oldNs, ns) {
 					return
 				}
-				updateNS(logger, ns, wfc.throttler.UpdateNamespaceParallelism)
+				updateNS(logger, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
 			},
 
 			DeleteFunc: func(obj interface{}) {
@@ -93,9 +93,11 @@ func deleteNS(log *logrus.Entry, ns *apiv1.Namespace, resetFn resetFunc) {
 	resetFn(ns.Name)
 }
 
-func updateNS(log *logrus.Entry, ns *apiv1.Namespace, updateFn updateFunc) {
+func updateNS(log *logrus.Entry, ns *apiv1.Namespace, updateFn updateFunc, resetFn resetFunc) {
 	limit, err := extractLimit(ns)
 	if errors.Is(err, errUnableToExtract) {
+		resetFn(ns.Name)
+		log.Infof("removing per-namespace parallelism for %s, reverting to default", ns.Name)
 		return
 	} else if err != nil {
 		log.Errorf("was unable to extract the limit due to: %s", err)
