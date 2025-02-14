@@ -2026,6 +2026,15 @@ func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
 	return false // workflows from older versions do not have this status, so assume completed if this is missing
 }
 
+func (ws *WorkflowStatus) IsTaskResultInited(name string) bool {
+	if ws.TaskResultsCompletionStatus == nil {
+		return false
+	}
+
+	_, found := ws.TaskResultsCompletionStatus[name]
+	return found
+}
+
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
 	return ws.OffloadNodeStatusVersion != ""
 }
