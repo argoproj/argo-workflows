@@ -238,59 +238,48 @@ jobs:
       matrix:
         include:
           - test: test-executor
-            install_k3s_version: max
             profile: minimal
             use-api: false
           - test: test-corefunctional
-            install_k3s_version: max
             profile: minimal
             use-api: false
           - test: test-functional
-            install_k3s_version: max
             profile: minimal
             use-api: false
           - test: test-api
-            install_k3s_version: max
             profile: mysql
             use-api: true
           - test: test-api
-            install_k3s_version: max
             profile: postgres
             use-api: true
           - test: test-cli
-            install_k3s_version: max
             profile: mysql
             use-api: true
           - test: test-cron
-            install_k3s_version: max
             profile: minimal
             use-api: false
           - test: test-examples
-            install_k3s_version: max
             profile: minimal
             use-api: false
           - test: test-plugins
-            install_k3s_version: max
             profile: plugins
             use-api: false
           - test: test-java-sdk
-            install_k3s_version: max
             profile: minimal
             use-api: true
           - test: test-python-sdk
-            install_k3s_version: max
             profile: minimal
             use-api: true
           - test: test-executor
-            install_k3s_version: min
+            k8s_version: min
             profile: minimal
             use-api: false
           - test: test-corefunctional
-            install_k3s_version: min
+            k8s_version: min
             profile: minimal
             use-api: false
           - test: test-functional
-            install_k3s_version: min
+            k8s_version: min
             profile: minimal
             use-api: false
     steps:
@@ -327,9 +316,11 @@ jobs:
         # but it's noisy and makes the logs for "Start controller/API" hard to follow.
         run: sudo apt-get -y install socat && make kit
       - name: Install and start K3S
+        env:
+          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
         run: |
           . hack/k8s-versions.sh
-          export INSTALL_K3S_VERSION="${K8S_VERSIONS[{{ matrix.install_k3s_version }}]}+k3s1"
+          export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
 
           curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
             INSTALL_K3S_EXEC="--docker --kubelet-arg=config=${GITHUB_WORKSPACE}/test/e2e/manifests/kubelet-configuration.yaml" \
