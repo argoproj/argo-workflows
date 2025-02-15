@@ -42,6 +42,8 @@ Otherwise, we typically release every two weeks:
 
 --8<-- "docs/tested-kubernetes-versions.md"
 
+Use the version selector to view the tested Kubernetes versions for a specific Argo Workflows version.
+
 ### Notes on Compatibility
 
 Argo versions may be compatible with newer and older Kubernetes versions, but only two minor versions are tested.

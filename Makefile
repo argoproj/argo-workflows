@@ -762,7 +762,9 @@ docs: /usr/local/bin/mkdocs \
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
-	./hack/docs/supported-versions.sh > docs/tested-kubernetes-versions.md
+ifeq ($(RELEASE_TAG),true)
+	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
+endif
 	TZ=UTC mkdocs build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
