@@ -328,7 +328,7 @@ jobs:
         run: sudo apt-get -y install socat && make kit
       - name: Install and start K3S
         run: |
-          . hack/k8s-version.sh
+          . hack/k8s-versions.sh
           export INSTALL_K3S_VERSION="${K8S_VERSIONS[{{ matrix.install_k3s_version }}]}+k3s1"
 
           curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
