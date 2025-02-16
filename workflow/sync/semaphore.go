@@ -10,25 +10,27 @@ import (
 )
 
 type prioritySemaphore struct {
-	name         string
-	limit        int
-	pending      *priorityQueue
-	semaphore    *sema.Weighted
-	lockHolder   map[string]bool
-	nextWorkflow NextWorkflow
-	log          *log.Entry
+	name           string
+	limit          int
+	limitTimestamp time.Time
+	pending        *priorityQueue
+	semaphore      *sema.Weighted
+	lockHolder     map[string]bool
+	nextWorkflow   NextWorkflow
+	log            *log.Entry
 }
 
 var _ semaphore = &prioritySemaphore{}
 
 func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string) *prioritySemaphore {
 	return &prioritySemaphore{
-		name:         name,
-		limit:        limit,
-		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
-		semaphore:    sema.NewWeighted(int64(limit)),
-		lockHolder:   make(map[string]bool),
-		nextWorkflow: nextWorkflow,
+		name:           name,
+		limit:          limit,
+		limitTimestamp: now(),
+		pending:        &priorityQueue{itemByKey: make(map[string]*item)},
+		semaphore:      sema.NewWeighted(int64(limit)),
+		lockHolder:     make(map[string]bool),
+		nextWorkflow:   nextWorkflow,
 		log: log.WithFields(log.Fields{
 			lockType: name,
 		}),
@@ -41,6 +43,14 @@ func (s *prioritySemaphore) getName() string {
 
 func (s *prioritySemaphore) getLimit() int {
 	return s.limit
+}
+
+func (s *prioritySemaphore) getLimitTimestamp() time.Time {
+	return s.limitTimestamp
+}
+
+func (s *prioritySemaphore) resetLimitTimestamp() {
+	s.limitTimestamp = now()
 }
 
 func (s *prioritySemaphore) getCurrentPending() []string {
@@ -72,6 +82,7 @@ func (s *prioritySemaphore) resize(n int) bool {
 		s.log.Infof("%s semaphore resized from %d to %d", s.name, cur, n)
 		s.semaphore = semaphore
 		s.limit = n
+		s.limitTimestamp = now()
 	}
 	return status
 }
