@@ -13,5 +13,10 @@ type semaphore interface {
 	getCurrentPending() []string
 	getName() string
 	getLimit() int
+	getLimitTimestamp() time.Time
+	resetLimitTimestamp()
 	resize(n int) bool
 }
+
+// expose for overriding in tests
+var now = time.Now
