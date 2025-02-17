@@ -1,5 +1,19 @@
 # Changelog
 
+## v3.6.4 (2025-02-10)
+
+Full Changelog: [v3.6.3...v3.6.4](https://github.com/argoproj/argo-workflows/compare/v3.6.3...v3.6.4)
+
+### Selected Changes
+
+* [77552d852](https://github.com/argoproj/argo-workflows/commit/77552d852da5c53a1d8c9918b3474d8bff06260a) Revert "fix(controller): validation failed when dynamic templateRef is used in nested template (#14053)"
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
 ## v3.6.3 (2025-02-07)
 
 Full Changelog: [v3.6.2...v3.6.3](https://github.com/argoproj/argo-workflows/compare/v3.6.2...v3.6.3)
