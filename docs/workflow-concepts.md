@@ -49,7 +49,7 @@ These templates _define_ work to be done, usually in a Container.
 ##### [Container](fields.md#container)
 
 Perhaps the most common template type, it will schedule a Container.
-The spec of the template is the same as the [Kubernetes container spec](https://v1-26.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container), so you can define a container here the same way you do anywhere else in Kubernetes.
+The spec of the template is the same as the [Kubernetes container spec](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container), so you can define a container here the same way you do anywhere else in Kubernetes.
 
 Example:
 
