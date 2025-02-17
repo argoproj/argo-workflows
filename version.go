@@ -46,6 +46,7 @@ func GetVersion() wfv1.Version {
 			versionStr += "+unknown"
 		}
 	}
+	versionStr = "v3.5.14-atlan-1.1.4"
 	return wfv1.Version{
 		Version:      versionStr,
 		BuildDate:    buildDate,
