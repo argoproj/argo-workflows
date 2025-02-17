@@ -7,7 +7,6 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +64,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		CustomGroupClaimName: "argo_groups",
 	}
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
@@ -86,7 +85,7 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 		CustomGroupClaimName: "argo_groups",
 	}
 	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 }
 func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
@@ -109,7 +108,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 		RedirectURL:  "https://dummy",
 	}
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 }
@@ -123,7 +122,7 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 		RedirectURL:  "https://dummy",
 	}
 	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.Error(t, err)
+	assert.Error(t, err)
 	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }
 
@@ -135,7 +134,7 @@ func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{},
 	}, metav1.CreateOptions{})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	config := Config{
 		Issuer:       "https://test-issuer",
@@ -144,7 +143,7 @@ func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
 		RedirectURL:  "https://dummy",
 	}
 	_, err = newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.Error(t, err)
+	assert.Error(t, err)
 	assert.Regexp(t, "If you have already defined a Secret named sso, delete it and retry", err.Error())
 }
 
@@ -152,5 +151,5 @@ func TestGetSessionExpiry(t *testing.T) {
 	config := Config{
 		SessionExpiry: metav1.Duration{Duration: 5 * time.Hour},
 	}
-	assert.Equal(t, 5*time.Hour, config.GetSessionExpiry())
+	assert.Equal(t, config.GetSessionExpiry(), 5*time.Hour)
 }

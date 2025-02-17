@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestShouldExecute(t *testing.T) {
@@ -26,7 +25,7 @@ func TestShouldExecute(t *testing.T) {
 	}
 	for _, trueExp := range trueExpressions {
 		res, err := shouldExecute(trueExp)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.True(t, res)
 	}
 
@@ -48,7 +47,7 @@ func TestShouldExecute(t *testing.T) {
 	}
 	for _, falseExp := range falseExpressions {
 		res, err := shouldExecute(falseExp)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.False(t, res)
 	}
 }

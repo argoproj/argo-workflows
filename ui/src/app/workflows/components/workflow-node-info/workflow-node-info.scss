@@ -1,0 +1,76 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-node-info {
+
+    height: calc(100vh - 2 * #{$top-bar-height});
+    overflow-y: auto;
+
+    .tabs {
+        a {
+            padding-right: 0;
+            padding-left: 0;
+        }
+    }
+
+    &__multi-line {
+        line-height: 24px;
+        display: inline-block;
+        vertical-align: middle;
+        overflow-x: auto !important; // override `.workflow-details__atribute-grid pre` selector
+    }
+
+    &__artifact-details span {
+        padding-right: 0.5em;
+        padding-left: 0.5em;
+        border-left: 1px solid $argo-color-gray-5;
+
+        display: inline-block;
+        width: 33%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1em;
+
+        &:first-child {
+            padding-left: 0;
+            border-left: none;
+        }
+    }
+
+    &__containers {
+        position: relative;
+    }
+
+    &__sidecar-back {
+        position: absolute;
+        left: 16px;
+        top: 8px;
+        font-size: 2em !important;
+        z-index: 10;
+        height: 16px;
+        width: 16px;
+        cursor: pointer;
+        color: $argo-color-teal-5;
+    }
+
+    &__sidecar {
+        text-transform: uppercase;
+        border-top: 1px solid $argo-color-gray-5;
+        cursor: pointer;
+        font-size: 0.8em;
+
+        span {
+            color: $argo-color-teal-5;
+        }
+
+        i {
+            float: right;
+            font-size: 1.5em;
+        }
+
+        &:last-child {
+            border-bottom: 1px solid $argo-color-gray-5;
+            padding: 1em 0;
+        }
+    }
+}

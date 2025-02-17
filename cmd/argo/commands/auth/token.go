@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -12,14 +13,12 @@ func NewTokenCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "token",
 		Short: "Print the auth token",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			authString, err := client.GetAuthString()
-			if err != nil {
-				return err
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
 			}
-			fmt.Println(authString)
-			return nil
+			fmt.Println(client.GetAuthString())
 		},
 	}
 }

@@ -99,16 +99,18 @@ func TestIsTransientErr(t *testing.T) {
 		assert.True(t, IsTransientErr(connectionResetErr))
 	})
 	t.Run("TransientErrorPattern", func(t *testing.T) {
-		t.Setenv(transientEnvVarKey, "this error is transient")
+		_ = os.Setenv(transientEnvVarKey, "this error is transient")
 		assert.True(t, IsTransientErr(transientErr))
 		assert.True(t, IsTransientErr(&transientExitErr))
 
-		t.Setenv(transientEnvVarKey, "this error is not transient")
+		_ = os.Setenv(transientEnvVarKey, "this error is not transient")
 		assert.False(t, IsTransientErr(transientErr))
 		assert.False(t, IsTransientErr(&transientExitErr))
 
-		t.Setenv(transientEnvVarKey, "")
+		_ = os.Setenv(transientEnvVarKey, "")
 		assert.False(t, IsTransientErr(transientErr))
+
+		_ = os.Unsetenv(transientEnvVarKey)
 	})
 	t.Run("ExplicitTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(NewErrTransient("")))

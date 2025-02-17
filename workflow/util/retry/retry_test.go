@@ -64,13 +64,13 @@ func TestGetFailHosts(t *testing.T) {
 		},
 	}
 	t.Run("NotExistParent", func(t *testing.T) {
-		assert.Equal(t, []string{}, GetFailHosts(nodes, "not-exist-node"))
+		assert.Equal(t, GetFailHosts(nodes, "not-exist-node"), []string{})
 	})
 	t.Run("ParentWithoutChildrenPodTypeError", func(t *testing.T) {
-		assert.Equal(t, []string{"hostn3"}, GetFailHosts(nodes, "n3"))
+		assert.Equal(t, GetFailHosts(nodes, "n3"), []string{"hostn3"})
 	})
 	t.Run("ParentWithoutChildrenPodTypeRunning", func(t *testing.T) {
-		assert.Equal(t, []string{}, GetFailHosts(nodes, "n2"))
+		assert.Equal(t, GetFailHosts(nodes, "n2"), []string{})
 	})
 	t.Run("ParentWithChildrenFromRetryNode", func(t *testing.T) {
 		assert.ElementsMatch(t, GetFailHosts(nodes, "retry"), []string{"hostn1", "hostn3"})

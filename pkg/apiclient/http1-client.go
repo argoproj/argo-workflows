@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -41,6 +40,6 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
 }
 
-func newHTTP1Client(baseUrl string, auth string, insecureSkipVerify bool, headers []string, customHttpClient *http.Client) (context.Context, Client, error) {
-	return context.Background(), httpClient(http1.NewFacade(baseUrl, auth, insecureSkipVerify, headers, customHttpClient)), nil
+func newHTTP1Client(baseUrl string, auth string, insecureSkipVerify bool, headers []string) (context.Context, Client, error) {
+	return context.Background(), httpClient(http1.NewFacade(baseUrl, auth, insecureSkipVerify, headers)), nil
 }

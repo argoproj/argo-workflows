@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateWorkflowFieldNames(t *testing.T) {
@@ -55,9 +55,9 @@ func TestValidateWorkflowFieldNames(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := validateWorkflowFieldNames(tc.names, tc.isParamOrArtifact)
 			if tc.expectedErr != nil {
-				require.EqualError(t, err, tc.expectedErr.Error())
+				assert.EqualError(t, err, tc.expectedErr.Error())
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -101,9 +101,9 @@ func TestVerifyNoCycles(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := validateNoCycles(tc.depGraph)
 			if tc.expectedErr != nil {
-				require.Errorf(t, err, tc.expectedErr.Error())
+				assert.Errorf(t, err, tc.expectedErr.Error())
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}

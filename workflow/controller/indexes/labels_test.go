@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -18,7 +17,7 @@ func TestMetaNamespaceLabelIndex(t *testing.T) {
 func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 	t.Run("NoLabel", func(t *testing.T) {
 		values, err := MetaNamespaceLabelIndexFunc("my-label")(&wfv1.Workflow{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.Empty(t, values)
 	})
 	t.Run("Labelled", func(t *testing.T) {
@@ -28,7 +27,7 @@ func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 				Labels:    map[string]string{"my-label": "my-value"},
 			},
 		})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.ElementsMatch(t, values, []string{"my-ns/my-value"})
 	})
 	t.Run("Labelled No Namespace", func(t *testing.T) {
@@ -38,7 +37,7 @@ func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 				Labels:    map[string]string{common.LabelKeyPhase: "my-value"},
 			},
 		})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.ElementsMatch(t, values, []string{"my-value"})
 	})
 
@@ -46,7 +45,7 @@ func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 		values, err := MetaWorkflowPhaseIndexFunc()(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{},
 		})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.ElementsMatch(t, values, []string{string(wfv1.NodePending)})
 	})
 }

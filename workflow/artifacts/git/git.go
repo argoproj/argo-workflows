@@ -27,7 +27,6 @@ type ArtifactDriver struct {
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
-	InsecureSkipTLS       bool
 	DisableSubmodules     bool
 }
 
@@ -93,11 +92,10 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer closer()
 	depth := a.GetDepth()
 	cloneOptions := &git.CloneOptions{
-		URL:             a.Repo,
-		Auth:            auth,
-		Depth:           depth,
-		SingleBranch:    a.SingleBranch,
-		InsecureSkipTLS: g.InsecureSkipTLS,
+		URL:          a.Repo,
+		Auth:         auth,
+		Depth:        depth,
+		SingleBranch: a.SingleBranch,
 	}
 	if a.SingleBranch && a.Branch == "" {
 		return errors.New("single branch mode without a branch specified")
@@ -135,7 +133,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		for i, spec := range a.Fetch {
 			refSpecs[i] = config.RefSpec(spec)
 		}
-		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs, Depth: depth, InsecureSkipTLS: g.InsecureSkipTLS}
+		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs, Depth: depth}
 		if err := opts.Validate(); err != nil {
 			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
 		}
@@ -153,7 +151,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		if a.SingleBranch {
 			refSpecs = []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", a.Branch, a.Branch))}
 		}
-		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs, InsecureSkipTLS: g.InsecureSkipTLS}
+		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs}
 		if err := opts.Validate(); err != nil {
 			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
 		}

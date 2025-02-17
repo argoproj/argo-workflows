@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	metricsdk "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -25,9 +23,6 @@ type Config struct {
 
 	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
-
-	// WorkflowEvents configures how workflow events are emitted
-	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitempty"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
@@ -102,7 +97,7 @@ type Config struct {
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
-	// https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
+	// https://argo-workflows.readthedocs.io/en/release-3.5/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 
 	// Workflow retention by number of workflows
@@ -250,24 +245,6 @@ type MySQLConfig struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
-// MetricModifier are modifiers for an individual named metric to change their behaviour
-type MetricModifier struct {
-	// Disabled disables the emission of this metric completely
-	Disabled bool `json:"disabled,omitempty"`
-	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
-	DisabledAttributes []string `json:"disabledAttributes"`
-	// HistogramBuckets allow configuring of the buckets used in a histogram
-	// Has no effect on non-histogram buckets
-	HistogramBuckets []float64 `json:"histogramBuckets,omitempty"`
-}
-
-type MetricsTemporality string
-
-const (
-	MetricsTemporalityCumulative MetricsTemporality = "Cumulative"
-	MetricsTemporalityDelta      MetricsTemporality = "Delta"
-)
-
 // MetricsConfig defines a config for a metrics server
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
@@ -283,36 +260,15 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
-	// Secure is a flag that starts the metrics servers using TLS, defaults to true
+	// Secure is a flag that starts the metrics servers using TLS
 	Secure *bool `json:"secure,omitempty"`
-	// Modifiers configure metrics by name
-	Modifiers map[string]MetricModifier `json:"modifiers,omitempty"`
-	// Temporality of the OpenTelemetry metrics.
-	// Enum of Cumulative or Delta, defaulting to Cumulative.
-	// No effect on Prometheus metrics, which are always Cumulative.
-	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
-func (mc *MetricsConfig) GetSecure(defaultValue bool) bool {
+func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
 	if mc.Secure != nil {
 		return *mc.Secure
 	}
 	return defaultValue
-}
-
-func (mc *MetricsConfig) GetTemporality() metricsdk.TemporalitySelector {
-	switch mc.Temporality {
-	case MetricsTemporalityCumulative:
-		return func(metricsdk.InstrumentKind) metricdata.Temporality {
-			return metricdata.CumulativeTemporality
-		}
-	case MetricsTemporalityDelta:
-		return func(metricsdk.InstrumentKind) metricdata.Temporality {
-			return metricdata.DeltaTemporality
-		}
-	default:
-		return metricsdk.DefaultTemporalitySelector
-	}
 }
 
 type WorkflowRestrictions struct {

@@ -26,7 +26,7 @@ spec:
             valueFrom:
               path: /tmp/hello_world.txt
       container:
-        image: argoproj/argosay:v2
+        image: alpine:latest
         command: ["sh", "-c"]
         args: ["echo intentional failure; exit 1"]
     - name: lifecycle-hook
@@ -34,5 +34,6 @@ spec:
         parameters:
           - name: hello-param
       container:
-        image: argoproj/argosay:v2
-        args: ["echo", "Hello param: {{inputs.parameters.hello-param}}"]
+        image: busybox
+        command: [echo]
+        args: ["Hello param: {{inputs.parameters.hello-param}}"]

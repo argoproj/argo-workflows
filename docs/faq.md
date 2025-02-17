@@ -26,3 +26,9 @@ Is there an RBAC error?
 You're probably getting a permission denied error because your RBAC is not configured.
 
 [Learn more about workflow RBAC](workflow-rbac.md)
+
+## There is an error about `/var/run/docker.sock`
+
+Try using a different container runtime executor.
+
+[Learn more about executors](workflow-executors.md)

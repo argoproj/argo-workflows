@@ -1,6 +1,7 @@
 package util
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +63,7 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 		})
 	}
 	name := RecoverWorkflowNameFromSelectorStringIfAny("whatever=whalesay")
-	assert.Equal(t, "", name)
+	assert.Equal(t, name, "")
 	assert.NotPanics(t, func() {
 		_ = RecoverWorkflowNameFromSelectorStringIfAny("whatever")
 	})
@@ -73,11 +74,11 @@ func TestGetDeletePropagation(t *testing.T) {
 		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
 	})
 	t.Run("GetEnvPolicy", func(t *testing.T) {
-		t.Setenv("WF_DEL_PROPAGATION_POLICY", "Foreground")
+		os.Setenv("WF_DEL_PROPAGATION_POLICY", "Foreground")
 		assert.Equal(t, metav1.DeletePropagationForeground, *GetDeletePropagation())
 	})
 	t.Run("GetEnvPolicyWithEmpty", func(t *testing.T) {
-		t.Setenv("WF_DEL_PROPAGATION_POLICY", "")
+		os.Setenv("WF_DEL_PROPAGATION_POLICY", "")
 		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
 	})
 }

@@ -11,7 +11,6 @@ import (
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -216,7 +215,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		},
 	}
 
-	t.Setenv(transientEnvVarKey, "this error is transient")
+	_ = os.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			stream, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
@@ -230,14 +229,15 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 				},
 			})
 			if tc.errMsg == "" {
-				require.NoError(t, err)
+				assert.Nil(t, err)
 				assert.NotNil(t, stream)
 			} else {
-				require.Error(t, err)
+				assert.NotNil(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())
 			}
 		})
 	}
+	_ = os.Unsetenv(transientEnvVarKey)
 }
 
 // Delete deletes an S3 artifact by artifact key
@@ -380,7 +380,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		},
 	}
 
-	t.Setenv(transientEnvVarKey, "this error is transient")
+	_ = os.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
@@ -397,10 +397,11 @@ func TestLoadS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Equal(t, tc.errMsg, "")
 			}
 		})
 	}
+	_ = os.Unsetenv(transientEnvVarKey)
 }
 
 func TestSaveS3Artifact(t *testing.T) {
@@ -508,7 +509,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		t.Setenv(transientEnvVarKey, "this error is transient")
+		_ = os.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
 			success, err := saveS3Artifact(
 				tc.s3client,
@@ -531,9 +532,10 @@ func TestSaveS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Equal(t, tc.errMsg, "")
 			}
 		})
+		_ = os.Unsetenv(transientEnvVarKey)
 	}
 }
 
@@ -588,7 +590,7 @@ func TestListObjects(t *testing.T) {
 		},
 	}
 
-	t.Setenv(transientEnvVarKey, "this error is transient")
+	_ = os.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			_, files, err := listObjects(tc.s3client,
@@ -607,12 +609,13 @@ func TestListObjects(t *testing.T) {
 					},
 				})
 			if tc.expectedSuccess {
-				require.NoError(t, err)
-				assert.Len(t, files, tc.expectedNumFiles)
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedNumFiles, len(files))
 			} else {
-				require.Error(t, err)
+				assert.NotNil(t, err)
 				assert.Equal(t, tc.expectedErrMsg, err.Error())
 			}
 		})
 	}
+	_ = os.Unsetenv(transientEnvVarKey)
 }

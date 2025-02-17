@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-repository-ref-
+  generateName: artifactory-repository-ref-
 spec:
   entrypoint: main
   artifactRepositoryRef:

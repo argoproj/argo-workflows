@@ -38,7 +38,6 @@ spec:
           path: "/tmp/argo/foo"
           hdfsUser: root
           force: true
-          # dataTransferProtection: authentication
           # krbCCacheSecret:
           #   name: krb
           #   key: krb5cc_0
@@ -64,7 +63,6 @@ spec:
           path: "/tmp/argo/foo"
           hdfsUser: root
           force: true
-          # dataTransferProtection: authentication
           # krbCCacheSecret:
           #   name: krb
           #   key: krb5cc_0

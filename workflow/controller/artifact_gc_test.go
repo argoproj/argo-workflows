@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -349,7 +348,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
-	require.NoError(t, err)
+	assert.Nil(t, err)
 
 	wfatcs := controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.GetNamespace())
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -369,7 +368,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// and it should only consist of artifacts labeled with OnWorkflowCompletion
 
 	assert.NotNil(t, pods)
-	assert.Len(t, (*pods).Items, 2)
+	assert.Equal(t, 2, len((*pods).Items))
 	var pod1 *corev1.Pod
 	var pod2 *corev1.Pod
 	for i, pod := range (*pods).Items {
@@ -391,7 +390,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	//  verify ServiceAccount and Annotations
 	//  verify that the right volume mounts get created
 	//  verify patched pod spec
-	assert.Equal(t, "default", pod1.Spec.ServiceAccountName)
+	assert.Equal(t, pod1.Spec.ServiceAccountName, "default")
 	assert.Contains(t, pod1.Annotations, "annotation-key-1")
 	assert.Equal(t, "annotation-value-1", pod1.Annotations["annotation-key-1"])
 	volumesMap1 := make(map[string]struct{})
@@ -401,7 +400,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	assert.Contains(t, volumesMap1, "my-minio-cred-1")
 	assert.Contains(t, volumesMap1, "my-minio-cred-2")
 
-	assert.Equal(t, "default", pod2.Spec.ServiceAccountName)
+	assert.Equal(t, pod2.Spec.ServiceAccountName, "default")
 	assert.Contains(t, pod2.Annotations, "annotation-key-1")
 	assert.Equal(t, "annotation-value-3", pod2.Annotations["annotation-key-1"])
 	volumesMap2 := make(map[string]struct{})
@@ -423,7 +422,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// We should have on WFAT per Pod (for now until we implement the capability to have multiple)
 
 	assert.NotNil(t, wfats)
-	assert.Len(t, (*wfats).Items, 2)
+	assert.Equal(t, 2, len((*wfats).Items))
 
 	var wfat1 *wfv1.WorkflowArtifactGCTask
 	var wfat2 *wfv1.WorkflowArtifactGCTask
@@ -572,7 +571,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	// - Conditions
 
 	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
-	require.NoError(t, err)
+	assert.Nil(t, err)
 
 	for _, expectedArtifact := range []struct {
 		nodeName     string
@@ -716,7 +715,7 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 
 			hasArtifact := woc.HasArtifactGC()
 
-			assert.Equal(t, tt.expectedResult, hasArtifact)
+			assert.Equal(t, hasArtifact, tt.expectedResult)
 		})
 	}
 

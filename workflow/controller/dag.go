@@ -443,7 +443,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		if tmpl != nil && tmpl.Metrics != nil {
 			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
 				localScope, realTimeScope := woc.prepareMetricScope(node)
-				woc.computeMetrics(ctx, tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 			}
 		}
 
@@ -454,7 +454,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		// Release acquired lock completed task.
 		if processedTmpl != nil {
-			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 
 		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)

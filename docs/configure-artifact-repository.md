@@ -204,88 +204,6 @@ artifacts:
         key: secretKey
 ```
 
-#### AWS S3 with IAM Assume Role
-
-> v3.6 and after
-
-You can use an [IAM role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) for temporary access.
-
-With the bucket and policy described above, create an IAM role and add the policy:
-
-```bash
-aws iam create-role --role-name $mybucket-role
-aws iam put-role-policy --role-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
-```
-
-Retrieve the role credentials:
-
-```bash
-aws sts assume-role --role-arn arn:aws:iam::012345678901:role/$mybucket-role
-```
-
-Configure an artifact with the credentials:
-
-```yaml
-artifacts:
-  - name: my-output-artifact
-    path: /my-output-artifact
-    s3:
-      endpoint: s3.amazonaws.com
-      bucket: my-s3-bucket
-      key: path/in/bucket/my-output-artifact.tgz
-      # The following fields are secret selectors.
-      # They reference the k8s secret named 'my-s3-credentials'.
-      # This secret is expected to have the keys 'accessKey', 'secretKey', and 'sessionToken',
-      # containing the base64 encoded credentials to the bucket.
-      accessKeySecret:
-        name: my-s3-credentials
-        key: accessKey
-      secretKeySecret:
-        name: my-s3-credentials
-        key: secretKey
-      sessionTokenSecret:
-        name: my-s3-credentials
-        key: sessionToken
-```
-
-!!! Note "Temporary"
-    IAM role credentials are temporary, so you must refresh them periodically via an external mechanism.
-
-### AWS S3 with S3 Access Grants
-
-> v3.6 and after
-
-You can use [S3 Access Grants](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants.html) for temporary, reduced scope access.
-Follow the [AWS guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-get-started.html) to set this up in your AWS account and retrieve access grant credentials.
-
-Configure an artifact with the access grant credentials:
-
-```yaml
-artifacts:
-  - name: my-output-artifact
-    path: /my-output-artifact
-    s3:
-      endpoint: s3.amazonaws.com
-      bucket: my-s3-bucket
-      key: path/in/bucket/my-output-artifact.tgz
-      # The following fields are secret selectors.
-      # They reference the k8s secret named 'my-s3-credentials'.
-      # This secret is expected to have the keys 'accessKey', 'secretKey', and 'sessionToken',
-      # containing the base64 encoded credentials to the bucket.
-      accessKeySecret:
-        name: my-s3-credentials
-        key: accessKey
-      secretKeySecret:
-        name: my-s3-credentials
-        key: secretKey
-      sessionTokenSecret:
-        name: my-s3-credentials
-        key: sessionToken
-```
-
-!!! Note "Temporary"
-    S3 Access Grants are temporary, so you must refresh them periodically via an external mechanism.
-
 ## Configuring GCS (Google Cloud Storage)
 
 Create a bucket from the GCP Console
@@ -308,7 +226,7 @@ artifacts:
       key: path/in/bucket
       # serviceAccountKeySecret is a secret selector.
       # It references the k8s secret named 'my-gcs-credentials'.
-      # This secret is expected to have the key 'serviceAccountKey',
+      # This secret is expected to have have the key 'serviceAccountKey',
       # containing the base64 encoded credentials
       # to the bucket.
       #
@@ -419,7 +337,7 @@ data:
       bucket: $mybucket
       # accessKeySecret and secretKeySecret are secret selectors.
       # It references the k8s secret named 'bucket-workflow-artifect-credentials'.
-      # This secret is expected to have the keys 'accessKey'
+      # This secret is expected to have have the keys 'accessKey'
       # and 'secretKey', containing the base64 encoded credentials
       # to the bucket.
       accessKeySecret:
@@ -461,7 +379,7 @@ metadata:
   namespace: rrsa-demo
   annotations:
     pod-identity.alibabacloud.com/role-name: $your_ram_role_name
-    
+
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -489,7 +407,6 @@ You can authenticate Argo to your Azure storage account in multiple ways:
 
 - [Managed Identities](#using-azure-managed-identities)
 - [Access Keys](#using-azure-access-keys)
-- [Shared Access Signatures (SAS)](#using-azure-shared-access-signatures-sas)
 
 ### Using Azure Managed Identities
 
@@ -509,7 +426,7 @@ artifacts:
       # workflow (for example, https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
       # then useSDKCreds should be set to true. The accountKeySecret is not required
       # and will not be used in this case.
-      useSDKCreds: true  
+      useSDKCreds: true
 ```
 
 ### Using Azure Access Keys
@@ -552,52 +469,7 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
           # containing the base64 encoded credentials to the storage account.
           accountKeySecret:
             name: my-azure-storage-credentials
-            key: account-access-key     
-    ```
-
-### Using Azure Shared Access Signatures (SAS)
-
-> v3.6 and after
-
-You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
-
-1. Retrieve the blob service endpoint for the storage account:
-
-    ```bash
-    az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
-    # https://mystorageaccountname.blob.core.windows.net
-    ```
-
-2. Generate a Shared Access Signature for the storage account:
-
-    ```bash
-    SAS_TOKEN="$(az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key)"
-    ```
-
-3. Create a Kubernetes Secret to hold the storage account key:
-
-    ```bash
-    kubectl create secret generic my-azure-storage-credentials \
-      --from-literal "shared-access-key=$SAS_TOKEN"
-    ```
-
-4. Configure an `azure` artifact:
-
-    ```yaml
-    artifacts:
-      - name: message
-        path: /tmp/message
-        azure:
-          endpoint: https://mystorageaccountname.blob.core.windows.net
-          container: my-container-name
-          blob: path/in/container
-          # accountKeySecret is a secret selector.
-          # It references the Kubernetes Secret named 'my-azure-storage-credentials'.
-          # This secret is expected to have the key 'shared-access-key',
-          # containing the base64 encoded shared access signature to the storage account.
-          accountKeySecret:
-            name: my-azure-storage-credentials
-            key: shared-access-key
+            key: account-access-key
     ```
 
 ## Configure the Default Artifact Repository
@@ -765,7 +637,7 @@ configuring the default artifact repository described previously.
 ## Artifact Streaming
 
 With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming is only supported in the following
-artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), Artifactory (v3.5+), and OSS (v3.6+).
+artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), and Artifactory (v3.5+).
 
 Previously, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the
 Argo Server’s disk first before downloading. If many users tried to download simultaneously, they would take up

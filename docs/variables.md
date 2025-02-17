@@ -146,7 +146,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
 | `steps.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
-| `steps.<STEPNAME>.outputs.result` | Output result of any previous container, script, or HTTP step |
+| `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
@@ -163,7 +163,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
 | `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
-| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container, script, or HTTP task |
+| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
@@ -183,22 +183,6 @@ Only available for `successCondition`
 | `response.statusCode` | Response status code (`int`) |
 | `response.body` | Response body (`string`) |
 | `response.headers` | Response headers (`map[string][]string`) |
-
-### CronWorkflows
-
-> v3.6 and after
-
-| Variable | Description|
-|----------|------------|
-| `cronworkflow.name` | Name of the CronWorkflow (`string`) |
-| `cronworkflow.namespace` | Namespace of the CronWorkflow (`string`) |
-| `cronworkflow.labels.<NAME>` | CronWorkflow labels (`string`) |
-| `cronworkflow.labels.json` | CronWorkflow labels as a JSON string (`string`) |
-| `cronworkflow.annotations.<NAME>` | CronWorkflow annotations (`string`) |
-| `cronworkflow.annotations.json` | CronWorkflow annotations as a JSON string (`string`) |
-| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled, value is nil on first run (`*time.Time`) |
-| `cronworkflow.failed` | Counts how many times child workflows failed |
-| `cronworkflow.succeeded` | Counts how many times child workflows succeeded |
 
 ### `RetryStrategy`
 
@@ -235,16 +219,15 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 When emitting custom metrics in a `template`, special variables are available that allow self-reference to the current
 step.
 
-| Variable                         | Description                                                                                                                                                                                  |
-|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `status`                         | Phase status of the metric-emitting template                                                                                                                                                 |
-| `duration`                       | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`)                                              |
-| `exitCode`                       | Exit code of the metric-emitting template                                                                                                                                                    |
-| `inputs.parameters.<NAME>`       | Input parameter of the metric-emitting template                                                                                                                                              |
-| `outputs.parameters.<NAME>`      | Output parameter of the metric-emitting template                                                                                                                                             |
-| `outputs.result`                 | Output result of the metric-emitting template                                                                                                                                                |
-| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc. |
-| `retries`                        | Retried count by retry strategy                                                                                                                                                              |
+| Variable | Description|
+|----------|------------|
+| `status` | Phase status of the metric-emitting template |
+| `duration` | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`) |
+| `exitCode` | Exit code of the metric-emitting template |
+| `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
+| `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
+| `outputs.result` | Output result of the metric-emitting template |
+| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
 
 ### Real-Time Metrics
 

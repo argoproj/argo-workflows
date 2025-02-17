@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 type MockKC struct {
@@ -36,7 +36,7 @@ func (*MockKC) CreateArchive(ctx context.Context, containerName, sourcePath stri
 	return nil, nil
 }
 
-// TestTerminatePodWithContainerName ensure we can a script pod with input artifacts
+// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestTerminatePodWithContainerName(t *testing.T) {
 	// Already terminated.
 	mock := &MockKC{
@@ -48,7 +48,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 	}
 	ctx := context.Background()
 	err := TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// w/ ShareProcessNamespace.
 	mock = &MockKC{
@@ -57,7 +57,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 				Name: "foo",
 			},
 			Spec: v1.PodSpec{
-				ShareProcessNamespace: ptr.To(true),
+				ShareProcessNamespace: pointer.BoolPtr(true),
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
@@ -68,7 +68,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 		},
 	}
 	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
-	require.EqualError(t, err, "cannot terminate a process-namespace-shared Pod foo")
+	assert.EqualError(t, err, "cannot terminate a process-namespace-shared Pod foo")
 
 	// w/ HostPID.
 	mock = &MockKC{
@@ -88,7 +88,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 		},
 	}
 	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
-	require.EqualError(t, err, "cannot terminate a hostPID Pod foo")
+	assert.EqualError(t, err, "cannot terminate a hostPID Pod foo")
 
 	// w/ RestartPolicy.
 	mock = &MockKC{
@@ -108,7 +108,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 		},
 	}
 	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
-	require.EqualError(t, err, "cannot terminate pod with a \"Always\" restart policy")
+	assert.EqualError(t, err, "cannot terminate pod with a \"Always\" restart policy")
 
 	// Successfully call KillContainer of the client interface.
 	mock = &MockKC{
@@ -128,7 +128,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 		},
 	}
 	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 }
 
 // TestWaitForTermination ensure we SIGTERM container with input wait time
@@ -144,7 +144,7 @@ func TestWaitForTermination(t *testing.T) {
 	}
 	ctx := context.Background()
 	err := WaitForTermination(ctx, mock, []string{"container-name"}, time.Duration(10)*time.Second)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// Fail SIGTERM Container
 	mock = &MockKC{
@@ -156,7 +156,7 @@ func TestWaitForTermination(t *testing.T) {
 		},
 	}
 	err = WaitForTermination(ctx, mock, []string{"container-name"}, time.Duration(1)*time.Second)
-	require.EqualError(t, err, "timeout after 1s")
+	assert.EqualError(t, err, "timeout after 1s")
 }
 
 // TestKillGracefully ensure we kill container gracefully with input wait time
@@ -180,5 +180,5 @@ func TestKillGracefully(t *testing.T) {
 	}
 	ctx := context.Background()
 	err := KillGracefully(ctx, mock, []string{"container-name"}, time.Second)
-	require.EqualError(t, err, "timeout after 1s")
+	assert.EqualError(t, err, "timeout after 1s")
 }

@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
@@ -188,14 +187,6 @@ func newServer() *ArtifactServer {
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
 										Key: "my-wf/my-node-1/my-s3-input-artifact.tgz",
-									},
-								},
-							},
-							{
-								Name: "my-s3-artifact-directory",
-								ArtifactLocation: wfv1.ArtifactLocation{
-									S3: &wfv1.S3Artifact{
-										Key: "my-wf/my-node-1/my-s3-artifact-directory",
 									},
 								},
 							},
@@ -406,21 +397,6 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			},
 		},
 		{
-			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/inputs/my-s3-input-artifact",
-			statusCode:  200,
-			isDirectory: false,
-		},
-		{
-			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/inputs/my-s3-artifact-directory/subdirectory/",
-			statusCode:  200,
-			isDirectory: true,
-			directoryFiles: []string{
-				"..",
-				"b.txt",
-				"c.txt",
-			},
-		},
-		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-s3-artifact-directory/a.txt",
 			statusCode:  200,
 			isDirectory: false,
@@ -475,7 +451,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				if tt.isDirectory {
 					fmt.Printf("got directory listing:\n%s\n", all)
 					// verify that the files are contained in the listing we got back
-					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))
+					assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
 					for _, file := range tt.directoryFiles {
 						assert.True(t, strings.Contains(string(all), file))
 					}
@@ -516,13 +492,14 @@ func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			s.GetOutputArtifact(recorder, r)
-			require.Equal(t, 200, recorder.Result().StatusCode)
-			assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
-			all, err := io.ReadAll(recorder.Result().Body)
-			if err != nil {
-				panic(fmt.Sprintf("failed to read http body: %v", err))
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
-			assert.Equal(t, "my-data", string(all))
 		})
 	}
 }
@@ -547,13 +524,14 @@ func TestArtifactServer_GetOutputArtifactWithTemplate(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			s.GetOutputArtifact(recorder, r)
-			require.Equal(t, 200, recorder.Result().StatusCode)
-			assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
-			all, err := io.ReadAll(recorder.Result().Body)
-			if err != nil {
-				panic(fmt.Sprintf("failed to read http body: %v", err))
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
-			assert.Equal(t, "my-data", string(all))
 		})
 	}
 }
@@ -578,13 +556,14 @@ func TestArtifactServer_GetOutputArtifactWithInlineTemplate(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			s.GetOutputArtifact(recorder, r)
-			require.Equal(t, 200, recorder.Result().StatusCode)
-			assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
-			all, err := io.ReadAll(recorder.Result().Body)
-			if err != nil {
-				panic(fmt.Sprintf("failed to read http body: %v", err))
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
-			assert.Equal(t, "my-data", string(all))
 		})
 	}
 }
@@ -608,13 +587,14 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 			r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-1/%s", tt.artifactName))
 			recorder := httptest.NewRecorder()
 			s.GetInputArtifact(recorder, r)
-			require.Equal(t, 200, recorder.Result().StatusCode)
-			assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Result().Header.Get("Content-Disposition"))
-			all, err := io.ReadAll(recorder.Result().Body)
-			if err != nil {
-				panic(fmt.Sprintf("failed to read http body: %v", err))
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Result().Header.Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
-			assert.Equal(t, "my-data", string(all))
 		})
 	}
 }
@@ -661,14 +641,14 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	// make sure there is no index out of bounds error
 	assert.Equal(t, 400, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Contains(t, string(output), "Bad Request")
 
 	recorder = httptest.NewRecorder()
 	s.GetOutputArtifactByUID(recorder, r)
 	assert.Equal(t, 400, recorder.Result().StatusCode)
 	output, err = io.ReadAll(recorder.Result().Body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Contains(t, string(output), "Bad Request")
 }
 
@@ -679,7 +659,7 @@ func TestArtifactServer_httpBadRequestError(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Contains(t, string(output), "Bad Request")
 }
 
@@ -692,7 +672,7 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "Internal Server Error\n", string(output))
 
 	recorder = httptest.NewRecorder()
@@ -702,7 +682,7 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
 	output, err = io.ReadAll(recorder.Result().Body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Contains(t, string(output), "Unauthorized")
 
 	recorder = httptest.NewRecorder()

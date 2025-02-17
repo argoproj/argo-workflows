@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -21,15 +23,15 @@ func NewWatchCommand() *cobra.Command {
 
   argo watch @latest
 `,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 1 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
 			}
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-			return common.WatchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
+			common.WatchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
 		},
 	}
 	command.Flags().StringVar(&getArgs.Status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")

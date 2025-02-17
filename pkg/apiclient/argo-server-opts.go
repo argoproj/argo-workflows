@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"fmt"
-	"net/http"
 )
 
 type ArgoServerOpts struct {
@@ -13,10 +12,8 @@ type ArgoServerOpts struct {
 	Secure             bool
 	InsecureSkipVerify bool
 	// whether or not to use HTTP1
-	HTTP1 bool
-	// use custom http client
-	HTTP1Client *http.Client
-	Headers     []string
+	HTTP1   bool
+	Headers []string
 }
 
 func (o ArgoServerOpts) GetURL() string {

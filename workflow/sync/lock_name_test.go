@@ -14,17 +14,17 @@ func TestDecodeLockName(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *lockName
+		want    *LockName
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
 			"TestMutexLockNameValidation",
 			args{"default/Mutex/test"},
-			&lockName{
+			&LockName{
 				Namespace:    "default",
 				ResourceName: "test",
 				Key:          "",
-				Kind:         lockKindMutex,
+				Kind:         LockKindMutex,
 			},
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return true
@@ -33,11 +33,11 @@ func TestDecodeLockName(t *testing.T) {
 		{
 			"TestMutexLocksCanContainSlashes",
 			args{"default/Mutex/test/foo/bar/baz"},
-			&lockName{
+			&LockName{
 				Namespace:    "default",
 				ResourceName: "test/foo/bar/baz",
 				Key:          "",
-				Kind:         lockKindMutex,
+				Kind:         LockKindMutex,
 			},
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return true
@@ -46,11 +46,11 @@ func TestDecodeLockName(t *testing.T) {
 		{
 			"TestConfigMapLockNamesWork",
 			args{"default/ConfigMap/foo/bar"},
-			&lockName{
+			&LockName{
 				Namespace:    "default",
 				ResourceName: "foo",
 				Key:          "bar",
-				Kind:         lockKindConfigMap,
+				Kind:         LockKindConfigMap,
 			},
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return true
@@ -68,11 +68,11 @@ func TestDecodeLockName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DecodeLockName(tt.args.lockName)
-			if !tt.wantErr(t, err, fmt.Sprintf("decodeLockName(%v)", tt.args.lockName)) {
+			if !tt.wantErr(t, err, fmt.Sprintf("DecodeLockName(%v)", tt.args.lockName)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "decodeLockName(%v)", tt.args.lockName)
-			got.validateEncoding(tt.args.lockName)
+			assert.Equalf(t, tt.want, got, "DecodeLockName(%v)", tt.args.lockName)
+			got.ValidateEncoding(tt.args.lockName)
 		})
 	}
 }

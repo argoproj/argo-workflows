@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -19,7 +18,7 @@ type (
 )
 
 type Manager struct {
-	syncLockMap  map[string]semaphore
+	syncLockMap  map[string]Semaphore
 	lock         *sync.Mutex
 	nextWorkflow NextWorkflow
 	getSyncLimit GetSyncLimit
@@ -28,7 +27,7 @@ type Manager struct {
 
 func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	return &Manager{
-		syncLockMap:  make(map[string]semaphore),
+		syncLockMap:  make(map[string]Semaphore),
 		lock:         &sync.Mutex{},
 		nextWorkflow: nextWorkflow,
 		getSyncLimit: getSyncLimit,
@@ -36,7 +35,7 @@ func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDe
 	}
 }
 
-func (sm *Manager) getWorkflowKey(key string) (string, error) {
+func (cm *Manager) getWorkflowKey(key string) (string, error) {
 	if key == "" {
 		return "", fmt.Errorf("holderkey is empty")
 	}
@@ -47,19 +46,19 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
 }
 
-func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
-	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+func (cm *Manager) CheckWorkflowExistence() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	log.Debug("Check the workflow existence")
-	for _, lock := range sm.syncLockMap {
+	for _, lock := range cm.syncLockMap {
 		keys := lock.getCurrentHolders()
 		keys = append(keys, lock.getCurrentPending()...)
 		for _, holderKeys := range keys {
-			wfKey, err := sm.getWorkflowKey(holderKeys)
+			wfKey, err := cm.getWorkflowKey(holderKeys)
 			if err != nil {
 				continue
 			}
-			if !sm.isWFDeleted(wfKey) {
+			if !cm.isWFDeleted(wfKey) {
 				lock.release(holderKeys)
 				lock.removeFromQueue(holderKeys)
 			}
@@ -106,41 +105,29 @@ const (
 // a synchronization exists both at the template level
 // and at the workflow level -> impossible to upgrade correctly
 // due to ambiguity. Currently we just assume workflow level.
-func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
+func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
 	if wf.Spec.Synchronization != nil {
-		syncItems, err := allSyncItems(ctx, wf.Spec.Synchronization)
+		syncLockName, err := GetLockName(wf.Spec.Synchronization, wf.Namespace)
 		if err != nil {
 			return ErrorLevel, err
 		}
-		for _, syncItem := range syncItems {
-			syncLockName, err := getLockName(syncItem, wf.Namespace)
-			if err != nil {
-				return ErrorLevel, err
-			}
-			checkName := syncLockName.encodeName()
-			if lockName == checkName {
-				return WorkflowLevel, nil
-			}
+		checkName := syncLockName.EncodeName()
+		if lockName == checkName {
+			return WorkflowLevel, nil
 		}
 	}
 
 	var lastErr error
 	for _, template := range wf.Spec.Templates {
 		if template.Synchronization != nil {
-			syncItems, err := allSyncItems(ctx, template.Synchronization)
+			syncLockName, err := GetLockName(template.Synchronization, wf.Namespace)
 			if err != nil {
-				return ErrorLevel, err
+				lastErr = err
+				continue
 			}
-			for _, syncItem := range syncItems {
-				syncLockName, err := getLockName(syncItem, wf.Namespace)
-				if err != nil {
-					lastErr = err
-					continue
-				}
-				checkName := syncLockName.encodeName()
-				if lockName == checkName {
-					return TemplateLevel, nil
-				}
+			checkName := syncLockName.EncodeName()
+			if lockName == checkName {
+				return TemplateLevel, nil
 			}
 		}
 	}
@@ -150,7 +137,7 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 	return ErrorLevel, lastErr
 }
 
-func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
+func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 	for _, wf := range wfs {
 		if wf.Status.Synchronization == nil {
 			continue
@@ -158,18 +145,19 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 
 		if wf.Status.Synchronization.Semaphore != nil {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
-				semaphore := sm.syncLockMap[holding.Semaphore]
+
+				semaphore := cm.syncLockMap[holding.Semaphore]
 				if semaphore == nil {
-					semaphore, err := sm.initializeSemaphore(holding.Semaphore)
+					semaphore, err := cm.initializeSemaphore(holding.Semaphore)
 					if err != nil {
 						log.Warnf("cannot initialize semaphore '%s': %v", holding.Semaphore, err)
 						continue
 					}
-					sm.syncLockMap[holding.Semaphore] = semaphore
+					cm.syncLockMap[holding.Semaphore] = semaphore
 				}
 
 				for _, holders := range holding.Holders {
-					level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Semaphore)
+					level, err := getWorkflowSyncLevelByName(&wf, holding.Semaphore)
 					if err != nil {
 						log.Warnf("cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
 						continue
@@ -185,11 +173,12 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 
 		if wf.Status.Synchronization.Mutex != nil {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
-				mutex := sm.syncLockMap[holding.Mutex]
+
+				mutex := cm.syncLockMap[holding.Mutex]
 				if mutex == nil {
-					mutex := sm.initializeMutex(holding.Mutex)
+					mutex := cm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
-						level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Mutex)
+						level, err := getWorkflowSyncLevelByName(&wf, holding.Mutex)
 						if err != nil {
 							log.Warnf("cannot obtain lock level for '%s' : %v", holding.Mutex, err)
 							continue
@@ -197,7 +186,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						key := getUpgradedKey(&wf, holding.Holder, level)
 						mutex.acquire(key)
 					}
-					sm.syncLockMap[holding.Mutex] = mutex
+					cm.syncLockMap[holding.Mutex] = mutex
 				}
 			}
 		}
@@ -206,138 +195,94 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 }
 
 // TryAcquire tries to acquire the lock from semaphore.
-// It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available, the failed lock, and any error encountered
-func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, string, error) {
-	sm.lock.Lock()
-	defer sm.lock.Unlock()
+// It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
+func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 
 	if syncLockRef == nil {
-		return false, false, "", "", fmt.Errorf("cannot acquire lock from nil Synchronization")
+		return false, false, "", fmt.Errorf("cannot acquire lock from nil Synchronization")
 	}
 
-	failedLockName := ""
-	syncItems, err := allSyncItems(ctx, syncLockRef)
+	syncLockName, err := GetLockName(syncLockRef, wf.Namespace)
 	if err != nil {
-		return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
+		return false, false, "", fmt.Errorf("requested configuration is invalid: %w", err)
 	}
-	holderKey := getHolderKey(wf, nodeName)
 
-	var msg string
-	lockKeys := make([]string, len(syncItems))
-	allAcquirable := true
-	for i, syncItem := range syncItems {
-		syncLockName, err := getLockName(syncItem, wf.Namespace)
+	lockKey := syncLockName.EncodeName()
+	lock, found := cm.syncLockMap[lockKey]
+	if !found {
+		switch syncLockRef.GetType() {
+		case wfv1.SynchronizationTypeSemaphore:
+			lock, err = cm.initializeSemaphore(lockKey)
+		case wfv1.SynchronizationTypeMutex:
+			lock = cm.initializeMutex(lockKey)
+		default:
+			return false, false, "", fmt.Errorf("unknown Synchronization Type")
+		}
 		if err != nil {
-			return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
+			return false, false, "", err
 		}
-		lockKeys[i] = syncLockName.encodeName()
+		cm.syncLockMap[lockKey] = lock
 	}
-	for i, lockKey := range lockKeys {
-		lock, found := sm.syncLockMap[lockKey]
-		if !found {
-			var err error
-			switch syncItems[i].getType() {
-			case wfv1.SynchronizationTypeSemaphore:
-				lock, err = sm.initializeSemaphore(lockKey)
-			case wfv1.SynchronizationTypeMutex:
-				lock = sm.initializeMutex(lockKey)
-			default:
-				return false, false, "", failedLockName, fmt.Errorf("unknown Synchronization Type")
-			}
-			if err != nil {
-				return false, false, "", failedLockName, err
-			}
-			sm.syncLockMap[lockKey] = lock
-		}
 
-		if syncItems[i].getType() == wfv1.SynchronizationTypeSemaphore {
-			err := sm.checkAndUpdateSemaphoreSize(lock)
-			if err != nil {
-				return false, false, "", "", err
-			}
-		}
-
-		var priority int32
-		if wf.Spec.Priority != nil {
-			priority = *wf.Spec.Priority
-		} else {
-			priority = 0
-		}
-		creationTime := wf.CreationTimestamp
-		lock.addToQueue(holderKey, priority, creationTime.Time)
-
-		ensureInit(wf, syncItems[i].getType())
-		acquired, already, newMsg := lock.checkAcquire(holderKey)
-		if !acquired && !already {
-			allAcquirable = false
-			if msg == "" {
-				msg = newMsg
-			}
-			if failedLockName == "" {
-				failedLockName = lockKey
-			}
+	if syncLockRef.GetType() == wfv1.SynchronizationTypeSemaphore {
+		err := cm.checkAndUpdateSemaphoreSize(lock)
+		if err != nil {
+			return false, false, "", err
 		}
 	}
 
-	switch {
-	case allAcquirable:
-		updated := false
-		for i, lockKey := range lockKeys {
-			lock := sm.syncLockMap[lockKey]
-			acquired, msg := lock.tryAcquire(holderKey)
-			if !acquired {
-				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
-			}
-			currentHolders := sm.getCurrentLockHolders(lockKey)
-			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockAcquired(holderKey, lockKey, currentHolders) {
-				updated = true
-			}
-		}
-		return true, updated, msg, failedLockName, nil
-	default: // Not all acquirable
-		updated := false
-		for i, lockKey := range lockKeys {
-			currentHolders := sm.getCurrentLockHolders(lockKey)
-			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
-				updated = true
-			}
-		}
-		return false, updated, msg, failedLockName, nil
+	holderKey := getHolderKey(wf, nodeName)
+	var priority int32
+	if wf.Spec.Priority != nil {
+		priority = *wf.Spec.Priority
+	} else {
+		priority = 0
 	}
+	creationTime := wf.CreationTimestamp
+	lock.addToQueue(holderKey, priority, creationTime.Time)
+
+	ensureInit(wf, syncLockRef.GetType())
+	currentHolders := cm.getCurrentLockHolders(lockKey)
+	acquired, msg := lock.tryAcquire(holderKey)
+	if acquired {
+		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
+		return true, updated, "", nil
+	}
+
+	updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockWaiting(holderKey, lockKey, currentHolders)
+	return false, updated, msg, nil
 }
 
-func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
+func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
 	if syncRef == nil {
 		return
 	}
 
-	sm.lock.Lock()
-	defer sm.lock.Unlock()
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
-	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
-	// should never have acquired anything if this errored
-	syncItems, _ := allSyncItems(ctx, syncRef)
+	lockName, err := GetLockName(syncRef, wf.Namespace)
+	if err != nil {
+		return
+	}
 
-	for _, syncItem := range syncItems {
-		lockName, err := getLockName(syncItem, wf.Namespace)
-		if err != nil {
-			return
-		}
-		if syncLockHolder, ok := sm.syncLockMap[lockName.encodeName()]; ok {
-			syncLockHolder.release(holderKey)
-			syncLockHolder.removeFromQueue(holderKey)
-			lockKey := lockName.encodeName()
-			if wf.Status.Synchronization != nil {
-				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey)
-			}
+	if syncLockHolder, ok := cm.syncLockMap[lockName.EncodeName()]; ok {
+		syncLockHolder.release(holderKey)
+		syncLockHolder.removeFromQueue(holderKey)
+		log.Debugf("%s sync lock is released by %s", lockName.EncodeName(), holderKey)
+		lockKey := lockName.EncodeName()
+		if wf.Status.Synchronization != nil {
+			wf.Status.Synchronization.GetStatus(syncRef.GetType()).LockReleased(holderKey, lockKey)
 		}
 	}
 }
 
-func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
-	sm.lock.Lock()
-	defer sm.lock.Unlock()
+func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 
 	if wf.Status.Synchronization == nil {
 		return true
@@ -345,7 +290,7 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 	if wf.Status.Synchronization.Semaphore != nil {
 		for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
-			syncLockHolder := sm.syncLockMap[holding.Semaphore]
+			syncLockHolder := cm.syncLockMap[holding.Semaphore]
 			if syncLockHolder == nil {
 				continue
 			}
@@ -359,7 +304,7 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 		// Remove the pending Workflow level semaphore keys
 		for _, waiting := range wf.Status.Synchronization.Semaphore.Waiting {
-			syncLockHolder := sm.syncLockMap[waiting.Semaphore]
+			syncLockHolder := cm.syncLockMap[waiting.Semaphore]
 			if syncLockHolder == nil {
 				continue
 			}
@@ -371,7 +316,7 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 	if wf.Status.Synchronization.Mutex != nil {
 		for _, holding := range wf.Status.Synchronization.Mutex.Holding {
-			syncLockHolder := sm.syncLockMap[holding.Mutex]
+			syncLockHolder := cm.syncLockMap[holding.Mutex]
 			if syncLockHolder == nil {
 				continue
 			}
@@ -383,7 +328,7 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 		// Remove the pending Workflow level mutex keys
 		for _, waiting := range wf.Status.Synchronization.Mutex.Waiting {
-			syncLockHolder := sm.syncLockMap[waiting.Mutex]
+			syncLockHolder := cm.syncLockMap[waiting.Mutex]
 			if syncLockHolder == nil {
 				continue
 			}
@@ -395,7 +340,7 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 	for _, node := range wf.Status.Nodes {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
-			lock, ok := sm.syncLockMap[node.SynchronizationStatus.Waiting]
+			lock, ok := cm.syncLockMap[node.SynchronizationStatus.Waiting]
 			if ok {
 				lock.removeFromQueue(getHolderKey(wf, node.ID))
 			}
@@ -431,35 +376,35 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	return key
 }
 
-func (sm *Manager) getCurrentLockHolders(lockName string) []string {
-	if concurrency, ok := sm.syncLockMap[lockName]; ok {
+func (cm *Manager) getCurrentLockHolders(lockName string) []string {
+	if concurrency, ok := cm.syncLockMap[lockName]; ok {
 		return concurrency.getCurrentHolders()
 	}
 	return nil
 }
 
-func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) {
-	limit, err := sm.getSyncLimit(semaphoreName)
+func (cm *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) {
+	limit, err := cm.getSyncLimit(semaphoreName)
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semaphoreName, limit, sm.nextWorkflow, "semaphore"), nil
+	return NewSemaphore(semaphoreName, limit, cm.nextWorkflow, "semaphore"), nil
 }
 
-func (sm *Manager) initializeMutex(mutexName string) semaphore {
-	return NewMutex(mutexName, sm.nextWorkflow)
+func (cm *Manager) initializeMutex(mutexName string) Semaphore {
+	return NewMutex(mutexName, cm.nextWorkflow)
 }
 
-func (sm *Manager) isSemaphoreSizeChanged(semaphore semaphore) (bool, int, error) {
-	limit, err := sm.getSyncLimit(semaphore.getName())
+func (cm *Manager) isSemaphoreSizeChanged(semaphore Semaphore) (bool, int, error) {
+	limit, err := cm.getSyncLimit(semaphore.getName())
 	if err != nil {
 		return false, semaphore.getLimit(), err
 	}
 	return semaphore.getLimit() != limit, limit, nil
 }
 
-func (sm *Manager) checkAndUpdateSemaphoreSize(semaphore semaphore) error {
-	changed, newLimit, err := sm.isSemaphoreSizeChanged(semaphore)
+func (cm *Manager) checkAndUpdateSemaphoreSize(semaphore Semaphore) error {
+	changed, newLimit, err := cm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
 		return err
 	}

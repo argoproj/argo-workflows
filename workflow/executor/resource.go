@@ -211,9 +211,8 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		log.Infof("Failing for conditions: %s", failSelector)
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
-		true,
-		func(ctx context.Context) (bool, error) {
+	err := wait.PollImmediateInfinite(envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+		func() (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
 			if err == nil {
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
@@ -228,7 +227,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 			return false, err
 		})
 	if err != nil {
-		if wait.Interrupted(err) {
+		if err == wait.ErrWaitTimeout {
 			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
 		} else {
 			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
@@ -271,10 +270,10 @@ func matchConditions(jsonBytes []byte, successReqs labels.Requirements, failReqs
 	for _, req := range failReqs {
 		failed := req.Matches(ls)
 		msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
-		log.Info(msg)
+		log.Infof(msg)
 		if failed {
 			// We return false here to not retry when failure conditions met.
-			return false, errors.Errorf(errors.CodeBadRequest, "%s", msg)
+			return false, errors.Errorf(errors.CodeBadRequest, msg)
 		}
 	}
 	numMatched := 0

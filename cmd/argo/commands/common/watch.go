@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
-func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflow string, getArgs GetFlags) error {
+func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflow string, getArgs GetFlags) {
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
@@ -25,9 +25,7 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
-	if err != nil {
-		return err
-	}
+	errors.CheckError(err)
 
 	wfChan := make(chan *wfv1.Workflow)
 	go func() {
@@ -54,35 +52,30 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		case newWf := <-wfChan:
 			// If we get a new event, update our workflow
 			if newWf == nil {
-				return nil
+				return
 			}
 			wf = newWf
 		case <-ticker.C:
 			// If we don't, refresh the workflow screen every second
 		case <-ctx.Done():
 			// When the context gets canceled
-			return nil
+			return
 		}
 
-		err := printWorkflowStatus(wf, getArgs)
-		if err != nil {
-			return err
-		}
+		printWorkflowStatus(wf, getArgs)
 		if wf != nil && !wf.Status.FinishedAt.IsZero() {
-			return nil
+			return
 		}
 	}
 }
 
-func printWorkflowStatus(wf *wfv1.Workflow, getArgs GetFlags) error {
+func printWorkflowStatus(wf *wfv1.Workflow, getArgs GetFlags) {
 	if wf == nil {
-		return nil
+		return
 	}
-	if err := packer.DecompressWorkflow(wf); err != nil {
-		return err
-	}
+	err := packer.DecompressWorkflow(wf)
+	errors.CheckError(err)
 	print("\033[H\033[2J")
 	print("\033[0;0H")
 	fmt.Print(PrintWorkflowHelper(wf, getArgs))
-	return nil
 }

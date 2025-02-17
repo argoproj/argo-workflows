@@ -2,10 +2,10 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -13,13 +13,12 @@ func NewWaitCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 			err := waitContainer(ctx)
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				log.Fatalf("%+v", err)
 			}
-			return nil
 		},
 	}
 	return &command
@@ -43,15 +42,6 @@ func waitContainer(ctx context.Context) error {
 	err := wfExecutor.Wait(ctx)
 	if err != nil {
 		wfExecutor.AddError(err)
-	}
-
-	if wfExecutor.Template.Resource != nil {
-		// Save log artifacts for resource template
-		err = wfExecutor.ReportOutputsLogs(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(err)
-		}
-		return wfExecutor.HasError()
 	}
 
 	// Capture output script result

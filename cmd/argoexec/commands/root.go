@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -50,8 +49,8 @@ func NewRootCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   CLIName,
 		Short: "argoexec is the executor sidecar to workflow containers",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.HelpFunc()(cmd, args)
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initConfig()
@@ -99,18 +98,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 
 	tmpl := &wfv1.Template{}
-	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
-	// wait container reads template from the file written by init container, instead of from environment variable.
-	if !ok {
-		data, err := os.ReadFile(varRunArgo + "/template")
-		checkErr(err)
-		envVarTemplateValue = string(data)
-	} else if envVarTemplateValue == common.EnvVarTemplateOffloaded {
-		data, err := os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
-		checkErr(err)
-		envVarTemplateValue = string(data)
-	}
-	checkErr(json.Unmarshal([]byte(envVarTemplateValue), tmpl))
+	checkErr(json.Unmarshal([]byte(os.Getenv(common.EnvVarTemplate)), tmpl))
 
 	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))

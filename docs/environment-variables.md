@@ -1,10 +1,10 @@
 # Environment Variables
 
-This document outlines environment variables that can be used to customize behavior.
+This document outlines the set of environment variables that can be used to customize the behavior at different
+levels.
 
-!!! Warning
-    Environment variables are typically added to test out experimental features and should not be used by most users.
-    Environment variables may be removed at any time.
+⚠️ Environment variables are typically added to test out experimental features and should not be used by
+most users. Environment variables may be removed at any time.
 
 ## Controller
 
@@ -22,7 +22,6 @@ This document outlines environment variables that can be used to customize behav
 | `ARGO_AGENT_PATCH_RATE`                  | `time.Duration`     | `DEFAULT_REQUEUE_TIME`                                                                      | Rate that the Argo Agent will patch the workflow task-set.                                                                                                                                                                                                               |
 | `ARGO_AGENT_CPU_LIMIT`                   | `resource.Quantity` | `100m`                                                                                      | CPU resource limit for the agent.                                                                                                                                                                                                                                        |
 | `ARGO_AGENT_MEMORY_LIMIT`                | `resource.Quantity` | `256m`                                                                                      | Memory resource limit for the agent.                                                                                                                                                                                                                                     |
-| `ARGO_POD_STATUS_CAPTURE_FINALIZER`      | `bool`              | `false`                                                                                     | The finalizer blocks the deletion of pods until the controller captures their status.
 | `BUBBLE_ENTRY_TEMPLATE_ERR`              | `bool`              | `true`                                                                                      | Whether to bubble up template errors to workflow.                                                                                                                                                                                                                        |
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
 | `CACHE_GC_AFTER_NOT_HIT_DURATION`        | `time.Duration`     | `30s`                                                                                       | When a memoization cache has not been hit after this duration, it will be deleted.                                                                                                                                                                                       |
@@ -31,6 +30,7 @@ This document outlines environment variables that can be used to customize behav
 | `DISABLE_MAX_RECURSION`                  | `bool`              | `false`                                                                                     | Set to true to disable the recursion preventer, which will stop a workflow running which has called into a child template 100 times                                                                                                                                      |
 | `EXPRESSION_TEMPLATES`                   | `bool`              | `true`                                                                                      | Escape hatch to disable expression templates.                                                                                                                                                                                                                            |
 | `EVENT_AGGREGATION_WITH_ANNOTATIONS`     | `bool`              | `false`                                                                                     | Whether event annotations will be used when aggregating events.                                                                                                                                                                                                          |
+| `GRPC_MESSAGE_SIZE`                      | `string`            | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
 | `GZIP_IMPLEMENTATION`                    | `string`            | `PGZip`                                                                                     | The implementation of compression/decompression. Currently only "`PGZip`" and "`GZip`" are supported.                                                                                                                                                                    |
 | `INFORMER_WRITE_BACK`                    | `bool`              | `true`                                                                                      | Whether to write back to informer instead of catching up.                                                                                                                                                                                                                |
 | `HEALTHZ_AGE`                            | `time.Duration`     | `5m`                                                                                        | How old a un-reconciled workflow is to report unhealthy.                                                                                                                                                                                                                 |
@@ -55,10 +55,9 @@ This document outlines environment variables that can be used to customize behav
 | `WORKFLOW_GC_PERIOD`                     | `time.Duration`     | `5m`                                                                                        | The periodicity for GC of workflows.                                                                                                                                                                                                                                     |
 | `SEMAPHORE_NOTIFY_DELAY`                 | `time.Duration`     | `1s`                                                                                        | Tuning Delay when notifying semaphore waiters about availability in the semaphore                                                                                                                                                                                        |
 | `WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS` | `bool` | `true` | Whether to watch the Controller's ConfigMap and semaphore ConfigMaps for run-time changes. When disabled, the Controller will only read these ConfigMaps once and will have to be manually restarted to pick up new changes. |
-| `SKIP_WORKFLOW_DURATION_ESTIMATION` | `bool` | `false` | Whether to lookup resource usage from prior workflows to estimate usage for new workflows. |
 
-CLI parameters of the Controller can be specified as environment variables with the `ARGO_` prefix.
-For example:
+CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_`
+prefix. For example:
 
 ```bash
 workflow-controller --managed-namespace=argo
@@ -70,7 +69,37 @@ Can be expressed as:
 ARGO_MANAGED_NAMESPACE=argo workflow-controller
 ```
 
-You can set environment variables for the Controller Deployment's container spec like the following:
+You can set environment variable for the argo-server deployment, for example:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+        - args:
+            - server
+          image: argoproj/argocli:latest
+          name: argo-server
+          env:
+            - name: GRPC_MESSAGE_SIZE
+              value: "209715200"
+          ports:
+          ..
+          ...
+          ....
+```
+
+You can set the environment variables for controller in controller's container spec like the following:
 
 ```yaml
 apiVersion: apps/v1
@@ -106,7 +135,8 @@ spec:
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 | `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s`    | The time interval for wait container to check whether the containers have completed.                   |
 
-You can set environment variables for the Executor in your [`workflow-controller-configmap`](workflow-controller-configmap.md) like the following:
+You can set the environment variables for executor by customizing executor container's environment variables in your
+controller's config-map like the following:
 
 ```yaml
 apiVersion: v1
@@ -125,14 +155,15 @@ data:
 
 | Name                                       | Type     | Default | Description                                                                                                             |
 |--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------|
+| `ALLOWED_LINK_PROTOCOL`                    | `string` | `http,https` | List of comma separated protocols allowed for the [Links feature](links.md)
 | `ARGO_ARTIFACT_SERVER`                     | `bool`   | `true`  | Enable [Workflow Archive](workflow-archive.md) endpoints
 | `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
 | `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
+| `BASE_HREF`                                | `string` | `/`     | [Base HREF](argo-server.md#base-href) of the Server
 | `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `GRPC_MESSAGE_SIZE`                        | `string` | `104857600` | Use different GRPC Max message size for Server (supporting huge workflows).                                         |
-| `IP_KEY_FUNC_HEADERS`                      | `string` | `""`    | List of comma separated request headers containing IPs to use for rate limiting. For example, "X-Forwarded-For,X-Real-IP". By default, uses the request's remote IP address.          |
 | `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
 | `SSO_DELEGATE_RBAC_TO_NAMESPACE`           | `bool`   | `false` | Enable [SSO RBAC Namespace Delegation](argo-server-sso.md#sso-rbac-namespace-delegation)

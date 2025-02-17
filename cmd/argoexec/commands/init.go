@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/argoproj/pkg/stats"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -12,13 +12,12 @@ func NewInitCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   "init",
 		Short: "Load artifacts",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
 			err := loadArtifacts(ctx)
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				log.Fatalf("%+v", err)
 			}
-			return nil
 		},
 	}
 	return &command

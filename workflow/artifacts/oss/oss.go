@@ -166,45 +166,9 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 	return err
 }
 
-// OpenStream opens a stream reader for an artifact from OSS compliant storage
-func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	var stream io.ReadCloser
-	err := waitutil.Backoff(defaultRetry,
-		func() (bool, error) {
-			log.Infof("OSS OpenStream, key: %s", inputArtifact.OSS.Key)
-			osscli, err := ossDriver.newOSSClient()
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			bucketName := inputArtifact.OSS.Bucket
-			err = setBucketLogging(osscli, bucketName)
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			bucket, err := osscli.Bucket(bucketName)
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			s, origErr := bucket.GetObject(inputArtifact.OSS.Key)
-			if origErr == nil {
-				stream = s
-				return true, nil
-			}
-			if !IsOssErrCode(err, "NoSuchKey") {
-				return !isTransientOSSErr(origErr), fmt.Errorf("failed to get file: %w", origErr)
-			}
-			isDir, err := IsOssDirectory(bucket, inputArtifact.OSS.Key)
-			if err != nil {
-				return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, inputArtifact.OSS.Key, err)
-			}
-			if !isDir {
-				return false, origErr
-			}
-			// directory case:
-			// todo: make a .tgz file which can be streamed to user
-			return false, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
-		})
-	return stream, err
+func (ossDriver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, ossDriver)
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
@@ -266,32 +230,9 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 	return err
 }
 
-// Delete deletes an artifact from an OSS compliant storage
-func (ossDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
-	err := waitutil.Backoff(defaultRetry,
-		func() (bool, error) {
-			log.Infof("OSS Delete artifact: key: %s", artifact.OSS.Key)
-			osscli, err := ossDriver.newOSSClient()
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			bucketName := artifact.OSS.Bucket
-			err = setBucketLogging(osscli, bucketName)
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			bucket, err := osscli.Bucket(bucketName)
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			objectName := artifact.OSS.Key
-			err = bucket.DeleteObject(objectName)
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			return true, nil
-		})
-	return err
+// Delete is unsupported for the oss artifacts
+func (ossDriver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
 }
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
@@ -594,21 +535,6 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	return files, nil
 }
 
-// IsDirectory tests if the key is acting like a OSS directory
-func (ossDriver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	osscli, err := ossDriver.newOSSClient()
-	if err != nil {
-		return !isTransientOSSErr(err), err
-	}
-	bucketName := artifact.OSS.Bucket
-	bucket, err := osscli.Bucket(bucketName)
-	if err != nil {
-		return !isTransientOSSErr(err), err
-	}
-	objectName := artifact.OSS.Key
-	isDir, err := IsOssDirectory(bucket, objectName)
-	if err != nil {
-		return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
-	}
-	return isDir, nil
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for OSS")
 }

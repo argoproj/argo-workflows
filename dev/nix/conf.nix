@@ -5,6 +5,7 @@
 # Even then the buildFlags are not passed into Go, meaning you won't see the correct version info yet. 
 # This is only intended for quick developing at the moment, gradually more functionality will be pushed here. 
 rec {
+  staticFiles = false; # not acted upon
   version = "latest";
   env = {
     DEFAULT_REQUEUE_TIME = "1s";
@@ -23,7 +24,6 @@ rec {
     LOGS = "true"; # same as CTRL - not acted upon
     UI = "true"; # same as CTRL
     API = "true"; # same as CTRL
-    UI_SECURE = "false";
     PLUGINS = "false";
   };
   controller = {
@@ -50,10 +50,7 @@ rec {
     args = "--loglevel ${env.LOG_LEVEL} server --namespaced=${env.NAMESPACED} --auth-mode ${env.AUTH_MODE} --secure=${env.SECURE} --x-frame-options=SAMEORIGIN";
   };
   ui = {
-    env = {
-      ARGO_UI_SECURE = "${env.UI_SECURE}";
-      ARGO_SECURE = "${env.SECURE}";
-    };
+    env = { };
     args = "--cwd ui start";
   };
 }

@@ -22,9 +22,9 @@ spec:
       parameters:
       - name: seconds
     synchronization:
-      semaphores:
-        - configMapKeyRef:
-            name: my-config
-            key: template
+      semaphore:
+        configMapKeyRef:
+          name: my-config
+          key: template
     container:
       image: argoproj/argosay:v2

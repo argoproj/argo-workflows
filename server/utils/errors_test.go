@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -63,7 +62,7 @@ func TestRecursiveStatus(t *testing.T) {
 
 func TestNilStatus(t *testing.T) {
 	newErr := ToStatusError(nil, codes.InvalidArgument)
-	require.NoError(t, newErr)
+	assert.Equal(t, nil, newErr)
 }
 
 func TestArgoError(t *testing.T) {
@@ -97,7 +96,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusOk", func(t *testing.T) {
 		code := http.StatusAccepted
 		err, ok := httpToStatusError(code, "msg")
-		assert.True(ok)
+		assert.Equal(true, ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.OK, stat.Code())
 	})
@@ -105,7 +104,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusOnRedirect", func(t *testing.T) {
 		code := http.StatusPermanentRedirect
 		err, ok := httpToStatusError(code, "msg")
-		assert.True(ok)
+		assert.Equal(true, ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.Internal, stat.Code())
 	})
@@ -113,7 +112,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusTeapot", func(t *testing.T) {
 		code := http.StatusTeapot
 		err, ok := httpToStatusError(code, "msg")
-		assert.True(ok)
+		assert.Equal(true, ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.InvalidArgument, stat.Code())
 	})
@@ -122,7 +121,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusInternal", func(t *testing.T) {
 		code := http.StatusVariantAlsoNegotiates
 		err, ok := httpToStatusError(code, "msg")
-		assert.True(ok)
+		assert.Equal(true, ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.Internal, stat.Code())
 	})

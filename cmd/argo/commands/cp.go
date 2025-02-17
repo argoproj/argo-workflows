@@ -48,10 +48,7 @@ func NewCpCommand() *cobra.Command {
 			workflowName := args[0]
 			outputDir := args[1]
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
-			}
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			if len(namespace) == 0 {
 				namespace = client.Namespace()
@@ -120,11 +117,7 @@ func getAndStoreArtifactData(namespace string, workflowName string, nodeId strin
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
-	authString, err := client.GetAuthString()
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", authString)
+	request.Header.Set("Authorization", client.GetAuthString())
 	resp, err := c.Do(request)
 	if err != nil {
 		return fmt.Errorf("request failed with: %w", err)

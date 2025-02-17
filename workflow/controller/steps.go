@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Knetic/govaluate"
@@ -312,8 +310,8 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
 			errorMsg := fmt.Sprintf("was unable to obtain childNode for %s", childNodeID)
-			woc.log.Error(errorMsg)
-			return nil, fmt.Errorf("%s", errorMsg)
+			woc.log.Errorf(errorMsg)
+			return nil, fmt.Errorf(errorMsg)
 		}
 		step := nodeSteps[childNode.Name]
 		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
@@ -402,15 +400,6 @@ func shouldExecute(when string) (bool, error) {
 	return boolRes, nil
 }
 
-func errorFromChannel(errCh <-chan error) error {
-	select {
-	case err := <-errCh:
-		return err
-	default:
-	}
-	return nil
-}
-
 // resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
 // NOTE: by now, input parameters should have been substituted throughout the template, so we only
 // are concerned with:
@@ -428,21 +417,21 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		return nil, err
 	}
 
-	// Resolve a Step's References and add it to newStepGroup
-	resolveStepReferences := func(i int, step wfv1.WorkflowStep, newStepGroup []wfv1.WorkflowStep) error {
+	for i, step := range stepGroup {
 		// Step 1: replace all parameter scope references in the step
+		// TODO: improve this
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return nil, errors.InternalWrapError(err)
 		}
 		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return nil, errors.InternalWrapError(err)
 		}
 
 		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -455,13 +444,13 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			if newStep.ShouldExpand() {
 				proceed = true
 			} else {
-				return err
+				return nil, err
 			}
 		}
 		if !proceed {
 			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
 			newStepGroup[i] = newStep
-			return nil
+			continue
 		}
 
 		// Step 2: replace all artifact references
@@ -475,37 +464,13 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 				if art.Optional {
 					continue
 				}
-				return fmt.Errorf("unable to resolve references: %s", err)
+				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
 			newStep.Arguments.Artifacts[j] = *resolvedArt
 		}
 
 		newStepGroup[i] = newStep
-		return nil
-	}
-
-	// When resolveStepReferences we can use a channel parallelStepNum to control the number of concurrencies
-	parallelStepNum := make(chan string, 500)
-	errCh := make(chan error, len(stepGroup)) // contains the error during resolveStepReferences
-	var wg sync.WaitGroup
-	for i, step := range stepGroup {
-		parallelStepNum <- step.Name
-		wg.Add(1)
-		go func(i int, step wfv1.WorkflowStep) {
-			defer wg.Done()
-			if err := resolveStepReferences(i, step, newStepGroup); err != nil {
-				woc.log.WithFields(log.Fields{"stepName": step.Name}).WithError(err).Error("Failed to resolve references")
-				errCh <- err
-			}
-			<-parallelStepNum
-		}(i, step)
-	}
-	wg.Wait()
-
-	err = errorFromChannel(errCh) // fetch the first error during resolveStepReferences
-	if err != nil {
-		return nil, fmt.Errorf("Failed to resolve references: %s", err)
 	}
 	return newStepGroup, nil
 }
@@ -631,10 +596,6 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
-	}
-
-	if len(node.Children) != 0 {
-		localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
 	}
 
 	if node.Phase != "" {
