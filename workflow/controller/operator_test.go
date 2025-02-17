@@ -9500,7 +9500,7 @@ func TestRetryExpressionFilterNodeType(t *testing.T) {
 	scope := env.GetFuncMap(localScope)
 	shouldContinue, err := argoexpr.EvalBool("retry.nodeType == 'Pod'", scope)
 	require.NoError(t, err)
-	assert.Equal(t, true, shouldContinue)
+	assert.True(t, shouldContinue)
 
 	retryNode, err = wf.GetNodeByName("test01-fail-5kk6k(0)[1].step-b")
 	require.NoError(t, err)
