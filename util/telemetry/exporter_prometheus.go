@@ -57,7 +57,7 @@ func (m *Metrics) RunPrometheusServer(ctx context.Context, isDummy bool) {
 	if !m.config.Enabled {
 		return
 	}
-	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	name := ""
 	mux := http.NewServeMux()

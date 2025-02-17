@@ -818,12 +818,11 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
-	retries.Limit = intstrutil.ParsePtr("3")
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
 		Factor:   intstrutil.ParsePtr("2"),
-		Cap:      "11m",
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -864,21 +863,6 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.NoError(err)
 	require.LessOrEqual(backoff, 600)
 	require.Less(595, backoff)
-
-	woc.initializeNode(nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
-	woc.addChildNode(nodeName, nodeName+"(2)")
-	n, err = woc.wf.GetNodeByName(nodeName)
-	require.NoError(err)
-
-	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	require.NoError(err)
-	require.Equal(wfv1.NodeRunning, n.Phase)
-
-	// Third backoff should be limited to 660 seconds by the Cap.
-	backoff, err = parseRetryMessage(n.Message)
-	require.NoError(err)
-	require.LessOrEqual(backoff, 660)
-	require.Less(655, backoff)
 
 	// Mark lastChild as successful.
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
@@ -1780,33 +1764,6 @@ func TestAssessNodeStatus(t *testing.T) {
 		node:        &wfv1.NodeStatus{TemplateName: templateName},
 		wantPhase:   wfv1.NodeError,
 		wantMessage: "Unexpected pod phase for : ",
-	}, {
-		name: "pod failed - main container still running, init container finished",
-		pod: &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				InitContainerStatuses: []apiv1.ContainerStatus{
-					{
-						Name:  common.InitContainerName,
-						State: apiv1.ContainerState{Terminated: nil},
-					},
-				},
-				ContainerStatuses: []apiv1.ContainerStatus{
-					{
-						Name:  common.WaitContainerName,
-						State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{StartedAt: metav1.Time{Time: time.Now()}}},
-					},
-					{
-						Name:  common.MainContainerName,
-						State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{StartedAt: metav1.Time{Time: time.Now()}}},
-					},
-				},
-				Message: "Pod Failed",
-				Phase:   apiv1.PodFailed,
-			},
-		},
-		node:        &wfv1.NodeStatus{TemplateName: templateName},
-		wantPhase:   wfv1.NodeFailed,
-		wantMessage: "Pod Failed",
 	}}
 
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -6558,7 +6515,6 @@ status:
   phase: Failed
   nodes:
     my-wf:
-      id: my-wf
       name: my-wf
       phase: Failed
 `)

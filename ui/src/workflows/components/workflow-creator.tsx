@@ -1,5 +1,4 @@
 import {Select} from 'argo-ui/src/components/select/select';
-import {History} from 'history';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
@@ -17,7 +16,7 @@ import {WorkflowEditor} from './workflow-editor';
 
 type Stage = 'choose-method' | 'submit-workflow' | 'full-editor';
 
-export function WorkflowCreator({namespace, onCreate, history}: {namespace: string; onCreate: (workflow: Workflow) => void; history: History}) {
+export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) {
     const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
     const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
     const [stage, setStage] = useState<Stage>('choose-method');
@@ -63,12 +62,6 @@ export function WorkflowCreator({namespace, onCreate, history}: {namespace: stri
         }
     }, [workflowTemplate]);
 
-    useEffect(() => {
-        const queryParams = new URLSearchParams(history.location.search);
-        const template = queryParams.get('template');
-        setWorkflowTemplate((workflowTemplates || []).find(tpl => tpl.metadata.name === template));
-    }, [workflowTemplates, setWorkflowTemplate, history]);
-
     return (
         <>
             {stage === 'choose-method' && (
@@ -100,7 +93,6 @@ export function WorkflowCreator({namespace, onCreate, history}: {namespace: stri
                         entrypoint={workflowTemplate.spec.entrypoint}
                         templates={workflowTemplate.spec.templates || []}
                         workflowParameters={workflowTemplate.spec.arguments.parameters || []}
-                        history={history}
                     />
                     <a onClick={() => setStage('full-editor')}>
                         Edit using full workflow options <i className='fa fa-caret-right' />

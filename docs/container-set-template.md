@@ -1,17 +1,12 @@
-# ContainerSet Template
+# Container Set Template
 
 > v3.1 and after
 
-A ContainerSet template is similar to a normal container template, but it allows you to run multiple containers within a single Pod.
+A container set template is similar to a normal container or script template, but allows you to specify multiple
+containers to run within a single pod.
 
-Since multiple containers run within a single Pod, they schedule on the same host.
-You can use cheap and fast `emptyDir` volumes instead of PersistentVolumeClaims (PVCs) to share data between steps.
-
-However, running all containers on the same host limits you to the host's resources.
-Running all containers simultaneously may use more resources than running them sequentially.
-
-Use ContainerSet templates strategically to avoid waiting for Pods to start and reduce the overhead of creating multiple init and wait containers.
-This can be more efficient than using a DAG template.
+Because you have multiple containers within a pod, they will be scheduled on the same host. You can use cheap and fast
+empty-dir volumes instead of persistent volume claims to share data between steps.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -52,82 +47,83 @@ spec:
               path: /workspace/message
 ```
 
-There are a few caveats:
+There are a couple of caveats:
 
-1. You cannot use [enhanced depends logic](enhanced-depends-logic.md).
-1. The ContainerSet uses the sum total of all resource requests, which may cost more than using the same DAG template. This can be problematic if your [resource requests](#️-resource-requests) are already high.
-1. ContainerSet templates can only run container templates.
+1. You must use the [Emissary Executor](workflow-executors.md#emissary-emissary).
+2. Or all containers must run in parallel - i.e. it is a graph with no dependencies.
+3. You cannot use [enhanced depends logic](enhanced-depends-logic.md).
+4. It will use the sum total of all resource requests, maybe costing more than the same DAG template. This will be a problem if your requests already cost a lot. See below.
 
-You can arrange the containers as a graph by specifying dependencies.
-
-ContainerSet templates are suitable for running tens rather than hundreds of containers.
+The containers can be arranged as a graph by specifying dependencies. This is suitable for running 10s rather than 100s
+of containers.
 
 ## Inputs and Outputs
 
-As with container and script templates, you can only load and save inputs and outputs from a container named `main`.
+As with the container and script templates, inputs and outputs can only be loaded and saved from a container
+named `main`.
 
-Include a container named `main` in all ContainerSet templates that have artifacts.
+All container set templates that have artifacts must/should have a container named `main`.
 
-If you want to use base-layer artifacts, ensure `main` is the last to finish, making it the root node in the graph.
-This may not always be practical.
+If you want to use base-layer artifacts, `main` must be last to finish, so it must be the root node in the graph.
 
-Instead, use a workspace volume and ensure all artifact paths are on that volume.
+That may not be practical.
+
+Instead, have a workspace volume and make sure all artifacts paths are on that volume.
 
 ## ⚠️ Resource Requests
 
-A ContainerSet starts all containers, and the [workflow executor](workflow-executors.md#emissary-emissary) only starts the main container process when the containers it depends on have completed.
-
-This means that even though the container is doing no useful work, it still consumes resources and you are still billed for them.
+A container set actually starts all containers, and the Emissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consuming resources and you're still getting billed for them.
 
 If your requests are small, this won't be a problem.
 
 If your requests are large, set the resource requests so the sum total is the most you'll need at once.
 
-### Example A: Simple Sequence (a -> b -> c)
+Example A: a simple sequence e.g. `a -> b -> c`
 
 * `a` needs 1Gi memory
 * `b` needs 2Gi memory
 * `c` needs 1Gi memory
 
-You need a maximum of 2Gi. You could set the requests as follows:
+Then you know you need only a maximum of 2Gi. You could set as follows:
 
 * `a` requests 512Mi memory
 * `b` requests 1Gi memory
 * `c` requests 512Mi memory
 
-The total is 2Gi, which is enough for `b`.
+The total is 2Gi, which is enough for `b`. We're all good.
 
-### Example B: Diamond DAG (a -> b -> d and a -> c -> d)
+Example B: Diamond DAG e.g. a diamond `a -> b -> d and  a -> c -> d`, i.e. `b` and `c` run at the same time.
 
-* `a` needs 1000 CPU
-* `b` needs 2000 CPU
-* `c` needs 1000 CPU
-* `d` needs 1000 CPU
+* `a` needs 1000 cpu
+* `b` needs 2000 cpu
+* `c` needs 1000 cpu
+* `d` needs 1000 cpu
 
-You know that `b` and `c` will run at the same time. So you need to make sure the total is 3000 CPU.
+I know that `b` and `c` will run at the same time. So I need to make sure the total is 3000.
 
-* `a` requests 500 CPU
-* `b` requests 1000 CPU
-* `c` requests 1000 CPU
-* `d` requests 500 CPU
+* `a` requests 500 cpu
+* `b` requests 1000 cpu
+* `c` requests 1000 cpu
+* `d` requests 500 cpu
 
-The total is 3000 CPU, which is enough for `b + c`.
+The total is 3000, which is enough for `b + c`. We're all good.
 
-### Example C: Lopsided Requests (a -> b)
+Example B: Lopsided requests, e.g. `a -> b` where `a` is cheap and `b` is expensive
 
-* `a` needs 100 CPU, 1Mi memory, runs for 10h
-* `b` needs 8Ki GPU, 100Gi memory, 200Ki GPU, runs for 5m
+* `a` needs 100 cpu, 1Mi memory, runs for 10h
+* `b` needs 8Ki GPU, 100 Gi memory, 200 Ki GPU, runs for 5m
 
-In this case, `a` only has small requests, but the ContainerSet uses the total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
-This is a good example of when using a ContainerSet template would not be efficient.
+Can you see the problem here? `a` only has small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
+
+Solution: do not use container set when you have lopsided requests.
 
 ## Inner `retryStrategy` usage
 
 > v3.3 and after
 
-Set an inner `retryStrategy` to apply to all containers of a container set, including the `duration` between each retry and the total number of `retries`.
+You can set an inner `retryStrategy` to apply to all containers of a container set, including the `duration` between each retry and the total number of `retries`.
 
-See the example below:
+See an example below:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -136,7 +132,7 @@ metadata:
   name: containerset-with-retrystrategy
   annotations:
     workflows.argoproj.io/description: |
-      This workflow creates a ContainerSet with a retryStrategy.
+      This workflow creates a container set with a retryStrategy.
 spec:
   entrypoint: containerset-retrystrategy-example
   templates:
@@ -165,12 +161,12 @@ spec:
 
 <!-- markdownlint-disable MD046 -- allow indentation within the admonition -->
 
-!!! Note "Template-level `retryStrategy` vs ContainerSet `retryStrategy`"
+!!! Note "Template-level `retryStrategy` vs Container Set `retryStrategy`"
     `containerSet.retryStrategy` works differently from [template-level retries](retries.md):
 
-    1. The Executor re-runs your `command` inside the same container if it fails.
+    1. Your `command` will be re-ran by the Executor inside the same container if it fails.
 
-        - Since no new containers are created, the nodes in the UI remain the same, and the retried logs are appended to the original container's logs. For example, your container logs may look like:
+        - As no new containers are created, the nodes in the UI remain the same, and the retried logs are appended to original container's logs. For example, your container logs may look like:
           ```text
           time="2024-03-29T06:40:25 UTC" level=info msg="capturing logs" argo=true
           intentional failure
@@ -185,8 +181,8 @@ spec:
           Error: exit status 1
           ```
 
-    2. If the Executor cannot locate a container's `command`, it will not retry.
+    1. If a container's `command` cannot be located, it will not be retried.
 
-        - Since it will fail each time, the retry logic is short-circuited.
+        - As it will fail each time, the retry logic is short-circuited.
 
 <!-- markdownlint-enable MD046 -->

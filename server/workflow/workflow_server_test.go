@@ -27,14 +27,11 @@ import (
 	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 const unlabelled = `{
@@ -643,9 +640,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 		panic(err)
 	}
 	namespaceAll := metav1.NamespaceAll
-	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, &namespaceAll)
 	return server, ctx
 }
 
@@ -812,13 +807,9 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 	assert.True(t, *wf.Spec.Suspend)
-	assert.Contains(t, wf.Labels, common.LabelKeyActor)
-	assert.Equal(t, string(creator.ActionSuspend), wf.Labels[common.LabelKeyAction])
 	wf, err = server.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{Name: wf.Name, Namespace: wf.Namespace})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
-	assert.Contains(t, wf.Labels, common.LabelKeyActor)
-	assert.Equal(t, string(creator.ActionResume), wf.Labels[common.LabelKeyAction])
 	assert.Nil(t, wf.Spec.Suspend)
 }
 
@@ -853,8 +844,6 @@ func TestTerminateWorkflow(t *testing.T) {
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
-	assert.Contains(t, wf.Labels, common.LabelKeyActor)
-	assert.Equal(t, string(creator.ActionTerminate), wf.Labels[common.LabelKeyAction])
 	require.NoError(t, err)
 
 	rsmWfReq = workflowpkg.WorkflowTerminateRequest{
@@ -875,8 +864,6 @@ func TestStopWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 	assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
-	assert.Contains(t, wf.Labels, common.LabelKeyActor)
-	assert.Equal(t, string(creator.ActionStop), wf.Labels[common.LabelKeyAction])
 }
 
 func TestResubmitWorkflow(t *testing.T) {

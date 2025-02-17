@@ -1,7 +1,7 @@
 import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
-import {useContext, useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {ID} from '../event-flow/id';
@@ -23,7 +23,6 @@ import '../workflows/components/workflow-details/workflow-details.scss';
 
 export function SensorDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
-    const isFirstRender = useRef(true);
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
@@ -43,20 +42,18 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
         [history]
     );
 
-    useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
-        history.push(
-            historyUrl('sensors/{namespace}/{name}', {
-                namespace,
-                name,
-                tab,
-                selectedLogNode
-            })
-        );
-    }, [namespace, name, tab, selectedLogNode]);
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('sensors/{namespace}/{name}', {
+                    namespace,
+                    name,
+                    tab,
+                    selectedLogNode
+                })
+            ),
+        [namespace, name, tab, selectedLogNode]
+    );
 
     useEffect(() => {
         services.sensor
