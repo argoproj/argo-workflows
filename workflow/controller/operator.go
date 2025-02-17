@@ -1886,6 +1886,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
 	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[common.LocalVarRetriesLastMessage] = lastChildNode.Message
+	localScope[common.LocalVarRetriesNodeType] = string(lastChildNode.Type)
 
 	return localScope
 }
