@@ -35,6 +35,8 @@ message WorkflowListRequest {
   string fields = 3;
   // Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact
   string nameFilter = 4;
+  string createdAfter = 5;
+  string finishedBefore = 6;
 }
 
 message WorkflowResubmitRequest {
