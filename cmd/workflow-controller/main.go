@@ -59,7 +59,7 @@ func NewRootCommand() *cobra.Command {
 		podCleanupWorkers       int    // --pod-cleanup-workers
 		cronWorkflowWorkers     int    // --cron-workflow-workers
 		workflowArchiveWorkers  int    // --workflow-archive-workers
-		semaphoreCacheTTL       int    // --semaphore-cache-ttl
+		SemaphoreSizeCacheTTL   int    // --semaphore-size-cache-ttl
 		burst                   int
 		qps                     float32
 		namespaced              bool   // --namespaced
@@ -122,7 +122,7 @@ func NewRootCommand() *cobra.Command {
 				log.Info("Leader election is turned off. Running in single-instance mode")
 				log.WithField("id", "single-instance").Info("starting leading")
 
-				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers, time.Second*time.Duration(semaphoreCacheTTL))
+				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers, time.Second*time.Duration(SemaphoreSizeCacheTTL))
 				go wfController.RunPrometheusServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
@@ -159,7 +159,7 @@ func NewRootCommand() *cobra.Command {
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
 							wg.Wait()
-							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers, time.Second*time.Duration(semaphoreCacheTTL))
+							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers, time.Second*time.Duration(SemaphoreSizeCacheTTL))
 							wg.Add(1)
 							go func() {
 								wfController.RunPrometheusServer(ctx, false)
@@ -203,7 +203,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
 	command.Flags().IntVar(&cronWorkflowWorkers, "cron-workflow-workers", 8, "Number of cron workflow workers")
 	command.Flags().IntVar(&workflowArchiveWorkers, "workflow-archive-workers", 8, "Number of workflow archive workers")
-	command.Flags().IntVar(&semaphoreCacheTTL, "semaphore-cache-ttl", 0, "Duration in seconds semaphore size will be cached for before refetching from configmap")
+	command.Flags().IntVar(&SemaphoreSizeCacheTTL, "semaphore-size-cache-ttl", 0, "Duration in seconds semaphore size will be cached for before refetching from configmap")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
