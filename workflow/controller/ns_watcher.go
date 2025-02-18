@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	limitReq, _        = labels.NewRequirement(common.LabelNamespaceLimit, selection.Exists, nil)
+	limitReq, _        = labels.NewRequirement(common.LabelParallelismLimit, selection.Exists, nil)
 	nsResyncPeriod     = 5 * time.Minute
 	errUnableToExtract = errors.New("was unable to extract limit")
 )
@@ -116,8 +116,8 @@ func nsFromObj(obj interface{}) (*apiv1.Namespace, error) {
 }
 
 func limitChanged(old *apiv1.Namespace, newNS *apiv1.Namespace) bool {
-	oldLimit := old.GetLabels()[common.LabelNamespaceLimit]
-	newLimit := newNS.GetLabels()[common.LabelNamespaceLimit]
+	oldLimit := old.GetLabels()[common.LabelParallelismLimit]
+	newLimit := newNS.GetLabels()[common.LabelParallelismLimit]
 	return !(oldLimit == newLimit)
 }
 
@@ -126,7 +126,7 @@ func extractLimit(ns *apiv1.Namespace) (int, error) {
 	var limitString *string
 
 	for lbl, value := range labels {
-		if lbl == common.LabelNamespaceLimit {
+		if lbl == common.LabelParallelismLimit {
 			limitString = &value
 			break
 		}
