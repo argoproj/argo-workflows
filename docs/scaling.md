@@ -110,11 +110,11 @@ In order to protect users against infinite recursion, the controller has a defau
 
 This protection can be disabled with the [environment variable](environment-variables.md#controller) `DISABLE_MAX_RECURSION=true`
 
-### Caching Semaphore ConfigMap Requests
+### Caching Semaphore Limit ConfigMap Requests
 
-By default the controller will reload the config map(s) referenced by a semaphore from kube every time that workflow is queued. If you notice high latency from queuing workflows leveraging semaphores you can cache semaphore sizes by setting `--semaphore-size-cache-ttl` (cache duration in seconds).
+By default the controller will reload the config map(s) referenced by a semaphore from kube every time that workflow is queued. If you notice high latency from queuing workflows leveraging semaphores you can cache semaphore limits by setting `--semaphore-limit-cache-ttl` (cache duration in seconds).
 
-Note that this will mean that Argo will not immediately pick up changes to your config map sizes.
+Note that this will mean that Argo will not immediately pick up changes to your config map limits.
 
 ## Miscellaneous
 

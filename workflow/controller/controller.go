@@ -274,7 +274,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts a Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int, SemaphoreSizeCacheTTL time.Duration) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int, semaphoreLimitCacheTTL time.Duration) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	// init DB after leader election (if enabled)
@@ -295,7 +295,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		WithField("podCleanup", podCleanupWorkers).
 		WithField("cronWorkflowWorkers", cronWorkflowWorkers).
 		WithField("workflowArchive", wfArchiveWorkers).
-		WithField("SemaphoreSizeCacheTTL", SemaphoreSizeCacheTTL).
+		WithField("SemaphoreLimitCacheTTL", semaphoreLimitCacheTTL).
 		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
@@ -315,7 +315,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.configMapInformer = wfc.newConfigMapInformer()
 
 	// Create Synchronization Manager
-	wfc.createSynchronizationManager(ctx, SemaphoreSizeCacheTTL)
+	wfc.createSynchronizationManager(ctx, semaphoreLimitCacheTTL)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
 		log.Fatal(err)
