@@ -11,7 +11,7 @@ DOCKER = docker run --rm --user $(shell id -u):$(shell id -g) -v $(WD):/wd --wor
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate
-	pip install setuptools twine build
+	pip install -U packaging setuptools twine build
 	python -m build --sdist --wheel --outdir client/dist/ client
 	twine check client/dist/*
 	twine upload client/dist/* -u __token__ -p ${PYPI_API_TOKEN}
@@ -44,7 +44,7 @@ else
 		--model-name-suffix '' \
 		--artifact-id argo-python-client \
 		--global-property modelTests=false \
- 		--global-property packageName=argo_workflows \
+		--global-property packageName=argo_workflows \
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)

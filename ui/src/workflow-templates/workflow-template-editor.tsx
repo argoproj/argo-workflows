@@ -1,7 +1,6 @@
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 
-import {GraphViewer} from '../shared/components/editors/graph-viewer';
 import {LabelsAndAnnotationsEditor} from '../shared/components/editors/labels-and-annotations-editor';
 import {MetadataEditor} from '../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../shared/components/editors/workflow-parameters-editor';
@@ -68,11 +67,6 @@ export function WorkflowTemplateEditor({
                             onChange={workflowMetadata => onChange({...template, spec: {...template.spec, workflowMetadata}})}
                         />
                     )
-                },
-                {
-                    key: 'graph',
-                    title: 'Graph',
-                    content: <GraphViewer workflowDefinition={template} />
                 }
             ]}
         />
