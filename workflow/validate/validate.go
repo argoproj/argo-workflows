@@ -479,14 +479,13 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 
 	}
 
-	templateScope := tmplCtx.GetTemplateScope()
 	tmplID := getTemplateID(tmpl)
-	_, ok := ctx.results[templateScope+tmplID]
+	_, ok := ctx.results[tmplID]
 	if ok {
 		// we can skip the rest since it has been validated.
 		return nil
 	}
-	ctx.results[templateScope+tmplID] = true
+	ctx.results[tmplID] = true
 
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
