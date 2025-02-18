@@ -53,9 +53,9 @@ const (
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
-	// LabelNamespaceLimit is a label applied on namespace objects to control the limits
+	// LabelParallelismLimit is a label applied on namespace objects to control the limits
 	// namespace parallelism.
-	LabelNamespaceLimit = workflow.WorkflowFullName + "/namespace-parallelism-limit"
+	LabelParallelismLimit = workflow.WorkflowFullName + "/namespace-parallelism-limit"
 
 	// AnnotationKeyPodGCStrategy is listed as an annotation on the Pod
 	// the strategy for the pod, in case the pod is orphaned from its workflow
