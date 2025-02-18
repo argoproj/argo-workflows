@@ -1317,14 +1317,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		if n.Name == onExitNodeName {
 			queue := list.New()
-			queue.PushBack(n)
+			queue.PushBack(&n)
 			for {
 				currNode := queue.Front()
 				if currNode == nil {
 					break
 				}
-				curr := currNode.Value.(wfv1.NodeStatus)
-				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, curr, deletedPods, podsToDelete)
+				curr := currNode.Value.(*wfv1.NodeStatus)
+				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, *curr, deletedPods, podsToDelete)
 				for i := range curr.Children {
 					child, err := wf.Status.Nodes.Get(curr.Children[i])
 					if err != nil {
