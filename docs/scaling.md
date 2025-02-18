@@ -73,6 +73,31 @@ This configuration allows the Controller to send an average of 50 queries per se
 It is important to note that increasing these values can increase the load on the Kubernetes API server and that you must observe your Kubernetes API under load in order to determine whether or not the values you have chosen are correct for your needs.
 It is not possible to provide a one-size-fits-all recommendation for these values.
 
+### Rate Limiting Pod Creation
+
+The Workflow Controller is responsible for the requesting the creation of Pods from the Kubernetes API.
+Creating pods is an expensive/heavy operation, and requesting too many Pods at once can in turn cause the Kubernetes API server to become overwhelmed.
+To mitigate this, you can set rate limit how many Pods the Workflow Controller requests by adjusting the `limit` and `burst` values in the [Workflow Controller ConfigMap](workflow-controller-configmap.yaml).
+
+```yaml
+  # Globally limits the rate at which pods are created.
+  # This is intended to mitigate flooding of the Kubernetes API server by workflows with a large amount of
+  # parallel nodes.
+  resourceRateLimit: |
+    limit: 10
+    burst: 1
+```
+
+- `limit`: This sets the average number of Pod creation requests per second..
+- `burst`: This sets the number of Pods per second the Controller can create before it starts enforcing the `limit`.
+
+By using cluster-wide observability tooling, you can determine whether or not your Kubernetes API server can handle more Pod creation requests.
+It is important to note that increasing these values can increase the load on the Kubernetes API server and that you must observe your Kubernetes API under load in order to determine whether or not the values you have chosen are correct for your needs.
+It is not possible to provide a one-size-fits-all recommendation for these values.
+
+!!! Note
+    Despite the name, this rate limit only applies to the creation of Pods and not the creation of other Kubernetes resources (for example, ConfigMaps or PersistentVolumeClaims).
+
 ## Sharding
 
 ### One Install Per Namespace
