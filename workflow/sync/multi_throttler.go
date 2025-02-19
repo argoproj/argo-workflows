@@ -160,7 +160,7 @@ func (m *multiThrottler) UpdateNamespaceParallelism(namespace string, limit int)
 func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.namespaceParallelism[namespace] = m.namespaceParallelismDefault
+	delete(m.namespaceParallelism, namespace)
 }
 
 func (m *multiThrottler) queueThrottled() {

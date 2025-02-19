@@ -54,7 +54,7 @@ const (
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
 	// LabelParallelismLimit is a label applied on namespace objects to control the limits
-	// namespace parallelism.
+	// parallelism.
 	LabelParallelismLimit = workflow.WorkflowFullName + "/namespace-parallelism-limit"
 
 	// AnnotationKeyPodGCStrategy is listed as an annotation on the Pod
