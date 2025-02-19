@@ -9,8 +9,7 @@ import (
 func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t dbType, options utils.ListOptions, count bool) (db.Selector, error) {
 	selector = selector.
 		And(namespaceEqual(options.Namespace)).
-		And(nameEqual(options.Name)).
-		And(namePrefixClause(options.NamePrefix)).
+		And(nameFilterClause(options.NameFilter, options.Name)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt))
 
@@ -52,9 +51,6 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		if nameFilter == "Prefix" {
 			clauses = append(clauses, db.Raw("name like ?", options.Name+"%"))
 		}
-	}
-	if options.NamePrefix != "" {
-		clauses = append(clauses, db.Raw("name like ?", options.NamePrefix+"%"))
 	}
 	if !options.MinStartedAt.IsZero() {
 		clauses = append(clauses, db.Raw("startedat >= ?", options.MinStartedAt))

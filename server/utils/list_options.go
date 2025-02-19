@@ -14,7 +14,7 @@ import (
 
 type ListOptions struct {
 	Namespace, Name            string
-	NamePrefix, NameFilter     string
+	NameFilter                 string
 	MinStartedAt, MaxStartedAt time.Time
 	LabelRequirements          labels.Requirements
 	Limit, Offset              int
@@ -52,7 +52,7 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
-func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter string) (ListOptions, error) {
+func BuildListOptions(options metav1.ListOptions, ns, nameFilter string) (ListOptions, error) {
 	if options.Continue == "" {
 		options.Continue = "0"
 	}
@@ -124,7 +124,6 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter str
 	return ListOptions{
 		Namespace:              namespace,
 		Name:                   name,
-		NamePrefix:             namePrefix,
 		NameFilter:             nameFilter,
 		MinStartedAt:           minStartedAt,
 		MaxStartedAt:           maxStartedAt,

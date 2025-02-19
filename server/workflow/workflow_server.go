@@ -180,7 +180,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 	s.instanceIDService.With(&listOption)
 
-	options, err := sutils.BuildListOptions(listOption, req.Namespace, "", req.NameFilter)
+	options, err := sutils.BuildListOptions(listOption, req.Namespace, req.NameFilter)
 	if err != nil {
 		return nil, err
 	}

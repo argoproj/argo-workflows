@@ -334,9 +334,13 @@ func nameEqual(name string) db.Cond {
 	return db.Cond{}
 }
 
-func namePrefixClause(namePrefix string) db.Cond {
-	if namePrefix != "" {
-		return db.Cond{"name LIKE": namePrefix + "%"}
+func nameFilterClause(nameFilter, name string) db.Cond {
+	if nameFilter == "Prefix" {
+		return db.Cond{"name LIKE": name + "%"}
+	} else if nameFilter == "Contains" {
+		return db.Cond{"name LIKE": "%" + name + "%"}
+	} else if nameFilter == "Exact" {
+		return nameEqual(name)
 	}
 	return db.Cond{}
 }
