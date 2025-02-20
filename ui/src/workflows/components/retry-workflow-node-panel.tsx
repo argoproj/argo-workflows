@@ -51,7 +51,7 @@ export function RetryWorkflowNode(props: Props) {
             <p>Note: Retrying this node will re-execute this node and all downstream nodes.</p>
 
             {error && <ErrorNotice error={error} />}
-            <div className='white-box'>
+            <div className='white-box' style={{overflow: "auto", maxHeight: "55vh"}}>
                 {/* Override Parameters */}
                 <div key='override-parameters' style={{marginBottom: 25}}>
                     <label>Override Parameters</label>
