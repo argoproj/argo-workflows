@@ -98,10 +98,10 @@ func TestHTTPTemplateWhenAgentPodFailed(t *testing.T) {
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		pod, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, pod)
 		ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, ts)
 		assert.Len(t, ts.Spec.Tasks, 1)
 		ts.Status.Nodes = make(map[string]wfv1.NodeResult)
@@ -110,16 +110,16 @@ func TestHTTPTemplateWhenAgentPodFailed(t *testing.T) {
 			Message: "Queuing",
 		}
 		ts, err = controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).UpdateStatus(ctx, ts, metav1.UpdateOptions{})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, wfv1.NodePending, ts.Status.Nodes["hello-world"].Phase)
 		wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		// simulate agent pod failure scenario
 		pod.Status.Phase = v1.PodFailed
 		pod.Status.Message = "manual termination"
 		pod, err = controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).UpdateStatus(ctx, pod, metav1.UpdateOptions{})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, v1.PodFailed, pod.Status.Phase)
 		// sleep 1 second to wait for informer getting pod info
 		time.Sleep(time.Second)
@@ -131,7 +131,7 @@ func TestHTTPTemplateWhenAgentPodFailed(t *testing.T) {
 		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes["hello-world"].Phase)
 		assert.Equal(t, `agent pod failed with reason:"manual termination"`, woc.wf.Status.Nodes["hello-world"].Message)
 		ts, err = controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, ts)
 		assert.Empty(t, ts.Spec.Tasks)
 		assert.Empty(t, ts.Status.Nodes)
