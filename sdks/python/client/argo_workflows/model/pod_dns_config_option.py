@@ -136,8 +136,8 @@ class PodDNSConfigOption(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            name (str): Required.. [optional]  # noqa: E501
-            value (str): [optional]  # noqa: E501
+            name (str): Name is this DNS resolver option's name. Required.. [optional]  # noqa: E501
+            value (str): Value is this DNS resolver option's value.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -219,8 +219,8 @@ class PodDNSConfigOption(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            name (str): Required.. [optional]  # noqa: E501
-            value (str): [optional]  # noqa: E501
+            name (str): Name is this DNS resolver option's name. Required.. [optional]  # noqa: E501
+            value (str): Value is this DNS resolver option's value.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
