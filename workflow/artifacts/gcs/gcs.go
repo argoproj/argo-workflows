@@ -196,6 +196,11 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 		if err != nil {
 			return nil, err
 		}
+		// prefix is a file
+		if  attrs.Name == prefix {
+			results = []string{attrs.Name}
+			return results, nil
+		}
 		// skip "folder" path like objects
 		// note that we still download content (including "subfolders")
 		// this is just a consequence of how objects are stored in GCS (no real hierarchy)
