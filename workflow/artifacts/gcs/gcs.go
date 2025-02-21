@@ -197,7 +197,7 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 			return nil, err
 		}
 		// prefix is a file
-		if  attrs.Name == prefix {
+		if attrs.Name == prefix {
 			results = []string{attrs.Name}
 			return results, nil
 		}
