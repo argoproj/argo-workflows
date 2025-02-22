@@ -55,6 +55,7 @@ validation:
 exclude_docs: |
   /proposals/
   /requirements.txt
+  /tested-kubernetes-versions.md
 
 nav:
   - Home: README.md
@@ -88,6 +89,7 @@ nav:
           - walk-through/exit-handlers.md
           - walk-through/timeouts.md
           # template types
+          - walk-through/annotations.md
           - walk-through/suspending.md
           - walk-through/kubernetes-resources.md
           # container configuration

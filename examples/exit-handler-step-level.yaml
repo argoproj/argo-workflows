@@ -10,20 +10,27 @@ spec:
     - name: main
       steps:
         - - name: hello1
-            onExit: exit
             template: print-message
             arguments:
-              parameters: [{name: message, value: "hello1"}]
+              parameters: [{ name: message, value: "hello1" }]
+            hooks:
+              exit:
+                template: exit
         - - name: hello2a
-            onExit: exit
             template: print-message
             arguments:
-              parameters: [{name: message, value: "hello2a"}]
+              parameters: [{ name: message, value: "hello2a" }]
+            hooks:
+              exit:
+                template: exit
           - name: hello2b
             onExit: exit
             template: print-message
             arguments:
-              parameters: [{name: message, value: "hello2b"}]
+              parameters: [{ name: message, value: "hello2b" }]
+            hooks:
+              exit:
+                template: exit
 
     - name: exit
       container:

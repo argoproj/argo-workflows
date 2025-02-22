@@ -256,7 +256,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			return
 		}
-		woc.updated = wfUpdate
+		woc.updated = woc.updated || wfUpdate
 		if !acquired {
 			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
 				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
@@ -1124,6 +1124,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) {
 	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
+		woc.log.Error("was unable to retrieve workflow pods")
 		return err, false
 	}
 	seenPods := make(map[string]*apiv1.Pod)
@@ -1149,6 +1150,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err == nil {
 			if newState := woc.assessNodeStatus(ctx, pod, node); newState != nil {
+				// update if a pod deletion timestamp exists on a completed workflow, ensures this pod is always looked at
+				// in the pod cleanup process
+				if pod.DeletionTimestamp != nil && newState.Fulfilled() {
+					woc.updated = true
+				}
 				// Check whether its taskresult is in an incompleted state.
 				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
 					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
@@ -1319,7 +1325,7 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown() 
 
 // getAllWorkflowPods returns all pods related to the current workflow
 func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
-	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+	objs, err := woc.controller.PodController.GetPodsByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -1422,10 +1428,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			continue
 		}
 		switch {
-		case c.State.Waiting != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
-		case c.State.Running != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
 			message := fmt.Sprintf("%s: %s (exit code %d): %s", c.Name, c.State.Terminated.Reason, exitCode, c.State.Terminated.Message)
@@ -1439,6 +1441,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			default:
 				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message)
 			}
+		case pod.Status.Phase == apiv1.PodFailed:
+			woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, `Pod Failed whilst container running`)
+		case c.State.Waiting != nil:
+			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
+		case c.State.Running != nil:
+			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
 		}
 	}
 
@@ -1478,7 +1486,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if c.Name == common.WaitContainerName {
 			waitContainerCleanedUp = false
 			switch {
-			case c.State.Running != nil && new.Phase.Completed():
+			case c.State.Running != nil && new.Phase.Completed() && pod.Status.Phase != apiv1.PodFailed:
 				woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
 				new.Phase = old.Phase
 			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
@@ -1555,7 +1563,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, terminateContainers)
+		woc.controller.PodController.TerminateContainers(woc.wf.Namespace, pod.Name)
 	}
 }
 
@@ -1959,6 +1967,17 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+	}
+
+	// Update displayName from processedTmpl
+	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
+		if !displayNameRegex.MatchString(displayName) {
+			err = fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		}
+
+		woc.log.Debugf("Updating node %s display name to %s", node.DisplayName, displayName)
+		woc.setNodeDisplayName(node, displayName)
 	}
 
 	// Check if this is a fulfilled node for synchronization.
@@ -2441,7 +2460,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		woc.updated = true
 		if woc.hasTaskSetNodes() {
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+			woc.controller.PodController.DeletePod(woc.wf.Namespace, woc.getAgentPodName())
 		}
 	}
 }
@@ -2507,6 +2526,7 @@ func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
+var displayNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
@@ -2677,7 +2697,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
-	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
+	return woc.controller.PodController.GetPod(woc.wf.GetNamespace(), podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
@@ -3226,8 +3246,8 @@ func parseLoopIndex(s string) int {
 }
 
 func (n loopNodes) Less(i, j int) bool {
-	left := parseLoopIndex(n[i].DisplayName)
-	right := parseLoopIndex(n[j].DisplayName)
+	left := parseLoopIndex(n[i].Name)
+	right := parseLoopIndex(n[j].Name)
 	return left < right
 }
 
@@ -4214,4 +4234,11 @@ func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 		}
 	}
 	return childrenIds
+}
+
+func (woc *wfOperationCtx) setNodeDisplayName(node *wfv1.NodeStatus, displayName string) {
+	nodeID := node.ID
+	newNode := node.DeepCopy()
+	newNode.DisplayName = displayName
+	woc.wf.Status.Nodes.Set(nodeID, *newNode)
 }
