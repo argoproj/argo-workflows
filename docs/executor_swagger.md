@@ -985,6 +985,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
 | withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>Note: The structure of WithItems is free-form, so we need</br>"x-kubernetes-preserve-unknown-fields: true" in the validation schema.</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
+| withItemsFrom | [WithItemsFrom](#with-items-from)| `WithItemsFrom` |  | |  |  |
 | withParam | string| `string` |  | | WithParam expands a task into multiple parallel tasks from the value in the parameter,</br>which is expected to be a JSON list. |  |
 | withSequence | [Sequence](#sequence)| `Sequence` |  | |  |  |
 
@@ -4257,6 +4258,21 @@ intent and helps make sure that UIDs and names do not get conflated.
 | gmsaCredentialSpecName | string| `string` |  | | GMSACredentialSpecName is the name of the GMSA credential spec to use.</br>+optional |  |
 | hostProcess | boolean| `bool` |  | | HostProcess determines if a container should be run as a 'Host Process' container.</br>All of a Pod's containers must have the same effective HostProcess value</br>(it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).</br>In addition, if HostProcess is true then HostNetwork must also be set to true.</br>+optional |  |
 | runAsUserName | string| `string` |  | | The UserName in Windows to run the entrypoint of the container process.</br>Defaults to the user specified in image metadata if unspecified.</br>May also be set in PodSecurityContext. If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence.</br>+optional |  |
+
+
+
+### <span id="with-items-from"></span> WithItemsFrom
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
 
 
 

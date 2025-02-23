@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	"github.com/Knetic/govaluate"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -548,6 +550,14 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	var items []wfv1.Item
 	if len(step.WithItems) > 0 {
 		items = step.WithItems
+	} else if step.WithItemsFrom != nil && step.WithItemsFrom.ConfigMapKeyRef != nil {
+		items, err = util.GetItemsFromConfigMap(woc.controller.kubeclientset, woc.wf.Namespace, step.WithItemsFrom.ConfigMapKeyRef)
+		if err != nil {
+			mustExec, mustExecErr := shouldExecute(step.When)
+			if mustExecErr != nil || mustExec {
+				return nil, err
+			}
+		}
 	} else if step.WithParam != "" {
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {

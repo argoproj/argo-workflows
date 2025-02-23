@@ -5891,6 +5891,22 @@ spec:
                                   type: string
                                 withItems:
                                   x-kubernetes-preserve-unknown-fields: true
+                                withItemsFrom:
+                                  properties:
+                                    configMapKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          default: ""
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
                                 withParam:
                                   type: string
                                 withSequence:
@@ -11993,6 +12009,22 @@ spec:
                                 type: string
                               withItems:
                                 x-kubernetes-preserve-unknown-fields: true
+                              withItemsFrom:
+                                properties:
+                                  configMapKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        default: ""
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                type: object
                               withParam:
                                 type: string
                               withSequence:
@@ -16569,6 +16601,22 @@ spec:
                                     type: string
                                   withItems:
                                     x-kubernetes-preserve-unknown-fields: true
+                                  withItemsFrom:
+                                    properties:
+                                      configMapKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            default: ""
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    type: object
                                   withParam:
                                     type: string
                                   withSequence:
@@ -22671,6 +22719,22 @@ spec:
                                   type: string
                                 withItems:
                                   x-kubernetes-preserve-unknown-fields: true
+                                withItemsFrom:
+                                  properties:
+                                    configMapKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          default: ""
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
                                 withParam:
                                   type: string
                                 withSequence:
