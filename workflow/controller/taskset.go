@@ -138,6 +138,10 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 		return err
 	}
 
+	if len(woc.taskSet) == 0 {
+		return nil
+	}
+
 	woc.log.Info("TaskSet Reconciliation")
 	if workflowTaskSet != nil && len(workflowTaskSet.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
