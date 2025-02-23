@@ -21,19 +21,16 @@ type CronSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *CronSuite) SetupSuite() {
-	s.E2ESuite.SetupSuite()
-	// Since tests run in parallel, delete all cron resources before the test suite is run
+func (s *CronSuite) TearDownSubTest() {
+	// Delete all CronWorkflows after every subtest (as opposed to after each
+	// test, which is the default) to avoid workflows from accumulating and
+	// causing intermittent failures due to the controller reaching the
+	// parallelism limit. When that happens, workflows can be postponed long
+	// enough to reach the test timeout, and you'll see the following in the logs:
+	//    time="2025-02-23T06:11:00.023Z" level=info msg="Workflow processing has been postponed due to max parallelism limit" key=argo/test-cron-wf-succeed-1-1740291060
+	//    time="2025-02-23T06:11:00.023Z" level=info msg="Updated phase  -> Pending" namespace=argo workflow=test-cron-wf-succeed-1-1740291060
+	//    time="2025-02-23T06:11:00.023Z" level=info msg="Updated message  -> Workflow processing has been postponed because too many workflows are already running" namespace=argo workflow=test-cron-wf-succeed-1-1740291060
 	s.E2ESuite.DeleteResources()
-}
-
-func (s *CronSuite) BeforeTest(suiteName, testName string) {
-	s.E2ESuite.BeforeTest(suiteName, testName)
-}
-
-func (s *CronSuite) TearDownSuite() {
-	s.E2ESuite.DeleteResources()
-	s.E2ESuite.TearDownSuite()
 }
 
 func (s *CronSuite) TestBasic() {
