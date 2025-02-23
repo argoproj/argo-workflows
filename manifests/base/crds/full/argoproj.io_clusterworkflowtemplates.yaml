@@ -2615,6 +2615,10 @@ spec:
                             x-kubernetes-list-type: atomic
                         type: object
                     type: object
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   archiveLocation:
                     properties:
                       archiveLogs:
@@ -13288,6 +13292,10 @@ spec:
                               type: array
                               x-kubernetes-list-type: atomic
                           type: object
+                      type: object
+                    annotations:
+                      additionalProperties:
+                        type: string
                       type: object
                     archiveLocation:
                       properties:
