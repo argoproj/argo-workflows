@@ -135,6 +135,7 @@ nav:
           - estimated-duration.md
           - progress.md
           - workflow-creator.md
+          - workflow-actor.md
       - Patterns:
           - empty-dir.md
           - cron-backfill.md
