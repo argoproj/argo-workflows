@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **template_ref** | [**IoArgoprojWorkflowV1alpha1TemplateRef**](IoArgoprojWorkflowV1alpha1TemplateRef.md) |  | [optional] 
 **when** | **str** | When is an expression in which the step should conditionally execute | [optional] 
 **with_items** | **[dict]** | WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \&quot;x-kubernetes-preserve-unknown-fields: true\&quot; in the validation schema. | [optional] 
+**with_items_from** | [**IoArgoprojWorkflowV1alpha1WithItemsFrom**](IoArgoprojWorkflowV1alpha1WithItemsFrom.md) |  | [optional] 
 **with_param** | **str** | WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list. | [optional] 
 **with_sequence** | [**IoArgoprojWorkflowV1alpha1Sequence**](IoArgoprojWorkflowV1alpha1Sequence.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]

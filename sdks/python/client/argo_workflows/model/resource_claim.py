@@ -82,7 +82,6 @@ class ResourceClaim(ModelNormal):
         """
         return {
             'name': (str,),  # noqa: E501
-            'request': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -92,7 +91,6 @@ class ResourceClaim(ModelNormal):
 
     attribute_map = {
         'name': 'name',  # noqa: E501
-        'request': 'request',  # noqa: E501
     }
 
     read_only_vars = {
@@ -139,7 +137,6 @@ class ResourceClaim(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            request (str): Request is the name chosen for a request in the referenced claim. If empty, everything from the claim is made available, otherwise only the result of this request.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -225,7 +222,6 @@ class ResourceClaim(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            request (str): Request is the name chosen for a request in the referenced claim. If empty, everything from the claim is made available, otherwise only the result of this request.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

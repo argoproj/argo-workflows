@@ -36,12 +36,14 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_sequence import IoArgoprojWorkflowV1alpha1Sequence
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template_ref import IoArgoprojWorkflowV1alpha1TemplateRef
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_with_items_from import IoArgoprojWorkflowV1alpha1WithItemsFrom
     globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
     globals()['IoArgoprojWorkflowV1alpha1ContinueOn'] = IoArgoprojWorkflowV1alpha1ContinueOn
     globals()['IoArgoprojWorkflowV1alpha1LifecycleHook'] = IoArgoprojWorkflowV1alpha1LifecycleHook
     globals()['IoArgoprojWorkflowV1alpha1Sequence'] = IoArgoprojWorkflowV1alpha1Sequence
     globals()['IoArgoprojWorkflowV1alpha1Template'] = IoArgoprojWorkflowV1alpha1Template
     globals()['IoArgoprojWorkflowV1alpha1TemplateRef'] = IoArgoprojWorkflowV1alpha1TemplateRef
+    globals()['IoArgoprojWorkflowV1alpha1WithItemsFrom'] = IoArgoprojWorkflowV1alpha1WithItemsFrom
 
 
 class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
@@ -107,6 +109,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
             'when': (str,),  # noqa: E501
             'with_items': ([dict],),  # noqa: E501
+            'with_items_from': (IoArgoprojWorkflowV1alpha1WithItemsFrom,),  # noqa: E501
             'with_param': (str,),  # noqa: E501
             'with_sequence': (IoArgoprojWorkflowV1alpha1Sequence,),  # noqa: E501
         }
@@ -127,6 +130,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
         'template_ref': 'templateRef',  # noqa: E501
         'when': 'when',  # noqa: E501
         'with_items': 'withItems',  # noqa: E501
+        'with_items_from': 'withItemsFrom',  # noqa: E501
         'with_param': 'withParam',  # noqa: E501
         'with_sequence': 'withSequence',  # noqa: E501
     }
@@ -182,6 +186,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the step should conditionally execute. [optional]  # noqa: E501
             with_items ([dict]): WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.. [optional]  # noqa: E501
+            with_items_from (IoArgoprojWorkflowV1alpha1WithItemsFrom): [optional]  # noqa: E501
             with_param (str): WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.. [optional]  # noqa: E501
             with_sequence (IoArgoprojWorkflowV1alpha1Sequence): [optional]  # noqa: E501
         """
@@ -275,6 +280,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the step should conditionally execute. [optional]  # noqa: E501
             with_items ([dict]): WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.. [optional]  # noqa: E501
+            with_items_from (IoArgoprojWorkflowV1alpha1WithItemsFrom): [optional]  # noqa: E501
             with_param (str): WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.. [optional]  # noqa: E501
             with_sequence (IoArgoprojWorkflowV1alpha1Sequence): [optional]  # noqa: E501
         """
