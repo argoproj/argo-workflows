@@ -2,7 +2,7 @@
 
 > v3.6.5 and after
 
-If argo workflow has setup [sso](argo-server-sso.md), when you perform an action on the argo workflow related resource (workflow, cronworkflow, workflowTemplate, clusterWorkflowTemplate) via the CLI or UI, an attempt will be made to label it with the user and their action.
+If argo workflow has setup [SSO](argo-server-sso.md), when you perform an action on the argo workflow related resource (Workflow, CronWorkflow, WorkflowTemplate, ClusterWorkflowTemplate) via the CLI or UI, an attempt will be made to label it with the user and their action.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
