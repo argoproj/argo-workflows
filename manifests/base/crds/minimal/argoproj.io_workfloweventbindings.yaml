@@ -660,6 +660,25 @@ spec:
                         type: array
                     type: object
                   metadata:
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      finalizers:
+                        items:
+                          type: string
+                        type: array
+                      generateName:
+                        type: string
+                      labels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      name:
+                        type: string
+                      namespace:
+                        type: string
                     type: object
                   workflowTemplateRef:
                     properties:

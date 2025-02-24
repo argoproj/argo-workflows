@@ -181,7 +181,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             template (str): Template is the name of the template to execute as the step. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the step should conditionally execute. [optional]  # noqa: E501
-            with_items ([dict]): WithItems expands a step into multiple parallel steps from the items in the list. [optional]  # noqa: E501
+            with_items ([dict]): WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.. [optional]  # noqa: E501
             with_param (str): WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.. [optional]  # noqa: E501
             with_sequence (IoArgoprojWorkflowV1alpha1Sequence): [optional]  # noqa: E501
         """
@@ -274,7 +274,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             template (str): Template is the name of the template to execute as the step. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the step should conditionally execute. [optional]  # noqa: E501
-            with_items ([dict]): WithItems expands a step into multiple parallel steps from the items in the list. [optional]  # noqa: E501
+            with_items ([dict]): WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.. [optional]  # noqa: E501
             with_param (str): WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.. [optional]  # noqa: E501
             with_sequence (IoArgoprojWorkflowV1alpha1Sequence): [optional]  # noqa: E501
         """

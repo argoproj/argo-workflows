@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 const unlabelled = `{
@@ -266,6 +267,8 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 			Template:  &wftObj1,
 		})
 		require.NoError(t, err)
+		assert.Contains(t, wftRsp.Labels, common.LabelKeyActor)
+		assert.Equal(t, string(creator.ActionUpdate), wftRsp.Labels[common.LabelKeyAction])
 		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {

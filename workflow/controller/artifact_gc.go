@@ -503,7 +503,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 // go through any GC pods that are already running and may have completed
 func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
 	// check if any previous Artifact GC Pods completed
-	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
+	pods, err := woc.controller.PodController.GetPodsByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}

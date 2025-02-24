@@ -3,8 +3,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-deprecated-schedule
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   workflowMetadata:
@@ -17,5 +16,5 @@ spec:
     templates:
       - name: sleep
         container:
-          image: alpine:latest
-          command: [sh, -c, "sleep 120"]
+          image: argoproj/argosay:v2
+          args: ["sleep", "120"]

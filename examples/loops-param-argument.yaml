@@ -34,6 +34,8 @@ spec:
         withParam: "{{inputs.parameters.os-list}}"
 
   - name: cat-os-release
+    annotations: 
+      workflows.argoproj.io/display-name: "os-{{inputs.parameters.image}}-{{inputs.parameters.tag}}"
     inputs:
       parameters:
       - name: image

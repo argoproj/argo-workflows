@@ -114,7 +114,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
-		creator.Label(o.ctx, wf)
+		creator.LabelCreator(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
 		if submit.Arguments != nil {
 			for _, p := range submit.Arguments.Parameters {

@@ -18,9 +18,8 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          command: ["sh", -c]
-          args: ["echo hello"]
+          image: argoproj/argosay:v2
+          args: ["echo", "hello"]
 
 ---
 

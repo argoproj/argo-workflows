@@ -539,18 +539,13 @@ spec:
       synchronization:
         mutexes:
           - name: job
-      script:
-        image: alpine:latest
-        command: [/bin/sh]
-        source: |
-          sleep 4
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "4"]
     - name: exit0
-      script:
-        image: alpine:latest
-        command: [/bin/sh]
-        source: |
-          sleep 2
-          exit 0
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "2"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -691,18 +686,12 @@ spec:
     
     - name: output-artifact
       script:
-        image: python:alpine3.6
-        command: [ python ]
+        image: argoproj/argosay:v2
+        command: [/bin/sh]
         source: |
-          import time
-          import random
-          import sys
-          time.sleep(1) # lifecycle hook for running won't trigger unless it runs for more than "a few seconds"
-          with open("result.txt", "w") as f:
-            f.write("Welcome")
-          if {{retries}} == 2:
-          	sys.exit(0)
-          sys.exit(1)
+          sleep 1
+          echo 'Welcome' > result.txt
+          [ "{{retries}}" = "2" ]
       retryStrategy: 
         limit: 2
       outputs:
@@ -712,21 +701,18 @@ spec:
 
     - name: started
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["echo STARTED!"]
+        image: argoproj/argosay:v2
+        args: ["echo", "STARTED!"]
 
     - name: success
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["echo SUCCEEDED!"]
+        image: argoproj/argosay:v2
+        args: ["echo", "SUCCEEDED!"]
 
     - name: failed
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["echo FAILED or ERROR!"]
+        image: argoproj/argosay:v2
+        args: ["echo", "FAILED or ERROR!"]
 
     - name: print-artifact
       inputs:
@@ -734,9 +720,8 @@ spec:
           - name: message
             path: /tmp/message
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["cat /tmp/message"]
+        image: argoproj/argosay:v2
+        args: ["cat", "/tmp/message"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).

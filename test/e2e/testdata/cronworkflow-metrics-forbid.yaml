@@ -17,5 +17,5 @@ spec:
     templates:
       - name: sleep
         container:
-          image: alpine:latest
-          command: [sh, -c, "sleep 120"]
+          image: argoproj/argosay:v2
+          args: ["sleep", "120"]
