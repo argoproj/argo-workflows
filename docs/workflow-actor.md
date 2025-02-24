@@ -18,6 +18,7 @@ metadata:
 ```
 
 Available actions:
+
 - Update
 - Suspend
 - Stop
