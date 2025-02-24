@@ -54,7 +54,8 @@ You can increase the rate limits by adjusting the `--qps` and `--burst` argument
 - `--qps`: This argument sets the average number of queries per second allowed by the Kubernetes client.
 The default value is 20.
 - `--burst`: This argument sets the number of queries per second the client can send before it starts enforcing the qps limit.
-The default value is 30. Typically, burst should be greater than qps.
+The default value is 30.
+Typically, burst should be greater than qps.
 
 By increasing these values, you can allow the Controller to send more requests to the API server, reducing the likelihood of throttling.
 
@@ -85,11 +86,12 @@ To mitigate this, you can set rate limit how many Pods the Workflow Controller r
   # parallel nodes.
   resourceRateLimit: |
     limit: 10
-    burst: 1
+    burst: 25
 ```
 
 - `limit`: This sets the average number of Pod creation requests per second..
 - `burst`: This sets the number of Pods per second the Controller can create before it starts enforcing the `limit`.
+Typically, burst should be greater than the limit.
 
 By using cluster-wide observability tooling, you can determine whether or not your Kubernetes API server can handle more Pod creation requests.
 It is important to note that increasing these values can increase the load on the Kubernetes API server and that you must observe your Kubernetes API under load in order to determine whether or not the values you have chosen are correct for your needs.
