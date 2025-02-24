@@ -497,7 +497,7 @@ func (w *When) AddNamespaceLimit(limit string) *When {
 	patchMap := make(map[string]interface{})
 	metadata := make(map[string]interface{})
 	labels := make(map[string]interface{})
-	labels["workflows.argoproj.io/namespace-parallelism-limit"] = limit
+	labels["workflows.argoproj.io/parallelism-limit"] = limit
 	metadata["labels"] = labels
 	patchMap["metadata"] = metadata
 

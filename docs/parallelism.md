@@ -23,7 +23,7 @@ When namespace parallelism is enabled, it is plausible for a workflow with a low
 !!! Note
     Workflows that are executing but restricted from running more nodes due to other mechanisms will still count toward parallelism limits.
 
-In addition to the default parallelism, you are able to set individual limits on namespace parallelism by modifying the namespace object with a `workflows.argoproj.io/namespace-parallelism-limit` label. Note that individual limits on namespaces will override global namespace limits.
+In addition to the default parallelism, you are able to set individual limits on namespace parallelism by modifying the namespace object with a `workflows.argoproj.io/parallelism-limit` label. Note that individual limits on namespaces will override global namespace limits.
 
 ### Priority
 
