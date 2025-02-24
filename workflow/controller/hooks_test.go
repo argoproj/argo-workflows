@@ -1142,7 +1142,7 @@ spec:
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, pod, metav1.UpdateOptions{})
 	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(pod))
-	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
@@ -1232,7 +1232,7 @@ spec:
 	pod := pods.Items[0]
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
 	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(&pod))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)

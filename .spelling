@@ -40,6 +40,7 @@ CloudSQL
 ClusterRoleBinding
 ClusterRoles
 ClusterWorkflowTemplate
+ClusterWorkflowTemplates
 Codespaces
 ConfigMap
 ConfigMaps
@@ -127,6 +128,7 @@ VSCode
 Valasek
 Webhooks
 Welch
+WorkflowEventBinding
 WorkflowTemplate
 WorkflowTemplates
 a.m.
@@ -187,6 +189,7 @@ liveness
 localhost
 maxFailures
 maxSuccess
+md
 memoization
 memoized
 memoizing
@@ -204,6 +207,7 @@ parameterizing
 params
 pprof
 pre-commit
+qps
 rc2
 repo
 roadmap
