@@ -329,7 +329,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
 		wfc.configMapInformer = wfc.newConfigMapInformer()
-		wfc.createSynchronizationManager(ctx)
+		wfc.createSynchronizationManager(ctx, 0)
 		_ = wfc.initManagers(ctx)
 
 		go wfc.wfInformer.Run(ctx.Done())
