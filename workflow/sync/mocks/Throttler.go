@@ -61,6 +61,21 @@ func (_m *Throttler) Remove(key string) {
 	_m.Called(key)
 }
 
+// ResetNamespaceParallelism provides a mock function with given fields: namespace
+func (_m *Throttler) ResetNamespaceParallelism(namespace string) {
+	_m.Called(namespace)
+}
+
+// UpdateNamespaceParallelism provides a mock function with given fields: namespace, limit
+func (_m *Throttler) UpdateNamespaceParallelism(namespace string, limit int) {
+	_m.Called(namespace, limit)
+}
+
+// UpdateParallelism provides a mock function with given fields: limit
+func (_m *Throttler) UpdateParallelism(limit int) {
+	_m.Called(limit)
+}
+
 // NewThrottler creates a new instance of Throttler. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewThrottler(t interface {
