@@ -1553,6 +1553,9 @@ type WorkflowStep struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,5,rep,name=withItems"`
 
+	// WithItemsFrom expands a step into multiple parallel steps from the value in the parameter,
+	WithItemsFrom *WithItemsFrom `json:"withItemsFrom,omitempty" protobuf:"bytes,14,opt,name=withItemsFrom"`
+
 	// WithParam expands a step into multiple parallel steps from the value in the parameter,
 	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty" protobuf:"bytes,6,opt,name=withParam"`
@@ -1576,6 +1579,11 @@ type WorkflowStep struct {
 	// Hooks holds the lifecycle hook which is invoked at lifecycle of
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+}
+
+type WithItemsFrom struct {
+	// ConfigMapKeyRef is a reference to a key in a ConfigMap
+	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,2,opt,name=configMapKeyRef"`
 }
 
 func (step *WorkflowStep) GetName() string {
@@ -3253,6 +3261,9 @@ type DAGTask struct {
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,6,rep,name=withItems"`
+
+	// WithItemsFrom expands a step into multiple parallel steps from the value in the parameter,
+	WithItemsFrom *WithItemsFrom `json:"withItemsFrom,omitempty" protobuf:"bytes,15,opt,name=withItemsFrom"`
 
 	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
 	// which is expected to be a JSON list.

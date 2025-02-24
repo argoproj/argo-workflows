@@ -574,6 +574,9 @@ message DAGTask {
   // +kubebuilder:pruning:PreserveUnknownFields
   repeated Item withItems = 6;
 
+  // WithItemsFrom expands a step into multiple parallel steps from the value in the parameter,
+  optional WithItemsFrom withItemsFrom = 15;
+
   // WithParam expands a task into multiple parallel tasks from the value in the parameter,
   // which is expected to be a JSON list.
   optional string withParam = 7;
@@ -1864,6 +1867,11 @@ message VolumeClaimGC {
   optional string strategy = 1;
 }
 
+message WithItemsFrom {
+  // ConfigMapKeyRef is a reference to a key in a ConfigMap
+  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 2;
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -2222,6 +2230,9 @@ message WorkflowStep {
   // +kubebuilder:validation:Schemaless
   // +kubebuilder:pruning:PreserveUnknownFields
   repeated Item withItems = 5;
+
+  // WithItemsFrom expands a step into multiple parallel steps from the value in the parameter,
+  optional WithItemsFrom withItemsFrom = 14;
 
   // WithParam expands a step into multiple parallel steps from the value in the parameter,
   // which is expected to be a JSON list.

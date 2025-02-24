@@ -1220,6 +1220,8 @@ definitions:
                 items:
                     $ref: '#/definitions/Item'
                 type: array
+            withItemsFrom:
+                $ref: '#/definitions/WithItemsFrom'
             withParam:
                 description: |-
                     WithParam expands a task into multiple parallel tasks from the value in the parameter,
@@ -5027,6 +5029,11 @@ definitions:
                     +optional
                 type: string
         title: WindowsSecurityContextOptions contain Windows-specific options and credentials.
+        type: object
+    WithItemsFrom:
+        properties:
+            configMapKeyRef:
+                $ref: '#/definitions/ConfigMapKeySelector'
         type: object
     Workflow:
         properties:

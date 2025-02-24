@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // dagContext holds context information about this context's DAG
@@ -549,7 +550,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
+	expandedTasks, err := woc.expandTask(*newTask)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, err.Error())
 		connectDependencies(nodeName)
@@ -775,11 +776,19 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
 		items = task.WithItems
+	} else if task.WithItemsFrom != nil && task.WithItemsFrom.ConfigMapKeyRef != nil {
+		items, err = util.GetItemsFromConfigMap(woc.controller.kubeclientset, woc.wf.Namespace, task.WithItemsFrom.ConfigMapKeyRef)
+		if err != nil {
+			mustExec, mustExecErr := shouldExecute(task.When)
+			if mustExecErr != nil || mustExec {
+				return nil, err
+			}
+		}
 	} else if task.WithParam != "" {
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {

@@ -2790,6 +2790,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 with_items=[
                                     {},
                                 ],
+                                with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                    config_map_key_ref=ConfigMapKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
                                 with_param="with_param_example",
                                 with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                     count="count_example",
@@ -5502,6 +5509,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 with_items=[
                                     {},
                                 ],
+                                with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                    config_map_key_ref=ConfigMapKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
                                 with_param="with_param_example",
                                 with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                     count="count_example",
@@ -7615,6 +7629,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     with_items=[
                                         {},
                                     ],
+                                    with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
                                     with_param="with_param_example",
                                     with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                         count="count_example",
@@ -10327,6 +10348,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     with_items=[
                                         {},
                                     ],
+                                    with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
                                     with_param="with_param_example",
                                     with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                         count="count_example",
@@ -14338,6 +14366,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 with_items=[
                                     {},
                                 ],
+                                with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                    config_map_key_ref=ConfigMapKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
                                 with_param="with_param_example",
                                 with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                     count="count_example",
@@ -17050,6 +17085,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 with_items=[
                                     {},
                                 ],
+                                with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                    config_map_key_ref=ConfigMapKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
                                 with_param="with_param_example",
                                 with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                     count="count_example",
@@ -19163,6 +19205,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     with_items=[
                                         {},
                                     ],
+                                    with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
                                     with_param="with_param_example",
                                     with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                         count="count_example",
@@ -21875,6 +21924,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     with_items=[
                                         {},
                                     ],
+                                    with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
                                     with_param="with_param_example",
                                     with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                         count="count_example",
@@ -25799,6 +25855,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 with_items=[
                                     {},
                                 ],
+                                with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                    config_map_key_ref=ConfigMapKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
                                 with_param="with_param_example",
                                 with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                     count="count_example",
@@ -28511,6 +28574,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 with_items=[
                                     {},
                                 ],
+                                with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                    config_map_key_ref=ConfigMapKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
                                 with_param="with_param_example",
                                 with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                     count="count_example",
@@ -30624,6 +30694,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     with_items=[
                                         {},
                                     ],
+                                    with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
                                     with_param="with_param_example",
                                     with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                         count="count_example",
@@ -33336,6 +33413,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     with_items=[
                                         {},
                                     ],
+                                    with_items_from=IoArgoprojWorkflowV1alpha1WithItemsFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
                                     with_param="with_param_example",
                                     with_sequence=IoArgoprojWorkflowV1alpha1Sequence(
                                         count="count_example",
