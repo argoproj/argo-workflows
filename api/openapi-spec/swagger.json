@@ -11229,6 +11229,13 @@
           "x-kubernetes-patch-merge-key": "key",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "volumeClaimTemplates": {
+          "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
+          }
+        },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a template.",
           "type": "array",

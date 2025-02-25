@@ -310,6 +310,53 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 		})
 }
 
+// TestVolumeClaimTemplateRef tests that a volumeClaimTemplateRef can be used in a workflow
+// details see #13977
+func (s *FunctionalSuite) TestVolumeClaimTemplateRef() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-templates/volume-claim-workflowtemplate.yaml").
+		Workflow(`
+metadata:
+  generateName: volumes-pvc-tmpl-ref-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: volume-ref
+            templateRef:
+              name: volumes-pvc-wftmpl
+              template: volumes-pvc-example`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded). // template ref volume claim template should also be succeeded
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			// pvc should be deleted after the workflow completes
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+
+			ticker := time.NewTicker(time.Second)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ctx.Done():
+					t.Error("timeout waiting for PVC to be deleted")
+					t.FailNow()
+				case <-ticker.C:
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
+					require.NoError(t, err)
+					if len(list.Items) == 0 {
+						return
+					}
+				}
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	var uid types.UID

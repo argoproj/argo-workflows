@@ -1689,6 +1689,11 @@ message Template {
   // +patchMergeKey=name
   repeated k8s.io.api.core.v1.Volume volumes = 17;
 
+  // VolumeClaimTemplates is a list of claims that containers are allowed to reference.
+  // The Workflow controller will create the claims at the beginning of the workflow
+  // and delete the claims upon completion of the workflow
+  repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 45;
+
   // InitContainers is a list of containers which run before the main container.
   // +patchStrategy=merge
   // +patchMergeKey=name
