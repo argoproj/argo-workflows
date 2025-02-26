@@ -133,6 +133,10 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bo
 }
 
 func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
+	if len(woc.taskSet) == 0 {
+		return nil
+	}
+
 	workflowTaskSet, err := woc.getWorkflowTaskSet()
 	if err != nil {
 		return err
