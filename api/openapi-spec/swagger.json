@@ -3009,6 +3009,16 @@
             "description": "Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.",
             "name": "nameFilter",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "createdAfter",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "finishedBefore",
+            "in": "query"
           }
         ],
         "responses": {
