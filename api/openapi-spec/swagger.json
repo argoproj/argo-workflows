@@ -13453,6 +13453,7 @@
       }
     },
     "io.k8s.api.core.v1.GRPCAction": {
+      "description": "GRPCAction specifies an action involving a GRPC service.",
       "type": "object",
       "required": [
         "port"
@@ -13714,19 +13715,19 @@
       "type": "object",
       "properties": {
         "exec": {
-          "description": "Exec specifies the action to take.",
+          "description": "Exec specifies a command to execute in the container.",
           "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction"
         },
         "httpGet": {
-          "description": "HTTPGet specifies the http request to perform.",
+          "description": "HTTPGet specifies an HTTP GET request to perform.",
           "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction"
         },
         "sleep": {
-          "description": "Sleep represents the duration that the container should sleep before being terminated.",
+          "description": "Sleep represents a duration that the container should sleep.",
           "$ref": "#/definitions/io.k8s.api.core.v1.SleepAction"
         },
         "tcpSocket": {
-          "description": "Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.",
+          "description": "Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for backward compatibility. There is no validation of this field and lifecycle hooks will fail at runtime when it is specified.",
           "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction"
         }
       }
@@ -13977,9 +13978,11 @@
           "type": "string"
         },
         "status": {
+          "description": "Status is the status of the condition. Can be True, False, Unknown. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required",
           "type": "string"
         },
         "type": {
+          "description": "Type is the type of the condition. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about",
           "type": "string"
         }
       }
@@ -14266,10 +14269,11 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "Required.",
+          "description": "Name is this DNS resolver option's name. Required.",
           "type": "string"
         },
         "value": {
+          "description": "Value is this DNS resolver option's value.",
           "type": "string"
         }
       }
@@ -14301,6 +14305,10 @@
         "runAsUser": {
           "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
+        },
+        "seLinuxChangePolicy": {
+          "description": "seLinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod. It has no effect on nodes that do not support SELinux or to volumes does not support SELinux. Valid values are \"MountOption\" and \"Recursive\".\n\n\"Recursive\" means relabeling of all files on all Pod volumes by the container runtime. This may be slow for large volumes, but allows mixing privileged and unprivileged Pods sharing the same volume on the same node.\n\n\"MountOption\" mounts all eligible Pod volumes with `-o context` mount option. This requires all Pods that share the same volume to use the same SELinux label. It is not possible to share the same volume among privileged and unprivileged Pods. Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their CSIDriver instance. Other volumes are always re-labelled recursively. \"MountOption\" value is allowed only when SELinuxMount feature gate is enabled.\n\nIf not specified and SELinuxMount feature gate is enabled, \"MountOption\" is used. If not specified and SELinuxMount feature gate is disabled, \"MountOption\" is used for ReadWriteOncePod volumes and \"Recursive\" for all other volumes.\n\nThis field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.\n\nAll Pods that use the same volume should use the same seLinuxChangePolicy, otherwise some pods can get stuck in ContainerCreating state. Note that this field cannot be set when spec.os.name is windows.",
+          "type": "string"
         },
         "seLinuxOptions": {
           "description": "The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.",
@@ -14381,7 +14389,7 @@
       "type": "object",
       "properties": {
         "exec": {
-          "description": "Exec specifies the action to take.",
+          "description": "Exec specifies a command to execute in the container.",
           "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction"
         },
         "failureThreshold": {
@@ -14389,11 +14397,11 @@
           "type": "integer"
         },
         "grpc": {
-          "description": "GRPC specifies an action involving a GRPC port.",
+          "description": "GRPC specifies a GRPC HealthCheckRequest.",
           "$ref": "#/definitions/io.k8s.api.core.v1.GRPCAction"
         },
         "httpGet": {
-          "description": "HTTPGet specifies the http request to perform.",
+          "description": "HTTPGet specifies an HTTP GET request to perform.",
           "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction"
         },
         "initialDelaySeconds": {
@@ -14409,7 +14417,7 @@
           "type": "integer"
         },
         "tcpSocket": {
-          "description": "TCPSocket specifies an action involving a TCP port.",
+          "description": "TCPSocket specifies a connection to a TCP port.",
           "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction"
         },
         "terminationGracePeriodSeconds": {
@@ -15004,6 +15012,7 @@
       "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.TypedObjectReference": {
+      "description": "TypedObjectReference contains enough information to let you locate the typed referenced object",
       "type": "object",
       "required": [
         "kind",
@@ -15036,23 +15045,23 @@
       ],
       "properties": {
         "awsElasticBlockStore": {
-          "description": "awsElasticBlockStore represents an AWS Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore",
+          "description": "awsElasticBlockStore represents an AWS Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore",
           "$ref": "#/definitions/io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource"
         },
         "azureDisk": {
-          "description": "azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.",
+          "description": "azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod. Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type are redirected to the disk.csi.azure.com CSI driver.",
           "$ref": "#/definitions/io.k8s.api.core.v1.AzureDiskVolumeSource"
         },
         "azureFile": {
-          "description": "azureFile represents an Azure File Service mount on the host and bind mount to the pod.",
+          "description": "azureFile represents an Azure File Service mount on the host and bind mount to the pod. Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type are redirected to the file.csi.azure.com CSI driver.",
           "$ref": "#/definitions/io.k8s.api.core.v1.AzureFileVolumeSource"
         },
         "cephfs": {
-          "description": "cephFS represents a Ceph FS mount on the host that shares a pod's lifetime",
+          "description": "cephFS represents a Ceph FS mount on the host that shares a pod's lifetime. Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.",
           "$ref": "#/definitions/io.k8s.api.core.v1.CephFSVolumeSource"
         },
         "cinder": {
-          "description": "cinder represents a cinder volume attached and mounted on kubelets host machine. More info: https://examples.k8s.io/mysql-cinder-pd/README.md",
+          "description": "cinder represents a cinder volume attached and mounted on kubelets host machine. Deprecated: Cinder is deprecated. All operations for the in-tree cinder type are redirected to the cinder.csi.openstack.org CSI driver. More info: https://examples.k8s.io/mysql-cinder-pd/README.md",
           "$ref": "#/definitions/io.k8s.api.core.v1.CinderVolumeSource"
         },
         "configMap": {
@@ -15060,7 +15069,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapVolumeSource"
         },
         "csi": {
-          "description": "csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).",
+          "description": "csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.",
           "$ref": "#/definitions/io.k8s.api.core.v1.CSIVolumeSource"
         },
         "downwardAPI": {
@@ -15080,23 +15089,23 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.FCVolumeSource"
         },
         "flexVolume": {
-          "description": "flexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.",
+          "description": "flexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.",
           "$ref": "#/definitions/io.k8s.api.core.v1.FlexVolumeSource"
         },
         "flocker": {
-          "description": "flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running",
+          "description": "flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running. Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.",
           "$ref": "#/definitions/io.k8s.api.core.v1.FlockerVolumeSource"
         },
         "gcePersistentDisk": {
-          "description": "gcePersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk",
+          "description": "gcePersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk",
           "$ref": "#/definitions/io.k8s.api.core.v1.GCEPersistentDiskVolumeSource"
         },
         "gitRepo": {
-          "description": "gitRepo represents a git repository at a particular revision. DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.",
+          "description": "gitRepo represents a git repository at a particular revision. Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.",
           "$ref": "#/definitions/io.k8s.api.core.v1.GitRepoVolumeSource"
         },
         "glusterfs": {
-          "description": "glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/glusterfs/README.md",
+          "description": "glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported. More info: https://examples.k8s.io/volumes/glusterfs/README.md",
           "$ref": "#/definitions/io.k8s.api.core.v1.GlusterfsVolumeSource"
         },
         "hostPath": {
@@ -15124,11 +15133,11 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimVolumeSource"
         },
         "photonPersistentDisk": {
-          "description": "photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine",
+          "description": "photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PhotonPersistentDiskVolumeSource"
         },
         "portworxVolume": {
-          "description": "portworxVolume represents a portworx volume attached and mounted on kubelets host machine",
+          "description": "portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PortworxVolumeSource"
         },
         "projected": {
@@ -15136,15 +15145,15 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ProjectedVolumeSource"
         },
         "quobyte": {
-          "description": "quobyte represents a Quobyte mount on the host that shares a pod's lifetime",
+          "description": "quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.",
           "$ref": "#/definitions/io.k8s.api.core.v1.QuobyteVolumeSource"
         },
         "rbd": {
-          "description": "rbd represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/rbd/README.md",
+          "description": "rbd represents a Rados Block Device mount on the host that shares a pod's lifetime. Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported. More info: https://examples.k8s.io/volumes/rbd/README.md",
           "$ref": "#/definitions/io.k8s.api.core.v1.RBDVolumeSource"
         },
         "scaleIO": {
-          "description": "scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.",
+          "description": "scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes. Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.",
           "$ref": "#/definitions/io.k8s.api.core.v1.ScaleIOVolumeSource"
         },
         "secret": {
@@ -15152,11 +15161,11 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretVolumeSource"
         },
         "storageos": {
-          "description": "storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.",
+          "description": "storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes. Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.",
           "$ref": "#/definitions/io.k8s.api.core.v1.StorageOSVolumeSource"
         },
         "vsphereVolume": {
-          "description": "vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine",
+          "description": "vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine. Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type are redirected to the csi.vsphere.vmware.com CSI driver.",
           "$ref": "#/definitions/io.k8s.api.core.v1.VsphereVirtualDiskVolumeSource"
         }
       }

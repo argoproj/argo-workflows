@@ -1125,6 +1125,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -4641,6 +4642,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -9462,6 +9464,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_group=1,
                                 run_as_non_root=True,
                                 run_as_user=1,
+                                se_linux_change_policy="se_linux_change_policy_example",
                                 se_linux_options=SELinuxOptions(
                                     level="level_example",
                                     role="role_example",
@@ -12741,6 +12744,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -16257,6 +16261,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -21078,6 +21083,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_group=1,
                                 run_as_non_root=True,
                                 run_as_user=1,
+                                se_linux_change_policy="se_linux_change_policy_example",
                                 se_linux_options=SELinuxOptions(
                                     level="level_example",
                                     role="role_example",
@@ -24442,6 +24448,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -27958,6 +27965,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -32779,6 +32787,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_group=1,
                                 run_as_non_root=True,
                                 run_as_user=1,
+                                se_linux_change_policy="se_linux_change_policy_example",
                                 se_linux_options=SELinuxOptions(
                                     level="level_example",
                                     role="role_example",
