@@ -2,6 +2,7 @@
 
 # GRPCAction
 
+GRPCAction specifies an action involving a GRPC service.
 
 ## Properties
 
