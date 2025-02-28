@@ -55,13 +55,23 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
             isFirstRender.current = false;
             return;
         }
-        history.push(
-            historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                namespace,
-                sidePanel
-            })
-        );
-    }, [namespace, sidePanel]);
+        const params = new URLSearchParams();
+        if (sidePanel) {
+            params.set('sidePanel', 'true');
+        }
+        if (labels.length > 0) {
+            params.set('labels', labels.join(','));
+        }
+        if (states.length > 0) {
+            params.set('states', states.join(','));
+        }
+        history.push({
+            pathname: historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace
+            }),
+            search: params.toString()
+        });
+    }, [namespace, sidePanel, labels, states]);
 
     // internal state
     const [error, setError] = useState<Error>();
