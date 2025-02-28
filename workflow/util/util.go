@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/client-go/kubernetes"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
@@ -1671,4 +1673,27 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 		return -1, err
 	}
 	return waitCtrIndex, nil
+}
+
+// GetItemsFromConfigMap reads items from a ConfigMap and returns them as []wfv1.Item
+func GetItemsFromConfigMap(clientset kubernetes.Interface, namespace string, configMapKeyRef *apiv1.ConfigMapKeySelector) ([]wfv1.Item, error) {
+	configMapName := configMapKeyRef.Name
+	key := configMapKeyRef.Key
+
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), configMapName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	itemsData, exists := configMap.Data[key]
+	if !exists {
+		return nil, fmt.Errorf("key %s not found in ConfigMap %s", key, configMapName)
+	}
+
+	var items []wfv1.Item
+	if err := json.Unmarshal([]byte(itemsData), &items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

@@ -9155,6 +9155,10 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
           }
         },
+        "withItemsFrom": {
+          "description": "WithItemsFrom expands a step into multiple parallel steps from the value in the parameter,",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WithItemsFrom"
+        },
         "withParam": {
           "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.",
           "type": "string"
@@ -11608,6 +11612,15 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.WithItemsFrom": {
+      "type": "object",
+      "properties": {
+        "configMapKeyRef": {
+          "description": "ConfigMapKeyRef is a reference to a key in a ConfigMap",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Workflow": {
       "description": "Workflow is the definition of a workflow resource",
       "type": "object",
@@ -12250,6 +12263,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
           }
+        },
+        "withItemsFrom": {
+          "description": "WithItemsFrom expands a step into multiple parallel steps from the value in the parameter,",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WithItemsFrom"
         },
         "withParam": {
           "description": "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
