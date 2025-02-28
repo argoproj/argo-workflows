@@ -55,6 +55,7 @@ func NewRootCommand() *cobra.Command {
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initConfig()
+			cmd.SilenceUsage = true
 		},
 	}
 
