@@ -42,7 +42,7 @@ func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
 	return fmt.Errorf("deleting archived workflows not supported")
 }
 
-func (r *nullWorkflowArchive) DeleteExpiredWorkflows(time.Duration) error {
+func (r *nullWorkflowArchive) DeleteExpiredWorkflows(time.Duration, []string) error {
 	return nil
 }
 
