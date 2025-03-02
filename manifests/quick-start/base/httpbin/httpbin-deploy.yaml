@@ -16,19 +16,19 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: main
-          image: kong/httpbin
+          image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: api
           readinessProbe:
             httpGet:
               path: /get
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /get
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10

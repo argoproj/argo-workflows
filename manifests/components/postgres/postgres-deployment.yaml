@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: main
-          image: postgres:12-alpine
+          image: quay.io/fedora/postgres-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
           env:
             - name: POSTGRES_PASSWORD
               value: password
