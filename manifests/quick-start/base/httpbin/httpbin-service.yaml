@@ -11,4 +11,4 @@ spec:
     - port: 9100
       name: api
       protocol: TCP
-      targetPort: 8080
+      targetPort: 80

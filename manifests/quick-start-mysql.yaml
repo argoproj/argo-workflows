@@ -3610,7 +3610,7 @@ spec:
   - name: api
     port: 9100
     protocol: TCP
-    targetPort: 8080
+    targetPort: 80
   selector:
     app: httpbin
 ---
@@ -3775,21 +3775,24 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
+      - env:
+        - name: PORT
+          value: "80"
+        image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
         livenessProbe:
           httpGet:
             path: /get
-            port: 8080
+            port: 80
           initialDelaySeconds: 5
           periodSeconds: 10
         name: main
         ports:
-        - containerPort: 8080
+        - containerPort: 80
           name: api
         readinessProbe:
           httpGet:
             path: /get
-            port: 8080
+            port: 80
           initialDelaySeconds: 5
           periodSeconds: 10
 ---

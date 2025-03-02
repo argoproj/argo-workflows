@@ -14,7 +14,7 @@ data:
     postgresql:
       host: postgres
       port: 5432
-      database: postgres
+      database: argo
       tableName: argo_workflows
       userNameSecret:
         name: argo-postgres-config

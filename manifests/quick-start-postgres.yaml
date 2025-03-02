@@ -3377,7 +3377,7 @@ data:
     postgresql:
       host: postgres
       port: 5432
-      database: postgres
+      database: argo
       tableName: argo_workflows
       userNameSecret:
         name: argo-postgres-config
@@ -3435,7 +3435,7 @@ metadata:
   name: argo-postgres-config
 stringData:
   password: password
-  username: postgres
+  username: argo
 type: Opaque
 ---
 apiVersion: v1
@@ -3610,7 +3610,7 @@ spec:
   - name: api
     port: 9100
     protocol: TCP
-    targetPort: 8080
+    targetPort: 80
   selector:
     app: httpbin
 ---
@@ -3775,21 +3775,24 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
+      - env:
+        - name: PORT
+          value: "80"
+        image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
         livenessProbe:
           httpGet:
             path: /get
-            port: 8080
+            port: 80
           initialDelaySeconds: 5
           periodSeconds: 10
         name: main
         ports:
-        - containerPort: 8080
+        - containerPort: 80
           name: api
         readinessProbe:
           httpGet:
             path: /get
-            port: 8080
+            port: 80
           initialDelaySeconds: 5
           periodSeconds: 10
 ---
@@ -3866,9 +3869,13 @@ spec:
     spec:
       containers:
       - env:
-        - name: POSTGRES_PASSWORD
+        - name: POSTGRESQL_USER
+          value: argo
+        - name: POSTGRESQL_PASSWORD
           value: password
-        image: quay.io/fedora/postgres-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
+        - name: POSTGRESQL_DATABASE
+          value: argo
+        image: quay.io/fedora/postgresql-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
         name: main
         ports:
         - containerPort: 5432
@@ -3877,7 +3884,7 @@ spec:
             command:
             - psql
             - -U
-            - postgres
+            - argo
             - -c
             - SELECT 1
           initialDelaySeconds: 15
