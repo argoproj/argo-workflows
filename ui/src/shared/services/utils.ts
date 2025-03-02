@@ -15,7 +15,7 @@ export function queryParams(filter: {
     resourceVersion?: string;
 }) {
     const queryParams: string[] = [];
-    const fieldSelector = fieldSelectorParams(filter.namespace, filter.name, filter.createdAfter, filter.finishedBefore);
+    const fieldSelector = fieldSelectorParams(filter.namespace, filter.name);
     if (fieldSelector.length > 0) {
         queryParams.push(`listOptions.fieldSelector=${fieldSelector}`);
     }
@@ -43,22 +43,22 @@ export function queryParams(filter: {
     if (filter.resourceVersion) {
         queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
     }
+    if (filter.createdAfter) {
+        queryParams.push(`createdAfter=${filter.createdAfter.toISOString()}`);
+    }
+    if (filter.finishedBefore) {
+        queryParams.push(`finishedBefore=${filter.finishedBefore.toISOString()}`);
+    }
     return queryParams;
 }
 
-function fieldSelectorParams(namespace?: string, name?: string, createdAfter?: Date, finishedBefore?: Date) {
+function fieldSelectorParams(namespace?: string, name?: string) {
     let fieldSelector = '';
     if (namespace) {
         fieldSelector += 'metadata.namespace=' + namespace + ',';
     }
     if (name) {
         fieldSelector += 'metadata.name=' + name + ',';
-    }
-    if (createdAfter) {
-        fieldSelector += 'metadata.creationTimestamp>' + createdAfter.toISOString() + ',';
-    }
-    if (finishedBefore) {
-        fieldSelector += 'spec.finishedAt<' + finishedBefore.toISOString() + ',';
     }
     if (fieldSelector.endsWith(',')) {
         fieldSelector = fieldSelector.substring(0, fieldSelector.length - 1);
