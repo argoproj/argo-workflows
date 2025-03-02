@@ -3377,7 +3377,7 @@ data:
     postgresql:
       host: postgres
       port: 5432
-      database: argo
+      database: postgres
       tableName: argo_workflows
       userNameSecret:
         name: argo-postgres-config
@@ -3435,7 +3435,7 @@ metadata:
   name: argo-postgres-config
 stringData:
   password: password
-  username: argo
+  username: postgres
 type: Opaque
 ---
 apiVersion: v1
@@ -3869,12 +3869,8 @@ spec:
     spec:
       containers:
       - env:
-        - name: POSTGRESQL_USER
-          value: argo
-        - name: POSTGRESQL_PASSWORD
+        - name: POSTGRESQL_ADMIN_PASSWORD
           value: password
-        - name: POSTGRESQL_DATABASE
-          value: argo
         image: quay.io/fedora/postgresql-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
         name: main
         ports:
@@ -3884,7 +3880,7 @@ spec:
             command:
             - psql
             - -U
-            - argo
+            - postgres
             - -c
             - SELECT 1
           initialDelaySeconds: 15

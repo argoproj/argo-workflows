@@ -18,17 +18,13 @@ spec:
         - name: main
           image: quay.io/fedora/postgresql-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
           env:
-            - name: POSTGRESQL_USER
-              value: argo
-            - name: POSTGRESQL_PASSWORD
+            - name: POSTGRESQL_ADMIN_PASSWORD
               value: password
-            - name: POSTGRESQL_DATABASE
-              value: argo
           ports:
             - containerPort: 5432
           readinessProbe:
             exec:
-              command: ["psql", "-U", "argo", "-c", "SELECT 1"]
+              command: ["psql", "-U", "postgres", "-c", "SELECT 1"]
             initialDelaySeconds: 15
             timeoutSeconds: 2
       nodeSelector:
