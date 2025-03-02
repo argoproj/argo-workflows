@@ -3541,7 +3541,7 @@ stringData:
     NuJLvtwCMGDCxhdYm7OrJ0aUfZzP6w==
     -----END PRIVATE KEY-----
   pass: password
-  tokenURL: http://httpbin:9100/response-headers?access_token=faketoken&token_type=Bearer
+  tokenURL: http://httpbin:9100/base64/YWNjZXNzX3Rva2VuPWZha2V0b2tlbg==
   user: admin
 type: Opaque
 ---
