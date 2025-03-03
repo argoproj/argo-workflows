@@ -24,7 +24,6 @@ spec:
               exit:
                 template: exit
           - name: hello2b
-            onExit: exit
             template: print-message
             arguments:
               parameters: [{ name: message, value: "hello2b" }]
