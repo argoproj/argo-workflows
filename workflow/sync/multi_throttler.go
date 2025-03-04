@@ -23,6 +23,12 @@ type Throttler interface {
 	Admit(key Key) bool
 	// Remove notifies throttler that item processing is no longer needed
 	Remove(key Key)
+	// UpdateParallelism
+	UpdateParallelism(limit int)
+	// UpdateNamespaceParallelism updates the namespace parallelism
+	UpdateNamespaceParallelism(namespace string, limit int)
+	// ResetNamespaceParallelism sets the namespace parallelism to the default value
+	ResetNamespaceParallelism(namespace string)
 }
 
 type Key = string
@@ -135,6 +141,26 @@ func (m *multiThrottler) Remove(key Key) {
 	delete(m.running, key)
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateParallelism(limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.totalParallelism = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateNamespaceParallelism(namespace string, limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.namespaceParallelism[namespace] = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	delete(m.namespaceParallelism, namespace)
 }
 
 func (m *multiThrottler) queueThrottled() {

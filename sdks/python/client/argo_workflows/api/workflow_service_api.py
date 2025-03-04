@@ -129,6 +129,7 @@ class WorkflowServiceApi(object):
                     'delete_options_orphan_dependents',
                     'delete_options_propagation_policy',
                     'delete_options_dry_run',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential',
                     'force',
                 ],
                 'required': [
@@ -164,6 +165,8 @@ class WorkflowServiceApi(object):
                         (str,),
                     'delete_options_dry_run':
                         ([str],),
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential':
+                        (bool,),
                     'force':
                         (bool,),
                 },
@@ -176,6 +179,7 @@ class WorkflowServiceApi(object):
                     'delete_options_orphan_dependents': 'deleteOptions.orphanDependents',
                     'delete_options_propagation_policy': 'deleteOptions.propagationPolicy',
                     'delete_options_dry_run': 'deleteOptions.dryRun',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential': 'deleteOptions.ignoreStoreReadErrorWithClusterBreakingPotential',
                     'force': 'force',
                 },
                 'location_map': {
@@ -187,6 +191,7 @@ class WorkflowServiceApi(object):
                     'delete_options_orphan_dependents': 'query',
                     'delete_options_propagation_policy': 'query',
                     'delete_options_dry_run': 'query',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential': 'query',
                     'force': 'query',
                 },
                 'collection_format_map': {
@@ -352,6 +357,8 @@ class WorkflowServiceApi(object):
                     'list_options_send_initial_events',
                     'fields',
                     'name_filter',
+                    'created_after',
+                    'finished_before',
                 ],
                 'required': [
                     'namespace',
@@ -395,6 +402,10 @@ class WorkflowServiceApi(object):
                         (str,),
                     'name_filter':
                         (str,),
+                    'created_after':
+                        (str,),
+                    'finished_before':
+                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -410,6 +421,8 @@ class WorkflowServiceApi(object):
                     'list_options_send_initial_events': 'listOptions.sendInitialEvents',
                     'fields': 'fields',
                     'name_filter': 'nameFilter',
+                    'created_after': 'createdAfter',
+                    'finished_before': 'finishedBefore',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -425,6 +438,8 @@ class WorkflowServiceApi(object):
                     'list_options_send_initial_events': 'query',
                     'fields': 'query',
                     'name_filter': 'query',
+                    'created_after': 'query',
+                    'finished_before': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -463,6 +478,7 @@ class WorkflowServiceApi(object):
                     'log_options_tail_lines',
                     'log_options_limit_bytes',
                     'log_options_insecure_skip_tls_verify_backend',
+                    'log_options_stream',
                     'grep',
                     'selector',
                 ],
@@ -510,6 +526,8 @@ class WorkflowServiceApi(object):
                         (str,),
                     'log_options_insecure_skip_tls_verify_backend':
                         (bool,),
+                    'log_options_stream':
+                        (str,),
                     'grep':
                         (str,),
                     'selector':
@@ -529,6 +547,7 @@ class WorkflowServiceApi(object):
                     'log_options_tail_lines': 'logOptions.tailLines',
                     'log_options_limit_bytes': 'logOptions.limitBytes',
                     'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
+                    'log_options_stream': 'logOptions.stream',
                     'grep': 'grep',
                     'selector': 'selector',
                 },
@@ -546,6 +565,7 @@ class WorkflowServiceApi(object):
                     'log_options_tail_lines': 'query',
                     'log_options_limit_bytes': 'query',
                     'log_options_insecure_skip_tls_verify_backend': 'query',
+                    'log_options_stream': 'query',
                     'grep': 'query',
                     'selector': 'query',
                 },
@@ -1299,6 +1319,7 @@ class WorkflowServiceApi(object):
                     'log_options_tail_lines',
                     'log_options_limit_bytes',
                     'log_options_insecure_skip_tls_verify_backend',
+                    'log_options_stream',
                     'grep',
                     'selector',
                 ],
@@ -1345,6 +1366,8 @@ class WorkflowServiceApi(object):
                         (str,),
                     'log_options_insecure_skip_tls_verify_backend':
                         (bool,),
+                    'log_options_stream':
+                        (str,),
                     'grep':
                         (str,),
                     'selector':
@@ -1364,6 +1387,7 @@ class WorkflowServiceApi(object):
                     'log_options_tail_lines': 'logOptions.tailLines',
                     'log_options_limit_bytes': 'logOptions.limitBytes',
                     'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
+                    'log_options_stream': 'logOptions.stream',
                     'grep': 'grep',
                     'selector': 'selector',
                 },
@@ -1381,6 +1405,7 @@ class WorkflowServiceApi(object):
                     'log_options_tail_lines': 'query',
                     'log_options_limit_bytes': 'query',
                     'log_options_insecure_skip_tls_verify_backend': 'query',
+                    'log_options_stream': 'query',
                     'grep': 'query',
                     'selector': 'query',
                 },
@@ -1502,6 +1527,7 @@ class WorkflowServiceApi(object):
             delete_options_orphan_dependents (bool): Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.. [optional]
             delete_options_propagation_policy (str): Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.. [optional]
             delete_options_dry_run ([str]): When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType=atomic.. [optional]
+            delete_options_ignore_store_read_error_with_cluster_breaking_potential (bool): if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional.. [optional]
             force (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
@@ -1758,6 +1784,8 @@ class WorkflowServiceApi(object):
             list_options_send_initial_events (bool): `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional. [optional]
             fields (str): Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".. [optional]
             name_filter (str): Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.. [optional]
+            created_after (str): [optional]
+            finished_before (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -1846,9 +1874,10 @@ class WorkflowServiceApi(object):
             log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
             log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
             log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-            log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
+            log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional.. [optional]
             log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
             log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
+            log_options_stream (str): Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional.. [optional]
             grep (str): [optional]
             selector (str): [optional]
             _return_http_data_only (bool): response data without head status
@@ -2793,9 +2822,10 @@ class WorkflowServiceApi(object):
             log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
             log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
             log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-            log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
+            log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional.. [optional]
             log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
             log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
+            log_options_stream (str): Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional.. [optional]
             grep (str): [optional]
             selector (str): [optional]
             _return_http_data_only (bool): response data without head status
