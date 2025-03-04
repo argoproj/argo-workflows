@@ -1,26 +1,37 @@
 import {GetUserInfoResponse, Info, Version} from '../models';
 import requests from './requests';
+import {retryApiCall} from './retry-utils';
 
-let info: Promise<Info>; // we cache this globally rather than in localStorage so it is request once per page refresh
+// Cache info globally rather than in localStorage so it is requested once per page refresh
+let infoCache: Promise<Info> | null = null;
 
 export const InfoService = {
     getInfo() {
-        if (info) {
-            return info;
+        if (infoCache) {
+            return infoCache;
         }
-        info = requests.get(`api/v1/info`).then(res => res.body as Info);
-        return info;
+
+        // Use retry utility for critical API calls
+        infoCache = retryApiCall(() => requests.get(`api/v1/info`).then(res => res.body as Info));
+
+        return infoCache;
     },
 
     getVersion() {
-        return requests.get(`api/v1/version`).then(res => res.body as Version);
+        return retryApiCall(() => requests.get(`api/v1/version`).then(res => res.body as Version));
     },
 
     getUserInfo() {
-        return requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse);
+        return retryApiCall(() => requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse));
     },
 
     collectEvent(name: string) {
+        // No need to retry for analytics events
         return requests.post(`api/v1/tracking/event`).send({name});
+    },
+
+    // Clear the cache if needed (e.g., after logout)
+    clearCache() {
+        infoCache = null;
     }
 };
