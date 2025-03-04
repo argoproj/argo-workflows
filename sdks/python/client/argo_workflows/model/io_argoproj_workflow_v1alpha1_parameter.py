@@ -159,7 +159,7 @@ class IoArgoprojWorkflowV1alpha1Parameter(ModelNormal):
             description (str): Description is the parameter description. [optional]  # noqa: E501
             enum ([str]): Enum holds a list of string values to choose from, for the actual value of the parameter. [optional]  # noqa: E501
             global_name (str): GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters. [optional]  # noqa: E501
-            value (str): Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values. [optional]  # noqa: E501
+            value (str): Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value. [optional]  # noqa: E501
             value_from (IoArgoprojWorkflowV1alpha1ValueFrom): [optional]  # noqa: E501
         """
 
@@ -250,7 +250,7 @@ class IoArgoprojWorkflowV1alpha1Parameter(ModelNormal):
             description (str): Description is the parameter description. [optional]  # noqa: E501
             enum ([str]): Enum holds a list of string values to choose from, for the actual value of the parameter. [optional]  # noqa: E501
             global_name (str): GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters. [optional]  # noqa: E501
-            value (str): Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values. [optional]  # noqa: E501
+            value (str): Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value. [optional]  # noqa: E501
             value_from (IoArgoprojWorkflowV1alpha1ValueFrom): [optional]  # noqa: E501
         """
 
