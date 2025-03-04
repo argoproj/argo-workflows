@@ -73,6 +73,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [DataRobot](https://www.datarobot.com/)
 1. [DataStax](https://www.datastax.com/)
 1. [DDEV](https://www.ddev.com/)
+1. [Deutsche Telekom AG](https://telekom.com)
 1. [DevSamurai](https://www.devsamurai.com/)
 1. [Devtron Labs](https://github.com/devtron-labs/devtron)
 1. [DLR](https://www.dlr.de/eoc/)
