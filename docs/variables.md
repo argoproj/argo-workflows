@@ -104,7 +104,7 @@ Convert to a JSON string (needed for `withParam`):
 toJson([1, 2])
 ```
 
-`toJson` is the same as [expr's built-in `toJSON` function](https://expr-lang.org/docs/language-definition#toJSON), 
+`toJson` is the same as [expr's built-in `toJSON` function](https://expr-lang.org/docs/language-definition#toJSON),
 except `toJson` does not add indentation.
 
 Extract data from JSON:
