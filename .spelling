@@ -48,6 +48,7 @@ ContainerSet
 Couler
 CronWorkflow
 CronWorkflows
+CustomResource
 DataDog
 Dataflow
 DevOps
@@ -146,6 +147,7 @@ boolean
 booleans
 buildkit
 changelog
+codebase
 config
 cpu
 cron
