@@ -78,8 +78,6 @@ Map a list:
 map([1, 2], { # * 2 })
 ```
 
-We provide some core functions:
-
 Cast to int:
 
 ```text
@@ -98,11 +96,16 @@ Cast to string:
 string(1)
 ```
 
+We provide some additional functions:
+
 Convert to a JSON string (needed for `withParam`):
 
 ```text
 toJson([1, 2])
 ```
+
+`toJson` is the same as [expr's built-in `toJSON` function](https://expr-lang.org/docs/language-definition#toJSON), 
+except `toJson` does not add indentation.
 
 Extract data from JSON:
 
