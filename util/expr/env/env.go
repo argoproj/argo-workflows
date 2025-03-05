@@ -19,9 +19,9 @@ func init() {
 
 func GetFuncMap(m map[string]interface{}) map[string]interface{} {
 	env := expand.Expand(m)
-	// Alias for the build-in `int` function, for backwards compatibility.
+	// Alias for the built-in `int` function, for backwards compatibility.
 	env["asInt"] = builtin.Int
-	// Alias for the build-in `float` function, for backwards compatibility.
+	// Alias for the built-in `float` function, for backwards compatibility.
 	env["asFloat"] = builtin.Float
 	env["jsonpath"] = jsonPath
 	env["toJson"] = toJson
