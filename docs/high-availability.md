@@ -41,3 +41,6 @@ A single replica of the Workflow Controller is recommended for most use cases du
 ## Argo Server
 
 Run a minimum of two replicas, typically three, to avoid dropping API and webhook requests.
+The minimum memory requirements for the Argo Server at scale can be quite large and are not load dependent.
+
+The Argo Server is horizontally scalable and can be load balanced.
