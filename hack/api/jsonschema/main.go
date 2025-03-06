@@ -40,7 +40,7 @@ func main() {
 		}
 		schema := obj{
 			"$id":     "http://workflows.argoproj.io/workflows.json", // don't really know what this should be
-			"$schema": "http://json-schema.org/schema#",
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
 			"type":    "object",
 			"oneOf": []interface{}{
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"},
