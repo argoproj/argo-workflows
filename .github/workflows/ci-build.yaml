@@ -242,15 +242,15 @@ jobs:
             profile: minimal
             use-api: true
           - test: test-executor
-            install_k3s_version: v1.28.13+k3s1
+            k8s_version: min
             profile: minimal
             use-api: false
           - test: test-corefunctional
-            install_k3s_version: v1.28.13+k3s1
+            k8s_version: min
             profile: minimal
             use-api: false
           - test: test-functional
-            install_k3s_version: v1.28.13+k3s1
+            k8s_version: min
             profile: minimal
             use-api: false
     steps:
@@ -283,12 +283,11 @@ jobs:
           python-version: '3.x'
           cache: pip
       - name: Install and start K3S
+        env:
+          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
         run: |
-          if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.31.0+k3s1
-          else
-            export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
-          fi
+          . hack/k8s-versions.sh
+          export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
 
           curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
             INSTALL_K3S_EXEC="--docker --kubelet-arg=config=${GITHUB_WORKSPACE}/test/e2e/manifests/kubelet-configuration.yaml" \
