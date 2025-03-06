@@ -112,11 +112,14 @@ func (c *Controller) HasSynced() func() bool {
 // Run runs the pod controller
 func (c *Controller) Run(ctx context.Context, workers int) {
 	defer c.workqueue.ShutDown()
-	go c.podInformer.Run(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), c.HasSynced(), c.wfInformer.HasSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.wfInformer.HasSynced) {
 		return
 	}
-	for i := 0; i < workers; i++ {
+	go c.podInformer.Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), c.HasSynced()) {
+		return
+	}
+	for range workers {
 		go wait.UntilWithContext(ctx, c.runPodCleanup, time.Second)
 	}
 	<-ctx.Done()
