@@ -19,6 +19,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/evanphx/json-patch v5.8.0+incompatible
+	github.com/evilmonkeyinc/jsonpath v0.8.1
 	github.com/expr-lang/expr v1.16.9
 	github.com/gavv/httpexpect/v2 v2.16.0
 	github.com/go-git/go-git/v5 v5.13.1
@@ -94,7 +95,6 @@ require (
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/evilmonkeyinc/jsonpath v0.8.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
