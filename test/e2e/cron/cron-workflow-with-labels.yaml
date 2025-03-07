@@ -6,7 +6,8 @@ metadata:
     client: importantclient
     workflows.argoproj.io/test: "true"
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   timezone: "America/Los_Angeles"   # Default to local machine timezone
   startingDeadlineSeconds: 0
   concurrencyPolicy: "Replace"      # Default to "Allow"

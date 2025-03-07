@@ -494,7 +494,7 @@ const cronwf = `
 	"namespace": "workflows"
   },
   "spec": {
-    "schedule": "* * * * *",
+    "schedules": ["* * * * *"],
     "timezone": "America/Los_Angeles",
     "startingDeadlineSeconds": 0,
     "concurrencyPolicy": "Replace",

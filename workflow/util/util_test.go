@@ -1326,7 +1326,8 @@ kind: CronWorkflow
 metadata:
   name: example-integers
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowSpec:
     entrypoint: whalesay
     templates:

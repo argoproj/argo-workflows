@@ -33,7 +33,8 @@ var scheduledWf = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedule: '* * * * *'
+    schedules:
+      - '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -234,7 +235,8 @@ var invalidWf = `
   metadata:
     name: hello-world
   spec:
-    schedule: '* * * * *'
+    schedules:
+      - '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -286,7 +288,8 @@ metadata:
 spec:
   concurrencyPolicy: Replace
   failedJobsHistoryLimit: 4
-  schedule: 10 * * 12737123 *
+  schedules:
+    - 10 * * 12737123 *
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
@@ -366,7 +369,8 @@ metadata:
 spec:
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 1
-  schedule: 41 12 * * *
+  schedules:
+    - 41 12 * * *
   successfulJobsHistoryLimit: 1
   timezone: America/New_York
   workflowSpec:
@@ -427,7 +431,8 @@ metadata:
 spec:
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 4
-  schedule: 0-36/1 21-22 * * *
+  schedules:
+    - 0-36/1 21-22 * * *
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
