@@ -30,7 +30,8 @@ metadata:
   labels:
     workflows.argoproj.io/controller-instanceid: my-instanceid
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -99,7 +100,7 @@ metadata:
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
 		t.Run("Invalid", func(t *testing.T) {
 			x := cronWf.DeepCopy()
-			x.Spec.Schedule = "invalid"
+			x.Spec.Schedules = []string{"invalid"}
 			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: x})
 			require.Error(t, err)
 		})
