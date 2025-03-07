@@ -3648,7 +3648,7 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 	if err == nil && !proceed {
 		newStepStr, err = tmpl.Replace(replaceMap, true)
 	} else {
-		newStepStr, err = tmpl.Replace(replaceMap, false)
+		newStepStr, err = tmpl.Replace(replaceMap, true)
 	}
 	if err != nil {
 		return "", err
