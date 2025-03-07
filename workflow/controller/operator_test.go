@@ -2679,6 +2679,77 @@ func TestExpandWithItemsMap(t *testing.T) {
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
 }
 
+var expandWithItemsFrom = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expand-with-items-from
+  namespace: default
+spec:
+  entrypoint: loop-example
+  templates:
+  - name: loop-example
+    steps:
+    - - name: print-message
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItemsFrom: # invoke whalesay once for each item in parallel
+          configMapKeyRef:
+            name: my-config
+            key: tables
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]`
+
+func TestExpandWithItemsFrom(t *testing.T) {
+	myconfig := apiv1.ConfigMap{
+		Data: map[string]string{
+			"tables": `
+				[
+					"table1",
+					"table2",
+					"table3"
+				]
+			`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-config",
+		},
+	}
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(expandWithItemsFrom)
+	cancel, controller := newController()
+	defer cancel()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &myconfig, metav1.CreateOptions{})
+	require.NoError(t, err)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+
+	// Test list expansion
+	wf, err = wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
+	require.NoError(t, err)
+	assert.Len(t, newSteps, 3)
+	assert.Equal(t, "table1", newSteps[0].Arguments.Parameters[0].Value.String())
+	assert.Equal(t, "table2", newSteps[1].Arguments.Parameters[0].Value.String())
+}
+
 var suspendTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
