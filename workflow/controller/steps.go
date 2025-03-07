@@ -574,6 +574,13 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	step.WithItems = nil
 	step.WithParam = ""
 	step.WithSequence = nil
+	var inputArts wfv1.Artifacts
+	for _, art := range step.Arguments.Artifacts {
+		if !art.Optional {
+			inputArts = append(inputArts, art)
+		}
+	}
+	step.Arguments.Artifacts = inputArts
 
 	stepBytes, err := json.Marshal(step)
 	if err != nil {

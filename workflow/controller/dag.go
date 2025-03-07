@@ -810,6 +810,13 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	task.WithItems = nil
 	task.WithParam = ""
 	task.WithSequence = nil
+	var inputArts wfv1.Artifacts
+	for _, art := range task.Arguments.Artifacts {
+		if !art.Optional {
+			inputArts = append(inputArts, art)
+		}
+	}
+	task.Arguments.Artifacts = inputArts
 
 	tmpl, err := template.NewTemplate(string(taskBytes))
 	if err != nil {
