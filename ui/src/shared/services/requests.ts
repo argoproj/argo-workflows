@@ -4,14 +4,34 @@ import {SuperAgentRequest} from 'superagent';
 
 import {apiUrl, uiUrlWithParams} from '../base';
 
+// Add a timeout to all requests to prevent hanging
+const REQUEST_TIMEOUT = 20000; // 20 seconds
+
+// Track if we're currently in a page reload to avoid multiple redirects
+let isReloading = false;
+
 function auth(req: SuperAgentRequest) {
-    return req.on('error', handle);
+    return req.timeout(REQUEST_TIMEOUT).on('error', handle);
 }
 
 function handle(err: any) {
+    console.error('API request error:', err);
+
+    // Prevent multiple redirects or handling during page reload
+    if (isReloading) {
+        return;
+    }
+
     // check URL to prevent redirect loop
     if (err.status === 401 && !document.location.href.includes('login')) {
+        isReloading = true;
         document.location.href = uiUrlWithParams('login', ['redirect=' + document.location.href]);
+        return;
+    }
+
+    // Handle timeout errors specifically
+    if (err.timeout) {
+        console.warn('Request timed out. This might cause UI issues.');
     }
 }
 
