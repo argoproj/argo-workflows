@@ -1,8 +1,7 @@
 # Webhooks
 
-> Introduced in v2.11
-
-Argo Workflows supports event-driven workflow execution through webhooks. While many clients can send events via the [events](events.md) API endpoint using a standard authorization header, some clients—such as those relying on signature verification for authentication—require additional configuration.
+Argo Workflows supports event-driven workflow execution through webhooks. 
+While many clients can send events via the [events](events.md) API endpoint using a standard authorization header, some clients—such as those relying on signature verification for authentication—require additional configuration.
 
 ## Configuring Webhook Access
 
@@ -23,7 +22,7 @@ In the target namespace, define the necessary access token resources for your cl
 
 ### 2. Define Webhook Clients in a Secret
 
-Create a Kubernetes secret named `argo-workflows-webhook-clients` that lists the service accounts authorized to trigger workflows via webhooks.
+Create a Kubernetes Secret named `argo-workflows-webhook-clients` that lists the Service Accounts authorized to trigger workflows via webhooks.
 
 - [View Example YAML](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
 
