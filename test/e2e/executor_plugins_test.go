@@ -22,6 +22,7 @@ type ExecutorPluginsSuite struct {
 	fixtures.E2ESuite
 }
 
+// Fake commit.
 func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 	s.Given().
 		Workflow("@testdata/plugins/executor/template-executor-workflow.yaml").
