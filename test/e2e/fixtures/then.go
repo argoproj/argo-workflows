@@ -3,6 +3,7 @@ package fixtures
 import (
 	"context"
 	"fmt"
+	"io"
 	"reflect"
 	"testing"
 	"time"
@@ -260,6 +261,25 @@ func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
 	}
 
 	f(t.t, list.Items)
+
+	return t
+}
+
+func (t *Then) ExpectContainerLogs(container string, f func(t *testing.T, logs string)) *Then {
+	t.t.Helper()
+
+	stream, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).GetLogs(t.wf.Name, &apiv1.PodLogOptions{Container: container}).Stream(context.Background())
+	if err != nil {
+		t.t.Fatal(err)
+	}
+
+	defer stream.Close()
+	logBytes, err := io.ReadAll(stream)
+	if err != nil {
+		t.t.Fatal(err)
+	}
+
+	f(t.t, string(logBytes))
 
 	return t
 }

@@ -1446,3 +1446,20 @@ func (s *FunctionalSuite) TestWorkflowParallelismDAGFailFast() {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("task2").Phase)
 		})
 }
+
+func (s *FunctionalSuite) TestWorkflowInvalidServiceAccountError() {
+	s.Given().
+		Workflow("@expectedfailures/serviceaccount-insufficient-permissions.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectContainerLogs("main", func(t *testing.T, logs string) {
+			assert.Contains(t, logs, "hello argo")
+		}).
+		ExpectContainerLogs("wait", func(t *testing.T, logs string) {
+			assert.Contains(t, logs, "Error: workflowtaskresults.argoproj.io is forbidden: User \"system:serviceaccount:argo:github.com\" cannot create resource")
+			// Shouldn't have print help text
+			assert.NotContains(t, logs, "Usage:")
+		})
+}
