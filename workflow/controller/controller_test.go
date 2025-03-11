@@ -920,10 +920,10 @@ metadata:
 spec:
  entrypoint: whalesay
  synchronization:
-   semaphore:
-     configMapKeyRef:
-       name: my-config
-       key: workflow
+   semaphores:
+     - configMapKeyRef:
+         name: my-config
+         key: workflow
  templates:
  - name: whalesay
    container:

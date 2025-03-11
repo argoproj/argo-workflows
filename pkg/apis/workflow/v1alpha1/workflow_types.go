@@ -377,10 +377,6 @@ type WorkflowSpec struct {
 	// PriorityClassName to apply to workflow pods.
 	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,23,opt,name=podPriorityClassName"`
 
-	// Priority to apply to workflow pods.
-	// DEPRECATED: Use PodPriorityClassName instead.
-	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,24,opt,name=podPriority"`
-
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,25,opt,name=hostAliases"`
@@ -723,9 +719,6 @@ type Template struct {
 
 	// PriorityClassName to apply to workflow pods.
 	PriorityClassName string `json:"priorityClassName,omitempty" protobuf:"bytes,26,opt,name=priorityClassName"`
-
-	// Priority to apply to workflow pods.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,27,opt,name=priority"`
 
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,28,opt,name=serviceAccountName"`
