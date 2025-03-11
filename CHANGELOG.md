@@ -1,5 +1,31 @@
 # Changelog
 
+## v3.6.5 (2025-03-11)
+
+Full Changelog: [v3.6.4...v3.6.5](https://github.com/argoproj/argo-workflows/compare/v3.6.4...v3.6.5)
+
+### Selected Changes
+
+* [9e532061c](https://github.com/argoproj/argo-workflows/commit/9e532061c064d1205610b1932a0fb3c4dc053421) fix: don't print help for non-validation errors. Fixes argoproj#14234 (cherry-pick #14249) (#14283)
+* [0a0ef6148](https://github.com/argoproj/argo-workflows/commit/0a0ef6148df12208ac8646fdbdee1b9ab23e1471) fix: correct semaphore configmap keys for multiple semaphores (#14184) (release-3.6) (#14281)
+* [12cc537af](https://github.com/argoproj/argo-workflows/commit/12cc537afb78b98a6af47b639b53a8378f4d095b) fix(cli): remove red from log colour selection. Fixes #6740 (cherry-pick #14215) (#14278)
+* [1f558bc07](https://github.com/argoproj/argo-workflows/commit/1f558bc07bc7c90ecbe75606d86efcd457d5a6e7) fix: wait for workflow informer to sync before pod informer (cherry-pick #14248) (#14266)
+* [a2de3a1a4](https://github.com/argoproj/argo-workflows/commit/a2de3a1a40de66d58fa7c401d9d166f4c1dd859f) chore(deps): bump github.com/go-jose/go-jose/v3 from 3.0.3 to 3.0.4 in the go_modules group (cherry-pick #14231) (#14269)
+* [0128fef4c](https://github.com/argoproj/argo-workflows/commit/0128fef4cb1149037f78d3e39ecf4f2ccdd27b2c) chore(deps): fix snyk (#14264) (release-3.6) (#14268)
+* [96181d3f5](https://github.com/argoproj/argo-workflows/commit/96181d3f58e8e0f83dba5267f1790ab57e2be294) fix: split pod controller from workflow controller (#14129) (release-3.6) (#14263)
+* [823429fbd](https://github.com/argoproj/argo-workflows/commit/823429fbd13b78e596614280492cfbee5c230991) chore(deps): bump minio-go to newer version (#14185) (release-3.6) (#14261)
+* [68d8ace7a](https://github.com/argoproj/argo-workflows/commit/68d8ace7a0fc1fe51044df07be793135b72f1df0) fix(api/jsonschema): use working `$id` (cherry-pick #14257) (#14258)
+* [ff5c155db](https://github.com/argoproj/argo-workflows/commit/ff5c155dbb8f23da516ae5ac2c77354ead23ac00) fix(api/jsonschema): use unchanging JSON Schema version (cherry-pick #14092) (#14256)
+* [c8dc1bc16](https://github.com/argoproj/argo-workflows/commit/c8dc1bc1674ebaf2cde8e4401f195d7d6474b834) fix(ci): python sdk release process (release-3.6) (#14183)
+* [a3b93733b](https://github.com/argoproj/argo-workflows/commit/a3b93733bb29123a5caa79c2b9b4c89bd267a9f2) fix: bump deps for k8schain to fix ecr-login (#14008) (release-3.6 cherry-pick) (#14174)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* gcp-cherry-pick-bot[bot]
+
+</details>
+
 ## v3.6.4 (2025-02-10)
 
 Full Changelog: [v3.6.3...v3.6.4](https://github.com/argoproj/argo-workflows/compare/v3.6.3...v3.6.4)
