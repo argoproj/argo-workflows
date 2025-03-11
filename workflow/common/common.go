@@ -16,7 +16,7 @@ const (
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// AnnotationKeyServiceAccountTokenName is used to name the secret that containers the service account token name.
-	// It is intentially named similar to ` `kubernetes.io/service-account.name`.
+	// It is intentionally named similar to ` `kubernetes.io/service-account.name`.
 	AnnotationKeyServiceAccountTokenName = workflow.WorkflowFullName + "/service-account-token.name"
 
 	// AnnotationKeyNodeID is the ID of the node.
@@ -98,7 +98,7 @@ const (
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
 	// LabelKeyWorkflowEventBinding is a label applied to Workflows that are submitted from a WorkflowEventBinding
 	LabelKeyWorkflowEventBinding = workflow.WorkflowFullName + "/workflow-event-binding"
-	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
+	// LabelKeyClusterWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
