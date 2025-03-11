@@ -756,7 +756,7 @@ docs: /usr/local/bin/mkdocs \
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
-ifeq ($(RELEASE_TAG),true)
+ifeq ($(shell echo $(GIT_BRANCH) | head -c 8),release-)
 	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
 endif
 	TZ=UTC mkdocs build --strict
