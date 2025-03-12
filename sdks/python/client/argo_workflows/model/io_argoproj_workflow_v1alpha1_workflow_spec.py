@@ -155,7 +155,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'pod_disruption_budget': (IoK8sApiPolicyV1PodDisruptionBudgetSpec,),  # noqa: E501
             'pod_gc': (IoArgoprojWorkflowV1alpha1PodGC,),  # noqa: E501
             'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
-            'pod_priority': (int,),  # noqa: E501
             'pod_priority_class_name': (str,),  # noqa: E501
             'pod_spec_patch': (str,),  # noqa: E501
             'priority': (int,),  # noqa: E501
@@ -205,7 +204,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
         'pod_disruption_budget': 'podDisruptionBudget',  # noqa: E501
         'pod_gc': 'podGC',  # noqa: E501
         'pod_metadata': 'podMetadata',  # noqa: E501
-        'pod_priority': 'podPriority',  # noqa: E501
         'pod_priority_class_name': 'podPriorityClassName',  # noqa: E501
         'pod_spec_patch': 'podSpecPatch',  # noqa: E501
         'priority': 'priority',  # noqa: E501
@@ -290,7 +288,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_disruption_budget (IoK8sApiPolicyV1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
@@ -413,7 +410,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_disruption_budget (IoK8sApiPolicyV1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501

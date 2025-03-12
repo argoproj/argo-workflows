@@ -1103,11 +1103,11 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 		},
 		Spec: WorkflowSpec{
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{&SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "test",
 					},
-				}},
+				}}},
 			},
 		},
 	}
@@ -1139,21 +1139,21 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 		{
 			Name: "t1",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{&SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "template1",
 					},
-				}},
+				}}},
 			},
 		},
 		{
 			Name: "t2",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{&SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "template",
 					},
-				}},
+				}}},
 			},
 		},
 	}

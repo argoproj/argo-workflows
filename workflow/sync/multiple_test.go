@@ -216,12 +216,12 @@ func TestMutexAndSemaphore(t *testing.T) {
 `)
 		wfmands1copy := wfmands1.DeepCopy()
 		wfmands2 := templatedWorkflow("mands2",
-			`    mutex:
-       name: two
-    semaphore:
-       configMapKeyRef:
-         key: double
-         name: my-config
+			`    mutexes:
+       - name: two
+    semaphores:
+       - configMapKeyRef:
+           key: double
+           name: my-config
 `)
 		wf1 := templatedWorkflow("one",
 			`    mutexes:

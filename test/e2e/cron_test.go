@@ -41,7 +41,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
 spec:
-  schedule: "* * * * *"
+  schedules:
+    -  "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -87,7 +88,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-timezone
 spec:
-  schedule: "%s"
+  schedules:
+    - "%s"
   timezone: "%s"
   workflowMetadata:
     labels:
@@ -114,7 +116,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-suspend
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -145,7 +148,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-resume
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -176,7 +180,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-forbid
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -212,7 +217,8 @@ metadata:
   labels:
 
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -244,7 +250,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-replace
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Replace"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -280,7 +287,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-succeed-1
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 1
@@ -314,7 +322,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-fail-1
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -349,7 +358,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-stop-condition-succeeded
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -386,7 +396,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-stop-condition-failed
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   stopStrategy:
     expression: "cronworkflow.failed >= 1"

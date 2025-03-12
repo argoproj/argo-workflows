@@ -1737,9 +1737,6 @@ message Template {
   // PriorityClassName to apply to workflow pods.
   optional string priorityClassName = 26;
 
-  // Priority to apply to workflow pods.
-  optional int32 priority = 27;
-
   // ServiceAccountName to apply to workflow pods
   optional string serviceAccountName = 28;
 
@@ -2068,10 +2065,6 @@ message WorkflowSpec {
 
   // PriorityClassName to apply to workflow pods.
   optional string podPriorityClassName = 23;
-
-  // Priority to apply to workflow pods.
-  // DEPRECATED: Use PodPriorityClassName instead.
-  optional int32 podPriority = 24;
 
   // +patchStrategy=merge
   // +patchMergeKey=ip

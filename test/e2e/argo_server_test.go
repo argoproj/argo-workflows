@@ -954,7 +954,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
       }
     },
     "spec": {
-      "schedule": "* * * * *",
+      "schedules": ["* * * * *"],
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -1001,7 +1001,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -1058,7 +1059,7 @@ spec:
       }
     },
     "spec": {
-      "schedule": "1 * * * *",
+      "schedules": ["1 * * * *"],
       "workflowMetadata": {
         "labels": {"workflows.argoproj.io/test": "true"}
       },
@@ -1079,7 +1080,7 @@ spec:
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.spec.schedule").
+			Path("$.spec.schedules[0]").
 			IsEqual("1 * * * *")
 	})
 
@@ -1824,7 +1825,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       }
     },
     "spec": {
-      "schedule": "* * * * *",
+      "schedules": ["* * * * *"],
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
