@@ -58,6 +58,6 @@ spec:
 The `script` keyword allows the specification of the script body using the `source` tag.
 This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body.
 
-In the same way as `container` tempalates do, the use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`.
+In the same way as `container` templates do, the use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`.
 This allows you to use the result of running the script itself in the rest of the workflow spec.
 In this example, the result is simply echoed by the print-message template.
