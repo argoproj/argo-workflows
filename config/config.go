@@ -108,6 +108,10 @@ type Config struct {
 	// Workflow retention by number of workflows
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 
+	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
+	// for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
+	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
+
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
 
