@@ -582,6 +582,24 @@ func (s *FunctionalSuite) TestParameterAggregationFromOutputs() {
 		})
 }
 
+func (s *FunctionalSuite) TestParameterAggregationDAGWithRetry() {
+	s.Given().
+		Workflow("@functional/parameter-aggregation-dag-with-retry.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(time.Second * 90).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("parameter-aggregation-dag-with-retry(0)")
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			require.NotNil(t, nodeStatus.Outputs)
+			require.NotEmpty(t, nodeStatus.Outputs.Parameters["dummy-dag-output"])
+			assert.Equal(t, `["1","2","3"]`, nodeStatus.Outputs.Parameters["dummy-dag-output"].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestDAGDepends() {
 	s.Given().
 		Workflow("@functional/dag-depends.yaml").
