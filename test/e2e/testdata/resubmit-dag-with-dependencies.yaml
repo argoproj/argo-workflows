@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resubmit-dag-with-dependencies-
+  labels:
+    workflow: resubmit-dag-with-dependencies
+spec:
+  entrypoint: rand-fail-dag
+  templates:
+    - name: rand-fail-dag
+      dag:
+        tasks:
+          - name: A
+            template: success
+          - name: B
+            template: fail
+            depends: A
+          - name: C
+            depends: "B"
+            template: success
+          - name: D
+            depends: "C"
+            template: success
+    - name: fail
+      container:
+        image: argoproj/argosay:v2
+        args: ["exit", "1"]
+    - name: success
+      container:
+        image: argoproj/argosay:v2
+        args: ["exit", "0"]

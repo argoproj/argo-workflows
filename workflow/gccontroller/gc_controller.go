@@ -31,7 +31,7 @@ var ticker *time.Ticker = time.NewTicker(50 * time.Millisecond)
 type Controller struct {
 	wfclientset      wfclientset.Interface
 	wfInformer       cache.SharedIndexInformer
-	workqueue        workqueue.DelayingInterface
+	workqueue        workqueue.TypedDelayingInterface[string]
 	clock            clock.WithTickerAndDelayedExecution
 	metrics          *metrics.Metrics
 	orderedQueueLock sync.Mutex
@@ -40,7 +40,7 @@ type Controller struct {
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
+func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
 	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
@@ -49,7 +49,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	controller := &Controller{
 		wfclientset:     wfClientset,
 		wfInformer:      wfInformer,
-		workqueue:       metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		workqueue:       metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_ttl_queue"),
 		clock:           clock.RealClock{},
 		metrics:         metrics,
 		orderedQueue:    orderedQueue,
@@ -79,10 +79,10 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
-				controller.retentionEnqueue(new)
+				controller.retentionEnqueue(ctx, new)
 			},
 			AddFunc: func(obj interface{}) {
-				controller.retentionEnqueue(obj)
+				controller.retentionEnqueue(ctx, obj)
 			},
 		},
 	})
@@ -92,7 +92,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	return controller
 }
 
-func (c *Controller) retentionEnqueue(obj interface{}) {
+func (c *Controller) retentionEnqueue(ctx context.Context, obj interface{}) {
 	// No need to queue the workflow if the retention policy is not set
 	if c.retentionPolicy == nil {
 		return
@@ -108,7 +108,7 @@ func (c *Controller) retentionEnqueue(obj interface{}) {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		c.orderedQueueLock.Lock()
 		heap.Push(c.orderedQueue[phase], un)
-		c.runGC(phase)
+		c.runGC(ctx, phase)
 		c.orderedQueueLock.Unlock()
 	}
 }
@@ -142,8 +142,8 @@ func (c *Controller) runWorker() {
 }
 
 // retentionGC queues workflows for deletion based upon the retention policy.
-func (c *Controller) runGC(phase wfv1.WorkflowPhase) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	var maxWorkflows int
 	switch phase {
 	case wfv1.WorkflowSucceeded:
@@ -172,7 +172,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 		return false
 	}
 	defer c.workqueue.Done(key)
-	runtimeutil.HandleError(c.deleteWorkflow(ctx, key.(string)))
+	runtimeutil.HandleError(c.deleteWorkflow(ctx, key))
 
 	return true
 }

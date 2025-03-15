@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - "main"
+      - "release-*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +27,7 @@ jobs:
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -56,8 +57,11 @@ jobs:
             e2e-tests:
               - *tests
               # plus manifests and SDKs that are used in E2E tests
+              - Dockerfile
               - manifests/**
               - sdks/**
+              # example test suite
+              - examples/**
             codegen:
               - *common
               # generated files
@@ -107,13 +111,13 @@ jobs:
     name: Unit Tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload coverage report
@@ -135,10 +139,10 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
-      - run: go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
         env:
           KUBECONFIG: /dev/null
       - name: Upload coverage report
@@ -150,11 +154,44 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  argoexec-image:
-    name: argoexec-image
-    # needs: [ lint ]
-    runs-on: ubuntu-latest
+  build-binaries:
+    name: Build Binaries
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: controller
+          - target: cli
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: "1.23"
+          cache: true
+      - name: Build
+        run: make ${{matrix.target}}
+      - name: Upload
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: ${{matrix.target}}
+          path: dist
+          if-no-files-found: error
+
+  argo-images:
+    name: argo-images
+    # needs: [ lint ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: argoexec
+          - image: argocli
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
@@ -162,24 +199,26 @@ jobs:
         uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
         with:
           context: .
-          tags: quay.io/argoproj/argoexec:latest
-          outputs: type=docker,dest=/tmp/argoexec_image.tar
-          target: argoexec
+          tags: quay.io/argoproj/${{matrix.image}}:latest
+          outputs: type=docker,dest=/tmp/${{matrix.image}}_image.tar
+          target: ${{matrix.image}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
         with:
-          name: argoexec
-          path: /tmp/argoexec_image.tar
+          name: ${{matrix.image}}_image.tar
+          path: /tmp/${{matrix.image}}_image.tar
           if-no-files-found: error
 
   e2e-tests:
     name: E2E Tests
-    needs: [ changed-files, argoexec-image ]
+    needs: [ changed-files, argo-images, build-binaries ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    # These tests usually finish in ~25m, but occasionally they take much longer due to resource
+    # contention on the runner, which we have no control over.
+    timeout-minutes: 60
     env:
       KUBECONFIG: /home/runner/.kubeconfig
       E2E_ENV_FACTOR: 2
@@ -189,40 +228,62 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+            use-api: false
           - test: test-corefunctional
             profile: minimal
+            use-api: false
           - test: test-functional
             profile: minimal
+            use-api: false
           - test: test-api
             profile: mysql
+            use-api: true
+          - test: test-api
+            profile: postgres
+            use-api: true
           - test: test-cli
             profile: mysql
+            use-api: true
           - test: test-cron
             profile: minimal
+            use-api: false
           - test: test-examples
             profile: minimal
+            use-api: false
           - test: test-plugins
             profile: plugins
+            use-api: false
           - test: test-java-sdk
             profile: minimal
+            use-api: true
           - test: test-python-sdk
             profile: minimal
+            use-api: true
           - test: test-executor
-            install_k3s_version: v1.26.15+k3s1
+            k8s_version: min
             profile: minimal
+            use-api: false
           - test: test-corefunctional
-            install_k3s_version: v1.26.15+k3s1
+            k8s_version: min
             profile: minimal
+            use-api: false
           - test: test-functional
-            install_k3s_version: v1.26.15+k3s1
+            k8s_version: min
             profile: minimal
+            use-api: false
     steps:
-      - name: Install socat (needed by Kubernetes)
-        run: sudo apt-get -y install socat
+      - name: Free up unused disk space
+        run: |
+          printf "==> Available space before cleanup\n"
+          df -h
+          # these directories are not used by E2E tests
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          printf "==> Available space after cleanup\n"
+          df -h
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -237,27 +298,52 @@ jobs:
         with:
           python-version: '3.x'
           cache: pip
+      - name: Install socat (needed by Kubernetes) and kit
+        # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
+        # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
+        # Running "make kit" isn't strictly necessary, since it would be installed automatically by "make start",
+        # but it's noisy and makes the logs for "Start controller/API" hard to follow.
+        run: sudo apt-get -y install socat && make kit
       - name: Install and start K3S
+        env:
+          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
         run: |
-          if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.29.3+k3s1
-          else
-            export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
-          fi
-          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          . hack/k8s-versions.sh
+          export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
+
+          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
+            INSTALL_K3S_EXEC="--docker --kubelet-arg=config=${GITHUB_WORKSPACE}/test/e2e/manifests/kubelet-configuration.yaml" \
+            K3S_KUBECONFIG_MODE=644 \
+            sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
           echo "- name: fake_token_user" >> $KUBECONFIG
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - name: Download argoexec image
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+      - name: Download images
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: argoexec
+          pattern: '*_image.tar'
           path: /tmp
-      - name: Load argoexec image
-        run: docker load < /tmp/argoexec_image.tar
+      - name: Load images
+        run: |
+          set -eux
+          docker load < /tmp/argoexec_image.tar/argoexec_image.tar
+          docker load < /tmp/argocli_image.tar/argocli_image.tar
+      - name: Download controller
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: controller
+          path: dist/
+      - name: Download CLI
+        if: ${{matrix.use-api}}
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: cli
+          path: dist/
+      - name: Prepare binaries
+        run: chmod +x dist/* && make --touch dist/*
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -265,28 +351,25 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
-      - name: Install manifests
-        run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
-      - name: Build controller
-        run: make controller kit STATIC_FILES=false
-      - name: Build CLI
-        run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
       - name: Start controller/API
         run: |
           make start PROFILE=${{matrix.profile}} \
             AUTH_MODE=client STATIC_FILES=false \
             LOG_LEVEL=info \
-            API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} \
+            API=${{matrix.use-api}} \
             UI=false \
-            POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
-      - name: Wait for controller to be up
-        run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+            POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
+          make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
         timeout-minutes: 5
+      - name: Validate release manifests
+        run: make manifests-validate
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
 
       # failure debugging below
+      - name: Failure debug - k3s logs
+        if: ${{ failure() }}
+        run: journalctl -u k3s
       - name: Failure debug - describe MinIO/MySQL deployment
         if: ${{ failure() }}
         run: |
@@ -318,9 +401,9 @@ jobs:
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - name: Failure debug - Wait container logs
+      - name: Failure debug - Workflow Pod logs
         if: ${{ failure() }}
-        run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
+        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
   # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
   # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
@@ -329,7 +412,7 @@ jobs:
     name: E2E Tests - Composite result
     needs: [ e2e-tests ]
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - run: |
           result="${{ needs.e2e-tests.result }}"
@@ -344,7 +427,7 @@ jobs:
     name: Codegen
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
@@ -352,7 +435,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - name: Install protoc
         run: |
@@ -381,7 +464,7 @@ jobs:
     name: Lint
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
     env:
       GOPATH: /home/runner/go
@@ -389,7 +472,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
@@ -403,7 +486,7 @@ jobs:
     name: UI
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096

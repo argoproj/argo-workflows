@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write  # for peter-evans/create-pull-request to create branch
       pull-requests: write  # for peter-evans/create-pull-request to create a PR
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -28,7 +28,7 @@ jobs:
       - run: ./hack/changelog.sh > CHANGELOG.md
       - uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # v6.0.1
         with:
-          title: 'docs: updated CHANGELOG.md'
-          commit-message: 'docs: updated CHANGELOG.md'
+          title: 'docs: update CHANGELOG.md for ${{ github.ref_name }}'
+          commit-message: 'docs: update CHANGELOG.md for ${{ github.ref_name }}'
           branch: create-pull-request/changelog
           signoff: true

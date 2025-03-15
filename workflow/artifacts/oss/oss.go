@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math"
@@ -16,7 +17,6 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -40,7 +40,7 @@ var (
 	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
 
 	// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
-	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge", "InternalError"}
 	bucketLogFilePrefix    = "bucket-log-"
 	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
 )
@@ -86,6 +86,13 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
+
+	// for oss driver, the proxy cannot be configured through environment variables
+	// ref: https://help.aliyun.com/zh/cli/use-an-http-proxy-server#section-5yf-ejl-jwf
+	if proxy, ok := os.LookupEnv("https_proxy"); ok {
+		options = append(options, oss.Proxy(proxy))
+	}
+
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
@@ -159,9 +166,45 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 	return err
 }
 
-func (ossDriver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
-	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, ossDriver)
+// OpenStream opens a stream reader for an artifact from OSS compliant storage
+func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	var stream io.ReadCloser
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			log.Infof("OSS OpenStream, key: %s", inputArtifact.OSS.Key)
+			osscli, err := ossDriver.newOSSClient()
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucketName := inputArtifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucket, err := osscli.Bucket(bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			s, origErr := bucket.GetObject(inputArtifact.OSS.Key)
+			if origErr == nil {
+				stream = s
+				return true, nil
+			}
+			if !IsOssErrCode(err, "NoSuchKey") {
+				return !isTransientOSSErr(origErr), fmt.Errorf("failed to get file: %w", origErr)
+			}
+			isDir, err := IsOssDirectory(bucket, inputArtifact.OSS.Key)
+			if err != nil {
+				return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, inputArtifact.OSS.Key, err)
+			}
+			if !isDir {
+				return false, origErr
+			}
+			// directory case:
+			// todo: make a .tgz file which can be streamed to user
+			return false, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
+		})
+	return stream, err
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
@@ -202,7 +245,9 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 			objectName := outputArtifact.OSS.Key
 			if outputArtifact.OSS.LifecycleRule != nil {
 				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
-				return !isTransientOSSErr(err), err
+				if err != nil {
+					return !isTransientOSSErr(err), err
+				}
 			}
 			if isDir {
 				if err = putDirectory(bucket, objectName, path); err != nil {
@@ -315,33 +360,33 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
 	}
 
-	// Set expiration rule.
-	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
-	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
+	// Delete the current version objects after a period of time.
+	// If BucketVersioning is enbaled, the objects will turn to non-current version.
 	expiration := oss.LifecycleExpiration{
-		ExpiredObjectDeleteMarker: pointer.Bool(true),
+		Days: markDeletionAfterDays,
 	}
 	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
-	versionTransition := oss.LifecycleVersionTransition{
-		NoncurrentDays: markInfrequentAccessAfterDays,
-		StorageClass:   oss.StorageIA,
+	transition := oss.LifecycleTransition{
+		Days:         markInfrequentAccessAfterDays,
+		StorageClass: oss.StorageIA,
 	}
-	// Mark deletion after a period of time.
-	versionExpiration := oss.LifecycleVersionExpiration{
-		NoncurrentDays: markDeletionAfterDays,
+	// Delete the aborted uploaded parts after a period of time.
+	abortMultipartUpload := oss.LifecycleAbortMultipartUpload{
+		Days: markDeletionAfterDays,
 	}
-	versionTransitionRule := oss.LifecycleRule{
-		ID:                    "version-transition-rule",
-		Prefix:                ossArtifact.Key,
-		Status:                string(oss.VersionEnabled),
-		Expiration:            &expiration,
-		NonVersionExpiration:  &versionExpiration,
-		NonVersionTransitions: []oss.LifecycleVersionTransition{versionTransition},
+
+	keySha := fmt.Sprintf("%x", sha256.Sum256([]byte(ossArtifact.Key)))
+	rule := oss.LifecycleRule{
+		ID:                   keySha,
+		Prefix:               ossArtifact.Key,
+		Status:               string(oss.VersionEnabled),
+		Expiration:           &expiration,
+		Transitions:          []oss.LifecycleTransition{transition},
+		AbortMultipartUpload: &abortMultipartUpload,
 	}
 
 	// Set lifecycle rules to the bucket.
-	rules := []oss.LifecycleRule{expirationRule, versionTransitionRule}
-	err := client.SetBucketLifecycle(ossArtifact.Bucket, rules)
+	err := client.SetBucketLifecycle(ossArtifact.Bucket, []oss.LifecycleRule{rule})
 	return err
 }
 

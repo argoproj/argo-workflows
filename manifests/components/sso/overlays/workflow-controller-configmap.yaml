@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  sso: |
+    issuer: http://dex:5556/dex
+    issuerAlias: http://dex:5556/dex
+    clientId:
+      name: argo-server-sso
+      key: clientID
+    clientSecret:
+      name: argo-server-sso
+      key: clientSecret
+    redirectUrl: http://localhost:8080/oauth2/callback
+    scopes:
+    - groups
+    - email
+    - profile
+    rbac:
+      enabled: true

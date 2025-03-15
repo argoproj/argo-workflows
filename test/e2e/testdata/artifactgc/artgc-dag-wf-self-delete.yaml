@@ -38,7 +38,7 @@ spec:
             dependencies: [delay-delete-workflow]
     - name: artgc-dag-delay-delete
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         volumeMounts:
           - name: artifacts
             mountPath: /mnt/vol
@@ -59,8 +59,9 @@ spec:
             done
     - name: artgc-dag-workflow-deleter
       container:
-        image: argoproj/argocli:latest
-        args: 
+        image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
+        args:
           - delete
           - -l
           - workflows.argoproj.io/workflow=artgc-dag-wf-self-delete
@@ -71,7 +72,7 @@ spec:
         labels:
           template: "artgc-dag-artifact-creator"
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         volumeMounts:
           - name: artifacts
             mountPath: /mnt/vol

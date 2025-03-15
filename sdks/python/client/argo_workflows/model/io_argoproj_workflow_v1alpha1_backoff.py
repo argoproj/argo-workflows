@@ -81,6 +81,7 @@ class IoArgoprojWorkflowV1alpha1Backoff(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'cap': (str,),  # noqa: E501
             'duration': (str,),  # noqa: E501
             'factor': (str,),  # noqa: E501
             'max_duration': (str,),  # noqa: E501
@@ -92,6 +93,7 @@ class IoArgoprojWorkflowV1alpha1Backoff(ModelNormal):
 
 
     attribute_map = {
+        'cap': 'cap',  # noqa: E501
         'duration': 'duration',  # noqa: E501
         'factor': 'factor',  # noqa: E501
         'max_duration': 'maxDuration',  # noqa: E501
@@ -138,9 +140,10 @@ class IoArgoprojWorkflowV1alpha1Backoff(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cap (str): Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap. [optional]  # noqa: E501
             duration (str): Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\"). [optional]  # noqa: E501
             factor (str): [optional]  # noqa: E501
-            max_duration (str): MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. [optional]  # noqa: E501
+            max_duration (str): MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -222,9 +225,10 @@ class IoArgoprojWorkflowV1alpha1Backoff(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cap (str): Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap. [optional]  # noqa: E501
             duration (str): Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\"). [optional]  # noqa: E501
             factor (str): [optional]  # noqa: E501
-            max_duration (str): MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. [optional]  # noqa: E501
+            max_duration (str): MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

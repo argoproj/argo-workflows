@@ -25,6 +25,12 @@ type change interface {
 	apply(session db.Session) error
 }
 
+type noop struct{}
+
+func (s noop) apply(session db.Session) error {
+	return nil
+}
+
 func ternary(condition bool, left, right change) change {
 	if condition {
 		return left
@@ -34,12 +40,43 @@ func ternary(condition bool, left, right change) change {
 }
 
 func (m migrate) Exec(ctx context.Context) (err error) {
+
+	dbType := dbTypeFor(m.session)
+
 	{
 		// poor mans SQL migration
-		_, err = m.session.SQL().Exec("create table if not exists schema_history(schema_version int not null)")
+		_, err = m.session.SQL().Exec("create table if not exists schema_history(schema_version int not null, primary key(schema_version))")
 		if err != nil {
 			return err
 		}
+
+		// Ensure the schema_history table has a primary key, creating it if necessary
+		// This logic is implemented separately from regular migrations to improve compatibility with databases running in strict or HA modes
+		dbIdentifierColumn := "table_schema"
+		if dbType == Postgres {
+			dbIdentifierColumn = "table_catalog"
+		}
+		rows, err := m.session.SQL().Query(
+			"select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = 'schema_history' and "+dbIdentifierColumn+" = ?",
+			m.session.Name())
+		if err != nil {
+			return err
+		}
+		defer func() {
+			tmpErr := rows.Close()
+			if err == nil {
+				err = tmpErr
+			}
+		}()
+		if !rows.Next() {
+			_, err := m.session.SQL().Exec("alter table schema_history add primary key(schema_version)")
+			if err != nil {
+				return err
+			}
+		} else if err := rows.Err(); err != nil {
+			return err
+		}
+
 		rs, err := m.session.SQL().Query("select schema_version from schema_history")
 		if err != nil {
 			return err
@@ -59,7 +96,6 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	dbType := dbTypeFor(m.session)
 
 	log.WithFields(log.Fields{"clusterName": m.clusterName, "dbType": dbType}).Info("Migrating database schema")
 
@@ -258,6 +294,17 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 		// add indexes for list archived workflow performance. #8836
 		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (startedat)`),
 		ansiSQLChange(`create index argo_archived_workflows_labels_i1 on argo_archived_workflows_labels (name,value)`),
+		// PostgreSQL only: convert argo_archived_workflows.workflow column to JSONB for performance and consistency with MySQL. #13779
+		ternary(dbType == MySQL,
+			noop{},
+			ansiSQLChange(`alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`),
+		),
+		// change argo_archived_workflows_i4 index to include clustername so MySQL uses it for listing archived workflows. #13601
+		ternary(dbType == MySQL,
+			ansiSQLChange(`drop index argo_archived_workflows_i4 on argo_archived_workflows`),
+			ansiSQLChange(`drop index argo_archived_workflows_i4`),
+		),
+		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (clustername, startedat)`),
 	} {
 		err := m.applyChange(changeSchemaVersion, change)
 		if err != nil {

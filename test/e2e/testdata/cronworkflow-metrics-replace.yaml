@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-metric-replace
+spec:
+  schedules:
+    - "* * * * *"
+  concurrencyPolicy: "Replace"
+  startingDeadlineSeconds: 0
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: sleep
+    templates:
+      - name: sleep
+        container:
+          image: argoproj/argosay:v2
+          args: ["sleep", "120"]

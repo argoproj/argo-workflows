@@ -1,4 +1,5 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, https://argo-workflows.readthedocs.io/en/latest/] # https://docs.readthedocs.io/en/stable/canonical-urls.html#how-to-specify-the-canonical-url, https://www.mkdocs.org/user-guide/configuration/#environment-variables
 repo_url: https://github.com/argoproj/argo-workflows
 edit_uri: https://github.com/argoproj/argo-workflows/edit/main/docs
 strict: true
@@ -32,6 +33,7 @@ markdown_extensions:
   - admonition
   - md_in_html
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
@@ -53,6 +55,7 @@ validation:
 exclude_docs: |
   /proposals/
   /requirements.txt
+  /tested-kubernetes-versions.md
 
 nav:
   - Home: README.md
@@ -86,6 +89,7 @@ nav:
           - walk-through/exit-handlers.md
           - walk-through/timeouts.md
           # template types
+          - walk-through/annotations.md
           - walk-through/suspending.md
           - walk-through/kubernetes-resources.md
           # container configuration
@@ -236,6 +240,7 @@ nav:
       - installation.md
       - releases.md
       - upgrading.md
+      - new-features.md
       - security.md
       - Configuration:
           - managed-namespace.md
@@ -248,10 +253,12 @@ nav:
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
+          - deprecations.md
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md
+          - parallelism.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md

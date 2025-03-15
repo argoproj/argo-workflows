@@ -32,7 +32,7 @@ spec:
             dependencies: [delay-stop-workflow]
     - name: delay-stop
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         volumeMounts:
           - name: artifacts
             mountPath: /mnt/vol
@@ -53,8 +53,9 @@ spec:
             done
     - name: workflow-stopper
       container:
-        image: argoproj/argocli:latest
-        args: 
+        image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
+        args:
           - stop
           - -l
           - workflows.argoproj.io/workflow=wf-stopped
@@ -65,7 +66,7 @@ spec:
         labels:
           template: "artifact-creator"
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         volumeMounts:
           - name: artifacts
             mountPath: /mnt/vol

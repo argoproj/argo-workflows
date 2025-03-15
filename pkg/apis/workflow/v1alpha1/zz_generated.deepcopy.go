@@ -2527,11 +2527,6 @@ func (in *PodGC) DeepCopyInto(out *PodGC) {
 		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.DeleteDelayDuration != nil {
-		in, out := &in.DeleteDelayDuration, &out.DeleteDelayDuration
-		*out = new(metav1.Duration)
-		**out = **in
-	}
 	return
 }
 
@@ -2768,6 +2763,11 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 	}
 	if in.SecretKeySecret != nil {
 		in, out := &in.SecretKeySecret, &out.SecretKeySecret
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.SessionTokenSecret != nil {
+		in, out := &in.SessionTokenSecret, &out.SessionTokenSecret
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
@@ -3055,6 +3055,28 @@ func (in *Synchronization) DeepCopyInto(out *Synchronization) {
 		*out = new(Mutex)
 		**out = **in
 	}
+	if in.Semaphores != nil {
+		in, out := &in.Semaphores, &out.Semaphores
+		*out = make([]*SemaphoreRef, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(SemaphoreRef)
+				(*in).DeepCopyInto(*out)
+			}
+		}
+	}
+	if in.Mutexes != nil {
+		in, out := &in.Mutexes, &out.Mutexes
+		*out = make([]*Mutex, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(Mutex)
+				**out = **in
+			}
+		}
+	}
 	return
 }
 
@@ -3274,11 +3296,6 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.Priority != nil {
-		in, out := &in.Priority, &out.Priority
-		*out = new(int32)
-		**out = **in
-	}
 	if in.AutomountServiceAccountToken != nil {
 		in, out := &in.AutomountServiceAccountToken, &out.AutomountServiceAccountToken
 		*out = new(bool)
@@ -3315,6 +3332,13 @@ func (in *Template) DeepCopyInto(out *Template) {
 		in, out := &in.Memoize, &out.Memoize
 		*out = new(Memoize)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.Annotations != nil {
+		in, out := &in.Annotations, &out.Annotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	return
 }
@@ -3832,11 +3856,6 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.PodGC, &out.PodGC
 		*out = new(PodGC)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.PodPriority != nil {
-		in, out := &in.PodPriority, &out.PodPriority
-		*out = new(int32)
-		**out = **in
 	}
 	if in.HostAliases != nil {
 		in, out := &in.HostAliases, &out.HostAliases

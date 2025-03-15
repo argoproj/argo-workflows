@@ -7,24 +7,30 @@ import (
 	"io"
 	"sort"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/fields"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -32,23 +38,61 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+)
+
+const (
+	latestAlias                  = "@latest"
+	reSyncDuration               = 20 * time.Minute
+	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
 type workflowServer struct {
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
-	wfArchiveServer       workflowarchivepkg.ArchivedWorkflowServiceServer
+	wfArchive             sqldb.WorkflowArchive
+	wfLister              store.WorkflowLister
+	wfReflector           *cache.Reflector
+	wftmplStore           servertypes.WorkflowTemplateStore
+	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
+	wfDefaults            *wfv1.Workflow
 }
 
-const latestAlias = "@latest"
+var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
-// NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchiveServer}
+// NewWorkflowServer returns a new WorkflowServer
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) *workflowServer {
+	ws := &workflowServer{
+		instanceIDService:     instanceIDService,
+		offloadNodeStatusRepo: offloadNodeStatusRepo,
+		hydrator:              hydrator.New(offloadNodeStatusRepo),
+		wfArchive:             wfArchive,
+		wfLister:              wfLister,
+		wftmplStore:           wftmplStore,
+		cwftmplStore:          cwftmplStore,
+		wfDefaults:            wfDefaults,
+	}
+	if wfStore != nil && namespace != nil {
+		lw := &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).List(context.Background(), options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).Watch(context.Background(), options)
+			},
+		}
+		wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)
+		ws.wfReflector = wfReflector
+	}
+	return ws
+}
+
+func (s *workflowServer) Run(stopCh <-chan struct{}) {
+	if s.wfReflector != nil {
+		s.wfReflector.Run(stopCh)
+	}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -63,12 +107,12 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	}
 
 	s.instanceIDService.Label(req.Workflow)
-	creator.Label(ctx, req.Workflow)
+	creator.LabelCreator(ctx, req.Workflow)
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
+	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{})
+	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -129,65 +173,77 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func mergeWithArchivedWorkflows(liveWfs wfv1.WorkflowList, archivedWfs wfv1.WorkflowList, numWfsToKeep int) *wfv1.WorkflowList {
-	var mergedWfs []wfv1.Workflow
-	var uidToWfs = map[types.UID][]wfv1.Workflow{}
-	for _, item := range liveWfs.Items {
-		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-	}
-	for _, item := range archivedWfs.Items {
-		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-	}
-
-	for _, v := range uidToWfs {
-		// The archived workflow we saved in the database have "Persisted" as the archival status.
-		// Prioritize 'Archived' over 'Persisted' because 'Archived' means the workflow is in the cluster
-		if len(v) == 1 {
-			mergedWfs = append(mergedWfs, v[0])
-		} else {
-			if ok := v[0].Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"; ok {
-				mergedWfs = append(mergedWfs, v[0])
-			} else {
-				mergedWfs = append(mergedWfs, v[1])
-			}
-		}
-	}
-	mergedWfsList := wfv1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
-	sort.Sort(mergedWfsList.Items)
-	numWfs := 0
-	var finalWfs []wfv1.Workflow
-	for _, item := range mergedWfsList.Items {
-		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
-			finalWfs = append(finalWfs, item)
-			numWfs += 1
-		}
-	}
-	return &wfv1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
-}
-
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
-	wfClient := auth.GetWfClient(ctx)
-
-	listOption := &metav1.ListOptions{}
+	listOption := metav1.ListOptions{}
 	if req.ListOptions != nil {
-		listOption = req.ListOptions
+		listOption = *req.ListOptions
 	}
-	s.instanceIDService.With(listOption)
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(ctx, *listOption)
+	s.instanceIDService.With(&listOption)
+
+	options, err := sutils.BuildListOptions(listOption, req.Namespace, "", req.NameFilter, req.CreatedAfter, req.FinishedBefore)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// verify if we have permission to list Workflows
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	archivedWfList, err := s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
-		ListOptions: listOption,
-		NamePrefix:  "",
-		Namespace:   req.Namespace,
-	})
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", options.Namespace, options.Namespace))
+	}
+
+	var wfs wfv1.Workflows
+	liveWfCount, err := s.wfLister.CountWorkflows(ctx, req.Namespace, req.NameFilter, req.CreatedAfter, req.FinishedBefore, listOption)
 	if err != nil {
-		log.Warnf("unable to list archived workflows:%v", err)
-	} else {
-		if archivedWfList != nil {
-			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList, int(listOption.Limit))
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	archivedCount, err := s.wfArchive.CountWorkflows(options)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	totalCount := liveWfCount + archivedCount
+
+	// first fetch live workflows
+	liveWfList := &wfv1.WorkflowList{}
+	if liveWfCount > 0 && (options.Limit == 0 || options.Offset < int(liveWfCount)) {
+		liveWfList, err = s.wfLister.ListWorkflows(ctx, req.Namespace, req.NameFilter, req.CreatedAfter, req.FinishedBefore, listOption)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
+		wfs = append(wfs, liveWfList.Items...)
+	}
+
+	// then fetch archived workflows
+	if options.Limit == 0 ||
+		int64(options.Offset+options.Limit) > liveWfCount {
+		archivedOffset := options.Offset - int(liveWfCount)
+		archivedLimit := options.Limit
+		if archivedOffset < 0 {
+			archivedOffset = 0
+			archivedLimit = options.Limit - len(liveWfList.Items)
+		}
+		archivedWfList, err := s.wfArchive.ListWorkflows(options.WithLimit(archivedLimit).WithOffset(archivedOffset))
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		wfs = append(wfs, archivedWfList...)
+	}
+	meta := metav1.ListMeta{ResourceVersion: liveWfList.ResourceVersion}
+	if s.wfReflector != nil {
+		meta.ResourceVersion = s.wfReflector.LastSyncResourceVersion()
+	}
+	remainCount := totalCount - int64(options.Offset) - int64(len(wfs))
+	if remainCount < 0 {
+		remainCount = 0
+	}
+	if remainCount > 0 {
+		meta.Continue = fmt.Sprintf("%v", options.Offset+len(wfs))
+	}
+	if options.ShowRemainingItemCount {
+		meta.RemainingItemCount = &remainCount
 	}
 
 	cleaner := fields.NewCleaner(req.Fields)
@@ -196,10 +252,10 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		for i, wf := range wfList.Items {
+		for i, wf := range wfs {
 			if wf.Status.IsOffloadNodeStatus() {
 				if s.offloadNodeStatusRepo.IsEnabled() {
-					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+					wfs[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
 				} else {
 					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
 				}
@@ -208,9 +264,9 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	// we make no promises about the overall list sorting, we just sort each page
-	sort.Sort(wfList.Items)
+	sort.Sort(wfs)
 
-	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
+	res := &wfv1.WorkflowList{ListMeta: meta, Items: wfs}
 	newRes := &wfv1.WorkflowList{}
 	if ok, err := cleaner.Clean(res, &newRes); err != nil {
 		return nil, sutils.ToStatusError(fmt.Errorf("unable to CleanFields in request: %w", err), codes.Internal)
@@ -455,7 +511,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, &wfv1.SubmitOpts{})
+	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -611,13 +667,12 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	if req.Workflow == nil {
 		return nil, fmt.Errorf("unable to get a workflow")
 	}
-	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
+	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 	s.instanceIDService.Label(req.Workflow)
-	creator.Label(ctx, req.Workflow)
+	creator.LabelCreator(ctx, req.Workflow)
 
-	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
@@ -640,7 +695,6 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	req.Name = wf.Name
 
 	err = ws.SendHeader(metadata.MD{})
-
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}
@@ -662,20 +716,32 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 		log.Debugf("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
 	}
-	var err error
+
 	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
+	// fallback to retrieve from archived workflows
 	if wf == nil || origErr != nil {
-		wf, err = s.wfArchiveServer.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{
-			Namespace: namespace,
-			Name:      name,
-		})
+		allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 		if err != nil {
-			log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
-			// We only return the original error to preserve the original status code.
-			return nil, sutils.ToStatusError(origErr, codes.Internal)
+			return nil, getWorkflowOrigErr(origErr, err)
+		}
+		if !allowed {
+			err = status.Error(codes.PermissionDenied, "permission denied")
+			return nil, getWorkflowOrigErr(origErr, err)
+		}
+
+		wf, err = s.wfArchive.GetWorkflow("", namespace, name)
+		if wf == nil || err != nil {
+			return nil, getWorkflowOrigErr(origErr, err)
 		}
 	}
 	return wf, nil
+}
+
+// getWorkflowOrigErr only returns the original error to preserve the original status code
+// it logs out the new error
+func getWorkflowOrigErr(origErr error, err error) error {
+	log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
+	return sutils.ToStatusError(origErr, codes.Internal)
 }
 
 func (s *workflowServer) validateWorkflow(wf *wfv1.Workflow) error {
@@ -720,19 +786,36 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	}
 
 	s.instanceIDService.Label(wf)
-	creator.Label(ctx, wf)
+	creator.LabelCreator(ctx, wf)
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
+	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
+	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
+
+	// if we are doing a normal dryRun, just return the workflow un-altered
+	if req.SubmitOptions != nil && req.SubmitOptions.DryRun {
+		return wf, nil
+	}
+	if req.SubmitOptions != nil && req.SubmitOptions.ServerDryRun {
+		// For a server dry run we require a namespace
+		if wf.Namespace == "" {
+			wf.Namespace = req.Namespace
+		}
+		workflow, err := util.CreateServerDryRun(ctx, wf, wfClient)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		}
+		return workflow, nil
+	}
+
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)

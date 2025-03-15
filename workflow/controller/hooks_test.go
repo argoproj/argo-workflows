@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -998,7 +999,7 @@ spec:
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	err, _ := woc.podReconciliation(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
 	assert.True(t, node.NodeFlag.Hooked)
@@ -1141,7 +1142,7 @@ spec:
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, pod, metav1.UpdateOptions{})
 	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(pod))
-	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
@@ -1231,7 +1232,7 @@ spec:
 	pod := pods.Items[0]
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
 	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(&pod))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)

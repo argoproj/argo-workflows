@@ -1,0 +1,38 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handler-fail-missing-output-
+  labels:
+    test: test
+spec:
+  entrypoint: failure-workflow
+  templates:
+    - name: failure-workflow
+      steps:
+        - - name: step1
+            template: intentional-fail
+            hooks:
+              exit:
+                template: lifecycle-hook
+                arguments:
+                  parameters:
+                    - name: hello-param
+                      value: '{{steps.step1.outputs.parameters.hello-param}}'
+    - name: intentional-fail
+      outputs:
+        parameters:
+          - name: hello-param
+            valueFrom:
+              path: /tmp/hello_world.txt
+      container:
+        image: argoproj/argosay:v2
+        command: ["sh", "-c"]
+        args: ["echo intentional failure; exit 1"]
+    - name: lifecycle-hook
+      inputs:
+        parameters:
+          - name: hello-param
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "Hello param: {{inputs.parameters.hello-param}}"]

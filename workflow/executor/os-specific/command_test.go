@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleStartCloser(t *testing.T) {
@@ -26,9 +27,9 @@ func TestSimpleStartCloser(t *testing.T) {
 	cmd.Stdout = slowWriter
 
 	closer, err := StartCommand(cmd)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = cmd.Wait()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// Wait for echo command to exit before calling closer
 	time.Sleep(100 * time.Millisecond)
 	closer()

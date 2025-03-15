@@ -1,5 +1,4 @@
 //go:build corefunctional
-// +build corefunctional
 
 package e2e
 
@@ -9,9 +8,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -117,7 +118,6 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 }
 
 func (s *FunctionalSuite) TestJSONVariables() {
-
 	s.Given().
 		Workflow("@testdata/json-variables.yaml").
 		When().
@@ -127,7 +127,7 @@ func (s *FunctionalSuite) TestJSONVariables() {
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
-					assert.Equal(t, 3, len(c.Args))
+					assert.Len(t, c.Args, 3)
 					assert.Equal(t, "myLabelValue", c.Args[0])
 					assert.Equal(t, "myAnnotationValue", c.Args[1])
 					assert.Equal(t, "myParamValue", c.Args[2])
@@ -159,7 +159,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestWorkflowRetention() {
-	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
 	s.Given().
 		Workflow("@testdata/exit-1.yaml").
 		When().
@@ -175,9 +174,7 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
-		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
-			return len(list) == 2
-		})
+		WaitForWorkflowListFailedCount(2)
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
@@ -237,11 +234,10 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-				assert.Len(t, nodeStatus.Children, 1)
-				assert.Len(t, nodeStatus.OutboundNodes, 1)
-			}
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			assert.Len(t, nodeStatus.Children, 1)
+			assert.Len(t, nodeStatus.OutboundNodes, 1)
 		})
 }
 
@@ -305,10 +301,9 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 					t.FailNow()
 				case <-ticker.C:
 					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
-					if assert.NoError(t, err) {
-						if len(list.Items) == 0 {
-							return
-						}
+					require.NoError(t, err)
+					if len(list.Items) == 0 {
+						return
 					}
 				}
 			}
@@ -338,7 +333,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 					case "WorkflowRunning":
 					case "WorkflowNodeFailed":
 						assert.Contains(t, e.Message, "Failed node failed-step-event-")
-						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
+						assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
 						assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
 					case "WorkflowFailed":
 						assert.Contains(t, e.Message, "exit code 1")
@@ -419,12 +414,12 @@ func (s *FunctionalSuite) TestArtifactRepositoryRef() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.NotEmpty(t, status.ArtifactRepositoryRef) {
-				assert.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
-				assert.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
-				assert.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
-				assert.False(t, status.ArtifactRepositoryRef.Default)
-			}
+			require.NotEmpty(t, status.ArtifactRepositoryRef)
+			assert.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
+			assert.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
+			assert.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
+			assert.False(t, status.ArtifactRepositoryRef.Default)
+
 			// these should never be set because we must get them from the artifactRepositoryRef
 			generated := status.Nodes.FindByDisplayName("generate").Outputs.Artifacts[0].S3
 			assert.Empty(t, generated.Bucket)
@@ -444,11 +439,10 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.Len(t, status.Nodes, 5) {
-				nodeStatus := status.Nodes.FindByDisplayName("sleep")
-				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
-			}
+			require.Len(t, status.Nodes, 5)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
 		})
 }
 
@@ -461,11 +455,10 @@ func (s *FunctionalSuite) TestDAGEmptyParam() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.Len(t, status.Nodes, 3) {
-				nodeStatus := status.Nodes.FindByDisplayName("sleep")
-				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
-			}
+			require.Len(t, status.Nodes, 3)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
 		})
 }
 
@@ -567,9 +560,25 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("print(0:res:1)")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-			}
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestParameterAggregationFromOutputs() {
+	s.Given().
+		Workflow("@functional/param-aggregation-fromoutputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(time.Second * 90).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key1:value1)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key2:value2)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(2:key3:value3)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key4:value4)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key5:value5)"))
 		})
 }
 
@@ -742,7 +751,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.Equal(t, *p.Spec.ActiveDeadlineSeconds, int64(5))
+			assert.Equal(t, int64(5), *p.Spec.ActiveDeadlineSeconds)
 		})
 }
 
@@ -883,12 +892,12 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.Equal(t, *p.Spec.TerminationGracePeriodSeconds, int64(5))
+			assert.Equal(t, int64(5), *p.Spec.TerminationGracePeriodSeconds)
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
-					assert.Equal(t, c.Resources.Limits.Cpu().String(), "100m")
+					assert.Equal(t, "100m", c.Resources.Limits.Cpu().String())
 				} else if c.Name == "wait" {
-					assert.Equal(t, c.Resources.Limits.Cpu().String(), "101m")
+					assert.Equal(t, "101m", c.Resources.Limits.Cpu().String())
 				}
 			}
 		})
@@ -912,9 +921,9 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			paths := status.Nodes.FindByDisplayName("get-artifact-path")
-			if assert.NotNil(t, paths) {
-				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
-			}
+			require.NotNil(t, paths)
+			assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
+
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
 			for _, value := range status.TaskResultsCompletionStatus {
@@ -1061,9 +1070,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestStepLevelMemoizeNoOutput() {
@@ -1121,9 +1128,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestDAGLevelMemoize() {
@@ -1187,9 +1192,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestDAGLevelMemoizeNoOutput() {
@@ -1248,9 +1251,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestContainerSetRetryFail() {
@@ -1331,7 +1332,6 @@ func (s *FunctionalSuite) TestEntrypointName() {
 			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 			assert.Equal(t, "bar", n.Inputs.Parameters[0].Value.String())
 		})
-
 }
 
 func (s *FunctionalSuite) TestMissingStepsInUI() {
@@ -1344,7 +1344,7 @@ func (s *FunctionalSuite) TestMissingStepsInUI() {
 		ExpectWorkflowNode(wfv1.NodeWithName(`missing-steps[0].step1[0].execute-script`), func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
 			assert.NotNil(t, n)
 			assert.NotNil(t, n.Children)
-			assert.Equal(t, 1, len(n.Children))
+			assert.Len(t, n.Children, 1)
 		})
 }
 
@@ -1354,4 +1354,109 @@ func (s *FunctionalSuite) TestWithItemsWithHooks() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+// when you terminate a workflow with onexit handler,
+// then the onexit handler should fail along with steps and stepsGroup
+func (s *FunctionalSuite) TestTerminateWorkflowWhileOnExitHandlerRunning() {
+	s.Given().
+		Workflow("@functional/workflow-exit-handler-sleep.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+			a := wf.Status.Nodes.FindByDisplayName("workflow-exit-handler-sleep")
+			return wfv1.NodeSucceeded == a.Phase, "nodes succeeded"
+		})).
+		ShutdownWorkflow(wfv1.ShutdownStrategyTerminate).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			for _, node := range status.Nodes {
+				if node.Type == wfv1.NodeTypeStepGroup || node.Type == wfv1.NodeTypeSteps {
+					assert.Equal(t, wfv1.NodeFailed, node.Phase)
+				}
+			}
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+		})
+}
+
+// Exit handler ensure when failed steps ensure no crash and output parameter
+func (s *FunctionalSuite) TestWorkflowExitHandlerCrashEnsureNodeIsPresent() {
+	s.Given().
+		Workflow("@expectedfailures/exit-handler-fail-missing-output.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			var hasExitNode bool
+			var exitNodeName string
+
+			for _, node := range status.Nodes {
+				if !node.IsExitNode() {
+					continue
+				}
+				hasExitNode = true
+				exitNodeName = node.DisplayName
+			}
+			assert.True(t, hasExitNode)
+			assert.NotEmpty(t, exitNodeName)
+
+			hookNode := status.Nodes.FindByDisplayName(exitNodeName)
+
+			require.NotNil(t, hookNode)
+			assert.NotNil(t, hookNode.Inputs)
+			require.Len(t, hookNode.Inputs.Parameters, 1)
+			assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowParallelismStepFailFast() {
+	s.Given().
+		Workflow("@expectedfailures/parallelism-step-fail-fast.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "template has failed or errored children and failFast enabled", status.Message)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("[0]").Phase)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("step1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("step2").Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowParallelismDAGFailFast() {
+	s.Given().
+		Workflow("@expectedfailures/parallelism-dag-fail-fast.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "template has failed or errored children and failFast enabled", status.Message)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("task1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("task2").Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowInvalidServiceAccountError() {
+	s.Given().
+		Workflow("@expectedfailures/serviceaccount-insufficient-permissions.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectContainerLogs("main", func(t *testing.T, logs string) {
+			assert.Contains(t, logs, "hello argo")
+		}).
+		ExpectContainerLogs("wait", func(t *testing.T, logs string) {
+			assert.Contains(t, logs, "Error: workflowtaskresults.argoproj.io is forbidden: User \"system:serviceaccount:argo:github.com\" cannot create resource")
+			// Shouldn't have print help text
+			assert.NotContains(t, logs, "Usage:")
+		})
 }

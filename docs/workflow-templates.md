@@ -32,17 +32,17 @@ spec:
   - name: hello               # The first "template" in this Workflow, it is referenced by "entrypoint"
     steps:                    # The type of this "template" is "steps"
     - - name: hello
-        template: whalesay    # We reference our second "template" here
+        template: print-message # We reference our second "template" here
         arguments:
           parameters: [{name: message, value: "hello1"}]
 
-  - name: whalesay             # The second "template" in this Workflow, it is referenced by "hello"
+  - name: print-message       # The second "template" in this Workflow, it is referenced by "hello"
     inputs:
       parameters:
       - name: message
     container:                # The type of this "template" is "container"
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
 
@@ -69,19 +69,19 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-submittable
 spec:
-  entrypoint: whalesay-template     # Fields other than "arguments" and "templates" not supported in v2.4 - v2.6
+  entrypoint: print-message     # Fields other than "arguments" and "templates" not supported in v2.4 - v2.6
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay-template
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]
 ```
 
@@ -98,13 +98,13 @@ spec:
       - name: message
         value: hello world
   templates:
-    - name: whalesay-template
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]
 ```
 
@@ -138,12 +138,11 @@ kind: WorkflowTemplate
 metadata:
   name: hello-world-template-global-arg
 spec:
-  serviceAccountName: argo
   templates:
     - name: hello-world
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{workflow.parameters.global-parameter}}"]
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -151,14 +150,13 @@ kind: Workflow
 metadata:
   generateName: hello-world-wf-global-arg-
 spec:
-  serviceAccountName: argo
-  entrypoint: whalesay
+  entrypoint: print-message
   arguments:
     parameters:
       - name: global-parameter
         value: hello
   templates:
-    - name: whalesay
+    - name: print-message
       steps:
         - - name: hello-world
             templateRef:
@@ -182,8 +180,8 @@ spec:
           - name: msg
             value: "hello world"
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.msg}}"]
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -191,9 +189,9 @@ kind: Workflow
 metadata:
   generateName: hello-world-local-arg-
 spec:
-  entrypoint: whalesay
+  entrypoint: print-message
   templates:
-    - name: whalesay
+    - name: print-message
       steps:
         - - name: hello-world
             templateRef:
@@ -214,14 +212,14 @@ kind: Workflow
 metadata:
   generateName: workflow-template-hello-world-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     steps:                              # You should only reference external "templates" in a "steps" or "dag" "template".
-      - - name: call-whalesay-template
+      - - name: call-print-message
           templateRef:                  # You can reference a "template" from another "WorkflowTemplate" using this field
             name: workflow-template-1   # This is the name of the "WorkflowTemplate" CRD that contains the "template" you want
-            template: whalesay-template # This is the name of the "template" you want to reference
+            template: print-message     # This is the name of the "template" you want to reference
           arguments:                    # You can pass in arguments as normal
             parameters:
             - name: message
@@ -236,51 +234,20 @@ kind: Workflow
 metadata:
   generateName: workflow-template-hello-world-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     dag:
       tasks:
-        - name: call-whalesay-template
+        - name: call-print-message
           templateRef:
             name: workflow-template-1
-            template: whalesay-template
+            template: print-message
           arguments:
             parameters:
             - name: message
               value: "hello world"
 ```
-
-You should **never** reference another template directly on a `template` object (outside of a `steps` or `dag` template).
-This includes both using `template` and `templateRef`.
-This behavior is deprecated, no longer supported, and will be removed in a future version.
-
-Here is an example of a **deprecated** reference that **should not be used**:
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    template:                     # You should NEVER use "template" here. Use it under a "steps" or "dag" template (see above).
-    templateRef:                  # You should NEVER use "templateRef" here. Use it under a "steps" or "dag" template (see above).
-      name: workflow-template-1
-      template: whalesay-template
-    arguments:                    # Arguments here are ignored. Use them under a "steps" or "dag" template (see above).
-      parameters:
-      - name: message
-        value: "hello world"
-```
-
-The reasoning for deprecating this behavior is that a `template` is a "definition": it defines inputs and things to be
-done once instantiated. With this deprecated behavior, the same template object is allowed to be an "instantiator":
-to pass in "live" arguments and reference other templates (those other templates may be "definitions" or "instantiators").
-
-This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.
 
 ### Create `Workflow` from `WorkflowTemplate` Spec
 
@@ -295,7 +262,7 @@ kind: Workflow
 metadata:
   generateName: workflow-template-hello-world-
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
@@ -314,7 +281,6 @@ metadata:
 spec:
   workflowTemplateRef:
     name: workflow-template-submittable
-
 ```
 
 ## Managing `WorkflowTemplates`

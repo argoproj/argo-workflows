@@ -1,0 +1,159 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-node-info {
+    height: calc(100vh - 2 * #{$top-bar-height});
+    overflow-y: auto;
+
+    .tabs {
+        a {
+            padding-right: 0;
+            padding-left: 0;
+        }
+    }
+
+    &__multi-line {
+        line-height: 24px;
+        display: inline-block;
+        vertical-align: middle;
+        overflow-x: auto !important; // override `.workflow-details__atribute-grid pre` selector
+    }
+
+    &__artifact-details span {
+        padding-right: 0.5em;
+        padding-left: 0.5em;
+        border-left: 1px solid $argo-color-gray-5;
+
+        display: inline-block;
+        width: 33%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1em;
+
+        &:first-child {
+            padding-left: 0;
+            border-left: none;
+        }
+    }
+
+    &__containers {
+        position: relative;
+    }
+
+    &__sidecar-back {
+        position: absolute;
+        left: 16px;
+        top: 8px;
+        font-size: 2em !important;
+        z-index: 10;
+        height: 16px;
+        width: 16px;
+        cursor: pointer;
+        color: $argo-color-teal-5;
+    }
+
+    &__sidecar {
+        text-transform: uppercase;
+        border-top: 1px solid $argo-color-gray-5;
+        cursor: pointer;
+        font-size: 0.8em;
+
+        span {
+            color: $argo-color-teal-5;
+        }
+
+        i {
+            float: right;
+            font-size: 1.5em;
+        }
+
+        &:last-child {
+            border-bottom: 1px solid $argo-color-gray-5;
+            padding: 1em 0;
+        }
+    }
+
+    .row.header {
+        color: $argo-color-gray-8;
+        background-color: $argo-color-gray-1;
+        border-bottom: 1px solid $argo-color-gray-5;
+        display: flex;
+        line-height: 1.2em;
+        padding: 4px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &:hover {
+            overflow: visible;
+            white-space: normal;
+        }
+
+        .columns {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            text-align: left;
+            padding-left: 0;
+
+            &:hover {
+                overflow: visible;
+                white-space: normal;
+
+            }
+        }
+    }
+
+
+    .hoverable {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        transition: all 0.2s ease-in-out;
+        word-wrap: break-word;
+        word-break: break-all;
+        overflow-wrap: break-word;
+
+        &:hover {
+            overflow: visible;
+            white-space: normal;
+            position: relative;
+            z-index: 1;
+        }
+    }
+
+    .artifact-row {
+        color: $argo-color-gray-8;
+        display: flex;
+        border-bottom: 1px solid $argo-color-gray-5;
+        padding: 8px 0;
+        text-align: left;
+
+        &:hover {
+            background-color: $argo-color-gray-3;
+        }
+
+        .columns {
+            padding-left: 0;
+
+            &.artifact-name {
+                display: flex;
+
+                a {
+                    margin-right: 1em;
+                    text-decoration: none;
+                }
+
+                .artifact-name-text {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+            }
+        }
+    }
+}

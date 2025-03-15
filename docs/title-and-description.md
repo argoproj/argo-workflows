@@ -15,7 +15,7 @@ metadata:
 ```
 
 The above manifest will render as a row like the below image:
-![Title and Description Example](assets/workflow-title-and-description.png)
+![Title and Description Example](assets/title-and-description-workflow.png)
 
 ## Embedded Markdown
 
@@ -34,7 +34,7 @@ metadata:
 ```
 
 The above manifest will render as a row like the below image:
-![Markdown Example](assets/workflow-title-and-description-markdown.png)
+![Markdown Example](assets/title-and-description-markdown-workflow.png)
 
 Below are a few more examples:
 
@@ -49,7 +49,7 @@ metadata:
 metadata:
   name: wonderful-poochenheimer
 
-# 3. markdown titile, no description
+# 3. markdown title, no description
 metadata:
   annotations:
     workflows.argoproj.io/title: '**Build and test and test**'
@@ -60,15 +60,7 @@ metadata:
   annotations:
     workflows.argoproj.io/description: '`SuperDuperProject` PR #6529: Implement frobbing (aff39ee)'
 
-# 5. markdown title, multi-line markdown description with URL converted into an anchor link
-metadata:
-  annotations:
-    workflows.argoproj.io/title: '**Test Title**'
-    workflows.argoproj.io/description: |
-      `This is a simple hello world example.`
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
-
-# 6. markdown title, markdown description with a markdown link
+# 5. markdown title, markdown description with a markdown link
 metadata:
   annotations:
     workflows.argoproj.io/title: '**Build and test**'
@@ -76,4 +68,78 @@ metadata:
 ```
 
 The above examples will render as rows like the below image:
-![More Markdown Examples](assets/workflow-title-and-description-markdown-complex.png)
+![More Markdown Examples](assets/title-and-description-markdown-complex-workflow.png)
+
+The `title` and `description` annotations also support multi-line values. Longer values will be truncated in the workflow list view, but can be seen in the `DESCRIPTION` section when the workflow row is expanded to display the workflow drawer.
+
+Below is an example:
+
+```yaml
+# markdown title, multi-line markdown description with URL converted into an anchor link
+metadata:
+  annotations:
+    workflows.argoproj.io/title: '**Test Title**'
+    workflows.argoproj.io/description: |
+      `This is a simple hello world example.`
+      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
+```
+
+The above example will render an expanded row like the below image:
+![Workflow Drawer Markdown Examples](assets/title-and-description-markdown-workflow-drawer.png)
+
+### For `ClusterWorkflowTemplates`
+
+> v3.7 and after
+
+You can also add the `workflows.argoproj.io/title` and `workflows.argoproj.io/description` annotations with embedded markdown to a `ClusterWorkflowTemplate` to display in the list:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: my-cluster-workflow-template
+  annotations:
+    workflows.argoproj.io/title: '**Test Title**'
+    workflows.argoproj.io/description: `This is a simple hello world example.`
+```
+
+The above manifest will render as a row like the below image:
+![ClusterWorkflowTemplate Example](assets/title-and-description-markdown-cluster-workflow-template.png)
+
+### For `CronWorkflows`
+
+> v3.7 and after
+
+You can also add the `workflows.argoproj.io/title` and `workflows.argoproj.io/description` annotations with embedded markdown to a `CronWorkflow` to display in the list:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: my-cron-workflow
+  annotations:
+    workflows.argoproj.io/title: '**Test Title**'
+    workflows.argoproj.io/description: `This is a simple hello world example.`
+```
+
+The above manifest will render as a row like the below image:
+![CronWorkflow Example](assets/title-and-description-markdown-cron-workflow.png)
+
+### For `WorkflowTemplates`
+
+> v3.7 and after
+
+You can also add the `workflows.argoproj.io/title` and `workflows.argoproj.io/description` annotations with embedded markdown to a `WorkflowTemplate` to display in the list:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: my-workflow-template
+  annotations:
+    workflows.argoproj.io/title: '**Test Title**'
+    workflows.argoproj.io/description: `This is a simple hello world example.`
+```
+
+The above manifest will render as a row like the below image:
+![WorkflowTemplate Example](assets/title-and-description-markdown-workflow-template.png)

@@ -135,6 +135,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         return {
             'active_deadline_seconds': (str,),  # noqa: E501
             'affinity': (Affinity,),  # noqa: E501
+            'annotations': ({str: (str,)},),  # noqa: E501
             'archive_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
             'automount_service_account_token': (bool,),  # noqa: E501
             'container': (Container,),  # noqa: E501
@@ -157,7 +158,6 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'parallelism': (int,),  # noqa: E501
             'plugin': (bool, date, datetime, dict, float, int, list, str, none_type,),  # noqa: E501
             'pod_spec_patch': (str,),  # noqa: E501
-            'priority': (int,),  # noqa: E501
             'priority_class_name': (str,),  # noqa: E501
             'resource': (IoArgoprojWorkflowV1alpha1ResourceTemplate,),  # noqa: E501
             'retry_strategy': (IoArgoprojWorkflowV1alpha1RetryStrategy,),  # noqa: E501
@@ -182,6 +182,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
     attribute_map = {
         'active_deadline_seconds': 'activeDeadlineSeconds',  # noqa: E501
         'affinity': 'affinity',  # noqa: E501
+        'annotations': 'annotations',  # noqa: E501
         'archive_location': 'archiveLocation',  # noqa: E501
         'automount_service_account_token': 'automountServiceAccountToken',  # noqa: E501
         'container': 'container',  # noqa: E501
@@ -204,7 +205,6 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'parallelism': 'parallelism',  # noqa: E501
         'plugin': 'plugin',  # noqa: E501
         'pod_spec_patch': 'podSpecPatch',  # noqa: E501
-        'priority': 'priority',  # noqa: E501
         'priority_class_name': 'priorityClassName',  # noqa: E501
         'resource': 'resource',  # noqa: E501
         'retry_strategy': 'retryStrategy',  # noqa: E501
@@ -264,6 +264,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             active_deadline_seconds (str): [optional]  # noqa: E501
             affinity (Affinity): [optional]  # noqa: E501
+            annotations ({str: (str,)}): Annotations is a list of annotations to add to the template at runtime. [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
@@ -286,7 +287,6 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
             plugin (bool, date, datetime, dict, float, int, list, str, none_type): Plugin is an Object with exactly one key. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
-            priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
             priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             resource (IoArgoprojWorkflowV1alpha1ResourceTemplate): [optional]  # noqa: E501
             retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
@@ -384,6 +384,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             active_deadline_seconds (str): [optional]  # noqa: E501
             affinity (Affinity): [optional]  # noqa: E501
+            annotations ({str: (str,)}): Annotations is a list of annotations to add to the template at runtime. [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
@@ -406,7 +407,6 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
             plugin (bool, date, datetime, dict, float, int, list, str, none_type): Plugin is an Object with exactly one key. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
-            priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
             priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             resource (IoArgoprojWorkflowV1alpha1ResourceTemplate): [optional]  # noqa: E501
             retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501

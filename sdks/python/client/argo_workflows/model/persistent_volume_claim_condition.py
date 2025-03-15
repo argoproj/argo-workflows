@@ -55,10 +55,6 @@ class PersistentVolumeClaimCondition(ModelNormal):
     """
 
     allowed_values = {
-        ('type',): {
-            'FILESYSTEMRESIZEPENDING': "FileSystemResizePending",
-            'RESIZING': "Resizing",
-        },
     }
 
     validations = {
@@ -118,8 +114,8 @@ class PersistentVolumeClaimCondition(ModelNormal):
         """PersistentVolumeClaimCondition - a model defined in OpenAPI
 
         Args:
-            status (str):
-            type (str):    Possible enum values:  - `\"FileSystemResizePending\"` - controller resize is finished and a file system resize is pending on node  - `\"Resizing\"` - a user trigger resize of pvc has been started
+            status (str): Status is the status of the condition. Can be True, False, Unknown. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required
+            type (str): Type is the type of the condition. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -154,8 +150,8 @@ class PersistentVolumeClaimCondition(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             last_probe_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             last_transition_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
-            message (str): Human-readable message indicating details about last transition.. [optional]  # noqa: E501
-            reason (str): Unique, this should be a short, machine understandable string that gives the reason for condition's last transition. If it reports \"ResizeStarted\" that means the underlying persistent volume is being resized.. [optional]  # noqa: E501
+            message (str): message is the human-readable message indicating details about last transition.. [optional]  # noqa: E501
+            reason (str): reason is a unique, this should be a short, machine understandable string that gives the reason for condition's last transition. If it reports \"Resizing\" that means the underlying persistent volume is being resized.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -209,8 +205,8 @@ class PersistentVolumeClaimCondition(ModelNormal):
         """PersistentVolumeClaimCondition - a model defined in OpenAPI
 
         Args:
-            status (str):
-            type (str):    Possible enum values:  - `\"FileSystemResizePending\"` - controller resize is finished and a file system resize is pending on node  - `\"Resizing\"` - a user trigger resize of pvc has been started
+            status (str): Status is the status of the condition. Can be True, False, Unknown. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required
+            type (str): Type is the type of the condition. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -245,8 +241,8 @@ class PersistentVolumeClaimCondition(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             last_probe_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             last_transition_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
-            message (str): Human-readable message indicating details about last transition.. [optional]  # noqa: E501
-            reason (str): Unique, this should be a short, machine understandable string that gives the reason for condition's last transition. If it reports \"ResizeStarted\" that means the underlying persistent volume is being resized.. [optional]  # noqa: E501
+            message (str): message is the human-readable message indicating details about last transition.. [optional]  # noqa: E501
+            reason (str): reason is a unique, this should be a short, machine understandable string that gives the reason for condition's last transition. If it reports \"Resizing\" that means the underlying persistent volume is being resized.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

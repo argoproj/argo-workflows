@@ -58,7 +58,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 annotations={
                     "key": "key_example",
                 },
-                cluster_name="cluster_name_example",
                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 deletion_grace_period_seconds=1,
                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -1256,7 +1255,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             node_port=1,
                             port=1,
-                            protocol="SCTP",
+                            protocol="protocol_example",
                             target_port="target_port_example",
                         ),
                     ],
@@ -1524,7 +1523,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1533,7 +1532,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1549,7 +1548,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1558,7 +1557,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1586,6 +1585,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        match_label_keys=[
+                                            "match_label_keys_example",
+                                        ],
+                                        mismatch_label_keys=[
+                                            "mismatch_label_keys_example",
+                                        ],
                                         namespace_selector=LabelSelector(
                                             match_expressions=[
                                                 LabelSelectorRequirement(
@@ -1624,6 +1629,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "key": "key_example",
                                         },
                                     ),
+                                    match_label_keys=[
+                                        "match_label_keys_example",
+                                    ],
+                                    mismatch_label_keys=[
+                                        "mismatch_label_keys_example",
+                                    ],
                                     namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
@@ -1663,6 +1674,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        match_label_keys=[
+                                            "match_label_keys_example",
+                                        ],
+                                        mismatch_label_keys=[
+                                            "mismatch_label_keys_example",
+                                        ],
                                         namespace_selector=LabelSelector(
                                             match_expressions=[
                                                 LabelSelectorRequirement(
@@ -1701,6 +1718,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "key": "key_example",
                                         },
                                     ),
+                                    match_label_keys=[
+                                        "match_label_keys_example",
+                                    ],
+                                    mismatch_label_keys=[
+                                        "mismatch_label_keys_example",
+                                    ],
                                     namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
@@ -1771,7 +1794,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         image="image_example",
-                        image_pull_policy="Always",
+                        image_pull_policy="image_pull_policy_example",
                         lifecycle=Lifecycle(
                             post_start=LifecycleHandler(
                                 _exec=ExecAction(
@@ -1789,7 +1812,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
+                                ),
+                                sleep=SleepAction(
+                                    seconds=1,
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -1812,7 +1838,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
+                                ),
+                                sleep=SleepAction(
+                                    seconds=1,
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -1841,7 +1870,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -1860,7 +1889,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="SCTP",
+                                protocol="protocol_example",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -1884,7 +1913,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -1896,7 +1925,19 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
+                        resize_policy=[
+                            ContainerResizePolicy(
+                                resource_name="resource_name_example",
+                                restart_policy="restart_policy_example",
+                            ),
+                        ],
                         resources=ResourceRequirements(
+                            claims=[
+                                ResourceClaim(
+                                    name="name_example",
+                                    request="request_example",
+                                ),
+                            ],
                             limits={
                                 "key": "key_example",
                             },
@@ -1904,8 +1945,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "key": "key_example",
                             },
                         ),
+                        restart_policy="restart_policy_example",
                         security_context=SecurityContext(
                             allow_privilege_escalation=True,
+                            app_armor_profile=AppArmorProfile(
+                                localhost_profile="localhost_profile_example",
+                                type="type_example",
+                            ),
                             capabilities=Capabilities(
                                 add=[
                                     "add_example",
@@ -1928,7 +1974,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -1958,7 +2004,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -1973,7 +2019,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         stdin=True,
                         stdin_once=True,
                         termination_message_path="termination_message_path_example",
-                        termination_message_policy="FallbackToLogsOnError",
+                        termination_message_policy="termination_message_policy_example",
                         tty=True,
                         volume_devices=[
                             VolumeDevice(
@@ -1987,6 +2033,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 mount_propagation="mount_propagation_example",
                                 name="name_example",
                                 read_only=True,
+                                recursive_read_only="recursive_read_only_example",
                                 sub_path="sub_path_example",
                                 sub_path_expr="sub_path_expr_example",
                             ),
@@ -2012,11 +2059,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     priority=1,
                     priority_class_name="priority_class_name_example",
                     security_context=PodSecurityContext(
+                        app_armor_profile=AppArmorProfile(
+                            localhost_profile="localhost_profile_example",
+                            type="type_example",
+                        ),
                         fs_group=1,
                         fs_group_change_policy="fs_group_change_policy_example",
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -2025,11 +2077,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         seccomp_profile=SeccompProfile(
                             localhost_profile="localhost_profile_example",
-                            type="Localhost",
+                            type="type_example",
                         ),
                         supplemental_groups=[
                             1,
                         ],
+                        supplemental_groups_policy="supplemental_groups_policy_example",
                         sysctls=[
                             Sysctl(
                                 name="name_example",
@@ -2046,9 +2099,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     service_account_name="service_account_name_example",
                     tolerations=[
                         Toleration(
-                            effect="NoExecute",
+                            effect="effect_example",
                             key="key_example",
-                            operator="Equal",
+                            operator="operator_example",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -2145,7 +2198,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         annotations={
                                             "key": "key_example",
                                         },
-                                        cluster_name="cluster_name_example",
                                         creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                         deletion_grace_period_seconds=1,
                                         deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -2193,12 +2245,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             kind="kind_example",
                                             name="name_example",
                                         ),
-                                        data_source_ref=TypedLocalObjectReference(
+                                        data_source_ref=TypedObjectReference(
                                             api_group="api_group_example",
                                             kind="kind_example",
                                             name="name_example",
+                                            namespace="namespace_example",
                                         ),
-                                        resources=ResourceRequirements(
+                                        resources=VolumeResourceRequirements(
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -2221,6 +2274,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             },
                                         ),
                                         storage_class_name="storage_class_name_example",
+                                        volume_attributes_class_name="volume_attributes_class_name_example",
                                         volume_mode="volume_mode_example",
                                         volume_name="volume_name_example",
                                     ),
@@ -2272,6 +2326,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                                 type="type_example",
                             ),
+                            image=ImageVolumeSource(
+                                pull_policy="pull_policy_example",
+                                reference="reference_example",
+                            ),
                             iscsi=ISCSIVolumeSource(
                                 chap_auth_discovery=True,
                                 chap_auth_session=True,
@@ -2312,6 +2370,26 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 default_mode=1,
                                 sources=[
                                     VolumeProjection(
+                                        cluster_trust_bundle=ClusterTrustBundleProjection(
+                                            label_selector=LabelSelector(
+                                                match_expressions=[
+                                                    LabelSelectorRequirement(
+                                                        key="key_example",
+                                                        operator="operator_example",
+                                                        values=[
+                                                            "values_example",
+                                                        ],
+                                                    ),
+                                                ],
+                                                match_labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            name="name_example",
+                                            optional=True,
+                                            path="path_example",
+                                            signer_name="signer_name_example",
+                                        ),
                                         config_map=ConfigMapProjection(
                                             items=[
                                                 KeyToPath(
@@ -2559,7 +2637,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     delete_options_propagation_policy = "deleteOptions.propagationPolicy_example" # str | Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional. (optional)
     delete_options_dry_run = [
         "deleteOptions.dryRun_example",
-    ] # [str] | When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional. (optional)
+    ] # [str] | When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType=atomic. (optional)
+    delete_options_ignore_store_read_error_with_cluster_breaking_potential = True # bool | if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -2571,7 +2650,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.delete_event_source(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_event_source(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run, delete_options_ignore_store_read_error_with_cluster_breaking_potential=delete_options_ignore_store_read_error_with_cluster_breaking_potential)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling EventSourceServiceApi->delete_event_source: %s\n" % e)
@@ -2589,7 +2668,8 @@ Name | Type | Description  | Notes
  **delete_options_preconditions_resource_version** | **str**| Specifies the target ResourceVersion +optional. | [optional]
  **delete_options_orphan_dependents** | **bool**| Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional. | [optional]
  **delete_options_propagation_policy** | **str**| Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: &#39;Orphan&#39; - orphan the dependents; &#39;Background&#39; - allow the garbage collector to delete the dependents in the background; &#39;Foreground&#39; - a cascading policy that deletes all dependents in the foreground. +optional. | [optional]
- **delete_options_dry_run** | **[str]**| When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional. | [optional]
+ **delete_options_dry_run** | **[str]**| When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType&#x3D;atomic. | [optional]
+ **delete_options_ignore_store_read_error_with_cluster_breaking_potential** | **bool**| if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional. | [optional]
 
 ### Return type
 
@@ -2663,9 +2743,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
     pod_log_options_since_time_seconds = "podLogOptions.sinceTime.seconds_example" # str | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. (optional)
     pod_log_options_since_time_nanos = 1 # int | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. (optional)
     pod_log_options_timestamps = True # bool | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. (optional)
-    pod_log_options_tail_lines = "podLogOptions.tailLines_example" # str | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. (optional)
+    pod_log_options_tail_lines = "podLogOptions.tailLines_example" # str | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional. (optional)
     pod_log_options_limit_bytes = "podLogOptions.limitBytes_example" # str | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. (optional)
     pod_log_options_insecure_skip_tls_verify_backend = True # bool | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. (optional)
+    pod_log_options_stream = "podLogOptions.stream_example" # str | Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -2677,7 +2758,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.event_sources_logs(namespace, name=name, event_source_type=event_source_type, event_name=event_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
+        api_response = api_instance.event_sources_logs(namespace, name=name, event_source_type=event_source_type, event_name=event_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend, pod_log_options_stream=pod_log_options_stream)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling EventSourceServiceApi->event_sources_logs: %s\n" % e)
@@ -2700,9 +2781,10 @@ Name | Type | Description  | Notes
  **pod_log_options_since_time_seconds** | **str**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
  **pod_log_options_since_time_nanos** | **int**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
  **pod_log_options_timestamps** | **bool**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
- **pod_log_options_tail_lines** | **str**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
+ **pod_log_options_tail_lines** | **str**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +optional. | [optional]
  **pod_log_options_limit_bytes** | **str**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
  **pod_log_options_insecure_skip_tls_verify_backend** | **bool**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
+ **pod_log_options_stream** | **str**| Specify which container log stream to return to the client. Acceptable values are \&quot;All\&quot;, \&quot;Stdout\&quot; and \&quot;Stderr\&quot;. If not specified, \&quot;All\&quot; is used, and both stdout and stderr are returned interleaved. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +featureGate&#x3D;PodLogsQuerySplitStreams +optional. | [optional]
 
 ### Return type
 
@@ -2853,6 +2935,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
     list_options_limit = "listOptions.limit_example" # str | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. (optional)
     list_options_continue = "listOptions.continue_example" # str | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. (optional)
+    list_options_send_initial_events = True # bool | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -2864,7 +2947,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.list_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling EventSourceServiceApi->list_event_sources: %s\n" % e)
@@ -2885,6 +2968,7 @@ Name | Type | Description  | Notes
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
  **list_options_limit** | **str**| limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | [optional]
  **list_options_continue** | **str**| The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | [optional]
+ **list_options_send_initial_events** | **bool**| &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;io.k8s.initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise. +optional | [optional]
 
 ### Return type
 
@@ -2955,7 +3039,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 annotations={
                     "key": "key_example",
                 },
-                cluster_name="cluster_name_example",
                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 deletion_grace_period_seconds=1,
                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -4153,7 +4236,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             node_port=1,
                             port=1,
-                            protocol="SCTP",
+                            protocol="protocol_example",
                             target_port="target_port_example",
                         ),
                     ],
@@ -4421,7 +4504,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -4430,7 +4513,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -4446,7 +4529,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -4455,7 +4538,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -4483,6 +4566,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        match_label_keys=[
+                                            "match_label_keys_example",
+                                        ],
+                                        mismatch_label_keys=[
+                                            "mismatch_label_keys_example",
+                                        ],
                                         namespace_selector=LabelSelector(
                                             match_expressions=[
                                                 LabelSelectorRequirement(
@@ -4521,6 +4610,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "key": "key_example",
                                         },
                                     ),
+                                    match_label_keys=[
+                                        "match_label_keys_example",
+                                    ],
+                                    mismatch_label_keys=[
+                                        "mismatch_label_keys_example",
+                                    ],
                                     namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
@@ -4560,6 +4655,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        match_label_keys=[
+                                            "match_label_keys_example",
+                                        ],
+                                        mismatch_label_keys=[
+                                            "mismatch_label_keys_example",
+                                        ],
                                         namespace_selector=LabelSelector(
                                             match_expressions=[
                                                 LabelSelectorRequirement(
@@ -4598,6 +4699,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "key": "key_example",
                                         },
                                     ),
+                                    match_label_keys=[
+                                        "match_label_keys_example",
+                                    ],
+                                    mismatch_label_keys=[
+                                        "mismatch_label_keys_example",
+                                    ],
                                     namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
@@ -4668,7 +4775,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         image="image_example",
-                        image_pull_policy="Always",
+                        image_pull_policy="image_pull_policy_example",
                         lifecycle=Lifecycle(
                             post_start=LifecycleHandler(
                                 _exec=ExecAction(
@@ -4686,7 +4793,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
+                                ),
+                                sleep=SleepAction(
+                                    seconds=1,
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -4709,7 +4819,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
+                                ),
+                                sleep=SleepAction(
+                                    seconds=1,
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -4738,7 +4851,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -4757,7 +4870,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="SCTP",
+                                protocol="protocol_example",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -4781,7 +4894,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -4793,7 +4906,19 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
+                        resize_policy=[
+                            ContainerResizePolicy(
+                                resource_name="resource_name_example",
+                                restart_policy="restart_policy_example",
+                            ),
+                        ],
                         resources=ResourceRequirements(
+                            claims=[
+                                ResourceClaim(
+                                    name="name_example",
+                                    request="request_example",
+                                ),
+                            ],
                             limits={
                                 "key": "key_example",
                             },
@@ -4801,8 +4926,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "key": "key_example",
                             },
                         ),
+                        restart_policy="restart_policy_example",
                         security_context=SecurityContext(
                             allow_privilege_escalation=True,
+                            app_armor_profile=AppArmorProfile(
+                                localhost_profile="localhost_profile_example",
+                                type="type_example",
+                            ),
                             capabilities=Capabilities(
                                 add=[
                                     "add_example",
@@ -4825,7 +4955,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -4855,7 +4985,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -4870,7 +5000,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         stdin=True,
                         stdin_once=True,
                         termination_message_path="termination_message_path_example",
-                        termination_message_policy="FallbackToLogsOnError",
+                        termination_message_policy="termination_message_policy_example",
                         tty=True,
                         volume_devices=[
                             VolumeDevice(
@@ -4884,6 +5014,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 mount_propagation="mount_propagation_example",
                                 name="name_example",
                                 read_only=True,
+                                recursive_read_only="recursive_read_only_example",
                                 sub_path="sub_path_example",
                                 sub_path_expr="sub_path_expr_example",
                             ),
@@ -4909,11 +5040,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     priority=1,
                     priority_class_name="priority_class_name_example",
                     security_context=PodSecurityContext(
+                        app_armor_profile=AppArmorProfile(
+                            localhost_profile="localhost_profile_example",
+                            type="type_example",
+                        ),
                         fs_group=1,
                         fs_group_change_policy="fs_group_change_policy_example",
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -4922,11 +5058,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         seccomp_profile=SeccompProfile(
                             localhost_profile="localhost_profile_example",
-                            type="Localhost",
+                            type="type_example",
                         ),
                         supplemental_groups=[
                             1,
                         ],
+                        supplemental_groups_policy="supplemental_groups_policy_example",
                         sysctls=[
                             Sysctl(
                                 name="name_example",
@@ -4943,9 +5080,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     service_account_name="service_account_name_example",
                     tolerations=[
                         Toleration(
-                            effect="NoExecute",
+                            effect="effect_example",
                             key="key_example",
-                            operator="Equal",
+                            operator="operator_example",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -5042,7 +5179,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         annotations={
                                             "key": "key_example",
                                         },
-                                        cluster_name="cluster_name_example",
                                         creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                         deletion_grace_period_seconds=1,
                                         deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -5090,12 +5226,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             kind="kind_example",
                                             name="name_example",
                                         ),
-                                        data_source_ref=TypedLocalObjectReference(
+                                        data_source_ref=TypedObjectReference(
                                             api_group="api_group_example",
                                             kind="kind_example",
                                             name="name_example",
+                                            namespace="namespace_example",
                                         ),
-                                        resources=ResourceRequirements(
+                                        resources=VolumeResourceRequirements(
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -5118,6 +5255,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             },
                                         ),
                                         storage_class_name="storage_class_name_example",
+                                        volume_attributes_class_name="volume_attributes_class_name_example",
                                         volume_mode="volume_mode_example",
                                         volume_name="volume_name_example",
                                     ),
@@ -5169,6 +5307,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                                 type="type_example",
                             ),
+                            image=ImageVolumeSource(
+                                pull_policy="pull_policy_example",
+                                reference="reference_example",
+                            ),
                             iscsi=ISCSIVolumeSource(
                                 chap_auth_discovery=True,
                                 chap_auth_session=True,
@@ -5209,6 +5351,26 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 default_mode=1,
                                 sources=[
                                     VolumeProjection(
+                                        cluster_trust_bundle=ClusterTrustBundleProjection(
+                                            label_selector=LabelSelector(
+                                                match_expressions=[
+                                                    LabelSelectorRequirement(
+                                                        key="key_example",
+                                                        operator="operator_example",
+                                                        values=[
+                                                            "values_example",
+                                                        ],
+                                                    ),
+                                                ],
+                                                match_labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            name="name_example",
+                                            optional=True,
+                                            path="path_example",
+                                            signer_name="signer_name_example",
+                                        ),
                                         config_map=ConfigMapProjection(
                                             items=[
                                                 KeyToPath(
@@ -5460,6 +5622,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
     list_options_limit = "listOptions.limit_example" # str | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. (optional)
     list_options_continue = "listOptions.continue_example" # str | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. (optional)
+    list_options_send_initial_events = True # bool | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -5471,7 +5634,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.watch_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling EventSourceServiceApi->watch_event_sources: %s\n" % e)
@@ -5492,6 +5655,7 @@ Name | Type | Description  | Notes
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
  **list_options_limit** | **str**| limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | [optional]
  **list_options_continue** | **str**| The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | [optional]
+ **list_options_send_initial_events** | **bool**| &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;io.k8s.initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise. +optional | [optional]
 
 ### Return type
 

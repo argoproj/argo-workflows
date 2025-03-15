@@ -5,10 +5,10 @@ FlexVolume represents a generic volume resource that is provisioned/attached usi
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**driver** | **str** | Driver is the name of the driver to use for this volume. | 
-**fs_type** | **str** | Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \&quot;ext4\&quot;, \&quot;xfs\&quot;, \&quot;ntfs\&quot;. The default filesystem depends on FlexVolume script. | [optional] 
-**options** | **{str: (str,)}** | Optional: Extra command options if any. | [optional] 
-**read_only** | **bool** | Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. | [optional] 
+**driver** | **str** | driver is the name of the driver to use for this volume. | 
+**fs_type** | **str** | fsType is the filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \&quot;ext4\&quot;, \&quot;xfs\&quot;, \&quot;ntfs\&quot;. The default filesystem depends on FlexVolume script. | [optional] 
+**options** | **{str: (str,)}** | options is Optional: this field holds extra command options if any. | [optional] 
+**read_only** | **bool** | readOnly is Optional: defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. | [optional] 
 **secret_ref** | [**LocalObjectReference**](LocalObjectReference.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

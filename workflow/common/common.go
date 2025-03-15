@@ -16,7 +16,7 @@ const (
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// AnnotationKeyServiceAccountTokenName is used to name the secret that containers the service account token name.
-	// It is intentially named similar to ` `kubernetes.io/service-account.name`.
+	// It is intentionally named similar to ` `kubernetes.io/service-account.name`.
 	AnnotationKeyServiceAccountTokenName = workflow.WorkflowFullName + "/service-account-token.name"
 
 	// AnnotationKeyNodeID is the ID of the node.
@@ -34,8 +34,6 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
-	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
@@ -51,13 +49,16 @@ const (
 	// AnnotationKeyProgress is N/M progress for the node
 	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
 
-	// AnnotationKeyReportOutputsCompleted is an annotation on a workflow pod indicating outputs have completed.
-	// Only used as a backup in case LabelKeyReportOutputsCompleted can't be added to WorkflowTaskResult.
-	AnnotationKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
-
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
+
+	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
+	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
+
+	// AnnotationKeyPodGCStrategy is listed as an annotation on the Pod
+	// the strategy for the pod, in case the pod is orphaned from its workflow
+	AnnotationKeyPodGCStrategy = workflow.WorkflowFullName + "/pod-gc-strategy"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -66,6 +67,11 @@ const (
 	LabelKeyCreator                  = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail             = workflow.WorkflowFullName + "/creator-email"
 	LabelKeyCreatorPreferredUsername = workflow.WorkflowFullName + "/creator-preferred-username"
+	// Who action on this workflow.
+	LabelKeyActor                  = workflow.WorkflowFullName + "/actor"
+	LabelKeyActorEmail             = workflow.WorkflowFullName + "/actor-email"
+	LabelKeyActorPreferredUsername = workflow.WorkflowFullName + "/actor-preferred-username"
+	LabelKeyAction                 = workflow.WorkflowFullName + "/action"
 	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
@@ -92,7 +98,7 @@ const (
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
 	// LabelKeyWorkflowEventBinding is a label applied to Workflows that are submitted from a WorkflowEventBinding
 	LabelKeyWorkflowEventBinding = workflow.WorkflowFullName + "/workflow-event-binding"
-	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
+	// LabelKeyClusterWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
@@ -163,6 +169,8 @@ const (
 	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
 	// EnvVarDefaultRequeueTime is the default requeue time for Workflow Informers. For more info, see rate_limiters.go
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
+	// EnvVarPodStatusCaptureFinalizer is used to prevent pod garbage collected before argo captures its exit status
+	EnvVarPodStatusCaptureFinalizer = "ARGO_POD_STATUS_CAPTURE_FINALIZER"
 	// EnvAgentTaskWorkers is the number of task workers for the agent pod
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet

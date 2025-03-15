@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -25,7 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -131,6 +132,13 @@ type VolumeClaimGCStrategy string
 const (
 	VolumeClaimGCOnCompletion VolumeClaimGCStrategy = "OnWorkflowCompletion"
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
+)
+
+type HoldingNameVersion int
+
+const (
+	HoldingNameV1 HoldingNameVersion = 1
+	HoldingNameV2 HoldingNameVersion = 2
 )
 
 // Workflow is the definition of a workflow resource
@@ -369,10 +377,6 @@ type WorkflowSpec struct {
 	// PriorityClassName to apply to workflow pods.
 	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,23,opt,name=podPriorityClassName"`
 
-	// Priority to apply to workflow pods.
-	// DEPRECATED: Use PodPriorityClassName instead.
-	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,24,opt,name=podPriority"`
-
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,25,opt,name=hostAliases"`
@@ -493,7 +497,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	if wf.Spec.WorkflowTemplateRef == nil {
 		templates = wf.Spec.Templates
 		if wf.Spec.Synchronization != nil {
-			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range wf.Spec.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -501,7 +505,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	} else if wf.Status.StoredWorkflowSpec != nil {
 		templates = wf.Status.StoredWorkflowSpec.Templates
 		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
-			if configMapRef := wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -510,7 +514,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 
 	for _, tmpl := range templates {
 		if tmpl.Synchronization != nil {
-			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range tmpl.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -546,9 +550,12 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
-// +kubebuilder:validation:Type=array
+// swagger:ignore
 type ParallelSteps struct {
-	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
+	// Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
+	// There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
+	// See the custom Unmarshaller below and ./hack/manifests/crd.go
+	Steps []WorkflowStep `json:"steps" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -655,6 +662,9 @@ type Template struct {
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Plugin is a plugin template
+	// Note: the structure of a plugin template is free-form, so we need to have
+	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
@@ -710,9 +720,6 @@ type Template struct {
 	// PriorityClassName to apply to workflow pods.
 	PriorityClassName string `json:"priorityClassName,omitempty" protobuf:"bytes,26,opt,name=priorityClassName"`
 
-	// Priority to apply to workflow pods.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,27,opt,name=priority"`
-
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,28,opt,name=serviceAccountName"`
 
@@ -749,6 +756,9 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+
+	// Annotations is a list of annotations to add to the template at runtime
+	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
 }
 
 // SetType will set the template object based on template type.
@@ -815,6 +825,29 @@ func (tmpl *Template) GetOutputs() *Outputs {
 	return nil
 }
 
+func (tmpl *Template) GetAnnotations() map[string]string {
+	if tmpl != nil {
+		return tmpl.Annotations
+	}
+	return map[string]string{}
+}
+
+func (tmpl *Template) SetAnnotations(annotations map[string]string) {
+	tmpl.Annotations = annotations
+}
+
+func (tmpl *Template) GetDisplayName() string {
+	displayName, ok := tmpl.GetAnnotations()[string(TemplateAnnotationDisplayName)]
+	if ok {
+		return displayName
+	}
+	return ""
+}
+
+func (tmpl *Template) SetDisplayName() {
+	tmpl.Annotations[string(TemplateAnnotationDisplayName)] = tmpl.Name
+}
+
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
@@ -858,7 +891,7 @@ type Parameter struct {
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
-	// If specified in the context of an input parameter, the value takes precedence over any passed values
+	// If specified in the context of an input parameter, any passed values take precedence over the specified value
 	Value *AnyString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
@@ -996,6 +1029,11 @@ func (a *Artifact) CleanPath() error {
 	// Any resolved path should always be within the /tmp/safe/ directory.
 	safeDir := ""
 	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
+	if runtime.GOOS == "windows" {
+		// windows PathSeparator is \ and needs escaping
+		slashDotDotRe = regexp.MustCompile(fmt.Sprintf(`\%c..$`, os.PathSeparator))
+	}
+
 	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
 	if strings.Contains(path, slashDotDotSlash) {
 		safeDir = path[:strings.Index(path, slashDotDotSlash)]
@@ -1018,7 +1056,7 @@ type PodGC struct {
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 	// DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
-	DeleteDelayDuration *metav1.Duration `json:"deleteDelayDuration,omitempty" protobuf:"bytes,3,opt,name=deleteDelayDuration"`
+	DeleteDelayDuration string `json:"deleteDelayDuration,omitempty" protobuf:"bytes,3,opt,name=deleteDelayDuration"`
 }
 
 // GetLabelSelector gets the label selector from podGC.
@@ -1037,6 +1075,13 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 		return podGC.Strategy
 	}
 	return PodGCOnPodNone
+}
+
+func (podGC *PodGC) GetDeleteDelayDuration() (time.Duration, error) {
+	if podGC == nil || podGC.DeleteDelayDuration == "" {
+		return -1, nil // negative return means the field was omitted
+	}
+	return ParseStringToDuration(podGC.DeleteDelayDuration)
 }
 
 // WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
@@ -1459,7 +1504,7 @@ type Outputs struct {
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
-	// Result holds the result (stdout) of a script template
+	// Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
 
 	// ExitCode holds the exit code of a script template
@@ -1482,6 +1527,10 @@ type WorkflowStep struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	// Note: This struct is defined recursively, since the inline template can potentially contain
+	// steps/DAGs that also has an "inline" field. Kubernetes doesn't allow recursive types, so we
+	// need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
 
 	// Arguments hold arguments to the template
@@ -1491,6 +1540,10 @@ type WorkflowStep struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// WithItems expands a step into multiple parallel steps from the items in the list
+	// Note: The structure of WithItems is free-form, so we need
+	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,5,rep,name=withItems"`
 
 	// WithParam expands a step into multiple parallel steps from the value in the parameter,
@@ -1628,34 +1681,28 @@ type TemplateRef struct {
 
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// Semaphore holds the Semaphore configuration
+	// Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Mutex holds the Mutex lock details
+	// Mutex holds the Mutex lock details - deprecated, use mutexes instead
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+	// v3.6 and after: Semaphores holds the list of Semaphores configuration
+	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
+	// v3.6 and after: Mutexes holds the list of Mutex lock details
+	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 
-func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelector {
+	selectors := make([]*apiv1.ConfigMapKeySelector, 0)
 	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
-		return s.Semaphore.ConfigMapKeyRef
+		selectors = append(selectors, s.Semaphore.ConfigMapKeyRef)
 	}
-	return nil
-}
 
-type SynchronizationType string
-
-const (
-	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
-	SynchronizationTypeMutex     SynchronizationType = "Mutex"
-	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
-)
-
-func (s *Synchronization) GetType() SynchronizationType {
-	if s.Semaphore != nil {
-		return SynchronizationTypeSemaphore
-	} else if s.Mutex != nil {
-		return SynchronizationTypeMutex
+	for _, semaphore := range s.Semaphores {
+		if semaphore.ConfigMapKeyRef != nil {
+			selectors = append(selectors, semaphore.ConfigMapKeyRef)
+		}
 	}
-	return SynchronizationTypeUnknown
+	return selectors
 }
 
 // SemaphoreRef is a reference of Semaphore
@@ -1976,7 +2023,7 @@ func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
 	if found {
 		return !value
 	}
-	return true
+	return false // workflows from older versions do not have this status, so assume completed if this is missing
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2014,8 +2061,15 @@ type Backoff struct {
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
 	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
-	// MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
+	// MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.
+	// It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.
+	// However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
+	// This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
+	// Cap is a limit on revised values of the duration parameter. If a
+	// multiplication by the factor parameter would make the duration
+	// exceed the cap then the duration is set to the cap
+	Cap string `json:"cap,omitempty" protobuf:"varint,4,opt,name=cap"`
 }
 
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
@@ -2378,9 +2432,25 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
+// IsPartOfExitHandler returns whether node is part of exit handler.
+func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
+	currentNode := n
+	for !currentNode.IsExitNode() {
+		if currentNode.BoundaryID == "" {
+			return false
+		}
+		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
+		if err != nil {
+			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+		}
+		currentNode = boundaryNode
+	}
+	return true
+}
+
 // IsExitNode returns whether or not node run as exit handler.
-func (ws NodeStatus) IsExitNode() bool {
-	return strings.HasSuffix(ws.DisplayName, ".onExit")
+func (n NodeStatus) IsExitNode() bool {
+	return strings.HasSuffix(n.DisplayName, ".onExit")
 }
 
 func (n NodeStatus) Succeeded() bool {
@@ -2449,9 +2519,9 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
-// IsActivePluginNode returns whether this node is an active plugin node
-func (n *NodeStatus) IsActivePluginNode() bool {
-	return n.Type == NodeTypePlugin && (n.Phase == NodeRunning || n.Phase == NodePending)
+// IsTaskSetNode returns whether this node uses the taskset
+func (n *NodeStatus) IsTaskSetNode() bool {
+	return n.Type == NodeTypeHTTP || n.Type == NodeTypePlugin
 }
 
 func (n NodeStatus) GetDuration() time.Duration {
@@ -2489,6 +2559,9 @@ type S3Bucket struct {
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
+
+	// SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
+	SessionTokenSecret *apiv1.SecretKeySelector `json:"sessionTokenSecret,omitempty" protobuf:"bytes,12,opt,name=sessionTokenSecret"`
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
@@ -2582,6 +2655,9 @@ type GitArtifact struct {
 
 	// Branch is the branch to fetch when `SingleBranch` is enabled
 	Branch string `json:"branch,omitempty" protobuf:"bytes,11,opt,name=branch"`
+
+	// InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
+	InsecureSkipTLS bool `json:"insecureSkipTLS,omitempty" protobuf:"varint,12,opt,name=insecureSkipTLS"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
@@ -2714,6 +2790,10 @@ type HDFSConfig struct {
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
 	HDFSUser string `json:"hdfsUser,omitempty" protobuf:"bytes,3,opt,name=hdfsUser"`
+
+	// DataTransferProtection is the protection level for HDFS data transfer.
+	// It corresponds to the dfs.data.transfer.protection configuration in HDFS.
+	DataTransferProtection string `json:"dataTransferProtection,omitempty" protobuf:"bytes,4,opt,name=dataTransferProtection"`
 }
 
 // HDFSKrbConfig is auth configurations for Kerberos
@@ -2941,6 +3021,7 @@ type ScriptTemplate struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
 
 	// Source contains the source code of the script to execute
+	// +optional
 	Source string `json:"source" protobuf:"bytes,2,opt,name=source"`
 }
 
@@ -3145,6 +3226,9 @@ type DAGTask struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	// Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively,
+	// so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Inline *Template `json:"inline,omitempty" protobuf:"bytes,14,opt,name=inline"`
 
 	// Arguments are the parameter and artifact arguments to the template
@@ -3157,6 +3241,10 @@ type DAGTask struct {
 	Dependencies []string `json:"dependencies,omitempty" protobuf:"bytes,5,rep,name=dependencies"`
 
 	// WithItems expands a task into multiple parallel tasks from the items in the list
+	// Note: The structure of WithItems is free-form, so we need
+	// "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:pruning:PreserveUnknownFields
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,6,rep,name=withItems"`
 
 	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
@@ -3374,6 +3462,11 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
+// GetPodMetadata returns the PodMetadata of a workflow.
+func (wf *Workflow) GetPodMetadata() *Metadata {
+	return wf.Spec.PodMetadata
+}
+
 // GetWorkflowSpec returns the Spec of a workflow.
 func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 	return wf.Spec
@@ -3582,7 +3675,7 @@ func (p *Prometheus) SetValueString(val string) {
 	}
 }
 
-func (p *Prometheus) GetDesc() string {
+func (p *Prometheus) GetKey() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
 	labels := p.GetMetricLabels()
@@ -3744,15 +3837,11 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
-	} else if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+	} else if !slices.Contains(semaphoreHolding.Holders, holdingName) {
 		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
 		return true
@@ -3762,13 +3851,11 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
+
 	if i >= 0 {
-		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+		semaphoreHolding.Holders = slices.DeleteFunc(semaphoreHolding.Holders,
+			func(x string) bool { return x == holdingName })
 		ss.Holding[i] = semaphoreHolding
 		return true
 	}
@@ -3837,13 +3924,17 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	return false
 }
 
+func CheckHolderKeyVersion(holderKey string) HoldingNameVersion {
+	items := strings.Split(holderKey, "/")
+	if len(items) == 2 || len(items) == 3 {
+		return HoldingNameV2
+	}
+	return HoldingNameV1
+}
+
 func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, mutexHolding := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i < 0 {
 		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
 		return true
@@ -3857,11 +3948,7 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
 	i, holder := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
@@ -3876,6 +3963,14 @@ type SynchronizationStatus struct {
 	// Mutex stores this workflow's mutex holder details
 	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
+
+type SynchronizationType string
+
+const (
+	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
+	SynchronizationTypeMutex     SynchronizationType = "Mutex"
+	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
+)
 
 func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
 	switch syncType {
@@ -3900,3 +3995,9 @@ type NodeFlag struct {
 	// Retried tracks whether or not this node was retried by retryStrategy
 	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
 }
+
+type TemplateAnnotation string
+
+const (
+	TemplateAnnotationDisplayName TemplateAnnotation = "workflows.argoproj.io/display-name"
+)

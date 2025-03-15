@@ -1,5 +1,4 @@
 //go:build functional
-// +build functional
 
 package e2e
 
@@ -21,72 +20,6 @@ import (
 
 type WorkflowSuite struct {
 	fixtures.E2ESuite
-}
-
-func (s *WorkflowSuite) TestContainerTemplateAutomountServiceAccountTokenDisabled() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: get-resources-via-container-template-
-  namespace: argo
-spec:
-  serviceAccountName: argo
-  automountServiceAccountToken: false
-  executor:
-    serviceAccountName: argo 
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        name: main
-        image: bitnami/kubectl
-        command:
-          - sh
-        args:
-          - -c
-          - |
-           kubectl get cm 
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
-func (s *WorkflowSuite) TestScriptTemplateAutomountServiceAccountTokenDisabled() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: get-resources-via-script-template-
-  namespace: argo
-spec:
-  serviceAccountName: argo
-  automountServiceAccountToken: false
-  executor:
-    serviceAccountName: argo
-  entrypoint: main
-  templates:
-    - name: main
-      script:
-        name: main
-        image: bitnami/kubectl
-        command:
-          - sh
-        source:
-          kubectl get cm 
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
 }
 
 func (s *WorkflowSuite) TestWorkflowFailedWhenAllPodSetFailedFromPending() {
@@ -117,7 +50,7 @@ spec:
       parameters:
         - name: item
     container:
-      image: centos:latest
+      image: argoproj/argosay:v2
       imagePullPolicy: Always
       command:
         - sh
@@ -185,6 +118,42 @@ spec:
 					assert.Nil(t, c.State.Running)
 				}
 			}
+		})
+}
+
+func (s *WorkflowSuite) TestWorkflowInlinePodName() {
+	s.Given().Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-inline-
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            inline:
+              container:
+                image: argoproj/argosay:v2
+                command:
+                  - cowsay
+                args:
+                  - "foo"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted, time.Minute*1).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return strings.Contains(status.Name, "a")
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.NotContains(t, pod.Name, "--")
 		})
 }
 

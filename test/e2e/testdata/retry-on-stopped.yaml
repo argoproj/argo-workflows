@@ -23,12 +23,13 @@ spec:
 
     - name: sleep
       container:
-        image: alpine:latest
-        command: [ sleep, "10" ]
+        image: argoproj/argosay:v2
+        args: [ sleep, "10" ]
 
     - name: stop
       container:
         image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
         args:
           - stop
           - -l
