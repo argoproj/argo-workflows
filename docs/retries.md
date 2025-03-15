@@ -92,6 +92,7 @@ This is an [expression](variables.md#expression) with access to the following va
 - `lastRetry.status`: The phase of the last retry: Error, Failed
 - `lastRetry.duration`: The duration of the last retry, in seconds
 - `lastRetry.message`: The message output from the last retry (available from version 3.5)
+- `retry.nodeType`: The node type of the retry: Pod, Steps, DAG
 
 If `expression` evaluates to false, the step will not be retried.
 
