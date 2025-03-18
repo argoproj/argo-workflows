@@ -49,7 +49,7 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 			}
 		}()
 		if !rows.Next() {
-			_, err := session.SQL().Exec("alter table ? add primary key(schema_version)", versionTableName)
+			_, err := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
 			if err != nil {
 				return err
 			}
