@@ -22,6 +22,26 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  synchronization: |
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+      connMaxLifetime: 0s
+    controllerName: test
+    limitTableName: sync_limit
+    stateTableName: sync_state
+    controllerTableName: sync_controller
+    deadControllerSeconds: 300
+    postgresql:
+      host: postgres
+      port: 5432
+      database: postgres
+      userNameSecret:
+        name: argo-postgres-config
+        key: username
+      passwordSecret:
+        name: argo-postgres-config
+        key: password
   retentionPolicy: |
     completed: 10
     failed: 3

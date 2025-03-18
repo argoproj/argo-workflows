@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -35,6 +36,7 @@ type Given struct {
 	kubeClient        kubernetes.Interface
 	bearerToken       string
 	restConfig        *rest.Config
+	config            *config.Config
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -55,6 +57,14 @@ func (g *Given) ExampleWorkflow(wf *wfv1.Workflow) *Given {
 	g.wf = wf
 	g.checkLabels(wf)
 	g.checkImages(g.wf, true)
+	return g
+}
+
+// Load created workflow
+func (g *Given) WorkflowWorkflow(wf *wfv1.Workflow) *Given {
+	g.t.Helper()
+	g.wf = wf
+	g.checkImages(g.wf, false)
 	return g
 }
 
@@ -125,6 +135,7 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
+			image == "public.ecr.aws/docker/library/alpine:3.18.4" ||
 			(isExample && (image == "busybox" || image == "python:alpine3.6"))
 	}
 	for _, t := range templates {
@@ -253,5 +264,6 @@ func (g *Given) When() *When {
 		kubeClient:        g.kubeClient,
 		bearerToken:       g.bearerToken,
 		restConfig:        g.restConfig,
+		config:            g.config,
 	}
 }

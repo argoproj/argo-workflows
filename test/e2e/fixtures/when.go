@@ -18,8 +18,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 
+	"github.com/upper/db/v4"
+
+	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
@@ -41,6 +45,7 @@ type When struct {
 	kubeClient        kubernetes.Interface
 	bearerToken       string
 	restConfig        *rest.Config
+	config            *config.Config
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -246,6 +251,18 @@ var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
 	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutex"
 }
 
+var ToBeHoldingAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil && len(wf.Status.Synchronization.Mutex.Holding) > 0, "to be holding a mutex"
+}
+
+var ToBeWaitingOnASemaphore Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Semaphore != nil && len(wf.Status.Synchronization.Semaphore.Waiting) > 0, "to be waiting on a semaphore"
+}
+
+var ToBeHoldingASemaphore Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Semaphore != nil && len(wf.Status.Synchronization.Semaphore.Holding) > 0, "to be holding a semaphore"
+}
+
 type WorkflowCompletionOkay bool
 
 func (w *When) listOptions() metav1.ListOptions {
@@ -282,7 +299,7 @@ func describeListOptions(opts metav1.ListOptions) string {
 //
 // * `metav1.ListOptions` - override label/field selectors
 //
-// * `WorkflowCompletionOkay“ (bool alias): if this is true, we won't stop checking for the other options
+// * `WorkflowCompletionOkay" (bool alias): if this is true, we won't stop checking for the other options
 //   - just because the Workflow completed
 //
 // * `Condition` - a condition - `ToFinish` by default
@@ -627,6 +644,154 @@ func (w *When) DeleteConfigMap(name string) *When {
 	return w
 }
 
+// setupDBSession creates a database session for semaphore operations
+// The caller must defer closing the returned session
+func (w *When) setupDBSession() db.Session {
+	w.t.Helper()
+	// Skip if persistence is not enabled
+	if w.config == nil || w.config.Synchronization == nil {
+		w.t.Fatal("Require synchronization to be setup")
+	}
+
+	ctx := context.Background()
+	dbSession, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return dbSession
+}
+
+// SetupDatabaseSemaphore creates a database semaphore with the specified limit
+func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	// Get the table name from config
+	limitTable := w.config.Synchronization.LimitTableName
+
+	// Insert or update the semaphore limit
+	if w.config.Synchronization.PostgreSQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET sizelimit = $2",
+				limitTable),
+			name, limit)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else if w.config.Synchronization.MySQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES (?, ?) ON DUPLICATE KEY UPDATE sizelimit = ?",
+				limitTable),
+			name, limit, limit)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else {
+		w.t.Fatal("Require one synchronization database to be setup")
+	}
+	return w
+}
+
+// SetDBSemaphoreState inserts or updates a record in the semaphore state table
+func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *string, mutex bool, held bool, priority int32, timestamp time.Time) *When {
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	// Get the table name from config
+	stateTable := w.config.Synchronization.StateTableName
+
+	controllerName := w.config.Synchronization.ControllerName
+	if controller != nil {
+		controllerName = *controller
+	}
+
+	// Insert or update the semaphore state
+	if w.config.Synchronization.PostgreSQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, mutex, held, priority, time) VALUES ($1, $2, $3, $4, $5, $6, $7) "+
+				"ON CONFLICT (name, workflowkey, controller, mutex) DO UPDATE SET held = $5, priority = $6, time = $7",
+				stateTable),
+			name, workflowKey, controllerName, mutex, held, priority, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else if w.config.Synchronization.MySQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, mutex, held, priority, time) VALUES (?, ?, ?, ?, ?, ?, ?) "+
+				"ON DUPLICATE KEY UPDATE held = ?, priority = ?, time = ?",
+				stateTable),
+			name, workflowKey, controllerName, mutex, held, priority, timestamp, held, priority, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else {
+		w.t.Fatal("Require one synchronization database to be setup")
+	}
+	return w
+}
+
+// SetDBSemaphoreControllerHB inserts or updates a record in the semaphore controller heartbeat table
+func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *When {
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	// Get the table name from config
+	controllerTable := w.config.Synchronization.ControllerTableName
+
+	controllerName := w.config.Synchronization.ControllerName
+	if name != nil {
+		controllerName = *name
+	}
+
+	// Insert or update the semaphore state
+	if w.config.Synchronization.PostgreSQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES ($1, $2) "+
+				"ON CONFLICT (controller) DO UPDATE SET time = $2",
+				controllerTable),
+			controllerName, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else if w.config.Synchronization.MySQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES (?, ?) "+
+				"ON DUPLICATE KEY UPDATE time = ?",
+				controllerTable),
+			controllerName, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else {
+		w.t.Fatal("Require one synchronization database to be setup")
+	}
+	return w
+}
+
+// ClearDBSemaphoreState deletes all records from the semaphore state table except for the controller heartbeat records
+func (w *When) ClearDBSemaphoreState() *When {
+	w.t.Helper()
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	_, err := dbSession.SQL().Exec(
+		fmt.Sprintf("DELETE FROM %s", w.config.Synchronization.StateTableName),
+	)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	// Delete all records except for this controller heartbeat records
+	_, err = dbSession.SQL().Exec(
+		fmt.Sprintf("DELETE FROM %s WHERE controller != ?", w.config.Synchronization.ControllerTableName),
+		w.config.Synchronization.ControllerName,
+	)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+
+	return w
+}
+
 func (w *When) PodsQuota(podLimit int) *When {
 	w.t.Helper()
 	ctx := context.Background()
@@ -763,5 +928,6 @@ func (w *When) Given() *Given {
 		cronWf:            w.cronWf,
 		kubeClient:        w.kubeClient,
 		restConfig:        w.restConfig,
+		config:            w.config,
 	}
 }

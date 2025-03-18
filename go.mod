@@ -39,6 +39,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/klauspost/pgzip v1.2.6
 	github.com/minio/minio-go/v7 v7.0.89
+	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/nao1215/markdown v0.6.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/common v0.62.0

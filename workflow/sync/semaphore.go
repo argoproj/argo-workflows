@@ -22,7 +22,7 @@ type prioritySemaphore struct {
 
 var _ semaphore = &prioritySemaphore{}
 
-func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string) *prioritySemaphore {
+func newInternalSemaphore(name string, limit int, nextWorkflow NextWorkflow, lType lockTypeName) *prioritySemaphore {
 	return &prioritySemaphore{
 		name:           name,
 		limit:          limit,
@@ -32,7 +32,8 @@ func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType st
 		lockHolder:     make(map[string]bool),
 		nextWorkflow:   nextWorkflow,
 		log: log.WithFields(log.Fields{
-			lockType: name,
+			"lockType": lType,
+			"name":     name,
 		}),
 	}
 }
@@ -115,21 +116,21 @@ func (s *prioritySemaphore) notifyWaiters() {
 	}
 	for idx := 0; idx < triggerCount; idx++ {
 		item := s.pending.items[idx]
-		wfKey := workflowKey(item)
+		wfKey := workflowKey(item.key)
 		s.log.Debugf("Enqueue the workflow %s", wfKey)
 		s.nextWorkflow(wfKey)
 	}
 }
 
 // workflowKey formulates the proper workqueue key given a semaphore queue item
-func workflowKey(i *item) string {
-	parts := strings.Split(i.key, "/")
+func workflowKey(key string) string {
+	parts := strings.Split(key, "/")
 	if len(parts) == 3 {
 		// the item is template semaphore (namespace/workflow-name/node-id) and so key must be
 		// truncated to just: namespace/workflow-name
 		return fmt.Sprintf("%s/%s", parts[0], parts[1])
 	}
-	return i.key
+	return key
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
@@ -194,7 +195,7 @@ func (s *prioritySemaphore) checkAcquire(holderKey string) (bool, bool, string) 
 		if !isSameWorkflowNodeKeys(holderKey, item.key) {
 			// Enqueue the front workflow if lock is available
 			if len(s.lockHolder) < s.limit {
-				s.nextWorkflow(workflowKey(item))
+				s.nextWorkflow(workflowKey(item.key))
 			}
 			s.log.Infof("%s isn't at the front", holderKey)
 			return false, false, waitingMsg
@@ -226,3 +227,5 @@ func (s *prioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
 	return false, msg
 }
+
+func (s *prioritySemaphore) probeWaiting() {}

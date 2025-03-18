@@ -2185,6 +2185,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| database | [SyncDatabaseRef](#sync-database-ref)| `SyncDatabaseRef` |  | |  |  |
 | name | string| `string` |  | | name of the mutex |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
@@ -3586,6 +3587,7 @@ are set, the values in SecurityContext take precedence.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| database | [SyncDatabaseRef](#sync-database-ref)| `SyncDatabaseRef` |  | |  |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
@@ -3717,6 +3719,21 @@ of the first container processes are calculated.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.</br>Could also be a Duration, e.g.: "2m", "6h" |  |
+
+
+
+### <span id="sync-database-ref"></span> SyncDatabaseRef
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| key | string| `string` |  | |  |  |
 
 
 

@@ -16,6 +16,7 @@ type semaphore interface {
 	getLimitTimestamp() time.Time
 	resetLimitTimestamp()
 	resize(n int) bool
+	probeWaiting()
 }
 
 // expose for overriding in tests
