@@ -23,6 +23,8 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 
 func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
 	dbType := DBTypeFor(session)
+	log.WithFields(log.Fields{"dbType": dbType}).Info("Migrating database schema")
+
 	{
 		// poor mans SQL migration
 		_, err := session.SQL().Exec(fmt.Sprintf("create table if not exists %s(schema_version int not null, primary key(schema_version))", versionTableName))
@@ -30,31 +32,38 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 			return err
 		}
 
-		// Ensure the schema_history table has a primary key, creating it if necessary
-		// This logic is implemented separately from regular migrations to improve compatibility with databases running in strict or HA modes
-		dbIdentifierColumn := "table_schema"
-		if dbType == Postgres {
-			dbIdentifierColumn = "table_catalog"
-		}
-		rows, err := session.SQL().Query(
-			"select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = 'schema_history' and "+dbIdentifierColumn+" = ?",
-			session.Name())
-		if err != nil {
-			return err
-		}
-		defer func() {
-			tmpErr := rows.Close()
-			if err == nil {
-				err = tmpErr
+		// For SQLite, no need to check for primary key existence - it's created in the table definition
+		// For other databases, check if we need to add the primary key
+		if dbType != SQLite {
+			// Ensure the schema_history table has a primary key, creating it if necessary
+			// This logic is implemented separately from regular migrations to improve compatibility with databases running in strict or HA modes
+			dbIdentifierColumn := "table_schema"
+			if dbType == Postgres {
+				dbIdentifierColumn = "table_catalog"
 			}
-		}()
-		if !rows.Next() {
-			_, err := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
+
+			// Check if primary key exists
+			rows, err := session.SQL().Query(
+				fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and "+dbIdentifierColumn+" = ?",
+					versionTableName),
+				session.Name())
 			if err != nil {
 				return err
 			}
-		} else if err := rows.Err(); err != nil {
-			return err
+			defer func() {
+				tmpErr := rows.Close()
+				if err == nil {
+					err = tmpErr
+				}
+			}()
+			if !rows.Next() {
+				_, err := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
+				if err != nil {
+					return err
+				}
+			} else if err := rows.Err(); err != nil {
+				return err
+			}
 		}
 
 		rs, err := session.SQL().Query(fmt.Sprintf("select schema_version from %s", versionTableName))
@@ -76,11 +85,9 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 			return err
 		}
 	}
-	log.WithFields(log.Fields{"dbType": dbType}).Info("Migrating database schema")
 
 	// try and make changes idempotent, as it is possible for the change to apply, but the archive update to fail
 	// and therefore try and apply again next try
-
 	for changeSchemaVersion, change := range changes {
 		err := applyChange(session, changeSchemaVersion, versionTableName, change)
 		if err != nil {

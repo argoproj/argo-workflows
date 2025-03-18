@@ -14,4 +14,5 @@ type semaphore interface {
 	getName() string
 	getLimit() int
 	resize(n int) bool
+	probeWaiting()
 }
