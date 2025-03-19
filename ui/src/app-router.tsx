@@ -65,21 +65,30 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
         return () => sub.unsubscribe();
     }, [popupManager]);
     useEffect(() => {
-        services.info.getUserInfo().then(userInfo => {
-            nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
-            setNamespace(nsUtils.getCurrentNamespace());
-        });
-        services.info
-            .getInfo()
-            .then(info => {
+        const fetchData = async () => {
+            try {
+                // Get user info with built-in retry logic from the service
+                const userInfo = await services.info.getUserInfo();
+                nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
+                setNamespace(nsUtils.getCurrentNamespace());
+
+                // Get app info with built-in retry logic from the service
+                const info = await services.info.getInfo();
                 nsUtils.setManagedNamespace(info.managedNamespace);
                 setNamespace(nsUtils.getCurrentNamespace());
                 setModals(info.modals);
                 setNavBarBackgroundColor(info.navColor);
-            })
-            .then(() => services.info.getVersion())
-            .then(setVersion)
-            .catch(setError);
+
+                // Get version info with built-in retry logic from the service
+                const version = await services.info.getVersion();
+                setVersion(version);
+            } catch (err) {
+                console.error('Failed to initialize application:', err);
+                setError(err);
+            }
+        };
+
+        fetchData();
     }, []);
 
     const managedNamespace = nsUtils.getManagedNamespace();
