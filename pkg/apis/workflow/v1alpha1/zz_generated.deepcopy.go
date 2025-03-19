@@ -3296,11 +3296,6 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.Priority != nil {
-		in, out := &in.Priority, &out.Priority
-		*out = new(int32)
-		**out = **in
-	}
 	if in.AutomountServiceAccountToken != nil {
 		in, out := &in.AutomountServiceAccountToken, &out.AutomountServiceAccountToken
 		*out = new(bool)
@@ -3337,6 +3332,13 @@ func (in *Template) DeepCopyInto(out *Template) {
 		in, out := &in.Memoize, &out.Memoize
 		*out = new(Memoize)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.Annotations != nil {
+		in, out := &in.Annotations, &out.Annotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	return
 }
@@ -3854,11 +3856,6 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.PodGC, &out.PodGC
 		*out = new(PodGC)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.PodPriority != nil {
-		in, out := &in.PodPriority, &out.PodPriority
-		*out = new(int32)
-		**out = **in
 	}
 	if in.HostAliases != nil {
 		in, out := &in.HostAliases, &out.HostAliases

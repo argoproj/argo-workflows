@@ -1,13 +1,14 @@
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 
+import {GraphViewer} from '../shared/components/editors/graph-viewer';
 import {LabelsAndAnnotationsEditor} from '../shared/components/editors/labels-and-annotations-editor';
 import {MetadataEditor} from '../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../shared/components/editors/workflow-parameters-editor';
 import {ObjectEditor} from '../shared/components/object-editor';
 import type {Lang} from '../shared/components/object-parser';
 import {CronWorkflow} from '../shared/models';
-import {CronWorkflowSpecEditor} from './cron-workflow-spec-editior';
+import {CronWorkflowSpecEditor} from './cron-workflow-spec-editor';
 import {CronWorkflowStatusViewer} from './cron-workflow-status-viewer';
 
 export function CronWorkflowEditor({
@@ -94,6 +95,11 @@ export function CronWorkflowEditor({
                             }
                         />
                     )
+                },
+                {
+                    key: 'graph',
+                    title: 'Graph',
+                    content: <GraphViewer workflowDefinition={cronWorkflow} />
                 }
             ]}
         />

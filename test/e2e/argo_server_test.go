@@ -954,7 +954,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
       }
     },
     "spec": {
-      "schedule": "* * * * *",
+      "schedules": ["* * * * *"],
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -1001,7 +1001,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -1058,7 +1059,7 @@ spec:
       }
     },
     "spec": {
-      "schedule": "1 * * * *",
+      "schedules": ["1 * * * *"],
       "workflowMetadata": {
         "labels": {"workflows.argoproj.io/test": "true"}
       },
@@ -1079,7 +1080,7 @@ spec:
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.spec.schedule").
+			Path("$.spec.schedules[0]").
 			IsEqual("1 * * * *")
 	})
 
@@ -1824,7 +1825,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       }
     },
     "spec": {
-      "schedule": "* * * * *",
+      "schedules": ["* * * * *"],
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -2133,6 +2134,42 @@ func (s *ArgoServerSuite) TestRateLimitHeader() {
 		resp.Header("X-RateLimit-Reset").NotEmpty()
 		resp.Header("Retry-After").IsEmpty()
 	})
+}
+
+func (s *ArgoServerSuite) TestPostgresNullBytes() {
+	// only meaningful for postgres, but shouldn't fail  for mysql.
+	var uid types.UID
+	_ = uid
+
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: archie-
+  labels:
+    foo: 1
+spec:
+  entrypoint: run-archie
+  templates:
+    - name: run-archie
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "hello \u0000"]`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		})
+
+	j := s.e().GET("/api/v1/archived-workflows/{uid}", uid).
+		Expect().
+		Status(200).
+		JSON()
+	j.
+		Path("$.spec.templates[0].container.args[1]").
+		IsEqual("hello \u0000")
+
 }
 
 func TestArgoServerSuite(t *testing.T) {

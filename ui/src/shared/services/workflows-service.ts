@@ -4,7 +4,7 @@ import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
 import {uiUrl} from '../base';
 import * as models from '../models';
-import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../models';
+import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../models';
 import {ResubmitOpts, RetryOpts} from '../models';
 import {SubmitOpts} from '../models/submit-opts';
 import {Pagination} from '../pagination';
@@ -55,9 +55,11 @@ export const WorkflowsService = {
             'items.spec.suspend'
         ],
         name?: string,
-        nameFilter?: NameFilterKeys
+        nameFilter?: NameFilterKeys,
+        createdAfter?: Date,
+        finishedBefore?: Date
     ) {
-        const params = queryParams({phases, labels, pagination, name, nameFilter});
+        const params = queryParams({phases, labels, pagination, name, nameFilter, createdAfter, finishedBefore});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },
@@ -253,9 +255,8 @@ export const WorkflowsService = {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
         const getLogsFromCluster = () => this.getContainerLogsFromCluster(workflow, podName, container, grep);
 
-        // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
-        // that the Workflow and associated pods have been deleted
-        if (archived) {
+        // If our workflow was deleted, try to get logs from artifacts.
+        if (!isWorkflowInCluster(workflow)) {
             return getLogsFromArtifact();
         }
 

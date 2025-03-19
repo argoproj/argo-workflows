@@ -818,11 +818,12 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
-	retries.Limit = intstrutil.ParsePtr("2")
+	retries.Limit = intstrutil.ParsePtr("3")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
 		Factor:   intstrutil.ParsePtr("2"),
+		Cap:      "11m",
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -863,6 +864,21 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.NoError(err)
 	require.LessOrEqual(backoff, 600)
 	require.Less(595, backoff)
+
+	woc.initializeNode(nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.addChildNode(nodeName, nodeName+"(2)")
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(err)
+
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	require.NoError(err)
+	require.Equal(wfv1.NodeRunning, n.Phase)
+
+	// Third backoff should be limited to 660 seconds by the Cap.
+	backoff, err = parseRetryMessage(n.Message)
+	require.NoError(err)
+	require.LessOrEqual(backoff, 660)
+	require.Less(655, backoff)
 
 	// Mark lastChild as successful.
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
@@ -1764,6 +1780,33 @@ func TestAssessNodeStatus(t *testing.T) {
 		node:        &wfv1.NodeStatus{TemplateName: templateName},
 		wantPhase:   wfv1.NodeError,
 		wantMessage: "Unexpected pod phase for : ",
+	}, {
+		name: "pod failed - main container still running, init container finished",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{StartedAt: metav1.Time{Time: time.Now()}}},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{StartedAt: metav1.Time{Time: time.Now()}}},
+					},
+				},
+				Message: "Pod Failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "Pod Failed",
 	}}
 
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -8316,8 +8359,8 @@ spec:
     - name: message
       value: mutex1
   synchronization:
-    mutex:
-      name:  "{{workflow.parameters.mutex}}"
+    mutexes:
+      - name:  "{{workflow.parameters.mutex}}"
   templates:
   - name: whalesay1
     container:
@@ -8336,7 +8379,7 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 	err := woc.setExecWorkflow(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, woc.execWf)
-	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutex.Name)
+	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutexes[0].Name)
 	tempStr, err := json.Marshal(woc.execWf.Spec.Templates)
 	require.NoError(t, err)
 	assert.Contains(t, string(tempStr), "{{workflow.parameters.message}}")
@@ -8420,7 +8463,7 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.NotNil(t, woc.execWf)
-			assert.Equal(t, tt.expectedMutexName, woc.execWf.Spec.Synchronization.Mutex.Name)
+			assert.Equal(t, tt.expectedMutexName, woc.execWf.Spec.Synchronization.Mutexes[0].Name)
 			assert.Equal(t, tt.expectedSchedulerName, woc.execWf.Spec.SchedulerName)
 		})
 	}
@@ -8504,8 +8547,8 @@ spec:
       image: docker/whalesay:latest
     name: whalesay
     synchronization:
-      mutex:
-        name: "{{ workflow.parameters.derived-mutex-name }}"
+      mutexes:
+        - name: "{{ workflow.parameters.derived-mutex-name }}"
   ttlStrategy:
     secondsAfterCompletion: 600
 status:
@@ -8542,7 +8585,7 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	}, workflowExistenceFunc)
 
 	// preempt lock
-	_, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+	_, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf, "test", &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{&wfv1.Mutex{Name: "welcome"}}})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
@@ -8551,7 +8594,7 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Phase)
 	assert.Equal(t, "Waiting for argo/Mutex/welcome lock. Lock status: 0/1", woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
 
-	woc.controller.syncManager.Release(ctx, wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+	woc.controller.syncManager.Release(ctx, wf, "test", &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{&wfv1.Mutex{Name: "welcome"}}})
 	woc.operate(ctx)
 	assert.Equal(t, "", woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
 }

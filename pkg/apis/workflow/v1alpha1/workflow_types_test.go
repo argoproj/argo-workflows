@@ -1103,11 +1103,11 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 		},
 		Spec: WorkflowSpec{
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{&SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "test",
 					},
-				}},
+				}}},
 			},
 		},
 	}
@@ -1118,38 +1118,50 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 		{
 			Name: "t1",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "template",
+				Semaphores: []*SemaphoreRef{
+					&SemaphoreRef{
+						ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "template",
+							},
+						},
 					},
-				}},
+					&SemaphoreRef{
+						ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "template-b",
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			Name: "t1",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{&SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "template1",
 					},
-				}},
+				}}},
 			},
 		},
 		{
 			Name: "t2",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{&SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "template",
 					},
-				}},
+				}}},
 			},
 		},
 	}
 	keys = wf.GetSemaphoreKeys()
-	assert.Len(keys, 3)
+	assert.Len(keys, 4)
 	assert.Contains(keys, "test/test")
 	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template-b")
 	assert.Contains(keys, "test/template1")
 
 	spec := wf.Spec.DeepCopy()
@@ -1160,9 +1172,10 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 	}
 	wf.Status.StoredWorkflowSpec = spec
 	keys = wf.GetSemaphoreKeys()
-	assert.Len(keys, 3)
+	assert.Len(keys, 4)
 	assert.Contains(keys, "test/test")
 	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template-b")
 	assert.Contains(keys, "test/template1")
 }
 

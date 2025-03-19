@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - "main"
+      - "release-*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -61,7 +62,6 @@ jobs:
               - sdks/**
               # example test suite
               - examples/**
-              - hack/test-examples.sh
             codegen:
               - *common
               # generated files
@@ -205,7 +205,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
         with:
           name: ${{matrix.image}}_image.tar
           path: /tmp/${{matrix.image}}_image.tar
@@ -260,15 +260,15 @@ jobs:
             profile: minimal
             use-api: true
           - test: test-executor
-            install_k3s_version: v1.29.10+k3s1
+            k8s_version: min
             profile: minimal
             use-api: false
           - test: test-corefunctional
-            install_k3s_version: v1.29.10+k3s1
+            k8s_version: min
             profile: minimal
             use-api: false
           - test: test-functional
-            install_k3s_version: v1.29.10+k3s1
+            k8s_version: min
             profile: minimal
             use-api: false
     steps:
@@ -305,12 +305,11 @@ jobs:
         # but it's noisy and makes the logs for "Start controller/API" hard to follow.
         run: sudo apt-get -y install socat && make kit
       - name: Install and start K3S
+        env:
+          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
         run: |
-          if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.31.2+k3s1
-          else
-            export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
-          fi
+          . hack/k8s-versions.sh
+          export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
 
           curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
             INSTALL_K3S_EXEC="--docker --kubelet-arg=config=${GITHUB_WORKSPACE}/test/e2e/manifests/kubelet-configuration.yaml" \
@@ -323,7 +322,7 @@ jobs:
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - name: Download images
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           pattern: '*_image.tar'
           path: /tmp
@@ -362,6 +361,8 @@ jobs:
             POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
           make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
         timeout-minutes: 5
+      - name: Validate release manifests
+        run: make manifests-validate
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
 

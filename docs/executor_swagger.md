@@ -468,6 +468,7 @@ of a single workflow step, which the executor will use as a default location to 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| cap | string| `string` |  | | Cap is a limit on revised values of the duration parameter. If a</br>multiplication by the factor parameter would make the duration</br>exceed the cap then the duration is set to the cap |  |
 | duration | string| `string` |  | | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") |  |
 | factor | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.</br>It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.</br>However, when the workflow fails, the pod's deadline is then overridden by maxDuration.</br>This ensures that the workflow does not exceed the specified maximum duration when retries are involved. |  |
@@ -668,7 +669,7 @@ key-value pairs as environment variables.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the ConfigMap must be defined</br>+optional |  |
 
 
@@ -688,7 +689,7 @@ key-value pairs as environment variables.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | key | string| `string` |  | | The key to select. |  |
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the ConfigMap or its key must be defined</br>+optional |  |
 
 
@@ -712,7 +713,7 @@ mode.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>ConfigMap will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the ConfigMap,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | optional specify whether the ConfigMap or its keys must be defined</br>+optional |  |
 
 
@@ -736,7 +737,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode is optional: mode bits used to set permissions on created files by default.</br>Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.</br>YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.</br>Defaults to 0644.</br>Directories within the path are not affected by this setting.</br>This might be in conflict with other options that affect the file</br>mode, like fsGroup, and the result can be other mode bits set.</br>+optional |  |
 | items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>ConfigMap will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the ConfigMap,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | optional specify whether the ConfigMap or its keys must be defined</br>+optional |  |
 
 
@@ -983,7 +984,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
-| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list |  |
+| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>Note: The structure of WithItems is free-form, so we need</br>"x-kubernetes-preserve-unknown-fields: true" in the validation schema.</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
 | withParam | string| `string` |  | | WithParam expands a task into multiple parallel tasks from the value in the parameter,</br>which is expected to be a JSON list. |  |
 | withSequence | [Sequence](#sequence)| `Sequence` |  | |  |  |
 
@@ -1856,7 +1857,6 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 
 > +protobuf.options.(gogoproto.goproto_stringer)=false
-+kubebuilder:validation:Type=object
   
 
 
@@ -2005,8 +2005,16 @@ hook. One and only one of the fields, except TCPSocket must be specified.
 ### <span id="local-object-reference"></span> LocalObjectReference
 
 
-> LocalObjectReference contains enough information to let you locate the
-referenced object inside the same namespace.
+> New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+Those cannot be well described when embedded.
+2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+3. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+
+Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
 +structType=atomic
   
 
@@ -2018,7 +2026,7 @@ referenced object inside the same namespace.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 
 
 
@@ -2511,10 +2519,7 @@ be cluster-scoped, so there is no namespace field.
 ### <span id="parallel-steps"></span> ParallelSteps
 
 
-> +kubebuilder:validation:Type=array
   
-
-
 
 [interface{}](#interface)
 
@@ -2754,6 +2759,17 @@ when volume is mounted.
 
 
 
+### <span id="pod-s-e-linux-change-policy"></span> PodSELinuxChangePolicy
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| PodSELinuxChangePolicy | string| string | |  |  |
+
+
+
 ### <span id="pod-security-context"></span> PodSecurityContext
 
 
@@ -2775,6 +2791,7 @@ container.securityContext take precedence over field values of PodSecurityContex
 | runAsGroup | int64 (formatted integer)| `int64` |  | | The GID to run the entrypoint of the container process.</br>Uses runtime default if unset.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence</br>for that container.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
 | runAsNonRoot | boolean| `bool` |  | | Indicates that the container must run as a non-root user.</br>If true, the Kubelet will validate the image at runtime to ensure that it</br>does not run as UID 0 (root) and fail to start the container if it does.</br>If unset or false, no such validation will be performed.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence.</br>+optional |  |
 | runAsUser | int64 (formatted integer)| `int64` |  | | The UID to run the entrypoint of the container process.</br>Defaults to user specified in image metadata if unspecified.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence</br>for that container.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
+| seLinuxChangePolicy | [PodSELinuxChangePolicy](#pod-s-e-linux-change-policy)| `PodSELinuxChangePolicy` |  | |  |  |
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
 | supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in</br>addition to the container's primary GID and fsGroup (if specified).  If</br>the SupplementalGroupsPolicy feature is enabled, the</br>supplementalGroupsPolicy field determines whether these are in addition</br>to or instead of any group memberships defined in the container image.</br>If unspecified, no additional groups are added, though group memberships</br>defined in the container image may still be used, depending on the</br>supplementalGroupsPolicy field.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional</br>+listType=atomic |  |
@@ -3391,7 +3408,7 @@ cause implementors to also use a fixed point implementation.
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
-| source | string| `string` |  | | Source contains the source code of the script to execute |  |
+| source | string| `string` |  | | Source contains the source code of the script to execute</br>+optional |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
 | stdinOnce | boolean| `bool` |  | | Whether the container runtime should close the stdin channel after it has been opened by</br>a single attach. When stdin is true the stdin stream will remain open across multiple attach</br>sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the</br>first client attaches to stdin, and then remains open and accepts data until the client disconnects,</br>at which time stdin is closed and remains closed until the container is restarted. If this</br>flag is false, a container processes that reads from stdin will never receive an EOF.</br>Default is false</br>+optional |  |
@@ -3453,7 +3470,7 @@ key-value pairs as environment variables.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the Secret must be defined</br>+optional |  |
 
 
@@ -3473,7 +3490,7 @@ key-value pairs as environment variables.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | key | string| `string` |  | | The key of the secret to select from.  Must be a valid secret key. |  |
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the Secret or its key must be defined</br>+optional |  |
 
 
@@ -3496,7 +3513,7 @@ mode.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>Secret will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the Secret,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
-| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | optional field specify whether the Secret or its key must be defined</br>+optional |  |
 
 
@@ -3810,6 +3827,7 @@ of the first container processes are calculated.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | activeDeadlineSeconds | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | affinity | [Affinity](#affinity)| `Affinity` |  | |  |  |
+| annotations | map of string| `map[string]string` |  | | Annotations is a list of annotations to add to the template at runtime |  |
 | archiveLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
 | automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.</br>ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
@@ -3832,7 +3850,6 @@ of the first container processes are calculated.
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
-| priority | int32 (formatted integer)| `int32` |  | | Priority to apply to workflow pods. |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |
 | retryStrategy | [RetryStrategy](#retry-strategy)| `RetryStrategy` |  | |  |  |
@@ -3954,8 +3971,19 @@ the triple <key,value,effect> using the matching operator <operator>.
 ### <span id="typed-local-object-reference"></span> TypedLocalObjectReference
 
 
-> TypedLocalObjectReference contains enough information to let you locate the
-typed referenced object inside the same namespace.
+> New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+Those cannot be well described when embedded.
+2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+3. The fields are both imprecise and overly precise.  Kind is not a precise mapping to a URL. This can produce ambiguity
+during interpretation and require a REST mapping.  In most cases, the dependency is on the group,resource tuple
+and the version of the actual struct is irrelevant.
+4. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+
+Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
 +structType=atomic
   
 
@@ -3976,7 +4004,10 @@ typed referenced object inside the same namespace.
 ### <span id="typed-object-reference"></span> TypedObjectReference
 
 
+> TypedObjectReference contains enough information to let you locate the typed referenced object
   
+
+
 
 
 

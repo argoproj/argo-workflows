@@ -1,6 +1,6 @@
 {
-  "$id": "http://workflows.argoproj.io/workflows.json",
-  "$schema": "http://json-schema.org/schema#",
+  "$id": "https://raw.githubusercontent.com/argoproj/argo-workflows/HEAD/api/jsonschema/schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "definitions": {
     "eventsource.CreateEventSourceRequest": {
       "properties": {
@@ -4352,6 +4352,10 @@
     "io.argoproj.workflow.v1alpha1.Backoff": {
       "description": "Backoff is a backoff strategy to use within retryStrategy",
       "properties": {
+        "cap": {
+          "description": "Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap",
+          "type": "string"
+        },
         "duration": {
           "description": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")",
           "type": "string"
@@ -4980,14 +4984,6 @@
           "type": "integer"
         }
       },
-      "required": [
-        "active",
-        "lastScheduledTime",
-        "conditions",
-        "succeeded",
-        "failed",
-        "phase"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest": {
@@ -5032,7 +5028,7 @@
         },
         "inline": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
-          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
         "name": {
           "description": "Name is the name of the target",
@@ -5055,7 +5051,7 @@
           "type": "string"
         },
         "withItems": {
-          "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
+          "description": "WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
           },
@@ -6250,7 +6246,7 @@
           "type": "string"
         },
         "value": {
-          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
+          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value",
           "type": "string"
         },
         "valueFrom": {
@@ -7031,6 +7027,13 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)"
         },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Annotations is a list of annotations to add to the template at runtime",
+          "type": "object"
+        },
         "archiveLocation": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key."
@@ -7126,15 +7129,11 @@
         },
         "plugin": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin",
-          "description": "Plugin is a plugin template"
+          "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
-        },
-        "priority": {
-          "description": "Priority to apply to workflow pods.",
-          "type": "integer"
         },
         "priorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
@@ -7920,10 +7919,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
           "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
         },
-        "podPriority": {
-          "description": "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
-          "type": "integer"
-        },
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
           "type": "string"
@@ -8142,7 +8137,7 @@
         },
         "inline": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
-          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an \"inline\" field. Kubernetes doesn't allow recursive types, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
         "name": {
           "description": "Name of the step",
@@ -8165,7 +8160,7 @@
           "type": "string"
         },
         "withItems": {
-          "description": "WithItems expands a step into multiple parallel steps from the items in the list",
+          "description": "WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
           },
@@ -9308,6 +9303,7 @@
       "type": "object"
     },
     "io.k8s.api.core.v1.GRPCAction": {
+      "description": "GRPCAction specifies an action involving a GRPC service.",
       "properties": {
         "port": {
           "description": "Port number of the gRPC service. Number must be in the range 1 to 65535.",
@@ -9569,19 +9565,19 @@
       "properties": {
         "exec": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
-          "description": "Exec specifies the action to take."
+          "description": "Exec specifies a command to execute in the container."
         },
         "httpGet": {
           "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
-          "description": "HTTPGet specifies the http request to perform."
+          "description": "HTTPGet specifies an HTTP GET request to perform."
         },
         "sleep": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SleepAction",
-          "description": "Sleep represents the duration that the container should sleep before being terminated."
+          "description": "Sleep represents a duration that the container should sleep."
         },
         "tcpSocket": {
           "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
-          "description": "Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified."
+          "description": "Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for backward compatibility. There is no validation of this field and lifecycle hooks will fail at runtime when it is specified."
         }
       },
       "type": "object"
@@ -9827,9 +9823,11 @@
           "type": "string"
         },
         "status": {
+          "description": "Status is the status of the condition. Can be True, False, Unknown. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required",
           "type": "string"
         },
         "type": {
+          "description": "Type is the type of the condition. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about",
           "type": "string"
         }
       },
@@ -10120,10 +10118,11 @@
       "description": "PodDNSConfigOption defines DNS resolver options of a pod.",
       "properties": {
         "name": {
-          "description": "Required.",
+          "description": "Name is this DNS resolver option's name. Required.",
           "type": "string"
         },
         "value": {
+          "description": "Value is this DNS resolver option's value.",
           "type": "string"
         }
       },
@@ -10155,6 +10154,10 @@
         "runAsUser": {
           "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
+        },
+        "seLinuxChangePolicy": {
+          "description": "seLinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod. It has no effect on nodes that do not support SELinux or to volumes does not support SELinux. Valid values are \"MountOption\" and \"Recursive\".\n\n\"Recursive\" means relabeling of all files on all Pod volumes by the container runtime. This may be slow for large volumes, but allows mixing privileged and unprivileged Pods sharing the same volume on the same node.\n\n\"MountOption\" mounts all eligible Pod volumes with `-o context` mount option. This requires all Pods that share the same volume to use the same SELinux label. It is not possible to share the same volume among privileged and unprivileged Pods. Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their CSIDriver instance. Other volumes are always re-labelled recursively. \"MountOption\" value is allowed only when SELinuxMount feature gate is enabled.\n\nIf not specified and SELinuxMount feature gate is enabled, \"MountOption\" is used. If not specified and SELinuxMount feature gate is disabled, \"MountOption\" is used for ReadWriteOncePod volumes and \"Recursive\" for all other volumes.\n\nThis field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.\n\nAll Pods that use the same volume should use the same seLinuxChangePolicy, otherwise some pods can get stuck in ContainerCreating state. Note that this field cannot be set when spec.os.name is windows.",
+          "type": "string"
         },
         "seLinuxOptions": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SELinuxOptions",
@@ -10236,7 +10239,7 @@
       "properties": {
         "exec": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
-          "description": "Exec specifies the action to take."
+          "description": "Exec specifies a command to execute in the container."
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -10244,11 +10247,11 @@
         },
         "grpc": {
           "$ref": "#/definitions/io.k8s.api.core.v1.GRPCAction",
-          "description": "GRPC specifies an action involving a GRPC port."
+          "description": "GRPC specifies a GRPC HealthCheckRequest."
         },
         "httpGet": {
           "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
-          "description": "HTTPGet specifies the http request to perform."
+          "description": "HTTPGet specifies an HTTP GET request to perform."
         },
         "initialDelaySeconds": {
           "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -10264,7 +10267,7 @@
         },
         "tcpSocket": {
           "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
-          "description": "TCPSocket specifies an action involving a TCP port."
+          "description": "TCPSocket specifies a connection to a TCP port."
         },
         "terminationGracePeriodSeconds": {
           "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
@@ -10859,6 +10862,7 @@
       "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.TypedObjectReference": {
+      "description": "TypedObjectReference contains enough information to let you locate the typed referenced object",
       "properties": {
         "apiGroup": {
           "description": "APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.",
@@ -10888,23 +10892,23 @@
       "properties": {
         "awsElasticBlockStore": {
           "$ref": "#/definitions/io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource",
-          "description": "awsElasticBlockStore represents an AWS Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore"
+          "description": "awsElasticBlockStore represents an AWS Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore"
         },
         "azureDisk": {
           "$ref": "#/definitions/io.k8s.api.core.v1.AzureDiskVolumeSource",
-          "description": "azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod."
+          "description": "azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod. Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type are redirected to the disk.csi.azure.com CSI driver."
         },
         "azureFile": {
           "$ref": "#/definitions/io.k8s.api.core.v1.AzureFileVolumeSource",
-          "description": "azureFile represents an Azure File Service mount on the host and bind mount to the pod."
+          "description": "azureFile represents an Azure File Service mount on the host and bind mount to the pod. Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type are redirected to the file.csi.azure.com CSI driver."
         },
         "cephfs": {
           "$ref": "#/definitions/io.k8s.api.core.v1.CephFSVolumeSource",
-          "description": "cephFS represents a Ceph FS mount on the host that shares a pod's lifetime"
+          "description": "cephFS represents a Ceph FS mount on the host that shares a pod's lifetime. Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported."
         },
         "cinder": {
           "$ref": "#/definitions/io.k8s.api.core.v1.CinderVolumeSource",
-          "description": "cinder represents a cinder volume attached and mounted on kubelets host machine. More info: https://examples.k8s.io/mysql-cinder-pd/README.md"
+          "description": "cinder represents a cinder volume attached and mounted on kubelets host machine. Deprecated: Cinder is deprecated. All operations for the in-tree cinder type are redirected to the cinder.csi.openstack.org CSI driver. More info: https://examples.k8s.io/mysql-cinder-pd/README.md"
         },
         "configMap": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapVolumeSource",
@@ -10912,7 +10916,7 @@
         },
         "csi": {
           "$ref": "#/definitions/io.k8s.api.core.v1.CSIVolumeSource",
-          "description": "csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature)."
+          "description": "csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers."
         },
         "downwardAPI": {
           "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIVolumeSource",
@@ -10932,23 +10936,23 @@
         },
         "flexVolume": {
           "$ref": "#/definitions/io.k8s.api.core.v1.FlexVolumeSource",
-          "description": "flexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin."
+          "description": "flexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead."
         },
         "flocker": {
           "$ref": "#/definitions/io.k8s.api.core.v1.FlockerVolumeSource",
-          "description": "flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running"
+          "description": "flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running. Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported."
         },
         "gcePersistentDisk": {
           "$ref": "#/definitions/io.k8s.api.core.v1.GCEPersistentDiskVolumeSource",
-          "description": "gcePersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk"
+          "description": "gcePersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk"
         },
         "gitRepo": {
           "$ref": "#/definitions/io.k8s.api.core.v1.GitRepoVolumeSource",
-          "description": "gitRepo represents a git repository at a particular revision. DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container."
+          "description": "gitRepo represents a git repository at a particular revision. Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container."
         },
         "glusterfs": {
           "$ref": "#/definitions/io.k8s.api.core.v1.GlusterfsVolumeSource",
-          "description": "glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/glusterfs/README.md"
+          "description": "glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported. More info: https://examples.k8s.io/volumes/glusterfs/README.md"
         },
         "hostPath": {
           "$ref": "#/definitions/io.k8s.api.core.v1.HostPathVolumeSource",
@@ -10976,11 +10980,11 @@
         },
         "photonPersistentDisk": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PhotonPersistentDiskVolumeSource",
-          "description": "photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine"
+          "description": "photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported."
         },
         "portworxVolume": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PortworxVolumeSource",
-          "description": "portworxVolume represents a portworx volume attached and mounted on kubelets host machine"
+          "description": "portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on."
         },
         "projected": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ProjectedVolumeSource",
@@ -10988,15 +10992,15 @@
         },
         "quobyte": {
           "$ref": "#/definitions/io.k8s.api.core.v1.QuobyteVolumeSource",
-          "description": "quobyte represents a Quobyte mount on the host that shares a pod's lifetime"
+          "description": "quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported."
         },
         "rbd": {
           "$ref": "#/definitions/io.k8s.api.core.v1.RBDVolumeSource",
-          "description": "rbd represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/rbd/README.md"
+          "description": "rbd represents a Rados Block Device mount on the host that shares a pod's lifetime. Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported. More info: https://examples.k8s.io/volumes/rbd/README.md"
         },
         "scaleIO": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ScaleIOVolumeSource",
-          "description": "scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes."
+          "description": "scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes. Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported."
         },
         "secret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretVolumeSource",
@@ -11004,11 +11008,11 @@
         },
         "storageos": {
           "$ref": "#/definitions/io.k8s.api.core.v1.StorageOSVolumeSource",
-          "description": "storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes."
+          "description": "storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes. Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported."
         },
         "vsphereVolume": {
           "$ref": "#/definitions/io.k8s.api.core.v1.VsphereVirtualDiskVolumeSource",
-          "description": "vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine"
+          "description": "vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine. Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type are redirected to the csi.vsphere.vmware.com CSI driver."
         }
       },
       "required": [

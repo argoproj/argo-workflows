@@ -51,7 +51,7 @@ endif
 # -- install & run options
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
+PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
 UI                    ?= false # start the UI with HTTP
 UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
@@ -300,7 +300,7 @@ endif
 $(GOPATH)/bin/controller-gen: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2
 endif
 $(GOPATH)/bin/go-to-protobuf: Makefile
 # update this in Nix when upgrading it here
@@ -447,6 +447,10 @@ dist/manifests/%: manifests/%
 
 # lint/test/etc
 
+.PHONE: manifests-validate
+manifests-validate:
+	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
+
 $(GOPATH)/bin/golangci-lint: Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
@@ -480,7 +484,10 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) \
+		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
+		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
+		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
@@ -525,15 +532,7 @@ dist/argosay:
 
 .PHONY: kit
 kit: Makefile
-ifeq ($(shell command -v kit),)
-ifeq ($(shell uname),Darwin)
-	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
-	brew install kit
-else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
-endif
-endif
-
+	go install github.com/kitproj/kit@v0.1.79
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
@@ -600,10 +599,6 @@ test-cli: ./dist/argo
 test-%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
-.PHONY: test-examples
-test-examples:
-	./hack/test-examples.sh
-
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
@@ -669,7 +664,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.31.3/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.32.2/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
@@ -723,7 +718,7 @@ endif
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell docs/metrics.md
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
 
@@ -748,7 +743,7 @@ endif
 .PHONY: docs-lint
 docs-lint: /usr/local/bin/markdownlint docs/metrics.md
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md
 
 /usr/local/bin/mkdocs:
 # update this in Nix when upgrading it here
@@ -767,6 +762,9 @@ docs: /usr/local/bin/mkdocs \
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
+ifeq ($(shell echo $(GIT_BRANCH) | head -c 8),release-)
+	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
+endif
 	TZ=UTC mkdocs build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"

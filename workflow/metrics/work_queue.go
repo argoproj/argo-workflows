@@ -52,9 +52,10 @@ func addWorkQueueMetrics(_ context.Context, m *Metrics) error {
 		return err
 	}
 	unfinishedCallback := queueUserdata{
-		gauge: m.AllInstruments[telemetry.InstrumentQueueUnfinishedWork.Name()]}
-	m.AllInstruments[telemetry.InstrumentQueueUnfinishedWork.Name()].SetUserdata(&unfinishedCallback)
-	err = m.AllInstruments[telemetry.InstrumentQueueUnfinishedWork.Name()].RegisterCallback(m.Metrics, unfinishedCallback.update)
+		gauge: m.GetInstrument(telemetry.InstrumentQueueUnfinishedWork.Name()),
+	}
+	unfinishedCallback.gauge.SetUserdata(&unfinishedCallback)
+	err = unfinishedCallback.gauge.RegisterCallback(m.Metrics, unfinishedCallback.update)
 	if err != nil {
 		return err
 	}
@@ -64,10 +65,10 @@ func addWorkQueueMetrics(_ context.Context, m *Metrics) error {
 		return err
 	}
 	longestRunningCallback := queueUserdata{
-		gauge: m.AllInstruments[telemetry.InstrumentQueueLongestRunning.Name()],
+		gauge: m.GetInstrument(telemetry.InstrumentQueueLongestRunning.Name()),
 	}
-	m.AllInstruments[telemetry.InstrumentQueueLongestRunning.Name()].SetUserdata(&longestRunningCallback)
-	err = m.AllInstruments[telemetry.InstrumentQueueLongestRunning.Name()].RegisterCallback(m.Metrics, longestRunningCallback.update)
+	longestRunningCallback.gauge.SetUserdata(&longestRunningCallback)
+	err = longestRunningCallback.gauge.RegisterCallback(m.Metrics, longestRunningCallback.update)
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func (m *Metrics) RateLimiterWithBusyWorkers(ctx context.Context, workQueue work
 	queue := workersBusyRateLimiterWorkQueue{
 		TypedRateLimitingInterface: workqueue.NewTypedRateLimitingQueueWithConfig(workQueue, workqueue.TypedRateLimitingQueueConfig[string]{Name: queueName}),
 		workerType:                 queueName,
-		busyGauge:                  m.AllInstruments[telemetry.InstrumentWorkersBusyCount.Name()],
+		busyGauge:                  m.GetInstrument(telemetry.InstrumentWorkersBusyCount.Name()),
 		ctx:                        ctx,
 	}
 	queue.newWorker(ctx)
@@ -167,7 +168,7 @@ func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[telemetry.InstrumentQueueDepthGauge.Name()],
+		inst: m.GetInstrument(telemetry.InstrumentQueueDepthGauge.Name()),
 	}
 }
 
@@ -175,7 +176,7 @@ func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[telemetry.InstrumentQueueAddsCount.Name()],
+		inst: m.GetInstrument(telemetry.InstrumentQueueAddsCount.Name()),
 	}
 }
 
@@ -183,7 +184,7 @@ func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[telemetry.InstrumentQueueLatency.Name()],
+		inst: m.GetInstrument(telemetry.InstrumentQueueLatency.Name()),
 	}
 }
 
@@ -191,7 +192,7 @@ func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[telemetry.InstrumentQueueDuration.Name()],
+		inst: m.GetInstrument(telemetry.InstrumentQueueDuration.Name()),
 	}
 }
 
@@ -199,7 +200,7 @@ func (m *Metrics) NewRetriesMetric(name string) workqueue.CounterMetric {
 	return queueMetric{
 		ctx:  m.Ctx,
 		name: name,
-		inst: m.AllInstruments[telemetry.InstrumentQueueRetries.Name()],
+		inst: m.GetInstrument(telemetry.InstrumentQueueRetries.Name()),
 	}
 }
 
@@ -207,7 +208,7 @@ func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.Settable
 	metric := queueMetric{
 		ctx:   m.Ctx,
 		name:  name,
-		inst:  m.AllInstruments[telemetry.InstrumentQueueUnfinishedWork.Name()],
+		inst:  m.GetInstrument(telemetry.InstrumentQueueUnfinishedWork.Name()),
 		value: ptr.To(float64(0.0)),
 	}
 	ud := getQueueUserdata(metric.inst)
@@ -219,7 +220,7 @@ func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue
 	metric := queueMetric{
 		ctx:   m.Ctx,
 		name:  name,
-		inst:  m.AllInstruments[telemetry.InstrumentQueueLongestRunning.Name()],
+		inst:  m.GetInstrument(telemetry.InstrumentQueueLongestRunning.Name()),
 		value: ptr.To(float64(0.0)),
 	}
 	ud := getQueueUserdata(metric.inst)
