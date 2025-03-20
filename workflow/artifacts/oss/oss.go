@@ -46,7 +46,6 @@ var (
 	bucketLogFilePrefix    = "bucket-log-"
 	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
 	jobs                   = 5
-	parallel               = 5
 )
 
 type ossCredentials struct {
@@ -522,7 +521,7 @@ func generatePutTasks(objectName, dir string) chan task {
 	return tasks
 }
 func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
-	parallelNum := make(chan string, parallel)
+	parallelNum := make(chan string, jobs)
 	tasks := generatePutTasks(objectName, dir)
 	errCh := make(chan error)
 	var wg sync.WaitGroup
