@@ -1,14 +1,17 @@
 package oss
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -88,11 +91,19 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	// reference https://github.com/aliyun/ossutil/blob/master/lib/cp.go
-	if parallelNum, ok := os.LookupEnv("parallel"); ok {
+	if parallelNum, ok := os.LookupEnv("PARALLEL"); ok {
 		if n, err := strconv.Atoi(parallelNum); err == nil {
 			parallel = n
 		} else {
 			return nil, fmt.Errorf("failed to parse parallel number: %w", err)
+		}
+	}
+
+	if size, ok := os.LookupEnv("MAX_OBJECT_SIZE"); ok {
+		if n, err := strconv.Atoi(size); err == nil {
+			maxObjectSize = int64(n)
+		} else {
+			return nil, fmt.Errorf("failed to parse maxObjectSize: %w", err)
 		}
 	}
 
@@ -427,43 +438,109 @@ func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
 // OSS multipart upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/multipart-upload?spm=a2c63.p38356.0.0.4ebe423fzsaPiN#section-trz-mpy-tes
 func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int64) error {
 	log.Info("OSS Multipart Uploading")
-	// Calculate the number of chunks
+
+	// Calculate number of chunks
 	chunkNum := int(math.Ceil(float64(objectSize)/float64(maxObjectSize))) + 1
 	chunks, err := oss.SplitFileByPartNum(path, chunkNum)
 	if err != nil {
 		return err
 	}
+
 	fd, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return err
 	}
 	defer fd.Close()
-	// Initialize a multipart upload event.
+
+	// Initialize multipart upload
 	imur, err := bucket.InitiateMultipartUpload(objectName)
 	if err != nil {
 		return err
 	}
-	// Upload the chunks.
-	var parts []oss.UploadPart
+
+	var (
+		wg         sync.WaitGroup
+		mu         sync.Mutex
+		parts      []oss.UploadPart
+		firstError error
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Concurrency control (adjustable as needed)
+	sem := make(chan struct{}, parallel)
+
 	for _, chunk := range chunks {
-		_, err := fd.Seek(chunk.Offset, io.SeekStart)
-		if err != nil {
-			return err
-		}
-		// Call the UploadPart method to upload each chunck.
-		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
-		if err != nil {
-			log.Warnf("Upload part error: %v", err)
-			return err
-		}
-		log.Infof("Upload part number: %v, ETag: %v", part.PartNumber, part.ETag)
-		parts = append(parts, part)
+		wg.Add(1)
+
+		go func(c oss.FileChunk) {
+			defer wg.Done()
+
+			// Acquire semaphore
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				return
+			}
+
+			// Check for existing errors
+			mu.Lock()
+			if firstError != nil {
+				mu.Unlock()
+				return
+			}
+			mu.Unlock()
+
+			// Create section reader for thread-safe access
+			reader := io.NewSectionReader(fd, c.Offset, c.Size)
+
+			// Upload part
+			part, err := bucket.UploadPart(imur, reader, c.Size, c.Number)
+			if err != nil {
+				log.Warnf("Upload part %d failed: %v", c.Number, err)
+
+				mu.Lock()
+				if firstError == nil {
+					firstError = err
+					cancel() // Trigger cancellation signal
+				}
+				mu.Unlock()
+				return
+			}
+
+			log.Infof("Uploaded part #%d, ETag: %s", part.PartNumber, part.ETag)
+
+			mu.Lock()
+			parts = append(parts, part)
+			mu.Unlock()
+		}(chunk)
 	}
+
+	wg.Wait()
+
+	// Handle error scenario
+	if firstError != nil {
+		log.Warn("Aborting multipart upload due to error")
+		if abortErr := bucket.AbortMultipartUpload(imur); abortErr != nil {
+			log.Warnf("Abort upload failed: %v", abortErr)
+		}
+		return firstError
+	}
+
+	// Sort parts by part number
+	sort.Slice(parts, func(i, j int) bool {
+		return parts[i].PartNumber < parts[j].PartNumber
+	})
+
+	// Complete multipart upload
 	_, err = bucket.CompleteMultipartUpload(imur, parts)
 	if err != nil {
-		log.Warnf("Complete multipart upload error: %v", err)
+		log.Warnf("Complete upload failed: %v", err)
 		return err
 	}
+
 	return nil
 }
 
