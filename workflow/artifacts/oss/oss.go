@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,7 @@ var (
 	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge", "InternalError"}
 	bucketLogFilePrefix    = "bucket-log-"
 	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
+	parallel               = 5
 )
 
 type ossCredentials struct {
@@ -85,6 +87,15 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 }
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
+	// reference https://github.com/aliyun/ossutil/blob/master/lib/cp.go
+	if parallelNum, ok := os.LookupEnv("parallel"); ok {
+		if n, err := strconv.Atoi(parallelNum); err == nil {
+			parallel = n
+		} else {
+			return nil, fmt.Errorf("failed to parse parallel number: %w", err)
+		}
+	}
+
 	var options []oss.ClientOption
 
 	// for oss driver, the proxy cannot be configured through environment variables
