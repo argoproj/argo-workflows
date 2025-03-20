@@ -5782,6 +5782,10 @@
           "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
           "type": "string"
         },
+        "type": {
+          "description": "The type of the link. E.g. \"external\", \"internal\". If the link type is external, it will open in a new tab.",
+          "type": "string"
+        },
         "url": {
           "description": "The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"",
           "type": "string"
@@ -5790,6 +5794,7 @@
       "required": [
         "name",
         "scope",
+        "type",
         "url"
       ],
       "type": "object",
