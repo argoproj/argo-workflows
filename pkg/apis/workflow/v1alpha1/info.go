@@ -8,6 +8,8 @@ type Link struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// "workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"
 	Scope string `json:"scope" protobuf:"bytes,2,opt,name=scope"`
+	// The type of the link. E.g. "external", "internal". If the link type is external, it will open in a new tab.
+	Type string `json:"type" protobuf:"bytes,4,opt,name=type"`
 	// The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
 	URL string `json:"url" protobuf:"bytes,3,opt,name=url"`
 }

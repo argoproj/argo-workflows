@@ -1,6 +1,7 @@
 export interface Link {
     name: string;
     scope: string;
+    type: string;
     url: string;
 }
 
