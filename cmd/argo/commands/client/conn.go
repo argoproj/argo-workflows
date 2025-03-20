@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -55,6 +57,14 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	var proxy func(*http.Request) (*url.URL, error)
+	if overrides.ClusterInfo.ProxyURL != "" {
+		proxyURL, err := url.Parse(overrides.ClusterInfo.ProxyURL)
+		if err != nil {
+			return nil, nil, err
+		}
+		proxy = http.ProxyURL(proxyURL)
+	}
 	return apiclient.NewClientFromOpts(
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,
@@ -70,6 +80,7 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
 			Context:              ctx,
+			Proxy:                proxy,
 		})
 }
 
