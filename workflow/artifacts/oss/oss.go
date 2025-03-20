@@ -491,7 +491,7 @@ func generatePutTasks(objectName, dir string) chan task {
 	tasks := make(chan task)
 	go func() {
 		defer close(tasks)
-		_ := filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+		_ = filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 
 			if err != nil {
 				log.WithFields(log.Fields{"fpath": fpath}).Error("Failed to walk artifacts path", err)
