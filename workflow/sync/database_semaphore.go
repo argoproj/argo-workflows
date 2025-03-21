@@ -12,11 +12,11 @@ import (
 type limitFunc func() int
 
 type dbConfig struct {
-	limitTable            string
-	stateTable            string
-	controllerTable       string
-	controllerName        string
-	deadControllerTimeout time.Duration
+	limitTable                string
+	stateTable                string
+	controllerTable           string
+	controllerName            string
+	inactiveControllerTimeout time.Duration
 }
 
 type databaseSemaphore struct {
@@ -167,7 +167,7 @@ func (s *databaseSemaphore) queueOrdered(session db.Session) ([]stateRecord, err
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	// Only live controllers are considered
-	since := time.Now().Add(-s.info.config.deadControllerTimeout)
+	since := time.Now().Add(-s.info.config.inactiveControllerTimeout)
 	var queue []stateRecord
 	err := session.SQL().
 		Select(stateKeyField, stateControllerField).

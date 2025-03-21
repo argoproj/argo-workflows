@@ -226,14 +226,14 @@ func (c PersistConfig) GetClusterName() string {
 
 type DatabaseSyncConfig struct {
 	DBConfig
-	ControllerName        string `json:"controllerName"`
-	SkipMigration         bool   `json:"skipMigration,omitempty"`
-	LimitTableName        string `json:"limitTableName,omitempty"`
-	StateTableName        string `json:"stateTableName,omitempty"`
-	ControllerTableName   string `json:"controllerTableName,omitempty"`
-	PollSeconds           *int   `json:"pollSeconds,omitempty"`
-	HeartbeatSeconds      *int   `json:"heartbeatSeconds,omitempty"`
-	DeadControllerSeconds *int   `json:"deadControllerSeconds,omitempty"`
+	ControllerName            string `json:"controllerName"`
+	SkipMigration             bool   `json:"skipMigration,omitempty"`
+	LimitTableName            string `json:"limitTableName,omitempty"`
+	StateTableName            string `json:"stateTableName,omitempty"`
+	ControllerTableName       string `json:"controllerTableName,omitempty"`
+	PollSeconds               *int   `json:"pollSeconds,omitempty"`
+	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
+	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`
 }
 
 type ConnectionPool struct {

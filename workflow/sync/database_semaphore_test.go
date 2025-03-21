@@ -9,8 +9,8 @@ import (
 	"github.com/upper/db/v4"
 )
 
-// TestDeadControllerDBSemaphore tests that a semaphore can't be acquired if the controller is not marked as responding
-func TestDeadControllerDBSemaphore(t *testing.T) {
+// TestInactiveControllerDBSemaphore tests that a semaphore can't be acquired if the controller is not marked as responding
+func TestInactiveControllerDBSemaphore(t *testing.T) {
 	// Only run this test for the database semaphore
 	nextWorkflow := func(key string) {}
 
@@ -22,8 +22,8 @@ func TestDeadControllerDBSemaphore(t *testing.T) {
 	dbSemaphore, ok := s.(*databaseSemaphore)
 	require.True(t, ok, "Expected a database semaphore")
 
-	// Update the controller heartbeat to be older than the dead controller timeout
-	staleTime := time.Now().Add(-dbSemaphore.info.config.deadControllerTimeout * 2)
+	// Update the controller heartbeat to be older than the inactive controller timeout
+	staleTime := time.Now().Add(-dbSemaphore.info.config.inactiveControllerTimeout * 2)
 	_, err := dbSemaphore.info.session.SQL().Update(dbSemaphore.info.config.controllerTable).
 		Set("time", staleTime).
 		Where(db.Cond{"controller": dbSemaphore.info.config.controllerName}).
@@ -35,9 +35,9 @@ func TestDeadControllerDBSemaphore(t *testing.T) {
 	s.addToQueue("foo/wf-01", 0, now)
 	s.addToQueue("foo/wf-02", 0, now.Add(time.Second))
 
-	// Try to acquire - this should fail because the controller is considered dead
+	// Try to acquire - this should fail because the controller is considered inactive
 	acquired, _ := s.tryAcquire("foo/wf-01")
-	assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as dead")
+	assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as inactive")
 
 	// Now update the controller heartbeat to be current
 	_, err = dbSemaphore.info.session.SQL().Update(dbSemaphore.info.config.controllerTable).
@@ -83,17 +83,17 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 	acquired, _ := s.tryAcquire("foo/our-wf-01")
 	assert.False(t, acquired, "Semaphore should not be acquired when another controller's item is first in queue")
 
-	// Now mark the other controller as dead by setting its timestamp to be old
-	staleTime := time.Now().Add(-dbSemaphore.info.config.deadControllerTimeout * 2)
+	// Now mark the other controller as inactive by setting its timestamp to be old
+	staleTime := time.Now().Add(-dbSemaphore.info.config.inactiveControllerTimeout * 2)
 	_, err = dbSemaphore.info.session.SQL().Update(dbSemaphore.info.config.controllerTable).
 		Set("time", staleTime).
 		Where(db.Cond{"controller": otherController}).
 		Exec()
 	require.NoError(t, err)
 
-	// Try again - now it should work because the other controller is considered dead
+	// Try again - now it should work because the other controller is considered inactive
 	acquired, _ = s.tryAcquire("foo/our-wf-01")
-	assert.True(t, acquired, "Semaphore should be acquired when other controller is marked as dead")
+	assert.True(t, acquired, "Semaphore should be acquired when other controller is marked as inactive")
 
 	// Verify the semaphore is now held by our workflow
 	holders := dbSemaphore.getCurrentHolders()
