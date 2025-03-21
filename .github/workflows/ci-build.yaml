@@ -343,7 +343,7 @@ jobs:
           name: cli
           path: dist/
       - name: Prepare binaries
-        run: chmod +x dist/* && make --touch dist/*
+        run: chmod +x dist/* && touch dist/*
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
