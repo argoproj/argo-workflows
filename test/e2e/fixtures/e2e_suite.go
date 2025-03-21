@@ -245,5 +245,6 @@ func (s *E2ESuite) Given() *Given {
 		kubeClient:        s.KubeClient,
 		bearerToken:       bearerToken,
 		restConfig:        s.RestConfig,
+		config:            s.Config,
 	}
 }

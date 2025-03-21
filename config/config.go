@@ -113,6 +113,9 @@ type Config struct {
 
 	// SSO in settings for single-sign on
 	SSO SSOConfig `json:"sso,omitempty"`
+
+	// Synchronization via databases config
+	Synchronization *DatabaseSyncConfig `json:"synchronization,omitempty"`
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -219,6 +222,18 @@ func (c PersistConfig) GetClusterName() string {
 		return c.ClusterName
 	}
 	return "default"
+}
+
+type DatabaseSyncConfig struct {
+	DBConfig
+	ControllerName            string `json:"controllerName"`
+	SkipMigration             bool   `json:"skipMigration,omitempty"`
+	LimitTableName            string `json:"limitTableName,omitempty"`
+	StateTableName            string `json:"stateTableName,omitempty"`
+	ControllerTableName       string `json:"controllerTableName,omitempty"`
+	PollSeconds               *int   `json:"pollSeconds,omitempty"`
+	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
+	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`
 }
 
 type ConnectionPool struct {

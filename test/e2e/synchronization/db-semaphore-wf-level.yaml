@@ -6,8 +6,7 @@ spec:
   entrypoint: whalesay
   synchronization:
     semaphores:
-      - configMapKeyRef:
-          name: my-config
+      - database:
           key: workflow
   templates:
   - name: whalesay

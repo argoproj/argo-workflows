@@ -271,6 +271,14 @@ jobs:
             k8s_version: min
             profile: minimal
             use-api: false
+          - test: test-dbsemaphore
+            k8s_version: min
+            profile: mysql
+            use-api: false
+          - test: test-dbsemaphore
+            k8s_version: min
+            profile: postgres
+            use-api: false
     steps:
       - name: Free up unused disk space
         run: |
