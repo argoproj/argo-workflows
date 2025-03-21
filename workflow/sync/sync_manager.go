@@ -42,9 +42,9 @@ type dbInfo struct {
 type lockTypeName string
 
 const (
-	defaultDBPollSeconds           = 10
-	defaultDBHeartbeatSeconds      = 60
-	defaultDBDeadControllerSeconds = 600
+	defaultDBPollSeconds               = 10
+	defaultDBHeartbeatSeconds          = 60
+	defaultDBInactiveControllerSeconds = 600
 
 	defaultLimitTableName      = "sync_limit"
 	defaultStateTableName      = "sync_state"
@@ -68,15 +68,20 @@ func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, nam
 		dbConfig.stateTable = defaultTable(config.StateTableName, defaultStateTableName)
 		dbConfig.controllerTable = defaultTable(config.ControllerTableName, defaultControllerTableName)
 		dbConfig.controllerName = config.ControllerName
-		dbConfig.deadControllerTimeout = secondsToDurationWithDefault(config.DeadControllerSeconds,
-			defaultDBDeadControllerSeconds)
+		dbConfig.inactiveControllerTimeout = secondsToDurationWithDefault(config.InactiveControllerSeconds,
+			defaultDBInactiveControllerSeconds)
 	}
+	syncLimitCacheTTL := time.Duration(0)
+	if config.SemaphoreLimitCacheSeconds != nil {
+		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
+	}
+
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
 		lock:              &sync.RWMutex{},
 		nextWorkflow:      nextWorkflow,
 		getSyncLimit:      getSyncLimit,
-		syncLimitCacheTTL: config.syncLimitCacheTTL,
+		syncLimitCacheTTL: syncLimitCacheTTL,
 		isWFDeleted:       isWFDeleted,
 		dbInfo: dbInfo{
 			session: dbSession,
@@ -543,6 +548,9 @@ func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) 
 		}
 		return newInternalSemaphore(semaphoreName, limit, sm.nextWorkflow, lockTypeSemaphore), nil
 	case lockKindDatabase:
+		if sm.dbInfo.session == nil {
+			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
+		}
 		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
 	default:
 		return nil, fmt.Errorf("Invalid lock kind %s when initializing semaphore", lock.Kind)
@@ -558,6 +566,9 @@ func (sm *Manager) initializeMutex(mutexName string) (semaphore, error) {
 	case lockKindMutex:
 		return newInternalMutex(mutexName, sm.nextWorkflow), nil
 	case lockKindDatabase:
+		if sm.dbInfo.session == nil {
+			return nil, fmt.Errorf("database session is not available for mutex %s", mutexName)
+		}
 		return newDatabaseMutex(mutexName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
 	default:
 		return nil, fmt.Errorf("Invalid lock kind %s when initializing mutex", lock.Kind)

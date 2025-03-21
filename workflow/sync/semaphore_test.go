@@ -57,11 +57,11 @@ func createTestDBSession(t *testing.T) (db.Session, dbInfo, error) {
 		}}
 	info := dbInfo{
 		config: dbConfig{
-			limitTable:            defaultLimitTableName,
-			stateTable:            defaultStateTableName,
-			controllerTable:       defaultControllerTableName,
-			controllerName:        "test1",
-			deadControllerTimeout: defaultDBDeadControllerSeconds * time.Second,
+			limitTable:                defaultLimitTableName,
+			stateTable:                defaultStateTableName,
+			controllerTable:           defaultControllerTableName,
+			controllerName:            "test1",
+			inactiveControllerTimeout: defaultDBInactiveControllerSeconds * time.Second,
 		},
 	}
 	conn, err := sqlite.Open(settings)

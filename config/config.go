@@ -226,14 +226,14 @@ func (c PersistConfig) GetClusterName() string {
 
 type SyncConfig struct {
 	DBConfig
-	ControllerName        string `json:"controllerName"`
-	SkipMigration         bool   `json:"skipMigration,omitempty"`
-	LimitTableName        string `json:"limitTableName,omitempty"`
-	StateTableName        string `json:"stateTableName,omitempty"`
-	ControllerTableName   string `json:"controllerTableName,omitempty"`
-	PollSeconds           *int   `json:"pollSeconds,omitempty"`
-	HeartbeatSeconds      *int   `json:"heartbeatSeconds,omitempty"`
-	DeadControllerSeconds *int   `json:"deadControllerSeconds,omitempty"`
+	ControllerName            string `json:"controllerName"`
+	SkipMigration             bool   `json:"skipMigration,omitempty"`
+	LimitTableName            string `json:"limitTableName,omitempty"`
+	StateTableName            string `json:"stateTableName,omitempty"`
+	ControllerTableName       string `json:"controllerTableName,omitempty"`
+	PollSeconds               *int   `json:"pollSeconds,omitempty"`
+	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
+	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`
 	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
 	// for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked).
 	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
