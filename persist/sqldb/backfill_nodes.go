@@ -18,7 +18,7 @@ func (s backfillNodes) String() string {
 	return fmt.Sprintf("backfillNodes{%s}", s.tableName)
 }
 
-func (s backfillNodes) apply(session db.Session) (err error) {
+func (s backfillNodes) Apply(session db.Session) (err error) {
 	log.Info("Backfill node status")
 	rs, err := session.SQL().SelectFrom(s.tableName).
 		Columns("workflow").

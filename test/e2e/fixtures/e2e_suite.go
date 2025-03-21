@@ -84,7 +84,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(s.KubeClient, s.Config)
+	s.Persistence = newPersistence(ctx, s.KubeClient, s.Config)
 	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
