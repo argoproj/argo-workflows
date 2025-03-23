@@ -15,7 +15,6 @@ const history = createBrowserHistory();
 
 export function App() {
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
     const popupManager: PopupManager = new PopupManager();
     const notificationsManager: NotificationsManager = new NotificationsManager();
     const navigationManager: NavigationManager = new NavigationManager(history);
@@ -27,46 +26,16 @@ export function App() {
         history
     };
 
-    // Add a small delay to ensure all resources are properly loaded
+    // Show loading indicator briefly to ensure UI is ready before rendering
     useEffect(() => {
+        // Short delay to ensure the UI is ready to render
+        // This helps prevent the white screen issue by giving the app time to initialize
         const timer = setTimeout(() => {
-            try {
-                // Any initialization logic that might fail can go here
-                setIsLoading(false);
-            } catch (err) {
-                setError(err instanceof Error ? err : new Error('An unexpected error occurred'));
-                setIsLoading(false);
-            }
-        }, 300);
+            setIsLoading(false);
+        }, 100);
 
         return () => clearTimeout(timer);
     }, []);
-
-    // Global error boundary
-    useEffect(() => {
-        const handleError = (event: ErrorEvent) => {
-            event.preventDefault();
-            setError(event.error || new Error(event.message));
-        };
-
-        window.addEventListener('error', handleError);
-
-        return () => {
-            window.removeEventListener('error', handleError);
-        };
-    }, []);
-
-    // Handle any errors during initialization
-    if (error) {
-        return (
-            <div className='error-container'>
-                <h1>Application Error</h1>
-                <p>An error occurred while loading the application. Please try refreshing the page.</p>
-                <pre>{error.message}</pre>
-                <button onClick={() => window.location.reload()}>Refresh Page</button>
-            </div>
-        );
-    }
 
     // Show loading indicator while initializing
     if (isLoading) {

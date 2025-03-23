@@ -8,46 +8,28 @@ import {useCollectEvent} from '../shared/use-collect-event';
 
 import './login.scss';
 
-// Clear any cached data on logout
+// Logout function
 function logout() {
     document.cookie = 'authorization=;Max-Age=0';
-    // Clear any cached API data
-    services.info.clearCache();
-    // Add a small delay before reload to ensure cookies are cleared
-    setTimeout(() => {
-        document.location.reload();
-    }, 100);
+    document.location.reload();
 }
 
-// Set auth token and redirect with loading indicator
+// Set auth token and redirect
 function user(token: string) {
     if (!token || token.trim() === '') {
         alert('Please enter a valid token');
         return;
     }
 
-    // Show loading indicator
-    const loadingElement = document.createElement('div');
-    loadingElement.className = 'loading-container';
-    loadingElement.innerHTML = `
-        <div style="text-align: center">
-            <div class="loading-spinner"></div>
-            <p>Logging in...</p>
-        </div>
-    `;
-    document.body.appendChild(loadingElement);
-
     // Set the cookie
     const path = uiUrl('');
     document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
 
-    // Clear any cached API data
+    // Clear any cached API data to ensure fresh data after login
     services.info.clearCache();
 
-    // Add a small delay before redirect to ensure cookie is set
-    setTimeout(() => {
-        document.location.href = path;
-    }, 300);
+    // Redirect to the main page
+    document.location.href = path;
 }
 
 function getRedirect(): string {
@@ -58,26 +40,13 @@ function getRedirect(): string {
     return 'redirect=' + window.location.origin + '/workflows';
 }
 
-// Handle SSO login with loading indicator
+// Handle SSO login
 function handleSsoLogin() {
-    // Show loading indicator
-    const loadingElement = document.createElement('div');
-    loadingElement.className = 'loading-container';
-    loadingElement.innerHTML = `
-        <div style="text-align: center">
-            <div class="loading-spinner"></div>
-            <p>Redirecting to login provider...</p>
-        </div>
-    `;
-    document.body.appendChild(loadingElement);
-
-    // Clear any cached API data
+    // Clear any cached API data to ensure fresh data after login
     services.info.clearCache();
 
-    // Add a small delay before redirect
-    setTimeout(() => {
-        document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
-    }, 300);
+    // Redirect to the SSO provider
+    document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
 }
 
 export function Login() {
