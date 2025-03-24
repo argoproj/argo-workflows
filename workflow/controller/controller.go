@@ -279,7 +279,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	// init DB after leader election (if enabled)
-	if err := wfc.initDB(); err != nil {
+	if err := wfc.initDB(ctx); err != nil {
 		log.Fatalf("Failed to init db: %v", err)
 	}
 
@@ -518,7 +518,7 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
 	wfc.Config = *c
-	err = wfc.updateConfig()
+	err = wfc.updateConfig(ctx)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
 	}
