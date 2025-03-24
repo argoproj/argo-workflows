@@ -11,14 +11,12 @@ import (
 	"github.com/robfig/cron/v3"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
-	"github.com/argoproj/pkg/humanize"
-
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in

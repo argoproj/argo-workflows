@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/pkg/humanize"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/expr-lang/expr"
 	log "github.com/sirupsen/logrus"
@@ -44,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	argokubeerr "github.com/argoproj/argo-workflows/v3/util/kube/errors"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
