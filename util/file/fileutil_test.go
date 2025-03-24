@@ -11,11 +11,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/argoproj/pkg/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/util/rand"
 )
 
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
