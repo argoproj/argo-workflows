@@ -50,6 +50,7 @@ These templates _define_ work to be done, usually in a Container.
 
 Perhaps the most common template type, it will schedule a Container.
 The spec of the template is the same as the [Kubernetes container spec](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container), so you can define a container here the same way you do anywhere else in Kubernetes.
+The standard output of the container is automatically exported into an [Argo variable](./variables.md) either `{{tasks.<NAME>.outputs.result}}` or `{{steps.<NAME>.outputs.result}}`, depending how it was called.
 
 Example:
 
@@ -66,7 +67,7 @@ Example:
 A convenience wrapper around a `container`.
 The spec is the same as a container, but adds the `source:` field which allows you to define a script in-place.
 The script will be saved into a file and executed for you.
-The result of the script is automatically exported into an [Argo variable](./variables.md) either `{{tasks.<NAME>.outputs.result}}` or `{{steps.<NAME>.outputs.result}}`, depending how it was called.
+The standard output of the script is automatically exported into an [Argo variable](./variables.md) in the same way as a Container Template.
 
 Example:
 

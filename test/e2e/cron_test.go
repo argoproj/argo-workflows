@@ -21,19 +21,16 @@ type CronSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *CronSuite) SetupSuite() {
-	s.E2ESuite.SetupSuite()
-	// Since tests run in parallel, delete all cron resources before the test suite is run
+func (s *CronSuite) TearDownSubTest() {
+	// Delete all CronWorkflows after every subtest (as opposed to after each
+	// test, which is the default) to avoid workflows from accumulating and
+	// causing intermittent failures due to the controller reaching the
+	// parallelism limit. When that happens, workflows can be postponed long
+	// enough to reach the test timeout, and you'll see the following in the logs:
+	//    time="2025-02-23T06:11:00.023Z" level=info msg="Workflow processing has been postponed due to max parallelism limit" key=argo/test-cron-wf-succeed-1-1740291060
+	//    time="2025-02-23T06:11:00.023Z" level=info msg="Updated phase  -> Pending" namespace=argo workflow=test-cron-wf-succeed-1-1740291060
+	//    time="2025-02-23T06:11:00.023Z" level=info msg="Updated message  -> Workflow processing has been postponed because too many workflows are already running" namespace=argo workflow=test-cron-wf-succeed-1-1740291060
 	s.E2ESuite.DeleteResources()
-}
-
-func (s *CronSuite) BeforeTest(suiteName, testName string) {
-	s.E2ESuite.BeforeTest(suiteName, testName)
-}
-
-func (s *CronSuite) TearDownSuite() {
-	s.E2ESuite.DeleteResources()
-	s.E2ESuite.TearDownSuite()
 }
 
 func (s *CronSuite) TestBasic() {
@@ -44,7 +41,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
 spec:
-  schedule: "* * * * *"
+  schedules:
+    -  "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -90,7 +88,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-timezone
 spec:
-  schedule: "%s"
+  schedules:
+    - "%s"
   timezone: "%s"
   workflowMetadata:
     labels:
@@ -117,7 +116,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-suspend
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -148,7 +148,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-resume
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -179,7 +180,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-forbid
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -215,7 +217,8 @@ metadata:
   labels:
 
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -247,7 +250,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-replace
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Replace"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -283,7 +287,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-succeed-1
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 1
@@ -317,7 +322,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-fail-1
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -352,7 +358,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-stop-condition-succeeded
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -389,7 +396,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-stop-condition-failed
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   stopStrategy:
     expression: "cronworkflow.failed >= 1"

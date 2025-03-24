@@ -47,10 +47,10 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    semaphore:
-      configMapKeyRef:
-        key: workflow
-        name: my-config
+    semaphores:
+      - configMapKeyRef:
+          key: workflow
+          name: my-config
   templates:
   - container:
       args:
@@ -98,10 +98,10 @@ metadata:
 spec:
  entrypoint: whalesay
  synchronization:
-   semaphore:
-     configMapKeyRef:
-       name: my-config
-       key: workflow
+   semaphores:
+     - configMapKeyRef:
+         name: my-config
+         key: workflow
  templates:
  - name: whalesay
    container:
@@ -163,10 +163,10 @@ spec:
     name: sleep-n-sec
     outputs: {}
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: template
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: template
+            name: my-config
 status:
   finishedAt: null
   nodes:
@@ -290,8 +290,8 @@ metadata:
 spec:
  entrypoint: whalesay
  synchronization:
-   mutex:
-     name: my-mutex
+   mutexes:
+     - name: my-mutex
  templates:
  - name: whalesay
    container:
@@ -960,8 +960,8 @@ spec:
           memory: 100Mi
     name: load-command
     synchronization:
-      mutex:
-        name: dag-2-task-1
+      mutexes:
+        - name: dag-2-task-1
   - container:
       args:
       - echo 'django command!'
@@ -976,10 +976,10 @@ spec:
           memory: 100Mi
     name: django-command
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: test-sem
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: test-sem
+            name: my-config
   ttlStrategy:
     secondsAfterCompletion: 600
 status:
@@ -1099,8 +1099,8 @@ spec:
   arguments: {}
   entrypoint: whalesay
   synchronization:
-    mutex:
-      name: my-mutex
+    mutexes:
+      - name: my-mutex
   templates:
   - container:
       args:
@@ -1173,8 +1173,8 @@ spec:
     name: acquire-lock
     outputs: {}
     synchronization:
-      mutex:
-        name: workflow
+      mutexes:
+        - name: workflow
 status:
   artifactGCStatus:
     notSpecified: true

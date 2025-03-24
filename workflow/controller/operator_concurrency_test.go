@@ -43,10 +43,10 @@ spec:
   templates:
     -
       synchronization:
-        semaphore:
-          configMapKeyRef:
-            key: template
-            name: my-config
+        semaphores:
+          - configMapKeyRef:
+              key: template
+              name: my-config
       container:
         args:
           - "hello world"
@@ -67,10 +67,10 @@ spec:
   templates:
   - name: scriptTmpl
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: template
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: template
+            name: my-config
     script:
       image: python:alpine3.6
       command: ["python"]
@@ -93,11 +93,11 @@ spec:
   templates:
   - name: scriptTmpl
     synchronization:
-      semaphore:
-        namespace: other
-        configMapKeyRef:
-          key: template
-          name: my-config
+      semaphores:
+        - namespace: other
+          configMapKeyRef:
+            key: template
+            name: my-config
     script:
       image: python:alpine3.6
       command: ["python"]
@@ -120,10 +120,10 @@ spec:
   templates:
   - name: resourceTmpl
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: template
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: template
+            name: my-config
     resource:
       action: create
       manifest: |
@@ -451,8 +451,8 @@ spec:
 
  - name: mutex
    synchronization:
-     mutex:
-       name: welcome
+     mutexes:
+       - name: welcome
    container:
      image: alpine:3.7
      command: [sh, -c, "exit 0"]
@@ -520,8 +520,8 @@ spec:
 
  - name: mutex
    synchronization:
-     mutex:
-       name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
+     mutexes:
+       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
    inputs:
      parameters:
      - name: message
@@ -584,10 +584,10 @@ spec:
     - name: whalesay
       daemon: true
       synchronization:
-        semaphore:
-          configMapKeyRef:
-            key: template
-            name: my-config
+        semaphores:
+          - configMapKeyRef:
+              key: template
+              name: my-config
       container:
         args:
           - "hello world"
@@ -663,10 +663,10 @@ spec:
         name: hello1
         template: whalesay
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: step
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: step
+            name: my-config
   -
     container:
       args:
@@ -699,10 +699,10 @@ spec:
         name: hello1
         template: whalesay
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          key: step
-          name: my-config
+      semaphores:
+        - configMapKeyRef:
+            key: step
+            name: my-config
   - container:
       args:
       - '{{inputs.parameters.message}}'
@@ -872,10 +872,10 @@ spec:
         limit: 5
         retryPolicy: Always
       synchronization:
-        semaphore:
-          configMapKeyRef:
-            name: my-config
-            key: template
+        semaphores:
+          - configMapKeyRef:
+              name: my-config
+              key: template
       container:
         image: alpine:3.6
         command: [sh, -c]
@@ -937,8 +937,8 @@ spec:
   entrypoint: whalesay
   onExit: whalesay
   synchronization:
-    mutex:
-      name:  test
+    mutexes:
+      - name:  test
   templates:
     - name: whalesay
       container:
@@ -957,7 +957,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// Create and acquire the lock for the first workflow
 		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
 		wf.Name = "one-terminating"
-		wf.Spec.Synchronization.Mutex.Name = "terminating-test"
+		wf.Spec.Synchronization.Mutexes[0].Name = "terminating-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -1001,7 +1001,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// Create and acquire the lock for the first workflow
 		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
 		wf.Name = "one-stopping"
-		wf.Spec.Synchronization.Mutex.Name = "stopping-test"
+		wf.Spec.Synchronization.Mutexes[0].Name = "stopping-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -1075,8 +1075,8 @@ spec:
 
     - name: sleep
       synchronization:
-        mutex:
-          name: mutex-example-steps-simple
+        mutexes:
+          - name: mutex-example-steps-simple
       inputs:
         parameters:
           - name: sleep_duration

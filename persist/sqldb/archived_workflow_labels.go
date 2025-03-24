@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 // ListWorkflowsLabelKeys returns distinct name from argo_archived_workflows_labels table
@@ -52,7 +53,7 @@ func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValue
 	return &wfv1.LabelValues{Items: labels}, nil
 }
 
-func labelsClause(selector db.Selector, t dbType, requirements labels.Requirements, tableName, labelTableName string, hasClusterName bool) (db.Selector, error) {
+func labelsClause(selector db.Selector, t sqldb.DBType, requirements labels.Requirements, tableName, labelTableName string, hasClusterName bool) (db.Selector, error) {
 	for _, req := range requirements {
 		cond, err := requirementToCondition(t, req, tableName, labelTableName, hasClusterName)
 		if err != nil {
@@ -63,7 +64,7 @@ func labelsClause(selector db.Selector, t dbType, requirements labels.Requiremen
 	return selector, nil
 }
 
-func requirementToCondition(t dbType, r labels.Requirement, tableName, labelTableName string, hasClusterName bool) (*db.RawExpr, error) {
+func requirementToCondition(t sqldb.DBType, r labels.Requirement, tableName, labelTableName string, hasClusterName bool) (*db.RawExpr, error) {
 	clusterNameSelector := ""
 	if hasClusterName {
 		clusterNameSelector = fmt.Sprintf("clustername = %s.clustername and", tableName)
@@ -90,13 +91,13 @@ func requirementToCondition(t dbType, r labels.Requirement, tableName, labelTabl
 		if err != nil {
 			return nil, err
 		}
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where %s uid = %s.uid and name = '%s' and cast(value as %s) > %d)", labelTableName, clusterNameSelector, tableName, r.Key(), t.intType(), i)), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where %s uid = %s.uid and name = '%s' and cast(value as %s) > %d)", labelTableName, clusterNameSelector, tableName, r.Key(), t.IntType(), i)), nil
 	case selection.LessThan:
 		i, err := strconv.Atoi(r.Values().List()[0])
 		if err != nil {
 			return nil, err
 		}
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where %s uid = %s.uid and name = '%s' and cast(value as %s) < %d)", labelTableName, clusterNameSelector, tableName, r.Key(), t.intType(), i)), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where %s uid = %s.uid and name = '%s' and cast(value as %s) < %d)", labelTableName, clusterNameSelector, tableName, r.Key(), t.IntType(), i)), nil
 	}
 	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
 }

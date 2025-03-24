@@ -121,6 +121,7 @@ class CronWorkflowServiceApi(object):
                     'delete_options_orphan_dependents',
                     'delete_options_propagation_policy',
                     'delete_options_dry_run',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential',
                 ],
                 'required': [
                     'namespace',
@@ -155,6 +156,8 @@ class CronWorkflowServiceApi(object):
                         (str,),
                     'delete_options_dry_run':
                         ([str],),
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential':
+                        (bool,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -165,6 +168,7 @@ class CronWorkflowServiceApi(object):
                     'delete_options_orphan_dependents': 'deleteOptions.orphanDependents',
                     'delete_options_propagation_policy': 'deleteOptions.propagationPolicy',
                     'delete_options_dry_run': 'deleteOptions.dryRun',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential': 'deleteOptions.ignoreStoreReadErrorWithClusterBreakingPotential',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -175,6 +179,7 @@ class CronWorkflowServiceApi(object):
                     'delete_options_orphan_dependents': 'query',
                     'delete_options_propagation_policy': 'query',
                     'delete_options_dry_run': 'query',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential': 'query',
                 },
                 'collection_format_map': {
                     'delete_options_dry_run': 'multi',
@@ -708,6 +713,7 @@ class CronWorkflowServiceApi(object):
             delete_options_orphan_dependents (bool): Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.. [optional]
             delete_options_propagation_policy (str): Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.. [optional]
             delete_options_dry_run ([str]): When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType=atomic.. [optional]
+            delete_options_ignore_store_read_error_with_cluster_breaking_potential (bool): if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

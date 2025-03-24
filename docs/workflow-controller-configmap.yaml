@@ -31,7 +31,7 @@ data:
   # parallel nodes.
   resourceRateLimit: |
     limit: 10
-    burst: 1
+    burst: 25
 
   # Whether or not to emit events on node completion. These can take a up a lot of space in
   # k8s (typically etcd) resulting in errors when trying to create new events:
