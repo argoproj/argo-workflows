@@ -21,13 +21,13 @@ import (
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/minio/minio-go/v7/pkg/sse"
 
-	"github.com/argoproj/pkg/file"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/retry"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
