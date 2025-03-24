@@ -12,7 +12,6 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -48,6 +47,7 @@ import (
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
