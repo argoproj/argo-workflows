@@ -19,4 +19,4 @@ type semaphore interface {
 }
 
 // expose for overriding in tests
-var now = time.Now
+var nowFn = time.Now

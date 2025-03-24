@@ -26,7 +26,7 @@ func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType st
 	return &prioritySemaphore{
 		name:           name,
 		limit:          limit,
-		limitTimestamp: now(),
+		limitTimestamp: nowFn(),
 		pending:        &priorityQueue{itemByKey: make(map[string]*item)},
 		semaphore:      sema.NewWeighted(int64(limit)),
 		lockHolder:     make(map[string]bool),
@@ -50,7 +50,7 @@ func (s *prioritySemaphore) getLimitTimestamp() time.Time {
 }
 
 func (s *prioritySemaphore) resetLimitTimestamp() {
-	s.limitTimestamp = now()
+	s.limitTimestamp = nowFn()
 }
 
 func (s *prioritySemaphore) getCurrentPending() []string {
@@ -82,7 +82,7 @@ func (s *prioritySemaphore) resize(n int) bool {
 		s.log.Infof("%s semaphore resized from %d to %d", s.name, cur, n)
 		s.semaphore = semaphore
 		s.limit = n
-		s.limitTimestamp = now()
+		s.limitTimestamp = nowFn()
 	}
 	return status
 }

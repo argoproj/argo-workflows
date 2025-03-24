@@ -465,7 +465,7 @@ func (sm *Manager) isSemaphoreSizeChanged(semaphore semaphore) (bool, int, error
 }
 
 func (sm *Manager) checkAndUpdateSemaphoreSize(semaphore semaphore) error {
-	if now().Sub(semaphore.getLimitTimestamp()) < sm.syncLimitCacheTTL {
+	if nowFn().Sub(semaphore.getLimitTimestamp()) < sm.syncLimitCacheTTL {
 		return nil
 	}
 

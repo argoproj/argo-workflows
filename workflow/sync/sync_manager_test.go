@@ -605,11 +605,11 @@ func TestSemaphoreSizeCache(t *testing.T) {
 	ctx := context.Background()
 
 	mockedNow := time.Now()
-	now = func() time.Time {
+	nowFn = func() time.Time {
 		return mockedNow
 	}
 	defer func() {
-		now = time.Now
+		nowFn = time.Now
 	}()
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
