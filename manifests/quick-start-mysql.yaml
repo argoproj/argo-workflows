@@ -3389,6 +3389,27 @@ data:
     completed: 10
     failed: 3
     errored: 3
+  synchronization: |
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+      connMaxLifetime: 0s
+    controllerName: test
+    limitTableName: sync_limit
+    stateTableName: sync_state
+    controllerTableName: sync_controller
+    deadControllerSeconds: 300
+    mysql:
+      host: mysql
+      port: 3306
+      database: argo
+      tableName: argo_workflows
+      userNameSecret:
+        name: argo-mysql-config
+        key: username
+      passwordSecret:
+        name: argo-mysql-config
+        key: password
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

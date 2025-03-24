@@ -188,7 +188,7 @@ The namespace defaults to the namespace of the Workflow, but can be overridden b
 
 The namespace for local ConfigMap locks is also used to read the size of the semaphore from a ConfigMap in that namespace.
 The Workflow controller will watch the ConfigMap and update the size of the semaphore accordingly, so the Workflow controller must have permission to read the ConfigMap.
-If you refer to a common ConfigMap by seting the `namespace` field you can share locks between namespaces.
+If you refer to a common ConfigMap by setting the `namespace` field you can share locks between namespaces.
 
 For local mutexes and all database locks the namespace defaults to the namespace of the Workflow, but is otherwise not actually used in any other way, so the kubernetes namespace doesn't need to exist.
 For database locks you can have global locks between all controllers.
@@ -200,7 +200,7 @@ When a Workflow cannot acquire a lock it will be placed into a ordered queue.
 
 You can set a [`priority`](parallelism.md#priority) on Workflows.
 The queue is first ordered by priority: a higher priority number is placed before a lower priority number.
-The queue is then ordered by creation time-stamp`: older Workflows are placed before newer Workflows.
+The queue is then ordered by creation time-stamp: older Workflows are placed before newer Workflows.
 
 Workflows can only acquire a lock if they are at the front of the queue for that lock.
 This applies to both local and multiple controller locks.

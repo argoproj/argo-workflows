@@ -2185,7 +2185,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| database | [SyncDatabaseRef](#sync-database-ref)| `SyncDatabaseRef` |  | |  |  |
+| database | boolean| `bool` |  | | Database specifies this is database controlled if this is set true |  |
 | name | string| `string` |  | | name of the mutex |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 

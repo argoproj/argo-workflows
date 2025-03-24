@@ -44,8 +44,8 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 
 			// Check if primary key exists
 			rows, err := session.SQL().Query(
-				fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and "+dbIdentifierColumn+" = ?",
-					versionTableName),
+				fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?",
+					versionTableName, dbIdentifierColumn),
 				session.Name())
 			if err != nil {
 				return err

@@ -22,8 +22,8 @@ func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int
 	return newInternalSemaphore(name, limit, nextWorkflow, lockTypeSemaphore), func() {}
 }
 
-// createTestDatabaseSemaphore creates a database-backed semaphore for testing
-func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, func()) {
+// createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
+func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, dbInfo) {
 	t.Helper()
 	dbSession, info, err := createTestDBSession(t)
 	require.NoError(t, err)
@@ -35,6 +35,13 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 	s := newDatabaseSemaphore(name, dbKey, nextWorkflow, info)
 	require.NotNil(t, s)
 
+	return s, dbSession, info
+}
+
+// createTestDatabaseSemaphoreForFactory creates a database-backed semaphore that conforms to the factory
+func createTestDatabaseSemaphoreForFactory(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, func()) {
+	t.Helper()
+	s, dbSession, _ := createTestDatabaseSemaphore(t, name, namespace, limit, nextWorkflow)
 	return s, func() {
 		dbSession.Close()
 	}
@@ -43,7 +50,7 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 // semaphoreFactories defines the available semaphore implementations for testing
 var semaphoreFactories = map[string]semaphoreFactory{
 	"InternalSemaphore": createTestInternalSemaphore,
-	"DatabaseSemaphore": createTestDatabaseSemaphore,
+	"DatabaseSemaphore": createTestDatabaseSemaphoreForFactory,
 }
 
 // createTestDBSession creates a test database session

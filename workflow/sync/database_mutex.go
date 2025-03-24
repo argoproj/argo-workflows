@@ -14,11 +14,6 @@ func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info
 			"name":     name,
 		}),
 		info:    info,
-		limitFn: mutexLimit,
 		isMutex: true,
 	}
-}
-
-func mutexLimit() int {
-	return 1
 }

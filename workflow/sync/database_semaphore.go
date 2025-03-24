@@ -9,8 +9,6 @@ import (
 	"github.com/upper/db/v4"
 )
 
-type limitFunc func() int
-
 type dbConfig struct {
 	limitTable                string
 	stateTable                string
@@ -25,7 +23,6 @@ type databaseSemaphore struct {
 	nextWorkflow NextWorkflow
 	log          *log.Entry
 	info         dbInfo
-	limitFn      limitFunc
 	isMutex      bool
 }
 
@@ -77,7 +74,6 @@ func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, 
 			"name":     name,
 		}),
 		info:    info,
-		limitFn: nil,
 		isMutex: false,
 	}
 }
@@ -86,12 +82,11 @@ func (s *databaseSemaphore) getName() string {
 	return s.name
 }
 
-// getLimit returns the semaphore limit. If limitFn is set, it returns the result of limitFn() directly.
-// Otherwise queries the database for the limit. Note that limitFn takes precedence over any database value,
-// which allows for special cases like mutexes to override the database limit.
+// getLimit returns the semaphore limit. If isMutex this always returns 1.
+// Otherwise queries the database for the limit.
 func (s *databaseSemaphore) getLimit() int {
-	if s.limitFn != nil {
-		return s.limitFn()
+	if s.isMutex {
+		return 1
 	}
 	limit := &limitRecord{}
 	err := s.info.session.SQL().
@@ -272,6 +267,7 @@ func (s *databaseSemaphore) removeFromQueue(holderKey string) {
 }
 
 func (s *databaseSemaphore) acquire(holderKey string) bool {
+	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit()
 	result := false
 	err := s.info.session.Tx(func(sess db.Session) error {
@@ -339,7 +335,7 @@ func (s *databaseSemaphore) checkAcquire(holderKey string) (bool, bool, string) 
 	if holderKey == "" {
 		return false, false, "bug: attempt to check semaphore with empty holder key"
 	}
-	// Different table, no need for this to be in the Tx
+	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit()
 	acquirable := false
 	already := false

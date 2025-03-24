@@ -15,8 +15,8 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 	nextWorkflow := func(key string) {}
 
 	// Create the database semaphore
-	s, cleanup := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
-	defer cleanup()
+	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
+	defer dbSession.Close()
 
 	// Get the underlying database semaphore to access its session
 	dbSemaphore, ok := s.(*databaseSemaphore)
@@ -55,8 +55,8 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 func TestOtherControllerDBSemaphore(t *testing.T) {
 	// Create a semaphore with limit 1
 	nextWorkflow := func(key string) {}
-	s, cleanup := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
-	defer cleanup()
+	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
+	defer dbSession.Close()
 
 	// Get the underlying database semaphore to access its session
 	dbSemaphore, ok := s.(*databaseSemaphore)
@@ -105,8 +105,8 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 	// Create a semaphore with limit 1
 	nextWorkflow := func(key string) {}
-	s, cleanup := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
-	defer cleanup()
+	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
+	defer dbSession.Close()
 
 	// Get the underlying database semaphore to access its session
 	dbSemaphore, ok := s.(*databaseSemaphore)
@@ -141,21 +141,17 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 
 // TestMutexAndSemaphoreWithSameName tests that a mutex and semaphore with the same name don't interfere with each other
 func TestMutexAndSemaphoreWithSameName(t *testing.T) {
-	// Create a test database session
-	dbSession, info, err := createTestDBSession(t)
-	require.NoError(t, err)
-	defer dbSession.Close()
-
 	// Setup the same key name for both
 	sharedKey := "foo/shared-name"
 
 	nextWorkflow := func(key string) {}
+
+	// Create a semaphore with limit 2 using the helper function
+	semaphore, dbSession, info := createTestDatabaseSemaphore(t, "shared-name", "foo", 2, nextWorkflow)
+	defer dbSession.Close()
+
 	// Create a mutex using that key
 	mutex := newDatabaseMutex("foo/shared-name", sharedKey, nextWorkflow, info)
-
-	// Create a semaphore with the same key but limit 2
-	semaphore := newDatabaseSemaphore("foo/shared-name", sharedKey, nextWorkflow, info)
-	semaphore.limitFn = func() int { return 2 }
 
 	// Add entries to queue and acquire for both
 	now := time.Now()
@@ -215,7 +211,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 
 	// Verify by checking the database directly
 	var allHolders []stateRecord
-	err = dbSession.SQL().
+	err := dbSession.SQL().
 		Select("*").
 		From(info.config.stateTable).
 		Where(db.Cond{"name": sharedKey, "held": true}).
