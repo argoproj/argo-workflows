@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	argoJson "github.com/argoproj/pkg/json"
 	"github.com/robfig/cron/v3"
 	"sigs.k8s.io/yaml"
 
+	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 

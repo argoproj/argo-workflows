@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	argoJson "github.com/argoproj/pkg/json"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/pkg/humanize"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )

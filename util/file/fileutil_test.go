@@ -4,10 +4,14 @@ import (
 	"archive/tar"
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
+	"github.com/argoproj/pkg/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -141,4 +145,33 @@ func TestExistsInTar(t *testing.T) {
 			assert.Equalf(t, tc.expected, actual, "sourcePath %s not found", tc.sourcePath)
 		})
 	}
+}
+
+// TestIsDirectory tests if a path is a directory. Errors if directory doesn't exist
+func TestIsDirectory(t *testing.T) {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("could not determine test directory")
+	}
+	testDir := filepath.Dir(filename)
+
+	isDir, err := file.IsDirectory(testDir)
+	require.NoError(t, err)
+	assert.True(t, isDir)
+
+	isDir, err = file.IsDirectory(filename)
+	require.NoError(t, err)
+	assert.False(t, isDir)
+
+	isDir, err = file.IsDirectory("doesnt-exist")
+	require.Error(t, err)
+	assert.False(t, isDir)
+}
+
+func TestExists(t *testing.T) {
+	assert.True(t, file.Exists("/"))
+	path, err := rand.RandString(10)
+	require.NoError(t, err)
+	randFilePath := fmt.Sprintf("/%s", path)
+	assert.False(t, file.Exists(randFilePath))
 }
