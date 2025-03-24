@@ -92,6 +92,11 @@ ifeq ($(PROFILE),sso)
 AUTH_MODE                     := sso
 endif
 
+ifndef $(GOPATH)
+	GOPATH:=$(shell go env GOPATH)
+	export GOPATH
+endif
+
 # Makefile managed tools
 TOOL_MOCKERY                := $(GOPATH)/bin/mockery
 TOOL_CONTROLLER_GEN         := $(GOPATH)/bin/controller-gen
@@ -126,11 +131,6 @@ override LDFLAGS += \
 
 ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
-endif
-
-ifndef $(GOPATH)
-	GOPATH:=$(shell go env GOPATH)
-	export GOPATH
 endif
 
 # -- file lists
