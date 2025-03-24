@@ -106,11 +106,11 @@ TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
 TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
 
 # npm bin -g will do this on later npms than we have
-TOOL_NODE_BINDIR            := $(shell npm config get prefix)/bin
+NVM_BIN                     ?= $(shell npm config get prefix)/bin
 TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
-TOOL_MDSPELL                := $(TOOL_NODE_BINDIR)/mdspell
-TOOL_MARKDOWN_LINK_CHECK    := $(TOOL_NODE_BINDIR)/markdown-link-check
-TOOL_MARKDOWNLINT           := $(TOOL_NODE_BINDIR)/markdownlint
+TOOL_MDSPELL                := $(NVM_BIN)/mdspell
+TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
+TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
 TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
 TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
 
