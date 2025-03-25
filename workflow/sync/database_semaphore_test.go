@@ -314,7 +314,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 
 		// Get the initial timestamp
 		initialTimestamp := dbSemaphore.getLimitTimestamp()
-		
+
 		// As we've a stopped clock we need to advance time to test the refresh
 		mockNow = mockNow.Add(1 * time.Millisecond)
 

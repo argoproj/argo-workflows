@@ -88,15 +88,14 @@ func (s *databaseSemaphore) getName() string {
 	return s.name
 }
 
-
 func (s *databaseSemaphore) updateLimitFromDB() error {
 	// Update the limit from the database
 	limit := &limitRecord{}
 	err := s.info.session.SQL().
-			Select(limitSizeField).
-			From(s.info.config.limitTable).
-			Where(db.Cond{limitNameField: s.dbKey}).
-			One(limit)
+		Select(limitSizeField).
+		From(s.info.config.limitTable).
+		Where(db.Cond{limitNameField: s.dbKey}).
+		One(limit)
 	if err != nil {
 		s.log.WithField("key", s.dbKey).WithError(err).Error("Failed to get limit")
 		return err
@@ -114,11 +113,11 @@ func (s *databaseSemaphore) updateLimitFromDB() error {
 // Otherwise queries the database for the limit.
 func (s *databaseSemaphore) getLimit() int {
 	log.WithFields(log.Fields{
-		"dbKey": s.dbKey,
-		"isMutex": s.isMutex,
-		"limitTimestamp": s.getLimitTimestamp(),
+		"dbKey":             s.dbKey,
+		"isMutex":           s.isMutex,
+		"limitTimestamp":    s.getLimitTimestamp(),
 		"syncLimitCacheTTL": s.syncLimitCacheTTL,
-		"remaining": nowFn().Sub(s.getLimitTimestamp()),
+		"remaining":         nowFn().Sub(s.getLimitTimestamp()),
 	}).Infof("getLimit")
 	if !s.isMutex && nowFn().Sub(s.getLimitTimestamp()) >= s.syncLimitCacheTTL {
 		if s.updateLimitFromDB() != nil {

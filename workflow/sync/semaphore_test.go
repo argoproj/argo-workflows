@@ -23,7 +23,7 @@ func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
-func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int,cacheTTL time.Duration,nextWorkflow NextWorkflow) (semaphore, db.Session, dbInfo) {
+func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow) (semaphore, db.Session, dbInfo) {
 	t.Helper()
 	dbSession, info, err := createTestDBSession(t)
 	require.NoError(t, err)
