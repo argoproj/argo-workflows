@@ -72,10 +72,10 @@ func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, nam
 			defaultDBInactiveControllerSeconds)
 	}
 	syncLimitCacheTTL := time.Duration(0)
-	if config.SemaphoreLimitCacheSeconds != nil {
+	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
 	}
-
+	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info("Sync manager ttl")
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
 		lock:              &sync.RWMutex{},
@@ -551,7 +551,7 @@ func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) 
 		if sm.dbInfo.session == nil {
 			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
 		}
-		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
+		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL), nil
 	default:
 		return nil, fmt.Errorf("Invalid lock kind %s when initializing semaphore", lock.Kind)
 	}

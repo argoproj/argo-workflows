@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -603,6 +604,7 @@ func (m *mockGetSyncLimit) getSyncLimit(s string) (int, error) {
 
 func TestSemaphoreSizeCache(t *testing.T) {
 	ctx := context.Background()
+	kube := fake.NewSimpleClientset()
 
 	mockedNow := time.Now()
 	nowFn = func() time.Time {
@@ -615,9 +617,13 @@ func TestSemaphoreSizeCache(t *testing.T) {
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		mock := mockGetSyncLimit{}
 		mock.outputSize = 10
+		config := config.SyncConfig{
+			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+		}
 
-		syncManager := NewLockManager(mock.getSyncLimit, 1, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
 		}, WorkflowExistenceFunc)
+
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 
@@ -644,7 +650,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 10, semaphore.getLimit())
 
 		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
@@ -670,7 +676,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 10, semaphore.getLimit())
 
 		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
 		mock.outputSize = 20
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -701,7 +707,11 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		mock := mockGetSyncLimit{}
 		mock.outputSize = 10
 
-		syncManager := NewLockManager(mock.getSyncLimit, 1, func(key string) {
+		config := config.SyncConfig{
+			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+		}
+
+		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
@@ -729,7 +739,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 10, semaphore.getLimit())
 
 		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
@@ -755,7 +765,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 10, semaphore.getLimit())
 
 		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
 		mock.outputSize = 20
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)

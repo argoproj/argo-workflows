@@ -18,12 +18,15 @@ type dbConfig struct {
 }
 
 type databaseSemaphore struct {
-	name         string
-	dbKey        string
-	nextWorkflow NextWorkflow
-	log          *log.Entry
-	info         dbInfo
-	isMutex      bool
+	name              string
+	limit             int
+	limitTimestamp    time.Time
+	syncLimitCacheTTL time.Duration
+	dbKey             string
+	nextWorkflow      NextWorkflow
+	log               *log.Entry
+	info              dbInfo
+	isMutex           bool
 }
 
 type limitRecord struct {
@@ -64,11 +67,14 @@ const (
 
 var _ semaphore = &databaseSemaphore{}
 
-func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo) *databaseSemaphore {
+func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo, syncLimitCacheTTL time.Duration) *databaseSemaphore {
 	return &databaseSemaphore{
-		name:         name,
-		dbKey:        dbKey,
-		nextWorkflow: nextWorkflow,
+		name:              name,
+		dbKey:             dbKey,
+		limit:             0,
+		limitTimestamp:    time.Time{}, // cause a refresh first call to getLimit
+		syncLimitCacheTTL: syncLimitCacheTTL,
+		nextWorkflow:      nextWorkflow,
 		log: log.WithFields(log.Fields{
 			"lockType": lockTypeSemaphore,
 			"name":     name,
@@ -85,24 +91,34 @@ func (s *databaseSemaphore) getName() string {
 // getLimit returns the semaphore limit. If isMutex this always returns 1.
 // Otherwise queries the database for the limit.
 func (s *databaseSemaphore) getLimit() int {
-	if s.isMutex {
-		return 1
+	if !s.isMutex && nowFn().Sub(s.getLimitTimestamp()) >= s.syncLimitCacheTTL {
+		// Update the limit from the database
+		s.resetLimitTimestamp()
+		limit := &limitRecord{}
+		err := s.info.session.SQL().
+			Select(limitSizeField).
+			From(s.info.config.limitTable).
+			Where(db.Cond{limitNameField: s.dbKey}).
+			One(limit)
+		if err != nil {
+			s.log.WithField("key", s.dbKey).WithError(err).Error("Failed to get limit")
+			return 0
+		}
+		s.log.WithFields(log.Fields{
+			"limit": limit.SizeLimit,
+			"key":   s.dbKey,
+		}).Debug("Current limit")
+		s.limit = limit.SizeLimit
 	}
-	limit := &limitRecord{}
-	err := s.info.session.SQL().
-		Select(limitSizeField).
-		From(s.info.config.limitTable).
-		Where(db.Cond{limitNameField: s.dbKey}).
-		One(limit)
-	if err != nil {
-		s.log.WithField("key", s.dbKey).WithError(err).Error("Failed to get limit")
-		return 0
-	}
-	s.log.WithFields(log.Fields{
-		"limit": limit.SizeLimit,
-		"key":   s.dbKey,
-	}).Debug("Current limit")
-	return limit.SizeLimit
+	return s.limit
+}
+
+func (s *databaseSemaphore) getLimitTimestamp() time.Time {
+	return s.limitTimestamp
+}
+
+func (s *databaseSemaphore) resetLimitTimestamp() {
+	s.limitTimestamp = nowFn()
 }
 
 func (s *databaseSemaphore) currentState(session db.Session, held bool) []string {
