@@ -23,7 +23,7 @@ func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
-func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, dbInfo) {
+func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int,cacheTTL time.Duration,nextWorkflow NextWorkflow) (semaphore, db.Session, dbInfo) {
 	t.Helper()
 	dbSession, info, err := createTestDBSession(t)
 	require.NoError(t, err)
@@ -32,7 +32,7 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 	_, err = dbSession.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
 	require.NoError(t, err)
 
-	s := newDatabaseSemaphore(name, dbKey, nextWorkflow, info, 0)
+	s := newDatabaseSemaphore(name, dbKey, nextWorkflow, info, cacheTTL)
 	require.NotNil(t, s)
 
 	return s, dbSession, info
@@ -41,7 +41,7 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 // createTestDatabaseSemaphoreForFactory creates a database-backed semaphore that conforms to the factory
 func createTestDatabaseSemaphoreForFactory(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, func()) {
 	t.Helper()
-	s, dbSession, _ := createTestDatabaseSemaphore(t, name, namespace, limit, nextWorkflow)
+	s, dbSession, _ := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow)
 	return s, func() {
 		dbSession.Close()
 	}

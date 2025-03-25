@@ -3398,7 +3398,7 @@ data:
     limitTableName: sync_limit
     stateTableName: sync_state
     controllerTableName: sync_controller
-    deadControllerSeconds: 300
+    inactiveControllerSeconds: 300
     postgresql:
       host: postgres
       port: 5432

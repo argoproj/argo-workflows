@@ -135,7 +135,6 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
-			image == "public.ecr.aws/docker/library/alpine:3.18.4" ||
 			(isExample && (image == "busybox" || image == "python:alpine3.6"))
 	}
 	for _, t := range templates {

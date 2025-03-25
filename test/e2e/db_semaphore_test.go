@@ -235,7 +235,7 @@ func (s *DBSemaphoreSuite) TestSynchronizationCases() {
 					Templates: []wfv1.Template{{
 						Name: "main",
 						Container: &apiv1.Container{
-							Image: "public.ecr.aws/docker/library/alpine:3.18.4",
+							Image: "argoproj/argosay:v2",
 						},
 					}},
 				},

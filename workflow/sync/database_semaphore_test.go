@@ -15,7 +15,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 	nextWorkflow := func(key string) {}
 
 	// Create the database semaphore
-	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
+	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, 0, nextWorkflow)
 	defer dbSession.Close()
 
 	// Get the underlying database semaphore to access its session
@@ -55,7 +55,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 func TestOtherControllerDBSemaphore(t *testing.T) {
 	// Create a semaphore with limit 1
 	nextWorkflow := func(key string) {}
-	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
+	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, 0, nextWorkflow)
 	defer dbSession.Close()
 
 	// Get the underlying database semaphore to access its session
@@ -105,7 +105,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 	// Create a semaphore with limit 1
 	nextWorkflow := func(key string) {}
-	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, nextWorkflow)
+	s, dbSession, _ := createTestDatabaseSemaphore(t, "bar", "foo", 1, 0, nextWorkflow)
 	defer dbSession.Close()
 
 	// Get the underlying database semaphore to access its session
@@ -147,7 +147,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 	nextWorkflow := func(key string) {}
 
 	// Create a semaphore with limit 2 using the helper function
-	semaphore, dbSession, info := createTestDatabaseSemaphore(t, "shared-name", "foo", 2, nextWorkflow)
+	semaphore, dbSession, info := createTestDatabaseSemaphore(t, "shared-name", "foo", 2, 0, nextWorkflow)
 	defer dbSession.Close()
 
 	// Create a mutex using that key
@@ -227,4 +227,108 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 	assert.Contains(t, holderKeys, "foo/wf-mutex-2", "wf-mutex-2 should be a holder")
 	assert.Contains(t, holderKeys, "foo/wf-sem-2", "wf-sem-2 should be a holder")
 	assert.Contains(t, holderKeys, "foo/wf-sem-3", "wf-sem-3 should be a holder")
+}
+
+// TestSyncLimitCacheDB tests the caching of semaphore limit values in database semaphores
+func TestSyncLimitCacheDB(t *testing.T) {
+	// Keep track of the original nowFn and restore it after the test
+	originalNowFn := nowFn
+	defer func() {
+		nowFn = originalNowFn
+	}()
+
+	// Mock time for consistent testing
+	mockNow := time.Now()
+	nowFn = func() time.Time {
+		return mockNow
+	}
+
+	t.Run("RefreshesAfterTTL", func(t *testing.T) {
+		nextWorkflow := func(key string) {}
+
+		// Create a semaphore with initial limit of 5 and a 10 second TTL
+		cacheTTL := 10 * time.Second
+		s, dbSession, _ := createTestDatabaseSemaphore(t, "test-semaphore", "foo", 5, cacheTTL, nextWorkflow)
+		defer dbSession.Close()
+
+		// Cast to access internal fields
+		dbSemaphore, ok := s.(*databaseSemaphore)
+		require.True(t, ok, "Expected a database semaphore")
+
+		// First call to getLimit() should return the initial limit
+		initialLimit := dbSemaphore.getLimit()
+		assert.Equal(t, 5, initialLimit, "Initial limit should be 5")
+
+		// Get the initial timestamp
+		initialTimestamp := dbSemaphore.getLimitTimestamp()
+
+		// Call getLimit() again immediately - should use cached value and not update timestamp
+		limit := dbSemaphore.getLimit()
+		assert.Equal(t, 5, limit, "Limit should still be 5")
+		assert.Equal(t, initialTimestamp, dbSemaphore.getLimitTimestamp(), "Timestamp should not change")
+
+		// Update the semaphore limit in the database
+		_, err := dbSemaphore.info.session.SQL().
+			Update(dbSemaphore.info.config.limitTable).
+			Set(limitSizeField, 10).
+			Where(db.Cond{limitNameField: dbSemaphore.dbKey}).
+			Exec()
+		require.NoError(t, err)
+
+		// Call getLimit() again - should still use cached value
+		limit = dbSemaphore.getLimit()
+		assert.Equal(t, 5, limit, "Limit should still be cached at 5")
+
+		// Advance time just before TTL expires
+		mockNow = mockNow.Add(cacheTTL - time.Second)
+
+		// Call getLimit() again - should still use cached value
+		limit = dbSemaphore.getLimit()
+		assert.Equal(t, 5, limit, "Limit should still be cached at 5")
+
+		// Advance time past TTL
+		mockNow = mockNow.Add(2 * time.Second) // Now we're past the TTL
+
+		// Call getLimit() again - should refresh from database
+		limit = dbSemaphore.getLimit()
+		assert.Equal(t, 10, limit, "Limit should be updated to 10")
+
+		// Timestamp should be updated
+		assert.NotEqual(t, initialTimestamp, dbSemaphore.getLimitTimestamp(), "Timestamp should be updated")
+	})
+
+	t.Run("ZeroTTLAlwaysRefreshes", func(t *testing.T) {
+		nextWorkflow := func(key string) {}
+
+		// Create a semaphore with initial limit of 5 and a 0 second TTL
+		s, dbSession, _ := createTestDatabaseSemaphore(t, "test-semaphore-zero", "foo", 5, 0, nextWorkflow)
+		defer dbSession.Close()
+
+		// Cast to access internal fields
+		dbSemaphore, ok := s.(*databaseSemaphore)
+		require.True(t, ok, "Expected a database semaphore")
+
+		// First call to getLimit() should return the initial limit
+		initialLimit := dbSemaphore.getLimit()
+		assert.Equal(t, 5, initialLimit, "Initial limit should be 5")
+
+		// Get the initial timestamp
+		initialTimestamp := dbSemaphore.getLimitTimestamp()
+		
+		// As we've a stopped clock we need to advance time to test the refresh
+		mockNow = mockNow.Add(1 * time.Millisecond)
+
+		// Update the semaphore limit in the database
+		_, err := dbSemaphore.info.session.SQL().
+			Update(dbSemaphore.info.config.limitTable).
+			Set(limitSizeField, 7).
+			Where(db.Cond{limitNameField: dbSemaphore.dbKey}).
+			Exec()
+		require.NoError(t, err)
+
+		// Call getLimit() again - should immediately refresh with zero TTL
+		limit := dbSemaphore.getLimit()
+		assert.Equal(t, 7, limit, "Limit should be updated to 7")
+		assert.NotEqual(t, initialTimestamp, dbSemaphore.getLimitTimestamp(), "Timestamp should be updated")
+	})
 }

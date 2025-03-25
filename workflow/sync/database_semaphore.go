@@ -88,27 +88,42 @@ func (s *databaseSemaphore) getName() string {
 	return s.name
 }
 
-// getLimit returns the semaphore limit. If isMutex this always returns 1.
-// Otherwise queries the database for the limit.
-func (s *databaseSemaphore) getLimit() int {
-	if !s.isMutex && nowFn().Sub(s.getLimitTimestamp()) >= s.syncLimitCacheTTL {
-		// Update the limit from the database
-		s.resetLimitTimestamp()
-		limit := &limitRecord{}
-		err := s.info.session.SQL().
+
+func (s *databaseSemaphore) updateLimitFromDB() error {
+	// Update the limit from the database
+	limit := &limitRecord{}
+	err := s.info.session.SQL().
 			Select(limitSizeField).
 			From(s.info.config.limitTable).
 			Where(db.Cond{limitNameField: s.dbKey}).
 			One(limit)
-		if err != nil {
-			s.log.WithField("key", s.dbKey).WithError(err).Error("Failed to get limit")
+	if err != nil {
+		s.log.WithField("key", s.dbKey).WithError(err).Error("Failed to get limit")
+		return err
+	}
+	s.log.WithFields(log.Fields{
+		"limit": limit.SizeLimit,
+		"key":   s.dbKey,
+	}).Debug("Current limit")
+	s.resetLimitTimestamp()
+	s.limit = limit.SizeLimit
+	return nil
+}
+
+// getLimit returns the semaphore limit. If isMutex this always returns 1.
+// Otherwise queries the database for the limit.
+func (s *databaseSemaphore) getLimit() int {
+	log.WithFields(log.Fields{
+		"dbKey": s.dbKey,
+		"isMutex": s.isMutex,
+		"limitTimestamp": s.getLimitTimestamp(),
+		"syncLimitCacheTTL": s.syncLimitCacheTTL,
+		"remaining": nowFn().Sub(s.getLimitTimestamp()),
+	}).Infof("getLimit")
+	if !s.isMutex && nowFn().Sub(s.getLimitTimestamp()) >= s.syncLimitCacheTTL {
+		if s.updateLimitFromDB() != nil {
 			return 0
 		}
-		s.log.WithFields(log.Fields{
-			"limit": limit.SizeLimit,
-			"key":   s.dbKey,
-		}).Debug("Current limit")
-		s.limit = limit.SizeLimit
 	}
 	return s.limit
 }
