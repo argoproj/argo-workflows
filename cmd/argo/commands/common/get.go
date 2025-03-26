@@ -7,12 +7,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/argoproj/pkg/humanize"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	"github.com/argoproj/argo-workflows/v3/util/printer"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
