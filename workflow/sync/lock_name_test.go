@@ -44,6 +44,18 @@ func TestDecodeLockName(t *testing.T) {
 			},
 		},
 		{
+			"TestDatabaseLockNamesWork",
+			args{"default/Database/foo"},
+			&lockName{
+				Namespace:    "default",
+				ResourceName: "foo",
+				Kind:         lockKindDatabase,
+			},
+			func(t assert.TestingT, err error, i ...interface{}) bool {
+				return true
+			},
+		},
+		{
 			"TestConfigMapLockNamesWork",
 			args{"default/ConfigMap/foo/bar"},
 			&lockName{
