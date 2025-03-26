@@ -1105,8 +1105,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		retryOnFailed = false
 		retryOnError = true
 	case wfv1.RetryPolicyOnTransientError:
-		retryOnError = true
 		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.InternalError(lastChildNode.Message)) {
+			retryOnError = true
 			retryOnFailed = true
 		}
 	case wfv1.RetryPolicyOnFailure:
