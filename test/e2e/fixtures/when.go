@@ -749,7 +749,7 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES ($1, $2) "+
 				"ON CONFLICT (controller) DO UPDATE SET time = $2",
 				controllerTable),
-			controllerName, timestamp)
+			controllerName, timestamp, timestamp)
 		if err != nil {
 			w.t.Fatal(err)
 		}
@@ -758,7 +758,7 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES (?, ?) "+
 				"ON DUPLICATE KEY UPDATE time = ?",
 				controllerTable),
-			controllerName, timestamp)
+			controllerName, timestamp, timestamp)
 		if err != nil {
 			w.t.Fatal(err)
 		}
