@@ -14,7 +14,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 
-	pkgrand "github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -26,6 +25,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
 )
 
 const (

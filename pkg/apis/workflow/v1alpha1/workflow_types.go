@@ -377,10 +377,6 @@ type WorkflowSpec struct {
 	// PriorityClassName to apply to workflow pods.
 	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,23,opt,name=podPriorityClassName"`
 
-	// Priority to apply to workflow pods.
-	// DEPRECATED: Use PodPriorityClassName instead.
-	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,24,opt,name=podPriority"`
-
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,25,opt,name=hostAliases"`
@@ -501,7 +497,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	if wf.Spec.WorkflowTemplateRef == nil {
 		templates = wf.Spec.Templates
 		if wf.Spec.Synchronization != nil {
-			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range wf.Spec.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -509,7 +505,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	} else if wf.Status.StoredWorkflowSpec != nil {
 		templates = wf.Status.StoredWorkflowSpec.Templates
 		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
-			if configMapRef := wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -518,7 +514,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 
 	for _, tmpl := range templates {
 		if tmpl.Synchronization != nil {
-			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range tmpl.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -724,9 +720,6 @@ type Template struct {
 	// PriorityClassName to apply to workflow pods.
 	PriorityClassName string `json:"priorityClassName,omitempty" protobuf:"bytes,26,opt,name=priorityClassName"`
 
-	// Priority to apply to workflow pods.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,27,opt,name=priority"`
-
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,28,opt,name=serviceAccountName"`
 
@@ -898,7 +891,7 @@ type Parameter struct {
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
-	// If specified in the context of an input parameter, the value takes precedence over any passed values
+	// If specified in the context of an input parameter, any passed values take precedence over the specified value
 	Value *AnyString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
@@ -1698,11 +1691,18 @@ type Synchronization struct {
 	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 
-func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelector {
+	selectors := make([]*apiv1.ConfigMapKeySelector, 0)
 	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
-		return s.Semaphore.ConfigMapKeyRef
+		selectors = append(selectors, s.Semaphore.ConfigMapKeyRef)
 	}
-	return nil
+
+	for _, semaphore := range s.Semaphores {
+		if semaphore.ConfigMapKeyRef != nil {
+			selectors = append(selectors, semaphore.ConfigMapKeyRef)
+		}
+	}
+	return selectors
 }
 
 // SemaphoreRef is a reference of Semaphore

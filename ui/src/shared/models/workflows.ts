@@ -196,7 +196,7 @@ export interface Parameter {
      */
     name: string;
     /**
-     * Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values
+     * Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value
      */
     value?: string;
     /**

@@ -21,11 +21,15 @@ spec:
     - name: step-template
       steps:
         - - name: stepA
-            onExit: exitContainer
             template: hello-world
+            hooks:
+              exit:
+                template: exitContainer
         - - name: stepB
-            onExit: exitContainer
             template: hello-world
+            hooks:
+              exit:
+                template: exitContainer
 
     - name: hello-world
       container:

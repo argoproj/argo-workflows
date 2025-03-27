@@ -1,5 +1,91 @@
 # Changelog
 
+## v3.6.5 (2025-03-11)
+
+Full Changelog: [v3.6.4...v3.6.5](https://github.com/argoproj/argo-workflows/compare/v3.6.4...v3.6.5)
+
+### Selected Changes
+
+* [9e532061c](https://github.com/argoproj/argo-workflows/commit/9e532061c064d1205610b1932a0fb3c4dc053421) fix: don't print help for non-validation errors. Fixes argoproj#14234 (cherry-pick #14249) (#14283)
+* [0a0ef6148](https://github.com/argoproj/argo-workflows/commit/0a0ef6148df12208ac8646fdbdee1b9ab23e1471) fix: correct semaphore configmap keys for multiple semaphores (#14184) (release-3.6) (#14281)
+* [12cc537af](https://github.com/argoproj/argo-workflows/commit/12cc537afb78b98a6af47b639b53a8378f4d095b) fix(cli): remove red from log colour selection. Fixes #6740 (cherry-pick #14215) (#14278)
+* [1f558bc07](https://github.com/argoproj/argo-workflows/commit/1f558bc07bc7c90ecbe75606d86efcd457d5a6e7) fix: wait for workflow informer to sync before pod informer (cherry-pick #14248) (#14266)
+* [a2de3a1a4](https://github.com/argoproj/argo-workflows/commit/a2de3a1a40de66d58fa7c401d9d166f4c1dd859f) chore(deps): bump github.com/go-jose/go-jose/v3 from 3.0.3 to 3.0.4 in the go_modules group (cherry-pick #14231) (#14269)
+* [0128fef4c](https://github.com/argoproj/argo-workflows/commit/0128fef4cb1149037f78d3e39ecf4f2ccdd27b2c) chore(deps): fix snyk (#14264) (release-3.6) (#14268)
+* [96181d3f5](https://github.com/argoproj/argo-workflows/commit/96181d3f58e8e0f83dba5267f1790ab57e2be294) fix: split pod controller from workflow controller (#14129) (release-3.6) (#14263)
+* [823429fbd](https://github.com/argoproj/argo-workflows/commit/823429fbd13b78e596614280492cfbee5c230991) chore(deps): bump minio-go to newer version (#14185) (release-3.6) (#14261)
+* [68d8ace7a](https://github.com/argoproj/argo-workflows/commit/68d8ace7a0fc1fe51044df07be793135b72f1df0) fix(api/jsonschema): use working `$id` (cherry-pick #14257) (#14258)
+* [ff5c155db](https://github.com/argoproj/argo-workflows/commit/ff5c155dbb8f23da516ae5ac2c77354ead23ac00) fix(api/jsonschema): use unchanging JSON Schema version (cherry-pick #14092) (#14256)
+* [c8dc1bc16](https://github.com/argoproj/argo-workflows/commit/c8dc1bc1674ebaf2cde8e4401f195d7d6474b834) fix(ci): python sdk release process (release-3.6) (#14183)
+* [a3b93733b](https://github.com/argoproj/argo-workflows/commit/a3b93733bb29123a5caa79c2b9b4c89bd267a9f2) fix: bump deps for k8schain to fix ecr-login (#14008) (release-3.6 cherry-pick) (#14174)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* koichi
+* Mason Malone
+* Prabakaran Kumaresshan
+* Roger Peppe
+* Rohan K
+* Tim Collins
+* Vaibhav Kaushik
+
+</details>
+
+## v3.6.4 (2025-02-10)
+
+Full Changelog: [v3.6.3...v3.6.4](https://github.com/argoproj/argo-workflows/compare/v3.6.3...v3.6.4)
+
+### Selected Changes
+
+* [77552d852](https://github.com/argoproj/argo-workflows/commit/77552d852da5c53a1d8c9918b3474d8bff06260a) Revert "fix(controller): validation failed when dynamic templateRef is used in nested template (#14053)"
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
+## v3.6.3 (2025-02-07)
+
+Full Changelog: [v3.6.2...v3.6.3](https://github.com/argoproj/argo-workflows/compare/v3.6.2...v3.6.3)
+
+### Selected Changes
+
+* [98eee45f3](https://github.com/argoproj/argo-workflows/commit/98eee45f321440b1e0c892a8f85af39e175447ed) chore(deps): bump golang.org/x/crypto from 0.26.0 to 0.31.0 in the go_modules group (#13992)
+* [d60d7dd84](https://github.com/argoproj/argo-workflows/commit/d60d7dd84ee04123fdf29c595551c0c336f577d0) chore(deps): bump github.com/go-git/go-git/v5 from 5.11.0 to 5.13.1 in the go_modules group (#14055)
+* [3732ce631](https://github.com/argoproj/argo-workflows/commit/3732ce6315983c4b498ffef08ffcc542393c59c1) fix: get logs from artifact when workflow deleted instead of archived. Fixes: #14083 (#14087)
+* [293b4a528](https://github.com/argoproj/argo-workflows/commit/293b4a5281fad022c282b1b3094a108fb1a5b84e) fix: ensure namespace parallelism and parallelism work together. Fixes  #10985 (#14039)
+* [939cefc19](https://github.com/argoproj/argo-workflows/commit/939cefc197bea17d0e4fce8122e974809b526713) fix: validate template of the same name. Fixes #13763 (#14043)
+* [59026f507](https://github.com/argoproj/argo-workflows/commit/59026f507bbb4499b62755d287341ae81c3e20bb) fix(controller): validation failed when dynamic templateRef is used in nested template (#14053)
+* [7a2986698](https://github.com/argoproj/argo-workflows/commit/7a2986698361c38beaac91e3cfbdf05b4f6e4879) fix(controller): step group stuck on running when exit hook has illegal expression (#14032)
+* [4729176e8](https://github.com/argoproj/argo-workflows/commit/4729176e82aa430f218e9f2867a71e4192a13b53) fix: ensure that nodes complete when workflow fails with `parallelism` and `failFast`. Fixes #13806 (#13827)
+* [bb3c0832b](https://github.com/argoproj/argo-workflows/commit/bb3c0832bcbe10bd1d8ac2b67074c71e0a8958a6) fix: mark all its children(container) as deleted if pod deleted. Fixes #13951 (#13978)
+* [f8012d4ec](https://github.com/argoproj/argo-workflows/commit/f8012d4ec36413115a344068e4aebd5f64b8b409) fix: cronOperator/serverResubmitWf retry create workflow on transient error. Fixes #13970 (#13971)
+* [c0ea4b0c4](https://github.com/argoproj/argo-workflows/commit/c0ea4b0c4ad2897d3203418313d4860684c81e5f) fix: Skip execution control for agent pod during pod reconciliation. Fixes #12726 (#12732)
+* [bd9b12487](https://github.com/argoproj/argo-workflows/commit/bd9b124878934e937d082441bd5db024b5fb07e3) fix: don't log non-errors as "Non-transient error: <nil>". Fixes #13881 (#13917)
+* [cf56b1821](https://github.com/argoproj/argo-workflows/commit/cf56b182104d548e7037fbaa981c5c02290a4813) fix: consistent variable substitution for `configMapKeyRef`. Fixes #13890 (#13921)
+* [c96c5dc7e](https://github.com/argoproj/argo-workflows/commit/c96c5dc7e6e3c8d6698c80c48ea3ad7aef2660ca) fix: locking in metrics (backport release-3.6) (#14156)
+* [2439becb9](https://github.com/argoproj/argo-workflows/commit/2439becb969b17fcf1d3ae18dd34be300663d7d1) fix(controller): task progress with mutexes not updated. Fixes #14148 (#14149)
+* [69b07e89b](https://github.com/argoproj/argo-workflows/commit/69b07e89bad42aa63d0dce93d3299df6d16e8dc8) fix: update upload-artifact and download-artifact (#14070)
+* [5bf74c3f8](https://github.com/argoproj/argo-workflows/commit/5bf74c3f8f945ec397747e26007f2e64c33e2838) feat: enable cherry-pick bot (#14151)
+* [d418c689c](https://github.com/argoproj/argo-workflows/commit/d418c689cbfc516170ab2f6c91b16cf6e1af378c) fix: archive fallback tests
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Alex Collins
+* chengjoey
+* Isitha Subasinghe
+* jswxstw
+* Mason Malone
+* shuangkun tian
+* Tianchu Zhao
+* Tim Collins
+* Yuan Tang
+
+</details>
+
 ## v3.6.2 (2024-12-02)
 
 Full Changelog: [v3.6.0...v3.6.2](https://github.com/argoproj/argo-workflows/compare/v3.6.0...v3.6.2)
@@ -24,22 +110,15 @@ Full Changelog: [v3.6.0...v3.6.2](https://github.com/argoproj/argo-workflows/com
 * Anton Gilgur
 * Blair Drummond
 * Carlos R.F.
-* Mason Malone
-* dependabot[bot]
 * instauro
 * jswxstw
+* Mason Malone
 
 </details>
 
 ## v3.6.0 (2024-10-31)
 
 Full Changelog: [v3.6.0-rc4...v3.6.0](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc4...v3.6.0)
-
-### Selected Changes
-
-<details><summary><h3>Contributors</h3></summary>
-
-</details>
 
 ## v3.6.0-rc4 (2024-10-31)
 
@@ -67,10 +146,11 @@ Full Changelog: [v3.6.0-rc3...v3.6.0-rc4](https://github.com/argoproj/argo-workf
 * Darko Janjic
 * Greg Sheremeta
 * Isitha Subasinghe
+* isubasinghe
+* Joibel
 * Mason Malone
 * MinyiZ
-* dependabot[bot]
-* github-actions[bot]
+* Minyi Zhong
 
 </details>
 
@@ -119,18 +199,22 @@ Full Changelog: [v3.6.0-rc2...v3.6.0-rc3](https://github.com/argoproj/argo-workf
 * Alan Clucas
 * Anton Gilgur
 * Ashley Manraj
+* chengjoey
 * Darko Janjic
+* Isitha Subasinghe
+* Joibel
+* jswxstw
 * Julie Vogelman
+* liuda1
 * Mason Malone
 * Michael Weibel
+* Taleb Zeghmi
 * Tianchu Zhao
-* Yuping Fan
-* Zadkiel AHARONIAN
-* chengjoey
-* github-actions[bot]
-* jswxstw
 * tooptoop4
 * wayne
+* Yuping Fan
+* Zadkiel AHARONIAN
+* 刘达
 
 </details>
 
@@ -159,15 +243,15 @@ Full Changelog: [v3.6.0-rc1...v3.6.0-rc2](https://github.com/argoproj/argo-workf
 * Anton Gilgur
 * Eduardo Rodrigues
 * Isitha Subasinghe
+* Joibel
 * Julie Vogelman
+* l2h
 * Mason Malone
 * Philipp Pfeil
+* shuangkun tian
 * Tim Collins
 * William Van Hevelingen
 * Yuan Tang
-* github-actions[bot]
-* l2h
-* shuangkun tian
 
 </details>
 
@@ -579,19 +663,25 @@ Full Changelog: [v3.5.14...v3.6.0-rc1](https://github.com/argoproj/argo-workflow
 <details><summary><h3>Contributors</h3></summary>
 
 * Adrien Delannoy
+* agilgur5
 * Alan Clucas
 * AlbeeSo
+* albertoclarit
 * Alex
 * AloysAqemia
 * Anastasiia Kozlova
 * Andrei Shevchenko
 * Andrew Fenner
+* ​Andrzej Ressel
 * Anton Gilgur
 * Baris Erdem
 * Blake Pettersson
 * Bryce-Huang
 * Carlos Santana
+* chengjoey
+* chenrui
 * Chris Dolan
+* crazeteam
 * Daan Seynaeve
 * Darko Janjic
 * David Gamba
@@ -605,104 +695,107 @@ Full Changelog: [v3.5.14...v3.6.0-rc1](https://github.com/argoproj/argo-workflow
 * GhangZh
 * Gongpu Zhu
 * Greg Sheremeta
+* guangwu
+* gussan
+* happyso
 * Harrison Kim
+* heidongxianhua
 * Helge Willum Thingvad
 * Ian Ensor
+* Ingvar Mattsson
 * Injun Baeg
+* instauro
 * Isitha Subasinghe
+* itayvolo
+* ivancili
 * James Kang
 * Janghun Lee(James)
 * Jason Meridth
 * Jellyfrog
 * Jiacheng Xu
-* Joe Bowbeer
+* jiangjiang
+* jingkai
 * João Pedro
+* Joe Bowbeer
+* jswxstw
 * Julie Vogelman
 * Justice
 * Kavish Dahekar
 * Krunal2017
+* leesungbin
+* linzhengen
+* lukashankeln
+* mahdi alizadeh
 * Mason Malone
 * Matt Fisher
 * Matt Menzenski
 * Meng Zhuo
 * Michael Weibel
 * Miltiadis Alexis
+* moonyoung
 * Nagy Attila Gábor
+* Neile Havens
+* neosu
 * Oliver Dain
 * Omer Levi Hevroni
+* origxm
+* panicboat
 * Paolo Quadri
 * Paul Greenberg
 * Phil Brown
+* polarbear567
 * Raffael
 * Raymond
+* redismongo
+* Rémi Cresson
+* rnathuji
 * Roel Arents
 * Ruin09
 * Ryan Currah
-* Rémi Cresson
 * Sahil Sharma
+* sakai-ast
+* sarabala1979
+* Saravanan Balasubramanian
 * Serg Shalavin
 * Shabeeb Khalid
+* shangchengbabaiban
+* sherwinkoo29
 * Shiwei Tang
+* shuangkun
+* shuangkun tian
 * Shubham
 * Shunsuke Suzuki
+* sh.yoon
+* Simon Behar
 * Sion Kang
 * Sn0rt
 * Son Bui
+* spaced
+* static-moonlight
+* Steven Johnson
+* sycured
 * Takumi Sue
 * Tal Yitzhak
+* terrytangyuan
 * Thor K. Høgås
 * Tianchu Zhao
 * Tim Collins
 * Travis Stevens
 * Vasily Chekalkin
+* vatine
 * Weidong Cai
+* williamburgson
 * William Van Hevelingen
 * Xiaofan Hu
+* xin04.zhang
 * Yang Lu
-* Yuan (Terry) Tang
 * Yuan Tang
+* Yuan (Terry) Tang
 * Yulin Li
 * YunCow
 * Yuping Fan
+* zjgemi
 * Zubair Haque
-* albertoclarit
-* chengjoey
-* chenrui
-* crazeteam
-* dependabot[bot]
-* github-actions[bot]
-* guangwu
-* gussan
-* happyso
-* heidongxianhua
-* instauro
-* itayvolo
-* ivancili
-* jiangjiang
-* jingkai
-* jswxstw
-* leesungbin
-* linzhengen
-* lukashankeln
-* mahdi alizadeh
-* moonyoung
-* neosu
-* origxm
-* panicboat
-* polarbear567
-* redismongo
-* renovate[bot]
-* rnathuji
-* sakai-ast
-* sh.yoon
-* shangchengbabaiban
-* shuangkun tian
-* spaced
-* static-moonlight
-* sycured
-* vatine
-* williamburgson
-* ​Andrzej Ressel
 * 刘达
 * 名白
 
@@ -739,17 +832,16 @@ Full Changelog: [v3.5.13...v3.5.14](https://github.com/argoproj/argo-workflows/c
 <details><summary><h3>Contributors</h3></summary>
 
 * Alan Clucas
+* chengjoey
+* htquanq
 * Isitha Subasinghe
+* jswxstw
 * Mason Malone
+* shuangkun tian
 * Tianchu Zhao
 * Tim Collins
 * William Van Hevelingen
 * Yulin Li
-* chengjoey
-* dependabot[bot]
-* htquanq
-* jswxstw
-* shuangkun tian
 
 </details>
 
@@ -793,19 +885,24 @@ Full Changelog: [v3.5.11...v3.5.12](https://github.com/argoproj/argo-workflows/c
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * Alan Clucas
 * Anton Gilgur
 * Greg Sheremeta
 * Isitha Subasinghe
+* Joibel
 * Julie Vogelman
+* Kavish Dahekar
+* Kavish Nareshchandra Dahekar
 * Michael Weibel
 * MinyiZ
-* Tianchu Zhao
-* Yuping Fan
-* github-actions[bot]
+* Minyi Zhong
+* Raymond Chow
 * shuangkun tian
+* Tianchu Zhao
 * tooptoop4
 * wayne
+* Yuping Fan
 
 </details>
 
@@ -853,23 +950,25 @@ Full Changelog: [v3.5.10...v3.5.11](https://github.com/argoproj/argo-workflows/c
 <details><summary><h3>Contributors</h3></summary>
 
 * Alan Clucas
+* ​Andrzej Ressel
 * Anton Gilgur
+* chengjoey
+* Ingvar Mattsson
 * Isitha Subasinghe
+* jingkai
+* jswxstw
 * Mason Malone
 * Miltiadis Alexis
+* origxm
+* shangchengbabaiban
+* sherwinkoo29
+* shuangkun tian
 * Thor K. Høgås
 * Tianchu Zhao
+* vatine
 * William Van Hevelingen
 * Xiaofan Hu
 * Yuan Tang
-* chengjoey
-* jingkai
-* jswxstw
-* origxm
-* shangchengbabaiban
-* shuangkun tian
-* vatine
-* ​Andrzej Ressel
 * 名白
 
 </details>
@@ -888,9 +987,8 @@ Full Changelog: [v3.5.9...v3.5.10](https://github.com/argoproj/argo-workflows/co
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * Anton Gilgur
-* dependabot[bot]
-* github-actions[bot]
 
 </details>
 
@@ -927,22 +1025,24 @@ Full Changelog: [v3.5.8...v3.5.9](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * Alan Clucas
+* AlbeeSo
 * Alex
 * Andrew Fenner
 * Anton Gilgur
 * Dillen Padhiar
 * Gongpu Zhu
-* Miltiadis Alexis
-* Tianchu Zhao
-* Yuan Tang
-* github-actions[bot]
 * instauro
 * jswxstw
 * linzhengen
-* sh.yoon
+* Miltiadis Alexis
+* Neile Havens
 * shuangkun tian
+* sh.yoon
 * spaced
+* Tianchu Zhao
+* Yuan Tang
 * 名白
 
 </details>
@@ -968,20 +1068,21 @@ Full Changelog: [v3.5.7...v3.5.8](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * Alan Clucas
 * Anton Gilgur
 * Janghun Lee(James)
 * Jason Meridth
 * Jiacheng Xu
+* jswxstw
 * Julie Vogelman
+* leesungbin
 * Miltiadis Alexis
 * Oliver Dain
 * Tianchu Zhao
+* Tim Collins
 * Travis Stevens
 * Yulin Li
-* github-actions[bot]
-* jswxstw
-* leesungbin
 
 </details>
 
@@ -1014,6 +1115,7 @@ Full Changelog: [v3.5.6...v3.5.7](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * Alan Clucas
 * AlbeeSo
 * Anastasiia Kozlova
@@ -1022,28 +1124,28 @@ Full Changelog: [v3.5.6...v3.5.7](https://github.com/argoproj/argo-workflows/com
 * David Gamba
 * Doug Goldstein
 * Greg Sheremeta
+* heidongxianhua
+* itayvolo
 * Jellyfrog
 * Jiacheng Xu
+* jswxstw
 * Krunal2017
 * Matt Fisher
 * Matt Menzenski
 * Phil Brown
+* rnathuji
 * Ryan Currah
 * Serg Shalavin
 * Shabeeb Khalid
+* sherwinkoo29
+* shuangkun tian
 * Shubham
+* sycured
+* terrytangyuan
 * Tim Collins
 * Yang Lu
-* Yuan (Terry) Tang
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
-* heidongxianhua
-* itayvolo
-* jswxstw
-* rnathuji
-* shuangkun tian
-* sycured
+* Yuan (Terry) Tang
 
 </details>
 
@@ -1098,22 +1200,29 @@ Full Changelog: [v3.5.5...v3.5.6](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * AlbeeSo
 * Andrei Shevchenko
 * Anton Gilgur
-* Jiacheng Xu
-* Roel Arents
-* Shiwei Tang
-* Shunsuke Suzuki
-* Tianchu Zhao
-* Yuan (Terry) Tang
-* Yuan Tang
-* Yulin Li
-* dependabot[bot]
-* github-actions[bot]
 * guangwu
+* Isitha Subasinghe
+* Jiacheng Xu
+* Julie Vogelman
+* Roel Arents
+* sarabala1979
+* Saravanan Balasubramanian
+* sherwinkoo29
+* Shiwei Tang
+* shuangkun
 * shuangkun tian
+* Shunsuke Suzuki
 * static-moonlight
+* terrytangyuan
+* Tianchu Zhao
+* Yuan Tang
+* Yuan (Terry) Tang
+* Yulin Li
+* zjgemi
 
 </details>
 
@@ -1171,19 +1280,21 @@ Full Changelog: [v3.5.4...v3.5.5](https://github.com/argoproj/argo-workflows/com
 * Garett MacGowan
 * Isitha Subasinghe
 * Jason Meridth
+* jiangjiang
 * João Pedro
+* jswxstw
+* Julie Vogelman
+* panicboat
 * Paolo Quadri
 * Raffael
 * Ruin09
 * Ryan Currah
+* sherwinkoo29
+* shuangkun tian
 * Son Bui
 * Tal Yitzhak
 * Tianchu Zhao
 * Yulin Li
-* jiangjiang
-* jswxstw
-* panicboat
-* shuangkun tian
 
 </details>
 
@@ -1267,21 +1378,21 @@ Full Changelog: [v3.5.2...v3.5.3](https://github.com/argoproj/argo-workflows/com
 * Bryce-Huang
 * Denys Melnyk
 * Garett MacGowan
-* Jason Meridth
-* Julie Vogelman
-* Saravanan Balasubramanian
-* Son Bui
-* Yang Lu
-* Yuan (Terry) Tang
-* Yuan Tang
-* Zubair Haque
-* dependabot[bot]
 * gussan
 * ivancili
+* Jason Meridth
 * jswxstw
+* Julie Vogelman
 * neosu
-* renovate[bot]
+* Saravanan Balasubramanian
 * shuangkun tian
+* Son Bui
+* Steven Johnson
+* Yang Lu
+* Yuan Tang
+* Yuan (Terry) Tang
+* zjgemi
+* Zubair Haque
 * 刘达
 
 </details>
@@ -1316,10 +1427,10 @@ Full Changelog: [v3.5.1...v3.5.2](https://github.com/argoproj/argo-workflows/com
 * Anton Gilgur
 * Garett MacGowan
 * Helge Willum Thingvad
+* Saravanan Balasubramanian
 * Weidong Cai
-* Yuan (Terry) Tang
 * Yuan Tang
-* dependabot[bot]
+* Yuan (Terry) Tang
 
 </details>
 
@@ -1351,16 +1462,15 @@ Full Changelog: [v3.5.0...v3.5.1](https://github.com/argoproj/argo-workflows/com
 
 * Alan Clucas
 * Anton Gilgur
+* gussan
+* happyso
 * Ruin09
+* shuangkun tian
 * Takumi Sue
 * Vasily Chekalkin
 * Yang Lu
-* Yuan (Terry) Tang
 * Yuan Tang
-* dependabot[bot]
-* gussan
-* happyso
-* shuangkun tian
+* Yuan (Terry) Tang
 
 </details>
 
@@ -1406,23 +1516,24 @@ Full Changelog: [v3.5.0-rc2...v3.5.0](https://github.com/argoproj/argo-workflows
 <details><summary><h3>Contributors</h3></summary>
 
 * Anton Gilgur
+* gussan
+* heidongxianhua
 * Isitha Subasinghe
 * Julie Vogelman
 * Justice
 * Matt Farmer
 * Michael Weibel
 * PranitRout07
+* redenferno
 * Ruin09
 * Sebast1aan
 * Takumi Sue
+* terrytangyuan
 * Tim Collins
+* Yuan Tang
 * Yuan (Terry) Tang
+* yunwoo-yu
 * Yusuke Shinoda
-* dependabot[bot]
-* github-actions[bot]
-* gussan
-* heidongxianhua
-* redenferno
 
 </details>
 
@@ -1516,14 +1627,23 @@ Full Changelog: [v3.5.0-rc1...v3.5.0-rc2](https://github.com/argoproj/argo-workf
 * Anton Gilgur
 * Antonio Gurgel
 * Basanth Jenu H B
+* b-erdem
+* bjenuhb
 * Cheng Wang
+* guangwu
+* gussan
+* happyso
 * Isitha Subasinghe
 * Jesse Suen
 * Jiwan Ahn
 * Julie Vogelman
+* junkmm
 * Justice
 * KBS
 * LEE EUI JOO
+* moonyoung
+* Niklas Simons
+* nsimons
 * Rick
 * Roel Arents
 * Ruin09
@@ -1532,21 +1652,14 @@ Full Changelog: [v3.5.0-rc1...v3.5.0-rc2](https://github.com/argoproj/argo-workf
 * Spencer Cai
 * Subin Kim
 * Suraj Banakar(बानकर) | スラジ
+* terrytangyuan
 * Thearas
 * Weidong Cai
 * Yang Lu
+* younggil
+* Yuan Tang
 * Yuan (Terry) Tang
 * Yusuke Shinoda
-* b-erdem
-* dependabot[bot]
-* github-actions[bot]
-* guangwu
-* gussan
-* happyso
-* junkmm
-* moonyoung
-* nsimons
-* younggil
 * yyzxw
 * 一条肥鱼
 * 张志强
@@ -1737,25 +1850,32 @@ Full Changelog: [v3.4.18...v3.5.0-rc1](https://github.com/argoproj/argo-workflow
 * Akashinfy
 * Alan Clucas
 * Aleksandr Lossenko
-* Alex Collins
 * Alexander Crow
+* Alex Collins
 * Amit Oren
 * Anton Gilgur
 * Aqeel Ahmad
+* boiledfroginthewell
 * Brian Loss
 * Byeonggon Lee
 * Carlos M
 * Cayde6
 * Cheng Wang
 * Christoph Buchli
+* cui fliter
 * DahuK
 * Dahye
+* devops-42
+* Dirc
 * Dylan Bragdon
 * Eduardo Rodrigues
+* ehellmann-nydig
 * Elifarley C
 * Federico Paparoni
 * GeunSam2 (Gray)
+* Giovanni Barbaro
 * GoshaDozoretz
+* gussan
 * Huan-Cheng Chang
 * Iain Lane
 * Isitha Subasinghe
@@ -1764,20 +1884,28 @@ Full Changelog: [v3.4.18...v3.5.0-rc1](https://github.com/argoproj/argo-workflow
 * Jinsu Park
 * Josh Soref
 * Julie Vogelman
+* jxlwqq
+* jyje
 * Lan
 * LilTwo
 * Lucas Heinlen
 * Lukas Grotz
 * Lukas Wöhrl
+* luyang93
+* Matthias Dietz
 * Max Xu
 * Mickaël Canévet
+* mouuii
+* munenori-harada
 * Northes
 * Oliver Skånberg-Tippen
 * Or Shachar
 * PanagiotisS
+* peterandluc
 * PeterKoegel
 * Rachel Bushrian
 * Rafael
+* rbushrian
 * Remington Breeze
 * Rick
 * Roel Arents
@@ -1785,43 +1913,32 @@ Full Changelog: [v3.4.18...v3.5.0-rc1](https://github.com/argoproj/argo-workflow
 * RoryDoherty
 * Rui Chen
 * Ruin09
+* sakai-ast
 * Saravanan Balasubramanian
+* shuangkun tian
+* smile-luobin
 * Son Bui
 * Takumi Sue
+* terrytangyuan
 * Tianchu Zhao
 * Tim Collins
 * Tom Kahn
-* Tore
-* Vedant Shrotria
-* Waleed Malik
-* Yuan (Terry) Tang
-* Yuan Tang
-* YunCow
-* Zubair Haque
-* boiledfroginthewell
-* cui fliter
-* dependabot[bot]
-* devops-42
-* ehellmann-nydig
-* github-actions[bot]
-* gussan
-* jxlwqq
-* jyje
-* luyang93
-* mouuii
-* munenori-harada
-* peterandluc
-* sakai-ast
-* shuangkun tian
-* smile-luobin
 * tooptoop4
+* Tore
+* Tore S. Loenoey
 * toyamagu
 * vanny96
+* Vedant Shrotria
 * vitalyrychkov
+* Waleed Malik
 * wangxiang
 * weafscast
 * yeicandoit
 * younggil
+* Yuan Tang
+* Yuan (Terry) Tang
+* YunCow
+* Zubair Haque
 * 李杰穎 (Jay Lee)
 
 </details>
@@ -1846,19 +1963,23 @@ Full Changelog: [v3.4.17...v3.4.18](https://github.com/argoproj/argo-workflows/c
 
 <details><summary><h3>Contributors</h3></summary>
 
+* Alan Clucas
+* AlbeeSo
 * Andrew Fenner
 * Anton Gilgur
 * Gongpu Zhu
 * Huan-Cheng Chang
-* Miltiadis Alexis
-* Northes
-* Oliver Dain
-* Travis Stevens
-* github-actions[bot]
 * jswxstw
 * jyje
+* Miltiadis Alexis
+* Neile Havens
+* Northes
+* Oliver Dain
 * shuangkun tian
+* terrytangyuan
 * tooptoop4
+* Travis Stevens
+* Yuan Tang
 * 名白
 
 </details>
@@ -1944,6 +2065,7 @@ Full Changelog: [v3.4.16...v3.4.17](https://github.com/argoproj/argo-workflows/c
 
 <details><summary><h3>Contributors</h3></summary>
 
+* agilgur5
 * Alan Clucas
 * AlbeeSo
 * AloysAqemia
@@ -1954,33 +2076,36 @@ Full Changelog: [v3.4.16...v3.4.17](https://github.com/argoproj/argo-workflows/c
 * Dennis Lawler
 * Denys Melnyk
 * Eduardo Rodrigues
+* guangwu
+* gussan
 * Helge Willum Thingvad
 * Isitha Subasinghe
+* ivancili
+* jiangjiang
 * João Pedro
+* jswxstw
+* Julie Vogelman
+* junkmm
+* neosu
 * Raffael
 * Ruin09
 * Ryan Currah
+* sherwinkoo29
 * Shiwei Tang
+* shuangkun
+* shuangkun tian
 * Shunsuke Suzuki
 * Son Bui
+* static-moonlight
+* sycured
 * Tal Yitzhak
 * Tianchu Zhao
 * Weidong Cai
 * Yang Lu
-* Yuan (Terry) Tang
 * Yuan Tang
+* Yuan (Terry) Tang
 * Yulin Li
-* dependabot[bot]
-* guangwu
-* gussan
-* ivancili
-* jiangjiang
-* jswxstw
-* junkmm
-* neosu
-* shuangkun tian
-* static-moonlight
-* sycured
+* zjgemi
 
 </details>
 
@@ -2035,8 +2160,8 @@ Full Changelog: [v3.4.13...v3.4.14](https://github.com/argoproj/argo-workflows/c
 
 * Anton Gilgur
 * Julie Vogelman
-* Yuan (Terry) Tang
 * Yuan Tang
+* Yuan (Terry) Tang
 
 </details>
 
@@ -2056,12 +2181,12 @@ Full Changelog: [v3.4.12...v3.4.13](https://github.com/argoproj/argo-workflows/c
 <details><summary><h3>Contributors</h3></summary>
 
 * Alan Clucas
+* Anton Gilgur
 * Cheng Wang
-* Vasily Chekalkin
-* Yuan (Terry) Tang
-* Yuan Tang
-* dependabot[bot]
 * shuangkun tian
+* Vasily Chekalkin
+* Yuan Tang
+* Yuan (Terry) Tang
 
 </details>
 
@@ -2109,19 +2234,21 @@ Full Changelog: [v3.4.11...v3.4.12](https://github.com/argoproj/argo-workflows/c
 * Alec Rabold
 * Anton Gilgur
 * Basanth Jenu H B
+* bjenuhb
+* happyso
 * Isitha Subasinghe
 * Julie Vogelman
 * Matt Farmer
 * Michael Weibel
 * Ruin09
+* Saravanan Balasubramanian
 * Son Bui
 * Takumi Sue
 * Thearas
 * Tim Collins
 * Weidong Cai
+* Yuan Tang
 * Yuan (Terry) Tang
-* dependabot[bot]
-* happyso
 
 </details>
 
@@ -2155,20 +2282,21 @@ Full Changelog: [v3.4.10...v3.4.11](https://github.com/argoproj/argo-workflows/c
 <details><summary><h3>Contributors</h3></summary>
 
 * Alan Clucas
+* Alex Collins
 * Anton Gilgur
 * Antonio Gurgel
 * Cheng Wang
+* gussan
+* happyso
 * Isitha Subasinghe
 * Jinsu Park
 * LEE EUI JOO
 * Ruin09
 * Son Bui
 * Suraj Banakar(बानकर) | スラジ
-* Yuan (Terry) Tang
-* Yuan Tang
-* gussan
-* happyso
 * younggil
+* Yuan Tang
+* Yuan (Terry) Tang
 * 一条肥鱼
 * 张志强
 
@@ -2203,22 +2331,23 @@ Full Changelog: [v3.4.9...v3.4.10](https://github.com/argoproj/argo-workflows/co
 
 <details><summary><h3>Contributors</h3></summary>
 
+* Alex Collins
 * Anton Gilgur
+* boiledfroginthewell
 * Christoph Buchli
+* gussan
 * Josh Soref
 * LilTwo
 * Roel Arents
 * Rui Chen
 * Ruin09
+* sakai-ast
 * Son Bui
 * Vedant Shrotria
+* younggil
+* Yuan Tang
 * Yuan (Terry) Tang
 * YunCow
-* boiledfroginthewell
-* dependabot[bot]
-* gussan
-* sakai-ast
-* younggil
 
 </details>
 
@@ -2261,20 +2390,22 @@ Full Changelog: [v3.4.8...v3.4.9](https://github.com/argoproj/argo-workflows/com
 * Alan Clucas
 * Anton Gilgur
 * Cheng Wang
+* Giovanni Barbaro
 * Iain Lane
 * James Slater
 * Lan
 * Lucas Heinlen
 * Rachel Bushrian
+* rbushrian
 * Roel Arents
+* Saravanan Balasubramanian
+* smile-luobin
 * Tim Collins
 * Tom Kahn
 * Tore
-* Yuan Tang
-* dependabot[bot]
-* smile-luobin
 * toyamagu
 * vanny96
+* Yuan Tang
 
 </details>
 
@@ -2332,6 +2463,7 @@ Full Changelog: [v3.4.7...v3.4.8](https://github.com/argoproj/argo-workflows/com
 
 * Alan Clucas
 * Alexander Crow
+* Dirc
 * GeunSam2 (Gray)
 * Julie Vogelman
 * Max Xu
@@ -2339,14 +2471,14 @@ Full Changelog: [v3.4.7...v3.4.8](https://github.com/argoproj/argo-workflows/com
 * PeterKoegel
 * Roel Arents
 * RoryDoherty
-* Takumi Sue
-* Tore
-* Yuan Tang
-* dependabot[bot]
 * shuangkun tian
+* Takumi Sue
 * tooptoop4
+* Tore
+* Tore S. Loenoey
 * toyamagu
 * yeicandoit
+* Yuan Tang
 
 </details>
 
@@ -2449,17 +2581,25 @@ Full Changelog: [v3.4.6...v3.4.7](https://github.com/argoproj/argo-workflows/com
 * Alan Clucas
 * Alex Collins
 * Ben Brandt
+* Caelan U
 * Ciprian Anton
 * GeunSam2 (Gray)
 * GoshaDo
+* hodong
 * Hyacin
 * Isitha Subasinghe
-* J.P. Zivalich
+* jannfis
+* jessesuen
 * Jiacheng Xu
 * John Daniel Maguire
 * Josh Soref
+* J.P. Zivalich
 * Julien Duchesne
+* jxlwqq
+* Kacper Kondratek
+* kolorful
 * Kratik Jain
+* krrrr38
 * Liang Xu
 * Lifei Chen
 * Mahmoud Abduljawad
@@ -2469,20 +2609,15 @@ Full Changelog: [v3.4.6...v3.4.7](https://github.com/argoproj/argo-workflows/com
 * Petri Kivikangas
 * Rajshekar Reddy
 * Sandeep Vagulapuram
+* Saravanan Balasubramanian
 * Shraddha
 * Tim Collins
 * Vaibhav Kaushik
 * Vasile Razdalovschi
-* Yao Lin
-* Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
-* hodong
-* jannfis
-* jxlwqq
-* kolorful
 * wangxiang
 * weafscast
+* Yao Lin
+* Yuan Tang
 
 </details>
 
@@ -2518,18 +2653,23 @@ Full Changelog: [v3.4.5...v3.4.6](https://github.com/argoproj/argo-workflows/com
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* Caelan U
 * Ciprian Anton
 * GoshaDo
 * Isitha Subasinghe
 * Jiacheng Xu
 * John Daniel Maguire
-* Petri Kivikangas
-* Sandeep Vagulapuram
-* Shraddha
-* Yuan Tang
+* Kacper Kondratek
 * kolorful
+* Mitsuo Heijo
+* Petri Kivikangas
+* Rajshekar Reddy
+* Sandeep Vagulapuram
+* Saravanan Balasubramanian
+* Shraddha
 * wangxiang
 * weafscast
+* Yuan Tang
 
 </details>
 
@@ -2625,13 +2765,17 @@ Full Changelog: [v3.4.4...v3.4.5](https://github.com/argoproj/argo-workflows/com
 * Amritpal Nagra
 * Balaji Siva
 * Caelan U
+* Chavy Lopiansky
 * Dana Pieluszczak
 * Dillen Padhiar
+* huiwq1990
 * Isitha Subasinghe
-* J.P. Zivalich
+* jessonzj
 * Jiacheng Xu
+* jie zhang
 * John Lin
 * Jordan (Tao Zhang)
+* J.P. Zivalich
 * Julie Vogelman
 * Junaid Rahim
 * Kacper Kondratek
@@ -2640,25 +2784,23 @@ Full Changelog: [v3.4.4...v3.4.5](https://github.com/argoproj/argo-workflows/com
 * Mayursinh Sarvaiya
 * Nandita
 * Paolo Quadri
+* rick
 * Rick
 * Rohan Kumar
 * Ruben Jenster
+* sarabala1979
 * Sarah Henkens
 * Saravanan Balasubramanian
+* shiraOvadia
 * Shota Sugiura
 * Sreejith Kesavan
 * Sushant20
 * Takahiro Yoshikawa
 * Tianchu Zhao
 * Vladimir Ivanov
+* wangxiang
 * Yuan Tang
 * Yuuki Takahashi
-* dependabot[bot]
-* github-actions[bot]
-* huiwq1990
-* jessonzj
-* shiraOvadia
-* wangxiang
 
 </details>
 
@@ -2713,7 +2855,9 @@ Full Changelog: [v3.4.3...v3.4.4](https://github.com/argoproj/argo-workflows/com
 * Alex Collins
 * Arjun Gopisetty
 * Athitya Kumar
+* botbotbot
 * Chris Jones
+* fsiegmund
 * Isitha Subasinghe
 * Jason Meridth
 * Julie Vogelman
@@ -2722,17 +2866,16 @@ Full Changelog: [v3.4.3...v3.4.4](https://github.com/argoproj/argo-workflows/com
 * Michael Crenshaw
 * Michael Weibel
 * Michal Raška
+* neo502721
 * Paolo Quadri
 * Pedro López Mareque
+* Remington Breeze
 * Rick
+* sarabala1979
+* Saravanan Balasubramanian
 * Steven White
 * Tianchu Zhao
 * Yuan Tang
-* botbotbot
-* dependabot[bot]
-* fsiegmund
-* github-actions[bot]
-* neo502721
 
 </details>
 
@@ -2753,17 +2896,17 @@ Full Changelog: [v3.4.2...v3.4.3](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* Alex Collins
 * Amit Auddy
 * Andrii Chubatiuk
 * Eddie Knight
+* erichmao
+* maozhi
 * Max Görner
 * Ryan Copley
 * Saravanan Balasubramanian
 * Tianchu Zhao
 * Tim Collins
-* dependabot[bot]
-* github-actions[bot]
-* maozhi
 
 </details>
 
@@ -2823,31 +2966,33 @@ Full Changelog: [v3.4.1...v3.4.2](https://github.com/argoproj/argo-workflows/com
 
 * Aditya Shrivastava
 * Alex Collins
+* alexdittmann
 * Andrii Chubatiuk
 * Anil Kumar
+* botbotbot
+* chen yangxue
 * Dillen Padhiar
 * Eddie Knight
 * Felix
 * Isitha Subasinghe
+* jibuji
 * Julie Vogelman
+* Lam Vu
 * Lukas Heppe
 * Patrice Chalin
+* pengfei.ji
 * Ricardo Rosales
 * Rohan Kumar
+* sarabala1979
 * Saravanan Balasubramanian
 * Shadow W
 * Takumi Sue
 * Tianchu Zhao
 * TwiN
 * Vũ Hải Lâm
+* yangxue.chen
 * Yuan Tang
 * Yuya Kakui
-* alexdittmann
-* botbotbot
-* chen yangxue
-* dependabot[bot]
-* github-actions[bot]
-* jibuji
 
 </details>
 
@@ -2883,21 +3028,22 @@ Full Changelog: [v3.4.0...v3.4.1](https://github.com/argoproj/argo-workflows/com
 * Adam
 * Alex Collins
 * Brian Loss
+* chen yangxue
 * Christopher Cutajar
 * Dakota Lillie
+* emagana
 * Jesse Suen
+* jsvk
 * Julie Vogelman
 * Rohan Kumar
+* sarabala1979
+* Saravanan Balasubramanian
 * Seokju Hong
 * Takumi Sue
 * Vladimir Ivanov
 * William Van Hevelingen
+* yangxue.chen
 * Yuan Tang
-* chen yangxue
-* dependabot[bot]
-* emagana
-* github-actions[bot]
-* jsvk
 
 </details>
 
@@ -2914,15 +3060,15 @@ Full Changelog: [v3.4.0-rc4...v3.4.0](https://github.com/argoproj/argo-workflows
 
 <details><summary><h3>Contributors</h3></summary>
 
-* 66li
 * Ashish Kurmi
 * Brian Loss
 * JM
 * Julie Vogelman
+* li
+* sarabala1979
 * Saravanan Balasubramanian
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
+* yuhui.zy
 * zychina
 
 </details>
@@ -2956,16 +3102,16 @@ Full Changelog: [v3.4.0-rc3...v3.4.0-rc4](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* jsvk
 * Julie Vogelman
 * Rohan Kumar
+* sarabala1979
+* Saravanan Balasubramanian
 * Takao Shibata
 * Thomas Bonfort
 * Tianchu Zhao
 * Tim Collins
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
-* jsvk
 
 </details>
 
@@ -2995,7 +3141,10 @@ Full Changelog: [v3.4.0-rc2...v3.4.0-rc3](https://github.com/argoproj/argo-workf
 
 * Abirdcfly
 * Brian Tate
+* jsvk
 * Julie Vogelman
+* kasteph
+* lkad
 * Mriyam Tamuli
 * Rohan Kumar
 * Saravanan Balasubramanian
@@ -3003,10 +3152,6 @@ Full Changelog: [v3.4.0-rc2...v3.4.0-rc3](https://github.com/argoproj/argo-workf
 * William Reed
 * Xianglin Gao
 * Yuan Tang
-* dependabot[bot]
-* jsvk
-* kasteph
-* lkad
 
 </details>
 
@@ -3036,18 +3181,17 @@ Full Changelog: [v3.4.0-rc1...v3.4.0-rc2](https://github.com/argoproj/argo-workf
 
 * Alex Collins
 * Dillen Padhiar
+* jingkai
 * Julie Vogelman
 * Kyle Wong
 * Niels ten Boom
 * Robert Kotcher
+* sarabala1979
 * Saravanan Balasubramanian
 * Savin
+* smile-luobin
 * Yash Hegde
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
-* jingkai
-* smile-luobin
 
 </details>
 
@@ -3356,11 +3500,13 @@ Full Changelog: [v3.3.10...v3.4.0-rc1](https://github.com/argoproj/argo-workflow
 * Aatman
 * Adam Eri
 * Alex Collins
+* alexdittmann
+* alexec
 * Aman Verma
 * Amil Khan
-* BOOK
 * Basanth Jenu H B
 * Baschtie
+* BOOK
 * Brian Loss
 * Caelan U
 * Cash Williams
@@ -3377,10 +3523,13 @@ Full Changelog: [v3.3.10...v3.4.0-rc1](https://github.com/argoproj/argo-workflow
 * Fernando Luís da Silva
 * Gaurav Gupta
 * Grzegorz Bielski
+* hadesy
 * Hao Xin
 * Hidehito Yabuuchi
 * Iain Lane
 * Ian McGraw
+* ibuder
+* İnanç Dokurel
 * Isitha Subasinghe
 * Iván Sánchez
 * Jake Ralston
@@ -3392,20 +3541,27 @@ Full Changelog: [v3.3.10...v3.4.0-rc1](https://github.com/argoproj/argo-workflow
 * Jose
 * Juan Luis Cano Rodríguez
 * Julie Vogelman
+* kasteph
+* kennytrytek
 * Kesavan
 * Kevin George
+* lijie
 * Logan Kilpatrick
 * LoricAndre
 * Manik Sidana
 * Marc Abramowitz
 * Mark Shields
 * Markus Lippert
+* mboussarov
 * Michael Goodness
 * Michael Weibel
+* mihirpandya-greenops
 * Mike Tougeron
 * Ming Yu Shi
 * Miroslav Boussarov
 * Mitsuo Heijo
+* momom-i
+* nikstur
 * Noam Gal
 * Peixuan Ding
 * Philippe Richard
@@ -3415,9 +3571,13 @@ Full Changelog: [v3.3.10...v3.4.0-rc1](https://github.com/argoproj/argo-workflow
 * Rick
 * Rohan Kumar
 * Sanjay Tiwari
+* sarabala1979
 * Saravanan Balasubramanian
 * Shay Nehmad
+* shirou
 * Shubham Nazare
+* smile-luobin
+* snyk-bot
 * Snyk bot
 * Song Juchao
 * Soumya Ghosh Dastidar
@@ -3426,33 +3586,19 @@ Full Changelog: [v3.3.10...v3.4.0-rc1](https://github.com/argoproj/argo-workflow
 * Surya Oruganti
 * Swarnim Pratap Singh
 * Takumi Sue
+* tatsuya-ogawa
+* tculp
 * Tianchu Zhao
 * Timo Pagel
+* tim-sendible
 * Tristan Colgate-McFarlane
 * Tuan
 * Vedant Thapa
 * Vignesh
 * William Van Hevelingen
 * Wu Jayway
-* Yuan Tang
-* alexdittmann
-* dependabot[bot]
-* github-actions[bot]
-* hadesy
-* ibuder
-* kasteph
-* kennytrytek
-* lijie
-* mihirpandya-greenops
-* momom-i
-* nikstur
-* shirou
-* smile-luobin
-* tatsuya-ogawa
-* tculp
-* tim-sendible
 * ybyang
-* İnanç Dokurel
+* Yuan Tang
 
 </details>
 
@@ -3572,9 +3718,9 @@ Full Changelog: [v3.3.5...v3.3.6](https://github.com/argoproj/argo-workflows/com
 
 * Alex Collins
 * Dillen Padhiar
+* lijie
 * Stephanie Palis
 * Yuan Tang
-* lijie
 
 </details>
 
@@ -3601,8 +3747,8 @@ Full Changelog: [v3.3.4...v3.3.5](https://github.com/argoproj/argo-workflows/com
 * Rohan Kumar
 * Soumya Ghosh Dastidar
 * Wu Jayway
-* Yuan Tang
 * ybyang
+* Yuan Tang
 
 </details>
 
@@ -3696,7 +3842,6 @@ Full Changelog: [v3.3.1...v3.3.2](https://github.com/argoproj/argo-workflows/com
 * Takumi Sue
 * Tristan Colgate-McFarlane
 * Wu Jayway
-* dependabot[bot]
 
 </details>
 
@@ -3739,8 +3884,6 @@ Full Changelog: [v3.3.0...v3.3.1](https://github.com/argoproj/argo-workflows/com
 
 Full Changelog: [v3.3.0-rc10...v3.3.0](https://github.com/argoproj/argo-workflows/compare/v3.3.0-rc10...v3.3.0)
 
-### Selected Changes
-
 <details><summary><h3>Contributors</h3></summary>
 
 * Saravanan Balasubramanian
@@ -3759,10 +3902,10 @@ Full Changelog: [v3.3.0-rc9...v3.3.0-rc10](https://github.com/argoproj/argo-work
 <details><summary><h3>Contributors</h3></summary>
 
 * Caelan U
+* sarabala1979
 * Saravanan Balasubramanian
 * Simon Behar
 * Yuan Tang
-* github-actions[bot]
 
 </details>
 
@@ -3793,18 +3936,17 @@ Full Changelog: [v3.3.0-rc8...v3.3.0-rc9](https://github.com/argoproj/argo-workf
 * Alex Collins
 * Anurag Pathak
 * Caelan U
+* cui fliter
+* descrepes
+* kennytrytek
 * Laurent Rochette
 * Niklas Hansson
+* sarabala1979
 * Saravanan Balasubramanian
 * Tianchu Zhao
 * Todor Todorov
 * Wojciech Pietrzak
 * Yuan Tang
-* cui fliter
-* dependabot[bot]
-* descrepes
-* github-actions[bot]
-* kennytrytek
 
 </details>
 
@@ -3824,9 +3966,9 @@ Full Changelog: [v3.3.0-rc7...v3.3.0-rc8](https://github.com/argoproj/argo-workf
 
 * Alex Collins
 * Niklas Hansson
+* sarabala1979
 * Saravanan Balasubramanian
 * Shyukri Shyukriev
-* github-actions[bot]
 
 </details>
 
@@ -3852,26 +3994,19 @@ Full Changelog: [v3.3.0-rc6...v3.3.0-rc7](https://github.com/argoproj/argo-workf
 
 * Alex Collins
 * Niklas Hansson
+* sarabala1979
 * Saravanan Balasubramanian
 * Sudhanshu Kumar Rai
 * Tianchu Zhao
 * Tomas Valasek
 * William Van Hevelingen
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
 
 </details>
 
 ## v3.3.0-rc6 (2022-02-21)
 
 Full Changelog: [v3.3.0-rc5...v3.3.0-rc6](https://github.com/argoproj/argo-workflows/compare/v3.3.0-rc5...v3.3.0-rc6)
-
-### Selected Changes
-
-<details><summary><h3>Contributors</h3></summary>
-
-</details>
 
 ## v3.3.0-rc5 (2022-02-21)
 
@@ -3906,6 +4041,7 @@ Full Changelog: [v3.3.0-rc4...v3.3.0-rc5](https://github.com/argoproj/argo-workf
 
 * AdamKorcz
 * Alex Collins
+* alexec
 * Baz Chalk
 * Daniel Helfand
 * Dillen Padhiar
@@ -3920,13 +4056,12 @@ Full Changelog: [v3.3.0-rc4...v3.3.0-rc5](https://github.com/argoproj/argo-workf
 * Niklas Hansson
 * Oleg
 * Rohan Kumar
+* sarabala1979
 * Scott Ernst
 * Tianchu Zhao
 * Vrukshali Torawane
 * Yuan Tang
 * Zhong Dai
-* dependabot[bot]
-* github-actions[bot]
 
 </details>
 
@@ -3947,14 +4082,14 @@ Full Changelog: [v3.3.0-rc3...v3.3.0-rc4](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * J.P. Zivalich
 * Ken Kaizu
+* sarabala1979
 * Saravanan Balasubramanian
 * William Van Hevelingen
 * Youngcheol Jang
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
 
 </details>
 
@@ -3981,11 +4116,10 @@ Full Changelog: [v3.3.0-rc2...v3.3.0-rc3](https://github.com/argoproj/argo-workf
 * Denis Melnik
 * Henrik Blixt
 * Paco Guzmán
+* sarabala1979
 * Tino Schröter
 * Yago Riveiro
 * Yuan Tang
-* dependabot[bot]
-* github-actions[bot]
 
 </details>
 
@@ -4164,13 +4298,17 @@ Full Changelog: [v3.2.11...v3.3.0-rc1](https://github.com/argoproj/argo-workflow
 <details><summary><h3>Contributors</h3></summary>
 
 * AdamKorcz
+* Adrian Wawrzak
 * Alex Collins
+* alexec
 * Andy
 * Arthur Sudre
-* BOOK
 * Basanth Jenu H B
 * Benny Cornelissen
 * Bob Haddleton
+* BOOK
+* cod-r
+* Codrut Panea
 * Denis Melnik
 * Dillen Padhiar
 * Dimas Yudha P
@@ -4182,70 +4320,68 @@ Full Changelog: [v3.2.11...v3.3.0-rc1](https://github.com/argoproj/argo-workflow
 * Gammal-Skalbagge
 * Guillaume Fillon
 * Hong Wang
+* icecoffee531
 * Isitha Subasinghe
 * Iven
-* J.P. Zivalich
-* JM" (Jason Meridth)
+* jacopo gobbi
 * Jannik Bertram
 * Jesse Suen
+* jhoenger
+* JM" (Jason Meridth)
 * Jonathan
 * Josh Preuss
 * Joshua Carp
 * Joyce Piscos
+* J.P. Zivalich
 * Julien Duchesne
+* jwjs36987
 * Kamil Rokosz
 * Ken Kaizu
+* kennytrytek
+* khyer
+* kostas-theo
 * Kyle Hanks
+* leonharetd
 * Markus Lippert
 * Mathew Wicks
 * Micah Beeman
 * Michael Crenshaw
 * Michael Weibel
 * Miroslav Tomasik
+* momom-i
 * NextNiclas
-* Nico Mandery
 * Nicoló Lino
+* Nico Mandery
 * Niklas Hansson
 * Nityananda Gohain
 * Peixuan Ding
 * Peter Evers
 * Rob Herley
 * Roel van den Berg
+* roofurmston
 * SalvadorC
+* sarabala1979
 * Saravanan Balasubramanian
 * Sebastiaan Tammer
 * Serhat
 * Siebjee
 * Simon Behar
+* smile-luobin
 * Song Juchao
 * Takumi Sue
 * Tianchu Zhao
 * Ting Yuan
 * Tino Schröter
 * Tom Meadows
+* toohsk
 * Valér Orlovský
 * William Reed
 * William Van Hevelingen
+* ybyang
 * Yuan (Bob) Gong
 * Yuan Tang
 * Zadkiel
 * Ziv Levi
-* cod-r
-* dependabot[bot]
-* github-actions[bot]
-* icecoffee531
-* jacopo gobbi
-* jhoenger
-* jwjs36987
-* kennytrytek
-* khyer
-* kostas-theo
-* leonharetd
-* momom-i
-* roofurmston
-* smile-luobin
-* toohsk
-* ybyang
 * zorulo
 * 大雄
 * 阿拉斯加大闸蟹
@@ -4402,8 +4538,8 @@ Full Changelog: [v3.2.4...v3.2.5](https://github.com/argoproj/argo-workflows/com
 * BOOK
 * Dillen Padhiar
 * Dominik Deren
-* J.P. Zivalich
 * Jonathan
+* J.P. Zivalich
 * NextNiclas
 * Peter Evers
 * Saravanan Balasubramanian
@@ -4455,6 +4591,7 @@ Full Changelog: [v3.2.3...v3.2.4](https://github.com/argoproj/argo-workflows/com
 * Bob Haddleton
 * Guillaume Fillon
 * Iven
+* kennytrytek
 * Kyle Hanks
 * Mathew Wicks
 * Miroslav Tomasik
@@ -4466,7 +4603,6 @@ Full Changelog: [v3.2.3...v3.2.4](https://github.com/argoproj/argo-workflows/com
 * Tianchu Zhao
 * Zadkiel
 * Ziv Levi
-* kennytrytek
 
 </details>
 
@@ -4532,12 +4668,6 @@ Full Changelog: [v3.2.0...v3.2.1](https://github.com/argoproj/argo-workflows/com
 
 Full Changelog: [v3.2.0-rc6...v3.2.0](https://github.com/argoproj/argo-workflows/compare/v3.2.0-rc6...v3.2.0)
 
-### Selected Changes
-
-<details><summary><h3>Contributors</h3></summary>
-
-</details>
-
 ## v3.2.0-rc6 (2021-10-05)
 
 Full Changelog: [v3.2.0-rc5...v3.2.0-rc6](https://github.com/argoproj/argo-workflows/compare/v3.2.0-rc5...v3.2.0-rc6)
@@ -4553,16 +4683,16 @@ Full Changelog: [v3.2.0-rc5...v3.2.0-rc6](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* asimhon
+* kennytrytek
 * Niels ten Boom
 * Raymond Wong
+* sarabala1979
 * Saravanan Balasubramanian
 * Sean Trantalis
 * Shea Sullivan
-* Tianchu Zhao
-* asimhon
-* github-actions[bot]
-* kennytrytek
 * smile-luobin
+* Tianchu Zhao
 
 </details>
 
@@ -4592,6 +4722,7 @@ Full Changelog: [v3.2.0-rc4...v3.2.0-rc5](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Andrey Velichkevich
 * Anish Dangi
 * Anthony Scott
@@ -4599,14 +4730,14 @@ Full Changelog: [v3.2.0-rc4...v3.2.0-rc5](https://github.com/argoproj/argo-workf
 * Julien Duchesne
 * Niklas Hansson
 * Philippe Richard
+* sarabala1979
 * Saravanan Balasubramanian
-* Tianchu Zhao
-* William Van Hevelingen
-* Yuan Tang
-* github-actions[bot]
 * smile-luobin
+* Tianchu Zhao
 * tooptoop4
+* William Van Hevelingen
 * ygelfand
+* Yuan Tang
 
 </details>
 
@@ -4627,11 +4758,12 @@ Full Changelog: [v3.2.0-rc3...v3.2.0-rc4](https://github.com/argoproj/argo-workf
 * Alex Collins
 * Brewster Malevich
 * J.P. Zivalich
+* sarabala1979
 * Saravanan Balasubramanian
+* Siming Tian
 * Stephen Raghunath
 * TCgogogo
 * Tianchu Zhao
-* github-actions[bot]
 * yyyyyy888
 
 </details>
@@ -4669,14 +4801,16 @@ Full Changelog: [v3.2.0-rc2...v3.2.0-rc3](https://github.com/argoproj/argo-workf
 * Anish Dangi
 * Damian Czaja
 * Elliot Maincourt
+* Glenn Pratt
 * Jesse Suen
 * Joshua Carp
+* sarabala1979
 * Saravanan Balasubramanian
 * Tianchu Zhao
 * Tim Gallant
 * William Van Hevelingen
+* xiong wang
 * Yuan Tang
-* github-actions[bot]
 * 大雄
 
 </details>
@@ -4709,17 +4843,17 @@ Full Changelog: [v3.2.0-rc1...v3.2.0-rc2](https://github.com/argoproj/argo-workf
 * Andrey Melnikov
 * Antoine Dao
 * Curtis Vogt
-* J.P. Zivalich
 * Josh Soref
+* J.P. Zivalich
 * Luciano Sá
 * Michael Pöllath
+* sarabala1979
 * Saravanan Balasubramanian
 * Siebjee
 * Simon Behar
+* smile-luobin
 * Tetsuya Shiota
 * Yuan Tang
-* github-actions[bot]
-* smile-luobin
 
 </details>
 
@@ -4840,12 +4974,14 @@ Full Changelog: [v3.1.15...v3.2.0-rc1](https://github.com/argoproj/argo-workflow
 <details><summary><h3>Contributors</h3></summary>
 
 * Aaron Mell
-* Alex Collins
 * Alexander Matyushentsev
+* Alex Collins
+* alexec
 * Antoine Dao
 * Antony Chazapis
 * BOOK
 * Brandon High
+* brgoode
 * Byungjin Park (Claud)
 * Caden
 * Carlos Montemuino
@@ -4853,48 +4989,50 @@ Full Changelog: [v3.1.15...v3.2.0-rc1](https://github.com/argoproj/argo-workflow
 * Daan Seynaeve
 * Daisuke Taniwaki
 * David Collom
+* David Peer
 * Denis Bellotti
 * Dominik Deren
+* dpeer6
 * Ed Marks
 * Gage Orsburn
 * Geoffrey Huntley
 * Henrik Blixt
 * Huan-Cheng Chang
 * Ivan Karol
+* jibuji
 * Joe McGovern
-* KUNG HO BACK
 * Kaito Ii
+* kennytrytek
+* KUNG HO BACK
 * Kyle Prager
 * Luces Huayhuaca
 * Marcin Gucki
+* meijin
 * Michael Crenshaw
 * Miles Croxford
 * Mohammad Ali
 * Niklas Hansson
 * Peixuan Ding
 * Reijer Copier
+* sarabala1979
 * Saravanan Balasubramanian
 * Sebastian Nyberg
 * Simon Behar
 * Stefan Sedich
+* steve-marmalade
 * Tetsuya Shiota
 * Thiago Bittencourt Gil
+* Thomas Cocozzello
 * Tianchu Zhao
 * Tom Meadows
+* uturunku1
 * Valér Orlovský
+* wanghong230
 * William Van Hevelingen
 * Windfarer
 * Yuan (Bob) Gong
 * Yuan Tang
 * Zadkiel
-* brgoode
-* dpeer6
-* github-actions[bot]
-* jibuji
-* kennytrytek
-* meijin
-* steve-marmalade
-* wanghong230
 
 </details>
 
@@ -5022,9 +5160,9 @@ Full Changelog: [v3.1.8...v3.1.9](https://github.com/argoproj/argo-workflows/com
 * Ed Marks
 * Jesse Suen
 * Saravanan Balasubramanian
+* smile-luobin
 * Windfarer
 * Yuan (Bob) Gong
-* smile-luobin
 
 </details>
 
@@ -5098,6 +5236,7 @@ Full Changelog: [v3.1.4...v3.1.5](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* Alex Collins
 * Yuan (Bob) Gong
 
 </details>
@@ -5156,14 +5295,15 @@ Full Changelog: [v3.1.2...v3.1.3](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
-* Alex Collins
 * Alexander Matyushentsev
+* Alex Collins
 * Antoine Dao
 * BOOK
+* David Peer
+* dpeer6
 * Saravanan Balasubramanian
 * Tianchu Zhao
 * Yuan (Bob) Gong
-* dpeer6
 
 </details>
 
@@ -5260,9 +5400,9 @@ Full Changelog: [v3.1.0-rc12...v3.1.0-rc13](https://github.com/argoproj/argo-wor
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Saravanan Balasubramanian
 * Yuan Tang
-* github-actions[bot]
 
 </details>
 
@@ -5279,8 +5419,8 @@ Full Changelog: [v3.1.0-rc11...v3.1.0-rc12](https://github.com/argoproj/argo-wor
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Yuan Tang
-* github-actions[bot]
 
 </details>
 
@@ -5298,9 +5438,9 @@ Full Changelog: [v3.1.0-rc10...v3.1.0-rc11](https://github.com/argoproj/argo-wor
 
 * Aayush Rangwala
 * Alex Collins
+* alexec
 * Kasper Aaquist Johansen
 * Simon Behar
-* github-actions[bot]
 
 </details>
 
@@ -5317,9 +5457,9 @@ Full Changelog: [v3.1.0-rc9...v3.1.0-rc10](https://github.com/argoproj/argo-work
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Stephan van Maris
 * Yuan Tang
-* github-actions[bot]
 
 </details>
 
@@ -5342,13 +5482,13 @@ Full Changelog: [v3.1.0-rc8...v3.1.0-rc9](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
+* amit
 * Antony Chazapis
 * Christophe Blin
 * Peixuan Ding
 * William Reed
 * Yuan Tang
-* amit
-* github-actions[bot]
 
 </details>
 
@@ -5363,8 +5503,8 @@ Full Changelog: [v3.1.0-rc7...v3.1.0-rc8](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Simon Behar
-* github-actions[bot]
 
 </details>
 
@@ -5382,10 +5522,10 @@ Full Changelog: [v3.1.0-rc6...v3.1.0-rc7](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
+* dherman
 * Maximilian Roos
 * Saravanan Balasubramanian
-* dherman
-* github-actions[bot]
 
 </details>
 
@@ -5402,12 +5542,13 @@ Full Changelog: [v3.1.0-rc5...v3.1.0-rc6](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Caelan U
 * Johannes Olsson
 * Lars Kerick
 * Michael Crenshaw
+* Yuan Tang
 * Zach Aller
-* github-actions[bot]
 
 </details>
 
@@ -5423,9 +5564,10 @@ Full Changelog: [v3.1.0-rc4...v3.1.0-rc5](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Daverkex
+* Néstor García
 * Saravanan Balasubramanian
-* github-actions[bot]
 
 </details>
 
@@ -5441,10 +5583,10 @@ Full Changelog: [v3.1.0-rc3...v3.1.0-rc4](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* alexec
 * Everton
 * Jerguš Lejko
 * Yuan Tang
-* github-actions[bot]
 
 </details>
 
@@ -5467,8 +5609,6 @@ Full Changelog: [v3.1.0-rc2...v3.1.0-rc3](https://github.com/argoproj/argo-workf
 ## v3.1.0-rc2 (2021-05-12)
 
 Full Changelog: [v3.1.0-rc1...v3.1.0-rc2](https://github.com/argoproj/argo-workflows/compare/v3.1.0-rc1...v3.1.0-rc2)
-
-### Selected Changes
 
 <details><summary><h3>Contributors</h3></summary>
 
@@ -5662,23 +5802,32 @@ Full Changelog: [v3.0.10...v3.1.0-rc1](https://github.com/argoproj/argo-workflow
 <details><summary><h3>Contributors</h3></summary>
 
 * AIKAWA
+* aleksei pankratev
 * Alex Collins
-* BOOK
+* alexey
 * Bogdan Luput
+* BOOK
 * Brandon
 * Caue Augusto dos Santos
 * Christophe Blin
 * Dan Garfield
+* descrepes
+* dherman
+* dinever
 * Iven
 * Jesse Suen
 * Jiaxin Shan
+* jsato8094
+* kennytrytek
 * Kevin Hwang
 * Kishore Chitrapu
 * Luciano Sá
+* markterm
 * Markus Lippert
 * Michael Crenshaw
 * Michael Ruoss
 * Michael Weibel
+* Nick Palumbo
 * Nicolas Michel
 * Nicoló Lino
 * Niklas Hansson
@@ -5690,33 +5839,28 @@ Full Changelog: [v3.0.10...v3.1.0-rc1](https://github.com/argoproj/argo-workflow
 * Riccardo Piccoli
 * Roi Kramer
 * Rush Tehrani
-* Saravanan Balasubramanian
+* sa-
 * Saïfane FARFAR
+* Saravanan Balasubramanian
 * Shoubhik Bose
 * Simon Behar
 * Stephan van Maris
+* surj-bains
+* tczhao
 * Tianchu Zhao
 * Tim Collins
+* tobi
+* tobisinghania
+* uucloud
 * Vivek Kumar
-* Vlad Losev
 * Vladimir Ivanov
+* Vlad Losev
+* wanglong001
 * Wen-Chih (Ryan) Lo
 * Yuan Tang
 * Zach Aller
+* zelongwang
 * Zhong Dai
-* alexey
-* descrepes
-* dherman
-* dinever
-* jsato8094
-* kennytrytek
-* markterm
-* sa-
-* surj-bains
-* tczhao
-* tobisinghania
-* uucloud
-* wanglong001
 
 </details>
 
@@ -5817,8 +5961,8 @@ Full Changelog: [v3.0.4...v3.0.5](https://github.com/argoproj/argo-workflows/com
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
-* Saravanan Balasubramanian
 * dherman
+* Saravanan Balasubramanian
 
 </details>
 
@@ -5836,9 +5980,9 @@ Full Changelog: [v3.0.3...v3.0.4](https://github.com/argoproj/argo-workflows/com
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* dinever
 * Radolumbo
 * Saravanan Balasubramanian
-* dinever
 
 </details>
 
@@ -5866,16 +6010,19 @@ Full Changelog: [v3.0.2...v3.0.3](https://github.com/argoproj/argo-workflows/com
 
 <details><summary><h3>Contributors</h3></summary>
 
+* aleksei pankratev
 * Alex Collins
+* alexey
+* markterm
 * Michael Ruoss
+* Nick Palumbo
 * Radolumbo
 * Saravanan Balasubramanian
 * Shoubhik Bose
+* tobi
+* tobisinghania
 * Wen-Chih (Ryan) Lo
 * Yuan Tang
-* alexey
-* markterm
-* tobisinghania
 
 </details>
 
@@ -5912,13 +6059,13 @@ Full Changelog: [v3.0.1...v3.0.2](https://github.com/argoproj/argo-workflows/com
 
 * Alex Collins
 * Iven
+* kennytrytek
 * Michael Ruoss
 * Saravanan Balasubramanian
 * Simon Behar
+* tczhao
 * Vladimir Ivanov
 * Yuan Tang
-* kennytrytek
-* tczhao
 
 </details>
 
@@ -6142,13 +6289,14 @@ Full Changelog: [v3.0.0-rc2...v3.0.0-rc3](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* dherman
 * Florian
 * Ken Kaizu
+* roi.kramer
 * Roi Kramer
 * Saravanan Balasubramanian
 * Simon Behar
 * Yuan Tang
-* dherman
 
 </details>
 
@@ -6183,15 +6331,15 @@ Full Changelog: [v3.0.0-rc1...v3.0.0-rc2](https://github.com/argoproj/argo-workf
 <details><summary><h3>Contributors</h3></summary>
 
 * Alex Collins
+* drannenberg
 * Dylan Hellems
 * Kaan C. Fidan
+* kennytrytek
 * Nelson Rodrigues
 * Saravanan Balasubramanian
 * Simon Behar
 * Viktor Farcic
 * Yuan Tang
-* drannenberg
-* kennytrytek
 
 </details>
 
@@ -6345,26 +6493,44 @@ Full Changelog: [v2.12.13...v3.0.0-rc1](https://github.com/argoproj/argo-workflo
 <details><summary><h3>Contributors</h3></summary>
 
 * Alastair Maw
+* aletepe
 * Alex Capras
 * Alex Collins
 * Alexey Volkov
 * Amim Knabben
 * Arthur Outhenin-Chalandre
-* BOOK
 * Basanth Jenu H B
+* bei-re
+* bellevuerails
+* BOOK
+* cocotyty
 * Daisuke Taniwaki
+* Derek Wang
+* dherman
+* ermeaney
+* fsiegmund
+* hermanhobnob
 * Huan-Cheng Chang
 * Isaac Gaskin
-* J.P. Zivalich
 * Jesse Suen
+* joyciep
+* J.P. Zivalich
+* kennytrytek
 * Kristoffer Johansson
+* lonsdale8734
+* makocchi
 * Marcin Gucki
+* markterm
 * Maximilian Roos
+* merlintang
+* merlintang tangrock@gmail.com
 * Michael Albers
+* nishant-d
 * Noah Hanjun Lee
 * Paavo Pokkinen
 * Paul Brabban
 * RossyWhite
+* saranyaeu2987
 * Saravanan Balasubramanian
 * Simeon H.K. Fitch
 * Simon Behar
@@ -6373,27 +6539,12 @@ Full Changelog: [v2.12.13...v3.0.0-rc1](https://github.com/argoproj/argo-workflo
 * Stefan Gloutnikov
 * Stéphane Este-Gracias
 * Takayoshi Nishida
+* tczhao
 * Tomáš Coufal
 * Trevor Wood
 * Viktor Farcic
 * Wylie Hobbs
 * Yuan Tang
-* aletepe
-* bei-re
-* bellevuerails
-* cocotyty
-* dherman
-* ermeaney
-* fsiegmund
-* hermanhobnob
-* joyciep
-* kennytrytek
-* lonsdale8734
-* makocchi
-* markterm
-* nishant-d
-* saranyaeu2987
-* tczhao
 * zhengchenyu
 
 </details>
