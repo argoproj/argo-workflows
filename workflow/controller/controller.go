@@ -50,6 +50,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -358,7 +360,13 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+        configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace)
+        var configMap *apiv1.ConfigMap
+        err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+                var err error
+                configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+                return !errorsutil.IsTransientErr(err), err
+        })
 		if err != nil {
 			return 0, err
 		}
