@@ -14,7 +14,19 @@ import (
 )
 
 func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) {
-	return interfaceToWorkflowTemplate(object)
+	un, ok := object.(*unstructured.Unstructured)
+	if !ok {
+		return nil, fmt.Errorf("malformed workflow template: expected \"*unstructured.Unstructured\", got \"%s\"", reflect.TypeOf(object).String())
+	}
+	wftmplRaw, ok := un.Object["workflowTemplate"]
+	if !ok {
+		return nil, fmt.Errorf("malformed workflow template: expected \"workflowTemplate\" key in unstructured object, got \"%s\"", reflect.TypeOf(object).String())
+	}
+	wftmpl, ok := wftmplRaw.(*wfv1.WorkflowTemplate)
+	if ok {
+		return wftmpl, nil
+	}
+	return nil, fmt.Errorf("malformed workflow template: expected \"*wfv1.WorkflowTemplate\", got \"%s\"", reflect.TypeOf(object).String())
 }
 
 func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate {
@@ -53,9 +65,9 @@ func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.Workfl
 	if !exists {
 		return nil, fmt.Errorf("WorkflowTemplate Informer cannot find WorkflowTemplate of name %q in namespace %q", name, getter.namespace)
 	}
-	wfTmpl, err := interfaceToWorkflowTemplate(obj)
-	if err != nil {
-		return nil, err
+	wfTmpl, ok := obj.(*wfv1.WorkflowTemplate)
+	if !ok {
+		return nil, fmt.Errorf("malformed workflow template: expected \"*wfv1.WorkflowTemplate\", got \"%s\"", reflect.TypeOf(obj).String())
 	}
 	return wfTmpl, nil
 }
