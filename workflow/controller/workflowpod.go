@@ -167,6 +167,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyTemplate:  tmpl.Name,              // Allows filtering by pods related to specific template
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
@@ -740,6 +741,15 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		for k, v := range woc.execWf.Spec.PodMetadata.Labels {
 			pod.ObjectMeta.Labels[k] = v
+		}
+	}
+
+	if woc.execWf.Spec.WorkflowTemplateRef != nil {
+		templateRef := woc.execWf.Spec.WorkflowTemplateRef
+		if templateRef.ClusterScope {
+			pod.ObjectMeta.Labels[common.LabelKeyClusterWorkflowTemplate] = templateRef.Name
+		} else {
+			pod.ObjectMeta.Labels[common.LabelKeyWorkflowTemplate] = templateRef.Name
 		}
 	}
 
