@@ -82,8 +82,10 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 FROM gcr.io/distroless/static as argoexec
 
-COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
-COPY --from=argoexec-build /etc/mime.types /etc/mime.types
+USER 8737
+
+COPY --chown=8737 --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
+COPY --chown=8737 --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 
