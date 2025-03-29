@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -43,12 +44,7 @@ func ParseObjects(body []byte, strict bool) []ParseResult {
 		un := &unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(text), un)
 		if err != nil {
-			// Only return an error if this is a kubernetes object, otherwise, print the error
-			if un.GetKind() != "" {
-				res = append(res, ParseResult{nil, err})
-			} else {
-				log.Errorf("yaml file at index %d is not valid: %s", i, err)
-			}
+			res = append(res, ParseResult{nil, fmt.Errorf("yaml file at index %d is not valid: %s", i, err)})
 			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
