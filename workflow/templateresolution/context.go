@@ -7,10 +7,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -156,11 +159,46 @@ func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template,
 	ctx.log.Debug("Getting the template")
 	if x := h.GetTemplate(); x != nil {
 		return x, nil
-	} else if x := h.GetTemplateRef(); x != nil {
-		return ctx.GetTemplateFromRef(x)
-	} else if x := h.GetTemplateName(); x != "" {
-		return ctx.GetTemplateByName(x)
 	}
+
+	if x := h.GetTemplateRef(); x != nil {
+		var tmpl *wfv1.Template
+		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+			var getRefErr error
+			tmpl, getRefErr = ctx.GetTemplateFromRef(x)
+			if getRefErr != nil {
+				if errorsutil.IsTransientErr(getRefErr) {
+					return false, nil
+				}
+				return true, getRefErr
+			}
+			return true, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return tmpl, nil
+	}
+
+	if x := h.GetTemplateName(); x != "" {
+		var tmpl *wfv1.Template
+		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+			var getNameErr error
+			tmpl, getNameErr = ctx.GetTemplateByName(x)
+			if getNameErr != nil {
+				if errorsutil.IsTransientErr(getNameErr) {
+					return false, nil
+				}
+				return true, getNameErr
+			}
+			return true, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return tmpl, nil
+	}
+
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
 
@@ -173,7 +211,7 @@ func (ctx *Context) GetTemplateScope() string {
 	return string(ctx.tmplBase.GetResourceScope()) + "/" + ctx.tmplBase.GetName()
 }
 
-// ResolveTemplate digs into referenes and returns a merged template.
+// ResolveTemplate digs into references and returns a merged template.
 // This method is the public start point of template resolution.
 func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
 	return ctx.resolveTemplateImpl(tmplHolder)
