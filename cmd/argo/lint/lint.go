@@ -142,8 +142,30 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		Errs: []error{},
 	}
 
-	for i, pr := range common.ParseObjects(data, opts.Strict) {
+	parseResults := common.ParseObjects(data, opts.Strict)
+
+	if len(parseResults) > 0 {
+		hasParseErrors := false
+		for _, pr := range parseResults {
+			if pr.Err != nil {
+				hasParseErrors = true
+				break
+			}
+		}
+
+		if hasParseErrors && len(data) > 0 {
+			res.Linted = true
+		}
+	}
+
+	for i, pr := range parseResults {
 		obj, err := pr.Object, pr.Err
+		if err != nil {
+			// Only record parse error but don't re-mark as linted
+			// This prevents double reporting in offline mode (offline-client.go also checks these errors)
+			res.Errs = append(res.Errs, err)
+			continue
+		}
 		if obj == nil {
 			continue // could not parse to kubernetes object
 		}
@@ -232,6 +254,9 @@ func (l *LintResults) evaluate() *LintResults {
 
 	for _, r := range l.Results {
 		if !r.Linted {
+			if len(r.Errs) > 0 {
+				success = false
+			}
 			continue
 		}
 		l.anythingLinted = true
@@ -242,7 +267,16 @@ func (l *LintResults) evaluate() *LintResults {
 		success = false
 	}
 
-	if !l.anythingLinted {
+	// Check if anything was attempted to be linted, even if it had parse errors
+	hasAnyContent := false
+	for _, r := range l.Results {
+		if len(r.Errs) > 0 {
+			hasAnyContent = true
+			break
+		}
+	}
+
+	if !l.anythingLinted && !hasAnyContent {
 		success = false
 	}
 
