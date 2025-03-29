@@ -177,6 +177,168 @@ func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 		})
 }
 
+func (s *DaemonPodSuite) TestDaemonPodIP() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: curl-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: nginx
+          template: nginx
+        - name: curl
+          dependencies: [nginx]
+          template: curl
+          arguments:
+            parameters: [{name: ip, value: '{{tasks.nginx.ip}}'}]
+  - name: nginx
+    daemon: true
+    container:
+      image: nginx:1.13
+      readinessProbe:
+        httpGet:
+          port: 80
+  - name: curl
+    inputs:
+      parameters:
+      - name: ip
+    container:
+      image: appropriate/curl
+      command: [curl, -vf, '{{inputs.parameters.ip}}']
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+
+}
+
+func (s *DaemonPodSuite) TestDaemonPodSequenceIPs() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: curl-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: nginxen
+          template: nginx
+          withSequence:
+            count: 3
+        - name: curl
+          dependencies: [nginxen]
+          template: curl
+          withParam: '{{tasks.nginxen.ip}}'
+          arguments:
+            parameters: [{name: ip, value: '{{item}}'}]
+  - name: nginx
+    daemon: true
+    container:
+      image: nginx:1.13
+      readinessProbe:
+        httpGet:
+          port: 80
+  - name: curl
+    inputs:
+      parameters:
+      - name: ip
+    container:
+      image: appropriate/curl
+      command: [curl, -vf, '{{inputs.parameters.ip}}']
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *DaemonPodSuite) TestDaemonPodItemsIPs() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: curl-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: nginxen
+          template: nginx
+          withItems: [a, b, c]
+        - name: curl
+          dependencies: [nginxen]
+          template: curl
+          withParam: '{{tasks.nginxen.ip}}'
+          arguments:
+            parameters: [{name: ip, value: '{{item}}'}]
+  - name: nginx
+    daemon: true
+    container:
+      image: nginx:1.13
+      readinessProbe:
+        httpGet:
+          port: 80
+  - name: curl
+    inputs:
+      parameters:
+      - name: ip
+    container:
+      image: appropriate/curl
+      command: [curl, -vf, '{{inputs.parameters.ip}}']
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *DaemonPodSuite) TestDaemonPodParamsIPs() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: curl-
+spec:
+  entrypoint: main
+  arguments:
+    parameters: [{name: items, value: '["a","b","c"]'}]
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: nginxen
+          template: nginx
+          withParam: '{{workflow.parameters.items}}'
+        - name: curl
+          dependencies: [nginxen]
+          template: curl
+          withParam: '{{tasks.nginxen.ip}}'
+          arguments:
+            parameters: [{name: ip, value: '{{item}}'}]
+  - name: nginx
+    daemon: true
+    container:
+      image: nginx:1.13
+      readinessProbe:
+        httpGet:
+          port: 80
+  - name: curl
+    inputs:
+      parameters:
+      - name: ip
+    container:
+      image: appropriate/curl
+      command: [curl, -vf, '{{inputs.parameters.ip}}']
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func TestDaemonPodSuite(t *testing.T) {
 	suite.Run(t, new(DaemonPodSuite))
 }
