@@ -8,7 +8,8 @@
     }
 
     &__content {
-        position: fixed;
+        position: absolute;
+        left: 80px !important;
         z-index: $notifications-z-index;
         padding: 1rem;
         background-color: $white-color;

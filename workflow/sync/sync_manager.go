@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
@@ -19,20 +20,22 @@ type (
 )
 
 type Manager struct {
-	syncLockMap  map[string]semaphore
-	lock         *sync.Mutex
-	nextWorkflow NextWorkflow
-	getSyncLimit GetSyncLimit
-	isWFDeleted  IsWorkflowDeleted
+	syncLockMap       map[string]semaphore
+	lock              *sync.RWMutex
+	nextWorkflow      NextWorkflow
+	getSyncLimit      GetSyncLimit
+	syncLimitCacheTTL time.Duration
+	isWFDeleted       IsWorkflowDeleted
 }
 
-func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
+func NewLockManager(getSyncLimit GetSyncLimit, syncLimitCacheTTL time.Duration, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	return &Manager{
-		syncLockMap:  make(map[string]semaphore),
-		lock:         &sync.Mutex{},
-		nextWorkflow: nextWorkflow,
-		getSyncLimit: getSyncLimit,
-		isWFDeleted:  isWFDeleted,
+		syncLockMap:       make(map[string]semaphore),
+		lock:              &sync.RWMutex{},
+		nextWorkflow:      nextWorkflow,
+		getSyncLimit:      getSyncLimit,
+		syncLimitCacheTTL: syncLimitCacheTTL,
+		isWFDeleted:       isWFDeleted,
 	}
 }
 
@@ -49,6 +52,9 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 
 func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+
+	sm.lock.RLock()
+	defer sm.lock.RUnlock()
 
 	log.Debug("Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
@@ -311,8 +317,8 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 		return
 	}
 
-	sm.lock.Lock()
-	defer sm.lock.Unlock()
+	sm.lock.RLock()
+	defer sm.lock.RUnlock()
 
 	holderKey := getHolderKey(wf, nodeName)
 	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
@@ -336,8 +342,8 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 }
 
 func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
-	sm.lock.Lock()
-	defer sm.lock.Unlock()
+	sm.lock.RLock()
+	defer sm.lock.RUnlock()
 
 	if wf.Status.Synchronization == nil {
 		return true
@@ -459,12 +465,18 @@ func (sm *Manager) isSemaphoreSizeChanged(semaphore semaphore) (bool, int, error
 }
 
 func (sm *Manager) checkAndUpdateSemaphoreSize(semaphore semaphore) error {
+	if nowFn().Sub(semaphore.getLimitTimestamp()) < sm.syncLimitCacheTTL {
+		return nil
+	}
+
 	changed, newLimit, err := sm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
 		return err
 	}
 	if changed {
 		semaphore.resize(newLimit)
+	} else {
+		semaphore.resetLimitTimestamp()
 	}
 	return nil
 }

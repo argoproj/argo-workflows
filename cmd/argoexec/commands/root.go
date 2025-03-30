@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/argoproj/pkg/cli"
-	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/types"
@@ -22,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
+	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
@@ -42,7 +41,7 @@ var (
 
 func initConfig() {
 	cmd.SetLogFormatter(logFormat)
-	cli.SetLogLevel(logLevel)
+	cmd.SetLogLevel(logLevel)
 	cmd.SetGLogLevel(glogLevel)
 }
 
@@ -55,6 +54,14 @@ func NewRootCommand() *cobra.Command {
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initConfig()
+
+			// Disable printing of usage string on errors, except for argument validation errors
+			// (i.e. when the "Args" function returns an error).
+			//
+			// This is set here instead of directly in "command" because Cobra
+			// executes PersistentPreRun after performing argument validation:
+			// https://github.com/spf13/cobra/blob/3a5efaede9d389703a792e2f7bfe3a64bc82ced9/command.go#L939-L957
+			cmd.SilenceUsage = true
 		},
 	}
 

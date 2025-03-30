@@ -3,7 +3,8 @@ kind: CronWorkflow
 metadata:
   name: basic
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"

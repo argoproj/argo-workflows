@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/humanize"
 )
 
 func NewGetCommand() *cobra.Command {

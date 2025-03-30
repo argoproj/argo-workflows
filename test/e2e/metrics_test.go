@@ -127,22 +127,6 @@ func (s *MetricsSuite) TestDeprecatedMutex() {
 		})
 }
 
-func (s *MetricsSuite) TestDeprecatedPodPriority() {
-	s.Given().
-		Workflow(`@testdata/workflow-deprecated-podpriority.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeErrored). // Fails as kubernetes we test on do not support this1
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="workflow podpriority",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
 func (s *MetricsSuite) TestDeprecatedSemaphore() {
 	s.Given().
 		Workflow(`@testdata/synchronization-deprecated-semaphore.yaml`).

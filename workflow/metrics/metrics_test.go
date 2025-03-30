@@ -74,22 +74,22 @@ func TestMetricGC(t *testing.T) {
 	baseCm := m.GetCustomMetric(key)
 	assert.NotNil(t, baseCm)
 
-	cm := customUserdata(baseCm, true)
-	assert.Len(t, cm, 1)
+	cm := customUserData(baseCm, true)
+	assert.NotNil(t, cm)
+	assert.Len(t, cm.values, 1)
 
 	// Ensure we get at least one TTL run
 	timeoutTime := time.Now().Add(time.Second * 2)
 	for time.Now().Before(timeoutTime) {
 		// Break if we know our test will pass.
-		if len(cm) == 0 {
+		if len(cm.values) == 0 {
 			break
 		}
 		// Sleep to prevent overloading test worker CPU.
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	assert.Empty(t, cm)
-
+	assert.Empty(t, cm.values)
 }
 
 func TestRealtimeMetricGC(t *testing.T) {
@@ -151,12 +151,12 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_queue")
 	defer wfQueue.ShutDown()
 
-	assert.NotNil(t, m.AllInstruments[telemetry.InstrumentQueueDepthGauge.Name()])
-	assert.NotNil(t, m.AllInstruments[telemetry.InstrumentQueueLatency.Name()])
+	assert.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueDepthGauge.Name()))
+	assert.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueLatency.Name()))
 
 	wfQueue.Add("hello")
 
-	require.NotNil(t, m.AllInstruments[telemetry.InstrumentQueueAddsCount.Name()])
+	require.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueAddsCount.Name()))
 	val, err := te.GetInt64CounterValue(telemetry.InstrumentQueueAddsCount.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
@@ -201,13 +201,14 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	m.StopRealtimeMetricsForWfUID("456")
 	assert.Empty(t, m.realtimeWorkflows["456"])
 
-	cm := customUserdata(baseCm, true)
-	assert.Len(t, cm, 1)
+	cm := customUserData(baseCm, true)
+	assert.NotNil(t, cm)
+	assert.Len(t, cm.values, 1)
 	assert.Len(t, m.realtimeWorkflows["123"], 1)
 
 	m.StopRealtimeMetricsForWfUID("123")
 	assert.Empty(t, m.realtimeWorkflows["123"])
-	assert.Empty(t, cm)
+	assert.Empty(t, cm.values)
 
 	err = m.UpsertCustomMetric(ctx, &wfv1.Prometheus{
 		Name:   key,
@@ -221,6 +222,6 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	}, "456", nil)
 	require.NoError(t, err)
 
-	assert.Len(t, cm, 1)
+	assert.Len(t, cm.values, 1)
 	assert.Len(t, m.realtimeWorkflows["456"], 1)
 }

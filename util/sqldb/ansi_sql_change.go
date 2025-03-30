@@ -5,9 +5,9 @@ import (
 )
 
 // represent a straight forward change that is compatible with all database providers
-type ansiSQLChange string
+type AnsiSQLChange string
 
-func (s ansiSQLChange) apply(session db.Session) error {
+func (s AnsiSQLChange) Apply(session db.Session) error {
 	_, err := session.SQL().Exec(string(s))
 	return err
 }

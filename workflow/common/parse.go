@@ -4,7 +4,6 @@ import (
 	"regexp"
 	"strings"
 
-	jsonpkg "github.com/argoproj/pkg/json"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,6 +13,7 @@ import (
 
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	jsonpkg "github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 var yamlSeparator = regexp.MustCompile(`\n---`)

@@ -1262,7 +1262,7 @@ message Parameter {
   optional string default = 2;
 
   // Value is the literal value to use for the parameter.
-  // If specified in the context of an input parameter, the value takes precedence over any passed values
+  // If specified in the context of an input parameter, any passed values take precedence over the specified value
   optional string value = 3;
 
   // ValueFrom is the source for the output parameter's value
@@ -1737,9 +1737,6 @@ message Template {
   // PriorityClassName to apply to workflow pods.
   optional string priorityClassName = 26;
 
-  // Priority to apply to workflow pods.
-  optional int32 priority = 27;
-
   // ServiceAccountName to apply to workflow pods
   optional string serviceAccountName = 28;
 
@@ -2068,10 +2065,6 @@ message WorkflowSpec {
 
   // PriorityClassName to apply to workflow pods.
   optional string podPriorityClassName = 23;
-
-  // Priority to apply to workflow pods.
-  // DEPRECATED: Use PodPriorityClassName instead.
-  optional int32 podPriority = 24;
 
   // +patchStrategy=merge
   // +patchMergeKey=ip

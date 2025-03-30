@@ -4842,7 +4842,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
+							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -6568,13 +6568,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"serviceAccountName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountName to apply to workflow pods",
@@ -7865,13 +7858,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Description: "PriorityClassName to apply to workflow pods.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"podPriority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
-							Type:        []string{"integer"},
-							Format:      "int32",
 						},
 					},
 					"hostAliases": {

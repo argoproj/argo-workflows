@@ -8,7 +8,7 @@ import {WorkflowParametersEditor} from '../shared/components/editors/workflow-pa
 import {ObjectEditor} from '../shared/components/object-editor';
 import type {Lang} from '../shared/components/object-parser';
 import {CronWorkflow} from '../shared/models';
-import {CronWorkflowSpecEditor} from './cron-workflow-spec-editior';
+import {CronWorkflowSpecEditor} from './cron-workflow-spec-editor';
 import {CronWorkflowStatusViewer} from './cron-workflow-status-viewer';
 
 export function CronWorkflowEditor({

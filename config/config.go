@@ -108,6 +108,10 @@ type Config struct {
 	// Workflow retention by number of workflows
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 
+	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
+	// for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
+	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
+
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
 
@@ -188,19 +192,23 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
+type DBConfig struct {
+	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
+}
+
 type PersistConfig struct {
+	DBConfig
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
 	Archive bool `json:"archive,omitempty"`
 	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
-	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
-	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
-	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
-	SkipMigration  bool              `json:"skipMigration,omitempty"`
+	ArchiveTTL    TTL    `json:"archiveTTL,omitempty"`
+	ClusterName   string `json:"clusterName,omitempty"`
+	SkipMigration bool   `json:"skipMigration,omitempty"`
 }
 
 func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {

@@ -55,6 +55,7 @@ validation:
 exclude_docs: |
   /proposals/
   /requirements.txt
+  /tested-kubernetes-versions.md
 
 nav:
   - Home: README.md
@@ -201,6 +202,7 @@ nav:
           - argo completion: cli/argo_completion.md
           - argo cp: cli/argo_cp.md
           - argo cron: cli/argo_cron.md
+          - argo cron: cli/argo_cron_backfill.md
           - argo cron create: cli/argo_cron_create.md
           - argo cron delete: cli/argo_cron_delete.md
           - argo cron get: cli/argo_cron_get.md

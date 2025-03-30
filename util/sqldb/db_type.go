@@ -7,15 +7,15 @@ import (
 	"github.com/upper/db/v4"
 )
 
-type dbType string
+type DBType string
 
 const (
-	MySQL    dbType = "mysql"
-	Postgres dbType = "postgres"
-	SQLite   dbType = "sqlite"
+	MySQL    DBType = "mysql"
+	Postgres DBType = "postgres"
+	SQLite   DBType = "sqlite"
 )
 
-func dbTypeFor(session db.Session) dbType {
+func DBTypeFor(session db.Session) DBType {
 	switch session.Driver().(*sql.DB).Driver().(type) {
 	case *mysql.MySQLDriver:
 		return MySQL
@@ -23,7 +23,7 @@ func dbTypeFor(session db.Session) dbType {
 	return Postgres
 }
 
-func (t dbType) intType() string {
+func (t DBType) IntType() string {
 	if t == MySQL {
 		return "signed"
 	}
