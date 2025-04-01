@@ -27,10 +27,11 @@ func NewLintCommand() *cobra.Command {
 				return err
 			}
 			opts := lint.LintOptions{
-				Files:            args,
-				Strict:           strict,
-				DefaultNamespace: client.Namespace(),
-				Printer:          os.Stdout,
+				Files:                  args,
+				Strict:                 strict,
+				DefaultNamespace:       client.Namespace(),
+				Printer:                os.Stdout,
+				IgnoreNonMatchingKinds: true,
 			}
 			return lint.RunLint(ctx, apiClient, []string{wf.CronWorkflowPlural}, output.String(), false, opts)
 		},

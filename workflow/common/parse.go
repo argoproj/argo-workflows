@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -19,8 +20,9 @@ import (
 var yamlSeparator = regexp.MustCompile(`\n---`)
 
 type ParseResult struct {
-	Object metav1.Object
-	Err    error
+	Object       metav1.Object
+	Err          error
+	MatchesKinds bool
 }
 
 func ParseObjects(body []byte, strict bool) []ParseResult {
@@ -30,10 +32,10 @@ func ParseObjects(body []byte, strict bool) []ParseResult {
 		err := jsonpkg.Unmarshal(body, un)
 		if un.GetKind() != "" && err != nil {
 			// only return an error if this is a kubernetes object, otherwise, ignore
-			return append(res, ParseResult{nil, err})
+			return append(res, ParseResult{Object: nil, Err: err, MatchesKinds: false})
 		}
 		v, err := toWorkflowTypeJSON(body, un.GetKind(), strict)
-		return append(res, ParseResult{v, err})
+		return append(res, ParseResult{Object: v, Err: err, MatchesKinds: false})
 	}
 
 	for i, text := range yamlSeparator.Split(string(body), -1) {
@@ -43,18 +45,13 @@ func ParseObjects(body []byte, strict bool) []ParseResult {
 		un := &unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(text), un)
 		if err != nil {
-			// Only return an error if this is a kubernetes object, otherwise, print the error
-			if un.GetKind() != "" {
-				res = append(res, ParseResult{nil, err})
-			} else {
-				log.Errorf("yaml file at index %d is not valid: %s", i, err)
-			}
+			res = append(res, ParseResult{Object: nil, Err: fmt.Errorf("yaml file at index %d is not valid: %s", i, err), MatchesKinds: false})
 			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
 		if v != nil {
 			// only append when this is a Kubernetes object
-			res = append(res, ParseResult{v, err})
+			res = append(res, ParseResult{Object: v, Err: err, MatchesKinds: false})
 		}
 	}
 	return res

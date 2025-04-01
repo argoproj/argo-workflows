@@ -37,6 +37,9 @@ type LintOptions struct {
 	// Printer if not nil the lint result is written to this writer after each
 	// file is linted.
 	Printer io.Writer
+
+	// IgnoreNonMatchingKinds if true, errors from objects with kinds not targeted by this lint
+	IgnoreNonMatchingKinds bool
 }
 
 // LintResult represents the result of linting objects from a single source
@@ -142,8 +145,34 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		Errs: []error{},
 	}
 
-	for i, pr := range common.ParseObjects(data, opts.Strict) {
+	parseResults := common.ParseObjects(data, opts.Strict)
+
+	if len(parseResults) > 0 {
+		hasParseErrors := false
+		for _, pr := range parseResults {
+			if pr.Err != nil {
+				hasParseErrors = true
+				break
+			}
+		}
+
+		if hasParseErrors && len(data) > 0 {
+			res.Linted = true
+		}
+	}
+
+	for i, pr := range parseResults {
 		obj, err := pr.Object, pr.Err
+		if err != nil {
+			if opts.IgnoreNonMatchingKinds {
+				if obj == nil || !isKindTargeted(obj, opts.ServiceClients) {
+					continue
+				}
+			}
+
+			res.Errs = append(res.Errs, err)
+			continue
+		}
 		if obj == nil {
 			continue // could not parse to kubernetes object
 		}
@@ -232,6 +261,9 @@ func (l *LintResults) evaluate() *LintResults {
 
 	for _, r := range l.Results {
 		if !r.Linted {
+			if len(r.Errs) > 0 {
+				success = false
+			}
 			continue
 		}
 		l.anythingLinted = true
@@ -242,7 +274,16 @@ func (l *LintResults) evaluate() *LintResults {
 		success = false
 	}
 
-	if !l.anythingLinted {
+	// Check if anything was attempted to be linted, even if it had parse errors
+	hasAnyContent := false
+	for _, r := range l.Results {
+		if len(r.Errs) > 0 {
+			hasAnyContent = true
+			break
+		}
+	}
+
+	if !l.anythingLinted && !hasAnyContent {
 		success = false
 	}
 
@@ -308,4 +349,23 @@ func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, er
 	}
 
 	return res, nil
+}
+
+func isKindTargeted(obj metav1.Object, clients ServiceClients) bool {
+	if obj == nil {
+		return false
+	}
+
+	switch obj.(type) {
+	case *wfv1.ClusterWorkflowTemplate:
+		return clients.ClusterWorkflowTemplateClient != nil
+	case *wfv1.CronWorkflow:
+		return clients.CronWorkflowsClient != nil
+	case *wfv1.Workflow:
+		return clients.WorkflowsClient != nil
+	case *wfv1.WorkflowTemplate:
+		return clients.WorkflowTemplatesClient != nil
+	default:
+		return false
+	}
 }

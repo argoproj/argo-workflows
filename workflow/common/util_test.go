@@ -108,7 +108,10 @@ func TestParseObjects(t *testing.T) {
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(invalidObj, false))
+	results := ParseObjects(invalidObj, false)
+	for _, res := range results {
+		assert.Nil(t, res.Object)
+	}
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
