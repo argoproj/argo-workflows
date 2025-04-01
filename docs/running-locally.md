@@ -1,8 +1,15 @@
 # Running Locally
 
-## Initial Setup
+## Development Environment Setup
 
-First, clone the Git repo into: `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
+You have two options for setting up your development environment:
+
+1. Use the [Dev Container](#development-container), either locally or via [GitHub Codespaces](https://github.com/codespaces). This is usually the fastest and easiest way to get started.
+1. [Manual installation](#manual-installation) of the necessary tooling. This requires a basic understanding of administering Kubernetes and package management for your OS.
+
+### Initial Local Setup
+
+Unless you're using GitHub Codespaces, the first step is cloning the Git repo into `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
 
 Next, add the following to your `/etc/hosts`:
 
@@ -13,13 +20,6 @@ Next, add the following to your `/etc/hosts`:
 127.0.0.1 mysql
 127.0.0.1 azurite
 ```
-
-## Development Environment Setup
-
-You have two options for setting up your development environment:
-
-1. Use the [Dev Container](#development-container). This is usually the fastest and easiest way to get started.
-1. [Manual installation](#manual-installation) of the necessary tooling. This requires a basic understanding of administering Kubernetes and package management for your OS.
 
 ### Development Container
 
