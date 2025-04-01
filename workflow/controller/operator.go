@@ -1272,14 +1272,14 @@ func recentlyStarted(node wfv1.NodeStatus) bool {
 func (woc *wfOperationCtx) markAllContainersDeleted(nodeID string) {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		woc.log.Errorf("was unable to obtain node for %s (markAllContainersDeleted)", nodeID)
 		return
 	}
 
 	for _, childNodeID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", childNodeID)
+			woc.log.Errorf("was unable to obtain node for %s (markAllContainersDeleted childNode)", childNodeID)
 			continue
 		}
 		if childNode.Type == wfv1.NodeTypeContainer {
@@ -2423,7 +2423,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	if phase == wfv1.WorkflowError {
 		entryNode, err := woc.wf.Status.Nodes.Get(woc.wf.ObjectMeta.Name)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", woc.wf.ObjectMeta.Name)
+			woc.log.Errorf("was unable to obtain node for %s (markWorkflowPhase)", woc.wf.ObjectMeta.Name)
 		}
 		if (err == nil) && entryNode.Phase == wfv1.NodeRunning {
 			entryNode.Phase = wfv1.NodeError
@@ -2819,7 +2819,7 @@ func (woc *wfOperationCtx) findLeafNodeWithType(boundaryID string, nodeType wfv1
 	dfs = func(nodeID string) {
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", nodeID)
+			woc.log.Errorf("was unable to obtain node for %s (findLeafNodeWithType)", nodeID)
 			return
 		}
 		if node.Type == nodeType {
@@ -2930,7 +2930,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Panicf("was unable to obtain node for %s", nodeID)
+		woc.log.Panicf("was unable to obtain node for %s (getOutboundNodes)", nodeID)
 	}
 	switch node.Type {
 	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
@@ -3432,7 +3432,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	childID := woc.wf.NodeID(child)
 	node, err := woc.wf.Status.Nodes.Get(parentID)
 	if err != nil {
-		woc.log.Panicf("was unable to obtain node for %s", parentID)
+		woc.log.Panicf("was unable to obtain node for %s (addChildNode)", parentID)
 	}
 	for _, nodeID := range node.Children {
 		if childID == nodeID {

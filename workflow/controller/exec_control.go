@@ -24,7 +24,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	wfNodesLock.RUnlock()
 	if err != nil {
-		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		woc.log.Errorf("was unable to obtain node for %s (applyExecutionControl)", nodeID)
 		return
 	}
 	// node is already completed

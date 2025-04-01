@@ -334,7 +334,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			for i, childID := range taskNode.Children {
 				childNode, err := woc.wf.Status.Nodes.Get(childID)
 				if err != nil {
-					woc.log.Errorf("was unable to obtain node for %s", childID)
+					woc.log.Errorf("was unable to obtain node for %s (executeDAG)", childID)
 					return nil, fmt.Errorf("Critical error, unable to find %s", childID)
 				}
 				childNodes[i] = *childNode
@@ -506,7 +506,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				for _, outNodeID := range outboundNodeIDs {
 					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 					if err != nil {
-						woc.log.Errorf("was unable to obtain node for %s", outNodeID)
+						woc.log.Errorf("was unable to obtain node for %s (executeDAGTask)", outNodeID)
 						return
 					}
 					woc.addChildNode(nodeName, taskNodeName)
@@ -706,10 +706,17 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	if err != nil {
 		return nil, err
 	}
+
 	var newTask wfv1.DAGTask
 	err = json.Unmarshal([]byte(newTaskStr), &newTask)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
+	}
+
+	for _, input := range newTask.Inline.Inputs.Parameters {
+		if strings.Contains(input.Value.String(), "{{") {
+			log.Errorf("Task still contains unevaluated parameters. workflow: %s, task: %s, parameter: %s, parameter value: %s", woc.wf.GetName(), task.GetName(), input.Name, input.Value.String());
+		}
 	}
 
 	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -873,7 +880,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			for _, childNodeID := range depNode.Children {
 				childNodePhase, err := d.wf.Status.Nodes.GetPhase(childNodeID)
 				if err != nil {
-					log.Warnf("was unable to obtain node for %s", childNodeID)
+					log.Warnf("was unable to obtain node for %s (evaluateDependsLogic)", childNodeID)
 					allFailed = false // we don't know if all failed
 					continue
 				}
