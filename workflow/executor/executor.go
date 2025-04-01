@@ -21,7 +21,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
 
-	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -434,7 +433,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
-			if !argofile.Exists(mountedArtPath) {
+			if !file.Exists(mountedArtPath) {
 				return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
 			}
 			return fileName, mountedArtPath, nil
@@ -494,7 +493,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
-	isDir, err := argofile.IsDirectory(unarchivedArtPath)
+	isDir, err := file.IsDirectory(unarchivedArtPath)
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}

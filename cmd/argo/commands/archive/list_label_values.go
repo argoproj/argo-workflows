@@ -3,12 +3,12 @@ package archive
 import (
 	"fmt"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 func NewListLabelValueCommand() *cobra.Command {

@@ -12,7 +12,6 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -48,6 +47,7 @@ import (
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -279,7 +279,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	// init DB after leader election (if enabled)
-	if err := wfc.initDB(); err != nil {
+	if err := wfc.initDB(ctx); err != nil {
 		log.Fatalf("Failed to init db: %v", err)
 	}
 
@@ -411,7 +411,12 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
+	syncLimitCacheTTL := time.Duration(0)
+	if wfc.Config.SemaphoreLimitCacheSeconds != nil {
+		syncLimitCacheTTL = time.Duration(*wfc.Config.SemaphoreLimitCacheSeconds) * time.Second
+	}
+
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, syncLimitCacheTTL, nextWorkflow, isWFDeleted)
 }
 
 // list all running workflows to initialize throttler and syncManager
@@ -518,7 +523,7 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
 	wfc.Config = *c
-	err = wfc.updateConfig()
+	err = wfc.updateConfig(ctx)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
 	}

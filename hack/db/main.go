@@ -47,7 +47,7 @@ func NewMigrateCommand() *cobra.Command {
 		Use:   "migrate",
 		Short: "Force DB migration for given cluster/table",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return sqldb.NewMigrate(session, cluster, table).Exec(context.Background())
+			return sqldb.Migrate(context.Background(), session, cluster, table)
 		},
 	}
 	migrationCmd.Flags().StringVar(&cluster, "cluster", "default", "Cluster name")
