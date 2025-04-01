@@ -802,7 +802,22 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 	case "false":
-		time.Sleep(1 * time.Second)
+		defaultSleepTime := 1 * time.Second
+		maybeConfiguredSleepDuration := os.Getenv("OPERATOR_WRITE_BACK_SLEEP_DURATION")
+		switch maybeConfiguredSleepDuration {
+		case "":
+			time.Sleep(defaultSleepTime)
+		default:
+			sleepTime, err := time.ParseDuration(maybeConfiguredSleepDuration)
+			if err != nil {
+				woc.log.WithError(err).Errorf(
+					"failed to convert OPERATOR_WRITE_BACK_SLEEP_DURATION to a valid duration. Sleeping for %s",
+					defaultSleepTime)
+				time.Sleep(defaultSleepTime)
+				return
+			}
+			time.Sleep(sleepTime)
+		}
 	}
 
 	// Make sure the workflow completed.
