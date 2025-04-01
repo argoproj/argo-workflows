@@ -11,16 +11,6 @@ You have two options for setting up your development environment:
 
 Unless you're using GitHub Codespaces, the first step is cloning the Git repo into `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
 
-Next, add the following to your `/etc/hosts`:
-
-```text
-127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-```
-
 ### Development Container
 
 Prebuilt [development container](https://containers.dev/) images are provided for both `amd64` and `arm64` containing all you need to develop Argo Workflows, without installing tools on your local machine. Provisioning a dev container is fully automated and typically takes ~1 minute.
@@ -47,6 +37,15 @@ To build on your own machine without using the Dev Container you will need:
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`node`](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
+* The following entries in your `/etc/hosts` file:
+
+    ```text
+    127.0.0.1 dex
+    127.0.0.1 minio
+    127.0.0.1 postgres
+    127.0.0.1 mysql
+    127.0.0.1 azurite
+    ```
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
