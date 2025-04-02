@@ -2441,7 +2441,7 @@ func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
-			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+			log.Panicf("was unable to obtain node for %s (IsPartOfExitHandler)", currentNode.BoundaryID)
 		}
 		currentNode = boundaryNode
 	}

@@ -31,7 +31,7 @@ func resourceDuration(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[strin
 		visited[childID] = true
 		child, err := wf.Status.Nodes.Get(childID)
 		if err != nil {
-			log.Warnf("was unable to obtain node for %s", childID)
+			log.Warnf("was unable to obtain node for %s (resourceDuration)", childID)
 			continue
 		}
 		if child.Type == wfv1.NodeTypePod {
