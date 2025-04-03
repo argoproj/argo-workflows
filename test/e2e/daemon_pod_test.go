@@ -8,9 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -174,6 +176,51 @@ func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 			node := status.Nodes.FindByDisplayName("daemoned")
 			require.NotNil(t, node)
 			assert.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
+		})
+}
+
+func (s *DaemonPodSuite) TestDaemonPodRetry() {
+	s.Given().
+		Workflow(`
+metadata:
+  name: daemon-retry
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: daemoned
+          template: daemoned
+        - name: whale
+          dependencies: [daemoned]
+          template: whale-tmpl
+  - name: daemoned
+    retryStrategy:
+      limit: 2
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args: ["-c", "sleep 10 && exit 1"]
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args: ["-c", "echo hi & sleep 15 && echo bye"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			failedNode := status.Nodes.FindByDisplayName("daemoned(0)")
+			succeededNode := status.Nodes.FindByDisplayName("daemoned(1)")
+			require.NotNil(t, failedNode)
+			require.NotNil(t, succeededNode)
+			assert.Equal(t, wfv1.NodeFailed, failedNode.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, succeededNode.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
