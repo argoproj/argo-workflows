@@ -36,3 +36,7 @@ For example, one may find it useful to define a custom label in the workflow and
 
 We can also access workflow fields in a pod link. For example, `${workflow.metadata.name}` returns
 the name of the workflow instead of the name of the pod. If the field doesn't exist on the workflow then the value will be an empty string.
+
+> v3.6 and after
+
+Links can be relative when configured and the UI will prefix them with the base UI URL.
