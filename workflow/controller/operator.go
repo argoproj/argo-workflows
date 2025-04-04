@@ -1455,6 +1455,24 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.PodIP = pod.Status.PodIP
 	}
 
+	if resultName := woc.nodeID(pod); new.Phase == wfv1.NodeSucceeded && tmpl != nil &&
+		(tmpl.HasOutputs() || tmpl.HasOutput()) && !woc.wf.Status.IsTaskResultInited(resultName) {
+		// error scenario: a pod for a step in a workflow has completed, and its task
+		// result are properly created and finalized by its wait container (judging from
+		// the exit status of the wait container), however, the task result informer in
+		// the controller leader has not received any updates about it (due to overloaded
+		// api server or etcd).
+		//
+		// the change is to forcefully mark the workflow having incomplete TaskResult in
+		// assessNodeStatus.
+		//
+		// this fix doesn't handle the case when a pod failed, there are too many
+		// potentially failure scenarios (like the wait container might not be able to
+		// insert a task result). plus, a retry is probably needed when there are
+		// failures. the loss is probably not as great as a successful one.
+		woc.wf.Status.MarkTaskResultIncomplete(resultName)
+	}
+
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
