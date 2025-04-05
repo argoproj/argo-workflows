@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: db-tmpl-level-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: task-1
+            template: django-command
+          - name: task-2
+            template: load-command
+
+    - name: load-command
+      synchronization:
+        mutexes:
+          - name: task-1
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "2s"]
+
+    - name: django-command
+      synchronization:
+        mutexes:
+          - name: task-1
+            database: true
+          - name: task-2
+            database: true
+        semaphores:
+          - database:
+              key: workflow
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "2s"]

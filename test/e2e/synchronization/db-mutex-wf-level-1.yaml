@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: db-wf-level-mutex-1-
+spec:
+  entrypoint: main
+  synchronization:
+    mutexes:
+      - name: test
+        database: true
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "2s"]

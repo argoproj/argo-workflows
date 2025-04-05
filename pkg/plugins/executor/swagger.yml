@@ -2298,6 +2298,9 @@ definitions:
     Mutex:
         description: Mutex holds Mutex configuration
         properties:
+            database:
+                description: Database specifies this is database controlled if this is set true
+                type: boolean
             name:
                 description: name of the mutex
                 type: string
@@ -4170,6 +4173,8 @@ definitions:
         properties:
             configMapKeyRef:
                 $ref: '#/definitions/ConfigMapKeySelector'
+            database:
+                $ref: '#/definitions/SyncDatabaseRef'
             namespace:
                 default: '[namespace of workflow]'
                 type: string
@@ -4280,6 +4285,11 @@ definitions:
                 description: |-
                     Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
                     Could also be a Duration, e.g.: "2m", "6h"
+                type: string
+        type: object
+    SyncDatabaseRef:
+        properties:
+            key:
                 type: string
         type: object
     Synchronization:

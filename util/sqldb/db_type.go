@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/go-sql-driver/mysql"
+	sqlite3 "github.com/mattn/go-sqlite3"
 	"github.com/upper/db/v4"
 )
 
@@ -19,6 +20,8 @@ func DBTypeFor(session db.Session) DBType {
 	switch session.Driver().(*sql.DB).Driver().(type) {
 	case *mysql.MySQLDriver:
 		return MySQL
+	case *sqlite3.SQLiteDriver:
+		return SQLite
 	}
 	return Postgres
 }
