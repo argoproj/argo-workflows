@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -175,10 +177,10 @@ spec:
 		logging.SetExitFunc(func(int) { fatal = true })
 
 		oldStdin := os.Stdin
-		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+		defer func() { os.Stdin = oldStdin }()
 		os.Stdin, err = os.Open(clusterWftmplPath)
 		require.NoError(t, err)
-		defer func() { _ = os.Stdin.Close() }() // close previously opened path to avoid errors trying to remove the file.
+		defer func() { _ = os.Stdin.Close() }()
 
 		ctx := logging.TestContext(t.Context())
 		err = runLint(ctx, []string{workflowPath, wftmplPath, "-"}, true, nil, "pretty", true)
@@ -291,5 +293,50 @@ spec:
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
+	})
+
+	t.Run("linting an invalid YAML file with offline mode logs once", func(t *testing.T) {
+		invalidYAMLPath := filepath.Join(subdir, "invalid-yaml.yaml")
+		err = os.WriteFile(invalidYAMLPath, []byte(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+	 generateName: hello-world-
+	 labels:
+	   workflows.argoproj.io/archive-strategy: "false"
+	 annotations:
+	   workflows.argoproj.io/description: |
+	     This is a simple hello world example.
+spec:
+	 entrypoint: hello-world
+	 templates:
+	 - name: hello-world
+	   container:
+	     image: busybox
+	command: [echo]
+	args: ["hello world"]
+`), 0644)
+		require.NoError(t, err)
+
+		hook := logging.NewTestHook()
+		ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text, hook))
+
+		originalExitFunc := logging.GetExitFunc()
+		var fatal bool
+		logging.SetExitFunc(func(int) { fatal = true })
+		defer logging.SetExitFunc(originalExitFunc)
+
+		err = runLint(ctx, []string{invalidYAMLPath}, true, nil, "pretty", true)
+		require.NoError(t, err)
+
+		yamlErrCount := 0
+		for _, entry := range hook.AllEntries() {
+			if entry.Level == logging.Error && strings.Contains(entry.Msg, "yaml file at index 0 is not valid") {
+				yamlErrCount++
+			}
+		}
+
+		assert.Equal(t, 1, yamlErrCount, "parse errors should only be logged once in offline mode")
+		assert.True(t, fatal, "Should have exited with error code for parse error")
 	})
 }
