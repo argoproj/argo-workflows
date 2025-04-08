@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -43,12 +44,10 @@ func ParseObjects(body []byte, strict bool) []ParseResult {
 		un := &unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(text), un)
 		if err != nil {
-			// Only return an error if this is a kubernetes object, otherwise, print the error
-			if un.GetKind() != "" {
-				res = append(res, ParseResult{nil, err})
-			} else {
-				log.Errorf("yaml file at index %d is not valid: %s", i, err)
-			}
+			// Return parse error for all YAML parsing errors, not just ones with Kind
+			// This allows upper layers to handle the errors properly instead of forcing logs here
+			errMsg := fmt.Errorf("yaml file at index %d is not valid: %s", i, err)
+			res = append(res, ParseResult{nil, errMsg})
 			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
@@ -121,13 +120,17 @@ func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 	manifests := make([]wfv1.Workflow, 0)
 	for _, res := range ParseObjects(body, strict) {
 		obj, err := res.Object, res.Err
+		if err != nil { // Return parsing errors immediately
+			return nil, err
+		}
+		// Skip if object is nil
+		if obj == nil {
+			continue
+		}
 		v, ok := obj.(*wfv1.Workflow)
 		if !ok {
 			log.Warnf("%s is not of kind Workflow. Ignoring...", obj.GetName())
 			continue
-		}
-		if err != nil { // only returns parsing errors for workflow types
-			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
@@ -139,13 +142,17 @@ func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTem
 	manifests := make([]wfv1.WorkflowTemplate, 0)
 	for _, res := range ParseObjects(body, strict) {
 		obj, err := res.Object, res.Err
+		if err != nil { // Return parsing errors immediately
+			return nil, err
+		}
+		// Skip if object is nil
+		if obj == nil {
+			continue
+		}
 		v, ok := obj.(*wfv1.WorkflowTemplate)
 		if !ok {
 			log.Warnf("%s is not of kind WorkflowTemplate. Ignoring...", obj.GetName())
 			continue
-		}
-		if err != nil { // only returns parsing errors for template types
-			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
@@ -157,13 +164,17 @@ func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, e
 	manifests := make([]wfv1.CronWorkflow, 0)
 	for _, res := range ParseObjects(body, strict) {
 		obj, err := res.Object, res.Err
+		if err != nil { // Return parsing errors immediately
+			return nil, err
+		}
+		// Skip if object is nil
+		if obj == nil {
+			continue
+		}
 		v, ok := obj.(*wfv1.CronWorkflow)
 		if !ok {
 			log.Warnf("%s is not of kind CronWorkflow. Ignoring...", obj.GetName())
 			continue
-		}
-		if err != nil { // only returns parsing errors for cron types
-			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
@@ -175,13 +186,17 @@ func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.Clus
 	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
 	for _, res := range ParseObjects(body, strict) {
 		obj, err := res.Object, res.Err
+		if err != nil { // Return parsing errors immediately
+			return nil, err
+		}
+		// Skip if object is nil
+		if obj == nil {
+			continue
+		}
 		v, ok := obj.(*wfv1.ClusterWorkflowTemplate)
 		if !ok {
 			log.Warnf("%s is not of kind ClusterWorkflowTemplate. Ignoring...", obj.GetName())
 			continue
-		}
-		if err != nil { // only returns parsing errors for cwft types
-			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
