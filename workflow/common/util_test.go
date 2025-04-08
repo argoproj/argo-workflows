@@ -111,7 +111,20 @@ func TestParseObjects(t *testing.T) {
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(ctx, invalidObj, false))
+	results := ParseObjects(invalidObj, false)
+	// Results should contain one entry with a nil object and an error
+	assert.Len(t, results, 1)
+	assert.Nil(t, results[0].Object)
+	assert.Contains(t, results[0].Err.Error(), "yaml file at index 0 is not valid")
+}
+
+func TestSplitWorkflowYAMLFileWithInvalidYAML(t *testing.T) {
+	// This should handle invalid YAML without panicking
+	invalidObj := []byte(`invalid-yaml-content`)
+	wfs, err := SplitWorkflowYAMLFile(invalidObj, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "yaml file at index 0 is not valid")
+	assert.Empty(t, wfs)
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
