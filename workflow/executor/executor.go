@@ -258,6 +258,25 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+		} else {
+			// Case root (general case) as default user.
+			// Main container will be run as root and group root.
+			// initContainer will be run as default UID 8737.
+			// Artifact default permission: 8737 root other rw-rw-r--
+			// Thus permission of write will be given thanks to file group.
+
+			// Case non-root with a restricted Pod Security Standard (eg: OpenShift cluster).
+			// Main container will be run as custom UID (eg 123456789).
+			// initContainer will be run as custom UID (eg 123456789).
+			// Main container will be run as default UID. Artifact permission will be:
+			// Artifact default permission: 123456789 root other rw-rw-r--
+			// Thus permission of write will be given thanks to file owner.
+
+			// Other case: any other case should be handled by the workflow, thanks to mode field in artifact.
+			err = chmod(artPath, int32(0664), art.RecurseMode)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
