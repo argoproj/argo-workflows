@@ -152,7 +152,7 @@ The name, Annotation and Label expression must evaluate to a string and follow t
 
 ## Event Expression Syntax and the Event Expression Environment
 
-**Event expressions** are [expressions](variables.md#expression) that are evaluated over the **event expression environment**.
+**Event expressions**, such as the `.spec.event.selector` or `...valueFrom.event` fields, are [expressions](variables.md#expression) that are evaluated over the **event expression environment**.
 
 ### Expression Syntax
 
