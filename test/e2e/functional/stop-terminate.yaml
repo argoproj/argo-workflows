@@ -16,16 +16,38 @@ spec:
     - name: echo
       container:
         image: argoproj/argosay:v1
-        command: [ sleep ]
-        args: [ "999" ]
+        command:
+          - /bin/bash
+          - "-c"
+          - "-x"
+          - |
+            date -Is --uc
+            sleep 999
+            date -Is --uc
+            echo bye
 
     - name: exit
       container:
         image: argoproj/argosay:v1
+        command:
+          - /bin/bash
+          - "-c"
+          - "-x"
+          - |
+            date -Is --uc
+            echo bye
    
     # We should sleep finite time to ensure workflow controller wait for DAG onExit template to complete.
     - name: exit-template
       container:
         image: argoproj/argosay:v1
-        command: [ sleep ]
-        args: [ "5" ]
+        command:
+          - /bin/bash
+          - "-c"
+          - "-x"
+          - |
+            date -Is --uc
+            sleep 5
+            date -Is --uc
+            echo bye
+
