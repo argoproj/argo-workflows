@@ -17,13 +17,34 @@ func (p *Plugin) UnmarshalJSON(value []byte) error {
 	}
 	// by validating the structure in UnmarshallJSON, we prevent bad data entering the system at the point of
 	// parsing, which means we do not need validate
-	m := map[string]interface{}{}
-	if err := json.Unmarshal(p.Object.Value, &m); err != nil {
-		return err
+	_, err := p.mapValue()
+	return err
+}
+
+// Name returns the user-specified plugin name
+func (p *Plugin) Name() (string, error) {
+	if p.Object.Value == nil {
+		return "", fmt.Errorf("plugin value is empty")
 	}
-	numKeys := len(m)
+	mapValue, err := p.mapValue()
+	if err != nil {
+		return "", err
+	}
+	for key := range mapValue {
+		return key, nil
+	}
+	return "", nil
+}
+
+// mapValue transforms the plugin value to a map of exactly one key, return err if failed
+func (p *Plugin) mapValue() (map[string]interface{}, error) {
+	mapValue := map[string]interface{}{}
+	if err := json.Unmarshal(p.Object.Value, &mapValue); err != nil {
+		return nil, err
+	}
+	numKeys := len(mapValue)
 	if numKeys != 1 {
-		return fmt.Errorf("expected exactly one key, got %d", numKeys)
+		return nil, fmt.Errorf("expected exactly one key, got %d", numKeys)
 	}
-	return nil
+	return mapValue, nil
 }
