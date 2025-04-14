@@ -6,7 +6,7 @@ spec:
   entrypoint: main
   securityContext:
     runAsNonRoot: true
-    runAsUser: 8737
+    runAsUser: 12345
   templates:
     - name: main
       container:

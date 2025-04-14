@@ -57,13 +57,21 @@ spec:
         artifacts:
           - globalName: globalArtifact
             name: artifact
-            path: /tmp/artifact.txt
+            path: /tmp/artifact-output.txt
             archive:
               none: {}
       container:
         image: argoproj/argosay:v2
-        command: [sh, -c]
-        args: ["echo -n {{inputs.parameters.value}} >> /tmp/artifact.txt"]
+        command:
+          - "sh"
+          - "-c"
+          - |
+            id
+            ls -al /tmp
+            # Because of sysctl protected_regular, the input file owner might not be the same as the process UID, thus resulting in permission denied.
+            # Copying input file to be sure the process is the owner.
+            cp /tmp/artifact.txt /tmp/artifact-output.txt
+            echo -n {{inputs.parameters.value}} >> /tmp/artifact-output.txt
     - name: save-artifact
       container:
         image: argoproj/argosay:v2
