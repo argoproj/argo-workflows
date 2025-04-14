@@ -21,9 +21,9 @@ spec:
           - "-c"
           - "-x"
           - |
-            date -Is --uc
+            date -Is --utc
             sleep 999
-            date -Is --uc
+            date -Is --utc
             echo bye
 
     - name: exit
@@ -34,7 +34,7 @@ spec:
           - "-c"
           - "-x"
           - |
-            date -Is --uc
+            date -Is --utc
             echo bye
    
     # We should sleep finite time to ensure workflow controller wait for DAG onExit template to complete.
@@ -46,8 +46,8 @@ spec:
           - "-c"
           - "-x"
           - |
-            date -Is --uc
+            date -Is --utc
             sleep 5
-            date -Is --uc
+            date -Is --utc
             echo bye
 
