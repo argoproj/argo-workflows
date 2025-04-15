@@ -777,7 +777,7 @@ spec:
       limit: "{{inputs.parameters.limit}}"
     container:
       image: argoproj/argosay:v2
-      args: [exit, "1"]
+      args: [exit, 1]
 `).
 		When().
 		SubmitWorkflow().
