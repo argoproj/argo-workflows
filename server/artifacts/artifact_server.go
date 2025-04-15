@@ -422,7 +422,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	if templateName != "" {
 		template := wf.GetTemplateByName(templateName)
 		if template == nil {
-			return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+			return nil, nil, fmt.Errorf("no template found for name %q associated with nodeId %q", templateName, nodeId)
 		}
 		archiveLocation = template.ArchiveLocation // this is case 4
 	}

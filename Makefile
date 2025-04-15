@@ -92,6 +92,33 @@ ifeq ($(PROFILE),sso)
 AUTH_MODE                     := sso
 endif
 
+ifndef $(GOPATH)
+	GOPATH:=$(shell go env GOPATH)
+	export GOPATH
+endif
+
+# Makefile managed tools
+TOOL_MOCKERY                := $(GOPATH)/bin/mockery
+TOOL_CONTROLLER_GEN         := $(GOPATH)/bin/controller-gen
+TOOL_GO_TO_PROTOBUF         := $(GOPATH)/bin/go-to-protobuf
+TOOL_PROTOC_GEN_GOGO        := $(GOPATH)/bin/protoc-gen-gogo
+TOOL_PROTOC_GEN_GOGOFAST    := $(GOPATH)/bin/protoc-gen-gogofast
+TOOL_PROTOC_GEN_GRPC_GATEWAY:= $(GOPATH)/bin/protoc-gen-grpc-gateway
+TOOL_PROTOC_GEN_SWAGGER     := $(GOPATH)/bin/protoc-gen-swagger
+TOOL_OPENAPI_GEN            := $(GOPATH)/bin/openapi-gen
+TOOL_SWAGGER                := $(GOPATH)/bin/swagger
+TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
+TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
+
+# npm bin -g will do this on later npms than we have
+NVM_BIN                     ?= $(shell npm config get prefix)/bin
+TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
+TOOL_MDSPELL                := $(NVM_BIN)/mdspell
+TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
+TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
+TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
+TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
+
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
 $(info KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
 $(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
@@ -104,11 +131,6 @@ override LDFLAGS += \
 
 ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
-endif
-
-ifndef $(GOPATH)
-	GOPATH:=$(shell go env GOPATH)
-	export GOPATH
 endif
 
 # -- file lists
@@ -146,7 +168,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger /usr/local/bin/clang-format
+PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
 
 # protoc,my.proto
 define protoc
@@ -260,7 +282,7 @@ argoexec-image:
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
-codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
+codegen: types swagger manifests $(TOOL_MOCKERY) docs/fields.md docs/cli/argo.md
 	go generate ./...
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
@@ -292,17 +314,17 @@ swagger: \
 	api/jsonschema/schema.json
 
 
-$(GOPATH)/bin/mockery: Makefile
+$(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/vektra/mockery/v2@v2.42.2
 endif
-$(GOPATH)/bin/controller-gen: Makefile
+$(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2
 endif
-$(GOPATH)/bin/go-to-protobuf: Makefile
+$(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	# TODO: currently fails on v0.30.3 with
@@ -314,43 +336,43 @@ $(GOPATH)/src/github.com/gogo/protobuf: Makefile
 ifneq ($(USE_NIX), true)
 	[ -e $@ ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $@
 endif
-$(GOPATH)/bin/protoc-gen-gogo: Makefile
+$(TOOL_PROTOC_GEN_GOGO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 endif
-$(GOPATH)/bin/protoc-gen-gogofast: Makefile
+$(TOOL_PROTOC_GEN_GOGOFAST): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
 endif
-$(GOPATH)/bin/protoc-gen-grpc-gateway: Makefile
+$(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
 endif
-$(GOPATH)/bin/protoc-gen-swagger: Makefile
+$(TOOL_PROTOC_GEN_SWAGGER): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 endif
-$(GOPATH)/bin/openapi-gen: Makefile
+$(TOOL_OPENAPI_GEN): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
 endif
-$(GOPATH)/bin/swagger: Makefile
+$(TOOL_SWAGGER): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
 endif
-$(GOPATH)/bin/goimports: Makefile
+$(TOOL_GOIMPORTS): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install golang.org/x/tools/cmd/goimports@v0.1.7
 endif
 
-/usr/local/bin/clang-format:
+$(TOOL_CLANG_FORMAT):
 ifeq (, $(shell which clang-format))
 ifeq ($(shell uname),Darwin)
 	brew install clang-format
@@ -360,13 +382,13 @@ else
 endif
 endif
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
 	# Why clang-format? Google uses it.
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
-	$(GOPATH)/bin/go-to-protobuf \
+	$(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1 \
@@ -405,7 +427,7 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
 # generate other files for other CRDs
-manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/manifests/crdgen.sh ./hack/manifests/crds.go
+manifests/base/crds/full/argoproj.io_workflows.yaml: $(TOOL_CONTROLLER_GEN) $(TYPES) ./hack/manifests/crdgen.sh ./hack/manifests/crds.go
 	./hack/manifests/crdgen.sh
 
 .PHONY: manifests
@@ -451,11 +473,11 @@ dist/manifests/%: manifests/%
 manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
-$(GOPATH)/bin/golangci-lint: Makefile
+$(TOOL_GOLANGCI_LINT): Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
 .PHONY: lint
-lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
+lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -464,7 +486,7 @@ lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	$(TOOL_GOLANGCI_LINT) run --fix --verbose
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
@@ -631,10 +653,10 @@ util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values
 	go run ./util/telemetry/builder --attributesGo $@
 
 # swagger
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
-	$(GOPATH)/bin/openapi-gen \
+	$(TOOL_OPENAPI_GEN) \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
@@ -647,7 +669,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 # generates many other files (listers, informers, client etc).
 .PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(GOPATH)/bin/go-to-protobuf $(TYPES)
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF) $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
@@ -664,7 +686,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.31.3/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.32.2/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
@@ -672,10 +694,10 @@ pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go 
 	go run ./hack/api/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
-dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+dist/swagger-conflicts: $(TOOL_SWAGGER) $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
-dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+dist/mixed.swagger.json: $(TOOL_SWAGGER) $(SWAGGER_FILES) dist/swagger-conflicts
 	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) -o dist/mixed.swagger.json
 
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/api/swagger/swaggify.sh
@@ -684,11 +706,11 @@ dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/api/swagger/swaggify.s
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/api/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-dist/swagger.0.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.0.json
+dist/swagger.0.json: $(TOOL_SWAGGER) dist/kubeified.swagger.json
+	$(TOOL_SWAGGER) flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.0.json
 
-api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/swagger.0.json
-	swagger flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
+api/openapi-spec/swagger.json: $(TOOL_SWAGGER) dist/swagger.0.json
+	$(TOOL_SWAGGER) flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/api/jsonschema/main.go
 	go run ./hack/api/jsonschema
@@ -709,31 +731,31 @@ docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.g
 
 # docs
 
-/usr/local/bin/mdspell: Makefile
+$(TOOL_MDSPELL): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1
 endif
 
 .PHONY: docs-spellcheck
-docs-spellcheck: /usr/local/bin/mdspell docs/metrics.md
+docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
 
-/usr/local/bin/markdown-link-check:
+$(TOOL_MARKDOWN_LINK_CHECK): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdown-link-check@3.11.1 > /dev/null || npm i -g markdown-link-check@3.11.1
 endif
 
 .PHONY: docs-linkcheck
-docs-linkcheck: /usr/local/bin/markdown-link-check
+docs-linkcheck: $(TOOL_MARKDOWN_LINK_CHECK)
 	# check docs for broken links
-	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
+	$(TOOL_MARKDOWN_LINK_CHECK) -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
 
-/usr/local/bin/markdownlint:
+$(TOOL_MARKDOWNLINT): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdownlint-cli@0.33.0 > /dev/null || npm i -g markdownlint-cli@0.33.0
@@ -741,18 +763,19 @@ endif
 
 
 .PHONY: docs-lint
-docs-lint: /usr/local/bin/markdownlint docs/metrics.md
+docs-lint: $(TOOL_MARKDOWNLINT) docs/metrics.md
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md
 
-/usr/local/bin/mkdocs:
+$(TOOL_MKDOCS): docs/requirements.txt
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	python -m pip install --no-cache-dir -r docs/requirements.txt
+	python3 -m venv $(TOOL_MKDOCS_DIR)
+	$(TOOL_MKDOCS_DIR)/bin/pip install --no-cache-dir -r $<
 endif
 
 .PHONY: docs
-docs: /usr/local/bin/mkdocs \
+docs: $(TOOL_MKDOCS) \
 	docs-spellcheck \
 	docs-lint \
 	# TODO: This is temporarily disabled to unblock merging PRs.
@@ -762,13 +785,16 @@ docs: /usr/local/bin/mkdocs \
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
-	TZ=UTC mkdocs build --strict
+ifeq ($(shell echo $(GIT_BRANCH) | head -c 8),release-)
+	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
+endif
+	TZ=UTC $(TOOL_MKDOCS) build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
 .PHONY: docs-serve
 docs-serve: docs
-	mkdocs serve
+	$(TOOL_MKDOCS) serve
 
 # pre-commit checks
 

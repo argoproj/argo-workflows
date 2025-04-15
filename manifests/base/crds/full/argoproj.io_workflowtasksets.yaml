@@ -6433,9 +6433,6 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     podSpecPatch:
                       type: string
-                    priority:
-                      format: int32
-                      type: integer
                     priorityClassName:
                       type: string
                     resource:
@@ -7767,6 +7764,8 @@ spec:
                         runAsUser:
                           format: int64
                           type: integer
+                        seLinuxChangePolicy:
+                          type: string
                         seLinuxOptions:
                           properties:
                             level:

@@ -177,7 +177,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		node, err := woc.wf.Status.Nodes.Get(artifactSearchResult.NodeID)
 		if err != nil {
 			woc.log.Errorf("Was unable to obtain node for %s", artifactSearchResult.NodeID)
-			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status??", strategy, artifactSearchResult.NodeID)
+			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status", strategy, artifactSearchResult.NodeID)
 		}
 		templateName := util.GetTemplateFromNode(*node)
 		if templateName == "" {
@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if !found {
 			template = woc.wf.GetTemplateByName(templateName)
 			if template == nil {
-				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found??", strategy, templateName, node)
+				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found", strategy, templateName, node)
 			}
 			templatesByName[templateName] = template
 		}
@@ -219,7 +219,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			// create the pod
 			podAccessInfo, found := podNames[podName]
 			if !found {
-				return fmt.Errorf("can't find podInfo for podName %q??", podName)
+				return fmt.Errorf("can't find podInfo for podName %q", podName)
 			}
 
 			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName, templatesToArtList, templatesByName)
@@ -401,7 +401,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	for templateName, artifacts := range templatesToArtList {
 		template, found := templatesByName[templateName]
 		if !found {
-			return nil, fmt.Errorf("can't find template with name %s???", templateName)
+			return nil, fmt.Errorf("can't find template with name %q", templateName)
 		}
 
 		if template.ArchiveLocation.HasLocation() {
@@ -503,7 +503,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 // go through any GC pods that are already running and may have completed
 func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
 	// check if any previous Artifact GC Pods completed
-	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
+	pods, err := woc.controller.PodController.GetPodsByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}

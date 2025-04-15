@@ -1326,7 +1326,8 @@ kind: CronWorkflow
 metadata:
   name: example-integers
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowSpec:
     entrypoint: whalesay
     templates:
@@ -3910,4 +3911,269 @@ func TestNestedDAG(t *testing.T) {
 		}
 	}
 
+}
+
+const onExitPanic = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-02-11T05:25:47Z"
+  generateName: exit-handlers-
+  generation: 21
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: exit-handlers-n7s4n
+  namespace: argo
+  resourceVersion: "2255"
+  uid: 7b2f1451-9a9a-4f66-a0d9-0364f814d948
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - echo intentional failure; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: intentional-fail
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: notify
+        template: send-email
+      - arguments: {}
+        name: celebrate
+        template: celebrate
+        when: '{{workflow.status}} == Succeeded'
+      - arguments: {}
+        name: cry
+        template: cry
+        when: '{{workflow.status}} != Succeeded'
+  - container:
+      args:
+      - 'echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}.
+        Failed steps {{workflow.failures}}'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: send-email
+    outputs: {}
+  - container:
+      args:
+      - echo hooray!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: celebrate
+    outputs: {}
+  - container:
+      args:
+      - echo boohoo!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: cry
+    outputs: {}
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2025-02-11T05:31:30Z"
+  message: 'main: Error (exit code 1)'
+  nodes:
+    exit-handlers-n7s4n:
+      displayName: exit-handlers-n7s4n
+      finishedAt: "2025-02-11T05:31:18Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n
+      message: 'main: Error (exit code 1)'
+      name: exit-handlers-n7s4n
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 4
+      startedAt: "2025-02-11T05:31:12Z"
+      templateName: intentional-fail
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+    exit-handlers-n7s4n-134905866:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: celebrate
+      finishedAt: "2025-02-11T05:31:21Z"
+      id: exit-handlers-n7s4n-134905866
+      message: when 'Failed == Succeeded' evaluated false
+      name: exit-handlers-n7s4n.onExit[0].celebrate
+      nodeFlag: {}
+      phase: Skipped
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: celebrate
+      templateScope: local/exit-handlers-n7s4n
+      type: Skipped
+    exit-handlers-n7s4n-975057257:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      children:
+      - exit-handlers-n7s4n-3201878844
+      - exit-handlers-n7s4n-134905866
+      - exit-handlers-n7s4n-2699669595
+      displayName: '[0]'
+      finishedAt: "2025-02-11T05:31:30Z"
+      id: exit-handlers-n7s4n-975057257
+      name: exit-handlers-n7s4n.onExit[0]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-02-11T05:31:21Z"
+      templateScope: local/exit-handlers-n7s4n
+      type: StepGroup
+    exit-handlers-n7s4n-1410405845:
+      children:
+      - exit-handlers-n7s4n-975057257
+      displayName: exit-handlers-n7s4n.onExit
+      finishedAt: "2025-02-11T05:31:30Z"
+      id: exit-handlers-n7s4n-1410405845
+      name: exit-handlers-n7s4n.onExit
+      nodeFlag:
+        hooked: true
+      outboundNodes:
+      - exit-handlers-n7s4n-3201878844
+      - exit-handlers-n7s4n-134905866
+      - exit-handlers-n7s4n-2699669595
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: exit-handler
+      templateScope: local/exit-handlers-n7s4n
+      type: Steps
+    exit-handlers-n7s4n-2699669595:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: cry
+      finishedAt: "2025-02-11T05:31:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n-2699669595
+      name: exit-handlers-n7s4n.onExit[0].cry
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n-cry-2699669595/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: cry
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+    exit-handlers-n7s4n-3201878844:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: notify
+      finishedAt: "2025-02-11T05:31:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n-3201878844
+      name: exit-handlers-n7s4n.onExit[0].notify
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n-send-email-3201878844/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: send-email
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+  phase: Failed
+  progress: 2/3
+  resourcesDuration:
+    cpu: 0
+    memory: 10
+  startedAt: "2025-02-11T05:31:12Z"
+  taskResultsCompletionStatus:
+    exit-handlers-n7s4n: true
+    exit-handlers-n7s4n-2699669595: true
+    exit-handlers-n7s4n-3201878844: true
+`
+
+func TestRegressions(t *testing.T) {
+	t.Run("exit handler", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(onExitPanic)
+		newWf, _, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
+		require.NoError(t, err)
+		// we can't really handle exit handlers granually yet
+		assert.Empty(t, newWf.Status.Nodes)
+	})
 }

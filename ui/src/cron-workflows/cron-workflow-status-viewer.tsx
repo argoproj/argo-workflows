@@ -19,22 +19,12 @@ export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec
                     {title: 'Active', value: status.active ? getCronWorkflowActiveWorkflowList(status.active) : <i>No Workflows Active</i>},
                     {
                         title: 'Schedules',
-                        value: (
+                        value: spec.schedules.map(schedule => (
                             <>
-                                {(spec.schedule ?? '') != '' ? (
-                                    <>
-                                        <code>{spec.schedule}</code> <PrettySchedule schedule={spec.schedule} />
-                                    </>
-                                ) : (
-                                    spec.schedules.map(schedule => (
-                                        <>
-                                            <code>{schedule}</code> <PrettySchedule schedule={schedule} />
-                                            <br />
-                                        </>
-                                    ))
-                                )}
+                                <code>{schedule}</code> <PrettySchedule schedule={schedule} />
+                                <br />
                             </>
-                        )
+                        ))
                     },
                     {title: 'Last Scheduled Time', value: <Timestamp date={status.lastScheduledTime} timestampKey={TIMESTAMP_KEYS.CRON_WORKFLOW_STATUS_LAST_SCHEDULED} />},
                     {title: 'Conditions', value: <ConditionsPanel conditions={status.conditions} />}
