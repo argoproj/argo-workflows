@@ -993,6 +993,9 @@ message Mutex {
 
   // Namespace is the namespace of the mutex, default: [namespace of workflow]
   optional string namespace = 2;
+
+  // Database specifies this is database controlled if this is set true
+  optional bool database = 3;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -1484,11 +1487,14 @@ message SemaphoreHolding {
 
 // SemaphoreRef is a reference of Semaphore
 message SemaphoreRef {
-  // ConfigMapKeyRef is configmap selector for Semaphore configuration
+  // ConfigMapKeyRef is a configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
 
   // Namespace is the namespace of the configmap, default: [namespace of workflow]
   optional string namespace = 2;
+
+  // SyncDatabaseRef is a database reference for Semaphore configuration
+  optional SyncDatabaseRef database = 3;
 }
 
 message SemaphoreStatus {
@@ -1581,6 +1587,10 @@ message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
   // Could also be a Duration, e.g.: "2m", "6h"
   optional string duration = 1;
+}
+
+message SyncDatabaseRef {
+  optional string key = 1;
 }
 
 // Synchronization holds synchronization lock configuration
