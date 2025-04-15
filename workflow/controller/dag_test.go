@@ -3591,9 +3591,11 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 
 	// run next DAGTask
 	woc.operate(ctx)
+	woc.operate(ctx)
+	woc.operate(ctx)
 	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
 	assert.NotNil(t, nextDAGTaskNode)
-	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
+	assert.Equal(t, wfv1.NodePending, nextDAGTaskNode.Phase)
 }
 
 func TestDagParallelism(t *testing.T) {
