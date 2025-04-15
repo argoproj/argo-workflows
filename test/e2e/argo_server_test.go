@@ -182,7 +182,7 @@ spec:
 			s.e().
 				POST("/api/v1/events/argo/").
 				WithHeader("X-Github-Event", "push").
-				WithHeader("X-Hub-Signature-256", "sha1=c09e61386e81c2669e015049350500448148205c").
+				WithHeader("X-Hub-Signature-256", "sha256=323b66bd8d05fc4ee07c06c999097af9a462b551a04ba0860d6fb3fdc521a558").
 				WithBytes(data).
 				Expect().
 				Status(200)

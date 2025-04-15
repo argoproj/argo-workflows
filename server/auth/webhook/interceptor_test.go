@@ -60,7 +60,7 @@ func TestInterceptor(t *testing.T) {
 	t.Run("Github", func(t *testing.T) {
 		r, _ := intercept("POST", "/api/v1/events/my-ns/my-d", map[string]string{
 			"X-Github-Event":      "push",
-			"X-Hub-Signature-256": "00000ba880174336fbe22d4723a67ba5c4c356ec9c696",
+			"X-Hub-Signature-256": "sha256=323b66bd8d05fc4ee07c06c999097af9a462b551a04ba0860d6fb3fdc521a558",
 		})
 		assert.Equal(t, []string{"Bearer my-github-token"}, r.Header["Authorization"])
 	})
