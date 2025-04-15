@@ -228,7 +228,7 @@ func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cm
 	command := exec.Command(name, args...)
 	command.Env = os.Environ()
 
-	var closer func() = func() {}
+	var closer = func() {}
 	var stdout io.Writer = os.Stdout
 	var stderr io.Writer = os.Stderr
 

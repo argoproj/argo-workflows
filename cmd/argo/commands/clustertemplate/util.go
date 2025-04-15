@@ -57,7 +57,7 @@ func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.Clus
 func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt string) {
 	switch outFmt {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -73,6 +73,6 @@ func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt strin
 
 func printClusterWorkflowTemplateHelper(wf *wfv1.ClusterWorkflowTemplate) {
 	const fmtStr = "%-20s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+	fmt.Printf(fmtStr, "Name:", wf.Name)
+	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.CreationTimestamp.Time))
 }
