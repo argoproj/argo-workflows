@@ -26,7 +26,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	workflowserver "github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	workflowstore "github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -34,7 +33,7 @@ import (
 
 var (
 	argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-	NoArgoServerErr               = fmt.Errorf("this is impossible if you are not using the Argo Server, see %s", help.CLI())
+	ErrNoArgoServer               = fmt.Errorf("this is impossible if you are not using the Argo Server, see %s", help.CLI())
 )
 
 type ArgoKubeOpts struct {
@@ -58,8 +57,8 @@ type argoKubeClient struct {
 	wfClient          workflow.Interface
 	wfTmplStore       types.WorkflowTemplateStore
 	cwfTmplStore      types.ClusterWorkflowTemplateStore
-	wfLister          workflowstore.WorkflowLister
-	wfStore           workflowstore.WorkflowStore
+	wfLister          store.WorkflowLister
+	wfStore           store.WorkflowStore
 }
 
 var _ Client = &argoKubeClient{}
@@ -166,11 +165,11 @@ func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.Wo
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 func (a *argoKubeClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, error) {

@@ -106,7 +106,7 @@ func TestSingleDependency(t *testing.T) {
 		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+		wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
