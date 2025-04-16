@@ -27,29 +27,29 @@ func (o OfflineCronWorkflowServiceClient) LintCronWorkflow(ctx context.Context, 
 }
 
 func (o OfflineCronWorkflowServiceClient) CreateCronWorkflow(ctx context.Context, req *cronworkflow.CreateCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineCronWorkflowServiceClient) ListCronWorkflows(ctx context.Context, req *cronworkflow.ListCronWorkflowsRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflowList, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineCronWorkflowServiceClient) GetCronWorkflow(ctx context.Context, req *cronworkflow.GetCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineCronWorkflowServiceClient) UpdateCronWorkflow(ctx context.Context, req *cronworkflow.UpdateCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineCronWorkflowServiceClient) DeleteCronWorkflow(ctx context.Context, req *cronworkflow.DeleteCronWorkflowRequest, _ ...grpc.CallOption) (*cronworkflow.CronWorkflowDeletedResponse, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineCronWorkflowServiceClient) ResumeCronWorkflow(ctx context.Context, req *cronworkflow.CronWorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineCronWorkflowServiceClient) SuspendCronWorkflow(ctx context.Context, req *cronworkflow.CronWorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }

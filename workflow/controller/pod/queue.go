@@ -39,7 +39,7 @@ func (c *Controller) getPodCleanupPatch(pod *apiv1.Pod, labelPodCompleted bool) 
 			func(s string) bool { return s == common.FinalizerPodStatus })
 		if len(finalizers) != len(pod.Finalizers) {
 			un.SetFinalizers(finalizers)
-			un.SetResourceVersion(pod.ObjectMeta.ResourceVersion)
+			un.SetResourceVersion(pod.ResourceVersion)
 		}
 	}
 
