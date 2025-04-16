@@ -64,13 +64,17 @@ func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wf
 				Name:         templateName,
 				ClusterScope: clusterScope,
 			},
+			PodMetadata: &wfv1.Metadata{
+				Labels: map[string]string{},
+			},
 		},
 	}
-
 	if clusterScope {
 		wf.Labels[LabelKeyClusterWorkflowTemplate] = templateName
+		wf.Spec.PodMetadata.Labels[LabelKeyClusterWorkflowTemplate] = templateName
 	} else {
 		wf.Labels[LabelKeyWorkflowTemplate] = templateName
+		wf.Spec.PodMetadata.Labels[LabelKeyWorkflowTemplate] = templateName
 	}
 	return wf
 }
@@ -90,6 +94,16 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 	}
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
+	if wf.Spec.PodMetadata == nil {
+		podMetaData := &wfv1.Metadata{
+			Labels: map[string]string{
+				LabelKeyCronWorkflow: cronWf.Name,
+			},
+		}
+		wf.Spec.PodMetadata = podMetaData
+	} else {
+		wf.Spec.PodMetadata.Labels[LabelKeyCronWorkflow] = cronWf.Name
+	}
 	if cronWf.Spec.WorkflowMetadata != nil {
 		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
 			wf.Labels[key] = label

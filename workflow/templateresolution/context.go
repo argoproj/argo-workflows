@@ -236,6 +236,18 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder)
 		return nil, nil, false, fmt.Errorf("template '%s' type is unknown", tmpl.Name)
 	}
 
+	templateRef := tmplHolder.GetTemplateRef()
+	if templateRef != nil {
+		if tmpl.Metadata.Labels == nil {
+			tmpl.Metadata.Labels = make(map[string]string)
+		}
+		if templateRef.ClusterScope {
+			tmpl.Metadata.Labels[common.LabelKeyClusterWorkflowTemplate] = templateRef.Name
+		} else {
+			tmpl.Metadata.Labels[common.LabelKeyWorkflowTemplate] = templateRef.Name
+		}
+	}
+
 	return newTmplCtx, tmpl, templateStored, nil
 }
 
