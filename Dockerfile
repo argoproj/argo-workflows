@@ -101,7 +101,7 @@ COPY --chown=8737 --from=workflow-controller-build /go/src/github.com/argoproj/a
 
 ENTRYPOINT [ "workflow-controller" ]
 
-####################################################################################################
+#####################################################################################################
 
 FROM gcr.io/distroless/static as argocli
 
