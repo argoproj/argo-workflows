@@ -1356,6 +1356,14 @@ func (s *FunctionalSuite) TestWithItemsWithHooks() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *FunctionalSuite) TestWithItemsWithArtifactRepositoryRef() {
+	s.Given().
+		Workflow("@smoke/with-items-with-artifact-repo-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 // when you terminate a workflow with onexit handler,
 // then the onexit handler should fail along with steps and stepsGroup
 func (s *FunctionalSuite) TestTerminateWorkflowWhileOnExitHandlerRunning() {
