@@ -10,8 +10,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
-	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
-	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	eventsource "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

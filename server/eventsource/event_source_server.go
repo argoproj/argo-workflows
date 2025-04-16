@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
-	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
+	esv1 "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1"
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
