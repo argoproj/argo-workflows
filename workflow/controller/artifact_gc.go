@@ -642,7 +642,7 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask
 		// find this node result in the Workflow Status
 		wfNode, err := woc.wf.Status.Nodes.Get(nodeName)
 		if err != nil {
-			woc.log.Errorf("Was unable to obtain node for %s", nodeName)
+			woc.log.Errorf("Was unable to obtain node for %s (processCompletedWorkflowArtifactGCTask)", nodeName)
 			return false, fmt.Errorf("node named %q returned by WorkflowArtifactGCTask %q wasn't found in Workflow %q Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
 		if wfNode.Outputs == nil {
