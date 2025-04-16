@@ -2,6 +2,8 @@
 
 To try out Argo Workflows, you can install it and run example workflows.
 
+This is a test of pull request previews.
+
 Alternatively, if you don't want to set up a Kubernetes cluster, try the [Killercoda course](training.md#hands-on).
 
 ## Prerequisites
