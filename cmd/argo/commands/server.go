@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
-	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	eventsource "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
-	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	eventsource "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
