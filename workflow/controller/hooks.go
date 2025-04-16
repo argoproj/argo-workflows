@@ -19,7 +19,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
-		hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
+		hookNodeName := generateLifeHookNodeName(woc.wf.Name, string(hookName))
 		// To check a node was triggered.
 		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {

@@ -118,7 +118,7 @@ func nsFromObj(obj interface{}) (*apiv1.Namespace, error) {
 func limitChanged(old *apiv1.Namespace, newNS *apiv1.Namespace) bool {
 	oldLimit := old.GetLabels()[common.LabelParallelismLimit]
 	newLimit := newNS.GetLabels()[common.LabelParallelismLimit]
-	return !(oldLimit == newLimit)
+	return oldLimit != newLimit
 }
 
 func extractLimit(ns *apiv1.Namespace) (int, error) {

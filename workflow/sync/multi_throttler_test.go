@@ -129,7 +129,7 @@ status:
 	assert.False(t, throttler.Admit("default/d"))
 
 	throttler.Remove("default/a")
-	assert.Equal(t, "", queuedKey)
+	assert.Empty(t, queuedKey)
 	assert.False(t, throttler.Admit("default/c"))
 	assert.False(t, throttler.Admit("default/d"))
 

@@ -1119,7 +1119,7 @@ spec:
 
 	// Make job-1's pod succeed
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod, _ *wfOperationCtx) {
-		if pod.ObjectMeta.Name == "job-1" {
+		if pod.Name == "job-1" {
 			pod.Status.Phase = apiv1.PodSucceeded
 		}
 	})

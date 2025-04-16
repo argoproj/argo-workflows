@@ -30,7 +30,7 @@ func (s *CronSuite) TearDownSubTest() {
 	//    time="2025-02-23T06:11:00.023Z" level=info msg="Workflow processing has been postponed due to max parallelism limit" key=argo/test-cron-wf-succeed-1-1740291060
 	//    time="2025-02-23T06:11:00.023Z" level=info msg="Updated phase  -> Pending" namespace=argo workflow=test-cron-wf-succeed-1-1740291060
 	//    time="2025-02-23T06:11:00.023Z" level=info msg="Updated message  -> Workflow processing has been postponed because too many workflows are already running" namespace=argo workflow=test-cron-wf-succeed-1-1740291060
-	s.E2ESuite.DeleteResources()
+	s.DeleteResources()
 }
 
 func (s *CronSuite) TestBasic() {

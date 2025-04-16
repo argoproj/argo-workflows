@@ -212,7 +212,7 @@ func (t *Then) ExpectPVCDeleted() *Then {
 			return t
 		default:
 			num := len(t.wf.Status.PersistentVolumeClaims)
-			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.ObjectMeta.Namespace)
+			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.Namespace)
 			for _, p := range t.wf.Status.PersistentVolumeClaims {
 				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
 				if err == nil {

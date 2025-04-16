@@ -9,8 +9,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -142,7 +140,7 @@ func (c *Controller) GetPodPhaseMetrics() map[string]int64 {
 }
 
 // Check if owned pod's workflow no longer exists or workflow is in deletion
-func (c *Controller) podOrphaned(pod *v1.Pod) bool {
+func (c *Controller) podOrphaned(pod *apiv1.Pod) bool {
 	controllerRef := metav1.GetControllerOf(pod)
 	// Pod had no owner
 	if controllerRef == nil ||
@@ -171,8 +169,8 @@ func (c *Controller) podOrphaned(pod *v1.Pod) bool {
 	return wf.DeletionTimestamp != nil
 }
 
-func podGCFromPod(pod *v1.Pod) wfv1.PodGC {
-	if val, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
+func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
+	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
 		parts := strings.Split(val, "/")
 		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(parts[0]), DeleteDelayDuration: parts[1]}
 	}
@@ -180,7 +178,7 @@ func podGCFromPod(pod *v1.Pod) wfv1.PodGC {
 }
 
 // Returns time.IsZero if no last transition
-func podLastTransition(pod *v1.Pod) time.Time {
+func podLastTransition(pod *apiv1.Pod) time.Time {
 	lastTransition := time.Time{}
 	for _, condition := range pod.Status.Conditions {
 		if condition.LastTransitionTime.After(lastTransition) {
@@ -191,7 +189,7 @@ func podLastTransition(pod *v1.Pod) time.Time {
 }
 
 // A common handler for
-func (c *Controller) commonPodEvent(pod *v1.Pod, deleting bool) {
+func (c *Controller) commonPodEvent(pod *apiv1.Pod, deleting bool) {
 	// All pods here are not marked completed
 	action := noAction
 	minimumDelay := time.Duration(0)
@@ -237,7 +235,7 @@ func (c *Controller) commonPodEvent(pod *v1.Pod, deleting bool) {
 	}
 }
 
-func (c *Controller) addPodEvent(pod *v1.Pod) {
+func (c *Controller) addPodEvent(pod *apiv1.Pod) {
 	c.log.WithField("pod", pod.Name).Info("add pod event")
 	err := c.callBack(pod)
 	if err != nil {
@@ -246,7 +244,7 @@ func (c *Controller) addPodEvent(pod *v1.Pod) {
 	c.commonPodEvent(pod, false)
 }
 
-func (c *Controller) updatePodEvent(old *v1.Pod, new *v1.Pod) {
+func (c *Controller) updatePodEvent(old *apiv1.Pod, new *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
 	c.log.WithField("pod", old.Name).Info("update pod event")
 	err := c.callBack(new)
@@ -256,7 +254,6 @@ func (c *Controller) updatePodEvent(old *v1.Pod, new *v1.Pod) {
 	c.commonPodEvent(new, false)
 }
 
-// func (c *Controller) deletePodEvent(pod *v1.Pod) {
 func (c *Controller) deletePodEvent(obj interface{}) {
 	pod, err := podFromObj(obj)
 	if err != nil {

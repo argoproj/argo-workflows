@@ -60,7 +60,7 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *cronWfOperationCtx {
 	return &cronWfOperationCtx{
-		name:            cronWorkflow.ObjectMeta.Name,
+		name:            cronWorkflow.Name,
 		cronWf:          cronWorkflow,
 		wfClientset:     wfClientset,
 		wfClient:        wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
@@ -69,8 +69,8 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
 		log: log.WithFields(log.Fields{
-			"workflow":  cronWorkflow.ObjectMeta.Name,
-			"namespace": cronWorkflow.ObjectMeta.Namespace,
+			"workflow":  cronWorkflow.Name,
+			"namespace": cronWorkflow.Namespace,
 		}),
 		metrics: metrics,
 		// inferScheduledTime returns an inferred scheduled time based on the current time and only works if it is called
@@ -120,7 +120,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 		return
 	}
 
-	woc.metrics.CronWfTrigger(ctx, woc.name, woc.cronWf.ObjectMeta.Namespace)
+	woc.metrics.CronWfTrigger(ctx, woc.name, woc.cronWf.Namespace)
 
 	wf := common.ConvertCronWorkflowToWorkflowWithProperties(woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
 
@@ -141,7 +141,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 }
 
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
-	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
+	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
 	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
 	if err != nil {
@@ -264,13 +264,13 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 			// Do nothing
 		case v1alpha1.ForbidConcurrent:
 			if len(woc.cronWf.Status.Active) > 0 {
-				woc.metrics.CronWfPolicy(ctx, woc.name, woc.cronWf.ObjectMeta.Namespace, v1alpha1.ForbidConcurrent)
+				woc.metrics.CronWfPolicy(ctx, woc.name, woc.cronWf.Namespace, v1alpha1.ForbidConcurrent)
 				woc.log.Infof("%s has 'ConcurrencyPolicy: Forbid' and has an active Workflow so it was not run", woc.name)
 				return false, nil
 			}
 		case v1alpha1.ReplaceConcurrent:
 			if len(woc.cronWf.Status.Active) > 0 {
-				woc.metrics.CronWfPolicy(ctx, woc.name, woc.cronWf.ObjectMeta.Namespace, v1alpha1.ReplaceConcurrent)
+				woc.metrics.CronWfPolicy(ctx, woc.name, woc.cronWf.Namespace, v1alpha1.ReplaceConcurrent)
 				woc.log.Infof("%s has 'ConcurrencyPolicy: Replace' and has active Workflows", woc.name)
 				err := woc.terminateOutstandingWorkflows(ctx)
 				if err != nil {
@@ -449,7 +449,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 	}
 
 	sort.SliceStable(jobList, func(i, j int) bool {
-		return jobList[i].Status.FinishedAt.Time.After(jobList[j].Status.FinishedAt.Time)
+		return jobList[i].Status.FinishedAt.After(jobList[j].Status.FinishedAt.Time)
 	})
 
 	for _, wf := range jobList[workflowsToKeep:] {

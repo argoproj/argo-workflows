@@ -201,10 +201,10 @@ const backfillWf = `{
 func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, scheTime []string, wfClient workflow.WorkflowServiceClient, cliOps backfillOpts) error {
 	var monitorWfObj v1alpha1.Workflow
 	err := json.Unmarshal([]byte(backfillWf), &monitorWfObj)
-	if monitorWfObj.ObjectMeta.Labels == nil {
-		monitorWfObj.ObjectMeta.Labels = make(map[string]string)
+	if monitorWfObj.Labels == nil {
+		monitorWfObj.Labels = make(map[string]string)
 	}
-	monitorWfObj.ObjectMeta.Labels[common.LabelKeyCronWorkflowBackfill] = cronWFName
+	monitorWfObj.Labels[common.LabelKeyCronWorkflowBackfill] = cronWFName
 	if err != nil {
 		return err
 	}

@@ -759,7 +759,7 @@ func getLatestWorkflow(ctx context.Context, wfClient versioned.Interface, namesp
 	}
 	latest := wfList.Items[0]
 	for _, wf := range wfList.Items {
-		if latest.ObjectMeta.CreationTimestamp.Before(&wf.ObjectMeta.CreationTimestamp) {
+		if latest.CreationTimestamp.Before(&wf.CreationTimestamp) {
 			latest = wf
 		}
 	}
