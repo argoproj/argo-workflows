@@ -110,7 +110,7 @@ spec:
 		for _, pod := range pods.Items {
 			assert.NotNil(t, pod)
 			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-			assert.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
+			assert.Equal(t, "testID", pod.Labels[common.LabelKeyControllerInstanceID])
 		}
 	})
 }

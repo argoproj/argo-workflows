@@ -36,7 +36,7 @@ func TestInterceptor(t *testing.T) {
 		assert.Empty(t, r.Header["Authorization"])
 		// we check the status code here - because we get a 403
 		assert.Equal(t, 403, w.Code)
-		assert.Equal(t, `{"message": "failed to process webhook request"}`, w.Body.String())
+		assert.JSONEq(t, `{"message": "failed to process webhook request"}`, w.Body.String())
 	})
 	t.Run("NoDiscriminator", func(t *testing.T) {
 		r, _ := intercept("POST", "/api/v1/events/my-ns/", nil)
