@@ -93,7 +93,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		if !isDuplicateKeyError(err) {
 			return "", err
 		}
-		logCtx.WithField("err", err).Info("Ignoring duplicate key error")
+		logCtx.WithField("err", err).Debug("Ignoring duplicate key error")
 	}
 	// Don't need to clean up the old records here, we have a scheduled cleanup mechanism.
 	// If we clean them up here, when we update, if there is an update conflict, we will not be able to go back.
