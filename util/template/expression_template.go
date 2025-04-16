@@ -40,6 +40,17 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
+	if (hasVariableInExpression(unmarshalledExpression, "lastRetry.exitCode") && !hasVarInEnv(env, "lastRetry.exitCode") ||
+		hasVariableInExpression(unmarshalledExpression, "lastRetry.status") && !hasVarInEnv(env, "lastRetry.status") ||
+		hasVariableInExpression(unmarshalledExpression, "lastRetry.duration") && !hasVarInEnv(env, "lastRetry.duration") ||
+		hasVariableInExpression(unmarshalledExpression, "lastRetry.message") && !hasVarInEnv(env, "lastRetry.message")) &&
+		allowUnresolved {
+		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
+		// when they don't exist in the env.
+		log.WithError(err).Debug("LastRetry variables are present and unresolved is allowed")
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+
 	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
 	// when `workflow.status` and `workflow.failures` don't exist in the env.
 	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
@@ -108,6 +119,24 @@ func hasRetries(expression string) bool {
 	}
 	for _, token := range tokens {
 		if token.Kind == lexer.Identifier && token.Value == "retries" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasVariableInExpression(expression, variable string) bool {
+	if !strings.Contains(expression, variable) {
+		return false
+	}
+	// Even if the expression contains `<variable>`, it could be the case that it represents a string (`"<variable>"`),
+	// not a variable, so we need to parse it and handle filter the string case.
+	tokens, err := lexer.Lex(file.NewSource(expression))
+	if err != nil {
+		return false
+	}
+	for i := 0; i < len(tokens)-2; i++ {
+		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == variable {
 			return true
 		}
 	}
