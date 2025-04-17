@@ -15,4 +15,4 @@
 | [Pull Request Build Status](https://github.com/LinuxSuRen/gogit) | Send build status of pull request to Git provider |
 | [Atomic Workflow Plugin](https://github.com/LinuxSuRen/argo-workflow-atomic-plugin) | Stop the workflows which comes from the same `WorkflowTemplate` and have the same parameters |
 | [AWS Plugin](https://github.com/greenpau/argo-workflows-aws-plugin) | Argo Workflows Executor Plugin for AWS Services, e.g. SageMaker Pipelines, Glue, etc. |
-| [Pytorch Job Plugin](https://github.com/shuangkun/argo-workflows-pytorch-plugin) | Argo Workflows Executor Plugin for Pytorch Job |
+| [Train Job Plugin](https://github.com/shuangkun/argo-workflows-pytorch-plugin) | Argo Workflows Executor Plugin for Train Job. |
