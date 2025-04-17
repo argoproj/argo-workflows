@@ -298,7 +298,7 @@ swagger: \
 $(GOPATH)/bin/mockery: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/vektra/mockery/v2@v2.42.2
+	go install github.com/vektra/mockery/v2@v2.53.3
 endif
 $(GOPATH)/bin/controller-gen: Makefile
 # update this in Nix when upgrading it here
