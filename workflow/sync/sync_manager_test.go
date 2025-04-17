@@ -649,8 +649,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 		assert.Equal(t, 10, semaphore.getLimit())
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
+		mockedNow = mockedNow.Add(1 * time.Second)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
@@ -675,8 +674,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 		assert.Equal(t, 10, semaphore.getLimit())
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
+		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -738,8 +736,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
 		assert.Equal(t, 10, semaphore.getLimit())
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
+		mockedNow = mockedNow.Add(1 * time.Second)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
@@ -764,8 +761,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
 		assert.Equal(t, 10, semaphore.getLimit())
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1 * time.Second)
+		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)

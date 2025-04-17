@@ -149,3 +149,17 @@ func (ln *lockName) validateEncoding(encoding string) string {
 func (ln *lockName) dbKey() string {
 	return fmt.Sprintf("%s/%s", ln.Namespace, ln.ResourceName)
 }
+
+func needDBSession(lockKeys []string) (bool, error) {
+	for _, key := range lockKeys {
+		lock, err := DecodeLockName(key)
+		if err != nil {
+			return false, err
+		}
+		switch lock.Kind {
+		case lockKindDatabase:
+			return true, nil
+		}
+	}
+	return false, nil
+}

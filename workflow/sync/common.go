@@ -1,21 +1,22 @@
 package sync
 
-import "time"
+import (
+	"time"
+
+	"github.com/upper/db/v4"
+)
 
 type semaphore interface {
-	acquire(holderKey string) bool
-	checkAcquire(holderKey string) (bool, bool, string)
-	tryAcquire(holderKey string) (bool, string)
+	acquire(holderKey string, session db.Session) bool
+	checkAcquire(holderKey string, session db.Session) (bool, bool, string)
+	tryAcquire(holderKey string, session db.Session) (bool, string)
 	release(key string) bool
-	addToQueue(holderKey string, priority int32, creationTime time.Time)
+	addToQueue(holderKey string, priority int32, creationTime time.Time, session db.Session)
 	removeFromQueue(holderKey string)
 	getCurrentHolders() []string
 	getCurrentPending() []string
 	getName() string
 	getLimit() int
-	getLimitTimestamp() time.Time
-	resetLimitTimestamp()
-	resize(n int) bool
 	probeWaiting()
 }
 

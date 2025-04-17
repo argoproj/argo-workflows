@@ -14,12 +14,14 @@ import (
 )
 
 // semaphoreFactory is a function that creates a semaphore for testing
-type semaphoreFactory func(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, func())
+type semaphoreFactory func(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func())
 
 // createTestInternalSemaphore creates an in-memory semaphore for testing
-func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, func()) {
+func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
-	return newInternalSemaphore(name, limit, nextWorkflow, lockTypeSemaphore), func() {}
+	sem, err := newInternalSemaphore(name, nextWorkflow, func(_ string) (int, error) { return limit, nil }, 0)
+	require.NoError(t, err)
+	return sem, nil, func() {}
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
@@ -39,10 +41,10 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 }
 
 // createTestDatabaseSemaphoreForFactory creates a database-backed semaphore that conforms to the factory
-func createTestDatabaseSemaphoreForFactory(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, func()) {
+func createTestDatabaseSemaphoreForFactory(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
 	s, dbSession, _ := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow)
-	return s, func() {
+	return s, dbSession, func() {
 		dbSession.Close()
 	}
 }
@@ -117,31 +119,31 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
 	nextWorkflow := func(key string) {}
 
-	s, cleanup := factory(t, "bar", "default", 2, nextWorkflow)
+	s, dbSession, cleanup := factory(t, "bar", "default", 2, nextWorkflow)
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("default/wf-01", 0, now)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
+	s.addToQueue("default/wf-01", 0, now, dbSession)
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second), dbSession)
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), dbSession)
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), dbSession)
 
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
-	acquired, _ = s.tryAcquire("default/wf-04")
+	acquired, _ = s.tryAcquire("default/wf-04", dbSession)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-03")
+	acquired, _ = s.tryAcquire("default/wf-03", dbSession)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-02")
+	acquired, _ = s.tryAcquire("default/wf-02", dbSession)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-01")
+	acquired, _ = s.tryAcquire("default/wf-01", dbSession)
 	assert.True(t, acquired)
 	// now that wf-01 obtained it, wf-02 can
-	acquired, _ = s.tryAcquire("default/wf-02")
+	acquired, _ = s.tryAcquire("default/wf-02", dbSession)
 	assert.True(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-03")
+	acquired, _ = s.tryAcquire("default/wf-03", dbSession)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-04")
+	acquired, _ = s.tryAcquire("default/wf-04", dbSession)
 	assert.False(t, acquired)
 }
 
@@ -162,17 +164,17 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 		notified[key] = true
 	}
 
-	s, cleanup := factory(t, "bar", "default", 3, nextWorkflow)
+	s, dbSession, cleanup := factory(t, "bar", "default", 3, nextWorkflow)
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
-	s.addToQueue("default/wf-01", 0, now)
-	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second))
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), dbSession)
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second), dbSession)
+	s.addToQueue("default/wf-01", 0, now, dbSession)
+	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second), dbSession)
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), dbSession)
 
-	acquired, _ := s.tryAcquire("default/wf-01")
+	acquired, _ := s.tryAcquire("default/wf-01", dbSession)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 2)
@@ -209,14 +211,14 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 		notified[key] = true
 	}
 
-	s, cleanup := factory(t, "bar", "foo", 2, nextWorkflow)
+	s, dbSession, cleanup := factory(t, "bar", "foo", 2, nextWorkflow)
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("foo/wf-01/nodeid-123", 0, now)
-	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second))
+	s.addToQueue("foo/wf-01/nodeid-123", 0, now, dbSession)
+	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second), dbSession)
 
-	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123")
+	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123", dbSession)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 1)

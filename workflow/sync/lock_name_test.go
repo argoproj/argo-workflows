@@ -88,3 +88,66 @@ func TestDecodeLockName(t *testing.T) {
 		})
 	}
 }
+
+func TestNeedDBSession(t *testing.T) {
+	tests := []struct {
+		name     string
+		lockKeys []string
+		want     bool
+		wantErr  bool
+	}{
+		{
+			name: "NoDatabaseLocks",
+			lockKeys: []string{
+				"default/ConfigMap/foo/bar",
+				"default/Mutex/test",
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "SingleDatabaseLock",
+			lockKeys: []string{
+				"default/Database/foo",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "MixedLockTypesWithDatabase",
+			lockKeys: []string{
+				"default/ConfigMap/foo/bar",
+				"default/Database/foo",
+				"default/Mutex/test",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "InvalidLockName",
+			lockKeys: []string{
+				"default/Invalid/foo",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:     "EmptyLockKeys",
+			lockKeys: []string{},
+			want:     false,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := needDBSession(tt.lockKeys)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equalf(t, tt.want, got, "needDBS(%v)", tt.lockKeys)
+		})
+	}
+}
