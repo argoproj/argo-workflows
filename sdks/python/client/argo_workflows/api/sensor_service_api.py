@@ -21,9 +21,9 @@ from argo_workflows.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_sensor import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_sensor_list import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SensorList
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
-from argo_workflows.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
 from argo_workflows.model.sensor_create_sensor_request import SensorCreateSensorRequest
 from argo_workflows.model.sensor_update_sensor_request import SensorUpdateSensorRequest
 from argo_workflows.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
@@ -43,7 +43,7 @@ class SensorServiceApi(object):
         self.api_client = api_client
         self.create_sensor_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1Sensor,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -189,7 +189,7 @@ class SensorServiceApi(object):
         )
         self.get_sensor_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1Sensor,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -251,7 +251,7 @@ class SensorServiceApi(object):
         )
         self.list_sensors_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1SensorList,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SensorList,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -468,7 +468,7 @@ class SensorServiceApi(object):
         )
         self.update_sensor_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1Sensor,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -679,7 +679,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1Sensor
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -848,7 +848,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1Sensor
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -937,7 +937,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1SensorList
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SensorList
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -1108,7 +1108,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1Sensor
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
                 If the method is called asynchronously, returns the request
                 thread.
         """

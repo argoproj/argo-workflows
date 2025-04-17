@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 <a name="eventSourceServiceCreateEventSource"></a>
 # **eventSourceServiceCreateEventSource**
-> IoArgoprojEventsV1alpha1EventSource eventSourceServiceCreateEventSource(namespace, body)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource eventSourceServiceCreateEventSource(namespace, body)
 
 
 
@@ -44,7 +44,7 @@ public class Example {
     String namespace = "namespace_example"; // String | 
     EventsourceCreateEventSourceRequest body = new EventsourceCreateEventSourceRequest(); // EventsourceCreateEventSourceRequest | 
     try {
-      IoArgoprojEventsV1alpha1EventSource result = apiInstance.eventSourceServiceCreateEventSource(namespace, body);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource result = apiInstance.eventSourceServiceCreateEventSource(namespace, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceCreateEventSource");
@@ -66,7 +66,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 
@@ -263,7 +263,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceGetEventSource"></a>
 # **eventSourceServiceGetEventSource**
-> IoArgoprojEventsV1alpha1EventSource eventSourceServiceGetEventSource(namespace, name)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource eventSourceServiceGetEventSource(namespace, name)
 
 
 
@@ -292,7 +292,7 @@ public class Example {
     String namespace = "namespace_example"; // String | 
     String name = "name_example"; // String | 
     try {
-      IoArgoprojEventsV1alpha1EventSource result = apiInstance.eventSourceServiceGetEventSource(namespace, name);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource result = apiInstance.eventSourceServiceGetEventSource(namespace, name);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceGetEventSource");
@@ -314,7 +314,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 
@@ -333,7 +333,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceListEventSources"></a>
 # **eventSourceServiceListEventSources**
-> IoArgoprojEventsV1alpha1EventSourceList eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents)
 
 
 
@@ -371,7 +371,7 @@ public class Example {
     String listOptionsContinue = "listOptionsContinue_example"; // String | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
     Boolean listOptionsSendInitialEvents = true; // Boolean | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional
     try {
-      IoArgoprojEventsV1alpha1EventSourceList result = apiInstance.eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList result = apiInstance.eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceListEventSources");
@@ -402,7 +402,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSourceList**](IoArgoprojEventsV1alpha1EventSourceList.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList.md)
 
 ### Authorization
 
@@ -421,7 +421,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceUpdateEventSource"></a>
 # **eventSourceServiceUpdateEventSource**
-> IoArgoprojEventsV1alpha1EventSource eventSourceServiceUpdateEventSource(namespace, name, body)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource eventSourceServiceUpdateEventSource(namespace, name, body)
 
 
 
@@ -451,7 +451,7 @@ public class Example {
     String name = "name_example"; // String | 
     EventsourceUpdateEventSourceRequest body = new EventsourceUpdateEventSourceRequest(); // EventsourceUpdateEventSourceRequest | 
     try {
-      IoArgoprojEventsV1alpha1EventSource result = apiInstance.eventSourceServiceUpdateEventSource(namespace, name, body);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource result = apiInstance.eventSourceServiceUpdateEventSource(namespace, name, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceUpdateEventSource");
@@ -474,7 +474,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 

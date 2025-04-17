@@ -23,9 +23,9 @@ from argo_workflows.model_utils import (  # noqa: F401
 )
 from argo_workflows.model.eventsource_create_event_source_request import EventsourceCreateEventSourceRequest
 from argo_workflows.model.eventsource_update_event_source_request import EventsourceUpdateEventSourceRequest
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source_list import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_list import IoArgoprojEventsV1alpha1EventSourceList
 from argo_workflows.model.stream_result_of_eventsource_event_source_watch_event import StreamResultOfEventsourceEventSourceWatchEvent
 from argo_workflows.model.stream_result_of_eventsource_log_entry import StreamResultOfEventsourceLogEntry
 
@@ -43,7 +43,7 @@ class EventSourceServiceApi(object):
         self.api_client = api_client
         self.create_event_source_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSource,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -310,7 +310,7 @@ class EventSourceServiceApi(object):
         )
         self.get_event_source_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSource,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -367,7 +367,7 @@ class EventSourceServiceApi(object):
         )
         self.list_event_sources_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSourceList,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -468,7 +468,7 @@ class EventSourceServiceApi(object):
         )
         self.update_event_source_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSource,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -679,7 +679,7 @@ class EventSourceServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1EventSource
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -938,7 +938,7 @@ class EventSourceServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1EventSource
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -1027,7 +1027,7 @@ class EventSourceServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1EventSourceList
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -1108,7 +1108,7 @@ class EventSourceServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1EventSource
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
                 If the method is called asynchronously, returns the request
                 thread.
         """
