@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**_object** | [**IoArgoprojEventsV1alpha1Sensor**](IoArgoprojEventsV1alpha1Sensor.md) |  |  [optional]
+**_object** | [**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor.md) |  |  [optional]
 **type** | **String** |  |  [optional]
 
 
