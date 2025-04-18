@@ -3,10 +3,13 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"golang.org/x/term"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
@@ -53,7 +56,43 @@ func NewLintCommand() *cobra.Command {
 	return command
 }
 
+func readStdinToTempFile() (string, error) {
+	tmpFile, err := os.CreateTemp("", "stdin_temp_*.yaml")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+
+	_, err = io.Copy(tmpFile, os.Stdin)
+	if err != nil {
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
+}
+
 func runLint(ctx context.Context, args []string, offline bool, lintKinds []string, output string, strict bool) error {
+	// Handle stdin in offline mode to prevent double-read issue
+	// (see https://github.com/argoproj/argo-workflows/issues/12819#issuecomment-2041060032)
+	if offline && !term.IsTerminal(int(os.Stdin.Fd())) {
+		var tempFile string
+		for i, OfflineFile := range args {
+			if OfflineFile == "-" {
+				// Replace stdin placeholder "-" with a temporary file path in arguments
+				file, err := readStdinToTempFile()
+				if err != nil {
+					return err
+				}
+				args[i] = file
+				tempFile = file
+				break
+			}
+		}
+		if tempFile != "" {
+			defer os.Remove(tempFile)
+		}
+	}
+
 	client.Offline = offline
 	client.OfflineFiles = args
 	ctx, apiClient, err := client.NewAPIClient(ctx)
