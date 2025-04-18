@@ -3,7 +3,6 @@
 > v3.2 and after
 
 `HTTP Template` is a type of template which can execute HTTP Requests.
-The body of the response is automatically exported into the `result` output parameter.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -43,10 +42,10 @@ spec:
         body: "test body" # Change request body
 ```
 
-## Argo Agent RBAC
+## Argo Agent
 
-HTTP and Plugin Templates use the Argo Agent, which executes the requests independently of the controller.
-The Agent and the Workflow Controller communicate through the `WorkflowTaskSet` CRD, which is created for each running `Workflow` that requires the use of the `Agent`.
+HTTP Templates use the Argo Agent, which executes the requests independently of the controller. The Agent and the Workflow
+Controller communicate through the `WorkflowTaskSet` CRD, which is created for each running `Workflow` that requires the use
+of the `Agent`.
 
-In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows.
-An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).
+In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows. An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).

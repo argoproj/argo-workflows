@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/humanize"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -33,8 +33,7 @@ var scheduledWf = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedules:
-      - '* * * * *'
+    schedule: '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -235,8 +234,7 @@ var invalidWf = `
   metadata:
     name: hello-world
   spec:
-    schedules:
-      - '* * * * *'
+    schedule: '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -288,8 +286,7 @@ metadata:
 spec:
   concurrencyPolicy: Replace
   failedJobsHistoryLimit: 4
-  schedules:
-    - 10 * * 12737123 *
+  schedule: 10 * * 12737123 *
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
@@ -369,8 +366,7 @@ metadata:
 spec:
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 1
-  schedules:
-    - 41 12 * * *
+  schedule: 41 12 * * *
   successfulJobsHistoryLimit: 1
   timezone: America/New_York
   workflowSpec:
@@ -431,8 +427,7 @@ metadata:
 spec:
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 4
-  schedules:
-    - 0-36/1 21-22 * * *
+  schedule: 0-36/1 21-22 * * *
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles

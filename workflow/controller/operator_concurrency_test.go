@@ -43,10 +43,10 @@ spec:
   templates:
     -
       synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
+        semaphore:
+          configMapKeyRef:
+            key: template
+            name: my-config
       container:
         args:
           - "hello world"
@@ -67,10 +67,10 @@ spec:
   templates:
   - name: scriptTmpl
     synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
+      semaphore:
+        configMapKeyRef:
+          key: template
+          name: my-config
     script:
       image: python:alpine3.6
       command: ["python"]
@@ -93,11 +93,11 @@ spec:
   templates:
   - name: scriptTmpl
     synchronization:
-      semaphores:
-        - namespace: other
-          configMapKeyRef:
-            key: template
-            name: my-config
+      semaphore:
+        namespace: other
+        configMapKeyRef:
+          key: template
+          name: my-config
     script:
       image: python:alpine3.6
       command: ["python"]
@@ -120,10 +120,10 @@ spec:
   templates:
   - name: resourceTmpl
     synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
+      semaphore:
+        configMapKeyRef:
+          key: template
+          name: my-config
     resource:
       action: create
       manifest: |
@@ -163,7 +163,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -224,7 +224,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -284,7 +284,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -346,7 +346,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -408,7 +408,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
@@ -451,8 +451,8 @@ spec:
 
  - name: mutex
    synchronization:
-     mutexes:
-       - name: welcome
+     mutex:
+       name: welcome
    container:
      image: alpine:3.7
      command: [sh, -c, "exit 0"]
@@ -464,7 +464,7 @@ func TestMutexInDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithMutex)
@@ -520,8 +520,8 @@ spec:
 
  - name: mutex
    synchronization:
-     mutexes:
-       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
+     mutex:
+       name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
    inputs:
      parameters:
      - name: message
@@ -536,7 +536,7 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("InterpolatedMutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithInterpolatedMutex)
@@ -584,10 +584,10 @@ spec:
     - name: whalesay
       daemon: true
       synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
+        semaphore:
+          configMapKeyRef:
+            key: template
+            name: my-config
       container:
         args:
           - "hello world"
@@ -601,7 +601,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -663,10 +663,10 @@ spec:
         name: hello1
         template: whalesay
     synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
+      semaphore:
+        configMapKeyRef:
+          key: step
+          name: my-config
   -
     container:
       args:
@@ -699,10 +699,10 @@ spec:
         name: hello1
         template: whalesay
     synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
+      semaphore:
+        configMapKeyRef:
+          key: step
+          name: my-config
   - container:
       args:
       - '{{inputs.parameters.message}}'
@@ -809,7 +809,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -872,10 +872,10 @@ spec:
         limit: 5
         retryPolicy: Always
       synchronization:
-        semaphores:
-          - configMapKeyRef:
-              name: my-config
-              key: template
+        semaphore:
+          configMapKeyRef:
+            name: my-config
+            key: template
       container:
         image: alpine:3.6
         command: [sh, -c]
@@ -886,7 +886,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -937,8 +937,8 @@ spec:
   entrypoint: whalesay
   onExit: whalesay
   synchronization:
-    mutexes:
-      - name:  test
+    mutex:
+      name:  test
   templates:
     - name: whalesay
       container:
@@ -950,14 +950,14 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), 0, func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
 	t.Run("PendingShuttingdownTerminatingWf", func(t *testing.T) {
 		// Create and acquire the lock for the first workflow
 		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
 		wf.Name = "one-terminating"
-		wf.Spec.Synchronization.Mutexes[0].Name = "terminating-test"
+		wf.Spec.Synchronization.Mutex.Name = "terminating-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -1001,7 +1001,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// Create and acquire the lock for the first workflow
 		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
 		wf.Name = "one-stopping"
-		wf.Spec.Synchronization.Mutexes[0].Name = "stopping-test"
+		wf.Spec.Synchronization.Mutex.Name = "stopping-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -1075,8 +1075,8 @@ spec:
 
     - name: sleep
       synchronization:
-        mutexes:
-          - name: mutex-example-steps-simple
+        mutex:
+          name: mutex-example-steps-simple
       inputs:
         parameters:
           - name: sleep_duration

@@ -17,18 +17,24 @@ type workflowPhaseGauge struct {
 }
 
 func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
-	err := m.CreateBuiltinInstrument(telemetry.InstrumentGauge)
+	const nameWorkflowPhaseGauge = `gauge`
+	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
+		nameWorkflowPhaseGauge,
+		"number of Workflows currently accessible by the controller by status",
+		"{workflow}",
+		telemetry.WithAsBuiltIn(),
+	)
 	if err != nil {
 		return err
 	}
 
-	name := telemetry.InstrumentGauge.Name()
 	if m.callbacks.WorkflowPhase != nil {
 		wfpGauge := workflowPhaseGauge{
 			callback: m.callbacks.WorkflowPhase,
-			gauge:    m.GetInstrument(name),
+			gauge:    m.GetInstrument(nameWorkflowPhaseGauge),
 		}
 		return wfpGauge.gauge.RegisterCallback(m.Metrics, wfpGauge.update)
+
 	}
 	return nil
 	// TODO init all phases?

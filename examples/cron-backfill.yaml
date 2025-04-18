@@ -33,8 +33,7 @@ metadata:
   name: daily-job
 spec:
   # run daily at 2am
-  schedules:
-    - "0 2 * * *"
+  schedule: "0 2 * * *"
   workflowSpec:
     workflowTemplateRef:
       name: job
