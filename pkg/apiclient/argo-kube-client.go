@@ -58,6 +58,7 @@ type argoKubeClient struct {
 	cwfTmplStore      types.ClusterWorkflowTemplateStore
 	wfLister          store.WorkflowLister
 	wfStore           store.WorkflowStore
+	namespace         string
 }
 
 var _ Client = &argoKubeClient{}
@@ -108,8 +109,9 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		opts:              opts,
 		instanceIDService: instanceIDService,
 		wfClient:          wfClient,
+		namespace:         namespace,
 	}
-	err = client.startStores(restConfig, namespace)
+	err = client.startStores(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -117,9 +119,9 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 	return ctx, client, nil
 }
 
-func (a *argoKubeClient) startStores(restConfig *restclient.Config, namespace string) error {
+func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
 	if a.opts.UseCaching {
-		wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, namespace)
+		wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, a.namespace)
 		if err != nil {
 			return err
 		}
@@ -147,7 +149,9 @@ func (a *argoKubeClient) startStores(restConfig *restclient.Config, namespace st
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, nil)}}
+	wfServer := workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	go wfServer.Run(a.opts.CachingCloseCh)
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {
