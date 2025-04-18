@@ -79,7 +79,7 @@ var bucketsOfKeys = map[string][]string{
 func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser, error) {
 	//fmt.Printf("deletethis: artifact=%+v\n", artifact)
 
-	key, err := artifact.ArtifactLocation.GetKey()
+	key, err := artifact.GetKey()
 	if err != nil {
 		return nil, err
 	}
@@ -477,7 +477,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 					// verify that the files are contained in the listing we got back
 					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))
 					for _, file := range tt.directoryFiles {
-						assert.True(t, strings.Contains(string(all), file))
+						assert.Contains(t, string(all), file)
 					}
 				} else {
 					assert.Equal(t, "my-data", string(all))
