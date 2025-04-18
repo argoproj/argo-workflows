@@ -280,6 +280,48 @@ spec:
 		})
 }
 
+// TestDependenciesContinueOnFailDag similar with TestContinueOnFailDag
+// but continueOn is set on P task, wf should be failed
+func (s *FunctionalSuite) TestDependenciesContinueOnFailDag() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: dependencies-continue-on-failed-dag-
+spec:
+  entrypoint: workflow-ignore
+  templates:
+    - name: workflow-ignore
+      dag:
+        failFast: false
+        tasks:
+          - name: F
+            template: fail
+          - name: P
+            template: pass
+            dependencies:
+              - F
+            continueOn:
+              failed: true
+
+    - name: pass
+      container:
+        image: argoproj/argosay:v2
+
+    - name: fail
+      container:
+        image: argoproj/argosay:v2
+        args: [ exit, "1" ]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("F").Phase)
+			assert.Equal(t, wfv1.NodeOmitted, status.Nodes.FindByDisplayName("P").Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 	s.Given().
 		Workflow(`@testdata/volume-claim-template-workflow.yaml`).
