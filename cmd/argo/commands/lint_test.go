@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper function to call the runLint function with the new ignoreMissing parameter
-func testRunLint(ctx context.Context, args []string, offline bool, lintKinds []string, output string, strict bool) error {
-	// Default ignoreMissing to false for backward compatibility
-	return runLint(ctx, args, offline, lintKinds, output, strict, false)
+// Helper function to call the runLint function
+func testRunLint(ctx context.Context, args []string, strict bool) error {
+	// In tests, we always use offline mode, nil for lintKinds, "pretty" for output, and false for ignoreMissing
+	return runLint(ctx, args, true, nil, "pretty", strict, false)
 }
 
 func Test_OfflineLint(t *testing.T) {
@@ -96,7 +96,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{workflowPath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{workflowPath}, true)
 
 		require.NoError(t, err)
 		assert.True(t, fatal, "should have exited")
@@ -107,7 +107,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{workflowPath, clusterWftmplPath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{workflowPath, clusterWftmplPath}, true)
 
 		require.NoError(t, err)
 		assert.True(t, fatal, "should have exited")
@@ -118,7 +118,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{workflowPath, wftmplPath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{workflowPath, wftmplPath}, true)
 
 		require.NoError(t, err)
 		assert.True(t, fatal, "should have exited")
@@ -129,7 +129,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{wftmplPath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{wftmplPath}, true)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
@@ -140,7 +140,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{clusterWftmplPath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{clusterWftmplPath}, true)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
@@ -151,7 +151,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{workflowPath, wftmplPath, clusterWftmplPath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{workflowPath, wftmplPath, clusterWftmplPath}, true)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
@@ -162,7 +162,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{dir}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{dir}, true)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
@@ -179,7 +179,7 @@ spec:
 		require.NoError(t, err)
 		defer func() { _ = os.Stdin.Close() }() // close previously opened path to avoid errors trying to remove the file.
 
-		err = testRunLint(context.Background(), []string{workflowPath, wftmplPath, "-"}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{workflowPath, wftmplPath, "-"}, true)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
@@ -211,7 +211,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{workflowCaseSensitivePath}, true, nil, "pretty", true)
+		err = testRunLint(context.Background(), []string{workflowCaseSensitivePath}, true)
 
 		require.NoError(t, err)
 		assert.True(t, fatal, "should have exited")
@@ -222,7 +222,7 @@ spec:
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 
-		err = testRunLint(context.Background(), []string{workflowCaseSensitivePath}, true, nil, "pretty", false)
+		err = testRunLint(context.Background(), []string{workflowCaseSensitivePath}, false)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
@@ -282,7 +282,7 @@ spec:
 		defer func() { logrus.StandardLogger().ExitFunc = nil }()
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
-		err = testRunLint(context.Background(), []string{workflowMultiDocsPath}, true, nil, "pretty", false)
+		err = testRunLint(context.Background(), []string{workflowMultiDocsPath}, false)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
