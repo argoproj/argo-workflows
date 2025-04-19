@@ -47,8 +47,11 @@ import (
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -219,11 +222,11 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 			WorkflowCondition: wfc.getWorkflowConditionMetrics,
 			IsLeader:          wfc.IsLeader,
 		})
-	deprecation.Initialize(wfc.metrics.Metrics.DeprecatedFeature)
-
 	if err != nil {
 		return nil, err
 	}
+
+	deprecation.Initialize(wfc.metrics.DeprecatedFeature)
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we create the queues
@@ -386,7 +389,13 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace)
+		var configMap *apiv1.ConfigMap
+		err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+			var err error
+			configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+			return !errorsutil.IsTransientErr(err), err
+		})
 		if err != nil {
 			return 0, err
 		}
@@ -700,7 +709,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.ObjectMeta.Name) {
+	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.Name) {
 		log.WithFields(log.Fields{"name": wf.ObjectMeta.Name}).Warn("Cache: Rejecting recently deleted")
 		return true
 	}
@@ -710,7 +719,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
-	if !(woc.GetShutdownStrategy().Enabled() && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
+	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
 		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
 		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
@@ -795,7 +804,7 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("Watch returned pod unrelated to any workflow")
 	}
-	wfc.wfQueue.AddRateLimited(pod.ObjectMeta.Namespace + "/" + workflowName)
+	wfc.wfQueue.AddRateLimited(pod.Namespace + "/" + workflowName)
 	return nil
 }
 
@@ -1288,5 +1297,5 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 
 func (wfc *WorkflowController) IsLeader() bool {
 	// the wfc.wfInformer is nil if it is not the leader
-	return !(wfc.wfInformer == nil)
+	return wfc.wfInformer != nil
 }
