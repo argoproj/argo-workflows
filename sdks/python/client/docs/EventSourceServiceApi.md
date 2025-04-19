@@ -14,7 +14,7 @@ Method | HTTP request | Description
 
 
 # **create_event_source**
-> IoArgoprojEventsV1alpha1EventSource create_event_source(namespace, body)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource create_event_source(namespace, body)
 
 
 
@@ -27,8 +27,8 @@ import time
 import argo_workflows
 from argo_workflows.api import event_source_service_api
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
 from argo_workflows.model.eventsource_create_event_source_request import EventsourceCreateEventSourceRequest
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -53,7 +53,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
     body = EventsourceCreateEventSourceRequest(
-        event_source=IoArgoprojEventsV1alpha1EventSource(
+        event_source=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource(
             metadata=ObjectMeta(
                 annotations={
                     "key": "key_example",
@@ -96,10 +96,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 self_link="self_link_example",
                 uid="uid_example",
             ),
-            spec=IoArgoprojEventsV1alpha1EventSourceSpec(
+            spec=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceSpec(
                 amqp={
-                    "key": IoArgoprojEventsV1alpha1AMQPEventSource(
-                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                             password=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -111,28 +111,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        consume=IoArgoprojEventsV1alpha1AMQPConsumeConfig(
+                        consume=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPConsumeConfig(
                             auto_ack=True,
                             consumer_tag="consumer_tag_example",
                             exclusive=True,
                             no_local=True,
                             no_wait=True,
                         ),
-                        exchange_declare=IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig(
+                        exchange_declare=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPExchangeDeclareConfig(
                             auto_delete=True,
                             durable=True,
                             internal=True,
@@ -140,17 +140,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         exchange_name="exchange_name_example",
                         exchange_type="exchange_type_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
-                        queue_bind=IoArgoprojEventsV1alpha1AMQPQueueBindConfig(
+                        queue_bind=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPQueueBindConfig(
                             no_wait=True,
                         ),
-                        queue_declare=IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig(
+                        queue_declare=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPQueueDeclareConfig(
                             arguments="arguments_example",
                             auto_delete=True,
                             durable=True,
@@ -159,7 +159,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             no_wait=True,
                         ),
                         routing_key="routing_key_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -186,8 +186,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 azure_events_hub={
-                    "key": IoArgoprojEventsV1alpha1AzureEventsHubEventSource(
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AzureEventsHubEventSource(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         fqdn="fqdn_example",
@@ -208,7 +208,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 azure_queue_storage={
-                    "key": IoArgoprojEventsV1alpha1AzureQueueStorageEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AzureQueueStorageEventSource(
                         connection_string=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -216,7 +216,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         decode_message=True,
                         dlq=True,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -229,13 +229,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 azure_service_bus={
-                    "key": IoArgoprojEventsV1alpha1AzureServiceBusEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AzureServiceBusEventSource(
                         connection_string=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         fully_qualified_namespace="fully_qualified_namespace_example",
@@ -245,7 +245,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                         queue_name="queue_name_example",
                         subscription_name="subscription_name_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -267,9 +267,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 bitbucket={
-                    "key": IoArgoprojEventsV1alpha1BitbucketEventSource(
-                        auth=IoArgoprojEventsV1alpha1BitbucketAuth(
-                            basic=IoArgoprojEventsV1alpha1BitbucketBasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketAuth(
+                            basic=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketBasicAuth(
                                 password=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -291,7 +291,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -300,13 +300,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         owner="owner_example",
                         project_key="project_key_example",
                         repositories=[
-                            IoArgoprojEventsV1alpha1BitbucketRepository(
+                            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketRepository(
                                 owner="owner_example",
                                 repository_slug="repository_slug_example",
                             ),
                         ],
                         repository_slug="repository_slug_example",
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -334,32 +334,38 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 bitbucketserver={
-                    "key": IoArgoprojEventsV1alpha1BitbucketServerEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketServerEventSource(
                         access_token=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         bitbucketserver_base_url="bitbucketserver_base_url_example",
+                        check_interval="check_interval_example",
                         delete_hook_on_finish=True,
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
                             "key": "key_example",
                         },
+                        one_event_per_change=True,
                         project_key="project_key_example",
+                        projects=[
+                            "projects_example",
+                        ],
                         repositories=[
-                            IoArgoprojEventsV1alpha1BitbucketServerRepository(
+                            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketServerRepository(
                                 project_key="project_key_example",
                                 repository_slug="repository_slug_example",
                             ),
                         ],
                         repository_slug="repository_slug_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        skip_branch_refs_changed_on_open_pr=True,
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -377,7 +383,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             insecure_skip_verify=True,
                         ),
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -410,23 +416,23 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 calendar={
-                    "key": IoArgoprojEventsV1alpha1CalendarEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1CalendarEventSource(
                         exclusion_dates=[
                             "exclusion_dates_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         interval="interval_example",
                         metadata={
                             "key": "key_example",
                         },
-                        persistence=IoArgoprojEventsV1alpha1EventPersistence(
-                            catchup=IoArgoprojEventsV1alpha1CatchupConfiguration(
+                        persistence=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventPersistence(
+                            catchup=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1CatchupConfiguration(
                                 enabled=True,
                                 max_duration="max_duration_example",
                             ),
-                            config_map=IoArgoprojEventsV1alpha1ConfigMapPersistence(
+                            config_map=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1ConfigMapPersistence(
                                 create_if_not_exist=True,
                                 name="name_example",
                             ),
@@ -436,25 +442,25 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 emitter={
-                    "key": IoArgoprojEventsV1alpha1EmitterEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EmitterEventSource(
                         broker="broker_example",
                         channel_key="channel_key_example",
                         channel_name="channel_name_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -466,7 +472,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -493,16 +499,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 event_bus_name="event_bus_name_example",
                 file={
-                    "key": IoArgoprojEventsV1alpha1FileEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1FileEventSource(
                         event_type="event_type_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
                             "key": "key_example",
                         },
                         polling=True,
-                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                        watch_path_config=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WatchPathConfig(
                             directory="directory_example",
                             path="path_example",
                             path_regexp="path_regexp_example",
@@ -510,14 +516,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 generic={
-                    "key": IoArgoprojEventsV1alpha1GenericEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GenericEventSource(
                         auth_secret=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         config="config_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         insecure=True,
@@ -529,8 +535,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 gerrit={
-                    "key": IoArgoprojEventsV1alpha1GerritEventSource(
-                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GerritEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                             password=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -546,7 +552,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         gerrit_base_url="gerrit_base_url_example",
@@ -558,7 +564,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "projects_example",
                         ],
                         ssl_verify=True,
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -586,7 +592,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 github={
-                    "key": IoArgoprojEventsV1alpha1GithubEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GithubEventSource(
                         active=True,
                         api_token=SecretKeySelector(
                             key="key_example",
@@ -598,10 +604,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
-                        github_app=IoArgoprojEventsV1alpha1GithubAppCreds(
+                        github_app=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GithubAppCreds(
                             app_id="app_id_example",
                             installation_id="installation_id_example",
                             private_key=SecretKeySelector(
@@ -622,7 +628,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         owner="owner_example",
                         repositories=[
-                            IoArgoprojEventsV1alpha1OwnedRepositories(
+                            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1OwnedRepositories(
                                 names=[
                                     "names_example",
                                 ],
@@ -630,7 +636,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         repository="repository_example",
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -663,7 +669,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 gitlab={
-                    "key": IoArgoprojEventsV1alpha1GitlabEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GitlabEventSource(
                         access_token=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -674,7 +680,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         gitlab_base_url="gitlab_base_url_example",
@@ -693,7 +699,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -721,12 +727,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 hdfs={
-                    "key": IoArgoprojEventsV1alpha1HDFSEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1HDFSEventSource(
                         addresses=[
                             "addresses_example",
                         ],
                         check_interval="check_interval_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         hdfs_user="hdfs_user_example",
@@ -752,7 +758,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                         type="type_example",
-                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                        watch_path_config=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WatchPathConfig(
                             directory="directory_example",
                             path="path_example",
                             path_regexp="path_regexp_example",
@@ -760,28 +766,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 kafka={
-                    "key": IoArgoprojEventsV1alpha1KafkaEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1KafkaEventSource(
                         config="config_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        consumer_group=IoArgoprojEventsV1alpha1KafkaConsumerGroup(
+                        consumer_group=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1KafkaConsumerGroup(
                             group_name="group_name_example",
                             oldest=True,
                             rebalance_strategy="rebalance_strategy_example",
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -790,7 +796,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                         partition="partition_example",
-                        sasl=IoArgoprojEventsV1alpha1SASLConfig(
+                        sasl=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SASLConfig(
                             mechanism="mechanism_example",
                             password_secret=SecretKeySelector(
                                 key="key_example",
@@ -803,7 +809,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -827,13 +833,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 minio={
-                    "key": IoArgoprojEventsV1alpha1S3Artifact(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Artifact(
                         access_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
-                        bucket=IoArgoprojEventsV1alpha1S3Bucket(
+                        bucket=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Bucket(
                             key="key_example",
                             name="name_example",
                         ),
@@ -846,7 +852,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1S3Filter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Filter(
                             prefix="prefix_example",
                             suffix="suffix_example",
                         ),
@@ -863,8 +869,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 mqtt={
-                    "key": IoArgoprojEventsV1alpha1MQTTEventSource(
-                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1MQTTEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                             password=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -877,28 +883,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ),
                         client_id="client_id_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -921,9 +927,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 nats={
-                    "key": IoArgoprojEventsV1alpha1NATSEventsSource(
-                        auth=IoArgoprojEventsV1alpha1NATSAuth(
-                            basic=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NATSEventsSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NATSAuth(
+                            basic=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                                 password=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -951,29 +957,30 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
+                        queue="queue_example",
                         subject="subject_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -995,23 +1002,23 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 nsq={
-                    "key": IoArgoprojEventsV1alpha1NSQEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NSQEventSource(
                         channel="channel_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
@@ -1019,7 +1026,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         metadata={
                             "key": "key_example",
                         },
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1041,14 +1048,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 pub_sub={
-                    "key": IoArgoprojEventsV1alpha1PubSubEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1PubSubEventSource(
                         credential_secret=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         delete_subscription_on_finish=True,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -1062,7 +1069,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 pulsar={
-                    "key": IoArgoprojEventsV1alpha1PulsarEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1PulsarEventSource(
                         auth_athenz_params={
                             "key": "key_example",
                         },
@@ -1076,28 +1083,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1130,12 +1137,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 redis={
-                    "key": IoArgoprojEventsV1alpha1RedisEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1RedisEventSource(
                         channels=[
                             "channels_example",
                         ],
                         db=1,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
@@ -1149,7 +1156,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1171,10 +1178,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 redis_stream={
-                    "key": IoArgoprojEventsV1alpha1RedisStreamEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1RedisStreamEventSource(
                         consumer_group="consumer_group_example",
                         db=1,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
@@ -1190,7 +1197,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         streams=[
                             "streams_example",
                         ],
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1213,22 +1220,22 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 replicas=1,
                 resource={
-                    "key": IoArgoprojEventsV1alpha1ResourceEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1ResourceEventSource(
                         event_types=[
                             "event_types_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1ResourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1ResourceFilter(
                             after_start=True,
                             created_by=dateutil_parser('1970-01-01T00:00:00.00Z'),
                             fields=[
-                                IoArgoprojEventsV1alpha1Selector(
+                                GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Selector(
                                     key="key_example",
                                     operation="operation_example",
                                     value="value_example",
                                 ),
                             ],
                             labels=[
-                                IoArgoprojEventsV1alpha1Selector(
+                                GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Selector(
                                     key="key_example",
                                     operation="operation_example",
                                     value="value_example",
@@ -1247,8 +1254,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         namespace="namespace_example",
                     ),
                 },
-                service=IoArgoprojEventsV1alpha1Service(
+                service=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Service(
                     cluster_ip="cluster_ip_example",
+                    metadata=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Metadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                    ),
                     ports=[
                         ServicePort(
                             app_protocol="app_protocol_example",
@@ -1261,14 +1276,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 sftp={
-                    "key": IoArgoprojEventsV1alpha1SFTPEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SFTPEventSource(
                         address=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         event_type="event_type_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -1290,7 +1305,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                        watch_path_config=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WatchPathConfig(
                             directory="directory_example",
                             path="path_example",
                             path_regexp="path_regexp_example",
@@ -1298,8 +1313,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 slack={
-                    "key": IoArgoprojEventsV1alpha1SlackEventSource(
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SlackEventSource(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -1315,7 +1330,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1343,14 +1358,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 sns={
-                    "key": IoArgoprojEventsV1alpha1SNSEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SNSEventSource(
                         access_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         endpoint="endpoint_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -1365,7 +1380,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         topic_arn="topic_arn_example",
                         validate_signature=True,
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1393,7 +1408,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 sqs={
-                    "key": IoArgoprojEventsV1alpha1SQSEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SQSEventSource(
                         access_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -1401,7 +1416,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         dlq=True,
                         endpoint="endpoint_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -1426,7 +1441,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 storage_grid={
-                    "key": IoArgoprojEventsV1alpha1StorageGridEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StorageGridEventSource(
                         api_url="api_url_example",
                         auth_token=SecretKeySelector(
                             key="key_example",
@@ -1437,7 +1452,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1StorageGridFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StorageGridFilter(
                             prefix="prefix_example",
                             suffix="suffix_example",
                         ),
@@ -1446,7 +1461,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                         region="region_example",
                         topic_arn="topic_arn_example",
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1474,7 +1489,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 stripe={
-                    "key": IoArgoprojEventsV1alpha1StripeEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StripeEventSource(
                         api_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -1487,7 +1502,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         metadata={
                             "key": "key_example",
                         },
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1514,7 +1529,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                 },
-                template=IoArgoprojEventsV1alpha1Template(
+                template=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Template(
                     affinity=Affinity(
                         node_affinity=NodeAffinity(
                             preferred_during_scheduling_ignored_during_execution=[
@@ -1746,13 +1761,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
-                    container=Container(
-                        args=[
-                            "args_example",
-                        ],
-                        command=[
-                            "command_example",
-                        ],
+                    container=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Container(
                         env=[
                             EnvVar(
                                 name="name_example",
@@ -1793,144 +1802,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                         ],
-                        image="image_example",
                         image_pull_policy="image_pull_policy_example",
-                        lifecycle=Lifecycle(
-                            post_start=LifecycleHandler(
-                                _exec=ExecAction(
-                                    command=[
-                                        "command_example",
-                                    ],
-                                ),
-                                http_get=HTTPGetAction(
-                                    host="host_example",
-                                    http_headers=[
-                                        HTTPHeader(
-                                            name="name_example",
-                                            value="value_example",
-                                        ),
-                                    ],
-                                    path="path_example",
-                                    port="port_example",
-                                    scheme="scheme_example",
-                                ),
-                                sleep=SleepAction(
-                                    seconds=1,
-                                ),
-                                tcp_socket=TCPSocketAction(
-                                    host="host_example",
-                                    port="port_example",
-                                ),
-                            ),
-                            pre_stop=LifecycleHandler(
-                                _exec=ExecAction(
-                                    command=[
-                                        "command_example",
-                                    ],
-                                ),
-                                http_get=HTTPGetAction(
-                                    host="host_example",
-                                    http_headers=[
-                                        HTTPHeader(
-                                            name="name_example",
-                                            value="value_example",
-                                        ),
-                                    ],
-                                    path="path_example",
-                                    port="port_example",
-                                    scheme="scheme_example",
-                                ),
-                                sleep=SleepAction(
-                                    seconds=1,
-                                ),
-                                tcp_socket=TCPSocketAction(
-                                    host="host_example",
-                                    port="port_example",
-                                ),
-                            ),
-                        ),
-                        liveness_probe=Probe(
-                            _exec=ExecAction(
-                                command=[
-                                    "command_example",
-                                ],
-                            ),
-                            failure_threshold=1,
-                            grpc=GRPCAction(
-                                port=1,
-                                service="service_example",
-                            ),
-                            http_get=HTTPGetAction(
-                                host="host_example",
-                                http_headers=[
-                                    HTTPHeader(
-                                        name="name_example",
-                                        value="value_example",
-                                    ),
-                                ],
-                                path="path_example",
-                                port="port_example",
-                                scheme="scheme_example",
-                            ),
-                            initial_delay_seconds=1,
-                            period_seconds=1,
-                            success_threshold=1,
-                            tcp_socket=TCPSocketAction(
-                                host="host_example",
-                                port="port_example",
-                            ),
-                            termination_grace_period_seconds=1,
-                            timeout_seconds=1,
-                        ),
-                        name="name_example",
-                        ports=[
-                            ContainerPort(
-                                container_port=1,
-                                host_ip="host_ip_example",
-                                host_port=1,
-                                name="name_example",
-                                protocol="protocol_example",
-                            ),
-                        ],
-                        readiness_probe=Probe(
-                            _exec=ExecAction(
-                                command=[
-                                    "command_example",
-                                ],
-                            ),
-                            failure_threshold=1,
-                            grpc=GRPCAction(
-                                port=1,
-                                service="service_example",
-                            ),
-                            http_get=HTTPGetAction(
-                                host="host_example",
-                                http_headers=[
-                                    HTTPHeader(
-                                        name="name_example",
-                                        value="value_example",
-                                    ),
-                                ],
-                                path="path_example",
-                                port="port_example",
-                                scheme="scheme_example",
-                            ),
-                            initial_delay_seconds=1,
-                            period_seconds=1,
-                            success_threshold=1,
-                            tcp_socket=TCPSocketAction(
-                                host="host_example",
-                                port="port_example",
-                            ),
-                            termination_grace_period_seconds=1,
-                            timeout_seconds=1,
-                        ),
-                        resize_policy=[
-                            ContainerResizePolicy(
-                                resource_name="resource_name_example",
-                                restart_policy="restart_policy_example",
-                            ),
-                        ],
                         resources=ResourceRequirements(
                             claims=[
                                 ResourceClaim(
@@ -1945,7 +1817,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "key": "key_example",
                             },
                         ),
-                        restart_policy="restart_policy_example",
                         security_context=SecurityContext(
                             allow_privilege_escalation=True,
                             app_armor_profile=AppArmorProfile(
@@ -1983,50 +1854,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_user_name="run_as_user_name_example",
                             ),
                         ),
-                        startup_probe=Probe(
-                            _exec=ExecAction(
-                                command=[
-                                    "command_example",
-                                ],
-                            ),
-                            failure_threshold=1,
-                            grpc=GRPCAction(
-                                port=1,
-                                service="service_example",
-                            ),
-                            http_get=HTTPGetAction(
-                                host="host_example",
-                                http_headers=[
-                                    HTTPHeader(
-                                        name="name_example",
-                                        value="value_example",
-                                    ),
-                                ],
-                                path="path_example",
-                                port="port_example",
-                                scheme="scheme_example",
-                            ),
-                            initial_delay_seconds=1,
-                            period_seconds=1,
-                            success_threshold=1,
-                            tcp_socket=TCPSocketAction(
-                                host="host_example",
-                                port="port_example",
-                            ),
-                            termination_grace_period_seconds=1,
-                            timeout_seconds=1,
-                        ),
-                        stdin=True,
-                        stdin_once=True,
-                        termination_message_path="termination_message_path_example",
-                        termination_message_policy="termination_message_policy_example",
-                        tty=True,
-                        volume_devices=[
-                            VolumeDevice(
-                                device_path="device_path_example",
-                                name="name_example",
-                            ),
-                        ],
                         volume_mounts=[
                             VolumeMount(
                                 mount_path="mount_path_example",
@@ -2038,14 +1865,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 sub_path_expr="sub_path_expr_example",
                             ),
                         ],
-                        working_dir="working_dir_example",
                     ),
                     image_pull_secrets=[
                         LocalObjectReference(
                             name="name_example",
                         ),
                     ],
-                    metadata=IoArgoprojEventsV1alpha1Metadata(
+                    metadata=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
                         },
@@ -2504,11 +2330,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 webhook={
-                    "key": IoArgoprojEventsV1alpha1WebhookEventSource(
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookEventSource(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
-                        webhook_context=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook_context=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -2536,10 +2362,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
             ),
-            status=IoArgoprojEventsV1alpha1EventSourceStatus(
-                status=IoArgoprojEventsV1alpha1Status(
+            status=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceStatus(
+                status=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Status(
                     conditions=[
-                        IoArgoprojEventsV1alpha1Condition(
+                        GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Condition(
                             last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
                             message="message_example",
                             reason="reason_example",
@@ -2571,7 +2397,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 
@@ -2810,7 +2636,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_event_source**
-> IoArgoprojEventsV1alpha1EventSource get_event_source(namespace, name)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource get_event_source(namespace, name)
 
 
 
@@ -2823,7 +2649,7 @@ import time
 import argo_workflows
 from argo_workflows.api import event_source_service_api
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -2867,7 +2693,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 
@@ -2889,7 +2715,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_event_sources**
-> IoArgoprojEventsV1alpha1EventSourceList list_event_sources(namespace)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList list_event_sources(namespace)
 
 
 
@@ -2902,7 +2728,7 @@ import time
 import argo_workflows
 from argo_workflows.api import event_source_service_api
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_list import IoArgoprojEventsV1alpha1EventSourceList
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source_list import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -2972,7 +2798,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSourceList**](IoArgoprojEventsV1alpha1EventSourceList.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList.md)
 
 ### Authorization
 
@@ -2994,7 +2820,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **update_event_source**
-> IoArgoprojEventsV1alpha1EventSource update_event_source(namespace, name, body)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource update_event_source(namespace, name, body)
 
 
 
@@ -3007,8 +2833,8 @@ import time
 import argo_workflows
 from argo_workflows.api import event_source_service_api
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
 from argo_workflows.model.eventsource_update_event_source_request import EventsourceUpdateEventSourceRequest
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -3034,7 +2860,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     namespace = "namespace_example" # str | 
     name = "name_example" # str | 
     body = EventsourceUpdateEventSourceRequest(
-        event_source=IoArgoprojEventsV1alpha1EventSource(
+        event_source=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource(
             metadata=ObjectMeta(
                 annotations={
                     "key": "key_example",
@@ -3077,10 +2903,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 self_link="self_link_example",
                 uid="uid_example",
             ),
-            spec=IoArgoprojEventsV1alpha1EventSourceSpec(
+            spec=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceSpec(
                 amqp={
-                    "key": IoArgoprojEventsV1alpha1AMQPEventSource(
-                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                             password=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3092,28 +2918,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        consume=IoArgoprojEventsV1alpha1AMQPConsumeConfig(
+                        consume=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPConsumeConfig(
                             auto_ack=True,
                             consumer_tag="consumer_tag_example",
                             exclusive=True,
                             no_local=True,
                             no_wait=True,
                         ),
-                        exchange_declare=IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig(
+                        exchange_declare=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPExchangeDeclareConfig(
                             auto_delete=True,
                             durable=True,
                             internal=True,
@@ -3121,17 +2947,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         exchange_name="exchange_name_example",
                         exchange_type="exchange_type_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
-                        queue_bind=IoArgoprojEventsV1alpha1AMQPQueueBindConfig(
+                        queue_bind=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPQueueBindConfig(
                             no_wait=True,
                         ),
-                        queue_declare=IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig(
+                        queue_declare=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AMQPQueueDeclareConfig(
                             arguments="arguments_example",
                             auto_delete=True,
                             durable=True,
@@ -3140,7 +2966,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             no_wait=True,
                         ),
                         routing_key="routing_key_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3167,8 +2993,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 azure_events_hub={
-                    "key": IoArgoprojEventsV1alpha1AzureEventsHubEventSource(
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AzureEventsHubEventSource(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         fqdn="fqdn_example",
@@ -3189,7 +3015,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 azure_queue_storage={
-                    "key": IoArgoprojEventsV1alpha1AzureQueueStorageEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AzureQueueStorageEventSource(
                         connection_string=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -3197,7 +3023,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         decode_message=True,
                         dlq=True,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -3210,13 +3036,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 azure_service_bus={
-                    "key": IoArgoprojEventsV1alpha1AzureServiceBusEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1AzureServiceBusEventSource(
                         connection_string=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         fully_qualified_namespace="fully_qualified_namespace_example",
@@ -3226,7 +3052,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                         queue_name="queue_name_example",
                         subscription_name="subscription_name_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3248,9 +3074,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 bitbucket={
-                    "key": IoArgoprojEventsV1alpha1BitbucketEventSource(
-                        auth=IoArgoprojEventsV1alpha1BitbucketAuth(
-                            basic=IoArgoprojEventsV1alpha1BitbucketBasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketAuth(
+                            basic=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketBasicAuth(
                                 password=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -3272,7 +3098,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -3281,13 +3107,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         owner="owner_example",
                         project_key="project_key_example",
                         repositories=[
-                            IoArgoprojEventsV1alpha1BitbucketRepository(
+                            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketRepository(
                                 owner="owner_example",
                                 repository_slug="repository_slug_example",
                             ),
                         ],
                         repository_slug="repository_slug_example",
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3315,32 +3141,38 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 bitbucketserver={
-                    "key": IoArgoprojEventsV1alpha1BitbucketServerEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketServerEventSource(
                         access_token=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         bitbucketserver_base_url="bitbucketserver_base_url_example",
+                        check_interval="check_interval_example",
                         delete_hook_on_finish=True,
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
                             "key": "key_example",
                         },
+                        one_event_per_change=True,
                         project_key="project_key_example",
+                        projects=[
+                            "projects_example",
+                        ],
                         repositories=[
-                            IoArgoprojEventsV1alpha1BitbucketServerRepository(
+                            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BitbucketServerRepository(
                                 project_key="project_key_example",
                                 repository_slug="repository_slug_example",
                             ),
                         ],
                         repository_slug="repository_slug_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        skip_branch_refs_changed_on_open_pr=True,
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3358,7 +3190,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             insecure_skip_verify=True,
                         ),
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3391,23 +3223,23 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 calendar={
-                    "key": IoArgoprojEventsV1alpha1CalendarEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1CalendarEventSource(
                         exclusion_dates=[
                             "exclusion_dates_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         interval="interval_example",
                         metadata={
                             "key": "key_example",
                         },
-                        persistence=IoArgoprojEventsV1alpha1EventPersistence(
-                            catchup=IoArgoprojEventsV1alpha1CatchupConfiguration(
+                        persistence=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventPersistence(
+                            catchup=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1CatchupConfiguration(
                                 enabled=True,
                                 max_duration="max_duration_example",
                             ),
-                            config_map=IoArgoprojEventsV1alpha1ConfigMapPersistence(
+                            config_map=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1ConfigMapPersistence(
                                 create_if_not_exist=True,
                                 name="name_example",
                             ),
@@ -3417,25 +3249,25 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 emitter={
-                    "key": IoArgoprojEventsV1alpha1EmitterEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EmitterEventSource(
                         broker="broker_example",
                         channel_key="channel_key_example",
                         channel_name="channel_name_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -3447,7 +3279,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3474,16 +3306,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 event_bus_name="event_bus_name_example",
                 file={
-                    "key": IoArgoprojEventsV1alpha1FileEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1FileEventSource(
                         event_type="event_type_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
                             "key": "key_example",
                         },
                         polling=True,
-                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                        watch_path_config=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WatchPathConfig(
                             directory="directory_example",
                             path="path_example",
                             path_regexp="path_regexp_example",
@@ -3491,14 +3323,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 generic={
-                    "key": IoArgoprojEventsV1alpha1GenericEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GenericEventSource(
                         auth_secret=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         config="config_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         insecure=True,
@@ -3510,8 +3342,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 gerrit={
-                    "key": IoArgoprojEventsV1alpha1GerritEventSource(
-                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GerritEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                             password=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3527,7 +3359,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         gerrit_base_url="gerrit_base_url_example",
@@ -3539,7 +3371,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "projects_example",
                         ],
                         ssl_verify=True,
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3567,7 +3399,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 github={
-                    "key": IoArgoprojEventsV1alpha1GithubEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GithubEventSource(
                         active=True,
                         api_token=SecretKeySelector(
                             key="key_example",
@@ -3579,10 +3411,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
-                        github_app=IoArgoprojEventsV1alpha1GithubAppCreds(
+                        github_app=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GithubAppCreds(
                             app_id="app_id_example",
                             installation_id="installation_id_example",
                             private_key=SecretKeySelector(
@@ -3603,7 +3435,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         owner="owner_example",
                         repositories=[
-                            IoArgoprojEventsV1alpha1OwnedRepositories(
+                            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1OwnedRepositories(
                                 names=[
                                     "names_example",
                                 ],
@@ -3611,7 +3443,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         repository="repository_example",
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3644,7 +3476,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 gitlab={
-                    "key": IoArgoprojEventsV1alpha1GitlabEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1GitlabEventSource(
                         access_token=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -3655,7 +3487,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         gitlab_base_url="gitlab_base_url_example",
@@ -3674,7 +3506,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3702,12 +3534,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 hdfs={
-                    "key": IoArgoprojEventsV1alpha1HDFSEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1HDFSEventSource(
                         addresses=[
                             "addresses_example",
                         ],
                         check_interval="check_interval_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         hdfs_user="hdfs_user_example",
@@ -3733,7 +3565,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                         type="type_example",
-                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                        watch_path_config=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WatchPathConfig(
                             directory="directory_example",
                             path="path_example",
                             path_regexp="path_regexp_example",
@@ -3741,28 +3573,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 kafka={
-                    "key": IoArgoprojEventsV1alpha1KafkaEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1KafkaEventSource(
                         config="config_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        consumer_group=IoArgoprojEventsV1alpha1KafkaConsumerGroup(
+                        consumer_group=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1KafkaConsumerGroup(
                             group_name="group_name_example",
                             oldest=True,
                             rebalance_strategy="rebalance_strategy_example",
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -3771,7 +3603,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                         partition="partition_example",
-                        sasl=IoArgoprojEventsV1alpha1SASLConfig(
+                        sasl=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SASLConfig(
                             mechanism="mechanism_example",
                             password_secret=SecretKeySelector(
                                 key="key_example",
@@ -3784,7 +3616,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3808,13 +3640,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 minio={
-                    "key": IoArgoprojEventsV1alpha1S3Artifact(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Artifact(
                         access_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
-                        bucket=IoArgoprojEventsV1alpha1S3Bucket(
+                        bucket=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Bucket(
                             key="key_example",
                             name="name_example",
                         ),
@@ -3827,7 +3659,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1S3Filter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Filter(
                             prefix="prefix_example",
                             suffix="suffix_example",
                         ),
@@ -3844,8 +3676,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 mqtt={
-                    "key": IoArgoprojEventsV1alpha1MQTTEventSource(
-                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1MQTTEventSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                             password=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3858,28 +3690,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ),
                         client_id="client_id_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3902,9 +3734,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 nats={
-                    "key": IoArgoprojEventsV1alpha1NATSEventsSource(
-                        auth=IoArgoprojEventsV1alpha1NATSAuth(
-                            basic=IoArgoprojEventsV1alpha1BasicAuth(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NATSEventsSource(
+                        auth=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NATSAuth(
+                            basic=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1BasicAuth(
                                 password=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -3932,29 +3764,30 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
+                        queue="queue_example",
                         subject="subject_example",
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -3976,23 +3809,23 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 nsq={
-                    "key": IoArgoprojEventsV1alpha1NSQEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NSQEventSource(
                         channel="channel_example",
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
@@ -4000,7 +3833,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         metadata={
                             "key": "key_example",
                         },
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4022,14 +3855,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 pub_sub={
-                    "key": IoArgoprojEventsV1alpha1PubSubEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1PubSubEventSource(
                         credential_secret=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         delete_subscription_on_finish=True,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -4043,7 +3876,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 pulsar={
-                    "key": IoArgoprojEventsV1alpha1PulsarEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1PulsarEventSource(
                         auth_athenz_params={
                             "key": "key_example",
                         },
@@ -4057,28 +3890,28 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        connection_backoff=IoArgoprojEventsV1alpha1Backoff(
-                            duration=IoArgoprojEventsV1alpha1Int64OrString(
+                        connection_backoff=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Backoff(
+                            duration=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
                                 str_val="str_val_example",
                                 type="type_example",
                             ),
-                            factor=IoArgoprojEventsV1alpha1Amount(
+                            factor=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
-                            jitter=IoArgoprojEventsV1alpha1Amount(
+                            jitter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Amount(
                                 value='YQ==',
                             ),
                             steps=1,
                         ),
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
                         metadata={
                             "key": "key_example",
                         },
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4111,12 +3944,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 redis={
-                    "key": IoArgoprojEventsV1alpha1RedisEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1RedisEventSource(
                         channels=[
                             "channels_example",
                         ],
                         db=1,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
@@ -4130,7 +3963,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4152,10 +3985,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 redis_stream={
-                    "key": IoArgoprojEventsV1alpha1RedisStreamEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1RedisStreamEventSource(
                         consumer_group="consumer_group_example",
                         db=1,
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
@@ -4171,7 +4004,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         streams=[
                             "streams_example",
                         ],
-                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                        tls=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig(
                             ca_cert_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4194,22 +4027,22 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 replicas=1,
                 resource={
-                    "key": IoArgoprojEventsV1alpha1ResourceEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1ResourceEventSource(
                         event_types=[
                             "event_types_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1ResourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1ResourceFilter(
                             after_start=True,
                             created_by=dateutil_parser('1970-01-01T00:00:00.00Z'),
                             fields=[
-                                IoArgoprojEventsV1alpha1Selector(
+                                GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Selector(
                                     key="key_example",
                                     operation="operation_example",
                                     value="value_example",
                                 ),
                             ],
                             labels=[
-                                IoArgoprojEventsV1alpha1Selector(
+                                GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Selector(
                                     key="key_example",
                                     operation="operation_example",
                                     value="value_example",
@@ -4228,8 +4061,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         namespace="namespace_example",
                     ),
                 },
-                service=IoArgoprojEventsV1alpha1Service(
+                service=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Service(
                     cluster_ip="cluster_ip_example",
+                    metadata=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Metadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                    ),
                     ports=[
                         ServicePort(
                             app_protocol="app_protocol_example",
@@ -4242,14 +4083,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 sftp={
-                    "key": IoArgoprojEventsV1alpha1SFTPEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SFTPEventSource(
                         address=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         event_type="event_type_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -4271,7 +4112,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                        watch_path_config=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WatchPathConfig(
                             directory="directory_example",
                             path="path_example",
                             path_regexp="path_regexp_example",
@@ -4279,8 +4120,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 slack={
-                    "key": IoArgoprojEventsV1alpha1SlackEventSource(
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SlackEventSource(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -4296,7 +4137,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4324,14 +4165,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 sns={
-                    "key": IoArgoprojEventsV1alpha1SNSEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SNSEventSource(
                         access_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
                             optional=True,
                         ),
                         endpoint="endpoint_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         metadata={
@@ -4346,7 +4187,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         topic_arn="topic_arn_example",
                         validate_signature=True,
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4374,7 +4215,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 sqs={
-                    "key": IoArgoprojEventsV1alpha1SQSEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SQSEventSource(
                         access_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -4382,7 +4223,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         dlq=True,
                         endpoint="endpoint_example",
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
                         json_body=True,
@@ -4407,7 +4248,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 storage_grid={
-                    "key": IoArgoprojEventsV1alpha1StorageGridEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StorageGridEventSource(
                         api_url="api_url_example",
                         auth_token=SecretKeySelector(
                             key="key_example",
@@ -4418,7 +4259,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         events=[
                             "events_example",
                         ],
-                        filter=IoArgoprojEventsV1alpha1StorageGridFilter(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StorageGridFilter(
                             prefix="prefix_example",
                             suffix="suffix_example",
                         ),
@@ -4427,7 +4268,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                         region="region_example",
                         topic_arn="topic_arn_example",
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4455,7 +4296,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
                 stripe={
-                    "key": IoArgoprojEventsV1alpha1StripeEventSource(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StripeEventSource(
                         api_key=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -4468,7 +4309,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         metadata={
                             "key": "key_example",
                         },
-                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -4495,7 +4336,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                 },
-                template=IoArgoprojEventsV1alpha1Template(
+                template=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Template(
                     affinity=Affinity(
                         node_affinity=NodeAffinity(
                             preferred_during_scheduling_ignored_during_execution=[
@@ -4727,13 +4568,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
-                    container=Container(
-                        args=[
-                            "args_example",
-                        ],
-                        command=[
-                            "command_example",
-                        ],
+                    container=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Container(
                         env=[
                             EnvVar(
                                 name="name_example",
@@ -4774,144 +4609,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                         ],
-                        image="image_example",
                         image_pull_policy="image_pull_policy_example",
-                        lifecycle=Lifecycle(
-                            post_start=LifecycleHandler(
-                                _exec=ExecAction(
-                                    command=[
-                                        "command_example",
-                                    ],
-                                ),
-                                http_get=HTTPGetAction(
-                                    host="host_example",
-                                    http_headers=[
-                                        HTTPHeader(
-                                            name="name_example",
-                                            value="value_example",
-                                        ),
-                                    ],
-                                    path="path_example",
-                                    port="port_example",
-                                    scheme="scheme_example",
-                                ),
-                                sleep=SleepAction(
-                                    seconds=1,
-                                ),
-                                tcp_socket=TCPSocketAction(
-                                    host="host_example",
-                                    port="port_example",
-                                ),
-                            ),
-                            pre_stop=LifecycleHandler(
-                                _exec=ExecAction(
-                                    command=[
-                                        "command_example",
-                                    ],
-                                ),
-                                http_get=HTTPGetAction(
-                                    host="host_example",
-                                    http_headers=[
-                                        HTTPHeader(
-                                            name="name_example",
-                                            value="value_example",
-                                        ),
-                                    ],
-                                    path="path_example",
-                                    port="port_example",
-                                    scheme="scheme_example",
-                                ),
-                                sleep=SleepAction(
-                                    seconds=1,
-                                ),
-                                tcp_socket=TCPSocketAction(
-                                    host="host_example",
-                                    port="port_example",
-                                ),
-                            ),
-                        ),
-                        liveness_probe=Probe(
-                            _exec=ExecAction(
-                                command=[
-                                    "command_example",
-                                ],
-                            ),
-                            failure_threshold=1,
-                            grpc=GRPCAction(
-                                port=1,
-                                service="service_example",
-                            ),
-                            http_get=HTTPGetAction(
-                                host="host_example",
-                                http_headers=[
-                                    HTTPHeader(
-                                        name="name_example",
-                                        value="value_example",
-                                    ),
-                                ],
-                                path="path_example",
-                                port="port_example",
-                                scheme="scheme_example",
-                            ),
-                            initial_delay_seconds=1,
-                            period_seconds=1,
-                            success_threshold=1,
-                            tcp_socket=TCPSocketAction(
-                                host="host_example",
-                                port="port_example",
-                            ),
-                            termination_grace_period_seconds=1,
-                            timeout_seconds=1,
-                        ),
-                        name="name_example",
-                        ports=[
-                            ContainerPort(
-                                container_port=1,
-                                host_ip="host_ip_example",
-                                host_port=1,
-                                name="name_example",
-                                protocol="protocol_example",
-                            ),
-                        ],
-                        readiness_probe=Probe(
-                            _exec=ExecAction(
-                                command=[
-                                    "command_example",
-                                ],
-                            ),
-                            failure_threshold=1,
-                            grpc=GRPCAction(
-                                port=1,
-                                service="service_example",
-                            ),
-                            http_get=HTTPGetAction(
-                                host="host_example",
-                                http_headers=[
-                                    HTTPHeader(
-                                        name="name_example",
-                                        value="value_example",
-                                    ),
-                                ],
-                                path="path_example",
-                                port="port_example",
-                                scheme="scheme_example",
-                            ),
-                            initial_delay_seconds=1,
-                            period_seconds=1,
-                            success_threshold=1,
-                            tcp_socket=TCPSocketAction(
-                                host="host_example",
-                                port="port_example",
-                            ),
-                            termination_grace_period_seconds=1,
-                            timeout_seconds=1,
-                        ),
-                        resize_policy=[
-                            ContainerResizePolicy(
-                                resource_name="resource_name_example",
-                                restart_policy="restart_policy_example",
-                            ),
-                        ],
                         resources=ResourceRequirements(
                             claims=[
                                 ResourceClaim(
@@ -4926,7 +4624,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "key": "key_example",
                             },
                         ),
-                        restart_policy="restart_policy_example",
                         security_context=SecurityContext(
                             allow_privilege_escalation=True,
                             app_armor_profile=AppArmorProfile(
@@ -4964,50 +4661,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_user_name="run_as_user_name_example",
                             ),
                         ),
-                        startup_probe=Probe(
-                            _exec=ExecAction(
-                                command=[
-                                    "command_example",
-                                ],
-                            ),
-                            failure_threshold=1,
-                            grpc=GRPCAction(
-                                port=1,
-                                service="service_example",
-                            ),
-                            http_get=HTTPGetAction(
-                                host="host_example",
-                                http_headers=[
-                                    HTTPHeader(
-                                        name="name_example",
-                                        value="value_example",
-                                    ),
-                                ],
-                                path="path_example",
-                                port="port_example",
-                                scheme="scheme_example",
-                            ),
-                            initial_delay_seconds=1,
-                            period_seconds=1,
-                            success_threshold=1,
-                            tcp_socket=TCPSocketAction(
-                                host="host_example",
-                                port="port_example",
-                            ),
-                            termination_grace_period_seconds=1,
-                            timeout_seconds=1,
-                        ),
-                        stdin=True,
-                        stdin_once=True,
-                        termination_message_path="termination_message_path_example",
-                        termination_message_policy="termination_message_policy_example",
-                        tty=True,
-                        volume_devices=[
-                            VolumeDevice(
-                                device_path="device_path_example",
-                                name="name_example",
-                            ),
-                        ],
                         volume_mounts=[
                             VolumeMount(
                                 mount_path="mount_path_example",
@@ -5019,14 +4672,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 sub_path_expr="sub_path_expr_example",
                             ),
                         ],
-                        working_dir="working_dir_example",
                     ),
                     image_pull_secrets=[
                         LocalObjectReference(
                             name="name_example",
                         ),
                     ],
-                    metadata=IoArgoprojEventsV1alpha1Metadata(
+                    metadata=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
                         },
@@ -5485,11 +5137,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 webhook={
-                    "key": IoArgoprojEventsV1alpha1WebhookEventSource(
-                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                    "key": GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookEventSource(
+                        filter=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
-                        webhook_context=IoArgoprojEventsV1alpha1WebhookContext(
+                        webhook_context=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -5517,10 +5169,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 },
             ),
-            status=IoArgoprojEventsV1alpha1EventSourceStatus(
-                status=IoArgoprojEventsV1alpha1Status(
+            status=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceStatus(
+                status=GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Status(
                     conditions=[
-                        IoArgoprojEventsV1alpha1Condition(
+                        GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Condition(
                             last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
                             message="message_example",
                             reason="reason_example",
@@ -5554,7 +5206,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 

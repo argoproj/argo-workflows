@@ -136,9 +136,9 @@ func getObjectType(field map[string]interface{}, addToQueue func(string)) string
 
 			name := getNameFromFullName(refString)
 			if refString == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
-				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", "WorkflowStep"), fmt.Sprintf("#"+strings.ToLower("WorkflowStep"))))
+				return fmt.Sprintf("`Array<Array<`%s`>>`", link("`WorkflowStep`", "#"+strings.ToLower("WorkflowStep")))
 			}
-			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
+			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), "#"+strings.ToLower(name)))
 		}
 		fullName := field["items"].(map[string]interface{})["type"].(string)
 		return fmt.Sprintf("`Array< %s >`", getNameFromFullName(fullName))
