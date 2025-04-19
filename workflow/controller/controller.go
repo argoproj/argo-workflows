@@ -47,7 +47,6 @@ import (
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
