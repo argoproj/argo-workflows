@@ -33,6 +33,7 @@ type LintOptions struct {
 	DefaultNamespace string
 	Formatter        Formatter
 	ServiceClients   ServiceClients
+	IgnoreMissing    bool
 
 	// Printer if not nil the lint result is written to this writer after each
 	// file is linted.
@@ -214,7 +215,12 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		}
 
 		if err != nil {
-			res.Errs = append(res.Errs, fmt.Errorf("in %s: %w", objName, err))
+			// If IgnoreMissing is set, filter out errors related to missing resources
+			if opts.IgnoreMissing && isMissingResourceError(err) {
+				log.Debugf("ignoring missing resource error in %s: %v", objName, err)
+			} else {
+				res.Errs = append(res.Errs, fmt.Errorf("in %s: %w", objName, err))
+			}
 		}
 	}
 
@@ -275,6 +281,15 @@ func getObjectName(kind string, obj metav1.Object, objIndex int) string {
 	}
 
 	return fmt.Sprintf(`"%s" (%s)`, name, kind)
+}
+
+// isMissingResourceError checks if the error is related to missing resources
+func isMissingResourceError(err error) bool {
+	errStr := err.Error()
+	return strings.Contains(errStr, "couldn't find workflow template") ||
+		strings.Contains(errStr, "couldn't find cluster workflow template") ||
+		strings.Contains(errStr, "not found") ||
+		strings.Contains(errStr, "doesn't exist")
 }
 
 func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, error) {
