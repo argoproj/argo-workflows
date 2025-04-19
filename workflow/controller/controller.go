@@ -47,7 +47,6 @@ import (
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
@@ -504,11 +503,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	errorsutil.CheckError(err)
 	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	errorsutil.CheckError(err)
 	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	errorsutil.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
@@ -1221,7 +1220,7 @@ func (wfc *WorkflowController) getWorkflowPhaseMetrics() map[string]int64 {
 	if wfc.wfInformer != nil {
 		for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-			errors.CheckError(err)
+			errorsutil.CheckError(err)
 			result[string(phase)] = int64(len(keys))
 		}
 	}
@@ -1236,7 +1235,7 @@ func (wfc *WorkflowController) getWorkflowConditionMetrics() map[wfv1.Condition]
 			{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 		} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
-			errors.CheckError(err)
+			errorsutil.CheckError(err)
 			result[x] = int64(len(keys))
 		}
 	}
