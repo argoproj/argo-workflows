@@ -17,17 +17,22 @@ argo lint FILE... [flags]
 # Lint only manifests of Workflows and CronWorkflows from stdin:
 
   cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -
+  
+# Lint workflow manifests but ignore missing template references:
+
+  argo lint --ignore-missing my-workflow.yaml
 ```
 
 ### Options
 
 ```
-  -h, --help            help for lint
-      --kinds strings   Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
-      --no-color        Disable colorized output
-      --offline         perform offline linting. For resources referencing other resources, the references will be resolved from the provided args
-  -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
-      --strict          Perform strict workflow validation (default true)
+  -h, --help             help for lint
+      --ignore-missing   ignore errors for missing resources, such as references to non-existent templates
+      --kinds strings    Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
+      --no-color         Disable colorized output
+      --offline          perform offline linting. For resources referencing other resources, the references will be resolved from the provided args
+  -o, --output string    Linting results output format. One of: pretty|simple (default "pretty")
+      --strict           Perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands
