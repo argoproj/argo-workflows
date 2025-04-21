@@ -8,8 +8,7 @@ import (
 	"strings"
 	"time"
 
-	eventsource "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
-	sensor "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -81,11 +80,10 @@ See %s`, help.ArgoServer()),
 
 			namespace := client.Namespace()
 			clients := &types.Clients{
-				Dynamic:     dynamic.NewForConfigOrDie(config),
-				EventSource: eventsource.NewForConfigOrDie(config),
-				Kubernetes:  kubernetes.NewForConfigOrDie(config),
-				Sensor:      sensor.NewForConfigOrDie(config),
-				Workflow:    wfclientset.NewForConfigOrDie(config),
+				Dynamic:    dynamic.NewForConfigOrDie(config),
+				Events:     events.NewForConfigOrDie(config),
+				Kubernetes: kubernetes.NewForConfigOrDie(config),
+				Workflow:   wfclientset.NewForConfigOrDie(config),
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

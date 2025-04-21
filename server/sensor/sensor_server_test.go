@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	sv1 "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1"
+	eventsv1a1 "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1"
 	"github.com/argoproj/argo-events/pkg/client/clientset/versioned/typed/events/v1alpha1"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -24,9 +24,9 @@ func (m *MockSensorClient) ArgoprojV1alpha1Sensor() v1alpha1.SensorInterface {
 	return nil
 }
 
-func (m *MockSensorClient) List(ctx context.Context, opts metav1.ListOptions) (*sv1.SensorList, error) {
-	sensorList := &sv1.SensorList{
-		Items: []sv1.Sensor{
+func (m *MockSensorClient) List(ctx context.Context, opts metav1.ListOptions) (*eventsv1a1.SensorList, error) {
+	sensorList := &eventsv1a1.SensorList{
+		Items: []eventsv1a1.Sensor{
 			{ObjectMeta: metav1.ObjectMeta{Name: "sensor1"}},
 			{ObjectMeta: metav1.ObjectMeta{Name: "sensor2"}},
 		},
@@ -38,7 +38,7 @@ type mockSensorServer struct {
 	sensorClient v1alpha1.SensorInterface
 }
 
-func (s *mockSensorServer) ListSensors(ctx context.Context, req *sensorpkg.ListSensorsRequest) (*sv1.SensorList, error) {
+func (s *mockSensorServer) ListSensors(ctx context.Context, req *sensorpkg.ListSensorsRequest) (*eventsv1a1.SensorList, error) {
 	if s.sensorClient == nil {
 		return nil, fmt.Errorf("sensor client is not set")
 	}
@@ -56,7 +56,7 @@ func TestListSensors(t *testing.T) {
 
 	mockClient := &MockSensorClient{ctrl: ctrl}
 
-	ctx := context.WithValue(context.Background(), auth.SensorKey, mockClient)
+	ctx := context.WithValue(context.Background(), auth.EventsKey, mockClient)
 
 	server := &mockSensorServer{
 		sensorClient: mockClient.ArgoprojV1alpha1Sensor(),
@@ -80,7 +80,7 @@ func TestListSensors_SensorClientNotSet(t *testing.T) {
 
 	mockClient := &MockSensorClient{ctrl: ctrl}
 
-	ctx := context.WithValue(context.Background(), auth.SensorKey, mockClient)
+	ctx := context.WithValue(context.Background(), auth.EventsKey, mockClient)
 
 	server := &mockSensorServer{
 		sensorClient: mockClient.ArgoprojV1alpha1Sensor(),
