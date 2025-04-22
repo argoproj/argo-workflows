@@ -106,7 +106,7 @@ func TestSingleDependency(t *testing.T) {
 		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+		wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
@@ -2565,6 +2565,8 @@ status:
         - name: chunk
           value: "7"
       name: reproduce-bug-9tpfr.process-tasks(7:7)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2588,6 +2590,8 @@ status:
         - name: chunk
           value: "5"
       name: reproduce-bug-9tpfr.process-tasks(5:5)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2630,6 +2634,8 @@ status:
         - name: chunk
           value: "1"
       name: reproduce-bug-9tpfr.process-tasks(1:1)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2653,6 +2659,8 @@ status:
         - name: chunk
           value: "8"
       name: reproduce-bug-9tpfr.process-tasks(8:8)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2732,6 +2740,8 @@ status:
           value: "3"
       message: failed with exit code 1
       name: reproduce-bug-9tpfr.process-tasks(3:3)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "1"
       phase: Failed
@@ -2755,6 +2765,8 @@ status:
         - name: chunk
           value: "9"
       name: reproduce-bug-9tpfr.process-tasks(9:9)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2777,6 +2789,8 @@ status:
           value: "3"
       message: failed with exit code 1
       name: reproduce-bug-9tpfr.process-tasks(3:3)(1)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "1"
       phase: Failed
@@ -2819,6 +2833,8 @@ status:
         - name: chunk
           value: "6"
       name: reproduce-bug-9tpfr.process-tasks(6:6)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2899,6 +2915,8 @@ status:
         - name: chunk
           value: "2"
       name: reproduce-bug-9tpfr.process-tasks(2:2)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2961,6 +2979,8 @@ status:
         - name: chunk
           value: "4"
       name: reproduce-bug-9tpfr.process-tasks(4:4)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -3004,6 +3024,8 @@ status:
         - name: chunk
           value: "0"
       name: reproduce-bug-9tpfr.process-tasks(0:0)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -3047,6 +3069,8 @@ status:
           value: "3"
       message: failed with exit code 1
       name: reproduce-bug-9tpfr.process-tasks(3:3)(2)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "1"
       phase: Failed

@@ -30,7 +30,7 @@ func simpleReplace(w io.Writer, tag string, replaceMap map[string]interface{}, a
 		if allowUnresolved {
 			// just write the same string back
 			log.WithError(errors.InternalError("unresolved")).Debug("unresolved is allowed ")
-			return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+			return fmt.Fprintf(w, "{{%s}}", tag)
 		}
 		return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 	}
