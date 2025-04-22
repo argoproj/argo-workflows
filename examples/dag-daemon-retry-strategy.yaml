@@ -27,6 +27,8 @@ spec:
     daemon: true
     container:
       image: nginx:latest
+      command: ["nginx"]
+      args: ["-g", "daemon off;"]
       readinessProbe:
         httpGet:
           path: /
