@@ -154,10 +154,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	isInput := false
-	if direction == Inputs {
-		isInput = true
-	}
+	isInput := direction == Inputs
 
 	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, fileName)
 	if err != nil {
@@ -211,7 +208,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		dirs := map[string]bool{} // to de-dupe sub-dirs
 
-		_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", "..", "..")))
+		_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", "..", "..")
 
 		for _, object := range objects {
 
@@ -220,11 +217,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 			// if dir is empty string, we are in the root dir
 			if dir == "" {
-				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", file, file)))
+				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", file, file)
 			} else if dirs[dir] {
 				continue
 			} else {
-				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", dir, dir)))
+				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", dir, dir)
 				dirs[dir] = true
 			}
 		}

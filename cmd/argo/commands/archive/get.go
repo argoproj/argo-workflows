@@ -70,8 +70,8 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 		fmt.Println(string(output))
 	default:
 		const fmtStr = "%-20s %v\n"
-		fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-		fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
+		fmt.Printf(fmtStr, "Name:", wf.Name)
+		fmt.Printf(fmtStr, "Namespace:", wf.Namespace)
 		serviceAccount := wf.GetExecSpec().ServiceAccountName
 		if serviceAccount == "" {
 			// if serviceAccountName was not specified in a submitted Workflow, we will
@@ -85,7 +85,7 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 		if wf.Status.Message != "" {
 			fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 		}
-		fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+		fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.CreationTimestamp.Time))
 		if !wf.Status.StartedAt.IsZero() {
 			fmt.Printf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
 		}

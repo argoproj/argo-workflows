@@ -35,7 +35,7 @@ func (l *authorizingServerStream) RecvMsg(m interface{}) error {
 	if err != nil {
 		return err
 	}
-	ctx, err := l.Gatekeeper.ContextWithRequest(l.ctx, m)
+	ctx, err := l.ContextWithRequest(l.ctx, m)
 	if err != nil {
 		return err
 	}

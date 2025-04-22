@@ -165,8 +165,8 @@ func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
 func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
-	if wf.ObjectMeta.Labels != nil {
-		return wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true"
+	if wf.Labels != nil {
+		return wf.Labels[common.LabelKeyCompleted] == "true"
 	}
 	return false
 }
@@ -288,10 +288,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		return err
 	}
 	if opts.GenerateName != "" {
-		wf.ObjectMeta.GenerateName = opts.GenerateName
+		wf.GenerateName = opts.GenerateName
 	}
 	if opts.Name != "" {
-		wf.ObjectMeta.Name = opts.Name
+		wf.Name = opts.Name
 	}
 	if opts.OwnerReference != nil {
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
@@ -636,10 +636,10 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	newWF.TypeMeta = wf.TypeMeta
 
 	// Resubmitted workflow will use generated names
-	if wf.ObjectMeta.GenerateName != "" {
-		newWF.ObjectMeta.GenerateName = wf.ObjectMeta.GenerateName
+	if wf.GenerateName != "" {
+		newWF.GenerateName = wf.GenerateName
 	} else {
-		newWF.ObjectMeta.GenerateName = wf.ObjectMeta.Name + "-"
+		newWF.GenerateName = wf.Name + "-"
 	}
 	// When resubmitting workflow with memoized nodes, we need to use a predetermined workflow name
 	// in order to formulate the node statuses. Which means we cannot reuse metadata.generateName
@@ -650,7 +650,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandSuffix()
+		newWF.Name = newWF.GenerateName + RandSuffix()
 	}
 
 	// carry over the unmodified spec
@@ -664,16 +664,16 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	newWF.Spec.Shutdown = ""
 
 	// carry over user labels and annotations from previous workflow.
-	if newWF.ObjectMeta.Labels == nil {
-		newWF.ObjectMeta.Labels = make(map[string]string)
+	if newWF.Labels == nil {
+		newWF.Labels = make(map[string]string)
 	}
-	for key, val := range wf.ObjectMeta.Labels {
+	for key, val := range wf.Labels {
 		switch key {
 		case common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername,
 			common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
-			newWF.ObjectMeta.Labels[key] = val
+			newWF.Labels[key] = val
 		}
 	}
 	// Apply creator labels based on the authentication information of the current request,
@@ -681,12 +681,12 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	creator.Label(ctx, &newWF)
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
-	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
-	if newWF.ObjectMeta.Annotations == nil {
-		newWF.ObjectMeta.Annotations = make(map[string]string)
+	newWF.Labels[common.LabelKeyPreviousWorkflowName] = wf.Name
+	if newWF.Annotations == nil {
+		newWF.Annotations = make(map[string]string)
 	}
-	for key, val := range wf.ObjectMeta.Annotations {
-		newWF.ObjectMeta.Annotations[key] = val
+	for key, val := range wf.Annotations {
+		newWF.Annotations[key] = val
 	}
 
 	// Setting OwnerReference from original Workflow
@@ -694,7 +694,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 
 	// Override parameters
 	if parameters != nil {
-		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
+		if _, ok := wf.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
 			log.Warnln("Overriding parameters on memoized or resubmitted workflows may have unexpected results")
 		}
 		err := overrideParameters(&newWF, parameters)
@@ -708,9 +708,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	}
 
 	// Iterate the previous nodes.
-	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
+	replaceRegexp := regexp.MustCompile("^" + wf.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	onExitNodeName := wf.Name + ".onExit"
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Panic(err)
@@ -721,7 +721,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			continue
 		}
 		originalID := node.ID
-		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
+		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
 		newNode.ID = newWF.NodeID(newNode.Name)
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
@@ -771,7 +771,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 // convertNodeID converts an old nodeID to a new nodeID
 func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
 	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.ObjectMeta.Name)
+	newNodeName := regex.ReplaceAllString(node.Name, newWf.Name)
 	return newWf.NodeID(newNodeName)
 }
 
@@ -838,7 +838,7 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 			resetParentGroupNodes = append(resetParentGroupNodes, currentNodeID)
 			log.Debugf("Reset connected group node %s", currentNode.Name)
 		}
-		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
+		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.Name {
 			parentNode, err := oldWF.Status.Nodes.Get(currentNode.BoundaryID)
 			if err != nil {
 				log.Panicf("unable to obtain node for %s, panicking", currentNode.BoundaryID)
@@ -860,7 +860,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
-		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
+		if !restartSuccessful || len(nodeFieldSelector) <= 0 {
 			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
 		}
 	default:
@@ -873,7 +873,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	delete(newWF.Labels, common.LabelKeyCompleted)
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
-	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
+	newWF.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.WorkflowRunning
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
@@ -890,7 +890,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 	// Override parameters
 	if parameters != nil {
-		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok {
+		if _, ok := wf.Labels[common.LabelKeyPreviousWorkflowName]; ok {
 			log.Warnln("Overriding parameters on resubmitted workflows may have unexpected results")
 		}
 		err := overrideParameters(newWF, parameters)
@@ -899,7 +899,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 	}
 
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	onExitNodeName := wf.Name + ".onExit"
 	// Get all children of nodes that match filter
 	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
@@ -923,7 +923,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
-					if node.ID != wf.ObjectMeta.Name { // Skip root node
+					if node.ID != wf.Name { // Skip root node
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
 						var nodeGroupNeedsReset bool
 						// Only reset DAG that's in the same branch as the nodeIDsToReset

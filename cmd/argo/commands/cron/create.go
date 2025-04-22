@@ -73,13 +73,13 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		// We have only copied the workflow spec to the cron workflow but not the metadata
 		// that includes name and generateName. Here we copy the metadata to the cron
 		// workflow's metadata and remove the unnecessary and mutually exclusive part.
-		if generateName := newWf.ObjectMeta.GenerateName; generateName != "" {
-			cronWf.ObjectMeta.GenerateName = generateName
-			cronWf.ObjectMeta.Name = ""
+		if generateName := newWf.GenerateName; generateName != "" {
+			cronWf.GenerateName = generateName
+			cronWf.Name = ""
 		}
-		if name := newWf.ObjectMeta.Name; name != "" {
-			cronWf.ObjectMeta.Name = name
-			cronWf.ObjectMeta.GenerateName = ""
+		if name := newWf.Name; name != "" {
+			cronWf.Name = name
+			cronWf.GenerateName = ""
 		}
 		if cronWf.Namespace == "" {
 			cronWf.Namespace = client.Namespace()
