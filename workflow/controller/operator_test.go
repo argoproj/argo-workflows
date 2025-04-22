@@ -9227,7 +9227,7 @@ func TestOperatorRetryExpressionError(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
 	assert.Len(t, retryNode.Children, 3)
 }
 
