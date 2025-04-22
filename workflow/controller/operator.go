@@ -3236,7 +3236,8 @@ func (n loopNodes) Len() int {
 }
 
 func parseLoopIndex(s string) int {
-	s = strings.SplitN(s, "(", 2)[1]
+	splits := strings.Split(s, "(")
+	s = splits[len(splits)-1]
 	s = strings.SplitN(s, ":", 2)[0]
 	val, err := strconv.Atoi(s)
 	if err != nil {
@@ -3276,7 +3277,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
 	for _, node := range childNodes {
-		if node.Outputs == nil || node.Phase != wfv1.NodeSucceeded || node.Type == wfv1.NodeTypeRetry {
+		if node.Outputs == nil || node.Phase != wfv1.NodeSucceeded {
 			continue
 		}
 		if len(node.Outputs.Parameters) > 0 {
