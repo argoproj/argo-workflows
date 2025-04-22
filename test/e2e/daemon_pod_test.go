@@ -8,11 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -213,14 +211,14 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
-		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, md *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			failedNode := status.Nodes.FindByDisplayName("daemoned(0)")
 			succeededNode := status.Nodes.FindByDisplayName("daemoned(1)")
 			require.NotNil(t, failedNode)
 			require.NotNil(t, succeededNode)
-			assert.Equal(t, wfv1.NodeFailed, failedNode.Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, succeededNode.Phase)
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, v1alpha1.NodeFailed, failedNode.Phase)
+			assert.Equal(t, v1alpha1.NodeSucceeded, succeededNode.Phase)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 }
 
