@@ -99,7 +99,7 @@ func (s *MetricsSuite) TestDeprecatedCronSchedule() {
 		CronWorkflow(`@testdata/cronworkflow-deprecated-schedule.yaml`).
 		When().
 		CreateCronWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		Wait(1 * time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").
@@ -124,6 +124,22 @@ func (s *MetricsSuite) TestDeprecatedMutex() {
 				Status(200).
 				Body().
 				Contains(`deprecated_feature{feature="synchronization mutex",namespace="argo"}`) // Count unimportant and unknown
+		})
+}
+
+func (s *MetricsSuite) TestDeprecatedPodPriority() {
+	s.Given().
+		Workflow(`@testdata/workflow-deprecated-podpriority.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored). // Fails as kubernetes we test on do not support this1
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`deprecated_feature{feature="workflow podpriority",namespace="argo"}`) // Count unimportant and unknown
 		})
 }
 
@@ -168,8 +184,7 @@ func (s *MetricsSuite) TestCronCountersForbid() {
 		CronWorkflow(`@testdata/cronworkflow-metrics-forbid.yaml`).
 		When().
 		CreateCronWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		Wait(time.Minute). // This pattern is used in cron_test.go too
+		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").
@@ -186,8 +201,7 @@ func (s *MetricsSuite) TestCronCountersReplace() {
 		CronWorkflow(`@testdata/cronworkflow-metrics-replace.yaml`).
 		When().
 		CreateCronWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		WaitForNewWorkflow(fixtures.ToBeRunning).
+		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").

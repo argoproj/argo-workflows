@@ -168,7 +168,7 @@ spec:
   serviceAccountName: argo
   automountServiceAccountToken: false
   executor:
-    serviceAccountName: default
+    serviceAccountName: argo
   entrypoint: main
   templates:
     - name: main

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -133,7 +134,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 			logLevel = "debug"
 			glogLevel = 6
 		}
-		cmdutil.SetLogLevel(logLevel)
+		cli.SetLogLevel(logLevel)
 		cmdutil.SetGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 

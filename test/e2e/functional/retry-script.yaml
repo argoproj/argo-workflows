@@ -10,8 +10,11 @@ spec:
     retryStrategy:
       limit: 10
     script:
-      image: argoproj/argosay:v2
-      command: ["bash", "-c"]
+      image: python:alpine3.6
+      command: ["python"]
       # fail with a 66% probability
       source: |
-        (( $RANDOM % 3 > 0 ))
+        import random;
+        import sys; 
+        exit_code = random.choice([0, 1, 1]); 
+        sys.exit(exit_code)

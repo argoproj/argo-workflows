@@ -32,7 +32,7 @@ spec:
             dependencies: [delay-stop-workflow]
     - name: delay-stop
       container:
-        image: argoproj/argosay:v2
+        image: alpine:latest
         volumeMounts:
           - name: artifacts
             mountPath: /mnt/vol
@@ -66,7 +66,7 @@ spec:
         labels:
           template: "artifact-creator"
       container:
-        image: argoproj/argosay:v2
+        image: alpine:latest
         volumeMounts:
           - name: artifacts
             mountPath: /mnt/vol

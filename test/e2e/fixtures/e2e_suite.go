@@ -40,8 +40,7 @@ import (
 
 const (
 	Namespace = "argo"
-	Label     = workflow.WorkflowFullName + "/test"     // mark this workflow as a test
-	Backfill  = workflow.WorkflowFullName + "/backfill" // clean backfill workflows
+	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 )
 
 var timeoutBias = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
@@ -84,7 +83,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(ctx, s.KubeClient, s.Config)
+	s.Persistence = newPersistence(s.KubeClient, s.Config)
 	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
@@ -188,17 +187,6 @@ func (s *E2ESuite) DeleteResources() {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
 		}
-		parse, err = labels.ParseToRequirements(Backfill)
-		s.CheckError(err)
-		backfillWorkflows, err := archive.ListWorkflows(utils.ListOptions{
-			Namespace:         Namespace,
-			LabelRequirements: parse,
-		})
-		s.CheckError(err)
-		for _, w := range backfillWorkflows {
-			err := archive.DeleteWorkflow(string(w.UID))
-			s.CheckError(err)
-		}
 	}
 }
 
@@ -256,6 +244,5 @@ func (s *E2ESuite) Given() *Given {
 		hydrator:          s.hydrator,
 		kubeClient:        s.KubeClient,
 		bearerToken:       bearerToken,
-		restConfig:        s.RestConfig,
 	}
 }

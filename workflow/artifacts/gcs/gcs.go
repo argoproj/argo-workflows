@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
@@ -20,7 +21,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/file"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
@@ -195,11 +195,6 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 		}
 		if err != nil {
 			return nil, err
-		}
-		// prefix is a file
-		if attrs.Name == prefix {
-			results = []string{attrs.Name}
-			return results, nil
 		}
 		// skip "folder" path like objects
 		// note that we still download content (including "subfolders")
