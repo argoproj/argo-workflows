@@ -11,33 +11,32 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
+func (wfc *WorkflowController) updateConfig() error {
 	bytes, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
 	log.Info("Configuration:\n" + string(bytes))
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
-	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
-	wfc.wfArchive = persist.NullWorkflowArchive
+	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		tableName, err := persist.GetTableName(persistence)
+		tableName, err := sqldb.GetTableName(persistence)
 		if err != nil {
 			return err
 		}
 		if wfc.session == nil {
-			session, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
+			session, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
 			if err != nil {
 				return err
 			}
@@ -46,7 +45,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
@@ -61,7 +60,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")
@@ -83,18 +82,18 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 }
 
 // initDB inits argo DB tables
-func (wfc *WorkflowController) initDB(ctx context.Context) error {
+func (wfc *WorkflowController) initDB() error {
 	persistence := wfc.Config.Persistence
 	if persistence == nil || persistence.SkipMigration {
 		log.Info("DB migration is disabled")
 		return nil
 	}
-	tableName, err := persist.GetTableName(persistence)
+	tableName, err := sqldb.GetTableName(persistence)
 	if err != nil {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.session, persistence.GetClusterName(), tableName)
+	return sqldb.NewMigrate(wfc.session, persistence.GetClusterName(), tableName).Exec(context.Background())
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {

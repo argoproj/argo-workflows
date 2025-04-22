@@ -36,11 +36,6 @@ Fixes #TODO
 
 <!-- TODO: Say how you tested your changes. -->
 
-### Documentation
-
-<!-- TODO: Say how you have updated the documentation or explain why this isn't needed here -->
-<!-- Required for features: Explain how the user will discover this feature through documentation and examples -->
-
 <!--
 ### Beyond this PR
 

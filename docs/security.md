@@ -63,6 +63,7 @@ rules:
       - workflowtemplates
       - clusterworkflowtemplates
       - cronworkflows
+      - cronworkflows
       - workflowtaskresults
     verbs:
       - get

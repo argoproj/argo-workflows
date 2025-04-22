@@ -18,7 +18,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/file"
+
+	"github.com/argoproj/pkg/file"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"

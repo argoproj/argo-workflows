@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/argoproj/pkg/cli"
+	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,7 +22,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
-	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
@@ -41,7 +42,7 @@ var (
 
 func initConfig() {
 	cmd.SetLogFormatter(logFormat)
-	cmd.SetLogLevel(logLevel)
+	cli.SetLogLevel(logLevel)
 	cmd.SetGLogLevel(glogLevel)
 }
 

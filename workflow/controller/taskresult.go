@@ -121,7 +121,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if !reflect.DeepEqual(old, newNode) {
 			woc.log.
 				WithField("nodeID", nodeID).
-				Debug("task-result changed")
+				Info("task-result changed")
 			woc.wf.Status.Nodes.Set(nodeID, *newNode)
 			woc.updated = true
 		}
