@@ -218,11 +218,11 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 			WorkflowCondition: wfc.getWorkflowConditionMetrics,
 			IsLeader:          wfc.IsLeader,
 		})
-	deprecation.Initialize(wfc.metrics.Metrics.DeprecatedFeature)
-
 	if err != nil {
 		return nil, err
 	}
+
+	deprecation.Initialize(wfc.metrics.Metrics.DeprecatedFeature)
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we create the queues
