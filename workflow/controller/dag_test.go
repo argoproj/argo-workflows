@@ -3615,11 +3615,9 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 
 	// run next DAGTask
 	woc.operate(ctx)
-	woc.operate(ctx)
-	woc.operate(ctx)
 	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
 	assert.NotNil(t, nextDAGTaskNode)
-	assert.Equal(t, wfv1.NodePending, nextDAGTaskNode.Phase)
+	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
 
 func TestDagParallelism(t *testing.T) {
@@ -3688,7 +3686,7 @@ func TestDagWftmplHookWithRetry(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, taskNode.Phase)
 	failHookRetryNode := woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure")
 	failHookChild0Node := woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(0)")
-	assert.Equal(t, wfv1.NodePending, failHookRetryNode.Phase)
+	assert.Equal(t, wfv1.NodeRunning, failHookRetryNode.Phase)
 	assert.Equal(t, wfv1.NodePending, failHookChild0Node.Phase)
 
 	// onFailure retry hook(0) failed
@@ -3701,7 +3699,7 @@ func TestDagWftmplHookWithRetry(t *testing.T) {
 	failHookRetryNode = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure")
 	failHookChild0Node = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(0)")
 	failHookChild1Node := woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(1)")
-	assert.Equal(t, wfv1.NodePending, failHookRetryNode.Phase)
+	assert.Equal(t, wfv1.NodeRunning, failHookRetryNode.Phase)
 	assert.Equal(t, wfv1.NodeFailed, failHookChild0Node.Phase)
 	assert.Equal(t, wfv1.NodePending, failHookChild1Node.Phase)
 

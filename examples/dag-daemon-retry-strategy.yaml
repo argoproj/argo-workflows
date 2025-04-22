@@ -26,7 +26,7 @@ spec:
       limit: "10"
     daemon: true
     container:
-      image: nginx:1.13
+      image: nginx:latest
       readinessProbe:
         httpGet:
           path: /

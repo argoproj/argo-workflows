@@ -973,6 +973,9 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	}
 
 	if !lastChildNode.Phase.Fulfilled() {
+		if !lastChildNode.IsDaemoned() {
+			return node, true, nil
+		}
 		// last child node is still running.
 		node = woc.markNodePhase(node.Name, lastChildNode.Phase)
 		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
@@ -1938,6 +1941,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		woc.log.Warnf("Node was nil, will be initialized as type Skipped")
 	}
 
+	if node != nil {
+		if node.DisplayName == "dependencyTesting" {
+			woc.log.Debugf("Node %s already exists, will be updated", nodeName)
+		}
+	}
+
 	woc.currentStackDepth++
 	defer func() { woc.currentStackDepth-- }()
 
@@ -2293,14 +2302,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return node, err
 		}
 
-		if !retryNode.Phase.Fulfilled() && node.Phase.Fulfilled() { // if the retry child has completed we need to update outself
+		if !retryNode.Phase.Fulfilled() && node.Phase.Fulfilled() { // if the retry child has completed we need to update the parent's status
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
 			}
 		}
 
-		if !node.Phase.Fulfilled() {
+		if !node.Phase.Fulfilled() && node.IsDaemoned() {
 			retryNode = woc.markNodePhase(retryNodeName, node.Phase)
 			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
 				retryNode.Daemoned = ptr.To(true)
