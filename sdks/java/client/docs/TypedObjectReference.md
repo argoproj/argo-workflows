@@ -2,7 +2,6 @@
 
 # TypedObjectReference
 
-TypedObjectReference contains enough information to let you locate the typed referenced object
 
 ## Properties
 

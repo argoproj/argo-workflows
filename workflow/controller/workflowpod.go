@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
@@ -211,11 +212,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact()) {
-		// we do not need the wait container for data templates because
+	if tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData {
+		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		// for resource template, add a wait container to collect logs.
 		waitCtr := woc.newWaitContainer(tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
@@ -245,7 +245,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	initCtr := woc.newInitContainer(tmpl)
 	pod.Spec.InitContainers = []apiv1.Container{initCtr}
 
-	woc.addSchedulingConstraints(pod, wfSpec, tmpl, nodeName)
+	woc.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, nodeName)
 	woc.addMetadata(pod, tmpl)
 
 	// Set initial progress from pod metadata if exists.
@@ -763,7 +763,7 @@ func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
-func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, nodeName string) {
+func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, nodeName string) {
 	// Get boundaryNode Template (if specified)
 	boundaryTemplate, err := woc.GetBoundaryTemplate(nodeName)
 	if err != nil {
@@ -805,6 +805,14 @@ func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1
 		pod.Spec.PriorityClassName = tmpl.PriorityClassName
 	} else if wfSpec.PodPriorityClassName != "" {
 		pod.Spec.PriorityClassName = wfSpec.PodPriorityClassName
+	}
+	// Set priority (if specified)
+	if tmpl.Priority != nil {
+		pod.Spec.Priority = tmpl.Priority
+		deprecation.Record(ctx, deprecation.PodPriority)
+	} else if wfSpec.PodPriority != nil {
+		pod.Spec.Priority = wfSpec.PodPriority
+		deprecation.Record(ctx, deprecation.PodPriority)
 	}
 
 	// set hostaliases

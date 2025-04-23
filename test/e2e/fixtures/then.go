@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -35,7 +34,6 @@ type Then struct {
 	hydrator    hydrator.Interface
 	kubeClient  kubernetes.Interface
 	bearerToken string
-	restConfig  *rest.Config
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
@@ -130,15 +128,6 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	}
 	block(t.t, cronWf)
 	return t
-}
-
-func (t *Then) ExpectWorkflowListFromCronWorkflow(block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
-	t.t.Helper()
-	if t.cronWf == nil {
-		t.t.Fatal("No cron workflow to match against")
-	}
-	labelSelector := common.LabelKeyCronWorkflow + "=" + t.cronWf.Name
-	return t.ExpectWorkflowList(metav1.ListOptions{LabelSelector: labelSelector}, block)
 }
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
@@ -323,6 +312,5 @@ func (t *Then) When() *When {
 		wf:          t.wf,
 		kubeClient:  t.kubeClient,
 		bearerToken: t.bearerToken,
-		restConfig:  t.restConfig,
 	}
 }

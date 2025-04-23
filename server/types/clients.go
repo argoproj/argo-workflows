@@ -1,7 +1,8 @@
 package types
 
 import (
-	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -9,8 +10,9 @@ import (
 )
 
 type Clients struct {
-	Dynamic    dynamic.Interface
-	Workflow   workflow.Interface
-	Events     events.Interface
-	Kubernetes kubernetes.Interface
+	Dynamic     dynamic.Interface
+	Workflow    workflow.Interface
+	Sensor      sensor.Interface
+	EventSource eventsource.Interface
+	Kubernetes  kubernetes.Interface
 }

@@ -16,8 +16,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   concurrencyPolicy: "Replace"
   startingDeadlineSeconds: 0
   workflowSpec:

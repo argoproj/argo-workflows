@@ -158,6 +158,7 @@ spec:
 }
 
 func (s *FunctionalSuite) TestWorkflowRetention() {
+	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
 	s.Given().
 		Workflow("@testdata/exit-1.yaml").
 		When().
@@ -173,7 +174,9 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
-		WaitForWorkflowListFailedCount(2)
+		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
+			return len(list) == 2
+		})
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
@@ -578,24 +581,6 @@ func (s *FunctionalSuite) TestParameterAggregationFromOutputs() {
 			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(2:key3:value3)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key4:value4)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key5:value5)"))
-		})
-}
-
-func (s *FunctionalSuite) TestParameterAggregationDAGWithRetry() {
-	s.Given().
-		Workflow("@functional/parameter-aggregation-dag-with-retry.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(time.Second * 90).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			nodeStatus := status.Nodes.FindByDisplayName("parameter-aggregation-dag-with-retry(0)")
-			require.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-			require.NotNil(t, nodeStatus.Outputs)
-			assert.Len(t, nodeStatus.Outputs.Parameters, 1)
-			assert.Equal(t, `["1","2","3"]`, nodeStatus.Outputs.Parameters[0].Value.String())
 		})
 }
 

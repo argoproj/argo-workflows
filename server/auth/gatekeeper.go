@@ -10,7 +10,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
-	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -37,11 +38,12 @@ import (
 type ContextKey string
 
 const (
-	DynamicKey ContextKey = "dynamic.Interface"
-	WfKey      ContextKey = "workflow.Interface"
-	EventsKey  ContextKey = "events.Interface"
-	KubeKey    ContextKey = "kubernetes.Interface"
-	ClaimsKey  ContextKey = "types.Claims"
+	DynamicKey     ContextKey = "dynamic.Interface"
+	WfKey          ContextKey = "workflow.Interface"
+	SensorKey      ContextKey = "sensor.Interface"
+	EventSourceKey ContextKey = "eventsource.Interface"
+	KubeKey        ContextKey = "kubernetes.Interface"
+	ClaimsKey      ContextKey = "types.Claims"
 )
 
 //go:generate mockery --name=Gatekeeper
@@ -110,7 +112,8 @@ func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (c
 	}
 	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic)
 	ctx = context.WithValue(ctx, WfKey, clients.Workflow)
-	ctx = context.WithValue(ctx, EventsKey, clients.Events)
+	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource)
+	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
@@ -128,8 +131,12 @@ func GetWfClient(ctx context.Context) workflow.Interface {
 	return ctx.Value(WfKey).(workflow.Interface)
 }
 
-func GetEventsClient(ctx context.Context) events.Interface {
-	return ctx.Value(EventsKey).(events.Interface)
+func GetEventSourceClient(ctx context.Context) eventsource.Interface {
+	return ctx.Value(EventSourceKey).(eventsource.Interface)
+}
+
+func GetSensorClient(ctx context.Context) sensor.Interface {
+	return ctx.Value(SensorKey).(sensor.Interface)
 }
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
@@ -344,19 +351,24 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create workflow client: %w", err)
 	}
-	eventsClient, err := events.NewForConfig(restConfig)
+	eventSourceClient, err := eventsource.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create events client: %w", err)
+		return nil, nil, fmt.Errorf("failure to create event source client: %w", err)
+	}
+	sensorClient, err := sensor.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failure to create sensor client: %w", err)
 	}
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
 	}
 	return restConfig, &servertypes.Clients{
-		Dynamic:    dynamicClient,
-		Workflow:   wfClient,
-		Events:     eventsClient,
-		Kubernetes: kubeClient,
+		Dynamic:     dynamicClient,
+		Workflow:    wfClient,
+		Sensor:      sensorClient,
+		EventSource: eventSourceClient,
+		Kubernetes:  kubeClient,
 	}, nil
 }
 

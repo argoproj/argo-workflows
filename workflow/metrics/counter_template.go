@@ -6,8 +6,17 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
+const (
+	nameWFTemplateTriggered = `workflowtemplate_triggered_total`
+)
+
 func addWorkflowTemplateCounter(_ context.Context, m *Metrics) error {
-	return m.CreateBuiltinInstrument(telemetry.InstrumentWorkflowtemplateTriggeredTotal)
+	return m.CreateInstrument(telemetry.Int64Counter,
+		nameWFTemplateTriggered,
+		"Total number of workflow templates triggered by workflowTemplateRef",
+		"{workflow_template}",
+		telemetry.WithAsBuiltIn(),
+	)
 }
 
 func templateAttribs(name, namespace string, cluster bool) telemetry.InstAttribs {
@@ -22,5 +31,5 @@ func (m *Metrics) CountWorkflowTemplate(ctx context.Context, phase MetricWorkflo
 	attribs := templateAttribs(name, namespace, cluster)
 	attribs = append(attribs, telemetry.InstAttrib{Name: telemetry.AttribWorkflowPhase, Value: string(phase)})
 
-	m.AddInt(ctx, telemetry.InstrumentWorkflowtemplateTriggeredTotal.Name(), 1, attribs)
+	m.AddInt(ctx, nameWFTemplateTriggered, 1, attribs)
 }

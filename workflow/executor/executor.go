@@ -21,6 +21,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
 
+	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -433,7 +434,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
-			if !file.Exists(mountedArtPath) {
+			if !argofile.Exists(mountedArtPath) {
 				return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
 			}
 			return fileName, mountedArtPath, nil
@@ -493,7 +494,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
-	isDir, err := file.IsDirectory(unarchivedArtPath)
+	isDir, err := argofile.IsDirectory(unarchivedArtPath)
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
@@ -846,16 +847,6 @@ func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.
 	outputs := we.Template.Outputs.DeepCopy()
 	outputs.Artifacts = artifacts
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
-}
-
-// ReportOutputsLogs updates the WorkflowTaskResult log fields
-func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
-	var outputs wfv1.Outputs
-	artifacts := wfv1.Artifacts{}
-	logArtifacts := we.SaveLogs(ctx)
-	artifacts = append(artifacts, logArtifacts...)
-	outputs.Artifacts = artifacts
-	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
 }
 
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {

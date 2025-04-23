@@ -5,8 +5,7 @@ metadata:
   labels:
     workflows.argoproj.io/test: "true"
 spec:
-  schedules:
-    - "5 5 5 * *" # "* * * * *" -> "5 5 5 * *"
+  schedule: "5 5 5 * *" # "* * * * *" -> "5 5 5 * *"
   concurrencyPolicy: "Replace" # Allow -> Replace
   startingDeadlineSeconds: 10 # 0 -> 10
   successfulJobsHistoryLimit: 5  # 4 -> 5

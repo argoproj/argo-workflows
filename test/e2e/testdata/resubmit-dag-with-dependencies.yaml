@@ -23,9 +23,13 @@ spec:
             template: success
     - name: fail
       container:
-        image: argoproj/argosay:v2
-        args: ["exit", "1"]
+        image: busybox
+        command: ["sh", -c]
+        args:
+          - exit 1
     - name: success
       container:
-        image: argoproj/argosay:v2
-        args: ["exit", "0"]
+        image: busybox
+        command: ["sh", -c]
+        args:
+          - exit 0

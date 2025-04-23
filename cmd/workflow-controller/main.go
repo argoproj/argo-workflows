@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/pkg/cli"
+	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -29,7 +31,6 @@ import (
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/env"
-	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -69,9 +70,9 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
-			defer runtimeutil.HandleCrashWithContext(context.Background(), runtimeutil.PanicHandlers...)
+			defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-			cmdutil.SetLogLevel(logLevel)
+			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
 			cmdutil.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()

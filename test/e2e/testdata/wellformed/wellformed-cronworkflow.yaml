@@ -5,8 +5,7 @@ metadata:
   labels:
     workflows.argoproj.io/test: "true"
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"

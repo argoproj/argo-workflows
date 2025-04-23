@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
+	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
@@ -35,34 +36,14 @@ var (
 	ErrNoArgoServer               = fmt.Errorf("this is impossible if you are not using the Argo Server, see %s", help.CLI())
 )
 
-type ArgoKubeOpts struct {
-	// Closing caching channel will stop caching informers
-	CachingCloseCh chan struct{}
-
-	// Whether to cache WorkflowTemplates, ClusterWorkflowTemplates and Workflows
-	// This improves performance of reading
-	// It is especially visible during validating templates,
-	//
-	// Note that templates caching currently uses informers, so not all template
-	// get/list can use it, since informer has limited capabilities (such as filtering)
-	//
-	// Workflow caching uses in-memory SQLite DB and it provides full capabilities
-	UseCaching bool
-}
-
 type argoKubeClient struct {
-	opts              ArgoKubeOpts
 	instanceIDService instanceid.Service
 	wfClient          workflow.Interface
-	wfTmplStore       types.WorkflowTemplateStore
-	cwfTmplStore      types.ClusterWorkflowTemplateStore
-	wfLister          store.WorkflowLister
-	wfStore           store.WorkflowStore
 }
 
 var _ Client = &argoKubeClient{}
 
-func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
+func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
@@ -77,11 +58,11 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 	if err != nil {
 		return nil, nil, err
 	}
-	namespace, _, err := clientConfig.Namespace()
+	eventSourceInterface, err := eventsource.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
-	eventInterface, err := events.NewForConfig(restConfig)
+	sensorInterface, err := sensor.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,10 +71,11 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		return nil, nil, err
 	}
 	clients := &types.Clients{
-		Dynamic:    dynamicClient,
-		Events:     eventInterface,
-		Kubernetes: kubeClient,
-		Workflow:   wfClient,
+		Dynamic:     dynamicClient,
+		EventSource: eventSourceInterface,
+		Kubernetes:  kubeClient,
+		Sensor:      sensorInterface,
+		Workflow:    wfClient,
 	}
 	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
 	if err != nil {
@@ -103,59 +85,21 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 	if err != nil {
 		return nil, nil, err
 	}
-
-	client := &argoKubeClient{
-		opts:              opts,
-		instanceIDService: instanceIDService,
-		wfClient:          wfClient,
-	}
-	err = client.startStores(restConfig, namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return ctx, client, nil
-}
-
-func (a *argoKubeClient) startStores(restConfig *restclient.Config, namespace string) error {
-	if a.opts.UseCaching {
-		wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, namespace)
-		if err != nil {
-			return err
-		}
-		cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
-		if err != nil {
-			return err
-		}
-		wfStore, err := store.NewSQLiteStore(a.instanceIDService)
-		if err != nil {
-			return err
-		}
-		wftmplInformer.Run(a.opts.CachingCloseCh)
-		cwftmplInformer.Run(a.opts.CachingCloseCh)
-		a.wfStore = wfStore
-		a.wfLister = wfStore
-		a.wfTmplStore = wftmplInformer
-		a.cwfTmplStore = cwftmplInformer
-	} else {
-		a.wfLister = store.NewKubeLister(a.wfClient)
-		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
-		a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
-	}
-	return nil
+	return ctx, &argoKubeClient{instanceIDService, wfClient}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, nil)}}
+	wfLister := store.NewKubeLister(a.wfClient)
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, wfLister, nil, nil)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {
-	return &errorTranslatingCronWorkflowServiceClient{&argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer(a.instanceIDService, a.wfTmplStore, a.cwfTmplStore, nil)}}, nil
+	return &errorTranslatingCronWorkflowServiceClient{&argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer(a.instanceIDService)}}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.WorkflowTemplateServiceClient, error) {
-	return &errorTranslatingWorkflowTemplateServiceClient{&argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer(a.instanceIDService, a.wfTmplStore, a.cwfTmplStore)}}, nil
+	return &errorTranslatingWorkflowTemplateServiceClient{&argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer(a.instanceIDService)}}, nil
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
@@ -167,5 +111,5 @@ func (a *argoKubeClient) NewInfoServiceClient() (infopkg.InfoServiceClient, erro
 }
 
 func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, error) {
-	return &errorTranslatingWorkflowClusterTemplateServiceClient{&argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer(a.instanceIDService, a.cwfTmplStore, nil)}}, nil
+	return &errorTranslatingWorkflowClusterTemplateServiceClient{&argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer(a.instanceIDService)}}, nil
 }

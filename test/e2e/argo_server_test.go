@@ -64,24 +64,6 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			}
 		})
 }
-func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
-	return httpexpect.
-		WithConfig(httpexpect.Config{
-			BaseURL:  baseUrl,
-			Reporter: httpexpect.NewFatalReporter(b),
-			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(b, true),
-			},
-			Client: httpClient,
-		}).
-		Builder(func(req *httpexpect.Request) {
-			if s.username != "" {
-				req.WithBasicAuth(s.username, "garbage")
-			} else if s.bearerToken != "" {
-				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
-			}
-		})
-}
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
@@ -954,7 +936,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
       }
     },
     "spec": {
-      "schedules": ["* * * * *"],
+      "schedule": "* * * * *",
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -1001,15 +983,11 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
@@ -1059,7 +1037,7 @@ spec:
       }
     },
     "spec": {
-      "schedules": ["1 * * * *"],
+      "schedule": "1 * * * *",
       "workflowMetadata": {
         "labels": {"workflows.argoproj.io/test": "true"}
       },
@@ -1080,7 +1058,7 @@ spec:
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.spec.schedules[0]").
+			Path("$.spec.schedule").
 			IsEqual("1 * * * *")
 	})
 
@@ -1376,8 +1354,7 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2
-        args: [echo, "hello \\u0001F44D"]`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1529,10 +1506,6 @@ spec:
 		j.
 			Path("$.metadata.name").
 			NotNull()
-		j.
-			Path("$.spec.templates[0].container.args[1]").
-			// make sure unicode escape wasn't mangled
-			IsEqual("hello \\u0001F44D")
 		j.
 			Path(fmt.Sprintf("$.metadata.labels[\"%s\"]", common.LabelKeyWorkflowArchivingStatus)).
 			IsEqual("Persisted")
@@ -1825,7 +1798,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       }
     },
     "spec": {
-      "schedules": ["* * * * *"],
+      "schedule": "* * * * *",
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -2134,42 +2107,6 @@ func (s *ArgoServerSuite) TestRateLimitHeader() {
 		resp.Header("X-RateLimit-Reset").NotEmpty()
 		resp.Header("Retry-After").IsEmpty()
 	})
-}
-
-func (s *ArgoServerSuite) TestPostgresNullBytes() {
-	// only meaningful for postgres, but shouldn't fail  for mysql.
-	var uid types.UID
-	_ = uid
-
-	s.Given().
-		Workflow(`
-metadata:
-  generateName: archie-
-  labels:
-    foo: 1
-spec:
-  entrypoint: run-archie
-  templates:
-    - name: run-archie
-      container:
-        image: argoproj/argosay:v2
-        args: [echo, "hello \u0000"]`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeArchived).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			uid = metadata.UID
-		})
-
-	j := s.e().GET("/api/v1/archived-workflows/{uid}", uid).
-		Expect().
-		Status(200).
-		JSON()
-	j.
-		Path("$.spec.templates[0].container.args[1]").
-		IsEqual("hello \u0000")
-
 }
 
 func TestArgoServerSuite(t *testing.T) {
