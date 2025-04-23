@@ -108,7 +108,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.WorkflowTemplate, resour
 	// For the next pagination, the resourceVersion of the last item is set in the Continue field.
 	if limit != 0 && len(wfList.Items) == int(limit) {
 		lastIndex := len(wfList.Items) - 1
-		wfList.ListMeta.Continue = wfList.Items[lastIndex].ResourceVersion
+		wfList.Continue = wfList.Items[lastIndex].ResourceVersion
 	}
 }
 
@@ -143,7 +143,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	var items []v1alpha1.WorkflowTemplate
 	if req.NamePattern != "" {
 		for _, item := range wfList.Items {
-			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
+			if strings.Contains(item.Name, req.NamePattern) {
 				items = append(items, item)
 			}
 		}

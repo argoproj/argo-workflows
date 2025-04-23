@@ -3,8 +3,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-deprecated-schedule
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
   workflowSpec:

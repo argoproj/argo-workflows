@@ -9,10 +9,11 @@ import {exampleWorkflowTemplate} from '../shared/examples';
 import {WorkflowTemplate} from '../shared/models';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
+import {useEditableObject} from '../shared/use-editable-object';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {
-    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(nsUtils.getNamespaceWithDefault(namespace)));
+    const {object: template, setObject: setTemplate, serialization, lang, setLang} = useEditableObject(exampleWorkflowTemplate(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -32,7 +33,7 @@ export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: strin
                 </Button>
             </div>
             <ErrorNotice error={error} />
-            <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} />
+            <WorkflowTemplateEditor template={template} serialization={serialization} lang={lang} onLangChange={setLang} onChange={setTemplate} onError={setError} />
             <p>
                 <ExampleManifests />.
             </p>

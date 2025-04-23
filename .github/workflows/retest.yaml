@@ -12,7 +12,7 @@ jobs:
     if: github.event.issue.pull_request && github.event.comment.author_association == 'MEMBER' && github.event.comment.body == '/retest'
     permissions:
       actions: write # for re-running failed jobs: https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#re-run-a-job-from-a-workflow-run
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Re-run failed jobs for this PR
         env:

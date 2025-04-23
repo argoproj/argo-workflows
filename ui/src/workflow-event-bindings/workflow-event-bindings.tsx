@@ -11,7 +11,7 @@ import {GraphPanel} from '../shared/components/graph/graph-panel';
 import {Graph} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
-import {ResourceEditor} from '../shared/components/resource-editor/resource-editor';
+import {SerializingObjectEditor} from '../shared/components/object-editor';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
@@ -147,7 +147,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                         <InfoIcon /> {introductionText} {learnMore}.
                     </Footnote>
                     <SlidingPanel isShown={!!selectedWorkflowEventBinding} onClose={() => setSelectedWorkflowEventBinding(null)}>
-                        {selected && <ResourceEditor value={selected} />}
+                        {selected && <SerializingObjectEditor value={selected} />}
                     </SlidingPanel>
                 </>
             )}

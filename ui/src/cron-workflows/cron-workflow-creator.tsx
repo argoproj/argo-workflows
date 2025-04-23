@@ -9,10 +9,11 @@ import {exampleCronWorkflow} from '../shared/examples';
 import {CronWorkflow} from '../shared/models';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
+import {useEditableObject} from '../shared/use-editable-object';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {
-    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
+    const {object: cronWorkflow, setObject: setCronWorkflow, serialization, lang, setLang} = useEditableObject(exampleCronWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -32,7 +33,7 @@ export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; o
                 </Button>
             </div>
             <ErrorNotice error={error} />
-            <CronWorkflowEditor cronWorkflow={cronWorkflow} onChange={setCronWorkflow} onError={setError} />
+            <CronWorkflowEditor cronWorkflow={cronWorkflow} serialization={serialization} lang={lang} onLangChange={setLang} onChange={setCronWorkflow} onError={setError} />
             <p>
                 <ExampleManifests />.
             </p>

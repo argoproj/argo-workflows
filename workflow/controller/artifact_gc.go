@@ -478,10 +478,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		pod.Spec.ServiceAccountName = podInfo.serviceAccount
 	}
 	for label, labelVal := range podInfo.podMetadata.Labels {
-		pod.ObjectMeta.Labels[label] = labelVal
+		pod.Labels[label] = labelVal
 	}
 	for annotation, annotationVal := range podInfo.podMetadata.Annotations {
-		pod.ObjectMeta.Annotations[annotation] = annotationVal
+		pod.Annotations[annotation] = annotationVal
 	}
 
 	if v := woc.controller.Config.InstanceID; v != "" {
@@ -503,7 +503,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 // go through any GC pods that are already running and may have completed
 func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
 	// check if any previous Artifact GC Pods completed
-	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
+	pods, err := woc.controller.PodController.GetPodsByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}

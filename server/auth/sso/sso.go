@@ -351,7 +351,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(cookie.Value, prefix) {
 		redirect = cookie.Value
 	}
-	http.Redirect(w, r, redirect, 302)
+	http.Redirect(w, r, redirect, http.StatusFound)
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.

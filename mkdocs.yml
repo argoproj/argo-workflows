@@ -54,6 +54,7 @@ validation:
 exclude_docs: |
   /proposals/
   /requirements.txt
+  /tested-kubernetes-versions.md
 
 nav:
   - Home: README.md

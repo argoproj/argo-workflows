@@ -11,8 +11,6 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -27,6 +25,7 @@ import (
 	cronworkflowserver "github.com/argoproj/argo-workflows/v3/server/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	workflowserver "github.com/argoproj/argo-workflows/v3/server/workflow"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -34,7 +33,7 @@ import (
 
 var (
 	argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-	NoArgoServerErr               = fmt.Errorf("this is impossible if you are not using the Argo Server, see %s", help.CLI())
+	ErrNoArgoServer               = fmt.Errorf("this is impossible if you are not using the Argo Server, see %s", help.CLI())
 )
 
 type argoKubeClient struct {
@@ -104,11 +103,11 @@ func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.Wo
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 func (a *argoKubeClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, error) {

@@ -8,10 +8,11 @@ import {exampleSensor} from '../shared/examples';
 import {Sensor} from '../shared/models';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
+import {useEditableObject} from '../shared/use-editable-object';
 import {SensorEditor} from './sensor-editor';
 
 export function SensorCreator({namespace, onCreate}: {namespace: string; onCreate: (sensor: Sensor) => void}) {
-    const [sensor, setSensor] = useState<Sensor>(exampleSensor(nsUtils.getNamespaceWithDefault(namespace)));
+    const {object: sensor, setObject: setSensor, serialization, lang, setLang} = useEditableObject(exampleSensor(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -31,7 +32,7 @@ export function SensorCreator({namespace, onCreate}: {namespace: string; onCreat
                 </Button>
             </div>
             <ErrorNotice error={error} />
-            <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} />
+            <SensorEditor sensor={sensor} serialization={serialization} lang={lang} onChange={setSensor} onLangChange={setLang} onError={setError} />
             <p>
                 <a href='https://github.com/argoproj/argo-events/tree/stable/examples/sensors'>
                     Example sensors <i className='fa fa-external-link-alt' />

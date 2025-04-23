@@ -10,6 +10,7 @@ import {exampleWorkflow} from '../../shared/examples';
 import {Workflow, WorkflowTemplate} from '../../shared/models';
 import * as nsUtils from '../../shared/namespaces';
 import {services} from '../../shared/services';
+import {useEditableObject} from '../../shared/use-editable-object';
 import {SubmitWorkflowPanel} from './submit-workflow-panel';
 import {WorkflowEditor} from './workflow-editor';
 
@@ -19,7 +20,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
     const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
     const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
     const [stage, setStage] = useState<Stage>('choose-method');
-    const [workflow, setWorkflow] = useState<Workflow>();
+    const {object: workflow, setObject: setWorkflow, serialization, lang, setLang} = useEditableObject<Workflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(() => {
@@ -116,7 +117,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                         </Button>
                     </div>
                     <ErrorNotice error={error} />
-                    <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
+                    <WorkflowEditor workflow={workflow} serialization={serialization} lang={lang} onLangChange={setLang} onChange={setWorkflow} onError={setError} />
                     <div>
                         <ExampleManifests />.
                     </div>

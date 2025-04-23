@@ -36,7 +36,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableObject<CronWorkflow>();
+    const {object: cronWorkflow, setObject: setCronWorkflow, resetObject: resetCronWorkflow, serialization, edited, lang, setLang} = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -207,7 +207,16 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                 {!cronWorkflow ? (
                     <Loading />
                 ) : (
-                    <CronWorkflowEditor cronWorkflow={cronWorkflow} onChange={setCronWorkflow} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />
+                    <CronWorkflowEditor
+                        cronWorkflow={cronWorkflow}
+                        serialization={serialization}
+                        lang={lang}
+                        onLangChange={setLang}
+                        onChange={setCronWorkflow}
+                        onError={setError}
+                        selectedTabKey={tab}
+                        onTabSelected={setTab}
+                    />
                 )}
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/cron-workflow=' + name} />}

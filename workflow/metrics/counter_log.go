@@ -21,7 +21,7 @@ func addLogCounter(ctx context.Context, m *Metrics) error {
 		telemetry.WithAsBuiltIn(),
 	)
 	lm := logMetric{
-		counter: m.AllInstruments[nameLogMessages],
+		counter: m.GetInstrument(nameLogMessages),
 	}
 	log.AddHook(lm)
 	for _, level := range lm.Levels() {

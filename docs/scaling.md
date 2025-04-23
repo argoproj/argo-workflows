@@ -5,10 +5,7 @@ For running large workflows, you'll typically need to scale the controller to ma
 ## Horizontally Scaling
 
 You cannot horizontally scale the controller.
-
-> v3.0 and after
-
-As of v3.0, the controller supports having a hot-standby for [High Availability](high-availability.md#workflow-controller).
+The controller supports having a hot-standby for [High Availability](high-availability.md#workflow-controller).
 
 ## Vertically Scaling
 
@@ -32,7 +29,8 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 
 ### K8S API Client Side Rate Limiting
 
-The K8S client library rate limits the messages that can go out.
+The Kubernetes client library used by the Workflow Controller rate limits the number of API requests that can be sent to the Kubernetes API server.
+This rate limiting helps prevent overwhelming the API server with too many requests at once.
 
 If you frequently see messages similar to this in the Controller log (issued by the library):
 
@@ -46,9 +44,34 @@ Or, in >= v3.5, if you see warnings similar to this (could be any CR, not just `
 Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t
 ```
 
-Then, if your K8S API Server can handle more requests:
+These messages indicate that the Controller is being throttled by the client-side rate limiting.
 
-- Increase both `--qps` and `--burst` arguments for the Controller. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `burst` > `qps`.  If not set, the default values are `qps=20` and `burst=30` (as of v3.5 (refer to `cmd/workflow-controller/main.go` in case the values change)).
+#### Adjusting Rate Limiting
+
+By using cluster-wide observability tooling, you can determine whether or not your Kubernetes API server can handle more requests.
+You can increase the rate limits by adjusting the `--qps` and `--burst` arguments for the Controller:
+
+- `--qps`: This argument sets the average number of queries per second allowed by the Kubernetes client.
+The default value is 20.
+- `--burst`: This argument sets the number of queries per second the client can send before it starts enforcing the qps limit.
+The default value is 30. Typically, burst should be greater than qps.
+
+By increasing these values, you can allow the Controller to send more requests to the API server, reducing the likelihood of throttling.
+
+##### Example Configuration
+
+To increase the rate limits, you might set the arguments as follows:
+
+```yaml
+args:
+  - --qps=50
+  - --burst=75
+```
+
+This configuration allows the Controller to send an average of 50 queries per second, with a burst capacity of 75 queries per second before throttling is enforced.
+
+It is important to note that increasing these values can increase the load on the Kubernetes API server and that you must observe your Kubernetes API under load in order to determine whether or not the values you have chosen are correct for your needs.
+It is not possible to provide a one-size-fits-all recommendation for these values.
 
 ## Sharding
 
@@ -72,8 +95,6 @@ metadata:
 data:
     instanceID: i1
 ```
-
-> v2.9 and after
 
 You may need to pass the instance ID to the CLI:
 

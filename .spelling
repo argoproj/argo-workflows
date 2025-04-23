@@ -183,6 +183,7 @@ liveness
 localhost
 maxFailures
 maxSuccess
+md
 memoization
 memoized
 memoizing
@@ -200,6 +201,7 @@ parameterizing
 params
 pprof
 pre-commit
+qps
 rc2
 repo
 roadmap

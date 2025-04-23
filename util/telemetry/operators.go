@@ -10,7 +10,7 @@ import (
 )
 
 func (m *Metrics) AddInt(ctx context.Context, name string, val int64, attribs InstAttribs) {
-	if instrument, ok := m.AllInstruments[name]; ok {
+	if instrument := m.GetInstrument(name); instrument != nil {
 		instrument.AddInt(ctx, val, attribs)
 	} else {
 		log.Errorf("Metrics addInt() to non-existent metric %s", name)
@@ -29,7 +29,7 @@ func (i *Instrument) AddInt(ctx context.Context, val int64, attribs InstAttribs)
 }
 
 func (m *Metrics) Record(ctx context.Context, name string, val float64, attribs InstAttribs) {
-	if instrument, ok := m.AllInstruments[name]; ok {
+	if instrument := m.GetInstrument(name); instrument != nil {
 		instrument.Record(ctx, val, attribs)
 	} else {
 		log.Errorf("Metrics record() to non-existent metric %s", name)

@@ -77,7 +77,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	wf.Status.Nodes.Set(onExitID, onExitNode)
 	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	require.NoError(t, err)
-	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
+	newWFOnExitName := newWF.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
@@ -113,7 +113,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				}
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
-			assert.Equal(t, len(body), len(filePaths))
+			assert.Len(t, filePaths, len(body))
 			require.NoError(t, err)
 			for i := range body {
 				assert.Equal(t, body[i], []byte(tc.contents[i]))
@@ -267,7 +267,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
+		assert.Empty(t, wf.Status.Nodes.FindByDisplayName("approve").Message)
 	})
 
 	t.Run("With user info", func(t *testing.T) {
@@ -1063,7 +1063,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				assert.Equal(t, createdTime, node.StartedAt)
 				assert.Equal(t, finishedTime, node.FinishedAt)
 			case wfv1.NodeFailed:
-				assert.Equal(t, "", node.Message)
+				assert.Empty(t, node.Message)
 				assert.Equal(t, wfv1.NodeRunning, node.Phase)
 				assert.Equal(t, metav1.Time{}, node.FinishedAt)
 				assert.True(t, node.StartedAt.After(createdTime.Time))
@@ -1182,7 +1182,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-		assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
+		assert.Empty(t, string(wf.Status.Nodes["4"].Phase))
 
 	})
 	t.Run("OverrideParams", func(t *testing.T) {

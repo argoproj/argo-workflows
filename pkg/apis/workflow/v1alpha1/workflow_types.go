@@ -162,9 +162,9 @@ type Workflows []Workflow
 func (w Workflows) Len() int      { return len(w) }
 func (w Workflows) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
 func (w Workflows) Less(i, j int) bool {
-	iStart := w[i].ObjectMeta.CreationTimestamp
+	iStart := w[i].CreationTimestamp
 	iFinish := w[i].Status.FinishedAt
-	jStart := w[j].ObjectMeta.CreationTimestamp
+	jStart := w[j].CreationTimestamp
 	jFinish := w[j].Status.FinishedAt
 	if iFinish.IsZero() && jFinish.IsZero() {
 		return !iStart.Before(&jStart)
@@ -230,7 +230,7 @@ func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
-			return wf.ObjectMeta.CreationTimestamp.After(t)
+			return wf.CreationTimestamp.After(t)
 		}
 	}
 	WorkflowFinishedBefore = func(t time.Time) WorkflowPredicate {
@@ -240,7 +240,7 @@ var (
 	}
 	WorkflowRanBetween = func(startTime time.Time, endTime time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
-			return wf.ObjectMeta.CreationTimestamp.After(startTime) && !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(endTime)
+			return wf.CreationTimestamp.After(startTime) && !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(endTime)
 		}
 	}
 )
@@ -501,7 +501,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	if wf.Spec.WorkflowTemplateRef == nil {
 		templates = wf.Spec.Templates
 		if wf.Spec.Synchronization != nil {
-			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range wf.Spec.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -509,7 +509,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	} else if wf.Status.StoredWorkflowSpec != nil {
 		templates = wf.Status.StoredWorkflowSpec.Templates
 		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
-			if configMapRef := wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -518,7 +518,7 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 
 	for _, tmpl := range templates {
 		if tmpl.Synchronization != nil {
-			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+			for _, configMapRef := range tmpl.Synchronization.getSemaphoreConfigMapRefs() {
 				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
 				keyMap[key] = true
 			}
@@ -1658,11 +1658,18 @@ type Synchronization struct {
 	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 
-func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelector {
+	selectors := make([]*apiv1.ConfigMapKeySelector, 0)
 	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
-		return s.Semaphore.ConfigMapKeyRef
+		selectors = append(selectors, s.Semaphore.ConfigMapKeyRef)
 	}
-	return nil
+
+	for _, semaphore := range s.Semaphores {
+		if semaphore.ConfigMapKeyRef != nil {
+			selectors = append(selectors, semaphore.ConfigMapKeyRef)
+		}
+	}
+	return selectors
 }
 
 // SemaphoreRef is a reference of Semaphore
@@ -2372,7 +2379,7 @@ func (ws *WorkflowStatus) GetDuration() time.Duration {
 	if ws.FinishedAt.IsZero() {
 		return 0
 	}
-	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
+	return ws.FinishedAt.Sub(ws.StartedAt.Time)
 }
 
 // Pending returns whether or not the node is in pending state
@@ -3417,12 +3424,12 @@ func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
-	if name == wf.ObjectMeta.Name {
-		return wf.ObjectMeta.Name
+	if name == wf.Name {
+		return wf.Name
 	}
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
-	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+	return fmt.Sprintf("%s-%v", wf.Name, h.Sum32())
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.

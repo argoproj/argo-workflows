@@ -86,7 +86,7 @@ func ansiColorCode(s string) int {
 	for _, c := range s {
 		i += int(c)
 	}
-	colors := []int{FgRed, FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
+	colors := []int{FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
 	return colors[i%len(colors)]
 }
 

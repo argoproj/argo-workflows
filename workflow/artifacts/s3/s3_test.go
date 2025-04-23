@@ -137,7 +137,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Success": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -163,7 +163,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"No such key": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -180,7 +180,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Is Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -197,7 +197,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -257,7 +257,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Success": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -285,7 +285,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"No such key": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -303,7 +303,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Is Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -321,7 +321,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Get File Other Transient Error": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -339,7 +339,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -360,7 +360,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Get Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -397,7 +397,7 @@ func TestLoadS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Empty(t, tc.errMsg)
 			}
 		})
 	}
@@ -434,7 +434,7 @@ func TestSaveS3Artifact(t *testing.T) {
 		"Success as Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{},
+					"my-bucket": {},
 				},
 				map[string]error{}),
 			bucket:    "my-bucket",
@@ -531,7 +531,7 @@ func TestSaveS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Empty(t, tc.errMsg)
 			}
 		})
 	}
@@ -550,7 +550,7 @@ func TestListObjects(t *testing.T) {
 		"Found objects": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -563,7 +563,7 @@ func TestListObjects(t *testing.T) {
 		"Empty directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder",
 					},
 				},
@@ -576,7 +576,7 @@ func TestListObjects(t *testing.T) {
 		"Non-existent directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder",
 					},
 				},

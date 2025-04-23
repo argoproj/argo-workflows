@@ -895,7 +895,7 @@ func (s *CLISuite) TestWorkflowRetryWithRecreatedPVC() {
 			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("print").Phase)
 			// This step is failed intentionally to allow retry. The error message is not related to PVC that is deleted
 			// previously since it is re-created during retry.
-			assert.Equal(t, "main: Error (exit code 1)", status.Nodes.FindByDisplayName("print").Message)
+			assert.Equal(t, "Error (exit code 1)", status.Nodes.FindByDisplayName("print").Message)
 		})
 }
 
@@ -1405,14 +1405,14 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Name Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "basic-cron-wf-overridden-name", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-name")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-name")
 		})
 	})
 
 	s.Run("Create GenerateName Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--generate-name", "basic-cron-wf-overridden-generate-name-", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-generate-name-")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-generate-name-")
 		})
 	})
 

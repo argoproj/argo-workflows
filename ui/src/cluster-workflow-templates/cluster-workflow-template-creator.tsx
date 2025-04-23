@@ -8,10 +8,11 @@ import {UploadButton} from '../shared/components/upload-button';
 import {exampleClusterWorkflowTemplate} from '../shared/examples';
 import {ClusterWorkflowTemplate} from '../shared/models';
 import {services} from '../shared/services';
-import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
+import {useEditableObject} from '../shared/use-editable-object';
+import {WorkflowTemplateEditor} from '../workflow-templates/workflow-template-editor';
 
 export function ClusterWorkflowTemplateCreator({onCreate}: {onCreate: (workflow: ClusterWorkflowTemplate) => void}) {
-    const [template, setTemplate] = useState<ClusterWorkflowTemplate>(exampleClusterWorkflowTemplate());
+    const {object: template, setObject: setTemplate, serialization, lang, setLang} = useEditableObject(exampleClusterWorkflowTemplate());
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -31,7 +32,7 @@ export function ClusterWorkflowTemplateCreator({onCreate}: {onCreate: (workflow:
                 </Button>
             </div>
             <ErrorNotice error={error} />
-            <ClusterWorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} />
+            <WorkflowTemplateEditor template={template} serialization={serialization} lang={lang} onLangChange={setLang} onChange={setTemplate} onError={setError} />
             <div>
                 <ExampleManifests />.
             </div>

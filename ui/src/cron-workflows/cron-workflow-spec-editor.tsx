@@ -14,22 +14,12 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>Schedules</div>
                     <div className='columns small-9'>
-                        {(spec.schedule ?? '') != '' ? (
+                        {spec.schedules.map((schedule, index) => (
                             <>
-                                <TextInput value={spec.schedule} onChange={schedule => onChange({...spec, schedule})} />
-                                <ScheduleValidator schedule={spec.schedule} />
+                                <TextInput value={schedule} onChange={newSchedule => onChange({...spec, schedules: updateScheduleAtIndex(spec.schedules, index, newSchedule)})} />
+                                <ScheduleValidator schedule={schedule} />
                             </>
-                        ) : (
-                            spec.schedules.map((schedule, index) => (
-                                <>
-                                    <TextInput
-                                        value={schedule}
-                                        onChange={newSchedule => onChange({...spec, schedules: updateScheduleAtIndex(spec.schedules, index, newSchedule)})}
-                                    />
-                                    <ScheduleValidator schedule={schedule} />
-                                </>
-                            ))
-                        )}
+                        ))}
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
