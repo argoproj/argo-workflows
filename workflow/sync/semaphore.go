@@ -6,7 +6,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/upper/db/v4"
 	sema "golang.org/x/sync/semaphore"
 )
 
@@ -138,7 +137,7 @@ func workflowKey(key string) string {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, _ db.Session) {
+func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, _ *transaction) {
 	if _, ok := s.lockHolder[holderKey]; ok {
 		s.log.Debugf("Lock is already acquired by %s", holderKey)
 		return
@@ -153,7 +152,7 @@ func (s *prioritySemaphore) removeFromQueue(holderKey string) {
 	s.log.Debugf("Removed from queue: %s", holderKey)
 }
 
-func (s *prioritySemaphore) acquire(holderKey string, _ db.Session) bool {
+func (s *prioritySemaphore) acquire(holderKey string, _ *transaction) bool {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
 		return true
@@ -179,7 +178,7 @@ func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
 //	false, true if we already have the lock
 //	false, false if the lock is not acquirable
 //	string return is a user facing message when not acquirable
-func (s *prioritySemaphore) checkAcquire(holderKey string, _ db.Session) (bool, bool, string) {
+func (s *prioritySemaphore) checkAcquire(holderKey string, _ *transaction) (bool, bool, string) {
 	limit := s.getLimit()
 	if holderKey == "" {
 		return false, false, "bug: attempt to check semaphore with empty holder key"
@@ -219,15 +218,15 @@ func (s *prioritySemaphore) checkAcquire(holderKey string, _ db.Session) (bool, 
 	return false, false, waitingMsg
 }
 
-func (s *prioritySemaphore) tryAcquire(holderKey string, session db.Session) (bool, string) {
-	acq, already, msg := s.checkAcquire(holderKey, session)
+func (s *prioritySemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string) {
+	acq, already, msg := s.checkAcquire(holderKey, tx)
 	if already {
 		return true, msg
 	}
 	if !acq {
 		return false, msg
 	}
-	if s.acquire(holderKey, session) {
+	if s.acquire(holderKey, tx) {
 		s.pending.pop()
 		limit := s.getLimit()
 		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, limit-len(s.lockHolder), limit)

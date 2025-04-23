@@ -2,16 +2,14 @@ package sync
 
 import (
 	"time"
-
-	"github.com/upper/db/v4"
 )
 
 type semaphore interface {
-	acquire(holderKey string, session db.Session) bool
-	checkAcquire(holderKey string, session db.Session) (bool, bool, string)
-	tryAcquire(holderKey string, session db.Session) (bool, string)
+	acquire(holderKey string, tx *transaction) bool
+	checkAcquire(holderKey string, tx *transaction) (bool, bool, string)
+	tryAcquire(holderKey string, tx *transaction) (bool, string)
 	release(key string) bool
-	addToQueue(holderKey string, priority int32, creationTime time.Time, session db.Session)
+	addToQueue(holderKey string, priority int32, creationTime time.Time, tx *transaction)
 	removeFromQueue(holderKey string)
 	getCurrentHolders() []string
 	getCurrentPending() []string

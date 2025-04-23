@@ -263,7 +263,8 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						continue
 					}
 					key := getUpgradedKey(&wf, holders, level)
-					if semaphore != nil && semaphore.acquire(key, sm.dbInfo.session) {
+					tx := &transaction{db: &sm.dbInfo.session}
+					if semaphore != nil && semaphore.acquire(key, tx) {
 						log.Infof("Lock acquired by %s from %s", key, holding.Semaphore)
 					}
 				}
@@ -287,7 +288,8 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 							continue
 						}
 						key := getUpgradedKey(&wf, holding.Holder, level)
-						mutex.acquire(key, sm.dbInfo.session)
+						tx := &transaction{db: &sm.dbInfo.session}
+						mutex.acquire(key, tx)
 					}
 					sm.syncLockMap[holding.Mutex] = mutex
 				}
@@ -335,7 +337,8 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var failedLockName string
 		err := sm.dbInfo.session.Tx(func(sess db.Session) error {
 			var err error
-			already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, sess, holderKey, failedLockName, syncItems, lockKeys)
+			tx := &transaction{db: &sess}
+			already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
 			return err
 		})
 		return already, updated, msg, failedLockName, err
@@ -343,7 +346,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	return sm.tryAcquireImpl(wf, nil, holderKey, failedLockName, syncItems, lockKeys)
 }
 
-func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, session db.Session, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
+func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
 	allAcquirable := true
 	msg := ""
 	for i, lockKey := range lockKeys {
@@ -371,10 +374,10 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, session db.Session, holderK
 			priority = 0
 		}
 		creationTime := wf.CreationTimestamp
-		lock.addToQueue(holderKey, priority, creationTime.Time, session)
+		lock.addToQueue(holderKey, priority, creationTime.Time, tx)
 
 		ensureInit(wf, syncItems[i].getType())
-		acquired, already, newMsg := lock.checkAcquire(holderKey, session)
+		acquired, already, newMsg := lock.checkAcquire(holderKey, tx)
 		if !acquired && !already {
 			allAcquirable = false
 			if msg == "" {
@@ -386,12 +389,12 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, session db.Session, holderK
 		}
 	}
 
-	switch {
+	switch {		
 	case allAcquirable:
 		updated := false
 		for i, lockKey := range lockKeys {
 			lock := sm.syncLockMap[lockKey]
-			acquired, msg := lock.tryAcquire(holderKey, session)
+			acquired, msg := lock.tryAcquire(holderKey, tx)
 			if !acquired {
 				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}

@@ -123,27 +123,28 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("default/wf-01", 0, now, dbSession)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second), dbSession)
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), dbSession)
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), dbSession)
+	tx := &transaction{db: &dbSession}
+	s.addToQueue("default/wf-01", 0, now, tx)
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second), tx)
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), tx)
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), tx)
 
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
-	acquired, _ = s.tryAcquire("default/wf-04", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-04", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-03", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-02", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-02", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-01", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-01", tx)
 	assert.True(t, acquired)
 	// now that wf-01 obtained it, wf-02 can
-	acquired, _ = s.tryAcquire("default/wf-02", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-02", tx)
 	assert.True(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-03", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-04", dbSession)
+	acquired, _ = s.tryAcquire("default/wf-04", tx)
 	assert.False(t, acquired)
 }
 
@@ -168,13 +169,14 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), dbSession)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second), dbSession)
-	s.addToQueue("default/wf-01", 0, now, dbSession)
-	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second), dbSession)
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), dbSession)
+	tx := &transaction{db: &dbSession}
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), tx)
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second), tx)
+	s.addToQueue("default/wf-01", 0, now, tx)
+	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second), tx)
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), tx)
 
-	acquired, _ := s.tryAcquire("default/wf-01", dbSession)
+	acquired, _ := s.tryAcquire("default/wf-01", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 2)
@@ -215,10 +217,11 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("foo/wf-01/nodeid-123", 0, now, dbSession)
-	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second), dbSession)
+	tx := &transaction{db: &dbSession}
+	s.addToQueue("foo/wf-01/nodeid-123", 0, now, tx)
+	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second), tx)
 
-	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123", dbSession)
+	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 1)

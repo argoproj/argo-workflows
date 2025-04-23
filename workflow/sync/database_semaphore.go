@@ -228,9 +228,9 @@ func (s *databaseSemaphore) notifyWaiters() {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, session db.Session) {
+func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, tx *transaction) {
 	var states []stateRecord
-	err := session.SQL().
+	err := (*tx.db).SQL().
 		Select(stateKeyField).
 		From(s.info.config.stateTable).
 		Where(db.Cond{stateNameField: s.dbKey}).
@@ -245,7 +245,7 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 	if len(states) > 0 {
 		return
 	}
-	_, err = session.Collection(s.info.config.stateTable).
+	_, err = (*tx.db).Collection(s.info.config.stateTable).
 		Insert(&stateRecord{
 			Name:       s.dbKey,
 			Key:        holderKey,
@@ -278,13 +278,13 @@ func (s *databaseSemaphore) removeFromQueue(holderKey string) {
 	}
 }
 
-func (s *databaseSemaphore) acquire(holderKey string, session db.Session) bool {
+func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit()
-	existing := s.currentHoldersSession(session)
+	existing := s.currentHoldersSession(*tx.db)
 	if len(existing) < limit {
 		var pending []stateRecord
-		err := session.SQL().
+		err := (*tx.db).SQL().
 			Select(stateKeyField).
 			From(s.info.config.stateTable).
 			Where(db.Cond{stateNameField: s.dbKey}).
@@ -300,7 +300,7 @@ func (s *databaseSemaphore) acquire(holderKey string, session db.Session) bool {
 		if len(pending) > 0 {
 			// Update the existing row in this transaction - removeFromQueue will
 			// fail later
-			_, err := session.SQL().Update(s.info.config.stateTable).
+			_, err := (*tx.db).SQL().Update(s.info.config.stateTable).
 				Set(stateHeldField, true).
 				Where(db.Cond{stateNameField: s.dbKey}).
 				And(db.Cond{stateKeyField: holderKey}).
@@ -313,7 +313,7 @@ func (s *databaseSemaphore) acquire(holderKey string, session db.Session) bool {
 				return false
 			}
 		} else { // insert
-			_, err := session.Collection(s.info.config.stateTable).
+			_, err := (*tx.db).Collection(s.info.config.stateTable).
 				Insert(&stateRecord{
 					Name:       s.dbKey,
 					Key:        holderKey,
@@ -338,13 +338,13 @@ func (s *databaseSemaphore) acquire(holderKey string, session db.Session) bool {
 //	false, true if we already have the lock
 //	false, false if the lock is not acquirable
 //	string return is a user facing message when not acquirable
-func (s *databaseSemaphore) checkAcquire(holderKey string, session db.Session) (bool, bool, string) {
+func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (bool, bool, string) {
 	if holderKey == "" {
 		return false, false, "bug: attempt to check semaphore with empty holder key"
 	}
 	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit()
-	holders := s.currentHoldersSession(session)
+	holders := s.currentHoldersSession(*tx.db)
 	if slices.Contains(holders, holderKey) {
 		return false, true, ""
 	}
@@ -357,7 +357,7 @@ func (s *databaseSemaphore) checkAcquire(holderKey string, session db.Session) (
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	// Only live controllers are considered
-	queue, err := s.queueOrdered(session)
+	queue, err := s.queueOrdered(*tx.db)
 	if err != nil {
 		s.log.WithFields(log.Fields{
 			"key":       holderKey,
@@ -381,15 +381,15 @@ func (s *databaseSemaphore) checkAcquire(holderKey string, session db.Session) (
 	return true, false, ""
 }
 
-func (s *databaseSemaphore) tryAcquire(holderKey string, session db.Session) (bool, string) {
-	acq, already, msg := s.checkAcquire(holderKey, session)
+func (s *databaseSemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string) {
+	acq, already, msg := s.checkAcquire(holderKey, tx)
 	if already {
 		return true, msg
 	}
 	if !acq {
 		return false, msg
 	}
-	if s.acquire(holderKey, session) {
+	if s.acquire(holderKey, tx) {
 		s.log.WithField("key", holderKey).Debug("Successfully acquired lock")
 		s.notifyWaiters()
 		return true, ""
