@@ -165,10 +165,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Namespace: woc.wf.Namespace,
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
+				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
@@ -187,12 +187,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
-		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
+		pod.Finalizers = append(pod.Finalizers, common.FinalizerPodStatus)
 	}
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
-		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
+		pod.Labels[common.LabelKeyOnExit] = "true"
 	}
 
 	if woc.execWf.Spec.HostNetwork != nil {
@@ -202,7 +202,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addDNSConfig(pod)
 
 	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
 	woc.addArchiveLocation(tmpl)
@@ -212,11 +212,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact()) {
-		// we do not need the wait container for data templates because
+	if tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData {
+		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		// for resource template, add a wait container to collect logs.
 		waitCtr := woc.newWaitContainer(tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
@@ -235,7 +234,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			break
 		}
 	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
+	pod.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
+
+	if podGC := woc.execWf.Spec.PodGC; podGC != nil {
+		pod.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(podGC))
+	}
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
@@ -246,7 +249,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addMetadata(pod, tmpl)
 
 	// Set initial progress from pod metadata if exists.
-	if x, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyProgress]; ok {
+	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
@@ -433,9 +436,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		cm := &apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      cmName,
-				Namespace: woc.wf.ObjectMeta.Namespace,
+				Namespace: woc.wf.Namespace,
 				Labels: map[string]string{
-					common.LabelKeyWorkflow: woc.wf.ObjectMeta.Name,
+					common.LabelKeyWorkflow: woc.wf.Name,
 				},
 				Annotations: map[string]string{
 					common.AnnotationKeyNodeName: nodeName,
@@ -539,7 +542,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 }
 
 func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists bool, err error) {
-	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
+	objs, err := woc.controller.PodController.GetPodsByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -733,18 +736,18 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.execWf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
 		for k, v := range woc.execWf.Spec.PodMetadata.Annotations {
-			pod.ObjectMeta.Annotations[k] = v
+			pod.Annotations[k] = v
 		}
 		for k, v := range woc.execWf.Spec.PodMetadata.Labels {
-			pod.ObjectMeta.Labels[k] = v
+			pod.Labels[k] = v
 		}
 	}
 
 	for k, v := range tmpl.Metadata.Annotations {
-		pod.ObjectMeta.Annotations[k] = v
+		pod.Annotations[k] = v
 	}
 	for k, v := range tmpl.Metadata.Labels {
-		pod.ObjectMeta.Labels[k] = v
+		pod.Labels[k] = v
 	}
 }
 

@@ -18,7 +18,13 @@ type workflowConditionGauge struct {
 }
 
 func addWorkflowConditionGauge(_ context.Context, m *Metrics) error {
-	err := m.CreateBuiltinInstrument(telemetry.InstrumentWorkflowCondition)
+	const nameWorkflowCondition = `workflow_condition`
+	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
+		nameWorkflowCondition,
+		"Workflow condition.",
+		"{unit}",
+		telemetry.WithAsBuiltIn(),
+	)
 	if err != nil {
 		return err
 	}
@@ -26,9 +32,10 @@ func addWorkflowConditionGauge(_ context.Context, m *Metrics) error {
 	if m.callbacks.WorkflowCondition != nil {
 		wfcGauge := workflowConditionGauge{
 			callback: m.callbacks.WorkflowCondition,
-			gauge:    m.AllInstruments[telemetry.InstrumentWorkflowCondition.Name()],
+			gauge:    m.GetInstrument(nameWorkflowCondition),
 		}
-		return m.AllInstruments[telemetry.InstrumentWorkflowCondition.Name()].RegisterCallback(m.Metrics, wfcGauge.update)
+		return wfcGauge.gauge.RegisterCallback(m.Metrics, wfcGauge.update)
+
 	}
 	return nil
 	// TODO init all phases?

@@ -15,7 +15,6 @@ import (
 	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -170,9 +169,7 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	wftmplStore := NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx
+	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {

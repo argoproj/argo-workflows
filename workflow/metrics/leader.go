@@ -16,19 +16,24 @@ type leaderGauge struct {
 }
 
 func addIsLeader(ctx context.Context, m *Metrics) error {
-	err := m.CreateBuiltinInstrument(telemetry.InstrumentIsLeader)
+	const nameLeader = `is_leader`
+	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
+		nameLeader,
+		"Emits 1 if leader, 0 otherwise. Always 1 if leader election is disabled.",
+		"{leader}",
+		telemetry.WithAsBuiltIn(),
+	)
 	if err != nil {
 		return err
 	}
 	if m.callbacks.IsLeader == nil {
 		return nil
 	}
-	name := telemetry.InstrumentIsLeader.Name()
 	lGauge := leaderGauge{
 		callback: m.callbacks.IsLeader,
-		gauge:    m.AllInstruments[name],
+		gauge:    m.GetInstrument(nameLeader),
 	}
-	return m.AllInstruments[name].RegisterCallback(m.Metrics, lGauge.update)
+	return lGauge.gauge.RegisterCallback(m.Metrics, lGauge.update)
 }
 
 func (l *leaderGauge) update(_ context.Context, o metric.Observer) error {

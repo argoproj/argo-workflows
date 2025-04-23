@@ -27,10 +27,8 @@ import (
 	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -642,9 +640,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 		panic(err)
 	}
 	namespaceAll := metav1.NamespaceAll
-	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, &namespaceAll)
 	return server, ctx
 }
 

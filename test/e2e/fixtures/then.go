@@ -3,6 +3,7 @@ package fixtures
 import (
 	"context"
 	"fmt"
+	"io"
 	"reflect"
 	"testing"
 	"time"
@@ -129,15 +130,6 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	return t
 }
 
-func (t *Then) ExpectWorkflowListFromCronWorkflow(block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
-	t.t.Helper()
-	if t.cronWf == nil {
-		t.t.Fatal("No cron workflow to match against")
-	}
-	labelSelector := common.LabelKeyCronWorkflow + "=" + t.cronWf.Name
-	return t.ExpectWorkflowList(metav1.ListOptions{LabelSelector: labelSelector}, block)
-}
-
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	t.t.Helper()
 	_, _ = fmt.Println("Listing workflows")
@@ -209,7 +201,7 @@ func (t *Then) ExpectPVCDeleted() *Then {
 			return t
 		default:
 			num := len(t.wf.Status.PersistentVolumeClaims)
-			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.ObjectMeta.Namespace)
+			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.Namespace)
 			for _, p := range t.wf.Status.PersistentVolumeClaims {
 				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
 				if err == nil {
@@ -269,6 +261,25 @@ func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
 	}
 
 	f(t.t, list.Items)
+
+	return t
+}
+
+func (t *Then) ExpectContainerLogs(container string, f func(t *testing.T, logs string)) *Then {
+	t.t.Helper()
+
+	stream, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).GetLogs(t.wf.Name, &apiv1.PodLogOptions{Container: container}).Stream(context.Background())
+	if err != nil {
+		t.t.Fatal(err)
+	}
+
+	defer stream.Close()
+	logBytes, err := io.ReadAll(stream)
+	if err != nil {
+		t.t.Fatal(err)
+	}
+
+	f(t.t, string(logBytes))
 
 	return t
 }

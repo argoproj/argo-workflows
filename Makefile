@@ -39,7 +39,6 @@ E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
-BENCHMARK_COUNT       ?= 6
 
 # should we build the static files?
 ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
@@ -70,6 +69,7 @@ endif
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
+DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
@@ -93,7 +93,7 @@ AUTH_MODE                     := sso
 endif
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
-$(info KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
+$(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
 $(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
 
 override LDFLAGS += \
@@ -107,18 +107,15 @@ override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
 endif
 
 ifndef $(GOPATH)
-	GOPATH:=$(shell go env GOPATH)
+	GOPATH=$(shell go env GOPATH)
 	export GOPATH
 endif
 
 # -- file lists
-# These variables are only used as prereqs for the below targets, and we don't want to run them for other targets
-# because the "go list" calls are very slow
-ifneq (,$(filter dist/argoexec dist/workflow-controller dist/argo dist/argo-% docs/cli/argo.md,$(MAKECMDGOALS)))
 HACK_PKG_FILES_AS_PKGS ?= false
 ifeq ($(HACK_PKG_FILES_AS_PKGS),false)
 	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CLI_PKG_FILES             := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 else
 # Building argoexec on windows cannot rebuild the openapi, we need to fall back to the old
@@ -126,11 +123,6 @@ else
 	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-endif
-else
-	ARGOEXEC_PKG_FILES    :=
-	CLI_PKG_FILES         :=
-	CONTROLLER_PKG_FILES  :=
 endif
 
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
@@ -173,14 +165,25 @@ endef
 cli: dist/argo
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
-ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
+
+$(GOPATH)/bin/staticfiles: Makefile
+# update this in Nix when updating it here
+ifneq ($(USE_NIX), true)
+	go install bou.ke/staticfiles@dd04075
+endif
+
+ifeq ($(STATIC_FILES),true)
+server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
+	# Pack UI into a Go file
+	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
-	@mkdir -p ui/dist/app
-	touch ui/dist/app/index.html
+server/static/files.go:
+	# Building without static files
+	cp ./server/static/files.go.stub ./server/static/files.go
 endif
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
@@ -195,16 +198,16 @@ dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
 
-dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo-windows-%: server/static/files.go $(CLI_PKG_FILES) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo-%: server/static/files.go $(CLI_PKG_FILES) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo: server/static/files.go $(CLI_PKG_FILES) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
@@ -295,12 +298,12 @@ swagger: \
 $(GOPATH)/bin/mockery: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/vektra/mockery/v2@v2.42.2
+	go install github.com/vektra/mockery/v2@v2.53.3
 endif
 $(GOPATH)/bin/controller-gen: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0
 endif
 $(GOPATH)/bin/go-to-protobuf: Makefile
 # update this in Nix when upgrading it here
@@ -448,10 +451,10 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint: Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.1.1
 
 .PHONY: lint
-lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -468,7 +471,7 @@ lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go
+test: server/static/files.go
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 	# marker file, based on it's modification time, we know how long ago this target was run
@@ -480,12 +483,13 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) \
-		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
-		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
-		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
+endif
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
 ifeq ($(UI_SECURE)$(PROFILE),truesso)
 	KUBE_NAMESPACE=$(KUBE_NAMESPACE) ./hack/update-sso-redirect-url.sh
@@ -528,20 +532,15 @@ dist/argosay:
 
 .PHONY: kit
 kit: Makefile
-ifeq ($(shell command -v kit),)
-ifeq ($(shell uname),Darwin)
-	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
-	brew install kit
-else
-	@echo "Downloading Kit"
-	curl -fsL --retry 99 "https://github.com/kitproj/kit/releases/download/v0.1.8/kit_0.1.8_$$(uname)_$$(uname -m | sed 's/aarch64/arm64/').tar.gz" | sudo tar -C /usr/local/bin -xzf - kit
-endif
-endif
-
+	go install github.com/kitproj/kit@v0.1.79
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-start: kit
+ifeq ($(API),true)
+start: install controller kit cli
+else
+start: install controller kit
+endif
 else
 start: install kit
 endif
@@ -616,7 +615,7 @@ Test%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
 
 Benchmark%:
-	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .
+	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -bench .
 
 # clean
 
@@ -625,21 +624,8 @@ clean:
 	go clean
 	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
-# Build telemetry files
-TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
-docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
-	@echo Rebuilding $@
-	go run ./util/telemetry/builder --metricsDocs $@
-
-util/telemetry/metrics_list.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
-	@echo Rebuilding $@
-	go run ./util/telemetry/builder --metricsListGo $@
-
-util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
-	@echo Rebuilding $@
-	go run ./util/telemetry/builder --attributesGo $@
-
 # swagger
+
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
@@ -655,7 +641,6 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 
 # generates many other files (listers, informers, client etc).
-.PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(GOPATH)/bin/go-to-protobuf $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
@@ -673,7 +658,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.31.3/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.30.3/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
@@ -709,11 +694,11 @@ go-diagrams/diagram.dot: ./hack/docs/diagram.go
 docs/assets/diagram.png: go-diagrams/diagram.dot
 	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
-docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) ui/dist/app/index.html hack/docs/fields.go
+docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docs/fields.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs fields
 
 # generates several other files
-docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
+docs/cli/argo.md: $(CLI_PKG_FILES) go.sum server/static/files.go hack/docs/cli.go
 	go run ./hack/docs cli
 
 # docs
@@ -725,9 +710,9 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs-spellcheck
-docs-spellcheck: /usr/local/bin/mdspell docs/metrics.md
+docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
 
@@ -750,9 +735,9 @@ endif
 
 
 .PHONY: docs-lint
-docs-lint: /usr/local/bin/markdownlint docs/metrics.md
+docs-lint: /usr/local/bin/markdownlint
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md
 
 /usr/local/bin/mkdocs:
 # update this in Nix when upgrading it here
@@ -771,6 +756,9 @@ docs: /usr/local/bin/mkdocs \
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
+ifeq ($(shell echo $(GIT_BRANCH) | head -c 8),release-)
+	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
+endif
 	TZ=UTC mkdocs build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"

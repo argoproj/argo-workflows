@@ -8,7 +8,7 @@ import (
 
 var (
 	ExplosiveOffloadNodeStatusRepo OffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}
-	OffloadNotSupportedError                             = fmt.Errorf("offload node status is not supported")
+	ErrOffloadNotSupported                               = fmt.Errorf("offload node status is not supported")
 )
 
 type explosiveOffloadNodeStatusRepo struct{}
@@ -18,21 +18,21 @@ func (n *explosiveOffloadNodeStatusRepo) IsEnabled() bool {
 }
 
 func (n *explosiveOffloadNodeStatusRepo) Save(string, string, wfv1.Nodes) (string, error) {
-	return "", OffloadNotSupportedError
+	return "", ErrOffloadNotSupported
 }
 
 func (n *explosiveOffloadNodeStatusRepo) Get(string, string) (wfv1.Nodes, error) {
-	return nil, OffloadNotSupportedError
+	return nil, ErrOffloadNotSupported
 }
 
 func (n *explosiveOffloadNodeStatusRepo) List(string) (map[UUIDVersion]wfv1.Nodes, error) {
-	return nil, OffloadNotSupportedError
+	return nil, ErrOffloadNotSupported
 }
 
 func (n *explosiveOffloadNodeStatusRepo) Delete(string, string) error {
-	return OffloadNotSupportedError
+	return ErrOffloadNotSupported
 }
 
 func (n *explosiveOffloadNodeStatusRepo) ListOldOffloads(string) (map[string][]string, error) {
-	return nil, OffloadNotSupportedError
+	return nil, ErrOffloadNotSupported
 }

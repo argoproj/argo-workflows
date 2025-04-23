@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl} from '../shared/base';
@@ -28,7 +28,6 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const isFirstRender = useRef(true);
     const namespace = match.params.namespace;
     const name = match.params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -46,20 +45,18 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
         [history]
     );
 
-    useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
-        history.push(
-            historyUrl('workflow-templates/{namespace}/{name}', {
-                namespace,
-                name,
-                sidePanel,
-                tab
-            })
-        );
-    }, [namespace, name, sidePanel, tab]);
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('workflow-templates/{namespace}/{name}', {
+                    namespace,
+                    name,
+                    sidePanel,
+                    tab
+                })
+            ),
+        [namespace, name, sidePanel, tab]
+    );
 
     useEffect(() => {
         services.workflowTemplate
@@ -160,7 +157,6 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                             entrypoint={template.spec.entrypoint}
                             templates={template.spec.templates || []}
                             workflowParameters={template.spec.arguments.parameters || []}
-                            history={history}
                         />
                     )}
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}

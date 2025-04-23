@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
@@ -42,7 +41,7 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			assert.Equal(t, &apiv1.PodSecurityContext{
 				RunAsUser:      ptr.To(int64(8737)),
 				RunAsNonRoot:   ptr.To(true),
-				SeccompProfile: &v1.SeccompProfile{Type: "RuntimeDefault"},
+				SeccompProfile: &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 			}, spec.SecurityContext)
 			require.Len(t, spec.Volumes, 4)
 			assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
@@ -72,7 +71,7 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 					ReadOnlyRootFilesystem:   ptr.To(true),
 					Privileged:               ptr.To(false),
 					Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
-					SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
+					SeccompProfile:           &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 				}, agent.SecurityContext)
 			}
 		}).
