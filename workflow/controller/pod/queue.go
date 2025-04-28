@@ -110,7 +110,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		c.workqueue.Done(key)
 	}()
 
-	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	namespace, podName, action := parsePodCleanupKey(key)
 	logCtx := c.log.WithFields(logrus.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName})
 	logCtx.Info("cleaning up pod")
 	err := func() error {

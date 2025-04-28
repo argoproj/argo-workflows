@@ -48,7 +48,7 @@ type Controller struct {
 	config        *argoConfig.Config
 	kubeclientset kubernetes.Interface
 	wfInformer    cache.SharedIndexInformer
-	workqueue     workqueue.RateLimitingInterface
+	workqueue     workqueue.TypedRateLimitingInterface[string]
 	podInformer   cache.SharedIndexInformer
 	callBack      podEventCallback
 	log           *logrus.Logger
@@ -62,7 +62,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		config:        config,
 		kubeclientset: clientSet,
 		wfInformer:    wfInformer,
-		workqueue:     metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue"),
+		workqueue:     metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "pod_cleanup_queue"),
 		podInformer:   newInformer(ctx, clientSet, &config.InstanceID, &namespace),
 		log:           log,
 		callBack:      callback,

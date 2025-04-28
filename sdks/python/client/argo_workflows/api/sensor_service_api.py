@@ -21,9 +21,9 @@ from argo_workflows.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_sensor import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
+from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_sensor_list import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SensorList
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
-from argo_workflows.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
 from argo_workflows.model.sensor_create_sensor_request import SensorCreateSensorRequest
 from argo_workflows.model.sensor_update_sensor_request import SensorUpdateSensorRequest
 from argo_workflows.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
@@ -43,7 +43,7 @@ class SensorServiceApi(object):
         self.api_client = api_client
         self.create_sensor_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1Sensor,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -120,6 +120,7 @@ class SensorServiceApi(object):
                     'delete_options_orphan_dependents',
                     'delete_options_propagation_policy',
                     'delete_options_dry_run',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential',
                 ],
                 'required': [
                     'namespace',
@@ -154,6 +155,8 @@ class SensorServiceApi(object):
                         (str,),
                     'delete_options_dry_run':
                         ([str],),
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential':
+                        (bool,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -164,6 +167,7 @@ class SensorServiceApi(object):
                     'delete_options_orphan_dependents': 'deleteOptions.orphanDependents',
                     'delete_options_propagation_policy': 'deleteOptions.propagationPolicy',
                     'delete_options_dry_run': 'deleteOptions.dryRun',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential': 'deleteOptions.ignoreStoreReadErrorWithClusterBreakingPotential',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -174,6 +178,7 @@ class SensorServiceApi(object):
                     'delete_options_orphan_dependents': 'query',
                     'delete_options_propagation_policy': 'query',
                     'delete_options_dry_run': 'query',
+                    'delete_options_ignore_store_read_error_with_cluster_breaking_potential': 'query',
                 },
                 'collection_format_map': {
                     'delete_options_dry_run': 'multi',
@@ -189,7 +194,7 @@ class SensorServiceApi(object):
         )
         self.get_sensor_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1Sensor,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -251,7 +256,7 @@ class SensorServiceApi(object):
         )
         self.list_sensors_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1SensorList,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SensorList,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -377,6 +382,7 @@ class SensorServiceApi(object):
                     'pod_log_options_tail_lines',
                     'pod_log_options_limit_bytes',
                     'pod_log_options_insecure_skip_tls_verify_backend',
+                    'pod_log_options_stream',
                 ],
                 'required': [
                     'namespace',
@@ -422,6 +428,8 @@ class SensorServiceApi(object):
                         (str,),
                     'pod_log_options_insecure_skip_tls_verify_backend':
                         (bool,),
+                    'pod_log_options_stream':
+                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -438,6 +446,7 @@ class SensorServiceApi(object):
                     'pod_log_options_tail_lines': 'podLogOptions.tailLines',
                     'pod_log_options_limit_bytes': 'podLogOptions.limitBytes',
                     'pod_log_options_insecure_skip_tls_verify_backend': 'podLogOptions.insecureSkipTLSVerifyBackend',
+                    'pod_log_options_stream': 'podLogOptions.stream',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -454,6 +463,7 @@ class SensorServiceApi(object):
                     'pod_log_options_tail_lines': 'query',
                     'pod_log_options_limit_bytes': 'query',
                     'pod_log_options_insecure_skip_tls_verify_backend': 'query',
+                    'pod_log_options_stream': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -468,7 +478,7 @@ class SensorServiceApi(object):
         )
         self.update_sensor_endpoint = _Endpoint(
             settings={
-                'response_type': (IoArgoprojEventsV1alpha1Sensor,),
+                'response_type': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -679,7 +689,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1Sensor
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -738,6 +748,7 @@ class SensorServiceApi(object):
             delete_options_orphan_dependents (bool): Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.. [optional]
             delete_options_propagation_policy (str): Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.. [optional]
             delete_options_dry_run ([str]): When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType=atomic.. [optional]
+            delete_options_ignore_store_read_error_with_cluster_breaking_potential (bool): if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -848,7 +859,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1Sensor
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -937,7 +948,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1SensorList
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1SensorList
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -996,9 +1007,10 @@ class SensorServiceApi(object):
             pod_log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
             pod_log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
             pod_log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-            pod_log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
+            pod_log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional.. [optional]
             pod_log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
             pod_log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
+            pod_log_options_stream (str): Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -1108,7 +1120,7 @@ class SensorServiceApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            IoArgoprojEventsV1alpha1Sensor
+            GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
                 If the method is called asynchronously, returns the request
                 thread.
         """
