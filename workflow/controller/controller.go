@@ -393,7 +393,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			var err error
 			configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
-			return !errorsutil.IsTransientErr(err), err
+			return !errors.IsTransientErr(err), err
 		})
 		if err != nil {
 			return 0, err
