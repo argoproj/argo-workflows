@@ -1606,8 +1606,8 @@ func TestAssessNodeStatus(t *testing.T) {
 		},
 		daemon:      true,
 		node:        &wfv1.NodeStatus{TemplateName: templateName},
-		wantPhase:   wfv1.NodeSucceeded,
-		wantMessage: "",
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
