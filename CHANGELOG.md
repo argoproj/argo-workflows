@@ -1,5 +1,46 @@
 # Changelog
 
+## v3.6.7 (2025-04-29)
+
+Full Changelog: [v3.6.6...v3.6.7](https://github.com/argoproj/argo-workflows/compare/v3.6.6...v3.6.7)
+
+### Selected Changes
+
+* [8d7dae690](https://github.com/argoproj/argo-workflows/commit/8d7dae690e152d19fb40f7affbb68fb783b32172) fix: disable ALPN in argo-server as a workaround (#14433)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
+## v3.6.6 (2025-04-28)
+
+Full Changelog: [v3.6.5...v3.6.6](https://github.com/argoproj/argo-workflows/compare/v3.6.5...v3.6.6)
+
+### Selected Changes
+
+* [0c14fbb55](https://github.com/argoproj/argo-workflows/commit/0c14fbb55566cc17c66eba78bad2b559d9a20e0d) fix: correct manual retry logic. Fixes #14124 (#14328) (release-3.6) (#14430)
+* [dcaca6343](https://github.com/argoproj/argo-workflows/commit/dcaca6343a5afe9ccb5f5b33addf7e7019a44bef) fix: manual retries exit handler cleanup. Fixes #14180 (#14181) (release-3.6) (#14429)
+* [3993b120d](https://github.com/argoproj/argo-workflows/commit/3993b120d85c91142f9f6e44a5f43cb731b4bff6) fix: correct retry logic (#13734) (release-3.6) (#14428)
+* [a0a87bf1e](https://github.com/argoproj/argo-workflows/commit/a0a87bf1e82abaf4354329d7cdf414e5bdb41e15) chore(deps)!: update k8s and argo-events (release-3.6) (#14424)
+* [f1cae2162](https://github.com/argoproj/argo-workflows/commit/f1cae2162c9b27846e4a263a77f8f1ef230d53bf) chore(deps): bump github.com/expr-lang/expr from 1.16.9 to 1.17.0 (#14307) (release-3.6) (#14421)
+* [2863f0ebd](https://github.com/argoproj/argo-workflows/commit/2863f0ebdb720e5d1262d36fd34bce38cd74749e) fix: prevent dfs sorter infinite recursion on cycle. Fixes #13395 (cherry-pick #14391) (#14420)
+* [fbda98503](https://github.com/argoproj/argo-workflows/commit/fbda985031d51cd89d374463d93e9d9988be68c1) fix: gracefully handle invalid CronWorkflows and simplify logic.  (cherry-pick #14197) (#14419)
+* [8e0308373](https://github.com/argoproj/argo-workflows/commit/8e03083732f3c526cc7f2a4f84fb7af28d9cd2b0) fix(workflow/sync): use RWMutex to prevent concurrent map access (cherry-pick #14321) (#14322)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Isitha Subasinghe
+* jswxstw
+* Mason Malone
+* Ryan Currah
+* William Van Hevelingen
+
+</details>
+
 ## v3.6.5 (2025-03-11)
 
 Full Changelog: [v3.6.4...v3.6.5](https://github.com/argoproj/argo-workflows/compare/v3.6.4...v3.6.5)
