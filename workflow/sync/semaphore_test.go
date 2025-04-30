@@ -1,16 +1,14 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/upper/db/v4"
-	"github.com/upper/db/v4/adapter/sqlite"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/upper/db/v4"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 // semaphoreFactory is a function that creates a semaphore for testing
@@ -25,78 +23,40 @@ func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
-func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow) (semaphore, db.Session, dbInfo) {
+func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, dbInfo, func()) {
 	t.Helper()
-	dbSession, info, err := createTestDBSession(t)
+	info, deferfunc, _, err := createTestDBSession(t, dbType)
 	require.NoError(t, err)
 
 	dbKey := fmt.Sprintf("%s/%s", namespace, name)
-	_, err = dbSession.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
+	_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
 	require.NoError(t, err)
 
 	s := newDatabaseSemaphore(name, dbKey, nextWorkflow, info, cacheTTL)
 	require.NotNil(t, s)
 
-	return s, dbSession, info
+	return s, info, deferfunc
 }
 
-// createTestDatabaseSemaphoreForFactory creates a database-backed semaphore that conforms to the factory
-func createTestDatabaseSemaphoreForFactory(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
+// createTestDatabaseSemaphorePostgres creates a database-backed semaphore that conforms to the factory
+func createTestDatabaseSemaphorePostgres(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
-	s, dbSession, _ := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow)
-	return s, dbSession, func() {
-		dbSession.Close()
-	}
+	s, info, deferfunc := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow, sqldb.Postgres)
+	return s, info.session, deferfunc
+}
+
+// createTestDatabaseSemaphoreMySQL creates a database-backed semaphore that conforms to the factory
+func createTestDatabaseSemaphoreMySQL(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
+	t.Helper()
+	s, info, deferfunc := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow, sqldb.MySQL)
+	return s, info.session, deferfunc
 }
 
 // semaphoreFactories defines the available semaphore implementations for testing
 var semaphoreFactories = map[string]semaphoreFactory{
 	"InternalSemaphore": createTestInternalSemaphore,
-	"DatabaseSemaphore": createTestDatabaseSemaphoreForFactory,
-}
-
-// createTestDBSession creates a test database session
-func createTestDBSession(t *testing.T) (db.Session, dbInfo, error) {
-	t.Helper()
-	settings := sqlite.ConnectionURL{
-		Database: `:memory:`,
-		Options: map[string]string{
-			"mode":  "memory",
-			"cache": "shared",
-		}}
-	info := dbInfo{
-		config: dbConfig{
-			limitTable:                defaultLimitTableName,
-			stateTable:                defaultStateTableName,
-			controllerTable:           defaultControllerTableName,
-			controllerName:            "test1",
-			inactiveControllerTimeout: defaultDBInactiveControllerSeconds * time.Second,
-		},
-	}
-	conn, err := sqlite.Open(settings)
-	if err != nil {
-		return nil, info, err
-	}
-
-	info.session = conn
-	err = migrate(context.Background(), conn, &info.config)
-	if err != nil {
-		conn.Close()
-		return nil, info, err
-	}
-
-	// Mark this controller as alive
-	_, err = conn.Collection(info.config.controllerTable).
-		Insert(&controllerHealthRecord{
-			Controller: info.config.controllerName,
-			Time:       time.Now(),
-		})
-	if err != nil {
-		conn.Close()
-		return nil, info, err
-	}
-
-	return conn, info, nil
+	"PostgresSemaphore": createTestDatabaseSemaphorePostgres,
+	"MySQLSemaphore":    createTestDatabaseSemaphoreMySQL,
 }
 
 // TestIsSameWorkflowNodeKeys tests the isSameWorkflowNodeKeys function

@@ -58,20 +58,20 @@ func (s *prioritySemaphore) getLimit() int {
 	return limit
 }
 
-func (s *prioritySemaphore) getCurrentPending() []string {
+func (s *prioritySemaphore) getCurrentPending() ([]string, error) {
 	var keys []string
 	for _, item := range s.pending.items {
 		keys = append(keys, item.key)
 	}
-	return keys
+	return keys, nil
 }
 
-func (s *prioritySemaphore) getCurrentHolders() []string {
+func (s *prioritySemaphore) getCurrentHolders() ([]string, error) {
 	var keys []string
 	for k := range s.lockHolder {
 		keys = append(keys, k)
 	}
-	return keys
+	return keys, nil
 }
 
 func (s *prioritySemaphore) resize(n int) bool {

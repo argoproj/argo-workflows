@@ -886,7 +886,6 @@ func TestMutexWfLevel(t *testing.T) {
 }
 
 func TestCheckWorkflowExistence(t *testing.T) {
-	assert := assert.New(t)
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -916,15 +915,25 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 
-		assert.Len(mutex.getCurrentHolders(), 1)
-		assert.Len(mutex.getCurrentPending(), 1)
-		assert.Len(semaphore.getCurrentHolders(), 1)
-		assert.Len(semaphore.getCurrentPending(), 1)
+		holders, err := mutex.getCurrentHolders()
+		require.NoError(t, err)
+		assert.Len(t, holders, 1)
+		pending, err := mutex.getCurrentPending()
+		require.NoError(t, err)
+		assert.Len(t, pending, 1)
+		holders, err = semaphore.getCurrentHolders()
+		require.NoError(t, err)
+		assert.Len(t, holders, 1)
+		pending, err = semaphore.getCurrentPending()
+		require.NoError(t, err)
+		assert.Len(t, pending, 1)
 		syncManager.CheckWorkflowExistence(ctx)
-		assert.Empty(mutex.getCurrentHolders())
-		assert.Len(mutex.getCurrentPending(), 1)
-		assert.Empty(semaphore.getCurrentHolders())
-		assert.Empty(semaphore.getCurrentPending())
+		holders, err = semaphore.getCurrentHolders()
+		require.NoError(t, err)
+		assert.Empty(t, holders)
+		pending, err = semaphore.getCurrentPending()
+		require.NoError(t, err)
+		assert.Empty(t, pending)
 	})
 }
 
@@ -1359,7 +1368,8 @@ func TestMutexMigration(t *testing.T) {
 		sem, found := syncMgr.syncLockMap[lockName.String()]
 		require.True(found)
 
-		holders := sem.getCurrentHolders()
+		holders, err := sem.getCurrentHolders()
+		require.NoError(err)
 		require.Len(holders, 1)
 
 		// PROVE: bug absent
@@ -1402,7 +1412,8 @@ func TestMutexMigration(t *testing.T) {
 		sem, found := syncMgr.syncLockMap[lockName.String()]
 		require.True(found)
 
-		holders := sem.getCurrentHolders()
+		holders, err := sem.getCurrentHolders()
+		require.NoError(err)
 		require.Len(holders, 1)
 
 		holderKey := getHolderKey(wfMutex3, foundNodeID)

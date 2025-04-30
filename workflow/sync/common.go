@@ -11,8 +11,8 @@ type semaphore interface {
 	release(key string) bool
 	addToQueue(holderKey string, priority int32, creationTime time.Time, tx *transaction)
 	removeFromQueue(holderKey string)
-	getCurrentHolders() []string
-	getCurrentPending() []string
+	getCurrentHolders() ([]string, error)
+	getCurrentPending() ([]string, error)
 	getName() string
 	getLimit() int
 	probeWaiting()

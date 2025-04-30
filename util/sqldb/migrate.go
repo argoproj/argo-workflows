@@ -32,38 +32,34 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 			return err
 		}
 
-		// For SQLite, no need to check for primary key existence - it's created in the table definition
-		// For other databases, check if we need to add the primary key
-		if dbType != SQLite {
-			// Ensure the schema_history table has a primary key, creating it if necessary
-			// This logic is implemented separately from regular migrations to improve compatibility with databases running in strict or HA modes
-			dbIdentifierColumn := "table_schema"
-			if dbType == Postgres {
-				dbIdentifierColumn = "table_catalog"
-			}
+		// Ensure the schema_history table has a primary key, creating it if necessary
+		// This logic is implemented separately from regular migrations to improve compatibility with databases running in strict or HA modes
+		dbIdentifierColumn := "table_schema"
+		if dbType == Postgres {
+			dbIdentifierColumn = "table_catalog"
+		}
 
-			// Check if primary key exists
-			rows, err := session.SQL().Query(
-				fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?",
-					versionTableName, dbIdentifierColumn),
-				session.Name())
+		// Check if primary key exists
+		rows, err := session.SQL().Query(
+			fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?",
+				versionTableName, dbIdentifierColumn),
+			session.Name())
+		if err != nil {
+			return err
+		}
+		defer func() {
+			tmpErr := rows.Close()
+			if err == nil {
+				err = tmpErr
+			}
+		}()
+		if !rows.Next() {
+			_, err := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
 			if err != nil {
 				return err
 			}
-			defer func() {
-				tmpErr := rows.Close()
-				if err == nil {
-					err = tmpErr
-				}
-			}()
-			if !rows.Next() {
-				_, err := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
-				if err != nil {
-					return err
-				}
-			} else if err := rows.Err(); err != nil {
-				return err
-			}
+		} else if err := rows.Err(); err != nil {
+			return err
 		}
 
 		rs, err := session.SQL().Query(fmt.Sprintf("select schema_version from %s", versionTableName))

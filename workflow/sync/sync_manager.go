@@ -15,7 +15,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 type (
@@ -34,43 +33,18 @@ type Manager struct {
 	dbInfo            dbInfo
 }
 
-type dbInfo struct {
-	session db.Session
-	config  dbConfig
-}
-
 type lockTypeName string
 
 const (
-	defaultDBPollSeconds               = 10
-	defaultDBHeartbeatSeconds          = 60
-	defaultDBInactiveControllerSeconds = 600
-
-	defaultLimitTableName      = "sync_limit"
-	defaultStateTableName      = "sync_state"
-	defaultControllerTableName = "sync_controller"
-
 	lockTypeSemaphore lockTypeName = "semaphore"
 	lockTypeMutex     lockTypeName = "mutex"
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
-	var dbSession db.Session
-	var dbConfig dbConfig
-	if config != nil {
-		var err error
-		dbSession, err = sqldb.CreateDBSession(ctx, kubectlConfig, namespace, config.DBConfig)
-		if err != nil {
-			// Carry on anyway, but database sync locks won't work
-			dbSession = nil
-		}
-		dbConfig.limitTable = defaultTable(config.LimitTableName, defaultLimitTableName)
-		dbConfig.stateTable = defaultTable(config.StateTableName, defaultStateTableName)
-		dbConfig.controllerTable = defaultTable(config.ControllerTableName, defaultControllerTableName)
-		dbConfig.controllerName = config.ControllerName
-		dbConfig.inactiveControllerTimeout = secondsToDurationWithDefault(config.InactiveControllerSeconds,
-			defaultDBInactiveControllerSeconds)
-	}
+	return createLockManager(ctx, kubectlConfig, namespace, dbSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
+}
+
+func createLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -85,42 +59,17 @@ func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, nam
 		isWFDeleted:       isWFDeleted,
 		dbInfo: dbInfo{
 			session: dbSession,
-			config:  dbConfig,
+			config:  dbConfigFromConfig(config),
 		},
 	}
-	log.WithField("dbConfigured", dbSession != nil).Info("Sync manager initialized")
-	if dbSession != nil {
-		log.Infof("Setting up sync manager database")
-		if !config.SkipMigration {
-			err := migrate(ctx, dbSession, &dbConfig)
-			if err != nil {
-				// Carry on anyway, but database sync locks won't work
-				log.Warnf("cannot initialize semaphore database: %v", err)
-				dbSession = nil
-			}
-			log.Infof("Sync db migration complete")
-		}
-	}
-	if dbSession != nil {
+	log.WithField("dbConfigured", sm.dbInfo.session != nil).Info("Sync manager initialized")
+	sm.dbInfo.migrate(ctx)
+
+	if sm.dbInfo.session != nil {
 		sm.backgroundNotifier(ctx, config.PollSeconds)
 		sm.dbControllerHeartbeat(ctx, config.HeartbeatSeconds)
 	}
 	return sm
-}
-
-func defaultTable(tableName, defaultName string) string {
-	if tableName == "" {
-		return defaultName
-	}
-	return tableName
-}
-
-func secondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration {
-	dur := time.Duration(defaultSeconds) * time.Second
-	if value != nil {
-		dur = time.Duration(*value) * time.Second
-	}
-	return dur
 }
 
 func (sm *Manager) getWorkflowKey(key string) (string, error) {
@@ -142,8 +91,17 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 
 	log.Debug("Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
-		keys := lock.getCurrentHolders()
-		keys = append(keys, lock.getCurrentPending()...)
+		holders, err := lock.getCurrentHolders()
+		if err != nil {
+			log.WithError(err).Error("failed to get current lock holders")
+			continue
+		}
+		pending, err := lock.getCurrentPending()
+		if err != nil {
+			log.WithError(err).Error("failed to get current lock pending")
+			continue
+		}
+		keys := append(holders, pending...)
 		for _, holderKeys := range keys {
 			wfKey, err := sm.getWorkflowKey(holderKeys)
 			if err != nil {
@@ -330,11 +288,15 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	if err != nil {
 		return false, false, "", failedLockName, fmt.Errorf("couldn't decode locks for session: %w", err)
 	}
+	if needDB && sm.dbInfo.session == nil {
+		return false, false, "", failedLockName, fmt.Errorf("synchronization database session is not available")
+	}
 	if needDB {
 		var updated bool
 		var already bool
 		var msg string
 		var failedLockName string
+		// TODO Guard against 0 limit
 		err := sm.dbInfo.session.Tx(func(sess db.Session) error {
 			var err error
 			tx := &transaction{db: &sess}
@@ -389,7 +351,7 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 		}
 	}
 
-	switch {		
+	switch {
 	case allAcquirable:
 		updated := false
 		for i, lockKey := range lockKeys {
@@ -398,7 +360,10 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 			if !acquired {
 				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}
-			currentHolders := sm.getCurrentLockHolders(lockKey)
+			currentHolders, err := sm.getCurrentLockHolders(lockKey)
+			if err != nil {
+				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %s", err)
+			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockAcquired(holderKey, lockKey, currentHolders) {
 				updated = true
 			}
@@ -407,7 +372,10 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 	default: // Not all acquirable
 		updated := false
 		for i, lockKey := range lockKeys {
-			currentHolders := sm.getCurrentLockHolders(lockKey)
+			currentHolders, err := sm.getCurrentLockHolders(lockKey)
+			if err != nil {
+				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %s", err)
+			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
 				updated = true
 			}
@@ -541,11 +509,11 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	return key
 }
 
-func (sm *Manager) getCurrentLockHolders(lock string) []string {
+func (sm *Manager) getCurrentLockHolders(lock string) ([]string, error) {
 	if concurrency, ok := sm.syncLockMap[lock]; ok {
 		return concurrency.getCurrentHolders()
 	}
-	return nil
+	return nil, nil
 }
 
 func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) {
@@ -602,14 +570,16 @@ func (sm *Manager) backgroundNotifier(ctx context.Context, period *int) {
 func (sm *Manager) dbControllerHeartbeat(ctx context.Context, period *int) {
 	// This doesn't need be be transactional, if someone else has the same controller name as us
 	// you've got much worse problems
-	_, err := sm.dbInfo.session.Collection(sm.dbInfo.config.controllerTable).
+	// Failure here is not critical, so we don't check errors, we may already be in the table
+	ll := db.LC().Level()
+	db.LC().SetLevel(db.LogLevelError)
+	sm.dbInfo.session.Collection(sm.dbInfo.config.controllerTable).
 		Insert(&controllerHealthRecord{
 			Controller: sm.dbInfo.config.controllerName,
 			Time:       time.Now(),
 		})
-	if err != nil {
-		log.Errorf("Failed to insert sync controller timestamp: %s", err)
-	}
+	db.LC().SetLevel(ll)
+
 	sm.dbControllerUpdate()
 	go wait.UntilWithContext(ctx, func(_ context.Context) { sm.dbControllerUpdate() },
 		secondsToDurationWithDefault(period, defaultDBHeartbeatSeconds))

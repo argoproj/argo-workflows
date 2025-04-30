@@ -9,14 +9,6 @@ import (
 	"github.com/upper/db/v4"
 )
 
-type dbConfig struct {
-	limitTable                string
-	stateTable                string
-	controllerTable           string
-	controllerName            string
-	inactiveControllerTimeout time.Duration
-}
-
 type databaseSemaphore struct {
 	name         string
 	limitGetter  limitProvider
@@ -119,7 +111,7 @@ func (s *databaseSemaphore) getLimit() int {
 	return limit
 }
 
-func (s *databaseSemaphore) currentState(session db.Session, held bool) []string {
+func (s *databaseSemaphore) currentState(session db.Session, held bool) ([]string, error) {
 	var states []stateRecord
 	err := session.SQL().
 		Select(stateKeyField).
@@ -130,23 +122,24 @@ func (s *databaseSemaphore) currentState(session db.Session, held bool) []string
 		All(&states)
 	if err != nil {
 		s.log.WithField("held", held).WithError(err).Error("Failed to get current state")
+		return nil, err
 	}
 	keys := make([]string, len(states))
 	for i := range states {
 		keys[i] = states[i].Key
 	}
-	return keys
+	return keys, nil
 }
 
-func (s *databaseSemaphore) getCurrentPending() []string {
+func (s *databaseSemaphore) getCurrentPending() ([]string,error) {
 	return s.currentState(s.info.session, false)
 }
 
-func (s *databaseSemaphore) getCurrentHolders() []string {
+func (s *databaseSemaphore) getCurrentHolders() ([]string, error) {
 	return s.currentHoldersSession(s.info.session)
 }
 
-func (s *databaseSemaphore) currentHoldersSession(session db.Session) []string {
+func (s *databaseSemaphore) currentHoldersSession(session db.Session) ([]string, error) {
 	return s.currentState(session, true)
 }
 
@@ -204,7 +197,12 @@ func (s *databaseSemaphore) queueOrdered(session db.Session) ([]stateRecord, err
 func (s *databaseSemaphore) notifyWaiters() {
 	limit := s.getLimit()
 	// We don't need to run a transaction here, if we get it wrong it'll right itself
-	holdCount := len(s.getCurrentHolders())
+	holders, err := s.getCurrentHolders()
+	if err != nil {
+		s.log.WithError(err).Error("Failed to notify waiters")
+		return
+	}
+	holdCount := len(holders)
 
 	pending, err := s.queueOrdered(s.info.session)
 	if err != nil {
@@ -281,7 +279,11 @@ func (s *databaseSemaphore) removeFromQueue(holderKey string) {
 func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit()
-	existing := s.currentHoldersSession(*tx.db)
+	existing, err := s.currentHoldersSession(*tx.db)
+	if err != nil {
+		s.log.WithField("key", holderKey).WithError(err).Error("Failed to acquire lock")
+		return false
+	}
 	if len(existing) < limit {
 		var pending []stateRecord
 		err := (*tx.db).SQL().
@@ -344,7 +346,11 @@ func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (boo
 	}
 	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit()
-	holders := s.currentHoldersSession(*tx.db)
+	holders, err := s.currentHoldersSession(*tx.db)
+	if err != nil {
+		s.log.WithField("key", holderKey).WithError(err).Error("Failed to acquire lock")
+		return false, false, err.Error()
+	}
 	if slices.Contains(holders, holderKey) {
 		return false, true, ""
 	}
@@ -369,7 +375,7 @@ func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (boo
 		return false, false, ""
 	}
 	if queue[0].Controller != s.info.config.controllerName {
-		return false, false, ""
+		return false, false, waitingMsg
 	}
 	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
 		// Enqueue the queue[0] workflow if lock is available
