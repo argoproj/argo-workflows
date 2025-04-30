@@ -131,7 +131,7 @@ func (s *databaseSemaphore) currentState(session db.Session, held bool) ([]strin
 	return keys, nil
 }
 
-func (s *databaseSemaphore) getCurrentPending() ([]string,error) {
+func (s *databaseSemaphore) getCurrentPending() ([]string, error) {
 	return s.currentState(s.info.session, false)
 }
 

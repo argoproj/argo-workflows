@@ -25,11 +25,11 @@ func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, na
 }
 
 // CreateDBSessionWithCreds creates a database session using direct username and password
-func CreateDBSessionWithCreds(ctx context.Context, dbConfig config.DBConfig, username, password string) (db.Session, error) {
+func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, error) {
 	if dbConfig.PostgreSQL != nil {
-		return createPostGresDBSessionWithCreds(ctx, dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		return createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
 	} else if dbConfig.MySQL != nil {
-		return createMySQLDBSessionWithCreds(ctx, dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		return createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
 	}
 	return nil, fmt.Errorf("no databases are configured")
 }
@@ -45,7 +45,7 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 		return nil, err
 	}
 
-	return createPostGresDBSessionWithCreds(ctx, cfg, persistPool, string(userNameByte), string(passwordByte))
+	return createPostGresDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
 }
 
 // createMySQLDBSession creates Mysql DB session
@@ -59,11 +59,11 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 		return nil, err
 	}
 
-	return createMySQLDBSessionWithCreds(ctx, cfg, persistPool, string(userNameByte), string(passwordByte))
+	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
-func createPostGresDBSessionWithCreds(ctx context.Context, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
+func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
 	fmt.Printf("Connecting to %s on %s, as %s/%s", cfg.Database, cfg.GetHostname(), username, password)
 	settings := postgresqladp.ConnectionURL{
 		User:     username,
@@ -90,7 +90,7 @@ func createPostGresDBSessionWithCreds(ctx context.Context, cfg *config.PostgreSQ
 }
 
 // createMySQLDBSessionWithCreds creates MySQL DB session with direct credentials
-func createMySQLDBSessionWithCreds(ctx context.Context, cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
+func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
 	session, err := mysqladp.Open(mysqladp.ConnectionURL{
 		User:     username,
 		Password: password,

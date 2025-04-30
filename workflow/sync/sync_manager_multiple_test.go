@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
@@ -48,13 +48,15 @@ func checkCannotAcquire(ctx context.Context, t *testing.T, syncMgr *Manager, wf 
 	assert.Contains(t, msg, "Waiting for", "wf should be waiting")
 }
 
-func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize int) (context.Context, *Manager, *Manager) {
-	ctx := context.Background()
-	kube := fake.NewSimpleClientset()
+func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize int) (context.Context, func(), *Manager, *Manager) {
+	ctx, cancel := context.WithCancel(context.Background())
 	// Create a database session for the semaphore
 	info, deferfn, cfg, err := createTestDBSession(t, dbType)
+	deferfn2 := func() {
+		deferfn()
+		cancel()
+	}
 	require.NoError(t, err)
-	defer deferfn()
 
 	// Set up the semaphore limit in the database
 	dbKey := "default/my-db-semaphore"
@@ -62,19 +64,20 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, kube, "default", info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
 	require.NotNil(t, syncMgr1.dbInfo.session)
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, kube, "default", info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
 	require.NotNil(t, syncMgr2.dbInfo.session)
-	return ctx, syncMgr1, syncMgr2
+	return ctx, deferfn2, syncMgr1, syncMgr2
 }
 
 func testSyncManagersSemaphoreAcquisitionForDB(t *testing.T, dbType sqldb.DBType) {
-	ctx, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 2)
+	ctx, deferfn, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 2)
+	defer deferfn()
 
 	// Create 4 workflows
 	wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
@@ -113,7 +116,8 @@ func TestSyncManagersSemaphoreAcquisition(t *testing.T) {
 }
 
 func testSyncManagersSemaphoreAcquisitionWithPriorityForDB(t *testing.T, dbType sqldb.DBType) {
-	ctx, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 1)
+	ctx, deferfn, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 1)
+	defer deferfn()
 
 	// Create 4 workflows
 	wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)

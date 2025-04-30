@@ -43,7 +43,7 @@ func createTestDBSession(t *testing.T, dbType sqldb.DBType) (dbInfo, func(), con
 
 	info := dbInfo{
 		config:  dbConfigFromConfig(&cfg),
-		session: dbSessionFromConfigWithCreds(ctx, &cfg, testDBUser, testDBPassword),
+		session: dbSessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
 	}
 	require.NotNil(t, info.session, "failed to create database session")
 	deferfn := func() {
@@ -79,7 +79,7 @@ func setupPostgresContainer(t *testing.T, ctx context.Context) (config.SyncConfi
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
+				WithStartupTimeout(30*time.Second)),
 	)
 	if err != nil {
 		return config.SyncConfig{}, nil, err
@@ -154,4 +154,3 @@ func setupMySQLContainer(t *testing.T, ctx context.Context) (config.SyncConfig, 
 
 	return cfg, termContainerFn, nil
 }
-

@@ -7,9 +7,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"k8s.io/client-go/kubernetes"
 )
 
 type dbConfig struct {
@@ -93,11 +94,11 @@ func dbConfigFromConfig(config *config.SyncConfig) dbConfig {
 	}
 }
 
-func dbSessionFromConfigWithCreds(ctx context.Context, config *config.SyncConfig, username, password string) db.Session {
+func dbSessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
 	if config == nil {
 		return nil
 	}
-	dbSession, err := sqldb.CreateDBSessionWithCreds(ctx, config.DBConfig, username, password)
+	dbSession, err := sqldb.CreateDBSessionWithCreds(config.DBConfig, username, password)
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work
 		return nil

@@ -41,10 +41,10 @@ const (
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
-	return createLockManager(ctx, kubectlConfig, namespace, dbSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
+	return createLockManager(ctx, dbSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
 }
 
-func createLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
+func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -530,7 +530,7 @@ func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) 
 		}
 		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL), nil
 	default:
-		return nil, fmt.Errorf("Invalid lock kind %s when initializing semaphore", lock.Kind)
+		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.Kind)
 	}
 }
 
@@ -548,7 +548,7 @@ func (sm *Manager) initializeMutex(mutexName string) (semaphore, error) {
 		}
 		return newDatabaseMutex(mutexName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
 	default:
-		return nil, fmt.Errorf("Invalid lock kind %s when initializing mutex", lock.Kind)
+		return nil, fmt.Errorf("invalid lock kind %s when initializing mutex", lock.Kind)
 	}
 }
 
@@ -573,7 +573,7 @@ func (sm *Manager) dbControllerHeartbeat(ctx context.Context, period *int) {
 	// Failure here is not critical, so we don't check errors, we may already be in the table
 	ll := db.LC().Level()
 	db.LC().SetLevel(db.LogLevelError)
-	sm.dbInfo.session.Collection(sm.dbInfo.config.controllerTable).
+	_, _ = sm.dbInfo.session.Collection(sm.dbInfo.config.controllerTable).
 		Insert(&controllerHealthRecord{
 			Controller: sm.dbInfo.config.controllerName,
 			Time:       time.Now(),

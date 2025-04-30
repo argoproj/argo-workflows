@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upper/db/v4"
+
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 var testDBTypes = []sqldb.DBType{sqldb.Postgres, sqldb.MySQL}

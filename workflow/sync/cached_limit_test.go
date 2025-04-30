@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock time for testing
@@ -73,7 +74,7 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 		advanceTime(1 * time.Minute)
 
 		cachedLimit, changed, err := cl.get("test-key")
-		assert.NoError(t, err, "Should not error with cached value")
+		require.NoError(t, err, "Should not error with cached value")
 		assert.Equal(t, firstLimit, cachedLimit, "Should return cached limit")
 		assert.False(t, changed, "Cached value should not indicate change")
 	}
@@ -86,7 +87,7 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 
 	// This call should refresh the cache
 	secondLimit, changed, err := cl.get("test-key")
-	assert.NoError(t, err, "Should not error when refreshing")
+	require.NoError(t, err, "Should not error when refreshing")
 	assert.Equal(t, initialLimit+2, secondLimit, "New limit should be initialLimit+2")
 	assert.True(t, changed, "Second refresh should indicate limit changed")
 	assert.Equal(t, 2, callCount, "Getter should be called a second time after TTL expires")
@@ -97,7 +98,7 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 		advanceTime(2 * time.Minute)
 
 		cachedLimit, changed, err := cl.get("test-key")
-		assert.NoError(t, err, "Should not error with new cached value")
+		require.NoError(t, err, "Should not error with new cached value")
 		assert.Equal(t, secondLimit, cachedLimit, "Should return new cached limit")
 		assert.False(t, changed, "Cached value should not indicate change")
 	}

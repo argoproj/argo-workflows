@@ -37,7 +37,7 @@ func newInternalSemaphore(name string, nextWorkflow NextWorkflow, configMapGette
 	var err error
 	limit := sem.getLimit()
 	if limit == 0 {
-		err = fmt.Errorf("Failed to initialize semaphore %s with limit", name) 
+		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
 	}
 	return sem, err
 }
@@ -49,7 +49,7 @@ func (s *prioritySemaphore) getName() string {
 func (s *prioritySemaphore) getLimit() int {
 	limit, changed, err := s.limitGetter.get(s.name)
 	if err != nil {
-		s.log.WithError(err).Errorf("Failed to get limit for semaphore %s", s.name)
+		s.log.WithError(err).Errorf("failed to get limit for semaphore %s", s.name)
 		return 0
 	}
 	if changed {

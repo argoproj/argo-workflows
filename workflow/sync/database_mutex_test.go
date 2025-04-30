@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 // createTestDatabaseMutex creates a database-backed mutex for testing
