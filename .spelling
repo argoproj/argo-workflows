@@ -151,6 +151,7 @@ codebase
 config
 cpu
 cron
+crypto
 daemoned
 dependabot
 dev
@@ -211,6 +212,12 @@ pprof
 pre-commit
 pytorch
 qps
+randAlpha
+randAlphaNum
+randAscii
+randBytes
+randInt
+randNumeric
 rc2
 repo
 roadmap
@@ -218,6 +225,8 @@ runtime
 runtimes
 s3
 sandboxed
+semver
+semverCompare
 shortcodes
 stateful
 stderr
@@ -226,6 +235,7 @@ temporality
 tolerations
 triaged
 un-reconciled
+uuidv4
 v1
 v1.0
 v1.1
