@@ -1334,5 +1334,5 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 		}
 	}
 	require.NotNil(t, mainContainer)
-	assert.Equal(t, mainContainer.Resources.Requests.Memory().String(), "25Mi")
+	assert.Equal(t, "25Mi", mainContainer.Resources.Requests.Memory().String())
 }
