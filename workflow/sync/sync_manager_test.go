@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -1073,6 +1074,16 @@ status:
     cpu: 2
     memory: 1
   startedAt: "2022-02-28T18:13:00Z"
+  synchronization:
+    mutex:
+      holding:
+      - holder: synchronization-tmpl-level-sgg6t-928517240
+        mutex: argo/Mutex/workflow
+      waiting:
+      - holder: argo/synchronization-tmpl-level-sgg6t/synchronization-tmpl-level-sgg6t-928517240
+        mutex: argo/Mutex/workflow
+  taskResultsCompletionStatus:
+    synchronization-tmpl-level-sgg6t-928517240: false
 `)
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
@@ -1467,6 +1478,10 @@ func TestCheckHolderVersion(t *testing.T) {
 }
 
 func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows platforms")
+	}
+
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
 			// Create database session and info
