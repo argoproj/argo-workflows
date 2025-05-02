@@ -601,14 +601,30 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
+	argoExecPath := os.Getenv(common.EnvVarArgoExecPath)
+	if argoExecPath != "" {
+		log.Infof("Using argoexec path from environment variable for the init subcommand: %s", argoExecPath)
+	} else {
+		argoExecPath = "argoexec"
+	}
+
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = append([]string{"argoexec", "init"}, woc.getExecutorLogOpts()...)
+	ctr.Command = append([]string{argoExecPath, "init"}, woc.getExecutorLogOpts()...)
+
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = append([]string{"argoexec", "wait"}, woc.getExecutorLogOpts()...)
+
+	argoExecPath := os.Getenv(common.EnvVarArgoExecPath)
+	if argoExecPath != "" {
+		log.Infof("Using argoexec path from environment variable for the wait subcommand: %s", argoExecPath)
+	} else {
+		argoExecPath = "argoexec"
+	}
+
+	ctr.Command = append([]string{argoExecPath, "wait"}, woc.getExecutorLogOpts()...)
 	return ctr
 }
 

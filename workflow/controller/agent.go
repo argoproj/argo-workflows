@@ -165,8 +165,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		podVolumes = append(podVolumes, *certVolume)
 		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
 	}
+
+	argoExecPath := os.Getenv(common.EnvVarArgoExecPath)
+	if argoExecPath != "" {
+		log.Infof("Using argoexec path from environment variable for the agent subcommand: %s", argoExecPath)
+	} else {
+		argoExecPath = "argoexec"
+	}
+
 	agentCtrTemplate := apiv1.Container{
-		Command:         []string{"argoexec"},
+		Command:         []string{argoExecPath},
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             envVars,
