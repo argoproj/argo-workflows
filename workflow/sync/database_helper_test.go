@@ -79,7 +79,7 @@ func setupPostgresContainer(t *testing.T, ctx context.Context) (config.SyncConfi
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second)),
+				WithStartupTimeout(15*time.Second)),
 	)
 	if err != nil {
 		return config.SyncConfig{}, nil, err

@@ -12,7 +12,7 @@ import (
 type databaseSemaphore struct {
 	name         string
 	limitGetter  limitProvider
-	dbKey        string
+	shortDbKey   string
 	nextWorkflow NextWorkflow
 	log          *log.Entry
 	info         dbInfo
@@ -28,7 +28,6 @@ type stateRecord struct {
 	Name       string    `db:"name"`        // semaphore name identifier
 	Key        string    `db:"workflowkey"` // workflow key holding or waiting for the lock of the form <namespace>/<name>
 	Controller string    `db:"controller"`  // controller where the workflow is running
-	Mutex      bool      `db:"mutex"`
 	Held       bool      `db:"held"`
 	Priority   int32     `db:"priority"` // higher number = higher priority in queue
 	Time       time.Time `db:"time"`     // timestamp of creation or last update
@@ -39,6 +38,12 @@ type controllerHealthRecord struct {
 	Time       time.Time `db:"time"`       // timestamp of creation or last update
 }
 
+type lockRecord struct {
+	Name       string    `db:"name"`       // semaphore name identifier
+	Controller string    `db:"controller"` // controller where the workflow is running
+	Time       time.Time `db:"time"`       // timestamp of creation
+}
+
 const (
 	limitNameField = "name"
 	limitSizeField = "sizelimit"
@@ -46,13 +51,16 @@ const (
 	stateNameField       = "name"
 	stateKeyField        = "workflowkey"
 	stateControllerField = "controller"
-	stateMutexField      = "mutex"
 	stateHeldField       = "held"
 	statePriorityField   = "priority"
 	stateTimeField       = "time"
 
 	controllerNameField = "controller"
 	controllerTimeField = "time"
+
+	lockNameField       = "name"
+	lockControllerField = "controller"
+	lockTimeField       = "time"
 )
 
 var _ semaphore = &databaseSemaphore{}
@@ -60,7 +68,7 @@ var _ semaphore = &databaseSemaphore{}
 func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo, syncLimitCacheTTL time.Duration) *databaseSemaphore {
 	sm := &databaseSemaphore{
 		name:         name,
-		dbKey:        dbKey,
+		shortDbKey:   dbKey,
 		limitGetter:  nil,
 		nextWorkflow: nextWorkflow,
 		log: log.WithFields(log.Fields{
@@ -74,6 +82,13 @@ func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, 
 	return sm
 }
 
+func (s *databaseSemaphore) longDbKey() string {
+	if s.isMutex {
+		return "mtx/" + s.shortDbKey
+	}
+	return "sem/" + s.shortDbKey
+}
+
 func (s *databaseSemaphore) getName() string {
 	return s.name
 }
@@ -84,15 +99,15 @@ func (s *databaseSemaphore) getLimitFromDB(_ string) (int, error) {
 	err := s.info.session.SQL().
 		Select(limitSizeField).
 		From(s.info.config.limitTable).
-		Where(db.Cond{limitNameField: s.dbKey}).
+		Where(db.Cond{limitNameField: s.shortDbKey}).
 		One(limit)
 	if err != nil {
-		s.log.WithField("key", s.dbKey).WithError(err).Error("Failed to get limit")
+		s.log.WithField("key", s.shortDbKey).WithError(err).Error("Failed to get limit")
 		return 0, err
 	}
 	s.log.WithFields(log.Fields{
 		"limit": limit.SizeLimit,
-		"key":   s.dbKey,
+		"key":   s.shortDbKey,
 	}).Debug("Current limit")
 	return limit.SizeLimit, nil
 }
@@ -101,9 +116,9 @@ func (s *databaseSemaphore) getLimitFromDB(_ string) (int, error) {
 // Otherwise queries the database for the limit.
 func (s *databaseSemaphore) getLimit() int {
 	log.WithFields(log.Fields{
-		"dbKey": s.dbKey,
+		"dbKey": s.shortDbKey,
 	}).Infof("getLimit")
-	limit, _, err := s.limitGetter.get(s.dbKey)
+	limit, _, err := s.limitGetter.get(s.shortDbKey)
 	if err != nil {
 		s.log.WithError(err).Errorf("Failed to get limit for semaphore %s", s.name)
 		return 0
@@ -117,8 +132,7 @@ func (s *databaseSemaphore) currentState(session db.Session, held bool) ([]strin
 		Select(stateKeyField).
 		From(s.info.config.stateTable).
 		Where(db.Cond{stateHeldField: held}).
-		And(db.Cond{stateNameField: s.dbKey}).
-		And(db.Cond{stateMutexField: s.isMutex}).
+		And(db.Cond{stateNameField: s.longDbKey()}).
 		All(&states)
 	if err != nil {
 		s.log.WithField("held", held).WithError(err).Error("Failed to get current state")
@@ -143,14 +157,36 @@ func (s *databaseSemaphore) currentHoldersSession(session db.Session) ([]string,
 	return s.currentState(session, true)
 }
 
+func (s *databaseSemaphore) lock() bool {
+	record := &lockRecord{
+		Name:       s.longDbKey(),
+		Controller: s.info.config.controllerName,
+		Time:       time.Now(),
+	}
+	_, err := s.info.session.Collection(s.info.config.lockTable).Insert(record)
+	return err == nil
+}
+
+func (s *databaseSemaphore) unlock() {
+	for {
+		_, err := s.info.session.SQL().
+			DeleteFrom(s.info.config.lockTable).
+			Where(db.Cond{lockNameField: s.longDbKey()}).
+			Exec()
+		if err == nil {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 func (s *databaseSemaphore) release(key string) bool {
 	_, err := s.info.session.SQL().
 		DeleteFrom(s.info.config.stateTable).
 		Where(db.Cond{stateHeldField: true}).
-		And(db.Cond{stateNameField: s.dbKey}).
+		And(db.Cond{stateNameField: s.longDbKey()}).
 		And(db.Cond{stateKeyField: key}).
 		And(db.Cond{stateControllerField: s.info.config.controllerName}).
-		And(db.Cond{stateMutexField: s.isMutex}).
 		Exec()
 
 	switch err {
@@ -165,26 +201,24 @@ func (s *databaseSemaphore) release(key string) bool {
 }
 
 func (s *databaseSemaphore) queueOrdered(session db.Session) ([]stateRecord, error) {
-	// Check whether requested holdkey is in front of priority queue.
-	// If it is in front position, it will allow to acquire lock.
-	// If it is not a front key, it needs to wait for its turn.
-	// Only live controllers are considered
 	since := time.Now().Add(-s.info.config.inactiveControllerTimeout)
 	var queue []stateRecord
+	subquery := session.SQL().
+		Select(controllerNameField).
+		From(s.info.config.controllerTable).
+		And(db.Cond{controllerTimeField + " >": since})
+
 	err := session.SQL().
 		Select(stateKeyField, stateControllerField).
 		From(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.dbKey}).
+		Where(db.Cond{stateNameField: s.longDbKey()}).
 		And(db.Cond{stateHeldField: false}).
-		And(db.Cond{stateMutexField: s.isMutex}).
 		And(db.Cond{
-			"controller IN": session.SQL().
-				Select(controllerNameField).
-				From(s.info.config.controllerTable).
-				And(db.Cond{controllerTimeField + " >": since}),
+			"controller IN": subquery,
 		}).
 		OrderBy(statePriorityField+" DESC", stateTimeField+" ASC").
 		All(&queue)
+
 	if err != nil {
 		s.log.WithError(err).Error("Failed to get ordered queue for semaphore notification")
 		return nil, err
@@ -226,15 +260,15 @@ func (s *databaseSemaphore) notifyWaiters() {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, tx *transaction) {
+func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+	// Doesn't need a transaction, as no-one else should be inserting exactly this record ever
 	var states []stateRecord
-	err := (*tx.db).SQL().
+	err := s.info.session.SQL().
 		Select(stateKeyField).
 		From(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.dbKey}).
+		Where(db.Cond{stateNameField: s.longDbKey()}).
 		And(db.Cond{stateKeyField: holderKey}).
 		And(db.Cond{stateControllerField: s.info.config.controllerName}).
-		And(db.Cond{stateMutexField: s.isMutex}).
 		All(&states)
 	if err != nil {
 		s.log.WithField("key", holderKey).WithError(err).Error("Failed to add to queue")
@@ -243,16 +277,15 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 	if len(states) > 0 {
 		return
 	}
-	_, err = (*tx.db).Collection(s.info.config.stateTable).
-		Insert(&stateRecord{
-			Name:       s.dbKey,
-			Key:        holderKey,
-			Controller: s.info.config.controllerName,
-			Held:       false,
-			Mutex:      s.isMutex,
-			Priority:   priority,
-			Time:       creationTime,
-		})
+	record := &stateRecord{
+		Name:       s.longDbKey(),
+		Key:        holderKey,
+		Controller: s.info.config.controllerName,
+		Held:       false,
+		Priority:   priority,
+		Time:       creationTime,
+	}
+	_, err = s.info.session.Collection(s.info.config.stateTable).Insert(record)
 	switch err {
 	case nil:
 		s.log.WithField("key", holderKey).Debug("Added into queue")
@@ -264,10 +297,11 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 func (s *databaseSemaphore) removeFromQueue(holderKey string) {
 	_, err := s.info.session.SQL().
 		DeleteFrom(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.dbKey}).
+		Where(db.Cond{stateNameField: s.longDbKey()}).
 		And(db.Cond{stateKeyField: holderKey}).
 		And(db.Cond{stateHeldField: false}).
 		Exec()
+
 	switch err {
 	case nil:
 		s.log.WithField("key", holderKey).Debug("Removed from queue")
@@ -276,8 +310,104 @@ func (s *databaseSemaphore) removeFromQueue(holderKey string) {
 	}
 }
 
-func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
+func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (bool, bool, string) {
+	if holderKey == "" {
+		s.log.WithFields(log.Fields{
+			"result":       false,
+			"already_held": false,
+			"message":      "bug: attempt to check semaphore with empty holder key",
+		}).Info("CheckAcquire failed")
+		return false, false, "bug: attempt to check semaphore with empty holder key"
+	}
 	// Limit changes are eventually consistent, not inside the tx
+	limit := s.getLimit()
+	holders, err := s.currentHoldersSession(*tx.db)
+	if err != nil {
+		s.log.WithFields(log.Fields{
+			"key":          holderKey,
+			"result":       false,
+			"already_held": false,
+			"error":        err.Error(),
+		}).Info("CheckAcquire failed")
+		return false, false, err.Error()
+	}
+	if slices.Contains(holders, holderKey) {
+		s.log.WithFields(log.Fields{
+			"key":          holderKey,
+			"result":       false,
+			"already_held": true,
+		}).Info("CheckAcquire - already held")
+		return false, true, ""
+	}
+	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDbKey(), len(holders), limit)
+
+	if len(holders) >= limit {
+		s.log.WithFields(log.Fields{
+			"key":             holderKey,
+			"result":          false,
+			"already_held":    false,
+			"message":         waitingMsg,
+			"current_holders": len(holders),
+			"limit":           limit,
+		}).Info("CheckAcquire - limit exceeded")
+		return false, false, waitingMsg
+	}
+	// Check whether requested holdkey is in front of priority queue.
+	// If it is in front position, it will allow to acquire lock.
+	// If it is not a front key, it needs to wait for its turn.
+	// Only live controllers are considered
+	queue, err := s.queueOrdered(*tx.db)
+	if err != nil {
+		s.log.WithFields(log.Fields{
+			"key":          holderKey,
+			"result":       false,
+			"already_held": false,
+			"error":        err.Error(),
+		}).Info("CheckAcquire failed")
+		return false, false, err.Error()
+	}
+	if len(queue) == 0 {
+		s.log.WithFields(log.Fields{
+			"key":          holderKey,
+			"result":       false,
+			"already_held": false,
+		}).Info("CheckAcquire - empty queue")
+		return false, false, ""
+	}
+	if queue[0].Controller != s.info.config.controllerName {
+		s.log.WithFields(log.Fields{
+			"key":                holderKey,
+			"result":             false,
+			"already_held":       false,
+			"message":            waitingMsg,
+			"queue_controller":   queue[0].Controller,
+			"current_controller": s.info.config.controllerName,
+		}).Info("CheckAcquire - different controller")
+		return false, false, waitingMsg
+	}
+	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
+		// Enqueue the queue[0] workflow if lock is available
+		if len(holders) < limit {
+			s.nextWorkflow(queue[0].Key)
+		}
+		s.log.WithFields(log.Fields{
+			"key":          holderKey,
+			"result":       false,
+			"already_held": false,
+			"message":      waitingMsg,
+			"queue_key":    queue[0].Key,
+		}).Info("CheckAcquire - not first in queue")
+		return false, false, waitingMsg
+	}
+	s.log.WithFields(log.Fields{
+		"key":          holderKey,
+		"result":       true,
+		"already_held": false,
+	}).Info("CheckAcquire - can acquire")
+	return true, false, ""
+}
+
+func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 	limit := s.getLimit()
 	existing, err := s.currentHoldersSession(*tx.db)
 	if err != nil {
@@ -289,10 +419,9 @@ func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 		err := (*tx.db).SQL().
 			Select(stateKeyField).
 			From(s.info.config.stateTable).
-			Where(db.Cond{stateNameField: s.dbKey}).
+			Where(db.Cond{stateNameField: s.longDbKey()}).
 			And(db.Cond{stateKeyField: holderKey}).
 			And(db.Cond{stateControllerField: s.info.config.controllerName}).
-			And(db.Cond{stateMutexField: s.isMutex}).
 			And(db.Cond{stateHeldField: false}).
 			All(&pending)
 		if err != nil {
@@ -300,109 +429,99 @@ func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 			return false
 		}
 		if len(pending) > 0 {
-			// Update the existing row in this transaction - removeFromQueue will
-			// fail later
 			_, err := (*tx.db).SQL().Update(s.info.config.stateTable).
 				Set(stateHeldField, true).
-				Where(db.Cond{stateNameField: s.dbKey}).
+				Where(db.Cond{stateNameField: s.longDbKey()}).
 				And(db.Cond{stateKeyField: holderKey}).
 				And(db.Cond{stateControllerField: s.info.config.controllerName}).
-				And(db.Cond{stateMutexField: s.isMutex}).
 				And(db.Cond{stateHeldField: false}).
 				Exec()
 			if err != nil {
 				s.log.WithField("key", holderKey).WithError(err).Error("Failed to acquire lock")
 				return false
 			}
-		} else { // insert
-			_, err := (*tx.db).Collection(s.info.config.stateTable).
-				Insert(&stateRecord{
-					Name:       s.dbKey,
-					Key:        holderKey,
-					Controller: s.info.config.controllerName,
-					Mutex:      s.isMutex,
-					Held:       true,
-				})
+		} else {
+			record := &stateRecord{
+				Name:       s.longDbKey(),
+				Key:        holderKey,
+				Controller: s.info.config.controllerName,
+				Held:       true,
+			}
+			_, err := (*tx.db).Collection(s.info.config.stateTable).Insert(record)
 			if err != nil {
 				s.log.WithField("key", holderKey).WithError(err).Error("Failed to acquire lock")
 				return false
 			}
 		}
+		s.log.WithFields(log.Fields{
+			"key":    holderKey,
+			"result": true,
+		}).Info("Acquire succeeded")
 		return true
 	}
+	s.log.WithFields(log.Fields{
+		"key":             holderKey,
+		"result":          false,
+		"reason":          "limit exceeded",
+		"current_holders": len(existing),
+		"limit":           limit,
+	}).Info("Acquire failed")
 	return false
-}
-
-// checkAcquire examines if tryAcquire would succeed
-// returns
-//
-//	true, false if we would be able to take the lock
-//	false, true if we already have the lock
-//	false, false if the lock is not acquirable
-//	string return is a user facing message when not acquirable
-func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (bool, bool, string) {
-	if holderKey == "" {
-		return false, false, "bug: attempt to check semaphore with empty holder key"
-	}
-	// Limit changes are eventually consistent, not inside the tx
-	limit := s.getLimit()
-	holders, err := s.currentHoldersSession(*tx.db)
-	if err != nil {
-		s.log.WithField("key", holderKey).WithError(err).Error("Failed to acquire lock")
-		return false, false, err.Error()
-	}
-	if slices.Contains(holders, holderKey) {
-		return false, true, ""
-	}
-	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.dbKey, len(holders), limit)
-
-	if len(holders) >= limit {
-		return false, false, waitingMsg
-	}
-	// Check whether requested holdkey is in front of priority queue.
-	// If it is in front position, it will allow to acquire lock.
-	// If it is not a front key, it needs to wait for its turn.
-	// Only live controllers are considered
-	queue, err := s.queueOrdered(*tx.db)
-	if err != nil {
-		s.log.WithFields(log.Fields{
-			"key":       holderKey,
-			"semaphore": s.dbKey,
-		}).WithError(err).Error("Failed to check if lock can be acquired")
-		return false, false, err.Error()
-	}
-	if len(queue) == 0 {
-		return false, false, ""
-	}
-	if queue[0].Controller != s.info.config.controllerName {
-		return false, false, waitingMsg
-	}
-	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
-		// Enqueue the queue[0] workflow if lock is available
-		if len(holders) < limit {
-			s.nextWorkflow(queue[0].Key)
-		}
-		return false, false, waitingMsg
-	}
-	return true, false, ""
 }
 
 func (s *databaseSemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string) {
 	acq, already, msg := s.checkAcquire(holderKey, tx)
 	if already {
+		s.log.WithFields(log.Fields{
+			"key":     holderKey,
+			"result":  true,
+			"message": msg,
+		}).Info("TryAcquire - already held")
 		return true, msg
 	}
 	if !acq {
+		s.log.WithFields(log.Fields{
+			"key":     holderKey,
+			"result":  false,
+			"message": msg,
+		}).Info("TryAcquire - cannot acquire")
 		return false, msg
 	}
 	if s.acquire(holderKey, tx) {
-		s.log.WithField("key", holderKey).Debug("Successfully acquired lock")
+		s.log.WithFields(log.Fields{
+			"key":    holderKey,
+			"result": true,
+		}).Info("TryAcquire succeeded")
 		s.notifyWaiters()
 		return true, ""
 	}
+	s.log.WithFields(log.Fields{
+		"key":     holderKey,
+		"result":  false,
+		"message": msg,
+	}).Info("TryAcquire failed")
 	return false, msg
+}
+
+func (s *databaseSemaphore) expireLocks() {
+	since := time.Now().Add(-s.info.config.inactiveControllerTimeout)
+	subquery := s.info.session.SQL().
+		Select(controllerNameField).
+		From(s.info.config.controllerTable).
+		And(db.Cond{controllerTimeField + " <=": since})
+
+	// Delete locks from inactive controllers
+	result, err := s.info.session.SQL().DeleteFrom(s.info.config.lockTable).
+		Where(db.Cond{lockControllerField + " IN": subquery}).
+		Exec()
+	if err != nil {
+		s.log.WithError(err).Error("Failed to expire locks")
+	} else if rowsAffected, err := result.RowsAffected(); err == nil && rowsAffected > 0 {
+		s.log.WithField("rowsAffected", rowsAffected).Info("Expired locks")
+	}
 }
 
 func (s *databaseSemaphore) probeWaiting() {
 	s.notifyWaiters()
+	s.expireLocks()
 }

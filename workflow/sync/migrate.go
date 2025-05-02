@@ -30,15 +30,21 @@ func migrate(ctx context.Context, session db.Session, config *dbConfig) (err err
     name varchar(256),
     workflowkey varchar(256),
     controller varchar(64) not null,
-    mutex boolean,
     held boolean,
     priority int,
     time timestamp,
-    primary key(name, workflowkey, controller, mutex)
+    primary key(name, workflowkey, controller)
 )`),
 		sqldb.AnsiSQLChange(`create index istate_name on ` + config.stateTable + ` (name)`),
 		sqldb.AnsiSQLChange(`create index istate_workflowkey on ` + config.stateTable + ` (workflowkey)`),
 		sqldb.AnsiSQLChange(`create index istate_controller on ` + config.stateTable + ` (controller)`),
 		sqldb.AnsiSQLChange(`create index istate_held on ` + config.stateTable + ` (held)`),
+		sqldb.AnsiSQLChange(`create table if not exists ` + config.lockTable + ` (
+    name varchar(256),
+    controller varchar(64) not null,
+    time timestamp,
+    primary key(name)
+)`),
+		sqldb.AnsiSQLChange(`create unique index ilock_name on ` + config.lockTable + ` (name)`),
 	})
 }

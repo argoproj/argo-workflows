@@ -1,7 +1,11 @@
+//go:build !windows
+
 package sync
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -137,25 +141,27 @@ func testSyncManagersSemaphoreAcquisitionWithPriorityForDB(t *testing.T, dbType 
 	wf04.Name = "wf-04"
 	wf04.Spec.Priority = ptr.To(int32(4))
 
+	// wf-01 acquires lock as first to appear
 	checkCanAcquire(ctx, t, syncMgr1, wf01)
 	checkCannotAcquire(ctx, t, syncMgr2, wf02)
 	checkCannotAcquire(ctx, t, syncMgr1, wf03)
 	checkCannotAcquire(ctx, t, syncMgr2, wf04)
 	// wf-01 releases lock
 	syncMgr1.Release(ctx, wf01, wf01.Name, wf01.Spec.Synchronization)
+	// wf-04 has highest priority, so should be next
 	checkCannotAcquire(ctx, t, syncMgr1, wf03)
 	checkCannotAcquire(ctx, t, syncMgr2, wf02)
 	checkCanAcquire(ctx, t, syncMgr2, wf04)
-	// recheck this time
+	// recheck the others
 	checkCannotAcquire(ctx, t, syncMgr1, wf03)
 	checkCannotAcquire(ctx, t, syncMgr2, wf02)
 	// wf-04 releases lock
 	syncMgr2.Release(ctx, wf04, wf04.Name, wf04.Spec.Synchronization)
-	checkCannotAcquire(ctx, t, syncMgr1, wf02)
-	checkCanAcquire(ctx, t, syncMgr2, wf03)
+	checkCannotAcquire(ctx, t, syncMgr2, wf02)
+	checkCanAcquire(ctx, t, syncMgr1, wf03)
 	// wf-03 releases lock
-	syncMgr2.Release(ctx, wf03, wf03.Name, wf03.Spec.Synchronization)
-	checkCanAcquire(ctx, t, syncMgr1, wf02)
+	syncMgr1.Release(ctx, wf03, wf03.Name, wf03.Spec.Synchronization)
+	checkCanAcquire(ctx, t, syncMgr2, wf02)
 }
 
 func TestSyncManagersSemaphoreAcquisitionWithPriority(t *testing.T) {
@@ -166,15 +172,76 @@ func TestSyncManagersSemaphoreAcquisitionWithPriority(t *testing.T) {
 	}
 }
 
-// func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
-// 	ctx, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 1)
+func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
+	ctx, deferfn, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 1)
+	defer deferfn()
 
-// }
+	// Create 4 workflows
+	wfbase := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
+	var wg sync.WaitGroup
+	lockCount := 0
+	maxLockCount := 0
+	testMtx := sync.Mutex{}
 
-// func TestSyncManagersContendingForSemaphore(t *testing.T) {
-// 	for _, dbType := range testDBTypes {
-// 		t.Run(string(dbType), func(t *testing.T) {
-// 			testSyncManagersContendingForSemaphore(t, dbType)
-// 		})
-// 	}
-// }
+	// Function to run workflows for a sync manager
+	runWorkflows := func(sm *Manager, name string, count int) {
+		defer wg.Done()
+		for testCounter := range count {
+			wfCopy := wfbase.DeepCopy()
+			wfName := fmt.Sprintf("%s-%d", name, testCounter)
+			t.Log(wfName)
+			wfCopy.Name = wfName
+			wfCopy.CreationTimestamp = metav1.Time{Time: time.Now()}
+			// Try to acquire lock
+			var acquired bool
+			for !acquired {
+				var err error
+				acquired, _, _, _, err = sm.TryAcquire(ctx, wfCopy, wfCopy.Name, wfCopy.Spec.Synchronization)
+				if err != nil {
+					t.Errorf("Error acquiring lock: %v", err)
+					return
+				}
+
+				if acquired {
+					testMtx.Lock()
+					lockCount += 1
+					t.Log(lockCount)
+					if lockCount >= maxLockCount {
+						maxLockCount = lockCount
+					}
+					testMtx.Unlock()
+
+					// Simulate work
+					time.Sleep(time.Millisecond * 10)
+
+					// Release lock with a mutex to ensure we won't have lockCount at +1 after release
+					testMtx.Lock()
+					sm.Release(ctx, wfCopy, wfCopy.Name, wfCopy.Spec.Synchronization)
+					lockCount -= 1
+					testMtx.Unlock()
+				}
+			}
+		}
+	}
+
+	const iterationCount = 5
+	// Start two goroutines
+	wg.Add(2)
+	go runWorkflows(syncMgr1, "wf1", iterationCount)
+	go runWorkflows(syncMgr2, "wf2", iterationCount)
+	wg.Wait()
+
+	// Verify that at no point were multiple locks held
+	if maxLockCount > 1 {
+		t.Errorf("Multiple locks were held simultaneously: %d", maxLockCount)
+	}
+
+}
+
+func TestSyncManagersContendingForSemaphore(t *testing.T) {
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			testSyncManagersContendingForSemaphore(t, dbType)
+		})
+	}
+}

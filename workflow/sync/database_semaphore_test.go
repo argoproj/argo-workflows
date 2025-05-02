@@ -34,11 +34,11 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 
 			// Add items to the queue
 			now := time.Now()
-			tx := &transaction{db: &info.session}
-			s.addToQueue("foo/wf-01", 0, now, tx)
-			s.addToQueue("foo/wf-02", 0, now.Add(time.Second), tx)
+			s.addToQueue("foo/wf-01", 0, now)
+			s.addToQueue("foo/wf-02", 0, now.Add(time.Second))
 
 			// Try to acquire - this should fail because the controller is considered inactive
+			tx := &transaction{db: &info.session}
 			acquired, _ := s.tryAcquire("foo/wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as inactive")
 
@@ -67,23 +67,32 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 
 			// Add an entry for another controller
 			otherController := "otherController"
-			_, err := info.session.SQL().InsertInto(info.config.controllerTable).
-				Values(otherController, time.Now()).
-				Exec()
+			controllerRecord := &controllerHealthRecord{
+				Controller: otherController,
+				Time:       time.Now(),
+			}
+			_, err := info.session.Collection(info.config.controllerTable).
+				Insert(controllerRecord)
 			require.NoError(t, err)
 
 			// Add an item to the queue from the other controller
-			_, err = info.session.SQL().InsertInto(info.config.stateTable).
-				Values(s.dbKey, "foo/other-wf-01", otherController, false, false, 0, time.Now()).
-				Exec()
+			semaphoreRecord := &stateRecord{
+				Name:       s.longDbKey(),
+				Key:        "foo/other-wf-01",
+				Controller: otherController,
+				Held:       false,
+				Time:       time.Now(),
+			}
+			_, err = info.session.Collection(info.config.stateTable).
+				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
 			// Add our own item to the queue
 			now := time.Now()
-			tx := &transaction{db: &info.session}
-			s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second), tx)
+			s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second))
 
 			// Try to acquire - this should fail because the other controller's item is first in line
+			tx := &transaction{db: &info.session}
 			acquired, _ := s.tryAcquire("foo/our-wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when another controller's item is first in queue")
 
@@ -119,23 +128,32 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 
 			// Add an entry for another controller
 			otherController := "otherController"
-			_, err := info.session.SQL().InsertInto(info.config.controllerTable).
-				Values(otherController, time.Now()).
-				Exec()
+			controllerRecord := &controllerHealthRecord{
+				Controller: otherController,
+				Time:       time.Now(),
+			}
+			_, err := info.session.Collection(info.config.controllerTable).
+				Insert(controllerRecord)
 			require.NoError(t, err)
 
 			// Add an item to the queue from the other cluster with a DIFFERENT semaphore name
-			_, err = info.session.SQL().InsertInto(info.config.stateTable).
-				Values("different/semaphore", "foo/other-wf-01", otherController, false, false, 0, time.Now()).
-				Exec()
+			semaphoreRecord := &stateRecord{
+				Name:       "sem/different/semaphore",
+				Key:        "foo/other-wf-01",
+				Controller: otherController,
+				Held:       false,
+				Time:       time.Now(),
+			}
+			_, err = info.session.Collection(info.config.stateTable).
+				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
 			// Add our own item to the queue
 			now := time.Now()
-			tx := &transaction{db: &info.session}
-			s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second), tx)
+			s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second))
 
 			// Try to acquire - this should succeed because the other cluster's item is for a different semaphore
+			tx := &transaction{db: &info.session}
 			acquired, _ := s.tryAcquire("foo/our-wf-01", tx)
 			assert.True(t, acquired, "Semaphore should be acquired when another cluster's item is for a different semaphore")
 
@@ -169,27 +187,27 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 
 			// Mutex workflow 1
 			tx := &transaction{db: &info.session}
-			mutex.addToQueue("foo/wf-mutex-1", 0, now, tx)
+			mutex.addToQueue("foo/wf-mutex-1", 0, now)
 			mutexAcquired1, _ := mutex.tryAcquire("foo/wf-mutex-1", tx)
 			assert.True(t, mutexAcquired1, "Mutex should be acquired by first workflow")
 
 			// Semaphore workflow 1
-			semaphore.addToQueue("foo/wf-sem-1", 0, now, tx)
+			semaphore.addToQueue("foo/wf-sem-1", 0, now)
 			semAcquired1, _ := semaphore.tryAcquire("foo/wf-sem-1", tx)
 			assert.True(t, semAcquired1, "Semaphore should be acquired by first workflow")
 
 			// Verify the mutex can't be acquired again
-			mutex.addToQueue("foo/wf-mutex-2", 0, now, tx)
+			mutex.addToQueue("foo/wf-mutex-2", 0, now)
 			mutexAcquired2, _ := mutex.tryAcquire("foo/wf-mutex-2", tx)
 			assert.False(t, mutexAcquired2, "Mutex should not be acquired by second workflow")
 
 			// But the semaphore can still be acquired (limit=2)
-			semaphore.addToQueue("foo/wf-sem-2", 0, now, tx)
+			semaphore.addToQueue("foo/wf-sem-2", 0, now)
 			semAcquired2, _ := semaphore.tryAcquire("foo/wf-sem-2", tx)
 			assert.True(t, semAcquired2, "Semaphore should be acquired by second workflow")
 
 			// But not a third time (because limit=2)
-			semaphore.addToQueue("foo/wf-sem-3", 0, now, tx)
+			semaphore.addToQueue("foo/wf-sem-3", 0, now)
 			semAcquired3, _ := semaphore.tryAcquire("foo/wf-sem-3", tx)
 			assert.False(t, semAcquired3, "Semaphore should not be acquired by third workflow (at capacity)")
 
@@ -213,7 +231,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			assert.True(t, semAcquired3Again, "Semaphore should be acquired after release")
 
 			// But not a fourth time (still at capacity with 2 holders)
-			semaphore.addToQueue("foo/wf-sem-4", 0, now, tx)
+			semaphore.addToQueue("foo/wf-sem-4", 0, now)
 			semAcquired4, _ := semaphore.tryAcquire("foo/wf-sem-4", tx)
 			assert.False(t, semAcquired4, "Semaphore should not be acquired fourth time (at capacity again)")
 
@@ -226,7 +244,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			err := info.session.SQL().
 				Select("*").
 				From(info.config.stateTable).
-				Where(db.Cond{"name": sharedKey, "held": true}).
+				Where(db.Cond{"held": true}).
 				All(&allHolders)
 			require.NoError(t, err)
 			assert.Len(t, allHolders, 3, "Should have three total holders (1 mutex + 2 semaphore)")
@@ -236,6 +254,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			for _, holder := range allHolders {
 				holderKeys = append(holderKeys, holder.Key)
 			}
+			t.Logf("holderKeys: %v", holderKeys)
 			assert.Contains(t, holderKeys, "foo/wf-mutex-2", "wf-mutex-2 should be a holder")
 			assert.Contains(t, holderKeys, "foo/wf-sem-2", "wf-sem-2 should be a holder")
 			assert.Contains(t, holderKeys, "foo/wf-sem-3", "wf-sem-3 should be a holder")
@@ -279,7 +298,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				_, err := info.session.SQL().
 					Update(info.config.limitTable).
 					Set(limitSizeField, 10).
-					Where(db.Cond{limitNameField: s.dbKey}).
+					Where(db.Cond{limitNameField: s.shortDbKey}).
 					Exec()
 				require.NoError(t, err)
 
@@ -320,7 +339,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				_, err := info.session.SQL().
 					Update(info.config.limitTable).
 					Set(limitSizeField, 7).
-					Where(db.Cond{limitNameField: s.dbKey}).
+					Where(db.Cond{limitNameField: s.shortDbKey}).
 					Exec()
 				require.NoError(t, err)
 

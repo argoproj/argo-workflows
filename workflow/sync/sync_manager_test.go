@@ -1465,3 +1465,78 @@ func TestCheckHolderVersion(t *testing.T) {
 		assert.Equal(wfv1.HoldingNameV1, version)
 	})
 }
+
+func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			// Create database session and info
+			info, deferfunc, _, err := createTestDBSession(t, dbType)
+			require.NoError(t, err)
+			defer deferfunc()
+
+			// Set up two controllers, one active and one inactive
+			activeController := "activeController"
+			inactiveController := "inactiveController"
+
+			// Insert controller records - one fresh, one stale
+			now := time.Now()
+			staleTime := now.Add(-info.config.inactiveControllerTimeout * 2) // Double the inactive timeout
+
+			_, err = info.session.Collection(info.config.controllerTable).Insert(&controllerHealthRecord{
+				Controller: activeController,
+				Time:       now,
+			})
+			require.NoError(t, err)
+
+			_, err = info.session.Collection(info.config.controllerTable).Insert(&controllerHealthRecord{
+				Controller: inactiveController,
+				Time:       staleTime,
+			})
+			require.NoError(t, err)
+
+			// Create a lock with an active controller and one with an inactive controller
+			lockName1 := "test-lock-active"
+			lockName2 := "test-lock-inactive"
+
+			_, err = info.session.Collection(info.config.lockTable).Insert(&lockRecord{
+				Name:       lockName1,
+				Controller: activeController,
+				Time:       now,
+			})
+			require.NoError(t, err)
+
+			_, err = info.session.Collection(info.config.lockTable).Insert(&lockRecord{
+				Name:       lockName2,
+				Controller: inactiveController,
+				Time:       now, // Time doesn't matter, controller is what matters
+			})
+			require.NoError(t, err)
+
+			// Initialize a semaphore so it gets added to the syncLockMap
+			testsem := newDatabaseSemaphore("test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
+			syncLockMap := make(map[string]semaphore)
+			syncLockMap["sem/test-semaphore"] = testsem
+
+			// Verify both lock records exist initially
+			lockCount, err := info.session.Collection(info.config.lockTable).Count()
+			require.NoError(t, err)
+			assert.Equal(t, uint64(2), lockCount, "Should have two lock records initially")
+
+			// Run the background notifier manually once
+			for _, lock := range syncLockMap {
+				lock.probeWaiting()
+			}
+
+			// Check that only the active controller's lock remains
+			var remainingLocks []lockRecord
+			err = info.session.SQL().Select("*").From(info.config.lockTable).All(&remainingLocks)
+			require.NoError(t, err)
+
+			assert.Len(t, remainingLocks, 1, "Should have one lock record remaining")
+			if len(remainingLocks) > 0 {
+				assert.Equal(t, lockName1, remainingLocks[0].Name, "Active controller's lock should remain")
+				assert.Equal(t, activeController, remainingLocks[0].Controller, "Active controller's lock should remain")
+			}
+		})
+	}
+}

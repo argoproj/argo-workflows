@@ -35,8 +35,8 @@ func TestDatabaseMutexAcquireRelease(t *testing.T) {
 			defer deferfunc()
 
 			now := time.Now()
-			mutex.addToQueue("default/workflow1", 0, now, tx)
-			mutex.addToQueue("default/workflow2", 0, now.Add(time.Second), tx)
+			mutex.addToQueue("default/workflow1", 0, now)
+			mutex.addToQueue("default/workflow2", 0, now.Add(time.Second))
 
 			// First acquisition should succeed
 			acquired, _ := mutex.tryAcquire("default/workflow1", tx)
@@ -70,8 +70,8 @@ func TestDatabaseMutexQueueOrder(t *testing.T) {
 
 			// Add items to the queue
 			now := time.Now()
-			mutex.addToQueue("default/workflow1", 0, now, tx)
-			mutex.addToQueue("default/workflow2", 0, now.Add(time.Second), tx)
+			mutex.addToQueue("default/workflow1", 0, now)
+			mutex.addToQueue("default/workflow2", 0, now.Add(time.Second))
 
 			acquired, _ := mutex.tryAcquire("default/workflow2", tx)
 			assert.False(t, acquired, "Second workflow should not acquire the mutex")

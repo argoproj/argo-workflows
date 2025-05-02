@@ -17,6 +17,7 @@ type dbConfig struct {
 	limitTable                string
 	stateTable                string
 	controllerTable           string
+	lockTable                 string
 	controllerName            string
 	inactiveControllerTimeout time.Duration
 	skipMigration             bool
@@ -35,6 +36,7 @@ const (
 	defaultLimitTableName      = "sync_limit"
 	defaultStateTableName      = "sync_state"
 	defaultControllerTableName = "sync_controller"
+	defaultLockTableName       = "sync_lock"
 )
 
 func defaultTable(tableName, defaultName string) string {
@@ -87,6 +89,7 @@ func dbConfigFromConfig(config *config.SyncConfig) dbConfig {
 		limitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
 		stateTable:      defaultTable(config.StateTableName, defaultStateTableName),
 		controllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),
+		lockTable:       defaultTable(config.LockTableName, defaultLockTableName),
 		controllerName:  config.ControllerName,
 		inactiveControllerTimeout: secondsToDurationWithDefault(config.InactiveControllerSeconds,
 			defaultDBInactiveControllerSeconds),

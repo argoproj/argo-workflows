@@ -58,6 +58,12 @@ func (s *prioritySemaphore) getLimit() int {
 	return limit
 }
 
+func (s *prioritySemaphore) lock() bool {
+	return true
+}
+
+func (s *prioritySemaphore) unlock() {}
+
 func (s *prioritySemaphore) getCurrentPending() ([]string, error) {
 	var keys []string
 	for _, item := range s.pending.items {
@@ -137,7 +143,7 @@ func workflowKey(key string) string {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, _ *transaction) {
+func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	if _, ok := s.lockHolder[holderKey]; ok {
 		s.log.Debugf("Lock is already acquired by %s", holderKey)
 		return

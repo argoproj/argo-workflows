@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
@@ -284,6 +285,10 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		lockKeys[i] = syncLockName.String()
 	}
 
+	if ok, err := sm.prepAcquire(wf, holderKey, syncItems, lockKeys); !ok {
+		return false, false, "", failedLockName, err
+	}
+
 	needDB, err := needDBSession(lockKeys)
 	if err != nil {
 		return false, false, "", failedLockName, fmt.Errorf("couldn't decode locks for session: %w", err)
@@ -297,20 +302,56 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var msg string
 		var failedLockName string
 		// TODO Guard against 0 limit
-		err := sm.dbInfo.session.Tx(func(sess db.Session) error {
-			var err error
-			tx := &transaction{db: &sess}
-			already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
-			return err
-		})
-		return already, updated, msg, failedLockName, err
+		var lastErr error
+		for retryCounter := range 5 {
+			err := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
+				log.WithFields(log.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+				}).Info("TryAcquire - starting transaction")
+				var err error
+				tx := &transaction{db: &sess}
+				already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
+				log.WithFields(log.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+				}).Info("TryAcquire - transaction completed")
+				return err
+			}, &sql.TxOptions{
+				Isolation: sql.LevelSerializable,
+				ReadOnly:  false,
+			})
+			if err == nil {
+				return already, updated, msg, failedLockName, nil
+			}
+			lastErr = err
+			// Check if this is a serialization error
+			if strings.Contains(err.Error(), "serialization") ||
+				strings.Contains(err.Error(), "dependencies") ||
+				strings.Contains(err.Error(), "deadlock") ||
+				strings.Contains(err.Error(), "rollback") {
+				log.WithFields(log.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+					"error":     err,
+				}).Info("TryAcquire - serialization conflict, retrying")
+				continue
+			} else {
+				log.WithFields(log.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+					"error":     err,
+				}).Info("TryAcquire - tx failed")
+			}
+			// For other errors, return immediately
+			return false, false, "", failedLockName, err
+		}
+		return false, false, "", failedLockName, fmt.Errorf("failed after %d retries: %w", 5, lastErr)
 	}
 	return sm.tryAcquireImpl(wf, nil, holderKey, failedLockName, syncItems, lockKeys)
 }
 
-func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
-	allAcquirable := true
-	msg := ""
+func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) (bool, error) {
 	for i, lockKey := range lockKeys {
 		lock, found := sm.syncLockMap[lockKey]
 		if !found {
@@ -321,10 +362,10 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 			case wfv1.SynchronizationTypeMutex:
 				lock, err = sm.initializeMutex(lockKey)
 			default:
-				return false, false, "", failedLockName, fmt.Errorf("unknown Synchronization Type")
+				return false, fmt.Errorf("unknown Synchronization Type")
 			}
 			if err != nil {
-				return false, false, "", failedLockName, err
+				return false, err
 			}
 			sm.syncLockMap[lockKey] = lock
 		}
@@ -336,15 +377,35 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 			priority = 0
 		}
 		creationTime := wf.CreationTimestamp
-		lock.addToQueue(holderKey, priority, creationTime.Time, tx)
-
 		ensureInit(wf, syncItems[i].getType())
-		acquired, already, newMsg := lock.checkAcquire(holderKey, tx)
-		if !acquired && !already {
-			allAcquirable = false
-			if msg == "" {
-				msg = newMsg
+		lock.addToQueue(holderKey, priority, creationTime.Time)
+	}
+	return true, nil
+}
+
+func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
+	defer sm.unlockAll(lockKeys)
+	allAcquirable := true
+	msg := ""
+	for _, lockKey := range lockKeys {
+		lock, found := sm.syncLockMap[lockKey]
+		if !found {
+			return false, false, "", failedLockName, fmt.Errorf("bug: lock not found: %s", lockKey)
+		}
+		if lock.lock() {
+			acquired, already, newMsg := lock.checkAcquire(holderKey, tx)
+			if !acquired && !already {
+				allAcquirable = false
+				if msg == "" {
+					msg = newMsg
+				}
+				if failedLockName == "" {
+					failedLockName = lockKey
+				}
 			}
+		} else {
+			allAcquirable = false
+			msg = "failed to lock()"
 			if failedLockName == "" {
 				failedLockName = lockKey
 			}
@@ -384,6 +445,13 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 	}
 }
 
+func (sm *Manager) unlockAll(lockKeys []string) {
+	for _, lockKey := range lockKeys {
+		lock := sm.syncLockMap[lockKey]
+		lock.unlock()
+	}
+}
+
 func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
 	if syncRef == nil {
 		return
@@ -393,6 +461,7 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 	defer sm.lock.RUnlock()
 
 	holderKey := getHolderKey(wf, nodeName)
+	log.Infof("Release %s", holderKey)
 	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
 	// should never have acquired anything if this errored
 	syncItems, _ := allSyncItems(ctx, syncRef)

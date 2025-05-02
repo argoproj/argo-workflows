@@ -109,7 +109,7 @@ As an example for a semaphore named `test` in namespace `devel` the name would b
 The above example Workflow would need something like
 
 ```sql
-INSERT INTO sync_limit (name, sizelimit) VALUES ('bar/foo', 3);
+INSERT INTO sync_limit (name, sizelimit) VALUES ('foo/bar', 3);
 ```
 
 ### Time
@@ -194,6 +194,24 @@ For local mutexes and all database locks the namespace defaults to the namespace
 For database locks you can have global locks between all controllers.
 For example using overriding the namespace to `global` and using the same lock name in several Workflows in several controllers will use the same lock.
 
+## Understanding Database Lock Keys
+
+Lock keys are used to uniquely identify locks in the system. The format depends on the lock type and where it's used.
+
+For database locks:
+- Semaphores use the format `sem/<namespace>/<key>`
+- Mutexes use the format `mtx/<namespace>/<key>`
+
+For ConfigMap locks:
+- The key used is the value specified in the `key` field in the ConfigMap reference
+- The namespace is derived from the Workflow or can be overridden with the `namespace` field
+
+How a lock appears in each table:
+- In the limit table: `<namespace>/<key>`
+- In the state and lock tables: `sem/<namespace>/<key>` or `mtx/<namespace>/<key>`
+
+When creating database semaphores, always insert records into the limit table with the `<namespace>/<key>` format, not the `sem/` or `mtx/` prefixed format.
+
 ## Queuing
 
 When a Workflow cannot acquire a lock it will be placed into a ordered queue.
@@ -227,6 +245,9 @@ synchronization:
 
 The Workflow will block until all of these locks are available.
 
+!!! Warning
+    If a Workflow is at the front of the queue and it needs to acquire multiple locks, all other Workflows that also need those same locks will wait. This applies even if the other Workflows only wish to acquire a subset of those locks.
+
 ## Workflow-level parallelism
 
 You can use `parallelism` within a Workflow or Template to restrict the total concurrent executions of steps or tasks.
@@ -240,8 +261,28 @@ Examples:
 1. [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-workflow.yaml) shows how parallelism is inherited by children
 1. [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-template-limit.yaml) shows how parallelism of looped Templates is also restricted
 
-!!! Warning
-    If a Workflow is at the front of the queue and it needs to acquire multiple locks, all other Workflows that also need those same locks will wait. This applies even if the other Workflows only wish to acquire a subset of those locks.
+## Monitoring Lock Status
+
+You can monitor the status of locks in several ways:
+
+1. Through the Workflow status - each Workflow displays its own lock status in `.status.synchronization`
+
+2. By querying the database tables directly for database locks:
+   ```sql
+   -- View all defined semaphore limits
+   SELECT * FROM sync_limit;
+   
+   -- See which workflows are currently holding locks
+   SELECT * FROM sync_state WHERE held = true;
+   
+   -- See which workflows are waiting for locks
+   SELECT * FROM sync_state WHERE held = false ORDER BY priority DESC, time ASC;
+   
+   -- Check controller health
+   SELECT * FROM sync_controller;
+   ```
+
+3. For local ConfigMap locks, examine the status in the Workflow resources themselves using kubectl
 
 ## Other Parallelism support
 
@@ -261,6 +302,7 @@ This table stores the maximum number of concurrent Workflows/Templates allowed f
 This table is created automatically when the controller starts.
 The table name is configured in the workflow-controller-configmap `limitTableName` field, and defaults to `sync_limit`.
 
+You are expected to manually insert values for any semaphores you want to use.
 Configuring:
 To allow up to 3 concurrent locks for semaphore "namespace/semaphore":
 
@@ -295,9 +337,11 @@ Pending locks are only considered as being in the queue if the controller has up
 #### Heartbeat defaults
 
 - Heartbeat Interval: Every 60 seconds. `heartbeatSeconds`
-- Inactive Controller Timeout: 600 seconds without a heartbeat update. `inactiveControllerSeconds`
+- Inactive Controller Timeout: 300 seconds without a heartbeat update. `inactiveControllerSeconds`
 
 These values can be configured in the workflow-controller-configmap ConfigMap.
+
+The `inactiveControllerSeconds` value also applies to entries in the Lock table, determining when locks from inactive controllers are considered stale and can be bypassed. These entries are just used whilst acquiring the lock along with a database transaction for the state.
 
 Held locks are never taken by another Workflow, even if the controller is inactive.
 You must manually intervene to release a held lock from a inactive controller.
@@ -306,15 +350,14 @@ You must manually intervene to release a held lock from a inactive controller.
 
 This table stores the current state of each mutex/semaphore.
 
-| Name          | Type      | Description                                                                 |
-|---------------|-----------|-----------------------------------------------------------------------------|
-| `name`        | `string`  | The semaphore name, usually in the format namespace/name.                   |
-| `workflowkey` | `string`  | The key of the Workflow that is holding the lock.                           |
-| `controller`  | `string`  | The controller name as configured by `controllerName`                       |
-| `mutex`       | `boolean` | Indicates whether the semaphore is a mutex                                  |
-| `held`        | `boolean` | Indicates whether the semaphore is currently held (true) or pending (false) |
-| `priority`    | `integer` | The priority of the pending Workflow (only used when pending)               |
-| `timestamp`   | `time`    | The creation time-stamp of the Workflow (only used when pending)            |
+| Name          | Type        | Description                                                                  |
+|---------------|-------------|------------------------------------------------------------------------------|
+| `name`        | `string`    | The semaphore name, in the format sem/namespace/lock or mtx/namespace/lock.  |
+| `workflowkey` | `string`    | The key of the Workflow that is holding or waiting for the lock.             |
+| `controller`  | `string`    | The controller name as configured by `controllerName`.                       |
+| `held`        | `boolean`   | Indicates whether the semaphore is currently held (true) or pending (false). |
+| `priority`    | `integer`   | The priority of the Workflow (higher number = higher priority).              |
+| `time`        | `timestamp` | The creation time-stamp or last update time.                                 |
 
 This table is created automatically when the controller starts.
 The table name is configured in the workflow-controller-configmap `stateTableName` field, and defaults to `sync_state`.
@@ -323,6 +366,48 @@ This table maintains the state of each semaphore or mutex, including details abo
 Manual modifications to this table are not recommended except to release a held lock from a inactive controller.
 
 This is polled by the controller every `pollSeconds` seconds.
+
+### Lock Table
+
+This table stores the lock information for coordination between controllers.
+
+| Name         | Type        | Description                                                                       |
+|--------------|-------------|-----------------------------------------------------------------------------------|
+| `name`       | `string`    | The semaphore name identifier (usually sem/namespace/lock or mtx/namespace/lock). |
+| `controller` | `string`    | The controller name as configured by `controllerName`.                            |
+| `time`       | `timestamp` | The timestamp of lock creation.                                                   |
+
+This table is created automatically when the controller starts.
+The table name is configured in the workflow-controller-configmap `lockTableName` field, and defaults to `sync_lock`.
+
+This table is used internally for coordination between multiple controllers to avoid race conditions when acquiring locks.
+It does not store the active state of a lock - that is in the state table.
+Manual modifications to this table are not recommended except to release a lock from an inactive controller.
+
+### Troubleshooting Database Lock Issues
+
+If Workflows are not being processed as expected:
+
+1. Check if a lock is being held by an inactive controller:
+   ```sql
+   SELECT s.name, s.workflowkey, s.controller, c.time as last_heartbeat
+   FROM sync_state s
+   LEFT JOIN sync_controller c ON s.controller = c.controller
+   WHERE s.held = true;
+   ```
+   
+2. Verify semaphore limits are correctly set:
+   ```sql
+   SELECT * FROM sync_limit WHERE name = 'namespace/lock-name';
+   ```
+
+3. If a workflow seems stuck waiting for a lock, check its position in the queue:
+   ```sql
+   SELECT workflowkey, priority, time
+   FROM sync_state
+   WHERE name = 'sem/namespace/lock-name' AND held = false
+   ORDER BY priority DESC, time ASC;
+   ```
 
 #### Permanent controller removal
 

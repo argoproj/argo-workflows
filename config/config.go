@@ -231,6 +231,7 @@ type SyncConfig struct {
 	LimitTableName            string `json:"limitTableName,omitempty"`
 	StateTableName            string `json:"stateTableName,omitempty"`
 	ControllerTableName       string `json:"controllerTableName,omitempty"`
+	LockTableName             string `json:"lockTableName,omitempty"`
 	PollSeconds               *int   `json:"pollSeconds,omitempty"`
 	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
 	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`

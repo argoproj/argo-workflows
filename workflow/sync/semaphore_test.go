@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -54,10 +55,22 @@ func createTestDatabaseSemaphoreMySQL(t *testing.T, name, namespace string, limi
 }
 
 // semaphoreFactories defines the available semaphore implementations for testing
-var semaphoreFactories = map[string]semaphoreFactory{
-	"InternalSemaphore": createTestInternalSemaphore,
-	"PostgresSemaphore": createTestDatabaseSemaphorePostgres,
-	"MySQLSemaphore":    createTestDatabaseSemaphoreMySQL,
+var semaphoreFactories map[string]semaphoreFactory
+
+// Don't test databases on windows as testcontainers don't work there
+func init() {
+	switch runtime.GOOS {
+	case "windows":
+		semaphoreFactories = map[string]semaphoreFactory{
+			"InternalSemaphore": createTestInternalSemaphore,
+		}
+	default:
+		semaphoreFactories = map[string]semaphoreFactory{
+			"InternalSemaphore": createTestInternalSemaphore,
+			"PostgresSemaphore": createTestDatabaseSemaphorePostgres,
+			"MySQLSemaphore":    createTestDatabaseSemaphoreMySQL,
+		}
+	}
 }
 
 // TestIsSameWorkflowNodeKeys tests the isSameWorkflowNodeKeys function
@@ -75,7 +88,7 @@ func TestIsSameWorkflowNodeKeys(t *testing.T) {
 	assert.True(t, isSameWorkflowNodeKeys(nodeWf2key1, nodeWf2key2))
 }
 
-// testTryAcquireSemaphore tests the tryAcquire method for both semaphore implementations
+// testTryAcquireSemaphore tests the tryAcquire method for one semaphore implementation
 func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
 	nextWorkflow := func(key string) {}
@@ -85,10 +98,10 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 
 	now := time.Now()
 	tx := &transaction{db: &dbSession}
-	s.addToQueue("default/wf-01", 0, now, tx)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second), tx)
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), tx)
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), tx)
+	s.addToQueue("default/wf-01", 0, now)
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
 
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
@@ -109,7 +122,7 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	assert.False(t, acquired)
 }
 
-// TestTryAcquireSemaphore runs the tryAcquire test for both semaphore implementations
+// TestTryAcquireSemaphore runs the tryAcquire test for all semaphore implementations
 func TestTryAcquireSemaphore(t *testing.T) {
 	for name, factory := range semaphoreFactories {
 		t.Run(name, func(t *testing.T) {
@@ -118,7 +131,7 @@ func TestTryAcquireSemaphore(t *testing.T) {
 	}
 }
 
-// testNotifyWaitersAcquire tests the notifyWaiters method for both semaphore implementations
+// testNotifyWaitersAcquire tests the notifyWaiters method for one semaphore implementation
 func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
 	notified := make(map[string]bool)
@@ -130,13 +143,14 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	defer cleanup()
 
 	now := time.Now()
-	tx := &transaction{db: &dbSession}
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), tx)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second), tx)
-	s.addToQueue("default/wf-01", 0, now, tx)
-	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second), tx)
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), tx)
+	// The ordering here is important and perhaps counterintuitive.
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
+	s.addToQueue("default/wf-01", 0, now)
+	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second))
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
 
+	tx := &transaction{db: &dbSession}
 	acquired, _ := s.tryAcquire("default/wf-01", tx)
 	assert.True(t, acquired)
 
@@ -157,7 +171,7 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	assert.False(t, notified["default/wf-05"])
 }
 
-// TestNotifyWaitersAcquire runs the notifyWaiters test for both semaphore implementations
+// TestNotifyWaitersAcquire runs the notifyWaiters test for all semaphore implementations
 func TestNotifyWaitersAcquire(t *testing.T) {
 	for name, factory := range semaphoreFactories {
 		t.Run(name, func(t *testing.T) {
@@ -166,7 +180,7 @@ func TestNotifyWaitersAcquire(t *testing.T) {
 	}
 }
 
-// testNotifyWorkflowFromTemplateSemaphore tests the template semaphore behavior for both implementations
+// testNotifyWorkflowFromTemplateSemaphore tests the template semaphore behavior for one semaphore` implementation
 func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
 	notified := make(map[string]bool)
@@ -178,10 +192,10 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	defer cleanup()
 
 	now := time.Now()
-	tx := &transaction{db: &dbSession}
-	s.addToQueue("foo/wf-01/nodeid-123", 0, now, tx)
-	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second), tx)
+	s.addToQueue("foo/wf-01/nodeid-123", 0, now)
+	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second))
 
+	tx := &transaction{db: &dbSession}
 	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123", tx)
 	assert.True(t, acquired)
 
@@ -189,7 +203,7 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	assert.True(t, notified["foo/wf-02"])
 }
 
-// TestNotifyWorkflowFromTemplateSemaphore runs the template semaphore test for both implementations
+// TestNotifyWorkflowFromTemplateSemaphore runs the template semaphore test for all implementations
 func TestNotifyWorkflowFromTemplateSemaphore(t *testing.T) {
 	for name, factory := range semaphoreFactories {
 		t.Run(name, func(t *testing.T) {

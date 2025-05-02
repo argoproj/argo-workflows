@@ -8,7 +8,7 @@ func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info
 	return &databaseSemaphore{
 		name:         name,
 		limitGetter:  &mutexLimit{},
-		dbKey:        dbKey,
+		shortDbKey:   dbKey,
 		nextWorkflow: nextWorkflow,
 		log: log.WithFields(log.Fields{
 			"lockType": lockTypeMutex,
