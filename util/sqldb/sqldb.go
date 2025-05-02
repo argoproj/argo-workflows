@@ -64,7 +64,6 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
 func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
-	fmt.Printf("Connecting to %s on %s, as %s/%s", cfg.Database, cfg.GetHostname(), username, password)
 	settings := postgresqladp.ConnectionURL{
 		User:     username,
 		Password: password,

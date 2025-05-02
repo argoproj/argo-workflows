@@ -705,22 +705,27 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 		controllerName = *controller
 	}
 
+	dbKey := "sem/" + name
+	if mutex {
+		dbKey = "mtx/" + name
+	}
+
 	// Insert or update the semaphore state
 	if w.config.Synchronization.PostgreSQL != nil {
 		_, err := dbSession.SQL().Exec(
-			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, mutex, held, priority, time) VALUES ($1, $2, $3, $4, $5, $6, $7) "+
-				"ON CONFLICT (name, workflowkey, controller, mutex) DO UPDATE SET held = $5, priority = $6, time = $7",
+			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES ($1, $2, $3, $4, $5, $6) "+
+				"ON CONFLICT (name, workflowkey, controller) DO UPDATE SET held = $4, priority = $5, time = $6",
 				stateTable),
-			name, workflowKey, controllerName, mutex, held, priority, timestamp)
+			dbKey, workflowKey, controllerName, held, priority, timestamp)
 		if err != nil {
 			w.t.Fatal(err)
 		}
 	} else if w.config.Synchronization.MySQL != nil {
 		_, err := dbSession.SQL().Exec(
-			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, mutex, held, priority, time) VALUES (?, ?, ?, ?, ?, ?, ?) "+
+			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES (?, ?, ?, ?, ?, ?) "+
 				"ON DUPLICATE KEY UPDATE held = ?, priority = ?, time = ?",
 				stateTable),
-			name, workflowKey, controllerName, mutex, held, priority, timestamp, held, priority, timestamp)
+			dbKey, workflowKey, controllerName, held, priority, timestamp, held, priority, timestamp)
 		if err != nil {
 			w.t.Fatal(err)
 		}
