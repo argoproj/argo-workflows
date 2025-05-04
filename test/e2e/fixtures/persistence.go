@@ -1,21 +1,24 @@
 package fixtures
 
 import (
+	"context"
+
 	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 type Persistence struct {
-	WorkflowArchive       sqldb.WorkflowArchive
+	WorkflowArchive       persist.WorkflowArchive
 	session               db.Session
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	offloadNodeStatusRepo persist.OffloadNodeStatusRepo
 }
 
-func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
+func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
 	persistence := wcConfig.Persistence
 	if persistence != nil {
 		if persistence.PostgreSQL != nil {
@@ -24,23 +27,23 @@ func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *P
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		session, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
 		if err != nil {
 			panic(err)
 		}
-		tableName, err := sqldb.GetTableName(persistence)
+		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
 			panic(err)
 		}
-		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		if err != nil {
 			panic(err)
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
+		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
 		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
 	} else {
-		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: sqldb.NullWorkflowArchive}
+		return &Persistence{offloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 	}
 }
 

@@ -144,3 +144,10 @@ func generateErrorString(err error) string {
 func isTransientSqbErr(err error) bool {
 	return strings.Contains(err.Error(), "upper: no more rows in")
 }
+
+// CheckError is a convenience function to fatally log an exit if the supplied error is non-nil
+func CheckError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}

@@ -21,7 +21,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
@@ -165,10 +164,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Namespace: woc.wf.Namespace,
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
+				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
@@ -187,12 +186,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
-		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
+		pod.Finalizers = append(pod.Finalizers, common.FinalizerPodStatus)
 	}
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
-		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
+		pod.Labels[common.LabelKeyOnExit] = "true"
 	}
 
 	if woc.execWf.Spec.HostNetwork != nil {
@@ -202,7 +201,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addDNSConfig(pod)
 
 	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
 	woc.addArchiveLocation(tmpl)
@@ -235,10 +234,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			break
 		}
 	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
+	pod.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
 
 	if podGC := woc.execWf.Spec.PodGC; podGC != nil {
-		pod.ObjectMeta.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(podGC))
+		pod.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(podGC))
 	}
 
 	// Add init container only if it needs input artifacts. This is also true for
@@ -246,11 +245,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	initCtr := woc.newInitContainer(tmpl)
 	pod.Spec.InitContainers = []apiv1.Container{initCtr}
 
-	woc.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, nodeName)
+	woc.addSchedulingConstraints(pod, wfSpec, tmpl, nodeName)
 	woc.addMetadata(pod, tmpl)
 
 	// Set initial progress from pod metadata if exists.
-	if x, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyProgress]; ok {
+	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
@@ -437,9 +436,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		cm := &apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      cmName,
-				Namespace: woc.wf.ObjectMeta.Namespace,
+				Namespace: woc.wf.Namespace,
 				Labels: map[string]string{
-					common.LabelKeyWorkflow: woc.wf.ObjectMeta.Name,
+					common.LabelKeyWorkflow: woc.wf.Name,
 				},
 				Annotations: map[string]string{
 					common.AnnotationKeyNodeName: nodeName,
@@ -737,18 +736,18 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.execWf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
 		for k, v := range woc.execWf.Spec.PodMetadata.Annotations {
-			pod.ObjectMeta.Annotations[k] = v
+			pod.Annotations[k] = v
 		}
 		for k, v := range woc.execWf.Spec.PodMetadata.Labels {
-			pod.ObjectMeta.Labels[k] = v
+			pod.Labels[k] = v
 		}
 	}
 
 	for k, v := range tmpl.Metadata.Annotations {
-		pod.ObjectMeta.Annotations[k] = v
+		pod.Annotations[k] = v
 	}
 	for k, v := range tmpl.Metadata.Labels {
-		pod.ObjectMeta.Labels[k] = v
+		pod.Labels[k] = v
 	}
 }
 
@@ -764,7 +763,7 @@ func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
-func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, nodeName string) {
+func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, nodeName string) {
 	// Get boundaryNode Template (if specified)
 	boundaryTemplate, err := woc.GetBoundaryTemplate(nodeName)
 	if err != nil {
@@ -806,14 +805,6 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 		pod.Spec.PriorityClassName = tmpl.PriorityClassName
 	} else if wfSpec.PodPriorityClassName != "" {
 		pod.Spec.PriorityClassName = wfSpec.PodPriorityClassName
-	}
-	// Set priority (if specified)
-	if tmpl.Priority != nil {
-		pod.Spec.Priority = tmpl.Priority
-		deprecation.Record(ctx, deprecation.PodPriority)
-	} else if wfSpec.PodPriority != nil {
-		pod.Spec.Priority = wfSpec.PodPriority
-		deprecation.Record(ctx, deprecation.PodPriority)
 	}
 
 	// set hostaliases

@@ -1,2 +1,4 @@
 mkdocs-material==9.*
 mkdocs-redirects==1.*
+# Update pymdown-extensions whenever needed, not pinned to anything important
+pymdown-extensions==10.*
