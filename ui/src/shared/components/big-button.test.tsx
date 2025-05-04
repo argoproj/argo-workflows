@@ -1,7 +1,7 @@
 import {render} from '@testing-library/react';
 import React from 'react';
 
-import {BigButton} from '../big-button';
+import {BigButton} from './big-button';
 
 describe('BigButton', () => {
     it('renders with correct title, attributes, and icon, and responds to click', () => {

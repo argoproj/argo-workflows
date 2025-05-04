@@ -1,7 +1,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
-import {Button} from '../button';
+import {Button} from './button';
 
 describe('Button', () => {
     it('renders children and responds to click', () => {

@@ -1,10 +1,10 @@
 import {fireEvent, render} from '@testing-library/react';
 import React, {forwardRef, useImperativeHandle} from 'react';
 
-import {ObjectEditor} from '../object-editor';
+import {ObjectEditor} from './object-editor';
 
 // Mock the heavy Monaco editor
-jest.mock('../suspense-monaco-editor', () => {
+jest.mock('./suspense-monaco-editor', () => {
     return {
         // eslint-disable-next-line react/display-name
         SuspenseMonacoEditor: forwardRef((props: any, ref: any) => {
