@@ -10690,7 +10690,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 	t.Run("Retry hooked node", func(t *testing.T) {
 		woc := setup()
 		childNodes := []*wfv1.NodeStatus{}
-		// Add child hooked noes
+		// Add child hooked nodes
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true, Hooked: true}))
