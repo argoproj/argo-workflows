@@ -580,7 +580,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			}
 			v, ok := r.(string)
 			if !ok {
-				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
+				return fmt.Errorf("failed to evaluate label %q expression %q evaluated to %T but must be a string", n, f.Expression, r)
 			}
 			if errs := validation.IsValidLabelValue(v); errs != nil {
 				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q and expression %q: %s", v, n, f.Expression, strings.Join(errs, ";"))
@@ -1733,7 +1733,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		}
 		pvc, err := pvcClient.Create(ctx, &pvcTmpl, metav1.CreateOptions{})
 		if err != nil && apierr.IsAlreadyExists(err) {
-			woc.log.WithField("pvc", pvcTmpl.Name).Info("pvc already exists. Workflow is re-using it")
+			woc.log.WithField("pvc", pvcTmpl.Name).Info("pvc already exists. Workflow is reusing it")
 			pvc, err = pvcClient.Get(ctx, pvcTmpl.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -1824,7 +1824,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 		}
 	}
 	if len(newPVClist) != totalPVCs {
-		// we were successful in deleting one ore more PVCs
+		// we were successful in deleting one or more PVCs
 		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
 		woc.wf.Status.PersistentVolumeClaims = newPVClist
 		woc.updated = true
@@ -2569,7 +2569,7 @@ func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 }
 
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
-// DAG or steps templates. Will match stings with prefix like: [0]. or .
+// DAG or steps templates. Will match strings with prefix like: [0]. or .
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 var displayNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
 

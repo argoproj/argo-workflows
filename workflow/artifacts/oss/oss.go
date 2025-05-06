@@ -361,7 +361,7 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 	}
 
 	// Delete the current version objects after a period of time.
-	// If BucketVersioning is enbaled, the objects will turn to non-current version.
+	// If BucketVersioning is enabled, the objects will turn to non-current version.
 	expiration := oss.LifecycleExpiration{
 		Days: markDeletionAfterDays,
 	}
@@ -439,7 +439,7 @@ func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int
 		if err != nil {
 			return err
 		}
-		// Call the UploadPart method to upload each chunck.
+		// Call the UploadPart method to upload each chunk.
 		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
 		if err != nil {
 			log.Warnf("Upload part error: %v", err)

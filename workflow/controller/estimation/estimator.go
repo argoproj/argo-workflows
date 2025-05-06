@@ -34,7 +34,7 @@ func (e *estimator) EstimateNodeDuration(nodeName string) wfv1.EstimatedDuration
 	node, err := e.baselineWF.Status.Nodes.Get(oldNodeID)
 	if err != nil {
 		log.Errorf("was unable to obtain node for %s", oldNodeID)
-		// inacurate but not going to break anything
+		// inaccurate but not going to break anything
 		return 0
 	}
 	return wfv1.NewEstimatedDuration(node.GetDuration())

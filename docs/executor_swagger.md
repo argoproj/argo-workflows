@@ -4,7 +4,7 @@
 # The API for an executor plugin.
   
 
-## Informations
+## Information
 
 ### Version
 
@@ -2104,7 +2104,7 @@ that the fieldset applies to.
 ### <span id="metadata"></span> Metadata
 
 
-> Pod metdata
+> Pod metadata
   
 
 

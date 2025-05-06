@@ -276,7 +276,7 @@ type WorkflowSpec struct {
 	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
-	// Parameters are referencable globally using the 'workflow' variable prefix.
+	// Parameters are referenceable globally using the 'workflow' variable prefix.
 	// e.g. {{workflow.parameters.myparam}}
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
@@ -628,7 +628,7 @@ type Template struct {
 	// Overrides the affinity set at the workflow level (if any)
 	Affinity *apiv1.Affinity `json:"affinity,omitempty" protobuf:"bytes,8,opt,name=affinity"`
 
-	// Metdata sets the pods's metadata, i.e. annotations and labels
+	// Metadata sets the pods's metadata, i.e. annotations and labels
 	Metadata Metadata `json:"metadata,omitempty" protobuf:"bytes,9,opt,name=metadata"`
 
 	// Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
@@ -876,7 +876,7 @@ func (in Inputs) IsEmpty() bool {
 	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
-// Pod metdata
+// Pod metadata
 type Metadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,opt,name=annotations"`
 	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
@@ -1985,7 +1985,7 @@ type WorkflowStatus struct {
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
 
-	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it every time we reconcile.
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection

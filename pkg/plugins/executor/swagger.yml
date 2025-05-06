@@ -2263,7 +2263,7 @@ definitions:
                 type: string
         type: object
     Metadata:
-        description: Pod metdata
+        description: Pod metadata
         properties:
             annotations:
                 additionalProperties:

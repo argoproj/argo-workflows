@@ -633,7 +633,7 @@ func RandSuffix() string {
 	return randString(5)
 }
 
-// FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
+// FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally reusing successful nodes
 func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
@@ -782,7 +782,7 @@ func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsT
 	for _, child := range node.Children {
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
-			log.Panicf("Coudn't obtain child for %s, panicking", child)
+			log.Panicf("Couldn't obtain child for %s, panicking", child)
 		}
 		_, present := nodeIDsToReset[child]
 		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {

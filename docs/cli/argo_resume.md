@@ -23,7 +23,7 @@ argo resume WORKFLOW1 WORKFLOW2... [flags]
 		
 # Resume multiple workflows by node field selector:
 		
-  argo resume --node-field-selector inputs.paramaters.myparam.value=abc		
+  argo resume --node-field-selector inputs.parameters.myparam.value=abc		
 
 ```
 
@@ -31,7 +31,7 @@ argo resume WORKFLOW1 WORKFLOW2... [flags]
 
 ```
   -h, --help                         help for resume
-      --node-field-selector string   selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+      --node-field-selector string   selector of node to resume, eg: --node-field-selector inputs.parameters.myparam.value=abc
 ```
 
 ### Options inherited from parent commands

@@ -9,7 +9,7 @@ See also the list of [new features in 3.6](new-features.md).
 
 ### Deprecations
 
-The following features are deprecated and will be removed in a future verison of Argo Workflows:
+The following features are deprecated and will be removed in a future version of Argo Workflows:
 
 * The Python SDK is deprecated, we recommend migrating to [Hera](https://github.com/argoproj-labs/hera)
 * `schedule` in CronWorkflows, `podPriority`, `mutex` and `semaphore` in Workflows and WorkflowTemplates.

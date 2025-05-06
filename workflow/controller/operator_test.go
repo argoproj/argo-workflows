@@ -1306,7 +1306,7 @@ func TestBackoffMessage(t *testing.T) {
 	retryNode, err := woc.wf.GetNodeByName("retry-backoff-s69z6")
 	require.NoError(t, err)
 
-	// Simulate backoff of 4 secods
+	// Simulate backoff of 4 seconds
 	firstNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, 0)
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-8 * time.Second)}
 	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-6 * time.Second)}
@@ -2813,7 +2813,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Empty(t, pods.Items)
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "inputs.paramaters.param1.value=value2")
+	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "inputs.parameters.param1.value=value2")
 	require.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -7962,7 +7962,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay hellow"]`)
+      args: ["cowsay hello"]`)
 
 	wf1 := wf.DeepCopy()
 	wf1.Name = "whalesay-1"

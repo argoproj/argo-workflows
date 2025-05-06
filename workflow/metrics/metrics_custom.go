@@ -17,7 +17,7 @@ import (
 type RealTimeValueFunc func() float64
 
 type customMetricValue struct {
-	// We are faking a settable and incrementable up/down gauge/coutner
+	// We are faking a settable and incrementable up/down gauge/counter
 	// for compatibility with prometheus. callback() reads this.
 	// This is used for counters, gauges and realtime custom metrics,
 	// using either the prometheusValue or the

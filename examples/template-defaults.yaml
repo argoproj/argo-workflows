@@ -5,7 +5,7 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       Template defaults will provide the fixability to configure the defaults values for all templates in workflow.
-      Individual template can be overide default values.
+      Individual template can be override default values.
     workflows.argoproj.io/version: '>= 3.1.0'
 spec:
   entrypoint: main

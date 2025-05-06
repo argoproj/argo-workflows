@@ -250,7 +250,7 @@ export interface RetryStrategy {
  */
 export interface Script {
     /**
-     * Command is the interpreter coommand to run (e.g. [python])
+     * Command is the interpreter command to run (e.g. [python])
      */
     command: string[];
     /**
@@ -839,7 +839,7 @@ export interface WorkflowSpec {
     affinity?: kubernetes.Affinity;
     /**
      * Arguments contain the parameters and artifacts sent to the workflow entrypoint.
-     * Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}
+     * Parameters are referenceable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}
      */
     arguments?: Arguments;
     /**

@@ -1,4 +1,4 @@
-# This template demonstrates the customer variable suppport.
+# This template demonstrates the customer variable support.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
