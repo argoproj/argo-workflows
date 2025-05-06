@@ -1,32 +1,13 @@
 import {fireEvent, render} from '@testing-library/react';
-import React, {forwardRef, useImperativeHandle} from 'react';
+import React, {forwardRef} from 'react';
 
 import {ObjectEditor} from './object-editor';
 
 // Mock the heavy Monaco editor
-jest.mock('./suspense-monaco-editor', () => {
-    return {
-        // eslint-disable-next-line react/display-name
-        SuspenseMonacoEditor: forwardRef((props: any, ref: any) => {
-            const {defaultValue, ...forward} = props;
-
-            useImperativeHandle(ref, () => ({
-                editor: {
-                    getValue: () => defaultValue,
-                    setValue: () => {},
-                    revealLineInCenter: () => {},
-                    setPosition: () => {},
-                    focus: () => {}
-                }
-            }));
-
-            /* Render a textarea so fireEvent.change works with a native `value`
-         property.  Spread `forward` *first* so we can wrap its onChange
-         and pass only the updated string back to parent code. */
-            return <textarea data-testid='editor' defaultValue={defaultValue} {...forward} onChange={e => forward.onChange?.(e.target.value)} />;
-        })
-    };
-});
+jest.mock('./suspense-monaco-editor', () => ({
+    // eslint-disable-next-line react/display-name, @typescript-eslint/no-unused-vars
+    SuspenseMonacoEditor: forwardRef((props: any, _) => <textarea data-testid='editor' onChange={e => props.onChange(e.target.value)} />)
+}));
 
 describe('ObjectEditor', () => {
     const value = {foo: 'bar', baz: 123};
