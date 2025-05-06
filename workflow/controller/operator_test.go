@@ -1548,7 +1548,7 @@ func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
 	}
 
 	pods, err := listPods(woc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
 	actual := []string{}
