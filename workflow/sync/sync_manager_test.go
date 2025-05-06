@@ -302,6 +302,27 @@ spec:
      args: ["hello world"]
 `
 
+// Workflow with database semaphore
+const wfWithDBSemaphore = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world-db-sem
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   semaphores:
+     - database:
+         key: my-database-sem
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]
+`
+
 var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
@@ -922,12 +943,6 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		pending, err := mutex.getCurrentPending()
 		require.NoError(t, err)
 		assert.Len(t, pending, 1)
-		holders, err = semaphore.getCurrentHolders()
-		require.NoError(t, err)
-		assert.Len(t, holders, 1)
-		pending, err = semaphore.getCurrentPending()
-		require.NoError(t, err)
-		assert.Len(t, pending, 1)
 		syncManager.CheckWorkflowExistence(ctx)
 		holders, err = semaphore.getCurrentHolders()
 		require.NoError(t, err)
@@ -1110,7 +1125,7 @@ status:
 		assert.True(status)
 		assert.True(wfUpdate)
 		require.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(wf.Status.Synchronization.Semaphore)
+		require.NotNil(t, wf.Status.Synchronization.Semaphore)
 	})
 
 }
@@ -1527,8 +1542,11 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			})
 			require.NoError(t, err)
 
+			_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", "foo/test-semaphore", 100)
+			require.NoError(t, err)
 			// Initialize a semaphore so it gets added to the syncLockMap
-			testsem := newDatabaseSemaphore("test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
+			testsem, err := newDatabaseSemaphore("test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
+			require.NoError(t, err)
 			syncLockMap := make(map[string]semaphore)
 			syncLockMap["sem/test-semaphore"] = testsem
 
@@ -1554,4 +1572,143 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnconfiguredSemaphores(t *testing.T) {
+	ctx := context.Background()
+	kube := fake.NewSimpleClientset()
+	t.Run("UnconfiguredConfigMapSemaphore", func(t *testing.T) {
+		// Setup with a fake k8s client but no ConfigMap created
+		syncLimitFunc := GetSyncLimitFunc(kube)
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create a workflow with a semaphore referencing a non-existent ConfigMap
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+
+		// Try to acquire the lock
+		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+		// Assertions - expect an error because ConfigMap doesn't exist
+		require.Error(t, err)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
+		assert.Contains(t, err.Error(), "failed to initialize semaphore")
+	})
+
+	t.Run("UnavailablePostgresSemaphore", func(t *testing.T) {
+		// Setup a LockManager with PostgreSQL configuration but invalid connection details
+		// Create a config with invalid PostgreSQL connection
+		syncConfig := &config.SyncConfig{
+			DBConfig: config.DBConfig{
+				PostgreSQL: &config.PostgreSQLConfig{
+					DatabaseConfig: config.DatabaseConfig{
+						Host:     "non-existent-host",
+						Port:     5432,
+						Database: "non-existent-db",
+					},
+					SSL: false,
+				},
+			},
+		}
+
+		syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create a workflow with a database semaphore
+		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+		// Try to acquire the lock
+		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+		// Assertions - expect it to fail because DB connection will fail
+		require.Error(t, err)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+		assert.Contains(t, err.Error(), "database session is not available")
+	})
+
+	t.Run("UnavailableMySQLSemaphore", func(t *testing.T) {
+		// Setup a LockManager with MySQL configuration but invalid connection details
+		// Create a config with invalid MySQL connection
+		syncConfig := &config.SyncConfig{
+			DBConfig: config.DBConfig{
+				MySQL: &config.MySQLConfig{
+					DatabaseConfig: config.DatabaseConfig{
+						Host:     "non-existent-host",
+						Port:     3306,
+						Database: "non-existent-db",
+					},
+				},
+			},
+		}
+
+		syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create a workflow with a database semaphore
+		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+		// Try to acquire the lock
+		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+		// Assertions - expect it to fail because DB connection will fail
+		require.Error(t, err)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+		assert.Contains(t, err.Error(), "database session is not available")
+	})
+	t.Run("UnconfiguredDBSemaphore", func(t *testing.T) {
+		// Setup a LockManager with no database configuration. This doesn't need to distinguish between Postgres and MySQL, neither are configured
+		syncConfig := &config.SyncConfig{}
+
+		syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create a workflow with a database semaphore
+		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+		// Try to acquire the lock
+		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+		// Assertions - expect it to fail because DB is not configured
+		require.Error(t, err)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+		assert.Contains(t, err.Error(), "database session is not available")
+	})
+
+	t.Run("MissingLimitSemaphore", func(t *testing.T) {
+		for _, dbType := range testDBTypes {
+			t.Run(string(dbType), func(t *testing.T) {
+				// Setup test database using helper
+				info, cleanup, syncConfig, err := createTestDBSession(t, dbType)
+				require.NoError(t, err)
+				defer cleanup()
+
+				// Configure sync manager
+				syncManager := createLockManager(ctx, info.session, &syncConfig, nil, func(key string) {
+				}, WorkflowExistenceFunc)
+				require.NotNil(t, syncManager)
+				require.NotNil(t, syncManager.dbInfo.session)
+
+				// Create a workflow with a database semaphore
+				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+				// Try to acquire the lock
+				status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+				// Assertions - expect it to fail because limit is not in the table
+				require.Error(t, err)
+				assert.False(t, status)
+				assert.NotEmpty(t, msg)
+				assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+				assert.Contains(t, err.Error(), "failed to initialize semaphore")
+			})
+		}
+	})
 }

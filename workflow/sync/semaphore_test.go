@@ -34,7 +34,8 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 	_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
 	require.NoError(t, err)
 
-	s := newDatabaseSemaphore(name, dbKey, nextWorkflow, info, cacheTTL)
+	s, err := newDatabaseSemaphore(name, dbKey, nextWorkflow, info, cacheTTL)
+	require.NoError(t, err)
 	require.NotNil(t, s)
 
 	return s, info, deferfunc

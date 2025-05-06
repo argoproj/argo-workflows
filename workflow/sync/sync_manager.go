@@ -285,8 +285,8 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		lockKeys[i] = syncLockName.String()
 	}
 
-	if ok, err := sm.prepAcquire(wf, holderKey, syncItems, lockKeys); !ok {
-		return false, false, "", failedLockName, err
+	if ok, msg, failedLockName, err := sm.prepAcquire(wf, holderKey, syncItems, lockKeys); !ok {
+		return false, false, msg, failedLockName, err
 	}
 
 	needDB, err := needDBSession(lockKeys)
@@ -301,7 +301,6 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var already bool
 		var msg string
 		var failedLockName string
-		// TODO Guard against 0 limit
 		var lastErr error
 		for retryCounter := range 5 {
 			err := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
@@ -351,7 +350,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	return sm.tryAcquireImpl(wf, nil, holderKey, failedLockName, syncItems, lockKeys)
 }
 
-func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) (bool, error) {
+func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) (bool, string, string, error) {
 	for i, lockKey := range lockKeys {
 		lock, found := sm.syncLockMap[lockKey]
 		if !found {
@@ -362,10 +361,10 @@ func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []
 			case wfv1.SynchronizationTypeMutex:
 				lock, err = sm.initializeMutex(lockKey)
 			default:
-				return false, fmt.Errorf("unknown Synchronization Type")
+				return false, "bug: unknown synchronization type in prepAcquire", lockKey, fmt.Errorf("unknown Synchronization Type")
 			}
 			if err != nil {
-				return false, err
+				return false, "failed to initialize lock", lockKey, err
 			}
 			sm.syncLockMap[lockKey] = lock
 		}
@@ -380,7 +379,7 @@ func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []
 		ensureInit(wf, syncItems[i].getType())
 		lock.addToQueue(holderKey, priority, creationTime.Time)
 	}
-	return true, nil
+	return true, "", "", nil
 }
 
 func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
@@ -597,7 +596,7 @@ func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) 
 		if sm.dbInfo.session == nil {
 			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
 		}
-		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL), nil
+		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
 	default:
 		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.Kind)
 	}

@@ -65,8 +65,8 @@ const (
 
 var _ semaphore = &databaseSemaphore{}
 
-func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo, syncLimitCacheTTL time.Duration) *databaseSemaphore {
-	sm := &databaseSemaphore{
+func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo, syncLimitCacheTTL time.Duration) (*databaseSemaphore, error) {
+	sem := &databaseSemaphore{
 		name:         name,
 		shortDbKey:   dbKey,
 		limitGetter:  nil,
@@ -78,8 +78,13 @@ func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, 
 		info:    info,
 		isMutex: false,
 	}
-	sm.limitGetter = newCachedLimit(sm.getLimitFromDB, syncLimitCacheTTL)
-	return sm
+	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
+	var err error
+	limit := sem.getLimit()
+	if limit == 0 {
+		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	}
+	return sem, err
 }
 
 func (s *databaseSemaphore) longDbKey() string {
@@ -158,12 +163,27 @@ func (s *databaseSemaphore) currentHoldersSession(session db.Session) ([]string,
 }
 
 func (s *databaseSemaphore) lock() bool {
+	// Check if lock already exists, in case we crashed and restarted
+	var existingLocks []lockRecord
+	err := s.info.session.SQL().
+		Select(lockNameField).
+		From(s.info.config.lockTable).
+		Where(db.Cond{lockNameField: s.longDbKey()}).
+		And(db.Cond{lockControllerField: s.info.config.controllerName}).
+		All(&existingLocks)
+
+	if err == nil && len(existingLocks) > 0 {
+		// Lock already exists
+		s.log.WithField("key", s.longDbKey()).Debug("Lock already exists")
+		return true
+	}
+
 	record := &lockRecord{
 		Name:       s.longDbKey(),
 		Controller: s.info.config.controllerName,
 		Time:       time.Now(),
 	}
-	_, err := s.info.session.Collection(s.info.config.lockTable).Insert(record)
+	_, err = s.info.session.Collection(s.info.config.lockTable).Insert(record)
 	return err == nil
 }
 
