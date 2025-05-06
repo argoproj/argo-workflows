@@ -9,8 +9,8 @@ type semaphore interface {
 	checkAcquire(holderKey string, tx *transaction) (bool, bool, string)
 	tryAcquire(holderKey string, tx *transaction) (bool, string)
 	release(key string) bool
-	addToQueue(holderKey string, priority int32, creationTime time.Time)
-	removeFromQueue(holderKey string)
+	addToQueue(holderKey string, priority int32, creationTime time.Time) error
+	removeFromQueue(holderKey string) error
 	getCurrentHolders() ([]string, error)
 	getCurrentPending() ([]string, error)
 	getName() string

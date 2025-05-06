@@ -110,7 +110,9 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			}
 			if !sm.isWFDeleted(wfKey) {
 				lock.release(holderKeys)
-				lock.removeFromQueue(holderKeys)
+				if err := lock.removeFromQueue(holderKeys); err != nil {
+					log.WithError(err).Warnf("failed to remove %s from queue", holderKeys)
+				}
 			}
 		}
 	}
@@ -377,7 +379,9 @@ func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []
 		}
 		creationTime := wf.CreationTimestamp
 		ensureInit(wf, syncItems[i].getType())
-		lock.addToQueue(holderKey, priority, creationTime.Time)
+		if err := lock.addToQueue(holderKey, priority, creationTime.Time); err != nil {
+			return false, fmt.Sprintf("Failed to add to queue: %v", err), lockKey, err
+		}
 	}
 	return true, "", "", nil
 }
@@ -472,7 +476,9 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 		}
 		if syncLockHolder, ok := sm.syncLockMap[lockName.String()]; ok {
 			syncLockHolder.release(holderKey)
-			syncLockHolder.removeFromQueue(holderKey)
+			if err := syncLockHolder.removeFromQueue(holderKey); err != nil {
+				log.Warnf("Error removing %s from queue: %v", holderKey, err)
+			}
 			lockKey := lockName
 			if wf.Status.Synchronization != nil {
 				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey.String())
@@ -510,7 +516,9 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 			key := getHolderKey(wf, "")
-			syncLockHolder.removeFromQueue(key)
+			if err := syncLockHolder.removeFromQueue(key); err != nil {
+				log.Warnf("Error removing %s from queue: %v", key, err)
+			}
 		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
@@ -534,7 +542,9 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 			key := getHolderKey(wf, "")
-			syncLockHolder.removeFromQueue(key)
+			if err := syncLockHolder.removeFromQueue(key); err != nil {
+				log.Warnf("Error removing %s from queue: %v", key, err)
+			}
 		}
 		wf.Status.Synchronization.Mutex = nil
 	}
@@ -543,7 +553,9 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
 			lock, ok := sm.syncLockMap[node.SynchronizationStatus.Waiting]
 			if ok {
-				lock.removeFromQueue(getHolderKey(wf, node.ID))
+				if err := lock.removeFromQueue(getHolderKey(wf, node.ID)); err != nil {
+					log.Warnf("Error removing %s from queue: %v", getHolderKey(wf, node.ID), err)
+				}
 			}
 			node.SynchronizationStatus = nil
 			wf.Status.Nodes.Set(node.ID, node)

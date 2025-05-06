@@ -280,7 +280,7 @@ func (s *databaseSemaphore) notifyWaiters() {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) error {
 	// Doesn't need a transaction, as no-one else should be inserting exactly this record ever
 	var states []stateRecord
 	err := s.info.session.SQL().
@@ -291,11 +291,10 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 		And(db.Cond{stateControllerField: s.info.config.controllerName}).
 		All(&states)
 	if err != nil {
-		s.log.WithField("key", holderKey).WithError(err).Error("Failed to add to queue")
-		return
+		return err
 	}
 	if len(states) > 0 {
-		return
+		return nil
 	}
 	record := &stateRecord{
 		Name:       s.longDbKey(),
@@ -306,15 +305,10 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 		Time:       creationTime,
 	}
 	_, err = s.info.session.Collection(s.info.config.stateTable).Insert(record)
-	switch err {
-	case nil:
-		s.log.WithField("key", holderKey).Debug("Added into queue")
-	default:
-		s.log.WithField("key", holderKey).WithError(err).Error("Failed to add to queue")
-	}
+	return err
 }
 
-func (s *databaseSemaphore) removeFromQueue(holderKey string) {
+func (s *databaseSemaphore) removeFromQueue(holderKey string) error {
 	_, err := s.info.session.SQL().
 		DeleteFrom(s.info.config.stateTable).
 		Where(db.Cond{stateNameField: s.longDbKey()}).
@@ -322,12 +316,7 @@ func (s *databaseSemaphore) removeFromQueue(holderKey string) {
 		And(db.Cond{stateHeldField: false}).
 		Exec()
 
-	switch err {
-	case nil:
-		s.log.WithField("key", holderKey).Debug("Removed from queue")
-	default:
-		s.log.WithField("key", holderKey).WithError(err).Error("Failed to remove from queue")
-	}
+	return err
 }
 
 func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (bool, bool, string) {
@@ -496,7 +485,7 @@ func (s *databaseSemaphore) tryAcquire(holderKey string, tx *transaction) (bool,
 			"key":     holderKey,
 			"result":  true,
 			"message": msg,
-		}).Info("TryAcquire - already held")
+		}).Info("tryAcquire - already held")
 		return true, msg
 	}
 	if !acq {
@@ -504,14 +493,14 @@ func (s *databaseSemaphore) tryAcquire(holderKey string, tx *transaction) (bool,
 			"key":     holderKey,
 			"result":  false,
 			"message": msg,
-		}).Info("TryAcquire - cannot acquire")
+		}).Info("tryAcquire - cannot acquire")
 		return false, msg
 	}
 	if s.acquire(holderKey, tx) {
 		s.log.WithFields(log.Fields{
 			"key":    holderKey,
 			"result": true,
-		}).Info("TryAcquire succeeded")
+		}).Info("tryAcquire succeeded")
 		s.notifyWaiters()
 		return true, ""
 	}
@@ -519,7 +508,7 @@ func (s *databaseSemaphore) tryAcquire(holderKey string, tx *transaction) (bool,
 		"key":     holderKey,
 		"result":  false,
 		"message": msg,
-	}).Info("TryAcquire failed")
+	}).Info("tryAcquire failed")
 	return false, msg
 }
 

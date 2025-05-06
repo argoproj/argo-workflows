@@ -143,19 +143,21 @@ func workflowKey(key string) string {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) error {
 	if _, ok := s.lockHolder[holderKey]; ok {
 		s.log.Debugf("Lock is already acquired by %s", holderKey)
-		return
+		return nil
 	}
 
 	s.pending.add(holderKey, priority, creationTime)
 	s.log.Debugf("Added into queue: %s", holderKey)
+	return nil
 }
 
-func (s *prioritySemaphore) removeFromQueue(holderKey string) {
+func (s *prioritySemaphore) removeFromQueue(holderKey string) error {
 	s.pending.remove(holderKey)
 	s.log.Debugf("Removed from queue: %s", holderKey)
+	return nil
 }
 
 func (s *prioritySemaphore) acquire(holderKey string, _ *transaction) bool {
