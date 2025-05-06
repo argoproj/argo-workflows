@@ -99,11 +99,10 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 
 	now := time.Now()
 	tx := &transaction{db: &dbSession}
-	s.addToQueue("default/wf-01", 0, now)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
-
+	require.NoError(t, s.addToQueue("default/wf-01", 0, now))
+	require.NoError(t, s.addToQueue("default/wf-02", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue("default/wf-03", 0, now.Add(2*time.Second)))
+	require.NoError(t, s.addToQueue("default/wf-04", 0, now.Add(3*time.Second)))
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
 	acquired, _ = s.tryAcquire("default/wf-04", tx)
@@ -145,11 +144,11 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 
 	now := time.Now()
 	// The ordering here is important and perhaps counterintuitive.
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
-	s.addToQueue("default/wf-01", 0, now)
-	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second))
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
+	require.NoError(t, s.addToQueue("default/wf-04", 0, now.Add(3*time.Second)))
+	require.NoError(t, s.addToQueue("default/wf-02", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue("default/wf-01", 0, now))
+	require.NoError(t, s.addToQueue("default/wf-05", 0, now.Add(4*time.Second)))
+	require.NoError(t, s.addToQueue("default/wf-03", 0, now.Add(2*time.Second)))
 
 	tx := &transaction{db: &dbSession}
 	acquired, _ := s.tryAcquire("default/wf-01", tx)
@@ -193,8 +192,8 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	defer cleanup()
 
 	now := time.Now()
-	s.addToQueue("foo/wf-01/nodeid-123", 0, now)
-	s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second))
+	require.NoError(t, s.addToQueue("foo/wf-01/nodeid-123", 0, now))
+	require.NoError(t, s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second)))
 
 	tx := &transaction{db: &dbSession}
 	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123", tx)

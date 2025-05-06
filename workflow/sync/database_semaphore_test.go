@@ -34,8 +34,8 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 
 			// Add items to the queue
 			now := time.Now()
-			s.addToQueue("foo/wf-01", 0, now)
-			s.addToQueue("foo/wf-02", 0, now.Add(time.Second))
+			require.NoError(t, s.addToQueue("foo/wf-01", 0, now))
+			require.NoError(t, s.addToQueue("foo/wf-02", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the controller is considered inactive
 			tx := &transaction{db: &info.session}
@@ -89,7 +89,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 
 			// Add our own item to the queue
 			now := time.Now()
-			s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second))
+			require.NoError(t, s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the other controller's item is first in line
 			tx := &transaction{db: &info.session}
@@ -150,7 +150,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 
 			// Add our own item to the queue
 			now := time.Now()
-			s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second))
+			require.NoError(t, s.addToQueue("foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should succeed because the other cluster's item is for a different semaphore
 			tx := &transaction{db: &info.session}
@@ -187,27 +187,27 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 
 			// Mutex workflow 1
 			tx := &transaction{db: &info.session}
-			mutex.addToQueue("foo/wf-mutex-1", 0, now)
+			require.NoError(t, mutex.addToQueue("foo/wf-mutex-1", 0, now))
 			mutexAcquired1, _ := mutex.tryAcquire("foo/wf-mutex-1", tx)
 			assert.True(t, mutexAcquired1, "Mutex should be acquired by first workflow")
 
 			// Semaphore workflow 1
-			semaphore.addToQueue("foo/wf-sem-1", 0, now)
+			require.NoError(t, semaphore.addToQueue("foo/wf-sem-1", 0, now))
 			semAcquired1, _ := semaphore.tryAcquire("foo/wf-sem-1", tx)
 			assert.True(t, semAcquired1, "Semaphore should be acquired by first workflow")
 
 			// Verify the mutex can't be acquired again
-			mutex.addToQueue("foo/wf-mutex-2", 0, now)
+			require.NoError(t, mutex.addToQueue("foo/wf-mutex-2", 0, now))
 			mutexAcquired2, _ := mutex.tryAcquire("foo/wf-mutex-2", tx)
 			assert.False(t, mutexAcquired2, "Mutex should not be acquired by second workflow")
 
 			// But the semaphore can still be acquired (limit=2)
-			semaphore.addToQueue("foo/wf-sem-2", 0, now)
+			require.NoError(t, semaphore.addToQueue("foo/wf-sem-2", 0, now))
 			semAcquired2, _ := semaphore.tryAcquire("foo/wf-sem-2", tx)
 			assert.True(t, semAcquired2, "Semaphore should be acquired by second workflow")
 
 			// But not a third time (because limit=2)
-			semaphore.addToQueue("foo/wf-sem-3", 0, now)
+			require.NoError(t, semaphore.addToQueue("foo/wf-sem-3", 0, now))
 			semAcquired3, _ := semaphore.tryAcquire("foo/wf-sem-3", tx)
 			assert.False(t, semAcquired3, "Semaphore should not be acquired by third workflow (at capacity)")
 
@@ -231,7 +231,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			assert.True(t, semAcquired3Again, "Semaphore should be acquired after release")
 
 			// But not a fourth time (still at capacity with 2 holders)
-			semaphore.addToQueue("foo/wf-sem-4", 0, now)
+			require.NoError(t, semaphore.addToQueue("foo/wf-sem-4", 0, now))
 			semAcquired4, _ := semaphore.tryAcquire("foo/wf-sem-4", tx)
 			assert.False(t, semAcquired4, "Semaphore should not be acquired fourth time (at capacity again)")
 
