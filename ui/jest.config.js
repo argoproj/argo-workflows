@@ -8,5 +8,4 @@ module.exports = {
   moduleNameMapper: {
     "\\.(css|scss)$": "<rootDir>/__mocks__/styleMock.js"
   },
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 };
