@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -11,7 +12,18 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
-var testDBTypes = []sqldb.DBType{sqldb.Postgres, sqldb.MySQL}
+var testDBTypes []sqldb.DBType
+
+// Don't test databases on windows as testcontainers don't work there
+func init() {
+	switch runtime.GOOS {
+	case "windows":
+		// Can't test these on windows
+		testDBTypes = []sqldb.DBType{}
+	default:
+		testDBTypes = []sqldb.DBType{sqldb.Postgres, sqldb.MySQL}
+	}
+}
 
 // TestInactiveControllerDBSemaphore tests that a semaphore can't be acquired if the controller is not marked as responding
 func TestInactiveControllerDBSemaphore(t *testing.T) {

@@ -20,6 +20,7 @@ import (
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 const configMap = `
@@ -1597,70 +1598,59 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to initialize semaphore")
 	})
 
-	t.Run("UnavailablePostgresSemaphore", func(t *testing.T) {
-		// Setup a LockManager with PostgreSQL configuration but invalid connection details
-		// Create a config with invalid PostgreSQL connection
-		syncConfig := &config.SyncConfig{
-			DBConfig: config.DBConfig{
-				PostgreSQL: &config.PostgreSQLConfig{
-					DatabaseConfig: config.DatabaseConfig{
-						Host:     "non-existent-host",
-						Port:     5432,
-						Database: "non-existent-db",
-					},
-					SSL: false,
-				},
-			},
+	t.Run("UnavailableDatabaseSemaphore", func(t *testing.T) {
+		// Don't use testDBTypes here, as we can test this on windows
+		for _, dbType := range []sqldb.DBType{sqldb.Postgres, sqldb.MySQL} {
+			t.Run(string(dbType), func(t *testing.T) {
+				// Create appropriate invalid config for the database type
+				var syncConfig *config.SyncConfig
+				switch dbType {
+				case sqldb.Postgres:
+					syncConfig = &config.SyncConfig{
+						DBConfig: config.DBConfig{
+							PostgreSQL: &config.PostgreSQLConfig{
+								DatabaseConfig: config.DatabaseConfig{
+									Host:     "non-existent-host",
+									Port:     5432,
+									Database: "non-existent-db",
+								},
+								SSL: false,
+							},
+						},
+					}
+				case sqldb.MySQL:
+					syncConfig = &config.SyncConfig{
+						DBConfig: config.DBConfig{
+							MySQL: &config.MySQLConfig{
+								DatabaseConfig: config.DatabaseConfig{
+									Host:     "non-existent-host",
+									Port:     3306,
+									Database: "non-existent-db",
+								},
+							},
+						},
+					}
+				}
+
+				syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+				}, WorkflowExistenceFunc)
+
+				// Create a workflow with a database semaphore
+				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+				// Try to acquire the lock
+				status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+				// Assertions - expect it to fail because DB connection will fail
+				require.Error(t, err)
+				assert.False(t, status)
+				assert.NotEmpty(t, msg)
+				assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+				assert.Contains(t, err.Error(), "database session is not available")
+			})
 		}
-
-		syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
-		}, WorkflowExistenceFunc)
-
-		// Create a workflow with a database semaphore
-		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
-
-		// Try to acquire the lock
-		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
-
-		// Assertions - expect it to fail because DB connection will fail
-		require.Error(t, err)
-		assert.False(t, status)
-		assert.NotEmpty(t, msg)
-		assert.Equal(t, "default/Database/my-database-sem", failedLockName)
-		assert.Contains(t, err.Error(), "database session is not available")
 	})
 
-	t.Run("UnavailableMySQLSemaphore", func(t *testing.T) {
-		// Setup a LockManager with MySQL configuration but invalid connection details
-		// Create a config with invalid MySQL connection
-		syncConfig := &config.SyncConfig{
-			DBConfig: config.DBConfig{
-				MySQL: &config.MySQLConfig{
-					DatabaseConfig: config.DatabaseConfig{
-						Host:     "non-existent-host",
-						Port:     3306,
-						Database: "non-existent-db",
-					},
-				},
-			},
-		}
-
-		syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
-		}, WorkflowExistenceFunc)
-
-		// Create a workflow with a database semaphore
-		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
-
-		// Try to acquire the lock
-		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
-
-		// Assertions - expect it to fail because DB connection will fail
-		require.Error(t, err)
-		assert.False(t, status)
-		assert.NotEmpty(t, msg)
-		assert.Equal(t, "default/Database/my-database-sem", failedLockName)
-		assert.Contains(t, err.Error(), "database session is not available")
-	})
 	t.Run("UnconfiguredDBSemaphore", func(t *testing.T) {
 		// Setup a LockManager with no database configuration. This doesn't need to distinguish between Postgres and MySQL, neither are configured
 		syncConfig := &config.SyncConfig{}
