@@ -48,7 +48,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
 		// when they don't exist in the env.
 		log.WithError(err).Debug("LastRetry variables are present and unresolved is allowed")
-		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
 	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
