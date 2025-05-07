@@ -9871,6 +9871,7 @@
       "required": [
         "name",
         "scope",
+        "type",
         "url"
       ],
       "properties": {
@@ -9880,6 +9881,10 @@
         },
         "scope": {
           "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the link. E.g. \"external\", \"internal\". If the link type is external, it will open in a new tab.",
           "type": "string"
         },
         "url": {
