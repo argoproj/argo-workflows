@@ -39,7 +39,7 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			spec := pod.Spec
 			assert.Equal(t, ptr.To(false), spec.AutomountServiceAccountToken)
 			assert.Equal(t, &apiv1.PodSecurityContext{
-				RunAsUser:      ptr.To(int64(8737)),
+				RunAsUser:      nil,
 				RunAsNonRoot:   ptr.To(true),
 				SeccompProfile: &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 			}, spec.SecurityContext)
@@ -65,7 +65,7 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				assert.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
 				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
 				assert.Equal(t, &apiv1.SecurityContext{
-					RunAsUser:                ptr.To(int64(8737)),
+					RunAsUser:                nil,
 					RunAsNonRoot:             ptr.To(true),
 					AllowPrivilegeEscalation: ptr.To(false),
 					ReadOnlyRootFilesystem:   ptr.To(true),

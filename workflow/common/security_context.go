@@ -10,7 +10,7 @@ func MinimalCtrSC() *corev1.SecurityContext {
 		Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 		Privileged:               ptr.To(false),
 		RunAsNonRoot:             ptr.To(true),
-		RunAsUser:                ptr.To(int64(8737)),
+		RunAsUser:                nil,
 		ReadOnlyRootFilesystem:   ptr.To(true),
 		AllowPrivilegeEscalation: ptr.To(false),
 		SeccompProfile:           &corev1.SeccompProfile{Type: "RuntimeDefault"},
@@ -20,7 +20,7 @@ func MinimalCtrSC() *corev1.SecurityContext {
 func MinimalPodSC() *corev1.PodSecurityContext {
 	return &corev1.PodSecurityContext{
 		RunAsNonRoot:   ptr.To(true),
-		RunAsUser:      ptr.To(int64(8737)),
+		RunAsUser:      nil,
 		SeccompProfile: &corev1.SeccompProfile{Type: "RuntimeDefault"},
 	}
 }
