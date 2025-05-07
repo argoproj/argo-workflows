@@ -113,30 +113,16 @@ func EnvMap(replaceMap map[string]string) map[string]interface{} {
 
 // hasRetries checks if the variable `retries` exists in the expression template
 func hasRetries(expression string) bool {
+	return hasVariableInExpression(expression, "retries")
+}
+
+func hasVariableInExpression(expression, variable string) bool {
 	tokens, err := lexer.Lex(file.NewSource(expression))
 	if err != nil {
 		return false
 	}
 	for _, token := range tokens {
-		if token.Kind == lexer.Identifier && token.Value == "retries" {
-			return true
-		}
-	}
-	return false
-}
-
-func hasVariableInExpression(expression, variable string) bool {
-	if !strings.Contains(expression, variable) {
-		return false
-	}
-	// Even if the expression contains `<variable>`, it could be the case that it represents a string (`"<variable>"`),
-	// not a variable, so we need to parse it and handle filter the string case.
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == variable {
+		if token.Kind == lexer.Identifier && token.Value == variable {
 			return true
 		}
 	}
