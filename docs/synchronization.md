@@ -307,7 +307,9 @@ This table is created automatically when the controller starts.
 The table name is configured in the workflow-controller-configmap `limitTableName` field, and defaults to `sync_limit`.
 
 You are expected to manually insert values for any semaphores you want to use.
-Configuring:
+
+#### Configuring limits
+
 To allow up to 3 concurrent locks for semaphore "namespace/semaphore":
 
 ```sql
