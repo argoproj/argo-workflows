@@ -1041,6 +1041,47 @@ spec:
       args: ["echo {{workflow.failures}}"]
 `
 
+var workflowStatusInResourceTemplateManifest = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-parent-workflow-
+spec:
+  entrypoint: trigger-child-workflow
+  serviceAccountName: argo
+  templates:
+    - name: trigger-child-workflow
+      resource:
+        action: create
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: {{workflow.name}}-child-workflow-
+          spec:
+            entrypoint: main
+            onExit: exit-handler
+            templates:
+              - name: main
+                dag:
+                  tasks:
+                    - name: say-hello-task
+                      template: say-hello
+              - name: say-hello
+                script:
+                  image: alpine:latest
+                  command: [sh]
+                  source: |
+                    echo "hello from child workflow"
+              - name: exit-handler
+                script:
+                  image: alpine:latest
+                  command: [sh]
+                  source: |
+                    echo "hello from exit handler"
+                    echo '{{workflow.failures}}'
+`
+
 func TestExitHandler(t *testing.T) {
 	// ensure {{workflow.status}} is not available when not in exit handler
 	err := validate(workflowStatusNotOnExit)
@@ -1048,6 +1089,10 @@ func TestExitHandler(t *testing.T) {
 
 	// ensure {{workflow.status}} is available in exit handler
 	err = validate(exitHandlerWorkflowStatusOnExit)
+	require.NoError(t, err)
+
+	// ensure {{workflow.status}} is available when in resource template manifest
+	err = validate(workflowStatusInResourceTemplateManifest)
 	require.NoError(t, err)
 }
 
