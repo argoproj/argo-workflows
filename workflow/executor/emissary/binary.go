@@ -1,19 +1,20 @@
 package emissary
 
 import (
+	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func copyBinary() error {
-	name, err := exec.LookPath("argoexec")
+	name, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get the argoexec path: %w", err)
 	}
+
 	in, err := os.Open(filepath.Clean(name))
 	if err != nil {
 		return err
