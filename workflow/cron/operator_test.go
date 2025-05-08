@@ -604,7 +604,7 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
 	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
-	assert.Contains(t, submissionErrorCond.Message, "cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
+	assert.Contains(t, submissionErrorCond.Message, "cron workflow can't be configured with both Spec.Schedule and Spec.Schedules")
 }
 
 var specErrWithValidAndInvalidSchedules = `

@@ -96,7 +96,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     const [uiTimezone, setUITimezone] = useState<string>(DEFAULT_TZ);
     // timezone used for timezone formatting
     const [timezone, setTimezone] = useLocalStorage<string>(TZ_LOCALSTORAGE_KEY, DEFAULT_TZ);
-    // update the UI everytime the timezone changes
+    // update the UI every time the timezone changes
     useEffect(() => {
         setUITimezone(timezone);
     }, [timezone]);

@@ -353,7 +353,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	for _, childNodeID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			woc.log.Panicf("Coudn't obtain child for %s, panicking", childNodeID)
+			woc.log.Panicf("Couldn't obtain child for %s, panicking", childNodeID)
 		}
 		step := nodeSteps[childNode.Name]
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
@@ -396,7 +396,7 @@ func shouldExecute(when string) (bool, error) {
 	}
 	result, err := expression.Evaluate(nil)
 	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
+		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expression '%s': %v", when, err)
 	}
 	boolRes, ok := result.(bool)
 	if !ok {

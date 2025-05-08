@@ -45,7 +45,7 @@ argo archive resubmit [WORKFLOW...] [flags]
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                    help for resubmit
       --log                     log the workflow until it completes
-      --memoized                re-use successful steps & outputs from the previous run
+      --memoized                reuse successful steps & outputs from the previous run
   -o, --output string           Output format. One of: name|json|yaml|wide
   -p, --parameter stringArray   input parameter to override on the original workflow spec
       --priority int32          workflow priority

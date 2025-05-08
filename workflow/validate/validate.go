@@ -373,7 +373,7 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 // ValidateCronWorkflow validates a CronWorkflow
 func ValidateCronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow, wfDefaults *wfv1.Workflow) error {
 	if len(cronWf.Spec.Schedules) > 0 && cronWf.Spec.Schedule != "" {
-		return fmt.Errorf("cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
+		return fmt.Errorf("cron workflow can't be configured with both Spec.Schedule and Spec.Schedules")
 	}
 	// CronWorkflows have fewer max chars allowed in their name because when workflows are created from them, they
 	// are appended with the unix timestamp (`-1615836720`). This lower character allowance allows for that timestamp

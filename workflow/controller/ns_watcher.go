@@ -89,7 +89,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 }
 
 func deleteNS(log *logrus.Entry, ns *apiv1.Namespace, resetFn resetFunc) {
-	log.Infof("reseting the namespace parallelism limits for %s due to deletion event", ns.Name)
+	log.Infof("resetting the namespace parallelism limits for %s due to deletion event", ns.Name)
 	resetFn(ns.Name)
 }
 

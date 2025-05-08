@@ -1,0 +1,6 @@
+[codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+skip = .git*,go.sum,*.lock,.codespellrc,CHANGELOG*.md
+check-hidden = true
+ignore-regex = \S{50,}|\bList[A-Z][a-z]+\b
+ignore-words-list = notin,implementors,bui,te,alpha-numeric,freee,ans

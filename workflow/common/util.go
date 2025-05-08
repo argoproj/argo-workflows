@@ -309,8 +309,8 @@ func IsDone(un *unstructured.Unstructured) bool {
 
 // Check whether child hooked nodes Fulfilled
 func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
-	childs := node.Children
-	for _, id := range childs {
+	children := node.Children
+	for _, id := range children {
 		n, ok := nodes[id]
 		if !ok {
 			continue

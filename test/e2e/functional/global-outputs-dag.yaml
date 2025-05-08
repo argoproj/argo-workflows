@@ -24,13 +24,13 @@ spec:
       args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
       parameters:
-      # export a global parameter. The parameter will be programatically available in the completed
+      # export a global parameter. The parameter will be programmatically available in the completed
       # workflow object under: workflow.status.outputs.parameters
       - name: hello-param
         valueFrom:
           path: /tmp/hello_world.txt
         globalName: my-global-param
-      # export a global artifact. The artifact will be programatically available in the completed
+      # export a global artifact. The artifact will be programmatically available in the completed
       # workflow object under: workflow.status.outputs.artifacts
       artifacts:
       - name: hello-art

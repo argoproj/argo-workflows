@@ -366,7 +366,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 //
 // It's not sufficient to only refer to RFC3986 for this validation logic
 // because modern browsers will convert back slashes (\) to forward slashes (/)
-// and will interprete percent-encoded bytes.
+// and will interpret percent-encoded bytes.
 //
 // We used to use absolute redirect URLs and would validate the scheme and host
 // match the request scheme and host, but this led to problems when Argo is

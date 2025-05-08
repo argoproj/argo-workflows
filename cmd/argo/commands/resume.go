@@ -35,7 +35,7 @@ func NewResumeCommand() *cobra.Command {
 		
 # Resume multiple workflows by node field selector:
 		
-  argo resume --node-field-selector inputs.paramaters.myparam.value=abc		
+  argo resume --node-field-selector inputs.parameters.myparam.value=abc		
 `,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && resumeArgs.nodeFieldSelector == "" {
@@ -70,6 +70,6 @@ func NewResumeCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	return command
 }

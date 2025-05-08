@@ -25,7 +25,7 @@ spec:
   - name: dag-target
     dag:
       # dag.target can optionally be specified to restrict the execution of the workflow to only the
-      # dependant chain of tasks to reach the desired target. Multiple targets can be specified, as
+      # dependent chain of tasks to reach the desired target. Multiple targets can be specified, as
       # space delimited targets, and can be parameterized. An empty/omitted target will execute all
       # tasks. Submit this example again with different values for target to see how it affects the
       # execution:

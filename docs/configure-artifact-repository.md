@@ -393,7 +393,7 @@ $ #create a ram user to access bucket.
 $ aliyun ram CreateUser --UserName $mybucket-user
 $ # create ram policy with the limit permission.
 $ aliyun ram CreatePolicy --PolicyName $mybucket-policy --PolicyDocument "$(cat policy.json)"
-$ # attch ram policy to the ram user.
+$ # attach ram policy to the ram user.
 $ aliyun ram AttachPolicyToUser --UserName $mybucket-user --PolicyName $mybucket-policy --PolicyType Custom
 $ # create access key and secret key for the ram user.
 $ aliyun ram CreateAccessKey --UserName $mybucket-user > access-key.json
