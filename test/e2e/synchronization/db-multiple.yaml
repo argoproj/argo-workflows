@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: synchronization-multiple-
+  generateName: db-multiple-
 spec:
   entrypoint: main
   templates:
@@ -16,10 +16,11 @@ spec:
       synchronization:
         mutexes:
           - name: load-1
+            database: true
           - name: load-2
+            database: true
         semaphores:
-          - configMapKeyRef:
-              name: my-config
+          - database:
               key: workflow
       container:
         image: argoproj/argosay:v2
@@ -29,10 +30,11 @@ spec:
       synchronization:
         mutexes:
           - name: django-1
+            database: true
           - name: django-2
+            database: true
         semaphores:
-          - configMapKeyRef:
-              name: my-config
+          - database:
               key: workflow
       container:
         image: argoproj/argosay:v2
