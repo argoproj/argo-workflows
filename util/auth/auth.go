@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// CanIArgo attempts to determine if a verb is actionable by a certain resource, this resouce must be an argo resource
+// CanIArgo attempts to determine if a verb is actionable by a certain resource, this resource must be an argo resource
 func CanIArgo(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
 	logCtx := log.WithFields(log.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
 	logCtx.Debug("CanI")
