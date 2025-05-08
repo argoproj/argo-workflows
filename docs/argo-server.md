@@ -119,7 +119,7 @@ spec:
         env:
           - name: ARGO_BASE_HREF
             value: /argo/
-        image: argoproj/argocli:latest
+        image: quay.io/argoproj/argocli:latest
         name: argo-server
 ...
 ```

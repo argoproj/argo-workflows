@@ -7,7 +7,7 @@ metadata:
   generateName: gc-ttl-
 spec:
   ttlStrategy:
-    secondsAfterCompletion: 10 # Time to live after workflow is completed, replaces ttlSecondsAfterFinished
+    secondsAfterCompletion: 10 # Time to live after the workflow is completed, regardless of its status (overrides secondsAfterSuccess and secondsAfterFailure).
     secondsAfterSuccess: 5     # Time to live after workflow is successful
     secondsAfterFailure: 5     # Time to live after workflow fails
   entrypoint: hello-world

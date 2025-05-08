@@ -89,7 +89,6 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --provenance=false \
-            --tag $image_name \
             --tag quay.io/$image_name .
 
   build-windows:
@@ -133,8 +132,6 @@ jobs:
               -t $image_name \
               -f Dockerfile.windows \
               .
-
-            docker push $image_name
 
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
@@ -187,14 +184,11 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
-            docker manifest push $image_name
             docker manifest push quay.io/$image_name
 
             cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
@@ -236,7 +230,6 @@ jobs:
           fi
 
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
-          docker pull $image_name
           docker pull quay.io/$image_name
 
   test-images-windows:
@@ -270,7 +263,6 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
-            docker pull $image_name
             docker pull quay.io/$image_name
           done
 

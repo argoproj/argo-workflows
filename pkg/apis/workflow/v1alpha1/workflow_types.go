@@ -1705,12 +1705,18 @@ func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelec
 	return selectors
 }
 
+type SyncDatabaseRef struct {
+	Key string `json:"key" protobuf:"bytes,1,name=key"`
+}
+
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
-	// ConfigMapKeyRef is configmap selector for Semaphore configuration
+	// ConfigMapKeyRef is a configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
 	// Namespace is the namespace of the configmap, default: [namespace of workflow]
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// SyncDatabaseRef is a database reference for Semaphore configuration
+	Database *SyncDatabaseRef `json:"database,omitempty" protobuf:"bytes,3,opt,name=database"`
 }
 
 // Mutex holds Mutex configuration
@@ -1719,6 +1725,8 @@ type Mutex struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// Namespace is the namespace of the mutex, default: [namespace of workflow]
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// Database specifies this is database controlled if this is set true
+	Database bool `json:"database,omitempty" protobuf:"bytes,3,opt,name=database"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.

@@ -1,5 +1,7 @@
 module.exports = {
   preset: "ts-jest",
+  testEnvironment: "jsdom",
+  setupFilesAfterEnv: ["<rootDir>/setupTests.ts"],
   transformIgnorePatterns: [
     "node_modules/(?!(argo-ui)/)"
   ],

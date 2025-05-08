@@ -42,7 +42,7 @@ func TestMultipleMutexLock(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MultipleMutex", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfall := templatedWorkflow("all",
 			`    mutexes:
@@ -122,7 +122,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 	})
 	t.Run("MultipleMutexOrdering", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfall := templatedWorkflow("all",
 			`    mutexes:
@@ -204,7 +204,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MutexSemaphore", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfmands1 := templatedWorkflow("mands1",
 			`    mutexes:
@@ -322,7 +322,7 @@ func TestPriority(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Priority", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wflow := templatedWorkflow("prioritylow",
 			`    mutexes:
@@ -399,7 +399,7 @@ func TestDuplicates(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Mutex", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfdupmutex := templatedWorkflow("mutex",
 			`    mutexes:
@@ -410,7 +410,7 @@ func TestDuplicates(t *testing.T) {
 		assert.Error(t, err)
 	})
 	t.Run("Semaphore", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfdupsemaphore := templatedWorkflow("semaphore",
 			`    semaphores:

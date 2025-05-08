@@ -2114,6 +2114,8 @@ spec:
                 properties:
                   mutex:
                     properties:
+                      database:
+                        type: boolean
                       name:
                         type: string
                       namespace:
@@ -2122,6 +2124,8 @@ spec:
                   mutexes:
                     items:
                       properties:
+                        database:
+                          type: boolean
                         name:
                           type: string
                         namespace:
@@ -2143,6 +2147,13 @@ spec:
                         - key
                         type: object
                         x-kubernetes-map-type: atomic
+                      database:
+                        properties:
+                          key:
+                            type: string
+                        required:
+                        - key
+                        type: object
                       namespace:
                         type: string
                     type: object
@@ -2162,6 +2173,13 @@ spec:
                           - key
                           type: object
                           x-kubernetes-map-type: atomic
+                        database:
+                          properties:
+                            key:
+                              type: string
+                          required:
+                          - key
+                          type: object
                         namespace:
                           type: string
                       type: object
@@ -11971,6 +11989,8 @@ spec:
                     properties:
                       mutex:
                         properties:
+                          database:
+                            type: boolean
                           name:
                             type: string
                           namespace:
@@ -11979,6 +11999,8 @@ spec:
                       mutexes:
                         items:
                           properties:
+                            database:
+                              type: boolean
                             name:
                               type: string
                             namespace:
@@ -12000,6 +12022,13 @@ spec:
                             - key
                             type: object
                             x-kubernetes-map-type: atomic
+                          database:
+                            properties:
+                              key:
+                                type: string
+                            required:
+                            - key
+                            type: object
                           namespace:
                             type: string
                         type: object
@@ -12019,6 +12048,13 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            database:
+                              properties:
+                                key:
+                                  type: string
+                              required:
+                              - key
+                              type: object
                             namespace:
                               type: string
                           type: object
@@ -22648,6 +22684,8 @@ spec:
                       properties:
                         mutex:
                           properties:
+                            database:
+                              type: boolean
                             name:
                               type: string
                             namespace:
@@ -22656,6 +22694,8 @@ spec:
                         mutexes:
                           items:
                             properties:
+                              database:
+                                type: boolean
                               name:
                                 type: string
                               namespace:
@@ -22677,6 +22717,13 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            database:
+                              properties:
+                                key:
+                                  type: string
+                              required:
+                              - key
+                              type: object
                             namespace:
                               type: string
                           type: object
@@ -22696,6 +22743,13 @@ spec:
                                 - key
                                 type: object
                                 x-kubernetes-map-type: atomic
+                              database:
+                                properties:
+                                  key:
+                                    type: string
+                                required:
+                                - key
+                                type: object
                               namespace:
                                 type: string
                             type: object

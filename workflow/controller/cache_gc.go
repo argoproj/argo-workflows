@@ -34,7 +34,7 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 	for _, obj := range configMaps {
 		cm, ok := obj.(*apiv1.ConfigMap)
 		if !ok {
-			log.WithField("configMap", cm.Name).Error("Unable to convert object to configmap when syncing ConfigMaps")
+			log.Error("Unable to convert object to configmap when syncing ConfigMaps")
 			continue
 		}
 		if err := wfc.cleanupUnusedCache(ctx, cm); err != nil {

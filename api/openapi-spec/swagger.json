@@ -10024,6 +10024,10 @@
       "description": "Mutex holds Mutex configuration",
       "type": "object",
       "properties": {
+        "database": {
+          "description": "Database specifies this is database controlled if this is set true",
+          "type": "boolean"
+        },
         "name": {
           "description": "name of the mutex",
           "type": "string"
@@ -10974,8 +10978,12 @@
       "type": "object",
       "properties": {
         "configMapKeyRef": {
-          "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+          "description": "ConfigMapKeyRef is a configmap selector for Semaphore configuration",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "database": {
+          "description": "SyncDatabaseRef is a database reference for Semaphore configuration",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SyncDatabaseRef"
         },
         "namespace": {
           "description": "Namespace is the namespace of the configmap, default: [namespace of workflow]",
@@ -11124,6 +11132,17 @@
       "properties": {
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SyncDatabaseRef": {
+      "type": "object",
+      "required": [
+        "key"
+      ],
+      "properties": {
+        "key": {
           "type": "string"
         }
       }

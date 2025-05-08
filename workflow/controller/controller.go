@@ -419,12 +419,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	syncLimitCacheTTL := time.Duration(0)
-	if wfc.Config.SemaphoreLimitCacheSeconds != nil {
-		syncLimitCacheTTL = time.Duration(*wfc.Config.SemaphoreLimitCacheSeconds) * time.Second
-	}
-
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, syncLimitCacheTTL, nextWorkflow, isWFDeleted)
+	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, isWFDeleted)
 }
 
 // list all running workflows to initialize throttler and syncManager

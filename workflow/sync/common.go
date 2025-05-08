@@ -1,21 +1,23 @@
 package sync
 
-import "time"
+import (
+	"time"
+)
 
 type semaphore interface {
-	acquire(holderKey string) bool
-	checkAcquire(holderKey string) (bool, bool, string)
-	tryAcquire(holderKey string) (bool, string)
+	acquire(holderKey string, tx *transaction) bool
+	checkAcquire(holderKey string, tx *transaction) (bool, bool, string)
+	tryAcquire(holderKey string, tx *transaction) (bool, string)
 	release(key string) bool
-	addToQueue(holderKey string, priority int32, creationTime time.Time)
-	removeFromQueue(holderKey string)
-	getCurrentHolders() []string
-	getCurrentPending() []string
+	addToQueue(holderKey string, priority int32, creationTime time.Time) error
+	removeFromQueue(holderKey string) error
+	getCurrentHolders() ([]string, error)
+	getCurrentPending() ([]string, error)
 	getName() string
-	getLimit() int
-	getLimitTimestamp() time.Time
-	resetLimitTimestamp()
-	resize(n int) bool
+	getLimit() int // Testing only
+	probeWaiting()
+	lock() bool
+	unlock()
 }
 
 // expose for overriding in tests

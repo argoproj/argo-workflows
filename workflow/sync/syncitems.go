@@ -37,7 +37,7 @@ func checkDuplicates(items []*syncItem) error {
 	for i, item := range items {
 		for j := i + 1; j < len(items); j++ {
 			if reflect.DeepEqual(*item, *items[j]) {
-				return errors.New("Duplicate synchronization item found")
+				return errors.New("duplicate synchronization item found")
 			}
 		}
 	}
