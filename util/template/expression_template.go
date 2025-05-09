@@ -21,6 +21,16 @@ func init() {
 	}
 }
 
+func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
+	for _, variable := range variables {
+		_, hasVar := env[variable]
+		if hasVariableInExpression(expression, variable) && !hasVar {
+			return true
+		}
+	}
+	return false
+}
+
 func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -33,18 +43,15 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
+	if anyVarNotInEnv(unmarshalledExpression, []string{"retries"}, env) && allowUnresolved {
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
 		log.WithError(err).Debug("Retries are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
-	if (hasVariableInExpression(unmarshalledExpression, "lastRetry.exitCode") && !hasVarInEnv(env, "lastRetry.exitCode") ||
-		hasVariableInExpression(unmarshalledExpression, "lastRetry.status") && !hasVarInEnv(env, "lastRetry.status") ||
-		hasVariableInExpression(unmarshalledExpression, "lastRetry.duration") && !hasVarInEnv(env, "lastRetry.duration") ||
-		hasVariableInExpression(unmarshalledExpression, "lastRetry.message") && !hasVarInEnv(env, "lastRetry.message")) &&
-		allowUnresolved {
+	lastRetryVariables := []string{"lastRetry.exitCode", "lastRetry.status", "lastRetry.duration", "lastRetry.message"}
+	if anyVarNotInEnv(unmarshalledExpression, lastRetryVariables, env) && allowUnresolved {
 		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
 		// when they don't exist in the env.
 		log.WithError(err).Debug("LastRetry variables are present and unresolved is allowed")
@@ -56,9 +63,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
 	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
 	// when the exit handlers complete.
-	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
-		(hasWorkflowFailures(unmarshalledExpression) && !hasVarInEnv(env, "workflow.failures"))) &&
-		allowUnresolved {
+	if anyVarNotInEnv(unmarshalledExpression, []string{"workflow.status", "workflow.failures"}, env) && allowUnresolved {
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
