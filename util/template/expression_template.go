@@ -23,8 +23,7 @@ func init() {
 
 func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
 	for _, variable := range variables {
-		_, hasVar := env[variable]
-		if hasVariableInExpression(expression, variable) && !hasVar {
+		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
 			return true
 		}
 	}
