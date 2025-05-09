@@ -20,6 +20,7 @@ rules:
   - ""
   resources:
   - configmaps
+  - namespaces
   verbs:
   - get
   - watch
