@@ -1,6 +1,6 @@
 # Workflow Pod Security Context
 
-By default, all workflow pods run as root.
+By default, all workflow pods run as default user of the image.
 
 You can run your workflow pods more securely by configuring the [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for your workflow pod.
 
