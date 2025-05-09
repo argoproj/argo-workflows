@@ -63,9 +63,9 @@ func Test_Replace(t *testing.T) {
 				require.NoError(t, err)
 			})
 			t.Run("AllowedRetries", func(t *testing.T) {
-				replaced, err := Replace(toJsonString("{{=sprig.int(retries)}}"), nil, true)
+				replaced, err := Replace(toJsonString("{{=int(retries)}}"), nil, true)
 				require.NoError(t, err)
-				assert.Equal(t, toJsonString("{{=sprig.int(retries)}}"), replaced)
+				assert.Equal(t, toJsonString("{{=int(retries)}}"), replaced)
 			})
 			t.Run("AllowedWorkflowStatus", func(t *testing.T) {
 				replaced, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, true)
