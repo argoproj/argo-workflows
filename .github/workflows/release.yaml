@@ -169,7 +169,9 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         run: |
+          set -euo pipefail
           : ${DOCKER_CONFIG:=~/.docker}
+
           echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
 
           docker_org=$DOCKERIO_ORG
@@ -178,6 +180,32 @@ jobs:
           if [ $tag = "main" ]; then
             tag="latest"
           fi
+
+          sign() {
+            local image_name=$1
+            local tag=$2
+            local os=$3
+            local arch=$4
+            local digest
+            digest=$(docker manifest inspect --verbose "quay.io/${image_name}:${tag}" |
+              jq -r "if type==\"object\"
+                then .Descriptor.digest
+                else .[] | select(.Descriptor.platform.architecture==\"$arch\" and
+                .Descriptor.platform.os==\"$os\") | .Descriptor.digest
+                end")
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY "quay.io/${image_name}@${digest}"
+          }
+
+          sign_list() {
+            local image_name=$1
+            local tag=$2
+            local digest
+            docker pull "quay.io/${image_name}:${tag}"
+            digest=$(docker inspect "quay.io/${image_name}:${tag}" \
+              | jq -r '.[0].RepoDigests[0]' \
+              | cut -d'@' -f2)
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY "quay.io/${image_name}@${digest}"
+          }
 
           targets="workflow-controller argoexec argocli"
           for target in $targets; do
@@ -191,8 +219,12 @@ jobs:
 
             docker manifest push quay.io/$image_name
 
-            cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
-
+            sign ${docker_org}/${target} ${tag}-linux-amd64 linux amd64
+            sign ${docker_org}/${target} ${tag}-linux-arm64 linux arm64
+            if [ $target = "argoexec" ]; then
+              sign ${docker_org}/${target} ${tag}-windows windows amd64
+            fi
+            sign_list ${docker_org}/${target} ${tag}
           done
 
   test-images-linux-amd64:
