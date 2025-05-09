@@ -34,7 +34,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 
 	can, _ := authutil.CanI(ctx, wfc.kubeclientset, []string{"get", "watch", "list"}, "", metav1.NamespaceAll, "namespaces")
 	if !can {
-		logrus.Error("was unable to get permissions for get/watch/list verbs on the namespace resource, per-namespace parallelism will not work")
+		logrus.Warn("was unable to get permissions for get/watch/list verbs on the namespace resource, per-namespace parallelism will not work")
 	}
 	c := kubeclientset.CoreV1().Namespaces()
 	logger := logrus.WithField("scope", "ns_watcher")
