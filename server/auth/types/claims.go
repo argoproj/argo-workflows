@@ -38,7 +38,7 @@ func init() {
 // json.Unmarshal to mash every claim into a custom map
 func (c *Claims) UnmarshalJSON(data []byte) error {
 	type claimAlias Claims
-	var localClaim claimAlias = claimAlias(*c)
+	var localClaim = claimAlias(*c)
 
 	// Populate the claims struct as much as possible
 	err := json.Unmarshal(data, &localClaim)

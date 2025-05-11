@@ -67,7 +67,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		message = pod.Status.Message
 	default:
 		newPhase = wfv1.NodeError
-		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
 	}
 	return newPhase, message
 }
@@ -195,7 +195,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	pod = &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Namespace: woc.wf.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
@@ -239,7 +239,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
 	log.Debug("Creating Agent pod")

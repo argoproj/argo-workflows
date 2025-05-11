@@ -81,6 +81,7 @@ class IoArgoprojWorkflowV1alpha1Mutex(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'database': (bool,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
         }
@@ -91,6 +92,7 @@ class IoArgoprojWorkflowV1alpha1Mutex(ModelNormal):
 
 
     attribute_map = {
+        'database': 'database',  # noqa: E501
         'name': 'name',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
     }
@@ -136,6 +138,7 @@ class IoArgoprojWorkflowV1alpha1Mutex(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            database (bool): Database specifies this is database controlled if this is set true. [optional]  # noqa: E501
             name (str): name of the mutex. [optional]  # noqa: E501
             namespace (str): Namespace is the namespace of the mutex, default: [namespace of workflow]. [optional]  # noqa: E501
         """
@@ -219,6 +222,7 @@ class IoArgoprojWorkflowV1alpha1Mutex(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            database (bool): Database specifies this is database controlled if this is set true. [optional]  # noqa: E501
             name (str): name of the mutex. [optional]  # noqa: E501
             namespace (str): Namespace is the namespace of the mutex, default: [namespace of workflow]. [optional]  # noqa: E501
         """
