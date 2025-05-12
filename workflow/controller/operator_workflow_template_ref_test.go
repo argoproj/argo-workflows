@@ -265,8 +265,8 @@ func TestWorkflowTemplateRefValueFromParamOverwrite(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
-		assert.Equal(t, "configmap argument overwrite with argument", woc.wf.Spec.Arguments.Parameters[0].Value.String())
+		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.execWf.Spec.Arguments.Parameters)
+		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
 	})
 }
 
@@ -334,9 +334,9 @@ func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
-		assert.Equal(t, "config-properties", woc.wf.Spec.Arguments.Parameters[0].ValueFrom.ConfigMapKeyRef.Name)
-		assert.Equal(t, "message", woc.wf.Spec.Arguments.Parameters[0].ValueFrom.ConfigMapKeyRef.Key)
+		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.execWf.Spec.Arguments.Parameters)
+		assert.Equal(t, "config-properties", woc.execWf.Spec.Arguments.Parameters[0].ValueFrom.ConfigMapKeyRef.Name)
+		assert.Equal(t, "message", woc.execWf.Spec.Arguments.Parameters[0].ValueFrom.ConfigMapKeyRef.Key)
 	})
 }
 
