@@ -101,7 +101,7 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 	// However, if Value, ValueFrom and Default are set in different places,
 	// i.e. the Workflow, WorflowTemplate and WorkflowDefault, we should only keep the one with the greatest priority.
 	wfParamsMap := parametersToMapByName(wfSpec)
-	wftParamsMap := parametersToMapByName(wfSpec)
+	wftParamsMap := parametersToMapByName(wftSpec)
 	for index, parameter := range targetWf.Spec.Arguments.Parameters {
 		if parameter.HasValue() {
 			if param, ok := wfParamsMap[parameter.Name]; ok {
