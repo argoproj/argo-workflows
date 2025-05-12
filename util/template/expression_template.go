@@ -21,8 +21,18 @@ func init() {
 	}
 }
 
+var callNum = 1
+
 func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
+	defer func() {
+		callNum++
+	}()
+	log := log.WithField("call", callNum)
+
 	for _, variable := range variables {
+		hasVar := hasVariableInExpression(expression, variable)
+		hsInEnv := hasVarInEnv(env, variable)
+		log.Infof("[[DEBUG]] has variable: (%s):%t inEnv: %t", variable, hasVar, hsInEnv)
 		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
 			return true
 		}
@@ -63,6 +73,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
 	// when the exit handlers complete.
 	if anyVarNotInEnv(unmarshalledExpression, []string{"workflow.status", "workflow.failures"}, env) && allowUnresolved {
+		log.WithError(err).Debug("workflow.status or workflow.failures are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
@@ -120,55 +131,55 @@ func hasRetries(expression string) bool {
 	return hasVariableInExpression(expression, "retries")
 }
 
+func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
+	if len(needle) > len(haystack) {
+		return false
+	}
+	if len(needle) == 0 {
+		return true
+	}
+outer:
+	for i := 0; i <= len(haystack)-len(needle); i++ {
+		for j := 0; j < len(needle); j++ {
+			if haystack[i+j].String() != needle[j].String() {
+				continue outer
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func filterEOF(toks []lexer.Token) []lexer.Token {
+	newToks := []lexer.Token{}
+	for _, tok := range toks {
+		if tok.Kind != lexer.EOF {
+			newToks = append(newToks, tok)
+		}
+	}
+	return newToks
+}
+
+// hasVariableInExpression checks if an expression contains a variable.
+// This function is somewhat cursed and I have attempted my best to
+// remove this curse, but it still exists.
+// The strings.Contains is needed because the lexer doesn't do
+// any whitespace processing (workflow .status will be seen as workflow.status)
 func hasVariableInExpression(expression, variable string) bool {
+	if !strings.Contains(expression, variable) {
+		return false
+	}
 	tokens, err := lexer.Lex(file.NewSource(expression))
 	if err != nil {
 		return false
 	}
-	for _, token := range tokens {
-		if token.Kind == lexer.Identifier && token.Value == variable {
-			return true
-		}
+	variableTokens, err := lexer.Lex(file.NewSource(variable))
+	if err != nil {
+		return false
 	}
-	return false
-}
+	variableTokens = filterEOF(variableTokens)
 
-// hasWorkflowStatus checks if expression contains `workflow.status`
-func hasWorkflowStatus(expression string) bool {
-	if !strings.Contains(expression, "workflow.status") {
-		return false
-	}
-	// Even if the expression contains `workflow.status`, it could be the case that it represents a string (`"workflow.status"`),
-	// not a variable, so we need to parse it and handle filter the string case.
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.status" {
-			return true
-		}
-	}
-	return false
-}
-
-// hasWorkflowFailures checks if expression contains `workflow.failures`
-func hasWorkflowFailures(expression string) bool {
-	if !strings.Contains(expression, "workflow.failures") {
-		return false
-	}
-	// Even if the expression contains `workflow.failures`, it could be the case that it represents a string (`"workflow.failures"`),
-	// not a variable, so we need to parse it and handle filter the string case.
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.failures" {
-			return true
-		}
-	}
-	return false
+	return searchTokens(tokens, variableTokens)
 }
 
 // hasVarInEnv checks if a parameter is in env or not
