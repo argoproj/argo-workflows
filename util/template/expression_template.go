@@ -21,18 +21,8 @@ func init() {
 	}
 }
 
-var callNum = 1
-
 func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
-	defer func() {
-		callNum++
-	}()
-	log := log.WithField("call", callNum)
-
 	for _, variable := range variables {
-		hasVar := hasVariableInExpression(expression, variable)
-		hsInEnv := hasVarInEnv(env, variable)
-		log.Infof("[[DEBUG]] has variable: (%s):%t inEnv: %t", variable, hasVar, hsInEnv)
 		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
 			return true
 		}
