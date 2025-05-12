@@ -309,6 +309,18 @@ spec:
     name: wf-template-echo
 `
 
+var configMapMessage = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-properties
+  namespace: default
+  labels:
+    workflows.argoproj.io/configmap-type: Parameter
+data:
+  message: "message from configmap"
+`
+
 func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithValueFromParamOverride)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueParameter)
@@ -316,6 +328,10 @@ func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
 		ctx := context.Background()
+		var cm apiv1.ConfigMap
+		wfv1.MustUnmarshal([]byte(configMapMessage), &cm)
+		_, err := controller.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, &cm, metav1.CreateOptions{})
+		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
