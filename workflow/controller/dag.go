@@ -858,7 +858,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			return false, false, nil
 		}
 
-		evalTaskName := strings.Replace(taskName, "-", "_", -1)
+		evalTaskName := strings.ReplaceAll(taskName, "-", "_")
 		if _, ok := evalScope[evalTaskName]; ok {
 			continue
 		}
@@ -894,7 +894,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 		}
 	}
 
-	evalLogic := strings.Replace(d.GetTaskDependsLogic(taskName), "-", "_", -1)
+	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(taskName), "-", "_")
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)

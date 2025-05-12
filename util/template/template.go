@@ -32,7 +32,7 @@ type impl struct {
 
 func (t *impl) Replace(replaceMap map[string]interface{}, allowUnresolved bool) (string, error) {
 	replacedTmpl := &bytes.Buffer{}
-	_, err := t.Template.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
+	_, err := t.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:

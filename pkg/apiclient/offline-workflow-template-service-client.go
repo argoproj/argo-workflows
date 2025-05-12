@@ -19,23 +19,23 @@ type OfflineWorkflowTemplateServiceClient struct {
 var _ workflowtemplatepkg.WorkflowTemplateServiceClient = &OfflineWorkflowTemplateServiceClient{}
 
 func (o OfflineWorkflowTemplateServiceClient) CreateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineWorkflowTemplateServiceClient) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineWorkflowTemplateServiceClient) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplateList, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineWorkflowTemplateServiceClient) UpdateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineWorkflowTemplateServiceClient) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
-	return nil, OfflineErr
+	return nil, ErrOffline
 }
 
 func (o OfflineWorkflowTemplateServiceClient) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
-	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
+	eventsv1a1 "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1"
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -19,8 +19,8 @@ import (
 
 type sensorServer struct{}
 
-func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensorsRequest) (*sv1.SensorList, error) {
-	client := auth.GetSensorClient(ctx)
+func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensorsRequest) (*eventsv1a1.SensorList, error) {
+	client := auth.GetEventsClient(ctx)
 	list, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -28,8 +28,8 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 	return list, nil
 }
 
-func (s *sensorServer) GetSensor(ctx context.Context, in *sensorpkg.GetSensorRequest) (*sv1.Sensor, error) {
-	client := auth.GetSensorClient(ctx)
+func (s *sensorServer) GetSensor(ctx context.Context, in *sensorpkg.GetSensorRequest) (*eventsv1a1.Sensor, error) {
+	client := auth.GetEventsClient(ctx)
 	sensor, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Get(ctx, in.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -37,8 +37,8 @@ func (s *sensorServer) GetSensor(ctx context.Context, in *sensorpkg.GetSensorReq
 	return sensor, nil
 }
 
-func (s *sensorServer) CreateSensor(ctx context.Context, in *sensorpkg.CreateSensorRequest) (*sv1.Sensor, error) {
-	client := auth.GetSensorClient(ctx)
+func (s *sensorServer) CreateSensor(ctx context.Context, in *sensorpkg.CreateSensorRequest) (*eventsv1a1.Sensor, error) {
+	client := auth.GetEventsClient(ctx)
 	sensor, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Create(ctx, in.Sensor, metav1.CreateOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -46,8 +46,8 @@ func (s *sensorServer) CreateSensor(ctx context.Context, in *sensorpkg.CreateSen
 	return sensor, nil
 }
 
-func (s *sensorServer) UpdateSensor(ctx context.Context, in *sensorpkg.UpdateSensorRequest) (*sv1.Sensor, error) {
-	client := auth.GetSensorClient(ctx)
+func (s *sensorServer) UpdateSensor(ctx context.Context, in *sensorpkg.UpdateSensorRequest) (*eventsv1a1.Sensor, error) {
+	client := auth.GetEventsClient(ctx)
 	sensor, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Update(ctx, in.Sensor, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -56,7 +56,7 @@ func (s *sensorServer) UpdateSensor(ctx context.Context, in *sensorpkg.UpdateSen
 }
 
 func (s *sensorServer) DeleteSensor(ctx context.Context, in *sensorpkg.DeleteSensorRequest) (*sensorpkg.DeleteSensorResponse, error) {
-	client := auth.GetSensorClient(ctx)
+	client := auth.GetEventsClient(ctx)
 	if err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Delete(ctx, in.Name, metav1.DeleteOptions{}); err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -101,7 +101,7 @@ func (s *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 	if in.ListOptions != nil {
 		listOptions = *in.ListOptions
 	}
-	eventSourceInterface := auth.GetSensorClient(ctx).ArgoprojV1alpha1().Sensors(in.Namespace)
+	eventSourceInterface := auth.GetEventsClient(ctx).ArgoprojV1alpha1().Sensors(in.Namespace)
 	watcher, err := eventSourceInterface.Watch(ctx, listOptions)
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
@@ -114,7 +114,7 @@ func (s *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 			if !open {
 				return sutils.ToStatusError(io.EOF, codes.ResourceExhausted)
 			}
-			es, ok := event.Object.(*sv1.Sensor)
+			es, ok := event.Object.(*eventsv1a1.Sensor)
 			if !ok {
 				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
 			}

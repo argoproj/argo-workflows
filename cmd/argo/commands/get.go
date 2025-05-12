@@ -65,7 +65,7 @@ func NewGetCommand() *cobra.Command {
 func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
 	switch getArgs.Output.String() {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))

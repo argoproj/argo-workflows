@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
-    globals()['IoArgoprojEventsV1alpha1EventSource'] = IoArgoprojEventsV1alpha1EventSource
+    from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_event_source import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
+    globals()['GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource'] = GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource
 
 
 class EventsourceEventSourceWatchEvent(ModelNormal):
@@ -87,7 +87,7 @@ class EventsourceEventSourceWatchEvent(ModelNormal):
         """
         lazy_import()
         return {
-            'object': (IoArgoprojEventsV1alpha1EventSource,),  # noqa: E501
+            'object': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource,),  # noqa: E501
             'type': (str,),  # noqa: E501
         }
 
@@ -142,7 +142,7 @@ class EventsourceEventSourceWatchEvent(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            object (IoArgoprojEventsV1alpha1EventSource): [optional]  # noqa: E501
+            object (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource): [optional]  # noqa: E501
             type (str): [optional]  # noqa: E501
         """
 
@@ -225,7 +225,7 @@ class EventsourceEventSourceWatchEvent(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            object (IoArgoprojEventsV1alpha1EventSource): [optional]  # noqa: E501
+            object (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource): [optional]  # noqa: E501
             type (str): [optional]  # noqa: E501
         """
 

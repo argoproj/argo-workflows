@@ -41,7 +41,7 @@ func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		}
 	}
 	if cliSubmitOpts.Wait {
-		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, !(cliSubmitOpts.Output.String() == "" || cliSubmitOpts.Output.String() == "wide"))
+		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, cliSubmitOpts.Output.String() != "" && cliSubmitOpts.Output.String() != "wide")
 	} else if cliSubmitOpts.Watch {
 		for _, workflow := range workflowNames {
 			if err := WatchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.GetArgs); err != nil {

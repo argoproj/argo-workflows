@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 <a name="eventSourceServiceCreateEventSource"></a>
 # **eventSourceServiceCreateEventSource**
-> IoArgoprojEventsV1alpha1EventSource eventSourceServiceCreateEventSource(namespace, body)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource eventSourceServiceCreateEventSource(namespace, body)
 
 
 
@@ -44,7 +44,7 @@ public class Example {
     String namespace = "namespace_example"; // String | 
     EventsourceCreateEventSourceRequest body = new EventsourceCreateEventSourceRequest(); // EventsourceCreateEventSourceRequest | 
     try {
-      IoArgoprojEventsV1alpha1EventSource result = apiInstance.eventSourceServiceCreateEventSource(namespace, body);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource result = apiInstance.eventSourceServiceCreateEventSource(namespace, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceCreateEventSource");
@@ -66,7 +66,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 
@@ -85,7 +85,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceDeleteEventSource"></a>
 # **eventSourceServiceDeleteEventSource**
-> Object eventSourceServiceDeleteEventSource(namespace, name, deleteOptionsGracePeriodSeconds, deleteOptionsPreconditionsUid, deleteOptionsPreconditionsResourceVersion, deleteOptionsOrphanDependents, deleteOptionsPropagationPolicy, deleteOptionsDryRun)
+> Object eventSourceServiceDeleteEventSource(namespace, name, deleteOptionsGracePeriodSeconds, deleteOptionsPreconditionsUid, deleteOptionsPreconditionsResourceVersion, deleteOptionsOrphanDependents, deleteOptionsPropagationPolicy, deleteOptionsDryRun, deleteOptionsIgnoreStoreReadErrorWithClusterBreakingPotential)
 
 
 
@@ -119,8 +119,9 @@ public class Example {
     Boolean deleteOptionsOrphanDependents = true; // Boolean | Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.
     String deleteOptionsPropagationPolicy = "deleteOptionsPropagationPolicy_example"; // String | Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.
     List<String> deleteOptionsDryRun = Arrays.asList(); // List<String> | When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType=atomic.
+    Boolean deleteOptionsIgnoreStoreReadErrorWithClusterBreakingPotential = true; // Boolean | if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional.
     try {
-      Object result = apiInstance.eventSourceServiceDeleteEventSource(namespace, name, deleteOptionsGracePeriodSeconds, deleteOptionsPreconditionsUid, deleteOptionsPreconditionsResourceVersion, deleteOptionsOrphanDependents, deleteOptionsPropagationPolicy, deleteOptionsDryRun);
+      Object result = apiInstance.eventSourceServiceDeleteEventSource(namespace, name, deleteOptionsGracePeriodSeconds, deleteOptionsPreconditionsUid, deleteOptionsPreconditionsResourceVersion, deleteOptionsOrphanDependents, deleteOptionsPropagationPolicy, deleteOptionsDryRun, deleteOptionsIgnoreStoreReadErrorWithClusterBreakingPotential);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceDeleteEventSource");
@@ -145,6 +146,7 @@ Name | Type | Description  | Notes
  **deleteOptionsOrphanDependents** | **Boolean**| Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional. | [optional]
  **deleteOptionsPropagationPolicy** | **String**| Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: &#39;Orphan&#39; - orphan the dependents; &#39;Background&#39; - allow the garbage collector to delete the dependents in the background; &#39;Foreground&#39; - a cascading policy that deletes all dependents in the foreground. +optional. | [optional]
  **deleteOptionsDryRun** | [**List&lt;String&gt;**](String.md)| When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType&#x3D;atomic. | [optional]
+ **deleteOptionsIgnoreStoreReadErrorWithClusterBreakingPotential** | **Boolean**| if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional. | [optional]
 
 ### Return type
 
@@ -167,7 +169,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceEventSourcesLogs"></a>
 # **eventSourceServiceEventSourcesLogs**
-> StreamResultOfEventsourceLogEntry eventSourceServiceEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend)
+> StreamResultOfEventsourceLogEntry eventSourceServiceEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend, podLogOptionsStream)
 
 
 
@@ -205,11 +207,12 @@ public class Example {
     String podLogOptionsSinceTimeSeconds = "podLogOptionsSinceTimeSeconds_example"; // String | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
     Integer podLogOptionsSinceTimeNanos = 56; // Integer | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
     Boolean podLogOptionsTimestamps = true; // Boolean | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
-    String podLogOptionsTailLines = "podLogOptionsTailLines_example"; // String | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+    String podLogOptionsTailLines = "podLogOptionsTailLines_example"; // String | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional.
     String podLogOptionsLimitBytes = "podLogOptionsLimitBytes_example"; // String | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
     Boolean podLogOptionsInsecureSkipTLSVerifyBackend = true; // Boolean | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+    String podLogOptionsStream = "podLogOptionsStream_example"; // String | Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional.
     try {
-      StreamResultOfEventsourceLogEntry result = apiInstance.eventSourceServiceEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend);
+      StreamResultOfEventsourceLogEntry result = apiInstance.eventSourceServiceEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend, podLogOptionsStream);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceEventSourcesLogs");
@@ -238,9 +241,10 @@ Name | Type | Description  | Notes
  **podLogOptionsSinceTimeSeconds** | **String**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
  **podLogOptionsSinceTimeNanos** | **Integer**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
  **podLogOptionsTimestamps** | **Boolean**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
- **podLogOptionsTailLines** | **String**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
+ **podLogOptionsTailLines** | **String**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +optional. | [optional]
  **podLogOptionsLimitBytes** | **String**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
  **podLogOptionsInsecureSkipTLSVerifyBackend** | **Boolean**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
+ **podLogOptionsStream** | **String**| Specify which container log stream to return to the client. Acceptable values are \&quot;All\&quot;, \&quot;Stdout\&quot; and \&quot;Stderr\&quot;. If not specified, \&quot;All\&quot; is used, and both stdout and stderr are returned interleaved. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +featureGate&#x3D;PodLogsQuerySplitStreams +optional. | [optional]
 
 ### Return type
 
@@ -263,7 +267,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceGetEventSource"></a>
 # **eventSourceServiceGetEventSource**
-> IoArgoprojEventsV1alpha1EventSource eventSourceServiceGetEventSource(namespace, name)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource eventSourceServiceGetEventSource(namespace, name)
 
 
 
@@ -292,7 +296,7 @@ public class Example {
     String namespace = "namespace_example"; // String | 
     String name = "name_example"; // String | 
     try {
-      IoArgoprojEventsV1alpha1EventSource result = apiInstance.eventSourceServiceGetEventSource(namespace, name);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource result = apiInstance.eventSourceServiceGetEventSource(namespace, name);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceGetEventSource");
@@ -314,7 +318,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 
@@ -333,7 +337,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceListEventSources"></a>
 # **eventSourceServiceListEventSources**
-> IoArgoprojEventsV1alpha1EventSourceList eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents)
 
 
 
@@ -371,7 +375,7 @@ public class Example {
     String listOptionsContinue = "listOptionsContinue_example"; // String | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
     Boolean listOptionsSendInitialEvents = true; // Boolean | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional
     try {
-      IoArgoprojEventsV1alpha1EventSourceList result = apiInstance.eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList result = apiInstance.eventSourceServiceListEventSources(namespace, listOptionsLabelSelector, listOptionsFieldSelector, listOptionsWatch, listOptionsAllowWatchBookmarks, listOptionsResourceVersion, listOptionsResourceVersionMatch, listOptionsTimeoutSeconds, listOptionsLimit, listOptionsContinue, listOptionsSendInitialEvents);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceListEventSources");
@@ -402,7 +406,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSourceList**](IoArgoprojEventsV1alpha1EventSourceList.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceList.md)
 
 ### Authorization
 
@@ -421,7 +425,7 @@ Name | Type | Description  | Notes
 
 <a name="eventSourceServiceUpdateEventSource"></a>
 # **eventSourceServiceUpdateEventSource**
-> IoArgoprojEventsV1alpha1EventSource eventSourceServiceUpdateEventSource(namespace, name, body)
+> GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource eventSourceServiceUpdateEventSource(namespace, name, body)
 
 
 
@@ -451,7 +455,7 @@ public class Example {
     String name = "name_example"; // String | 
     EventsourceUpdateEventSourceRequest body = new EventsourceUpdateEventSourceRequest(); // EventsourceUpdateEventSourceRequest | 
     try {
-      IoArgoprojEventsV1alpha1EventSource result = apiInstance.eventSourceServiceUpdateEventSource(namespace, name, body);
+      GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource result = apiInstance.eventSourceServiceUpdateEventSource(namespace, name, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceUpdateEventSource");
@@ -474,7 +478,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**IoArgoprojEventsV1alpha1EventSource**](IoArgoprojEventsV1alpha1EventSource.md)
+[**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSource.md)
 
 ### Authorization
 

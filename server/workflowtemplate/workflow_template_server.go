@@ -13,28 +13,19 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 type WorkflowTemplateServer struct {
 	instanceIDService instanceid.Service
-	wftmplStore       servertypes.WorkflowTemplateStore
-	cwftmplStore      servertypes.ClusterWorkflowTemplateStore
 }
 
-func NewWorkflowTemplateServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) workflowtemplatepkg.WorkflowTemplateServiceServer {
-	if wftmplStore == nil {
-		wftmplStore = NewWorkflowTemplateClientStore()
-	}
-	if cwftmplStore == nil {
-		cwftmplStore = clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	}
-	return &WorkflowTemplateServer{instanceIDService, wftmplStore, cwftmplStore}
+func NewWorkflowTemplateServer(instanceIDService instanceid.Service) workflowtemplatepkg.WorkflowTemplateServiceServer {
+	return &WorkflowTemplateServer{instanceIDService}
 }
 
 func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
@@ -44,8 +35,8 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	}
 	wts.instanceIDService.Label(req.Template)
 	creator.Label(ctx, req.Template)
-	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
-	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
@@ -66,7 +57,8 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req 
 }
 
 func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, namespace string, name string) (*v1alpha1.WorkflowTemplate, error) {
-	wfTmpl, err := wts.wftmplStore.Getter(ctx, namespace).Get(name)
+	wfClient := auth.GetWfClient(ctx)
+	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, name, v1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -116,7 +108,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.WorkflowTemplate, resour
 	// For the next pagination, the resourceVersion of the last item is set in the Continue field.
 	if limit != 0 && len(wfList.Items) == int(limit) {
 		lastIndex := len(wfList.Items) - 1
-		wfList.ListMeta.Continue = wfList.Items[lastIndex].ResourceVersion
+		wfList.Continue = wfList.Items[lastIndex].ResourceVersion
 	}
 }
 
@@ -151,7 +143,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	var items []v1alpha1.WorkflowTemplate
 	if req.NamePattern != "" {
 		for _, item := range wfList.Items {
-			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
+			if strings.Contains(item.Name, req.NamePattern) {
 				items = append(items, item)
 			}
 		}
@@ -176,10 +168,11 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 }
 
 func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
+	wfClient := auth.GetWfClient(ctx)
 	wts.instanceIDService.Label(req.Template)
 	creator.Label(ctx, req.Template)
-	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
-	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
@@ -196,8 +189,8 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
-	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)

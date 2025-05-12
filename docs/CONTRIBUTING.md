@@ -134,6 +134,16 @@ Subsequently, if there is still no response, it will be automatically closed as 
 
 See the [Stale Action configuration](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/stale.yaml) for more details.
 
+## Automated actions
+
+As a member (see [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md)) of the argo-project you can use the following comments on PRs to trigger actions:
+
+* `/retest` - re-run any failing test cases
+* `/test` - trigger the full test suite.
+Only use this for PRs where the test suite has not automatically triggered - this is almost always wasteful and will not make things pass that `/retest` doesn't pass.
+* `/cherry-pick <branchname>` - will [attempt to cherry-pick](https://github.com/googleapis/repo-automation-bots/tree/main/packages/cherry-pick-bot) this commit after it has been merged to the target branch.
+This can be used prior to merging and the PR will be created after the merge, or commented after merging for an immediate attempt.
+
 ## Sustainability Effort
 
 Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.

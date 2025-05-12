@@ -29,7 +29,7 @@ type CronSuite struct {
 func (s *CronSuite) SetupSuite() {
 	s.E2ESuite.SetupSuite()
 	// Since tests run in parallel, delete all cron resources before the test suite is run
-	s.E2ESuite.DeleteResources()
+	s.DeleteResources()
 }
 
 func (s *CronSuite) BeforeTest(suiteName, testName string) {
@@ -37,7 +37,7 @@ func (s *CronSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *CronSuite) TearDownSuite() {
-	s.E2ESuite.DeleteResources()
+	s.DeleteResources()
 	s.E2ESuite.TearDownSuite()
 }
 
@@ -71,7 +71,7 @@ spec:
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, cronWf.Status.LastScheduledTime.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestBasicTimezone", func() {
@@ -109,7 +109,7 @@ spec:
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, cronWf.Status.LastScheduledTime.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuspend", func() {
@@ -272,7 +272,7 @@ spec:
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Len(t, cronWf.Status.Active, 1)
 				require.NotNil(t, cronWf.Status.LastScheduledTime)
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, cronWf.Status.LastScheduledTime.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
@@ -306,7 +306,7 @@ spec:
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Len(t, wfList.Items, 1)
-				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
@@ -341,7 +341,7 @@ spec:
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Len(t, wfList.Items, 1)
-				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestStoppingConditionWithSucceeded", func() {
@@ -447,7 +447,7 @@ spec:
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, cronWf.Status.LastScheduledTime.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }

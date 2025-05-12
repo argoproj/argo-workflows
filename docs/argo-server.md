@@ -178,3 +178,7 @@ Argo Server by default rate limits to 1000 per IP per minute, you can configure 
 * `X-Rate-Limit-Remaining` - the number of requests left for the current rate-limit window.
 * `X-Rate-Limit-Reset` - the time at which the rate limit resets, specified in UTC time.
 * `Retry-After` - indicate when a client should retry requests (when the rate limit expires), in UTC time.
+
+### GRPC ALPN
+
+The grpc library wants to enforce ALPN, but we are not prepared for this so the argo-server binary is built with `GRPC_ENFORCE_ALPN_ENABLED` set to `false` in the docker image as a short term workaround, as documented in https://github.com/grpc/grpc-go/issues/434
