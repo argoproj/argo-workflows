@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -121,10 +123,12 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 
 	client.AddKubectlFlagsToCmd(command)
 	client.AddAPIClientFlagsToCmd(command)
+
 	// global log level
 	var logLevel string
 	var glogLevel int
 	var verbose bool
+	var cfgFile string
 	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
 		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
 	}
@@ -148,23 +152,40 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
+	command.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.argo/config.yaml)")
 
-	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("ARGO")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
-	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
-	if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
-		log.Fatal(err)
-	}
-	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
-	command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
-		if !f.Changed && viper.IsSet(f.Name) {
-			val := viper.Get(f.Name)
-			if err := command.PersistentFlags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(err)
-			}
+	// load viper configuration after all of the flags have been defined and parsed
+	cobra.OnInitialize(func() {
+		viper.SetConfigType("yaml")
+		viper.SetConfigName("config")
+		homeDir, err := os.UserHomeDir()
+		if err == nil {
+			viper.AddConfigPath(filepath.Join(homeDir, ".argo"))
 		}
+		viper.AddConfigPath(".argo")
+		if cfgFile != "" {
+			viper.SetConfigFile(cfgFile)
+		}
+		_ = viper.ReadInConfig() // ignore error if config file not found
+
+		// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
+		viper.AutomaticEnv()
+		viper.SetEnvPrefix("ARGO")
+		viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+
+		// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
+		if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
+			log.Fatal(err)
+		}
+		// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
+		command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+			if !f.Changed && viper.IsSet(f.Name) {
+				val := viper.Get(f.Name)
+				if err := command.PersistentFlags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
+					log.Fatal(err)
+				}
+			}
+		})
 	})
 
 	return command

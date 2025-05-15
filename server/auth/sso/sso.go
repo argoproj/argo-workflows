@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -47,6 +48,7 @@ type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
+	HandleCliExchange(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
 }
 
@@ -68,6 +70,7 @@ type sso struct {
 	customClaimName   string
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
+	oneTimeCodeStore  *OneTimeCodeStore
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -220,7 +223,26 @@ func newSso(
 		userInfoPath:      c.UserInfoPath,
 		issuer:            c.Issuer,
 		filterGroupsRegex: filterGroupsRegex,
+		oneTimeCodeStore:  &OneTimeCodeStore{},
 	}, nil
+}
+
+func (s *sso) HandleCliExchange(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		log.Error("no code provided")
+		w.WriteHeader(400)
+		return
+	}
+	raw, ok := s.oneTimeCodeStore.Retrieve(code)
+	if !ok {
+		log.Error("invalid or expired code")
+		w.WriteHeader(400)
+		return
+	}
+
+	w.WriteHeader(200)
+	_, _ = w.Write([]byte(raw))
 }
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
@@ -234,6 +256,12 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
+
+	// this is a workaround to differentiate between the web flow and CLI flow
+	if r.URL.Query().Get("cli") == "true" {
+		state = "cli-" + state
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
 		Value:    finalRedirectUrl,
@@ -338,23 +366,47 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		return
 	}
-	value := Prefix + raw
-	log.Debugf("handing oauth2 callback %v", value)
-	http.SetCookie(w, &http.Cookie{
-		Value:    value,
-		Name:     "authorization",
-		Path:     s.baseHRef,
-		Expires:  time.Now().Add(s.expiry),
-		SameSite: http.SameSiteStrictMode,
-		Secure:   s.secure,
-	})
 
 	finalRedirectUrl := cookie.Value
 	if !isValidFinalRedirectUrl(cookie.Value) {
 		finalRedirectUrl = s.baseHRef
-
 	}
+
+	value := Prefix + raw
+	log.Debugf("handing oauth2 callback %v", value)
+
+	// for localhost we don't need to set the cookie, but we need to generate one time code and send it back within query param
+	if isLocalhost(finalRedirectUrl) && strings.HasPrefix(state, "cli-") {
+		code, err := s.oneTimeCodeStore.Store(value)
+		if err != nil {
+			log.WithError(err).Error("failed to store one time code")
+			w.WriteHeader(401)
+			return
+		}
+		// redirect to the final redirect url with the one time code
+		finalRedirectUrl = fmt.Sprintf("%s?code=%s", finalRedirectUrl, code)
+	} else {
+		http.SetCookie(w, &http.Cookie{
+			Value:    value,
+			Name:     "authorization",
+			Path:     s.baseHRef,
+			Expires:  time.Now().Add(s.expiry),
+			SameSite: http.SameSiteStrictMode,
+			Secure:   s.secure,
+		})
+	}
+
 	http.Redirect(w, r, finalRedirectUrl, http.StatusFound)
+}
+
+func isLocalhost(urlString string) bool {
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return false
+	}
+
+	hostname := u.Hostname()
+	return hostname == "localhost" || hostname == "127.0.0.1" || strings.HasPrefix(hostname, "127.")
 }
 
 // isValidFinalRedirectUrl checks whether the final redirect URL is safe.
@@ -374,6 +426,11 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 // "https" while the request scheme would be "http"
 // (see https://github.com/argoproj/argo-workflows/issues/13031).
 func isValidFinalRedirectUrl(redirect string) bool {
+	// allow redirect to localhost for CLI flow
+	if isLocalhost(redirect) {
+		return true
+	}
+
 	// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L47
 	return strings.HasPrefix(redirect, "/") && !strings.HasPrefix(redirect, "//") && !invalidRedirectRegex.MatchString(redirect)
 }
