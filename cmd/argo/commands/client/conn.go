@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -96,6 +97,12 @@ func GetAuthString() (string, error) {
 	if ok {
 		return token, nil
 	}
+
+	token = viper.GetString("token")
+	if token != "" {
+		return token, nil
+	}
+
 	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
 		return "", err

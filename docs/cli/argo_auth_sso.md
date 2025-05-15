@@ -1,15 +1,16 @@
-## argo cron suspend
+## argo auth sso
 
-suspend zero or more cron workflows
+Authenticate with SSO
 
 ```
-argo cron suspend CRON_WORKFLOW... [flags]
+argo auth sso [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for suspend
+  -h, --help           help for sso
+      --sso-port int   Port to listen for the callback (default 8085)
 ```
 
 ### Options inherited from parent commands
@@ -50,5 +51,5 @@ argo cron suspend CRON_WORKFLOW... [flags]
 
 ### SEE ALSO
 
-* [argo cron](argo_cron.md)	 - manage cron workflows
+* [argo auth](argo_auth.md)	 - manage authentication settings
 

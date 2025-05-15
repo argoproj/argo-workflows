@@ -13,5 +13,6 @@ func NewAuthCommand() *cobra.Command {
 		},
 	}
 	command.AddCommand(NewTokenCommand())
+	command.AddCommand(NewSsoCommand())
 	return command
 }

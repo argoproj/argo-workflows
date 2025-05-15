@@ -191,6 +191,7 @@ nav:
           - argo archive resubmit: cli/argo_archive_resubmit.md
           - argo archive retry: cli/argo_archive_retry.md
           - argo auth: cli/argo_auth.md
+          - argo auth sso: cli/argo_auth_sso.md
           - argo auth token: cli/argo_auth_token.md
           - argo cluster-template: cli/argo_cluster-template.md
           - argo cluster-template create: cli/argo_cluster-template_create.md
