@@ -173,7 +173,7 @@ func (ctx *Context) GetTemplateScope() string {
 	return string(ctx.tmplBase.GetResourceScope()) + "/" + ctx.tmplBase.GetName()
 }
 
-// ResolveTemplate digs into referenes and returns a merged template.
+// ResolveTemplate digs into references and returns a merged template.
 // This method is the public start point of template resolution.
 func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
 	return ctx.resolveTemplateImpl(tmplHolder)

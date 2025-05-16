@@ -251,7 +251,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			serviceAccountKey := string(serviceAccountKeyBytes)
 			driver.ServiceAccountKey = serviceAccountKey
 		}
-		// key is not set, assume it is using Workload Idendity
+		// key is not set, assume it is using Workload Identity
 		return &driver, nil
 	}
 

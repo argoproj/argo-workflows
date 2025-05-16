@@ -3884,7 +3884,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Pod metdata",
+				Description: "Pod metadata",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"annotations": {
@@ -6396,7 +6396,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
+							Description: "Metadata sets the pods's metadata, i.e. annotations and labels",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
@@ -7686,7 +7686,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
+							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referenceable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
@@ -8180,7 +8180,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"artifactRepositoryRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
+							Description: "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it every time we reconcile.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus"),
 						},
 					},

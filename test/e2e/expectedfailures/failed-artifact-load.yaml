@@ -12,7 +12,7 @@ spec:
     inputs:
       artifacts:
       - name: doesnt-exist
-        path: /this/doesnt/matter
+        path: /this/does not/matter
         http:
           url: https://non-existent-http-location.com/doesnt-exist.txt
     container:

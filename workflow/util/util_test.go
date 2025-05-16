@@ -242,7 +242,7 @@ status:
 `
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
-	t.Run("Withought user info", func(t *testing.T) {
+	t.Run("Without user info", func(t *testing.T) {
 		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
@@ -251,7 +251,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		require.NoError(t, err)
 
 		// will return error as displayName does not match any nodes
-		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistent")
 		require.Error(t, err)
 
 		// displayName didn't match suspend node so should still be running
@@ -281,7 +281,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		require.NoError(t, err)
 
 		// will return error as displayName does not match any nodes
-		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistent")
 		require.Error(t, err)
 
 		// displayName didn't match suspend node so should still be running
@@ -309,7 +309,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	require.NoError(t, err)
 
 	// will return error as displayName does not match any nodes
-	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
+	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistent", "error occurred")
 	require.Error(t, err)
 
 	// displayName didn't match suspend node so should still be running

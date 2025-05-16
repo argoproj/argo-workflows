@@ -18,8 +18,8 @@ export class CoffmanGrahamSorter {
 
         nodes.forEach(n => {
             let dependantLevel = -1;
-            this.graph.incomingEdges(n).forEach(dependant => {
-                const l = levels.get(dependant);
+            this.graph.incomingEdges(n).forEach(dependent => {
+                const l = levels.get(dependent);
                 if (l === null) {
                     throw new Error('dependency order');
                 }

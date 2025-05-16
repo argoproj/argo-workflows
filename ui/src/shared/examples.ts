@@ -95,7 +95,7 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     }
 });
 
-const calender = {'example-with-interval': {interval: '10s'}};
+const calendar = {'example-with-interval': {interval: '10s'}};
 
 export const exampleEventSource = (namespace: string): EventSource => ({
     metadata: {
@@ -104,7 +104,7 @@ export const exampleEventSource = (namespace: string): EventSource => ({
         labels
     },
     spec: {
-        calendar: calender
+        calendar: calendar
     }
 });
 

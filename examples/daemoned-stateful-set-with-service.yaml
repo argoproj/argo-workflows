@@ -1,6 +1,6 @@
 # This example shows how to create a stateful set with an attached service to use as a daemoned server.
 # It is complete with a tear-down handler, and a wait step that ensures the stateful set is ready before continuing.
-# Note that the service account that Argo uses to run this must have sufficient permissions to create, delte, and get
+# Note that the service account that Argo uses to run this must have sufficient permissions to create, delete, and get
 # the resources.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

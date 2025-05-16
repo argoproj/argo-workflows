@@ -118,7 +118,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
             {zeroState && (
                 <ZeroState title='No event sources'>
                     <p>
-                        An event source defines what events can be used to trigger actions. Typical event sources are calender (to create events on schedule) GitHub or GitLab (to
+                        An event source defines what events can be used to trigger actions. Typical event sources are calendar (to create events on schedule) GitHub or GitLab (to
                         create events for Git pushes), or MinIO (to create events for file drops). Each event source publishes messages to the event bus so that sensors can listen
                         for them.
                     </p>

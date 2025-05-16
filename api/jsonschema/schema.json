@@ -2295,7 +2295,7 @@
       "properties": {
         "basic": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
-          "title": "Baisc auth with username and password\n+optional"
+          "title": "Basic auth with username and password\n+optional"
         },
         "credential": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -2843,7 +2843,7 @@
           "items": {
             "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Selector"
           },
-          "title": "Fields provide field filters similar to K8s field selector\n(see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/).\nUnlike K8s field selector, it supports arbitrary fileds like \"spec.serviceAccountName\",\nand the value could be a string or a regex.\nSame as K8s field selector, operator \"=\", \"==\" and \"!=\" are supported.\n+optional",
+          "title": "Fields provide field filters similar to K8s field selector\n(see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/).\nUnlike K8s field selector, it supports arbitrary fields like \"spec.serviceAccountName\",\nand the value could be a string or a regex.\nSame as K8s field selector, operator \"=\", \"==\" and \"!=\" are supported.\n+optional",
           "type": "array"
         },
         "labels": {
@@ -3727,7 +3727,7 @@
           "items": {
             "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConditionsResetCriteria"
           },
-          "title": "Criteria to reset the conditons\n+optional",
+          "title": "Criteria to reset the conditions\n+optional",
           "type": "array"
         },
         "custom": {
@@ -5877,7 +5877,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
-      "description": "Pod metdata",
+      "description": "Pod metadata",
       "properties": {
         "annotations": {
           "additionalProperties": {
@@ -7209,7 +7209,7 @@
         },
         "metadata": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
-          "description": "Metdata sets the pods's metadata, i.e. annotations and labels"
+          "description": "Metadata sets the pods's metadata, i.e. annotations and labels"
         },
         "metrics": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics",
@@ -7937,7 +7937,7 @@
         },
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
-          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
+          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referenceable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
         },
         "artifactGC": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowLevelArtifactGC",
@@ -8132,7 +8132,7 @@
         },
         "artifactRepositoryRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus",
-          "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile."
+          "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it every time we reconcile."
         },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",

@@ -156,7 +156,7 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 		return err
 	}
 	if srcStat.IsDir() {
-		return fmt.Errorf("HDFS artifact does not suppot directory copy")
+		return fmt.Errorf("HDFS artifact does not support directory copy")
 	}
 
 	_, err = os.Stat(path)
@@ -210,7 +210,7 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 		return err
 	}
 	if isDir {
-		return fmt.Errorf("HDFS artifact does not suppot directory copy")
+		return fmt.Errorf("HDFS artifact does not support directory copy")
 	}
 
 	_, err = hdfscli.Stat(driver.Path)

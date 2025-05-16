@@ -100,7 +100,7 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 		// using default provider chains in sdk to get credential
 		log.Infof("Using default sdk provider chains for OSS driver")
 		// need install ack-pod-identity-webhook in your cluster when using oidc provider for OSS drirver
-		// the mutating webhook will help to inject the required OIDC env variables and toke volume mount configuration
+		// the mutating webhook will help to inject the required OIDC env variables and took volume mount configuration
 		// please refer to https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook
 		cred, err := credentials.NewCredential(nil)
 		if err != nil {
@@ -361,7 +361,7 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 	}
 
 	// Delete the current version objects after a period of time.
-	// If BucketVersioning is enbaled, the objects will turn to non-current version.
+	// If BucketVersioning is enabled, the objects will turn to non-current version.
 	expiration := oss.LifecycleExpiration{
 		Days: markDeletionAfterDays,
 	}
@@ -439,7 +439,7 @@ func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int
 		if err != nil {
 			return err
 		}
-		// Call the UploadPart method to upload each chunck.
+		// Call the UploadPart method to upload each chunk.
 		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
 		if err != nil {
 			log.Warnf("Upload part error: %v", err)

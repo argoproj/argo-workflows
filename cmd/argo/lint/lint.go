@@ -101,7 +101,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 	return nil
 }
 
-// Lint reads all files, returns linting errors of all of the enitities of the specified kinds.
+// Lint reads all files, returns linting errors of all of the entities of the specified kinds.
 // Entities of other kinds are ignored.
 func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	var fmtr Formatter = defaultFormatter

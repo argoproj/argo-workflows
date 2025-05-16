@@ -8,7 +8,7 @@ metadata:
     workflows.argoproj.io/description: |
       This workflow demonstrates collecting outputs (specifically the stdout result) from a pod.
 
-      Specifially, you must have a container named "main".
+      Specifically, you must have a container named "main".
     workflows.argoproj.io/version: ">= 3.1.0"
 spec:
   entrypoint: main
