@@ -25,6 +25,7 @@ argo auth [flags]
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
+      --config string                  config file (default is $HOME/.argo/config.yaml)
       --context string                 The name of the kubeconfig context to use
       --disable-compression            If true, opt-out of response compression for all requests to the server
       --gloglevel int                  Set the glog logging level
@@ -50,5 +51,6 @@ argo auth [flags]
 ### SEE ALSO
 
 * [argo](argo.md)	 - argo is the command line interface to Argo
+* [argo auth sso](argo_auth_sso.md)	 - Authenticate with SSO
 * [argo auth token](argo_auth_token.md)	 - Print the auth token
 
