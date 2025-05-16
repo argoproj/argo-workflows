@@ -17,7 +17,7 @@ func TestSimpleStartCloser(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		shell = "pwsh.exe"
 	}
-	cmd := exec.Command(shell, "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
+	cmd := exec.Command(shell, "-c", `echo "A123456789B123456789C123456789D123456789E123456789"`)
 	var stdoutWriter bytes.Buffer
 	slowWriter := SlowWriter{
 		&stdoutWriter,
@@ -34,9 +34,9 @@ func TestSimpleStartCloser(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	closer()
 
-	expected := "A123456789B123456789C123456789D123456789E123456789"
+	expected := "A123456789B123456789C123456789D123456789E123456789\n"
 	if runtime.GOOS == "windows" {
-		expected = "A123456789B123456789C123456789D123456789E123456789\\c\r\n"
+		expected = "A123456789B123456789C123456789D123456789E123456789\r\n"
 	}
 	assert.Equal(t, expected, stdoutWriter.String())
 }
