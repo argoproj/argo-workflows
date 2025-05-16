@@ -10888,8 +10888,20 @@ spec:
         i = random.randint(1, 100)
         print(i)`
 
-// TestWorkflowNeedReconcile test whether a workflow need reconcile taskresults.
+// testWorkflowNeedReconcile test whether a workflow need reconcile taskresults.
 func TestWorkflowNeedReconcile(t *testing.T) {
+	t.Run("hasIncompleteTaskResult", func(t *testing.T) {
+		hasIncompleteTaskResult := true
+		testWorkflowNeedReconcileHelper(t, hasIncompleteTaskResult)
+	})
+
+	t.Run("hasNoTaskResult", func(t *testing.T) {
+		hasIncompleteTaskResult := false
+		testWorkflowNeedReconcileHelper(t, hasIncompleteTaskResult)
+	})
+}
+
+func testWorkflowNeedReconcileHelper(t *testing.T, hasIncompleteTaskResult bool) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
@@ -10910,9 +10922,13 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
-	for _, node := range woc.wf.Status.Nodes {
-		woc.wf.Status.MarkTaskResultIncomplete(node.ID)
+
+	if hasIncompleteTaskResult {
+		for _, node := range woc.wf.Status.Nodes {
+			woc.wf.Status.MarkTaskResultIncomplete(node.ID)
+		}
 	}
+
 	err, podReconciliationCompleted := woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	assert.False(t, podReconciliationCompleted)
