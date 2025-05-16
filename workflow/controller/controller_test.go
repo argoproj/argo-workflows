@@ -340,6 +340,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+		go wfc.configMapInformer.Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
 			wfc.wfInformer,
@@ -349,6 +350,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
+			wfc.configMapInformer,
 		} {
 			for !c.HasSynced() {
 				time.Sleep(5 * time.Millisecond)
