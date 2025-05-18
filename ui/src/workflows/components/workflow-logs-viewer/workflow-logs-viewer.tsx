@@ -87,6 +87,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     const [selectedJsonFields, setSelectedJsonFields] = useState<SelectedJsonFields>(() => {
         return storage.getItem<SelectedJsonFields>('jsonFields', {values: []});
     });
+    const [templateFromRef, setTemplateFromRef] = useState<models.Template>(null);
 
     function setDebouncedGrep(value: string) {
         debounce(() => setGrep(value), 1000)[0]();
@@ -169,7 +170,52 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     // default to the node id of the pod
     const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
-    const templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
+    
+    useEffect(() => {
+        if (!node || !node.templateRef) {
+            setTemplateFromRef(null);
+            return;
+        }
+
+        const fetchTemplate = async () => {
+            try {
+                if (node.templateRef.clusterScope) {
+                    console.log(`Fetching template from ClusterWorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}`);
+                    const tmpl = await services.clusterWorkflowTemplate.get(node.templateRef.name);
+                    const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
+                    
+                    if (matchingTemplate) {
+                        setTemplateFromRef(matchingTemplate);
+                    } else {
+                        console.warn(`Template '${node.templateRef.template}' not found in ClusterWorkflowTemplate '${node.templateRef.name}'`);
+                        setTemplateFromRef(null);
+                    }
+                } else {
+                    console.log(`Fetching template from WorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}, namespace: ${workflow.metadata.namespace}`);
+                    const tmpl = await services.workflowTemplate.get(node.templateRef.name, workflow.metadata.namespace);
+                    const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
+                    
+                    if (matchingTemplate) {
+                        setTemplateFromRef(matchingTemplate);
+                    } else {
+                        console.warn(`Template '${node.templateRef.template}' not found in WorkflowTemplate '${node.templateRef.name}'`);
+                        setTemplateFromRef(null);
+                    }
+                }
+            } catch (err) {
+                console.error(`Failed to fetch template from reference: ${err}`);
+                setTemplateFromRef(null);
+            }
+        };
+
+        fetchTemplate();
+    }, [node, workflow.metadata.namespace]);
+    
+    let templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
+    
+    if (templates.length === 0 && node && node.templateRef && templateFromRef) {
+        templates = [templateFromRef];
+    }
 
     const containers = [
         ...new Set(
