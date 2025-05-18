@@ -170,7 +170,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     // default to the node id of the pod
     const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
-    
+
     useEffect(() => {
         if (!node || !node.templateRef) {
             setTemplateFromRef(null);
@@ -183,7 +183,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                     console.log(`Fetching template from ClusterWorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}`);
                     const tmpl = await services.clusterWorkflowTemplate.get(node.templateRef.name);
                     const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
-                    
+
                     if (matchingTemplate) {
                         setTemplateFromRef(matchingTemplate);
                     } else {
@@ -191,10 +191,12 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                         setTemplateFromRef(null);
                     }
                 } else {
-                    console.log(`Fetching template from WorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}, namespace: ${workflow.metadata.namespace}`);
+                    console.log(
+                        `Fetching template from WorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}, namespace: ${workflow.metadata.namespace}`
+                    );
                     const tmpl = await services.workflowTemplate.get(node.templateRef.name, workflow.metadata.namespace);
                     const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
-                    
+
                     if (matchingTemplate) {
                         setTemplateFromRef(matchingTemplate);
                     } else {
@@ -210,9 +212,9 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
 
         fetchTemplate();
     }, [node, workflow.metadata.namespace]);
-    
+
     let templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
-    
+
     if (templates.length === 0 && node && node.templateRef && templateFromRef) {
         templates = [templateFromRef];
     }
