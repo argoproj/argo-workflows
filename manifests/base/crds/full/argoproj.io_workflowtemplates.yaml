@@ -23616,6 +23616,9 @@ spec:
                   secondsAfterCompletion:
                     format: int32
                     type: integer
+                  secondsAfterError:
+                    format: int32
+                    type: integer
                   secondsAfterFailure:
                     format: int32
                     type: integer

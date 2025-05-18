@@ -109,6 +109,7 @@ func (c *Controller) retentionEnqueue(ctx context.Context, obj interface{}) {
 		c.orderedQueueLock.Lock()
 		heap.Push(c.orderedQueue[phase], un)
 		c.runGC(ctx, phase)
+		c.runCompletedGC(ctx)
 		c.orderedQueueLock.Unlock()
 	}
 }
@@ -147,7 +148,11 @@ func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 	var maxWorkflows int
 	switch phase {
 	case wfv1.WorkflowSucceeded:
-		maxWorkflows = c.retentionPolicy.Completed
+		maxWorkflows = c.retentionPolicy.Succeeded
+		// For backwards compatibility with installations that don't specify the new key
+		if maxWorkflows == 0 {
+			maxWorkflows = c.retentionPolicy.Completed
+		}
 	case wfv1.WorkflowFailed:
 		maxWorkflows = c.retentionPolicy.Failed
 	case wfv1.WorkflowError:
@@ -158,9 +163,42 @@ func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 
 	for c.orderedQueue[phase].Len() > maxWorkflows {
 		key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
-		log.Infof("Queueing %v workflow %s for delete due to max rention(%d workflows)", phase, key, maxWorkflows)
+		log.Infof("Queueing %v workflow %s for delete due to max retention(%d workflows)", phase, key, maxWorkflows)
 		c.workqueue.Add(key)
 		<-ticker.C
+	}
+}
+
+func (c *Controller) runCompletedGC(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+
+	maxWorkflowsCompleted := c.retentionPolicy.Completed
+	workflowsCompleted := 0
+
+	for _, queue := range c.orderedQueue {
+		workflowsCompleted += queue.Len()
+	}
+	for workflowsCompleted > maxWorkflowsCompleted {
+		var queueToPop *gcHeap
+		oldest := time.Now()
+		for _, queue := range c.orderedQueue {
+			queuePopTime, err := queue.PeekPopTimestamp()
+			if err != nil {
+				continue
+			}
+			if queuePopTime.Before(oldest) {
+				oldest = queuePopTime
+				queueToPop = queue
+			}
+		}
+
+		if queueToPop != nil {
+			key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(queueToPop))
+			log.Infof("Queueing Completed workflow %s for delete due to max retention(%d workflows)", key, maxWorkflowsCompleted)
+			c.workqueue.Add(key)
+			<-ticker.C
+		}
+		workflowsCompleted -= 1
 	}
 }
 
@@ -255,6 +293,8 @@ func ttl(wf *wfv1.Workflow) (ttl time.Duration, ok bool) {
 	if ttlStrategy != nil {
 		if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
 			return time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second, true
+		} else if wf.Status.Errored() && ttlStrategy.SecondsAfterError != nil {
+			return time.Duration(*ttlStrategy.SecondsAfterError) * time.Second, true
 		} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
 			return time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second, true
 		} else if wf.Status.Phase.Completed() && ttlStrategy.SecondsAfterCompletion != nil {

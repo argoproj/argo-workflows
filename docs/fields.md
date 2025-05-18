@@ -1889,6 +1889,7 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`secondsAfterCompletion`|`integer`|SecondsAfterCompletion is the number of seconds to live after completion|
+|`secondsAfterError`|`integer`|SecondsAfterError is the number of seconds to live after error|
 |`secondsAfterFailure`|`integer`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`integer`|SecondsAfterSuccess is the number of seconds to live after success|
 

@@ -8,4 +8,6 @@ type RetentionPolicy struct {
 	Failed int `json:"failed,omitempty"`
 	// Errored is the number of errored Workflows to retain
 	Errored int `json:"errored,omitempty"`
+	// Succeeded is the number of succeeded Workflows to retain
+	Succeeded int `json:"succeeded,omitempty"`
 }

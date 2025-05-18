@@ -3155,6 +3155,11 @@ func (in *TTLStrategy) DeepCopyInto(out *TTLStrategy) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.SecondsAfterError != nil {
+		in, out := &in.SecondsAfterError, &out.SecondsAfterError
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 

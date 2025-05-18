@@ -1,6 +1,9 @@
 package gccontroller
 
 import (
+	"fmt"
+	"time"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -37,4 +40,12 @@ func (h *gcHeap) Pop() interface{} {
 	h.heap = old[0 : n-1]
 	delete(h.dedup, x.GetName())
 	return x
+}
+
+func (h *gcHeap) PeekPopTimestamp() (time.Time, error) {
+	n := len(h.heap)
+	if n == 0 {
+		return time.Time{}, fmt.Errorf("heap is empty")
+	}
+	return h.heap[0].GetCreationTimestamp().Time, nil
 }

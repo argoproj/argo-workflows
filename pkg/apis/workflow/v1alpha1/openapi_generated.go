@@ -6318,6 +6318,13 @@ func schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref common.ReferenceCallback)
 							Format:      "int32",
 						},
 					},
+					"secondsAfterError": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecondsAfterError is the number of seconds to live after error",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 			},
 		},
