@@ -311,6 +311,66 @@ data:
     #     name: argo-mysql-config
     #     key: password
 
+  # synchronization configuration for database locks (semaphores and mutexes)
+  # This enables coordination between multiple argo controller instances or across clusters
+  # Shares a similar structure with persistence configuration
+  synchronization: |
+    # Connection pool settings, similar to persistence connectionPool
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+      connMaxLifetime: 0s # 0 means connections don't have a max lifetime
+    
+    # Required - sets a unique name for this controller instance
+    # Must be different for each controller instance to properly coordinate lock ownership
+    controllerName: controller-1
+    
+    # Optional - customize the table names for the lock mechanism
+    # These table names are created and managed by the controller
+    limitTableName: sync_limit           # Stores semaphore limits (default: sync_limit)
+    stateTableName: sync_state           # Stores current lock state (default: sync_state)
+    controllerTableName: sync_controller # Stores controller heartbeats (default: sync_controller)
+    lockTableName: sync_lock             # Stores lock coordination data (default: sync_lock)
+    
+    # Optional timing configurations 
+    pollSeconds: 5                  # How often to check for lock changes (default: 5)
+    heartbeatSeconds: 60            # How often to update controller heartbeat (default: 60)
+    inactiveControllerSeconds: 300  # When to consider a controller dead (default: 300)
+    
+    # Time in seconds to cache semaphore limits to reduce database queries (default: 0)
+    # 0 means check the limit on every access
+    semaphoreLimitCacheSeconds: 0
+    
+    # Skip database migration if needed (default: false)
+    # skipMigration: true
+    
+    # PostgreSQL database configuration - similar to persistence config
+    postgresql:
+      host: localhost
+      port: 5432
+      database: postgres  # Can be the same database as persistence
+      # the database secrets must be in the same namespace as the controller
+      userNameSecret:
+        name: argo-postgres-config
+        key: username
+      passwordSecret:
+        name: argo-postgres-config
+        key: password
+      ssl: true
+      sslMode: require
+    
+    # MySQL database configuration (alternative to PostgreSQL)
+    # mysql:
+    #   host: localhost
+    #   port: 3306
+    #   database: argo
+    #   userNameSecret:
+    #     name: argo-mysql-config
+    #     key: username
+    #   passwordSecret:
+    #     name: argo-mysql-config
+    #     key: password
+
   # PodSpecLogStrategy enables the logging of pod specs in the controller log.
   # podSpecLogStrategy: |
   #   failedPod: true
@@ -334,6 +394,10 @@ data:
   #   completed: 10
   #   failed: 3
   #   errored: 3
+
+  # SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
+  # for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
+  semaphoreLimitCacheSeconds: "0"
 
   # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
   # See more: docs/default-workflow-specs.md

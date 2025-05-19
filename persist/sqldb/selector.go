@@ -6,9 +6,10 @@ import (
 	"github.com/upper/db/v4"
 
 	"github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
-func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t dbType, options utils.ListOptions, count bool) (db.Selector, error) {
+func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (db.Selector, error) {
 	selector = selector.
 		And(namespaceEqual(options.Namespace)).
 		And(nameEqual(options.Name)).
@@ -35,7 +36,7 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		Offset(options.Offset), nil
 }
 
-func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t dbType, options utils.ListOptions, count bool) (out string, outArgs []any, err error) {
+func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (out string, outArgs []any, err error) {
 	var clauses []*db.RawExpr
 	if options.Namespace != "" {
 		clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))

@@ -154,10 +154,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	isInput := false
-	if direction == Inputs {
-		isInput = true
-	}
+	isInput := direction == Inputs
 
 	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, fileName)
 	if err != nil {
@@ -211,7 +208,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		dirs := map[string]bool{} // to de-dupe sub-dirs
 
-		_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", "..", "..")))
+		_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", "..", "..")
 
 		for _, object := range objects {
 
@@ -220,11 +217,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 			// if dir is empty string, we are in the root dir
 			if dir == "" {
-				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", file, file)))
+				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", file, file)
 			} else if dirs[dir] {
 				continue
 			} else {
-				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", dir, dir)))
+				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", dir, dir)
 				dirs[dir] = true
 			}
 		}
@@ -422,7 +419,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	if templateName != "" {
 		template := wf.GetTemplateByName(templateName)
 		if template == nil {
-			return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+			return nil, nil, fmt.Errorf("no template found for name %q associated with nodeId %q", templateName, nodeId)
 		}
 		archiveLocation = template.ArchiveLocation // this is case 4
 	}

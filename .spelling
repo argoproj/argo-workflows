@@ -107,6 +107,7 @@ PVCs
 Peixuan
 PersistentVolumeClaims
 Ploomber
+PostgreSQL
 Postgres
 PriorityClass
 RCs
@@ -209,6 +210,7 @@ parameterizing
 params
 pprof
 pre-commit
+pytorch
 qps
 rc2
 repo

@@ -2,13 +2,14 @@ package s3
 
 import (
 	"bytes"
+	"context"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,7 @@ type mockS3Client struct {
 	mockedErrs map[string]error
 }
 
-func newMockS3Client(files map[string][]string, mockedErrs map[string]error) argos3.S3Client {
+func newMockS3Client(files map[string][]string, mockedErrs map[string]error) S3Client {
 	return &mockS3Client{
 		files:      files,
 		mockedErrs: mockedErrs,
@@ -128,7 +129,7 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 
 func TestOpenStreamS3Artifact(t *testing.T) {
 	tests := map[string]struct {
-		s3client  argos3.S3Client
+		s3client  S3Client
 		bucket    string
 		key       string
 		localPath string
@@ -137,7 +138,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Success": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -163,7 +164,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"No such key": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -180,7 +181,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Is Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -197,7 +198,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -247,7 +248,7 @@ func (s *mockS3Client) Delete(bucket, key string) error {
 
 func TestLoadS3Artifact(t *testing.T) {
 	tests := map[string]struct {
-		s3client  argos3.S3Client
+		s3client  S3Client
 		bucket    string
 		key       string
 		localPath string
@@ -257,7 +258,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Success": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -285,7 +286,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"No such key": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -303,7 +304,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Is Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -321,7 +322,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Get File Other Transient Error": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -339,7 +340,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -360,7 +361,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Get Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -397,7 +398,7 @@ func TestLoadS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Empty(t, tc.errMsg)
 			}
 		})
 	}
@@ -412,7 +413,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		s3client  argos3.S3Client
+		s3client  S3Client
 		bucket    string
 		key       string
 		localPath string
@@ -434,7 +435,7 @@ func TestSaveS3Artifact(t *testing.T) {
 		"Success as Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{},
+					"my-bucket": {},
 				},
 				map[string]error{}),
 			bucket:    "my-bucket",
@@ -531,7 +532,7 @@ func TestSaveS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Empty(t, tc.errMsg)
 			}
 		})
 	}
@@ -540,7 +541,7 @@ func TestSaveS3Artifact(t *testing.T) {
 func TestListObjects(t *testing.T) {
 
 	tests := map[string]struct {
-		s3client         argos3.S3Client
+		s3client         S3Client
 		bucket           string
 		key              string
 		expectedSuccess  bool
@@ -550,7 +551,7 @@ func TestListObjects(t *testing.T) {
 		"Found objects": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -563,7 +564,7 @@ func TestListObjects(t *testing.T) {
 		"Empty directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder",
 					},
 				},
@@ -576,7 +577,7 @@ func TestListObjects(t *testing.T) {
 		"Non-existent directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder",
 					},
 				},
@@ -615,4 +616,117 @@ func TestListObjects(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestNewS3Client tests the s3 constructor
+func TestNewS3Client(t *testing.T) {
+	opts := S3ClientOpts{
+		Endpoint:        "foo.com",
+		Region:          "us-south-3",
+		Secure:          false,
+		Transport:       http.DefaultTransport,
+		AccessKey:       "key",
+		SecretKey:       "secret",
+		SessionToken:    "",
+		Trace:           true,
+		RoleARN:         "",
+		RoleSessionName: "",
+		UseSDKCreds:     false,
+		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyId: "", KmsEncryptionContext: ""},
+	}
+	s3If, err := NewS3Client(context.Background(), opts)
+	require.NoError(t, err)
+	s3cli := s3If.(*s3client)
+	assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
+	assert.Equal(t, opts.Region, s3cli.Region)
+	assert.Equal(t, opts.Secure, s3cli.Secure)
+	assert.Equal(t, opts.Transport, s3cli.Transport)
+	assert.Equal(t, opts.AccessKey, s3cli.AccessKey)
+	assert.Equal(t, opts.SessionToken, s3cli.SessionToken)
+	assert.Equal(t, opts.Trace, s3cli.Trace)
+	assert.Equal(t, opts.EncryptOpts, s3cli.EncryptOpts)
+	assert.Equal(t, opts.AddressingStyle, s3cli.AddressingStyle)
+	// s3cli.minioClient.
+	// 	s3client.minioClient
+}
+
+// TestNewS3Client tests the S3 constructor using ephemeral credentials
+func TestNewS3ClientEphemeral(t *testing.T) {
+	opts := S3ClientOpts{
+		Endpoint:     "foo.com",
+		Region:       "us-south-3",
+		AccessKey:    "key",
+		SecretKey:    "secret",
+		SessionToken: "sessionToken",
+	}
+	s3If, err := NewS3Client(context.Background(), opts)
+	require.NoError(t, err)
+	s3cli := s3If.(*s3client)
+	assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
+	assert.Equal(t, opts.Region, s3cli.Region)
+	assert.Equal(t, opts.AccessKey, s3cli.AccessKey)
+	assert.Equal(t, opts.SecretKey, s3cli.SecretKey)
+	assert.Equal(t, opts.SessionToken, s3cli.SessionToken)
+}
+
+// TestNewS3Client tests the s3 constructor
+func TestNewS3ClientWithDiff(t *testing.T) {
+	t.Run("IAMRole", func(t *testing.T) {
+		opts := S3ClientOpts{
+			Endpoint: "foo.com",
+			Region:   "us-south-3",
+			Secure:   false,
+			Trace:    true,
+		}
+		s3If, err := NewS3Client(context.Background(), opts)
+		require.NoError(t, err)
+		s3cli := s3If.(*s3client)
+		assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
+		assert.Equal(t, opts.Region, s3cli.Region)
+		assert.Equal(t, opts.Trace, s3cli.Trace)
+		assert.Equal(t, opts.Endpoint, s3cli.minioClient.EndpointURL().Host)
+	})
+	t.Run("AssumeIAMRole", func(t *testing.T) {
+		t.SkipNow()
+		opts := S3ClientOpts{
+			Endpoint: "foo.com",
+			Region:   "us-south-3",
+			Secure:   false,
+			Trace:    true,
+			RoleARN:  "01234567890123456789",
+		}
+		s3If, err := NewS3Client(context.Background(), opts)
+		require.NoError(t, err)
+		s3cli := s3If.(*s3client)
+		assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
+		assert.Equal(t, opts.Region, s3cli.Region)
+		assert.Equal(t, opts.Trace, s3cli.Trace)
+		assert.Equal(t, opts.Endpoint, s3cli.minioClient.EndpointURL().Host)
+	})
+}
+
+func TestDisallowedComboOptions(t *testing.T) {
+	t.Run("KMS and SSEC", func(t *testing.T) {
+		opts := S3ClientOpts{
+			Endpoint:    "foo.com",
+			Region:      "us-south-3",
+			Secure:      true,
+			Trace:       true,
+			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyId: "00000000-0000-0000-0000-000000000000", KmsEncryptionContext: ""},
+		}
+		_, err := NewS3Client(context.Background(), opts)
+		assert.Error(t, err)
+	})
+
+	t.Run("SSEC and InSecure", func(t *testing.T) {
+		opts := S3ClientOpts{
+			Endpoint:    "foo.com",
+			Region:      "us-south-3",
+			Secure:      false,
+			Trace:       true,
+			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyId: "", KmsEncryptionContext: ""},
+		}
+		_, err := NewS3Client(context.Background(), opts)
+		assert.Error(t, err)
+	})
 }

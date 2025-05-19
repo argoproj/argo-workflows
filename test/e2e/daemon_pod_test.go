@@ -177,6 +177,51 @@ func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 		})
 }
 
+func (s *DaemonPodSuite) TestDaemonPodRetry() {
+	s.Given().
+		Workflow(`
+metadata:
+  name: daemon-retry
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: daemoned
+          template: daemoned
+        - name: whale
+          dependencies: [daemoned]
+          template: whale-tmpl
+  - name: daemoned
+    retryStrategy:
+      limit: 2
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args: ["-c", "sleep 10 && exit 1"]
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args: ["-c", "echo hi & sleep 15 && echo bye"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			failedNode := status.Nodes.FindByDisplayName("daemoned(0)")
+			succeededNode := status.Nodes.FindByDisplayName("daemoned(1)")
+			require.NotNil(t, failedNode)
+			require.NotNil(t, succeededNode)
+			assert.Equal(t, v1alpha1.NodeFailed, failedNode.Phase)
+			assert.Equal(t, v1alpha1.NodeSucceeded, succeededNode.Phase)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestDaemonPodSuite(t *testing.T) {
 	suite.Run(t, new(DaemonPodSuite))
 }

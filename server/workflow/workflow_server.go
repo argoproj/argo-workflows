@@ -510,6 +510,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	creator.LabelCreator(ctx, newWF)
 
 	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{})
 	if err != nil {
@@ -758,7 +759,7 @@ func getLatestWorkflow(ctx context.Context, wfClient versioned.Interface, namesp
 	}
 	latest := wfList.Items[0]
 	for _, wf := range wfList.Items {
-		if latest.ObjectMeta.CreationTimestamp.Before(&wf.ObjectMeta.CreationTimestamp) {
+		if latest.CreationTimestamp.Before(&wf.CreationTimestamp) {
 			latest = wf
 		}
 	}
