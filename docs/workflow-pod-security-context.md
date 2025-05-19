@@ -25,7 +25,7 @@ metadata:
 spec:
   securityContext:
     runAsNonRoot: true
-    runAsUser: 8737 #; or any non-root user
+    runAsUser: 8737 # or any non-root user
 ```
 
 !!! Warning "It is easy to make a workflow need root unintentionally"
