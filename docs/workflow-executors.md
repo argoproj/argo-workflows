@@ -1,8 +1,8 @@
 # Workflow Executors
 
-A workflow executor runs in the pods that execute your workloads.
+A Workflow executor runs in the Pods that execute your workloads.
 It runs as both an init container and as a sidecar to the container you specify.
-It allows Argo to perform certain actions like monitoring pod logs, providing and collecting artifacts, and managing container life-cycles.
+It allows Argo to perform certain actions like monitoring Pod logs, providing and collecting artifacts, and managing container life-cycles.
 
 Historically there were multiple available executor types, but as of 3.4 the only available executor is called `emissary`.
 
@@ -26,7 +26,8 @@ Historically there were multiple available executor types, but as of 3.4 the onl
 You can determine the default command for a container image using:
 
 ```bash
-docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosay:v2
+docker pull alpine:latest
+docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' alpine:latest
 ```
 
 [Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes)

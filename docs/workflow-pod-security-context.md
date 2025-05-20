@@ -1,8 +1,8 @@
 # Workflow Pod Security Context
 
-This document explains how to configure security context for workflow pods in Argo Workflows.
+This document explains how to configure security context for Workflow Pods in Argo Workflows.
 
-Running workflow pods as non-root is best practice for security.
+Running Workflow Pods as non-root is best practice for security.
 
 You may need to do this if:
 
@@ -11,11 +11,11 @@ You may need to do this if:
 
 ## Basic Configuration
 
-By default, all workflow pods run as root.
+By default, all Workflow Pods run as root.
 
-You can configure the [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for your workflow pod.
+You can configure the [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for your Workflow Pod.
 
-Here's a basic example that runs the pod as a non-root user:
+Here's a basic example that runs the Pod as a non-root user:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
