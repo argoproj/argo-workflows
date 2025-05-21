@@ -27,10 +27,10 @@ func TestCanI(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	allowed, err := CanI(ctx, kubeClient, "get", "workflow", "", "")
+	allowed, err := CanIArgo(ctx, kubeClient, "get", "workflow", "", "")
 	require.NoError(t, err)
 	assert.True(t, allowed)
-	notAllowed, err := CanI(ctx, kubeClient, "list", "workflow", "", "")
+	notAllowed, err := CanIArgo(ctx, kubeClient, "list", "workflow", "", "")
 	require.NoError(t, err)
 	assert.False(t, notAllowed)
 }

@@ -8,7 +8,7 @@ import (
 
 func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, error) {
 	kubeClientset := GetKubeClient(ctx)
-	allowed, err := authUtil.CanI(ctx, kubeClientset, verb, resource, namespace, name)
+	allowed, err := authUtil.CanIArgo(ctx, kubeClientset, verb, resource, namespace, name)
 	if err != nil {
 		return false, err
 	}
