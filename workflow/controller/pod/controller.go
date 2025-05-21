@@ -290,7 +290,7 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
-		var allPods []v1.Pod
+		var allPods []apiv1.Pod
 		continueTok := ""
 		options.Limit = podPaginationLimit
 		for {
@@ -305,7 +305,7 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 			}
 			continueTok = podList.Continue
 		}
-		return &v1.PodList{Items: allPods}, nil
+		return &apiv1.PodList{Items: allPods}, nil
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
