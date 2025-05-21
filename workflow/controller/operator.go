@@ -2205,6 +2205,23 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// Inject the retryAttempt number
 		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 
+		// Inject lastRetry variables
+		// the first node will not have "lastRetry" variables so they must have default values
+		// for the expression to resolve
+		lastRetryExitCode, lastRetryDuration := "0", "0"
+		var lastRetryStatus, lastRetryMessage string
+		if lastChildNode != nil {
+			if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
+				lastRetryExitCode = *lastChildNode.Outputs.ExitCode
+			}
+			lastRetryStatus = string(lastChildNode.Phase)
+			lastRetryDuration = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+			lastRetryMessage = lastChildNode.Message
+		}
+		localParams[common.LocalVarRetriesLastExitCode] = lastRetryExitCode
+		localParams[common.LocalVarRetriesLastDuration] = lastRetryDuration
+		localParams[common.LocalVarRetriesLastStatus] = lastRetryStatus
+		localParams[common.LocalVarRetriesLastMessage] = lastRetryMessage
 		processedTmpl, err = common.SubstituteParams(processedTmpl, woc.globalParams, localParams)
 		if errorsutil.IsTransientErr(err) {
 			return node, err
