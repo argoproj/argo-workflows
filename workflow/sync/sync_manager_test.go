@@ -906,6 +906,42 @@ func TestMutexWfLevel(t *testing.T) {
 		syncManager.ReleaseAll(wf2)
 		assert.Empty(t, mutex.pending.items)
 	})
+
+	t.Run("WorkflowLevelMutexAcquireAndReleaseWithMultipleMutex", func(t *testing.T) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+			// nextKey = key
+		}, WorkflowExistenceFunc)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		mutexes := make([]*wfv1.Mutex, 0, 10)
+		for i := range 10 {
+			mutexes = append(mutexes, &wfv1.Mutex{Name: fmt.Sprintf("mutex%d", i)})
+		}
+		wf.Spec.Synchronization.Mutexes = mutexes
+		wf1 := wf.DeepCopy()
+		wf1.Name = "two"
+
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+		require.NoError(t, err)
+		require.Empty(t, msg)
+		require.Empty(t, failedLockName)
+		require.True(t, status)
+		require.True(t, wfUpdate)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+		syncManager.ReleaseAll(wf)
+
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+		require.NoError(t, err)
+		require.Empty(t, msg)
+		require.Empty(t, failedLockName)
+		require.True(t, status)
+		require.True(t, wfUpdate)
+		require.NotNil(t, wf1.Status.Synchronization)
+		require.NotNil(t, wf1.Status.Synchronization.Mutex)
+		require.NotNil(t, wf1.Status.Synchronization.Mutex.Holding)
+		syncManager.ReleaseAll(wf1)
+	})
 }
 
 func TestCheckWorkflowExistence(t *testing.T) {
