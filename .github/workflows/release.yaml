@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/amd64, linux/arm64 ]
-        target: [ workflow-controller, argocli, argoexec ]
+        target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -179,7 +179,7 @@ jobs:
             tag="latest"
           fi
 
-          targets="workflow-controller argoexec argocli"
+          targets="workflow-controller argoexec argoexec-nonroot argocli"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 
@@ -203,7 +203,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/amd64 ]
-        target: [ workflow-controller, argocli, argoexec ]
+        target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
       - name: Docker Login
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
@@ -309,6 +309,7 @@ jobs:
       - run: bom generate --image quay.io/argoproj/workflow-controller:$VERSION -o dist/workflow-controller.spdx
       - run: bom generate --image quay.io/argoproj/argocli:$VERSION -o dist/argocli.spdx
       - run: bom generate --image quay.io/argoproj/argoexec:$VERSION -o dist/argoexec.spdx
+      - run: bom generate --image quay.io/argoproj/argoexec-nonroot:$VERSION -o dist/argoexec-nonroot.spdx
       # pack the boms into one file to make it easy to download
       - run: tar -zcf dist/sbom.tar.gz dist/*.spdx
       - run: make release-notes VERSION=$VERSION
