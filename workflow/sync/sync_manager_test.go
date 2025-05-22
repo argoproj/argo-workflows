@@ -451,6 +451,84 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		syncManager.ReleaseAll(wf3)
 		assert.Empty(t, sema.pending.items)
 	})
+
+	t.Run("WorkflowLevelSemaphoreAcquireAndReleaseWithMultipleSemaphores", func(t *testing.T) {
+		// Create ConfigMap with multiple semaphore limits
+		cm := v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "multiple-sema-config",
+				Namespace: "default",
+			},
+			Data: map[string]string{
+				"sem1": "1",
+				"sem2": "1",
+				"sem3": "1",
+			},
+		}
+		_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+			// nextKey = key
+		}, WorkflowExistenceFunc)
+
+		// Create two workflows that both need all semaphores
+		wf1 := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf1.Name = "wf1"
+		wf1.Spec.Synchronization.Semaphores = []*wfv1.SemaphoreRef{
+			{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "multiple-sema-config"},
+					Key:                  "sem1",
+				},
+			},
+			{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "multiple-sema-config"},
+					Key:                  "sem2",
+				},
+			},
+			{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "multiple-sema-config"},
+					Key:                  "sem3",
+				},
+			},
+		}
+
+		wf2 := wf1.DeepCopy()
+		wf2.Name = "wf2"
+
+		// First workflow should acquire all semaphores
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		require.NotNil(t, wf1.Status.Synchronization)
+		require.NotNil(t, wf1.Status.Synchronization.Semaphore)
+		require.NotNil(t, wf1.Status.Synchronization.Semaphore.Holding)
+		assert.Len(t, wf1.Status.Synchronization.Semaphore.Holding, 3)
+
+		// Release all semaphores from first workflow
+		syncManager.ReleaseAll(wf1)
+
+		// Second workflow should now be able to acquire all semaphores
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		require.NotNil(t, wf2.Status.Synchronization)
+		require.NotNil(t, wf2.Status.Synchronization.Semaphore)
+		require.NotNil(t, wf2.Status.Synchronization.Semaphore.Holding)
+		assert.Len(t, wf2.Status.Synchronization.Semaphore.Holding, 3)
+
+		// Clean up
+		syncManager.ReleaseAll(wf2)
+	})
 }
 
 func TestResizeSemaphoreSize(t *testing.T) {
@@ -683,6 +761,42 @@ func TestMutexWfLevel(t *testing.T) {
 		assert.Len(t, mutex.pending.items, 1)
 		syncManager.ReleaseAll(wf2)
 		assert.Empty(t, mutex.pending.items)
+	})
+
+	t.Run("WorkflowLevelMutexAcquireAndReleaseWithMultipleMutex", func(t *testing.T) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+			// nextKey = key
+		}, WorkflowExistenceFunc)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		mutexes := make([]*wfv1.Mutex, 0, 10)
+		for i := range 10 {
+			mutexes = append(mutexes, &wfv1.Mutex{Name: fmt.Sprintf("mutex%d", i)})
+		}
+		wf.Spec.Synchronization.Mutexes = mutexes
+		wf1 := wf.DeepCopy()
+		wf1.Name = "two"
+
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+		require.NoError(t, err)
+		require.Empty(t, msg)
+		require.Empty(t, failedLockName)
+		require.True(t, status)
+		require.True(t, wfUpdate)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+		syncManager.ReleaseAll(wf)
+
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+		require.NoError(t, err)
+		require.Empty(t, msg)
+		require.Empty(t, failedLockName)
+		require.True(t, status)
+		require.True(t, wfUpdate)
+		require.NotNil(t, wf1.Status.Synchronization)
+		require.NotNil(t, wf1.Status.Synchronization.Mutex)
+		require.NotNil(t, wf1.Status.Synchronization.Mutex.Holding)
+		syncManager.ReleaseAll(wf1)
 	})
 }
 
