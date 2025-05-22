@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -31,6 +32,10 @@ type resetFunc = func(string)
 
 func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubeclientset kubernetes.Interface) (cache.SharedIndexInformer, error) {
 
+	can, _ := authutil.CanI(ctx, wfc.kubeclientset, []string{"get", "watch", "list"}, "", metav1.NamespaceAll, "namespaces")
+	if !can {
+		logrus.Warn("was unable to get permissions for get/watch/list verbs on the namespace resource, per-namespace parallelism will not work")
+	}
 	c := kubeclientset.CoreV1().Namespaces()
 	logger := logrus.WithField("scope", "ns_watcher")
 

@@ -21,6 +21,15 @@ func init() {
 	}
 }
 
+func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
+	for _, variable := range variables {
+		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
+			return true
+		}
+	}
+	return false
+}
+
 func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -33,10 +42,18 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
+	if anyVarNotInEnv(unmarshalledExpression, []string{"retries"}, env) && allowUnresolved {
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
 		log.WithError(err).Debug("Retries are present and unresolved is allowed")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
+	}
+
+	lastRetryVariables := []string{"lastRetry.exitCode", "lastRetry.status", "lastRetry.duration", "lastRetry.message"}
+	if anyVarNotInEnv(unmarshalledExpression, lastRetryVariables, env) && allowUnresolved {
+		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
+		// when they don't exist in the env.
+		log.WithError(err).Debug("LastRetry variables are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
@@ -45,9 +62,8 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
 	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
 	// when the exit handlers complete.
-	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
-		(hasWorkflowFailures(unmarshalledExpression) && !hasVarInEnv(env, "workflow.failures"))) &&
-		allowUnresolved {
+	if anyVarNotInEnv(unmarshalledExpression, []string{"workflow.status", "workflow.failures"}, env) && allowUnresolved {
+		log.WithError(err).Debug("workflow.status or workflow.failures are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
@@ -102,54 +118,58 @@ func EnvMap(replaceMap map[string]string) map[string]interface{} {
 
 // hasRetries checks if the variable `retries` exists in the expression template
 func hasRetries(expression string) bool {
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
+	return hasVariableInExpression(expression, "retries")
+}
+
+func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
+	if len(needle) > len(haystack) {
 		return false
 	}
-	for _, token := range tokens {
-		if token.Kind == lexer.Identifier && token.Value == "retries" {
-			return true
+	if len(needle) == 0 {
+		return true
+	}
+outer:
+	for i := 0; i <= len(haystack)-len(needle); i++ {
+		for j := 0; j < len(needle); j++ {
+			if haystack[i+j].String() != needle[j].String() {
+				continue outer
+			}
 		}
+		return true
 	}
 	return false
 }
 
-// hasWorkflowStatus checks if expression contains `workflow.status`
-func hasWorkflowStatus(expression string) bool {
-	if !strings.Contains(expression, "workflow.status") {
-		return false
-	}
-	// Even if the expression contains `workflow.status`, it could be the case that it represents a string (`"workflow.status"`),
-	// not a variable, so we need to parse it and handle filter the string case.
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.status" {
-			return true
+func filterEOF(toks []lexer.Token) []lexer.Token {
+	newToks := []lexer.Token{}
+	for _, tok := range toks {
+		if tok.Kind != lexer.EOF {
+			newToks = append(newToks, tok)
 		}
 	}
-	return false
+	return newToks
 }
 
-// hasWorkflowFailures checks if expression contains `workflow.failures`
-func hasWorkflowFailures(expression string) bool {
-	if !strings.Contains(expression, "workflow.failures") {
+// hasVariableInExpression checks if an expression contains a variable.
+// This function is somewhat cursed and I have attempted my best to
+// remove this curse, but it still exists.
+// The strings.Contains is needed because the lexer doesn't do
+// any whitespace processing (workflow .status will be seen as workflow.status)
+func hasVariableInExpression(expression, variable string) bool {
+	if !strings.Contains(expression, variable) {
 		return false
 	}
-	// Even if the expression contains `workflow.failures`, it could be the case that it represents a string (`"workflow.failures"`),
-	// not a variable, so we need to parse it and handle filter the string case.
 	tokens, err := lexer.Lex(file.NewSource(expression))
 	if err != nil {
 		return false
 	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.failures" {
-			return true
-		}
+	variableTokens, err := lexer.Lex(file.NewSource(variable))
+	if err != nil {
+		return false
 	}
-	return false
+	variableTokens = filterEOF(variableTokens)
+
+	return searchTokens(tokens, variableTokens)
 }
 
 // hasVarInEnv checks if a parameter is in env or not
