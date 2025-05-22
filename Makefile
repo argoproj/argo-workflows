@@ -245,6 +245,7 @@ else
 endif
 
 argoexec-image:
+argoexec-nonroot-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
