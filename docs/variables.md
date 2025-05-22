@@ -113,9 +113,9 @@ Extract data from JSON:
 jsonpath(inputs.parameters.json, '$.some.path')
 ```
 
-You can also use [Sprig functions](http://masterminds.github.io/sprig/):
+#### Sprig Functions
 
-Trim a string:
+You can also use a curated set of [Sprig functions](http://masterminds.github.io/sprig/):
 
 ```text
 sprig.trim(inputs.parameters['my-string-param'])
@@ -125,6 +125,26 @@ sprig.trim(inputs.parameters['my-string-param'])
     Sprig functions often do not raise errors.
     For example, if `int` is used on an invalid value, it returns `0`.
     Please review the Sprig documentation to understand which functions raise errors and which do not.
+
+Available Sprig functions include:
+
+* Random/crypto: `randAlpha`, `randAlphaNum`, `randAscii`, `randNumeric`, `randBytes`, `randInt`, `uuidv4`
+
+* Regex helpers: `regexFindAll`, `regexSplit`, `regexReplaceAll`, `regexReplaceAllLiteral`, `regexQuoteMeta`
+
+* Text formatting: `wrap`, `wrapWith`, `nospace`, `title`, `untitle`, `plural`, `initials`, `snakecase`, `camelcase`, `kebabcase`, `swapcase`, `shuffle`, `trunc`
+
+* Dictionary and reflection helpers: `dict`, `set`, `deepCopy`, `merge`, `mergeOverwrite`, `mergeRecursive`, `dig`, `pluck`, `typeIsLike`, `kindIs`, `typeOf`
+
+* Path/URL helpers: `base`, `dir`, `ext`, `clean`, `urlParse`, `urlJoin`
+
+* SemVer helpers: `semver`, `semverCompare`
+
+* Flow control: `fail`, `required`
+
+* Encoding/YAML: `b32enc`, `b32dec`, `toYaml`, `fromYaml`
+
+For complete documentation on these functions, refer to the [Sprig documentation](http://masterminds.github.io/sprig/).
 
 ## Reference
 

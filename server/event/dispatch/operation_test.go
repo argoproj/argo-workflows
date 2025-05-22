@@ -346,7 +346,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta:          metav1.ObjectMeta{GenerateName: `"my-wft-pr-"+sprig.toString(payload.foo.pr)+"-"`},
+					ObjectMeta:          metav1.ObjectMeta{GenerateName: `"my-wft-pr-"+string(payload.foo.pr)+"-"`},
 				},
 			},
 		},
