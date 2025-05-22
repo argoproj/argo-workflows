@@ -468,13 +468,12 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
-			// nextKey = key
-		}, WorkflowExistenceFunc)
+		syncManager := NewLockManager(syncLimitFunc, func(key string) {}, WorkflowExistenceFunc)
 
 		// Create two workflows that both need all semaphores
 		wf1 := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf1.Name = "wf1"
+		wf1.Spec.Synchronization.Semaphore = nil
 		wf1.Spec.Synchronization.Semaphores = []*wfv1.SemaphoreRef{
 			{
 				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
@@ -764,8 +763,7 @@ func TestMutexWfLevel(t *testing.T) {
 	})
 
 	t.Run("WorkflowLevelMutexAcquireAndReleaseWithMultipleMutex", func(t *testing.T) {
-		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
-			// nextKey = key
+		syncManager := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 		mutexes := make([]*wfv1.Mutex, 0, 10)
