@@ -13,7 +13,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aliyun/credentials-go v1.3.2
 	github.com/argoproj/argo-events v1.9.6
-	github.com/argoproj/pkg v0.13.7-0.20240704113442-a69fd34a8117
+	github.com/argoproj/pkg v0.13.7-0.20250123033407-65f2d4777bfd
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.9.0
