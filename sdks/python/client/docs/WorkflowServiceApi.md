@@ -419,6 +419,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -737,6 +738,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -1050,7 +1052,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         "key": "key_example",
                     },
                 ),
-                pod_priority=1,
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
@@ -1059,6 +1060,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         node_anti_affinity={},
                     ),
                     backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                        cap="cap_example",
                         duration="duration_example",
                         factor="factor_example",
                         max_duration="max_duration_example",
@@ -1078,6 +1080,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     run_as_group=1,
                     run_as_non_root=True,
                     run_as_user=1,
+                    se_linux_change_policy="se_linux_change_policy_example",
                     se_linux_options=SELinuxOptions(
                         level="level_example",
                         role="role_example",
@@ -1091,6 +1094,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     supplemental_groups=[
                         1,
                     ],
+                    supplemental_groups_policy="supplemental_groups_policy_example",
                     sysctls=[
                         Sysctl(
                             name="name_example",
@@ -1109,11 +1113,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 suspend=True,
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                        database=True,
                         name="name_example",
                         namespace="namespace_example",
                     ),
                     mutexes=[
                         IoArgoprojWorkflowV1alpha1Mutex(
+                            database=True,
                             name="name_example",
                             namespace="namespace_example",
                         ),
@@ -1124,6 +1130,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                            key="key_example",
+                        ),
                         namespace="namespace_example",
                     ),
                     semaphores=[
@@ -1132,6 +1141,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
+                            ),
+                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                key="key_example",
                             ),
                             namespace="namespace_example",
                         ),
@@ -1370,6 +1382,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
+                    annotations={
+                        "key": "key_example",
+                    },
                     archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -1413,6 +1428,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "fetch_example",
                             ],
                             insecure_ignore_host_key=True,
+                            insecure_skip_tls=True,
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1778,6 +1794,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             claims=[
                                 ResourceClaim(
                                     name="name_example",
+                                    request="request_example",
                                 ),
                             ],
                             limits={
@@ -2076,6 +2093,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -2270,6 +2288,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -2558,6 +2577,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -2868,6 +2888,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3284,6 +3305,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -3456,6 +3478,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3786,6 +3809,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -4002,7 +4026,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     parallelism=1,
                     plugin={},
                     pod_spec_patch="pod_spec_patch_example",
-                    priority=1,
                     priority_class_name="priority_class_name_example",
                     resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                         action="action_example",
@@ -4077,6 +4100,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -4269,6 +4293,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             node_anti_affinity={},
                         ),
                         backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                            cap="cap_example",
                             duration="duration_example",
                             factor="factor_example",
                             max_duration="max_duration_example",
@@ -4467,6 +4492,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             claims=[
                                 ResourceClaim(
                                     name="name_example",
+                                    request="request_example",
                                 ),
                             ],
                             limits={
@@ -4582,6 +4608,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -4595,6 +4622,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         supplemental_groups=[
                             1,
                         ],
+                        supplemental_groups_policy="supplemental_groups_policy_example",
                         sysctls=[
                             Sysctl(
                                 name="name_example",
@@ -4800,6 +4828,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -4975,6 +5004,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -5259,6 +5289,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -5507,11 +5538,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                            database=True,
                             name="name_example",
                             namespace="namespace_example",
                         ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
@@ -5522,6 +5555,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                key="key_example",
+                            ),
                             namespace="namespace_example",
                         ),
                         semaphores=[
@@ -5530,6 +5566,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
+                                ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
                                 ),
                                 namespace="namespace_example",
                             ),
@@ -5764,6 +5803,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             host_path=HostPathVolumeSource(
                                 path="path_example",
                                 type="type_example",
+                            ),
+                            image=ImageVolumeSource(
+                                pull_policy="pull_policy_example",
+                                reference="reference_example",
                             ),
                             iscsi=ISCSIVolumeSource(
                                 chap_auth_discovery=True,
@@ -6172,6 +6215,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -6215,6 +6261,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -6580,6 +6627,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -6878,6 +6926,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -7072,6 +7121,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -7360,6 +7410,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -7670,6 +7721,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8086,6 +8138,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -8258,6 +8311,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8588,6 +8642,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8804,7 +8859,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -8879,6 +8933,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -9071,6 +9126,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 node_anti_affinity={},
                             ),
                             backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                cap="cap_example",
                                 duration="duration_example",
                                 factor="factor_example",
                                 max_duration="max_duration_example",
@@ -9269,6 +9325,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -9384,6 +9441,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -9397,6 +9455,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             supplemental_groups=[
                                 1,
                             ],
+                            supplemental_groups_policy="supplemental_groups_policy_example",
                             sysctls=[
                                 Sysctl(
                                     name="name_example",
@@ -9602,6 +9661,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -9777,6 +9837,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -10061,6 +10122,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -10309,11 +10371,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
@@ -10324,6 +10388,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
+                                ),
                                 namespace="namespace_example",
                             ),
                             semaphores=[
@@ -10332,6 +10399,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
+                                    ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
                                     ),
                                     namespace="namespace_example",
                                 ),
@@ -10566,6 +10636,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_path=HostPathVolumeSource(
                                     path="path_example",
                                     type="type_example",
+                                ),
+                                image=ImageVolumeSource(
+                                    pull_policy="pull_policy_example",
+                                    reference="reference_example",
                                 ),
                                 iscsi=ISCSIVolumeSource(
                                     chap_auth_discovery=True,
@@ -11098,6 +11172,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             path="path_example",
                             type="type_example",
                         ),
+                        image=ImageVolumeSource(
+                            pull_policy="pull_policy_example",
+                            reference="reference_example",
+                        ),
                         iscsi=ISCSIVolumeSource(
                             chap_auth_discovery=True,
                             chap_auth_session=True,
@@ -11523,6 +11601,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -11815,6 +11894,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -12116,6 +12196,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -12549,6 +12630,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             path="path_example",
                             type="type_example",
                         ),
+                        image=ImageVolumeSource(
+                            pull_policy="pull_policy_example",
+                            reference="reference_example",
+                        ),
                         iscsi=ISCSIVolumeSource(
                             chap_auth_discovery=True,
                             chap_auth_session=True,
@@ -12961,6 +13046,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -13004,6 +13092,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -13369,6 +13458,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -13667,6 +13757,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -13861,6 +13952,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -14149,6 +14241,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -14459,6 +14552,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -14875,6 +14969,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -15047,6 +15142,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -15377,6 +15473,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -15593,7 +15690,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -15668,6 +15764,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -15860,6 +15957,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 node_anti_affinity={},
                             ),
                             backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                cap="cap_example",
                                 duration="duration_example",
                                 factor="factor_example",
                                 max_duration="max_duration_example",
@@ -16058,6 +16156,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -16173,6 +16272,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -16186,6 +16286,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             supplemental_groups=[
                                 1,
                             ],
+                            supplemental_groups_policy="supplemental_groups_policy_example",
                             sysctls=[
                                 Sysctl(
                                     name="name_example",
@@ -16391,6 +16492,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -16566,6 +16668,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -16850,6 +16953,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -17098,11 +17202,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
@@ -17113,6 +17219,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
+                                ),
                                 namespace="namespace_example",
                             ),
                             semaphores=[
@@ -17121,6 +17230,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
+                                    ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
                                     ),
                                     namespace="namespace_example",
                                 ),
@@ -17355,6 +17467,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_path=HostPathVolumeSource(
                                     path="path_example",
                                     type="type_example",
+                                ),
+                                image=ImageVolumeSource(
+                                    pull_policy="pull_policy_example",
+                                    reference="reference_example",
                                 ),
                                 iscsi=ISCSIVolumeSource(
                                     chap_auth_discovery=True,
@@ -17831,6 +17947,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -18149,6 +18266,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -18462,7 +18580,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                     ),
-                    pod_priority=1,
                     pod_priority_class_name="pod_priority_class_name_example",
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
@@ -18471,6 +18588,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             node_anti_affinity={},
                         ),
                         backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                            cap="cap_example",
                             duration="duration_example",
                             factor="factor_example",
                             max_duration="max_duration_example",
@@ -18490,6 +18608,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -18503,6 +18622,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         supplemental_groups=[
                             1,
                         ],
+                        supplemental_groups_policy="supplemental_groups_policy_example",
                         sysctls=[
                             Sysctl(
                                 name="name_example",
@@ -18521,11 +18641,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     suspend=True,
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                            database=True,
                             name="name_example",
                             namespace="namespace_example",
                         ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
@@ -18536,6 +18658,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                key="key_example",
+                            ),
                             namespace="namespace_example",
                         ),
                         semaphores=[
@@ -18544,6 +18669,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
+                                ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
                                 ),
                                 namespace="namespace_example",
                             ),
@@ -18782,6 +18910,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -18825,6 +18956,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -19190,6 +19322,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -19488,6 +19621,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -19682,6 +19816,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -19970,6 +20105,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -20280,6 +20416,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -20696,6 +20833,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -20868,6 +21006,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -21198,6 +21337,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -21414,7 +21554,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -21489,6 +21628,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -21681,6 +21821,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 node_anti_affinity={},
                             ),
                             backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                cap="cap_example",
                                 duration="duration_example",
                                 factor="factor_example",
                                 max_duration="max_duration_example",
@@ -21879,6 +22020,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -21994,6 +22136,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -22007,6 +22150,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             supplemental_groups=[
                                 1,
                             ],
+                            supplemental_groups_policy="supplemental_groups_policy_example",
                             sysctls=[
                                 Sysctl(
                                     name="name_example",
@@ -22212,6 +22356,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -22387,6 +22532,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -22671,6 +22817,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -22919,11 +23066,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
@@ -22934,6 +23083,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
+                                ),
                                 namespace="namespace_example",
                             ),
                             semaphores=[
@@ -22942,6 +23094,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
+                                    ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
                                     ),
                                     namespace="namespace_example",
                                 ),
@@ -23176,6 +23331,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_path=HostPathVolumeSource(
                                     path="path_example",
                                     type="type_example",
+                                ),
+                                image=ImageVolumeSource(
+                                    pull_policy="pull_policy_example",
+                                    reference="reference_example",
                                 ),
                                 iscsi=ISCSIVolumeSource(
                                     chap_auth_discovery=True,
@@ -23584,6 +23743,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                 ),
                             ),
+                            annotations={
+                                "key": "key_example",
+                            },
                             archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                                 archive_logs=True,
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -23627,6 +23789,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -23992,6 +24155,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -24290,6 +24454,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             claims=[
                                                 ResourceClaim(
                                                     name="name_example",
+                                                    request="request_example",
                                                 ),
                                             ],
                                             limits={
@@ -24484,6 +24649,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -24772,6 +24938,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     "fetch_example",
                                                                 ],
                                                                 insecure_ignore_host_key=True,
+                                                                insecure_skip_tls=True,
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -25082,6 +25249,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -25498,6 +25666,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -25670,6 +25839,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -26000,6 +26170,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -26216,7 +26387,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             parallelism=1,
                             plugin={},
                             pod_spec_patch="pod_spec_patch_example",
-                            priority=1,
                             priority_class_name="priority_class_name_example",
                             resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                                 action="action_example",
@@ -26291,6 +26461,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -26483,6 +26654,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     node_anti_affinity={},
                                 ),
                                 backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                    cap="cap_example",
                                     duration="duration_example",
                                     factor="factor_example",
                                     max_duration="max_duration_example",
@@ -26681,6 +26853,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -26796,6 +26969,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_group=1,
                                 run_as_non_root=True,
                                 run_as_user=1,
+                                se_linux_change_policy="se_linux_change_policy_example",
                                 se_linux_options=SELinuxOptions(
                                     level="level_example",
                                     role="role_example",
@@ -26809,6 +26983,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 supplemental_groups=[
                                     1,
                                 ],
+                                supplemental_groups_policy="supplemental_groups_policy_example",
                                 sysctls=[
                                     Sysctl(
                                         name="name_example",
@@ -27014,6 +27189,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -27189,6 +27365,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -27473,6 +27650,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     "fetch_example",
                                                                 ],
                                                                 insecure_ignore_host_key=True,
+                                                                insecure_skip_tls=True,
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -27721,11 +27899,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                                 mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                                 mutexes=[
                                     IoArgoprojWorkflowV1alpha1Mutex(
+                                        database=True,
                                         name="name_example",
                                         namespace="namespace_example",
                                     ),
@@ -27736,6 +27916,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
+                                    ),
                                     namespace="namespace_example",
                                 ),
                                 semaphores=[
@@ -27744,6 +27927,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
+                                        ),
+                                        database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                            key="key_example",
                                         ),
                                         namespace="namespace_example",
                                     ),
@@ -27978,6 +28164,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_path=HostPathVolumeSource(
                                         path="path_example",
                                         type="type_example",
+                                    ),
+                                    image=ImageVolumeSource(
+                                        pull_policy="pull_policy_example",
+                                        reference="reference_example",
                                     ),
                                     iscsi=ISCSIVolumeSource(
                                         chap_auth_discovery=True,
@@ -28510,6 +28700,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                                 type="type_example",
                             ),
+                            image=ImageVolumeSource(
+                                pull_policy="pull_policy_example",
+                                reference="reference_example",
+                            ),
                             iscsi=ISCSIVolumeSource(
                                 chap_auth_discovery=True,
                                 chap_auth_session=True,
@@ -28826,6 +29020,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     delete_options_dry_run = [
         "deleteOptions.dryRun_example",
     ] # [str] | When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType=atomic. (optional)
+    delete_options_ignore_store_read_error_with_cluster_breaking_potential = True # bool | if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional. (optional)
     force = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
@@ -28838,7 +29033,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.delete_workflow(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run, force=force)
+        api_response = api_instance.delete_workflow(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run, delete_options_ignore_store_read_error_with_cluster_breaking_potential=delete_options_ignore_store_read_error_with_cluster_breaking_potential, force=force)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->delete_workflow: %s\n" % e)
@@ -28857,6 +29052,7 @@ Name | Type | Description  | Notes
  **delete_options_orphan_dependents** | **bool**| Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional. | [optional]
  **delete_options_propagation_policy** | **str**| Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: &#39;Orphan&#39; - orphan the dependents; &#39;Background&#39; - allow the garbage collector to delete the dependents in the background; &#39;Foreground&#39; - a cascading policy that deletes all dependents in the foreground. +optional. | [optional]
  **delete_options_dry_run** | **[str]**| When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional +listType&#x3D;atomic. | [optional]
+ **delete_options_ignore_store_read_error_with_cluster_breaking_potential** | **bool**| if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it +optional. | [optional]
  **force** | **bool**|  | [optional]
 
 ### Return type
@@ -29360,6 +29556,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -29678,6 +29875,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -29991,7 +30189,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         "key": "key_example",
                     },
                 ),
-                pod_priority=1,
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
@@ -30000,6 +30197,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         node_anti_affinity={},
                     ),
                     backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                        cap="cap_example",
                         duration="duration_example",
                         factor="factor_example",
                         max_duration="max_duration_example",
@@ -30019,6 +30217,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     run_as_group=1,
                     run_as_non_root=True,
                     run_as_user=1,
+                    se_linux_change_policy="se_linux_change_policy_example",
                     se_linux_options=SELinuxOptions(
                         level="level_example",
                         role="role_example",
@@ -30032,6 +30231,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     supplemental_groups=[
                         1,
                     ],
+                    supplemental_groups_policy="supplemental_groups_policy_example",
                     sysctls=[
                         Sysctl(
                             name="name_example",
@@ -30050,11 +30250,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 suspend=True,
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                        database=True,
                         name="name_example",
                         namespace="namespace_example",
                     ),
                     mutexes=[
                         IoArgoprojWorkflowV1alpha1Mutex(
+                            database=True,
                             name="name_example",
                             namespace="namespace_example",
                         ),
@@ -30065,6 +30267,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                            key="key_example",
+                        ),
                         namespace="namespace_example",
                     ),
                     semaphores=[
@@ -30073,6 +30278,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
+                            ),
+                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                key="key_example",
                             ),
                             namespace="namespace_example",
                         ),
@@ -30311,6 +30519,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                     ),
+                    annotations={
+                        "key": "key_example",
+                    },
                     archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -30354,6 +30565,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "fetch_example",
                             ],
                             insecure_ignore_host_key=True,
+                            insecure_skip_tls=True,
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -30719,6 +30931,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             claims=[
                                 ResourceClaim(
                                     name="name_example",
+                                    request="request_example",
                                 ),
                             ],
                             limits={
@@ -31017,6 +31230,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -31211,6 +31425,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -31499,6 +31714,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -31809,6 +32025,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -32225,6 +32442,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -32397,6 +32615,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -32727,6 +32946,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -32943,7 +33163,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     parallelism=1,
                     plugin={},
                     pod_spec_patch="pod_spec_patch_example",
-                    priority=1,
                     priority_class_name="priority_class_name_example",
                     resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                         action="action_example",
@@ -33018,6 +33237,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -33210,6 +33430,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             node_anti_affinity={},
                         ),
                         backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                            cap="cap_example",
                             duration="duration_example",
                             factor="factor_example",
                             max_duration="max_duration_example",
@@ -33408,6 +33629,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             claims=[
                                 ResourceClaim(
                                     name="name_example",
+                                    request="request_example",
                                 ),
                             ],
                             limits={
@@ -33523,6 +33745,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -33536,6 +33759,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         supplemental_groups=[
                             1,
                         ],
+                        supplemental_groups_policy="supplemental_groups_policy_example",
                         sysctls=[
                             Sysctl(
                                 name="name_example",
@@ -33741,6 +33965,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -33916,6 +34141,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -34200,6 +34426,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -34448,11 +34675,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                            database=True,
                             name="name_example",
                             namespace="namespace_example",
                         ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
@@ -34463,6 +34692,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                key="key_example",
+                            ),
                             namespace="namespace_example",
                         ),
                         semaphores=[
@@ -34471,6 +34703,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
+                                ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
                                 ),
                                 namespace="namespace_example",
                             ),
@@ -34705,6 +34940,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             host_path=HostPathVolumeSource(
                                 path="path_example",
                                 type="type_example",
+                            ),
+                            image=ImageVolumeSource(
+                                pull_policy="pull_policy_example",
+                                reference="reference_example",
                             ),
                             iscsi=ISCSIVolumeSource(
                                 chap_auth_discovery=True,
@@ -35113,6 +35352,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -35156,6 +35398,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -35521,6 +35764,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -35819,6 +36063,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -36013,6 +36258,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -36301,6 +36547,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -36611,6 +36858,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -37027,6 +37275,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -37199,6 +37448,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -37529,6 +37779,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -37745,7 +37996,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -37820,6 +38070,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -38012,6 +38263,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 node_anti_affinity={},
                             ),
                             backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                cap="cap_example",
                                 duration="duration_example",
                                 factor="factor_example",
                                 max_duration="max_duration_example",
@@ -38210,6 +38462,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -38325,6 +38578,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -38338,6 +38592,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             supplemental_groups=[
                                 1,
                             ],
+                            supplemental_groups_policy="supplemental_groups_policy_example",
                             sysctls=[
                                 Sysctl(
                                     name="name_example",
@@ -38543,6 +38798,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -38718,6 +38974,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -39002,6 +39259,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -39250,11 +39508,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
@@ -39265,6 +39525,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
+                                ),
                                 namespace="namespace_example",
                             ),
                             semaphores=[
@@ -39273,6 +39536,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
+                                    ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
                                     ),
                                     namespace="namespace_example",
                                 ),
@@ -39507,6 +39773,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_path=HostPathVolumeSource(
                                     path="path_example",
                                     type="type_example",
+                                ),
+                                image=ImageVolumeSource(
+                                    pull_policy="pull_policy_example",
+                                    reference="reference_example",
                                 ),
                                 iscsi=ISCSIVolumeSource(
                                     chap_auth_discovery=True,
@@ -40039,6 +40309,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             path="path_example",
                             type="type_example",
                         ),
+                        image=ImageVolumeSource(
+                            pull_policy="pull_policy_example",
+                            reference="reference_example",
+                        ),
                         iscsi=ISCSIVolumeSource(
                             chap_auth_discovery=True,
                             chap_auth_session=True,
@@ -40464,6 +40738,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -40756,6 +41031,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -41057,6 +41333,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -41490,6 +41767,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             path="path_example",
                             type="type_example",
                         ),
+                        image=ImageVolumeSource(
+                            pull_policy="pull_policy_example",
+                            reference="reference_example",
+                        ),
                         iscsi=ISCSIVolumeSource(
                             chap_auth_discovery=True,
                             chap_auth_session=True,
@@ -41902,6 +42183,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -41945,6 +42229,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -42310,6 +42595,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -42608,6 +42894,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -42802,6 +43089,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -43090,6 +43378,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -43400,6 +43689,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -43816,6 +44106,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -43988,6 +44279,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -44318,6 +44610,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -44534,7 +44827,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -44609,6 +44901,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -44801,6 +45094,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 node_anti_affinity={},
                             ),
                             backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                cap="cap_example",
                                 duration="duration_example",
                                 factor="factor_example",
                                 max_duration="max_duration_example",
@@ -44999,6 +45293,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -45114,6 +45409,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -45127,6 +45423,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             supplemental_groups=[
                                 1,
                             ],
+                            supplemental_groups_policy="supplemental_groups_policy_example",
                             sysctls=[
                                 Sysctl(
                                     name="name_example",
@@ -45332,6 +45629,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -45507,6 +45805,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -45791,6 +46090,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -46039,11 +46339,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
@@ -46054,6 +46356,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
+                                ),
                                 namespace="namespace_example",
                             ),
                             semaphores=[
@@ -46062,6 +46367,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
+                                    ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
                                     ),
                                     namespace="namespace_example",
                                 ),
@@ -46296,6 +46604,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_path=HostPathVolumeSource(
                                     path="path_example",
                                     type="type_example",
+                                ),
+                                image=ImageVolumeSource(
+                                    pull_policy="pull_policy_example",
+                                    reference="reference_example",
                                 ),
                                 iscsi=ISCSIVolumeSource(
                                     chap_auth_discovery=True,
@@ -46772,6 +47084,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -47090,6 +47403,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -47403,7 +47717,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                     ),
-                    pod_priority=1,
                     pod_priority_class_name="pod_priority_class_name_example",
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
@@ -47412,6 +47725,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             node_anti_affinity={},
                         ),
                         backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                            cap="cap_example",
                             duration="duration_example",
                             factor="factor_example",
                             max_duration="max_duration_example",
@@ -47431,6 +47745,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
+                        se_linux_change_policy="se_linux_change_policy_example",
                         se_linux_options=SELinuxOptions(
                             level="level_example",
                             role="role_example",
@@ -47444,6 +47759,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         supplemental_groups=[
                             1,
                         ],
+                        supplemental_groups_policy="supplemental_groups_policy_example",
                         sysctls=[
                             Sysctl(
                                 name="name_example",
@@ -47462,11 +47778,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     suspend=True,
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                            database=True,
                             name="name_example",
                             namespace="namespace_example",
                         ),
                         mutexes=[
                             IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
@@ -47477,6 +47795,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                key="key_example",
+                            ),
                             namespace="namespace_example",
                         ),
                         semaphores=[
@@ -47485,6 +47806,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
+                                ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
                                 ),
                                 namespace="namespace_example",
                             ),
@@ -47723,6 +48047,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                         ),
+                        annotations={
+                            "key": "key_example",
+                        },
                         archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                             archive_logs=True,
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -47766,6 +48093,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -48131,6 +48459,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -48429,6 +48758,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -48623,6 +48953,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -48911,6 +49242,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -49221,6 +49553,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -49637,6 +49970,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -49809,6 +50143,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -50139,6 +50474,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -50355,7 +50691,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         parallelism=1,
                         plugin={},
                         pod_spec_patch="pod_spec_patch_example",
-                        priority=1,
                         priority_class_name="priority_class_name_example",
                         resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                             action="action_example",
@@ -50430,6 +50765,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -50622,6 +50958,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 node_anti_affinity={},
                             ),
                             backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                cap="cap_example",
                                 duration="duration_example",
                                 factor="factor_example",
                                 max_duration="max_duration_example",
@@ -50820,6 +51157,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 claims=[
                                     ResourceClaim(
                                         name="name_example",
+                                        request="request_example",
                                     ),
                                 ],
                                 limits={
@@ -50935,6 +51273,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             run_as_group=1,
                             run_as_non_root=True,
                             run_as_user=1,
+                            se_linux_change_policy="se_linux_change_policy_example",
                             se_linux_options=SELinuxOptions(
                                 level="level_example",
                                 role="role_example",
@@ -50948,6 +51287,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             supplemental_groups=[
                                 1,
                             ],
+                            supplemental_groups_policy="supplemental_groups_policy_example",
                             sysctls=[
                                 Sysctl(
                                     name="name_example",
@@ -51153,6 +51493,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -51328,6 +51669,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -51612,6 +51954,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -51860,11 +52203,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                database=True,
                                 name="name_example",
                                 namespace="namespace_example",
                             ),
                             mutexes=[
                                 IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
@@ -51875,6 +52220,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                    key="key_example",
+                                ),
                                 namespace="namespace_example",
                             ),
                             semaphores=[
@@ -51883,6 +52231,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
+                                    ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
                                     ),
                                     namespace="namespace_example",
                                 ),
@@ -52117,6 +52468,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_path=HostPathVolumeSource(
                                     path="path_example",
                                     type="type_example",
+                                ),
+                                image=ImageVolumeSource(
+                                    pull_policy="pull_policy_example",
+                                    reference="reference_example",
                                 ),
                                 iscsi=ISCSIVolumeSource(
                                     chap_auth_discovery=True,
@@ -52525,6 +52880,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                 ),
                             ),
+                            annotations={
+                                "key": "key_example",
+                            },
                             archive_location=IoArgoprojWorkflowV1alpha1ArtifactLocation(
                                 archive_logs=True,
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -52568,6 +52926,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -52933,6 +53292,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -53231,6 +53591,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             claims=[
                                                 ResourceClaim(
                                                     name="name_example",
+                                                    request="request_example",
                                                 ),
                                             ],
                                             limits={
@@ -53425,6 +53786,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -53713,6 +54075,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     "fetch_example",
                                                                 ],
                                                                 insecure_ignore_host_key=True,
+                                                                insecure_skip_tls=True,
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -54023,6 +54386,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -54439,6 +54803,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -54611,6 +54976,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -54941,6 +55307,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -55157,7 +55524,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             parallelism=1,
                             plugin={},
                             pod_spec_patch="pod_spec_patch_example",
-                            priority=1,
                             priority_class_name="priority_class_name_example",
                             resource=IoArgoprojWorkflowV1alpha1ResourceTemplate(
                                 action="action_example",
@@ -55232,6 +55598,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 "fetch_example",
                                             ],
                                             insecure_ignore_host_key=True,
+                                            insecure_skip_tls=True,
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -55424,6 +55791,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     node_anti_affinity={},
                                 ),
                                 backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                    cap="cap_example",
                                     duration="duration_example",
                                     factor="factor_example",
                                     max_duration="max_duration_example",
@@ -55622,6 +55990,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     claims=[
                                         ResourceClaim(
                                             name="name_example",
+                                            request="request_example",
                                         ),
                                     ],
                                     limits={
@@ -55737,6 +56106,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 run_as_group=1,
                                 run_as_non_root=True,
                                 run_as_user=1,
+                                se_linux_change_policy="se_linux_change_policy_example",
                                 se_linux_options=SELinuxOptions(
                                     level="level_example",
                                     role="role_example",
@@ -55750,6 +56120,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 supplemental_groups=[
                                     1,
                                 ],
+                                supplemental_groups_policy="supplemental_groups_policy_example",
                                 sysctls=[
                                     Sysctl(
                                         name="name_example",
@@ -55955,6 +56326,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         claims=[
                                             ResourceClaim(
                                                 name="name_example",
+                                                request="request_example",
                                             ),
                                         ],
                                         limits={
@@ -56130,6 +56502,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -56414,6 +56787,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     "fetch_example",
                                                                 ],
                                                                 insecure_ignore_host_key=True,
+                                                                insecure_skip_tls=True,
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -56662,11 +57036,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                                 mutex=IoArgoprojWorkflowV1alpha1Mutex(
+                                    database=True,
                                     name="name_example",
                                     namespace="namespace_example",
                                 ),
                                 mutexes=[
                                     IoArgoprojWorkflowV1alpha1Mutex(
+                                        database=True,
                                         name="name_example",
                                         namespace="namespace_example",
                                     ),
@@ -56677,6 +57053,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                        key="key_example",
+                                    ),
                                     namespace="namespace_example",
                                 ),
                                 semaphores=[
@@ -56685,6 +57064,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
+                                        ),
+                                        database=IoArgoprojWorkflowV1alpha1SyncDatabaseRef(
+                                            key="key_example",
                                         ),
                                         namespace="namespace_example",
                                     ),
@@ -56919,6 +57301,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_path=HostPathVolumeSource(
                                         path="path_example",
                                         type="type_example",
+                                    ),
+                                    image=ImageVolumeSource(
+                                        pull_policy="pull_policy_example",
+                                        reference="reference_example",
                                     ),
                                     iscsi=ISCSIVolumeSource(
                                         chap_auth_discovery=True,
@@ -57451,6 +57837,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                                 type="type_example",
                             ),
+                            image=ImageVolumeSource(
+                                pull_policy="pull_policy_example",
+                                reference="reference_example",
+                            ),
                             iscsi=ISCSIVolumeSource(
                                 chap_auth_discovery=True,
                                 chap_auth_session=True,
@@ -57770,6 +58160,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
     list_options_continue = "listOptions.continue_example" # str | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. (optional)
     list_options_send_initial_events = True # bool | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional (optional)
     fields = "fields_example" # str | Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\". (optional)
+    name_filter = "nameFilter_example" # str | Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact. (optional)
+    created_after = "createdAfter_example" # str |  (optional)
+    finished_before = "finishedBefore_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -57781,7 +58174,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.list_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events, fields=fields)
+        api_response = api_instance.list_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events, fields=fields, name_filter=name_filter, created_after=created_after, finished_before=finished_before)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->list_workflows: %s\n" % e)
@@ -57804,6 +58197,9 @@ Name | Type | Description  | Notes
  **list_options_continue** | **str**| The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | [optional]
  **list_options_send_initial_events** | **bool**| &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;io.k8s.initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise. +optional | [optional]
  **fields** | **str**| Fields to be included or excluded in the response. e.g. \&quot;items.spec,items.status.phase\&quot;, \&quot;-items.status.nodes\&quot;. | [optional]
+ **name_filter** | **str**| Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact. | [optional]
+ **created_after** | **str**|  | [optional]
+ **finished_before** | **str**|  | [optional]
 
 ### Return type
 
@@ -57875,9 +58271,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
     log_options_since_time_seconds = "logOptions.sinceTime.seconds_example" # str | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. (optional)
     log_options_since_time_nanos = 1 # int | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. (optional)
     log_options_timestamps = True # bool | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. (optional)
-    log_options_tail_lines = "logOptions.tailLines_example" # str | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. (optional)
+    log_options_tail_lines = "logOptions.tailLines_example" # str | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional. (optional)
     log_options_limit_bytes = "logOptions.limitBytes_example" # str | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. (optional)
     log_options_insecure_skip_tls_verify_backend = True # bool | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. (optional)
+    log_options_stream = "logOptions.stream_example" # str | Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional. (optional)
     grep = "grep_example" # str |  (optional)
     selector = "selector_example" # str |  (optional)
 
@@ -57893,7 +58290,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
-        api_response = api_instance.pod_logs(namespace, name, pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
+        api_response = api_instance.pod_logs(namespace, name, pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, log_options_stream=log_options_stream, grep=grep, selector=selector)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->pod_logs: %s\n" % e)
@@ -57914,9 +58311,10 @@ Name | Type | Description  | Notes
  **log_options_since_time_seconds** | **str**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
  **log_options_since_time_nanos** | **int**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
  **log_options_timestamps** | **bool**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
- **log_options_tail_lines** | **str**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
+ **log_options_tail_lines** | **str**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +optional. | [optional]
  **log_options_limit_bytes** | **str**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
  **log_options_insecure_skip_tls_verify_backend** | **bool**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
+ **log_options_stream** | **str**| Specify which container log stream to return to the client. Acceptable values are \&quot;All\&quot;, \&quot;Stdout\&quot; and \&quot;Stderr\&quot;. If not specified, \&quot;All\&quot; is used, and both stdout and stderr are returned interleaved. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +featureGate&#x3D;PodLogsQuerySplitStreams +optional. | [optional]
  **grep** | **str**|  | [optional]
  **selector** | **str**|  | [optional]
 
@@ -58920,9 +59318,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
     log_options_since_time_seconds = "logOptions.sinceTime.seconds_example" # str | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. (optional)
     log_options_since_time_nanos = 1 # int | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. (optional)
     log_options_timestamps = True # bool | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. (optional)
-    log_options_tail_lines = "logOptions.tailLines_example" # str | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. (optional)
+    log_options_tail_lines = "logOptions.tailLines_example" # str | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +optional. (optional)
     log_options_limit_bytes = "logOptions.limitBytes_example" # str | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. (optional)
     log_options_insecure_skip_tls_verify_backend = True # bool | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. (optional)
+    log_options_stream = "logOptions.stream_example" # str | Specify which container log stream to return to the client. Acceptable values are \"All\", \"Stdout\" and \"Stderr\". If not specified, \"All\" is used, and both stdout and stderr are returned interleaved. Note that when \"TailLines\" is specified, \"Stream\" can only be set to nil or \"All\". +featureGate=PodLogsQuerySplitStreams +optional. (optional)
     grep = "grep_example" # str |  (optional)
     selector = "selector_example" # str |  (optional)
 
@@ -58936,7 +59335,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_logs(namespace, name, pod_name=pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
+        api_response = api_instance.workflow_logs(namespace, name, pod_name=pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, log_options_stream=log_options_stream, grep=grep, selector=selector)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->workflow_logs: %s\n" % e)
@@ -58957,9 +59356,10 @@ Name | Type | Description  | Notes
  **log_options_since_time_seconds** | **str**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
  **log_options_since_time_nanos** | **int**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
  **log_options_timestamps** | **bool**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
- **log_options_tail_lines** | **str**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
+ **log_options_tail_lines** | **str**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +optional. | [optional]
  **log_options_limit_bytes** | **str**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
  **log_options_insecure_skip_tls_verify_backend** | **bool**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
+ **log_options_stream** | **str**| Specify which container log stream to return to the client. Acceptable values are \&quot;All\&quot;, \&quot;Stdout\&quot; and \&quot;Stderr\&quot;. If not specified, \&quot;All\&quot; is used, and both stdout and stderr are returned interleaved. Note that when \&quot;TailLines\&quot; is specified, \&quot;Stream\&quot; can only be set to nil or \&quot;All\&quot;. +featureGate&#x3D;PodLogsQuerySplitStreams +optional. | [optional]
  **grep** | **str**|  | [optional]
  **selector** | **str**|  | [optional]
 

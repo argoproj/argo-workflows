@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -19,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 )
 
 const (
@@ -88,8 +88,8 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 
 	ARGO_BASE_HREF=/argo
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 	}
 
@@ -125,14 +125,25 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	var logLevel string
 	var glogLevel int
 	var verbose bool
+	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
+	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {
 			logLevel = "debug"
 			glogLevel = 6
 		}
-		cli.SetLogLevel(logLevel)
+		cmdutil.SetLogLevel(logLevel)
 		cmdutil.SetGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
+
+		// Disable printing of usage string on errors, except for argument validation errors
+		// (i.e. when the "Args" function returns an error).
+		//
+		// This is set here instead of directly in "command" because Cobra
+		// executes PersistentPreRun after performing argument validation:
+		// https://github.com/spf13/cobra/blob/3a5efaede9d389703a792e2f7bfe3a64bc82ced9/command.go#L939-L957
+		cmd.SilenceUsage = true
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")

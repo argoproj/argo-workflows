@@ -1,9 +1,9 @@
-//go:build !windows
-
 package v1alpha1
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
@@ -204,7 +204,7 @@ func TestArtifact_ValidatePath(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: ""}
 		err := a1.CleanPath()
 		require.EqualError(t, err, "Artifact 'a1' did not specify a path")
-		assert.Equal(t, "", a1.Path)
+		assert.Empty(t, a1.Path)
 	})
 
 	t.Run("directory traversal above safe base dir fails", func(t *testing.T) {
@@ -255,54 +255,61 @@ func TestArtifact_ValidatePath(t *testing.T) {
 		a3 := Artifact{Name: "a3", Path: "../.."}
 		err = a3.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "../..", a3.Path)
+		assert.Equal(t, filepath.Join("..", ".."), a3.Path)
 
 		a4 := Artifact{Name: "a4", Path: "../etc/passwd"}
 		err = a4.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "../etc/passwd", a4.Path)
+		assert.Equal(t, filepath.Join("..", "etc", "passwd"), a4.Path)
 	})
 
 	t.Run("directory traversal ending within safe base dir succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/../tmp/abcd"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/subdir/../../tmp/subdir/abcd"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/subdir/abcd", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "subdir", "abcd")), a2.Path)
 	})
 
 	t.Run("artifact path filenames are allowed to contain double dots", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/..artifact.txt"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/..artifact.txt", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "..artifact.txt")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/artif..t.txt"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/artif..t.txt", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "artif..t.txt")), a2.Path)
 	})
 
 	t.Run("normal artifact path succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a2.Path)
 
 		a3 := Artifact{Name: "a3", Path: "/tmp/abcd/some-artifact.txt"}
 		err = a3.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd/some-artifact.txt", a3.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd", "some-artifact.txt")), a3.Path)
 	})
+}
+
+func ensureRootPathSeparator(p string) string {
+	if p[0] == os.PathSeparator {
+		return p
+	}
+	return string(os.PathSeparator) + p
 }
 
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
@@ -600,7 +607,7 @@ func TestArtifactRepositoryRef_GetConfigMapOr(t *testing.T) {
 
 func TestArtifactRepositoryRef_GetKeyOr(t *testing.T) {
 	var r *ArtifactRepositoryRef
-	assert.Equal(t, "", r.GetKeyOr(""))
+	assert.Empty(t, r.GetKeyOr(""))
 	assert.Equal(t, "my-key", (&ArtifactRepositoryRef{}).GetKeyOr("my-key"))
 	assert.Equal(t, "my-key", (&ArtifactRepositoryRef{Key: "my-key"}).GetKeyOr(""))
 }
@@ -747,7 +754,7 @@ func TestNestedChildren(t *testing.T) {
 			assert.False(t, ok, "got %s", child.Name)
 			found[child.Name] = true
 		}
-		assert.Equal(t, len(nodes), len(found))
+		assert.Len(t, found, len(nodes))
 	})
 }
 
@@ -960,7 +967,7 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	countArtifactName := func(ars ArtifactSearchResults, name string) int {
 		count := 0
 		for _, ar := range ars {
-			if ar.Artifact.Name == name {
+			if ar.Name == name {
 				count++
 			}
 		}
@@ -1015,7 +1022,7 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	queriedArtifactSearchResults = wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifactSearchResults)
 	assert.Len(t, queriedArtifactSearchResults, 1)
-	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[0].Name)
 	assert.Equal(t, "node-bar", queriedArtifactSearchResults[0].NodeID)
 
 	// artifact name
@@ -1024,7 +1031,7 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	queriedArtifactSearchResults = wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifactSearchResults)
 	assert.Len(t, queriedArtifactSearchResults, 1)
-	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Name)
 	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
 
 	// node id
@@ -1051,7 +1058,7 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	queriedArtifactSearchResults = wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifactSearchResults)
 	assert.Len(t, queriedArtifactSearchResults, 1)
-	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Name)
 	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
 }
 
@@ -1096,11 +1103,11 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 		},
 		Spec: WorkflowSpec{
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "test",
 					},
-				}},
+				}}},
 			},
 		},
 	}
@@ -1111,38 +1118,50 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 		{
 			Name: "t1",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "template",
+				Semaphores: []*SemaphoreRef{
+					{
+						ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "template",
+							},
+						},
 					},
-				}},
+					{
+						ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "template-b",
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			Name: "t1",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "template1",
 					},
-				}},
+				}}},
 			},
 		},
 		{
 			Name: "t2",
 			Synchronization: &Synchronization{
-				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				Semaphores: []*SemaphoreRef{{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "template",
 					},
-				}},
+				}}},
 			},
 		},
 	}
 	keys = wf.GetSemaphoreKeys()
-	assert.Len(keys, 3)
+	assert.Len(keys, 4)
 	assert.Contains(keys, "test/test")
 	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template-b")
 	assert.Contains(keys, "test/template1")
 
 	spec := wf.Spec.DeepCopy()
@@ -1153,9 +1172,10 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 	}
 	wf.Status.StoredWorkflowSpec = spec
 	keys = wf.GetSemaphoreKeys()
-	assert.Len(keys, 3)
+	assert.Len(keys, 4)
 	assert.Contains(keys, "test/test")
 	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template-b")
 	assert.Contains(keys, "test/template1")
 }
 
@@ -1373,7 +1393,7 @@ func TestDAGTask_GetExitTemplate(t *testing.T) {
 	}
 	task := DAGTask{
 		Hooks: map[LifecycleEvent]LifecycleHook{
-			ExitLifecycleEvent: LifecycleHook{
+			ExitLifecycleEvent: {
 				Template:  "test",
 				Arguments: args,
 			},
@@ -1401,7 +1421,7 @@ func TestStep_GetExitTemplate(t *testing.T) {
 	}
 	task := WorkflowStep{
 		Hooks: map[LifecycleEvent]LifecycleHook{
-			ExitLifecycleEvent: LifecycleHook{
+			ExitLifecycleEvent: {
 				Template:  "test",
 				Arguments: args,
 			},
@@ -1600,7 +1620,7 @@ func TestInlineStore(t *testing.T) {
 						{
 							Name: "step-template",
 							Steps: []ParallelSteps{
-								ParallelSteps{
+								{
 									[]WorkflowStep{
 										{
 											Name: "hello1",

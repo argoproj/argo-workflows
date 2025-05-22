@@ -15,10 +15,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 
+	"github.com/upper/db/v4"
+
+	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
@@ -39,6 +44,8 @@ type When struct {
 	hydrator          hydrator.Interface
 	kubeClient        kubernetes.Interface
 	bearerToken       string
+	restConfig        *rest.Config
+	config            *config.Config
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -219,6 +226,7 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed
 		}), "to have failed pod"
 	}
+	ToBePending = ToHavePhase(wfv1.WorkflowPending)
 )
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
@@ -243,35 +251,71 @@ var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
 	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutex"
 }
 
+var ToBeHoldingAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil && len(wf.Status.Synchronization.Mutex.Holding) > 0, "to be holding a mutex"
+}
+
+var ToBeWaitingOnASemaphore Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Semaphore != nil && len(wf.Status.Synchronization.Semaphore.Waiting) > 0, "to be waiting on a semaphore"
+}
+
+var ToBeHoldingASemaphore Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Semaphore != nil && len(wf.Status.Synchronization.Semaphore.Holding) > 0, "to be holding a semaphore"
+}
+
 type WorkflowCompletionOkay bool
+
+func (w *When) listOptions() metav1.ListOptions {
+	w.t.Helper()
+	fieldSelector := ""
+	if w.wf != nil {
+		fieldSelector = "metadata.name=" + w.wf.Name
+	}
+
+	labelSelector := Label
+	if w.cronWf != nil {
+		labelSelector += "," + common.LabelKeyCronWorkflow + "=" + w.cronWf.Name
+	}
+	return metav1.ListOptions{LabelSelector: labelSelector, FieldSelector: fieldSelector}
+}
+
+func describeListOptions(opts metav1.ListOptions) string {
+	out := ""
+	if opts.FieldSelector != "" {
+		out += fmt.Sprintf("field selector '%s'", opts.FieldSelector)
+		if opts.LabelSelector != "" {
+			out += " and "
+		}
+	}
+	if opts.LabelSelector != "" {
+		out += fmt.Sprintf("label selector '%s'", opts.LabelSelector)
+	}
+	return out
+}
 
 // Wait for a workflow to meet a condition:
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
-// * `string` - either:
-//   - the workflow's name (not spaces)
-//   - or a new message (if it contain spaces) - default "to finish"
 //
-// * `WorkflowCompletionOkay“ (bool alias): if this is true, we won't stop checking for the other options
+// * `metav1.ListOptions` - override label/field selectors
+//
+// * `WorkflowCompletionOkay" (bool alias): if this is true, we won't stop checking for the other options
 //   - just because the Workflow completed
 //
 // * `Condition` - a condition - `ToFinish` by default
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
-	workflowName := ""
-	if w.wf != nil {
-		workflowName = w.wf.Name
-	}
 	condition := ToBeDone
+	listOptions := w.listOptions()
 	var workflowCompletionOkay WorkflowCompletionOkay
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
 			// Note that we add the timeoutBias (defaults to 0), set by environment variable E2E_WAIT_TIMEOUT_BIAS
 			timeout = v + timeoutBias
-		case string:
-			workflowName = v
+		case metav1.ListOptions:
+			listOptions = v
 		case Condition:
 			condition = v
 		case WorkflowCompletionOkay:
@@ -282,19 +326,13 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 
 	start := time.Now()
-
-	fieldSelector := ""
-	if workflowName != "" {
-		fieldSelector = "metadata.name=" + workflowName
-	}
-
-	_, _ = fmt.Println("Waiting", timeout.String(), "for workflow", fieldSelector)
+	_, _ = fmt.Printf("Waiting up to %s for workflow with %s\n", timeout, describeListOptions(listOptions))
 
 	ctx := context.Background()
-	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
-	watch, err := w.client.Watch(ctx, opts)
+
+	watch, err := w.client.Watch(ctx, listOptions)
 	if err != nil {
-		w.t.Error(err)
+		w.t.Fatal(err)
 	}
 	defer watch.Stop()
 	timeoutCh := make(chan bool, 1)
@@ -333,11 +371,29 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 }
 
-func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition func(list []wfv1.Workflow) bool) *When {
+// Waits for workflow to be created with different name than the current one
+func (w *When) WaitForNewWorkflow(condition Condition) *When {
 	w.t.Helper()
-	timeout := defaultTimeout
+	if w.wf == nil {
+		w.t.Fatal("No previous workflow")
+	}
+	listOptions := w.listOptions()
+	listOptions.FieldSelector = "metadata.name!=" + w.wf.Name
+	w.wf = nil
+	return w.WaitForWorkflow(condition, WorkflowCompletionOkay(true), listOptions)
+}
+
+func (w *When) WaitForWorkflowListCount(timeout time.Duration, count int) *When {
+	w.t.Helper()
+	return w.waitForWorkflowListCount(timeout+timeoutBias, w.listOptions().LabelSelector, count)
+}
+
+func (w *When) waitForWorkflowListCount(timeout time.Duration, labelSelector string, count int) *When {
+	w.t.Helper()
+
 	start := time.Now()
-	_, _ = fmt.Println("Waiting", timeout.String(), "for workflows", listOptions)
+	opts := metav1.ListOptions{LabelSelector: labelSelector}
+	_, _ = fmt.Printf("Waiting up to %s for %d workflows with %s\n", timeout, count, describeListOptions(opts))
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	for {
@@ -346,12 +402,12 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 			w.t.Errorf("timeout after %v waiting for condition", timeout)
 			return w
 		default:
-			wfList, err := w.client.List(ctx, listOptions)
+			wfList, err := w.client.List(ctx, opts)
 			if err != nil {
 				w.t.Error(err)
 				return w
 			}
-			if ok := condition(wfList.Items); ok {
+			if len(wfList.Items) == count {
 				_, _ = fmt.Printf("Condition met after %s\n", time.Since(start).Truncate(time.Second))
 				return w
 			}
@@ -361,11 +417,55 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 }
 
 func (w *When) WaitForWorkflowDeletion() *When {
-	fieldSelector := "metadata.name=" + w.wf.Name
-	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
-	return w.WaitForWorkflowList(opts, func(list []wfv1.Workflow) bool {
-		return len(list) == 0
-	})
+	w.t.Helper()
+	return w.WaitForWorkflowListCount(defaultTimeout, 0)
+}
+
+func (w *When) WaitForWorkflowListFailedCount(count int) *When {
+	w.t.Helper()
+	return w.waitForWorkflowListCount(defaultTimeout, Label+","+common.LabelKeyPhase+"=Failed", count)
+}
+
+func (w *When) WaitForCronWorkflowCompleted(timeout time.Duration) *When {
+	w.t.Helper()
+	return w.waitForCronWorkflow(timeout+timeoutBias, Label+","+common.LabelKeyCronWorkflowCompleted+"=true", false)
+}
+
+func (w *When) WaitForCronWorkflow() *When {
+	w.t.Helper()
+	return w.waitForCronWorkflow(defaultTimeout, Label, true)
+}
+
+func (w *When) waitForCronWorkflow(timeout time.Duration, labelSelector string, onlyActive bool) *When {
+	w.t.Helper()
+	if w.cronWf == nil {
+		w.t.Fatal("No cron workflow")
+	}
+	fieldSelector := "metadata.name=" + w.cronWf.Name
+	opts := metav1.ListOptions{LabelSelector: labelSelector, FieldSelector: fieldSelector}
+	start := time.Now()
+	_, _ = fmt.Printf("Waiting up to %s for cron workflow with %s\n", timeout, describeListOptions(opts))
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			w.t.Errorf("timeout after %v waiting for condition", timeout)
+			return w
+		default:
+			cronWfList, err := w.cronClient.List(ctx, opts)
+			if err != nil {
+				w.t.Error(err)
+				return w
+			}
+			if len(cronWfList.Items) == 1 && (!onlyActive || len(cronWfList.Items[0].Status.Active) == 1) {
+				_, _ = fmt.Printf("Condition met after %s\n", time.Since(start).Truncate(time.Second))
+				return w
+			}
+		}
+		time.Sleep(time.Second)
+	}
+
 }
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
@@ -403,6 +503,28 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 
 	_, err := w.client.Patch(ctx, w.wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
 	if err != nil && shouldErr {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) AddNamespaceLimit(limit string) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	patchMap := make(map[string]interface{})
+	metadata := make(map[string]interface{})
+	labels := make(map[string]interface{})
+	labels["workflows.argoproj.io/parallelism-limit"] = limit
+	metadata["labels"] = labels
+	patchMap["metadata"] = metadata
+
+	bs, err := json.Marshal(patchMap)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+
+	_, err = w.kubeClient.CoreV1().Namespaces().Patch(ctx, Namespace, types.MergePatchType, []byte(bs), metav1.PatchOptions{})
+	if err != nil {
 		w.t.Fatal(err)
 	}
 	return w
@@ -522,6 +644,159 @@ func (w *When) DeleteConfigMap(name string) *When {
 	return w
 }
 
+// setupDBSession creates a database session for semaphore operations
+// The caller must defer closing the returned session
+func (w *When) setupDBSession() db.Session {
+	w.t.Helper()
+	// Skip if persistence is not enabled
+	if w.config == nil || w.config.Synchronization == nil {
+		w.t.Fatal("Require synchronization to be setup")
+	}
+
+	ctx := context.Background()
+	dbSession, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return dbSession
+}
+
+// SetupDatabaseSemaphore creates a database semaphore with the specified limit
+func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	// Get the table name from config
+	limitTable := w.config.Synchronization.LimitTableName
+
+	// Insert or update the semaphore limit
+	if w.config.Synchronization.PostgreSQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET sizelimit = $2",
+				limitTable),
+			name, limit)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else if w.config.Synchronization.MySQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES (?, ?) ON DUPLICATE KEY UPDATE sizelimit = ?",
+				limitTable),
+			name, limit, limit)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else {
+		w.t.Fatal("Require one synchronization database to be setup")
+	}
+	return w
+}
+
+// SetDBSemaphoreState inserts or updates a record in the semaphore state table
+func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *string, mutex bool, held bool, priority int32, timestamp time.Time) *When {
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	// Get the table name from config
+	stateTable := w.config.Synchronization.StateTableName
+
+	controllerName := w.config.Synchronization.ControllerName
+	if controller != nil {
+		controllerName = *controller
+	}
+
+	dbKey := "sem/" + name
+	if mutex {
+		dbKey = "mtx/" + name
+	}
+
+	// Insert or update the semaphore state
+	if w.config.Synchronization.PostgreSQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES ($1, $2, $3, $4, $5, $6) "+
+				"ON CONFLICT (name, workflowkey, controller) DO UPDATE SET held = $4, priority = $5, time = $6",
+				stateTable),
+			dbKey, workflowKey, controllerName, held, priority, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else if w.config.Synchronization.MySQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES (?, ?, ?, ?, ?, ?) "+
+				"ON DUPLICATE KEY UPDATE held = ?, priority = ?, time = ?",
+				stateTable),
+			dbKey, workflowKey, controllerName, held, priority, timestamp, held, priority, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else {
+		w.t.Fatal("Require one synchronization database to be setup")
+	}
+	return w
+}
+
+// SetDBSemaphoreControllerHB inserts or updates a record in the semaphore controller heartbeat table
+func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *When {
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	// Get the table name from config
+	controllerTable := w.config.Synchronization.ControllerTableName
+
+	controllerName := w.config.Synchronization.ControllerName
+	if name != nil {
+		controllerName = *name
+	}
+
+	// Insert or update the semaphore state
+	if w.config.Synchronization.PostgreSQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES ($1, $2) "+
+				"ON CONFLICT (controller) DO UPDATE SET time = $2",
+				controllerTable),
+			controllerName, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else if w.config.Synchronization.MySQL != nil {
+		_, err := dbSession.SQL().Exec(
+			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES (?, ?) "+
+				"ON DUPLICATE KEY UPDATE time = ?",
+				controllerTable),
+			controllerName, timestamp, timestamp)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+	} else {
+		w.t.Fatal("Require one synchronization database to be setup")
+	}
+	return w
+}
+
+// ClearDBSemaphoreState deletes all records from the semaphore state table except for the controller heartbeat records
+func (w *When) ClearDBSemaphoreState() *When {
+	w.t.Helper()
+	dbSession := w.setupDBSession()
+	defer dbSession.Close()
+
+	_, err := dbSession.SQL().Exec(
+		fmt.Sprintf("DELETE FROM %s", w.config.Synchronization.StateTableName),
+	)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	// Delete all records except for this controller heartbeat records
+	_, err = dbSession.SQL().Exec(
+		fmt.Sprintf("DELETE FROM %s WHERE controller != ?", w.config.Synchronization.ControllerTableName),
+		w.config.Synchronization.ControllerName,
+	)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+
+	return w
+}
+
 func (w *When) PodsQuota(podLimit int) *When {
 	w.t.Helper()
 	ctx := context.Background()
@@ -637,6 +912,7 @@ func (w *When) Then() *Then {
 		hydrator:    w.hydrator,
 		kubeClient:  w.kubeClient,
 		bearerToken: w.bearerToken,
+		restConfig:  w.restConfig,
 	}
 }
 
@@ -656,5 +932,7 @@ func (w *When) Given() *Given {
 		cwfTemplates:      w.cwfTemplates,
 		cronWf:            w.cronWf,
 		kubeClient:        w.kubeClient,
+		restConfig:        w.restConfig,
+		config:            w.config,
 	}
 }

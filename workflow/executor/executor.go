@@ -21,7 +21,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
 
-	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -306,39 +305,51 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
+	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
-		err := we.saveArtifact(ctx, common.MainContainerName, &art)
+		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
+
 		if err != nil {
-			return artifacts, err
+			aggregateError += err.Error() + "; "
 		}
-		artifacts = append(artifacts, art)
+		if saved {
+			artifacts = append(artifacts, art)
+		}
 	}
-	return artifacts, nil
+	if aggregateError == "" {
+		return artifacts, nil
+	} else {
+		return artifacts, errors.New(aggregateError)
+	}
+
 }
 
-func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
+// save artifact
+// return whether artifact was in fact saved, and if there was an error
+func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) (bool, error) {
 	// Determine the file path of where to find the artifact
 	err := art.CleanPath()
 	if err != nil {
-		return err
+		return false, err
 	}
 	fileName, localArtPath, err := we.stageArchiveFile(containerName, art)
 	if err != nil {
 		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
 			log.Warnf("Ignoring optional artifact '%s' which does not exist in path '%s': %v", art.Name, art.Path, err)
-			return nil
+			return false, nil
 		}
-		return err
+		return false, err
 	}
 	fi, err := os.Stat(localArtPath)
 	if err != nil {
-		return err
+		return false, err
 	}
 	size := fi.Size()
 	if size == 0 {
 		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
 	}
-	return we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
+	err = we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
+	return err == nil, err
 }
 
 // fileBase is probably path.Base(filePath), but can be something else
@@ -422,7 +433,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
-			if !argofile.Exists(mountedArtPath) {
+			if !file.Exists(mountedArtPath) {
 				return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
 			}
 			return fileName, mountedArtPath, nil
@@ -482,7 +493,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
-	isDir, err := argofile.IsDirectory(unarchivedArtPath)
+	isDir, err := file.IsDirectory(unarchivedArtPath)
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
@@ -835,6 +846,16 @@ func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.
 	outputs := we.Template.Outputs.DeepCopy()
 	outputs.Artifacts = artifacts
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
+}
+
+// ReportOutputsLogs updates the WorkflowTaskResult log fields
+func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
+	var outputs wfv1.Outputs
+	artifacts := wfv1.Artifacts{}
+	logArtifacts := we.SaveLogs(ctx)
+	artifacts = append(artifacts, logArtifacts...)
+	outputs.Artifacts = artifacts
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
 }
 
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {

@@ -9,13 +9,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 
-	wfconfig "github.com/argoproj/argo-workflows/v3/config"
-
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
@@ -28,19 +25,43 @@ type Config struct {
 	IgnoreErrors bool
 	Secure       bool
 	Modifiers    map[string]Modifier
-	Temporality  wfconfig.MetricsTemporality
+	Temporality  metricsdk.TemporalitySelector
 }
 
 type Metrics struct {
-	// Ensures mutual exclusion in workflows map
-	Mutex sync.RWMutex
-
 	// Evil context for compatibility with legacy context free interfaces
 	Ctx       context.Context
 	otelMeter *metric.Meter
 	config    *Config
 
-	AllInstruments map[string]*Instrument
+	// Ensures mutual exclusion in instruments
+	mutex       sync.RWMutex
+	instruments map[string]*Instrument
+}
+
+func (m *Metrics) AddInstrument(name string, inst *Instrument) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.instruments[name] = inst
+}
+
+func (m *Metrics) GetInstrument(name string) *Instrument {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	inst, ok := m.instruments[name]
+	if !ok {
+		return nil
+	}
+	return inst
+}
+
+// IterateROInstruments iterates over every instrument for Read-Only purposes
+func (m *Metrics) IterateROInstruments(fn func(i *Instrument)) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	for _, i := range m.instruments {
+		fn(i)
+	}
 }
 
 func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *Config, extraOpts ...metricsdk.Option) (*Metrics, error) {
@@ -55,7 +76,7 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 	_, otlpMetricsEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
 	if otlpEnabled || otlpMetricsEnabled {
 		log.Info("Starting OTLP metrics exporter")
-		otelExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(getTemporality(config)))
+		otelExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
 		if err != nil {
 			return nil, err
 		}
@@ -84,10 +105,10 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 
 	meter := provider.Meter(serviceName)
 	metrics := &Metrics{
-		Ctx:            ctx,
-		otelMeter:      &meter,
-		config:         config,
-		AllInstruments: make(map[string]*Instrument),
+		Ctx:         ctx,
+		otelMeter:   &meter,
+		config:      config,
+		instruments: make(map[string]*Instrument),
 	}
 
 	return metrics, nil
@@ -102,19 +123,4 @@ func (m *Metrics) Populate(ctx context.Context, adders ...AddMetric) error {
 		}
 	}
 	return nil
-}
-
-func getTemporality(config *Config) metricsdk.TemporalitySelector {
-	switch config.Temporality {
-	case wfconfig.MetricsTemporalityCumulative:
-		return func(metricsdk.InstrumentKind) metricdata.Temporality {
-			return metricdata.CumulativeTemporality
-		}
-	case wfconfig.MetricsTemporalityDelta:
-		return func(metricsdk.InstrumentKind) metricdata.Temporality {
-			return metricdata.DeltaTemporality
-		}
-	default:
-		return metricsdk.DefaultTemporalitySelector
-	}
 }

@@ -1,11 +1,10 @@
-//go:build !windows
-
 package common
 
 import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -74,6 +73,9 @@ func filteredFiles(t *testing.T) ([]os.DirEntry, error) {
 }
 
 func TestLoadToStream(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("disabled on windows because artifacts server isn't run in windows and the test fails.")
+	}
 	tests := map[string]struct {
 		artifactDriver ArtifactDriver
 		errMsg         string
@@ -114,7 +116,7 @@ func TestLoadToStream(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				assert.Equal(t, len(filesBefore), len(filesAfter))
+				assert.Len(t, filesAfter, len(filesBefore))
 			} else {
 				require.Error(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())

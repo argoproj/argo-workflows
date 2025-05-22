@@ -26,7 +26,7 @@ func IgnoreContainerNotFoundErr(err error) error {
 // IsTransientErr reports whether the error is transient and logs it.
 func IsTransientErr(err error) bool {
 	isTransient := IsTransientErrQuiet(err)
-	if !isTransient {
+	if err != nil && !isTransient {
 		log.Warnf("Non-transient error: %v", err)
 	}
 	return isTransient
@@ -125,6 +125,9 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "connect: connection refused") {
 		// If err is connection refused, retry.
 		return true
+	} else if strings.Contains(errorString, "invalid connection") {
+		// If err is invalid connection, retry.
+		return true
 	}
 
 	return false
@@ -140,4 +143,11 @@ func generateErrorString(err error) string {
 
 func isTransientSqbErr(err error) bool {
 	return strings.Contains(err.Error(), "upper: no more rows in")
+}
+
+// CheckError is a convenience function to fatally log an exit if the supplied error is non-nil
+func CheckError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }

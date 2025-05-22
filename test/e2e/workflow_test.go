@@ -13,79 +13,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type WorkflowSuite struct {
 	fixtures.E2ESuite
-}
-
-func (s *WorkflowSuite) TestContainerTemplateAutomountServiceAccountTokenDisabled() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: get-resources-via-container-template-
-  namespace: argo
-spec:
-  serviceAccountName: argo
-  automountServiceAccountToken: false
-  executor:
-    serviceAccountName: get-cm
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        name: main
-        image: bitnami/kubectl
-        command:
-          - sh
-        args:
-          - -c
-          - |
-           kubectl get cm 
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
-func (s *WorkflowSuite) TestScriptTemplateAutomountServiceAccountTokenDisabled() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: get-resources-via-script-template-
-  namespace: argo
-spec:
-  serviceAccountName: argo
-  automountServiceAccountToken: false
-  executor:
-    serviceAccountName: get-cm
-  entrypoint: main
-  templates:
-    - name: main
-      script:
-        name: main
-        image: bitnami/kubectl
-        command:
-          - sh
-        source:
-          kubectl get cm 
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
 }
 
 func (s *WorkflowSuite) TestWorkflowFailedWhenAllPodSetFailedFromPending() {
@@ -116,7 +49,7 @@ spec:
       parameters:
         - name: item
     container:
-      image: centos:latest
+      image: argoproj/argosay:v2
       imagePullPolicy: Always
       command:
         - sh
@@ -132,11 +65,11 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed, time.Minute*11).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
 			for _, node := range status.Nodes {
-				if node.Type == wfv1.NodeTypePod {
-					assert.Equal(t, wfv1.NodeFailed, node.Phase)
+				if node.Type == v1alpha1.NodeTypePod {
+					assert.Equal(t, v1alpha1.NodeFailed, node.Phase)
 					assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
 				}
 			}
@@ -213,8 +146,8 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted, time.Minute*1).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "a")

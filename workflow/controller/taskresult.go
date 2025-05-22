@@ -9,11 +9,17 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
+	"k8s.io/apimachinery/pkg/selection"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+)
+
+var (
+	workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 )
 
 func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {
@@ -55,7 +61,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 10*time.Second)
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
@@ -71,10 +77,11 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
 		// If the task result is completed, set the state to true.
-		if label == "true" {
+		switch label {
+		case "true":
 			woc.log.Debugf("Marking task result complete %s", resultName)
 			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else if label == "false" {
+		case "false":
 			woc.log.Debugf("Marking task result incomplete %s", resultName)
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
@@ -84,8 +91,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if err != nil {
 			continue
 		}
+
 		// Mark task result as completed if it has no chance to be completed.
-		if label == "false" && old.IsPodDeleted() {
+		if label == "false" && old.Completed() && !woc.nodePodExist(*old) {
 			if recentlyDeleted(old) {
 				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
@@ -93,10 +101,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
 				continue
-			} else {
-				woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
-				woc.wf.Status.MarkTaskResultComplete(nodeID)
 			}
+			woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
+			woc.wf.Status.MarkTaskResultComplete(nodeID)
 		}
 		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
@@ -114,7 +121,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if !reflect.DeepEqual(old, newNode) {
 			woc.log.
 				WithField("nodeID", nodeID).
-				Info("task-result changed")
+				Debug("task-result changed")
 			woc.wf.Status.Nodes.Set(nodeID, *newNode)
 			woc.updated = true
 		}

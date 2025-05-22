@@ -12,9 +12,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-
-	"sigs.k8s.io/yaml"
 )
 
 type offlineWorkflowTemplateGetterMap map[string]templateresolution.WorkflowTemplateNamespacedGetter
@@ -36,7 +35,7 @@ type offlineClient struct {
 	namespacedWorkflowTemplateGetterMap offlineWorkflowTemplateGetterMap
 }
 
-var OfflineErr = fmt.Errorf("not supported when you are in offline mode")
+var ErrOffline = fmt.Errorf("not supported when you are in offline mode")
 
 var _ Client = &offlineClient{}
 
@@ -50,42 +49,43 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 
 	for _, basePath := range paths {
 		err := file.WalkManifests(basePath, func(path string, bytes []byte) error {
-			var generic map[string]interface{}
-			if err := yaml.Unmarshal(bytes, &generic); err != nil {
-				return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
-			}
-			switch generic["kind"] {
-			case "ClusterWorkflowTemplate":
-				cwftmpl := new(wfv1.ClusterWorkflowTemplate)
-				if err := yaml.Unmarshal(bytes, &cwftmpl); err != nil {
-					return fmt.Errorf("failed to unmarshal file %s as a ClusterWorkflowTemplate: %w", path, err)
+			for _, pr := range common.ParseObjects(bytes, false) {
+				obj, err := pr.Object, pr.Err
+				if err != nil {
+					return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
 				}
 
-				if _, ok := clusterWorkflowTemplateGetter.clusterWorkflowTemplates[cwftmpl.Name]; ok {
-					return fmt.Errorf("duplicate ClusterWorkflowTemplate found: %q", cwftmpl.Name)
+				if obj == nil {
+					continue // could not parse to kubernetes object
 				}
-				clusterWorkflowTemplateGetter.clusterWorkflowTemplates[cwftmpl.Name] = cwftmpl
 
-			case "WorkflowTemplate":
-				wftmpl := new(wfv1.WorkflowTemplate)
-				if err := yaml.Unmarshal(bytes, &wftmpl); err != nil {
-					return fmt.Errorf("failed to unmarshal file %s as a WorkflowTemplate: %w", path, err)
-				}
-				getter, ok := workflowTemplateGetters[wftmpl.Namespace]
-				if !ok {
-					getter = &offlineWorkflowTemplateNamespacedGetter{
-						namespace:         wftmpl.Namespace,
-						workflowTemplates: map[string]*wfv1.WorkflowTemplate{},
+				objName := obj.GetName()
+				namespace := obj.GetNamespace()
+
+				switch v := obj.(type) {
+				case *wfv1.ClusterWorkflowTemplate:
+					if _, ok := clusterWorkflowTemplateGetter.clusterWorkflowTemplates[objName]; ok {
+						return fmt.Errorf("duplicate ClusterWorkflowTemplate found: %q", objName)
 					}
-					workflowTemplateGetters[wftmpl.Namespace] = getter
+					clusterWorkflowTemplateGetter.clusterWorkflowTemplates[objName] = v
+
+				case *wfv1.WorkflowTemplate:
+					getter, ok := workflowTemplateGetters[namespace]
+					if !ok {
+						getter = &offlineWorkflowTemplateNamespacedGetter{
+							namespace:         namespace,
+							workflowTemplates: map[string]*wfv1.WorkflowTemplate{},
+						}
+						workflowTemplateGetters[namespace] = getter
+					}
+
+					if _, ok := getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName]; ok {
+						return fmt.Errorf("duplicate WorkflowTemplate found: %q", objName)
+					}
+					getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName] = v
 				}
 
-				if _, ok := getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[wftmpl.Name]; ok {
-					return fmt.Errorf("duplicate WorkflowTemplate found: %q", wftmpl.Name)
-				}
-				getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[wftmpl.Name] = wftmpl
 			}
-
 			return nil
 		})
 
@@ -129,11 +129,11 @@ func (c *offlineClient) NewClusterWorkflowTemplateServiceClient() (clusterworkfl
 }
 
 func (c *offlineClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 func (c *offlineClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 type offlineWorkflowTemplateNamespacedGetter struct {

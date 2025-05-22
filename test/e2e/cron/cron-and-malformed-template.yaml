@@ -5,7 +5,8 @@ metadata:
   labels:
     argo-e2e: "true"
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -18,9 +19,8 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          command: ["sh", -c]
-          args: ["echo hello"]
+          image: argoproj/argosay:v2
+          args: ["echo", "hello"]
 
 ---
 

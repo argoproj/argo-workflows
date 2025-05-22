@@ -8,7 +8,7 @@ add_header() {
   mv tmp "$1"
 }
 
-controller-gen crd:maxDescLen=0 paths=./pkg/apis/... output:dir=manifests/base/crds/full
+controller-gen crd:maxDescLen=0,generateEmbeddedObjectMeta=true paths=./pkg/apis/... output:dir=manifests/base/crds/full
 
 find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do
   # remove junk fields
@@ -18,5 +18,5 @@ find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do
   minimal="manifests/base/crds/minimal/$(basename "$file")"
   echo "Creating minimal CRD file: ${minimal}"
   cp "$file" "$minimal"
-  go run ./hack/manifests removecrdvalidation "$minimal"
+  go run ./hack/manifests minimizecrd "$minimal"
 done

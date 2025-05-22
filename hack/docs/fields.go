@@ -136,9 +136,9 @@ func getObjectType(field map[string]interface{}, addToQueue func(string)) string
 
 			name := getNameFromFullName(refString)
 			if refString == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
-				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", "WorkflowStep"), fmt.Sprintf("#"+strings.ToLower("WorkflowStep"))))
+				return fmt.Sprintf("`Array<Array<`%s`>>`", link("`WorkflowStep`", "#"+strings.ToLower("WorkflowStep")))
 			}
-			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
+			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), "#"+strings.ToLower(name)))
 		}
 		fullName := field["items"].(map[string]interface{})["type"].(string)
 		return fmt.Sprintf("`Array< %s >`", getNameFromFullName(fullName))
@@ -202,7 +202,7 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 		doneFields: make(Set),
 		queue: []string{
 			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
-			"io.argoproj.workflow.v1alpha1.WorkflowTemplate",
+			"io.argoproj.workflow.v1alpha1.WorkflowTemplate", "io.argoproj.workflow.v1alpha1.WorkflowEventBinding",
 		},
 		external: []string{},
 		index:    make(map[string]Set),
@@ -239,7 +239,7 @@ FILES:
 		for _, m := range matches {
 			kind := m[1]
 			switch kind {
-			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate":
+			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate", "WorkflowEventBinding":
 			default:
 				continue FILES
 			}
@@ -301,7 +301,11 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 	}
 	if jsonName, ok := c.jsonName[key]; ok {
 		if set, ok := c.index[jsonName]; ok {
-			out += getExamples(set, "Examples with this field")
+			// HACK: The "spec" field usually refers to a WorkflowSpec, but other CRDs
+			// have different definitions, and the examples with "spec" aren't applicable.
+			if jsonName != "spec" || name == "WorkflowSpec" || name == "CronWorkflowSpec" {
+				out += getExamples(set, "Examples with this field")
+			}
 		}
 	}
 

@@ -15,8 +15,10 @@ import (
 	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 const unlabelled = `{
@@ -161,6 +163,8 @@ const wftStr3 = `{
   }
 }`
 
+const userEmailLabel = "my-sub.at.your.org"
+
 func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
 	var unlabelledObj, wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
@@ -168,8 +172,10 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	wftmplStore := NewWorkflowTemplateClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
+	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
@@ -202,6 +208,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 		assert.NotNil(t, wftRsp)
 		assert.Contains(t, wftRsp.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wftRsp.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, wftRsp.Labels[common.LabelKeyCreatorEmail])
 	})
 }
 
@@ -263,6 +270,9 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 			Template:  &wftObj1,
 		})
 		require.NoError(t, err)
+		assert.Contains(t, wftRsp.Labels, common.LabelKeyActor)
+		assert.Equal(t, string(creator.ActionUpdate), wftRsp.Labels[common.LabelKeyAction])
+		assert.Equal(t, userEmailLabel, wftRsp.Labels[common.LabelKeyActorEmail])
 		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {

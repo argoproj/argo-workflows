@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"time"
 
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -23,6 +25,9 @@ type Config struct {
 
 	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+
+	// WorkflowEvents configures how workflow events are emitted
+	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitempty"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
@@ -108,6 +113,9 @@ type Config struct {
 
 	// SSO in settings for single-sign on
 	SSO SSOConfig `json:"sso,omitempty"`
+
+	// Synchronization via databases config
+	Synchronization *SyncConfig `json:"synchronization,omitempty"`
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -183,19 +191,23 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
+type DBConfig struct {
+	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
+}
+
 type PersistConfig struct {
+	DBConfig
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
 	Archive bool `json:"archive,omitempty"`
 	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
-	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
-	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
-	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
-	SkipMigration  bool              `json:"skipMigration,omitempty"`
+	ArchiveTTL    TTL    `json:"archiveTTL,omitempty"`
+	ClusterName   string `json:"clusterName,omitempty"`
+	SkipMigration bool   `json:"skipMigration,omitempty"`
 }
 
 func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
@@ -210,6 +222,22 @@ func (c PersistConfig) GetClusterName() string {
 		return c.ClusterName
 	}
 	return "default"
+}
+
+type SyncConfig struct {
+	DBConfig
+	ControllerName            string `json:"controllerName"`
+	SkipMigration             bool   `json:"skipMigration,omitempty"`
+	LimitTableName            string `json:"limitTableName,omitempty"`
+	StateTableName            string `json:"stateTableName,omitempty"`
+	ControllerTableName       string `json:"controllerTableName,omitempty"`
+	LockTableName             string `json:"lockTableName,omitempty"`
+	PollSeconds               *int   `json:"pollSeconds,omitempty"`
+	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
+	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`
+	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
+	// for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked).
+	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
 }
 
 type ConnectionPool struct {
@@ -288,11 +316,26 @@ type MetricsConfig struct {
 	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
-func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
+func (mc *MetricsConfig) GetSecure(defaultValue bool) bool {
 	if mc.Secure != nil {
 		return *mc.Secure
 	}
 	return defaultValue
+}
+
+func (mc *MetricsConfig) GetTemporality() metricsdk.TemporalitySelector {
+	switch mc.Temporality {
+	case MetricsTemporalityCumulative:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.CumulativeTemporality
+		}
+	case MetricsTemporalityDelta:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.DeltaTemporality
+		}
+	default:
+		return metricsdk.DefaultTemporalitySelector
+	}
 }
 
 type WorkflowRestrictions struct {

@@ -22,6 +22,7 @@
 * [Managing Thousands of Automatic Machine Learning Experiments with Argo and Katib](https://github.com/terrytangyuan/public-talks/blob/main/talks/argocon-automl-experiments-2022)
 * [MLOps at TripAdvisor: ML Models CI/CD Automation with Argo - Ang Gao (Principal Software Engineer, TripAdvisor)](https://www.youtube.com/watch?v=BochC4GKxbo&list=PLGHfqDpnXFXK4E8XzasScagiJk-8BPgva&index=2&utm_source=argo-docs)
 * [Production-Ready AI Platform on Kubernetes](https://github.com/terrytangyuan/public-talks/tree/main/talks/kubecon-europe-2024-production-ai-platform-on-k8s)
+* [Revolutionizing Scientific Simulations with Argo Workflows](https://www.youtube.com/watch?v=BYVf7GhfiRg)
 * [Towards Cloud-Native Distributed Machine Learning Pipelines at Scale](https://github.com/terrytangyuan/public-talks/tree/main/talks/towards-cloud-native-distributed-machine-learning-pipelines-at-scale-pydata-global-2021)
 
 ## Books

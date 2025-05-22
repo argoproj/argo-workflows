@@ -33,6 +33,10 @@ message WorkflowListRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
   // Fields to be included or excluded in the response. e.g. "items.spec,items.status.phase", "-items.status.nodes"
   string fields = 3;
+  // Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact
+  string nameFilter = 4;
+  string createdAfter = 5;
+  string finishedBefore = 6;
 }
 
 message WorkflowResubmitRequest {

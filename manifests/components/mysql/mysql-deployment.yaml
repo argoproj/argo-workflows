@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      name: mysql
+      labels:
+        app: mysql
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: main
+          image: quay.io/fedora/mysql-80@sha256:4f242c1ea0b77df36293784ed26acc12a1e048457fe6c4037bd5d49a0ec4d186
+          env:
+            - name: MYSQL_USER
+              value: mysql
+            - name: MYSQL_PASSWORD
+              value: password
+            - name: MYSQL_DATABASE
+              value: argo
+            - name: MYSQL_RANDOM_ROOT_PASSWORD
+              value: "yes"
+          ports:
+            - containerPort: 3306
+          readinessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/os: linux

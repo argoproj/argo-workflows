@@ -40,7 +40,8 @@ import (
 
 const (
 	Namespace = "argo"
-	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
+	Label     = workflow.WorkflowFullName + "/test"     // mark this workflow as a test
+	Backfill  = workflow.WorkflowFullName + "/backfill" // clean backfill workflows
 )
 
 var timeoutBias = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
@@ -83,7 +84,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(s.KubeClient, s.Config)
+	s.Persistence = newPersistence(ctx, s.KubeClient, s.Config)
 	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
@@ -175,7 +176,7 @@ func (s *E2ESuite) DeleteResources() {
 
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
-		archive := s.Persistence.workflowArchive
+		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(utils.ListOptions{
@@ -184,6 +185,17 @@ func (s *E2ESuite) DeleteResources() {
 		})
 		s.CheckError(err)
 		for _, w := range workflows {
+			err := archive.DeleteWorkflow(string(w.UID))
+			s.CheckError(err)
+		}
+		parse, err = labels.ParseToRequirements(Backfill)
+		s.CheckError(err)
+		backfillWorkflows, err := archive.ListWorkflows(utils.ListOptions{
+			Namespace:         Namespace,
+			LabelRequirements: parse,
+		})
+		s.CheckError(err)
+		for _, w := range backfillWorkflows {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
 		}
@@ -244,5 +256,7 @@ func (s *E2ESuite) Given() *Given {
 		hydrator:          s.hydrator,
 		kubeClient:        s.KubeClient,
 		bearerToken:       bearerToken,
+		restConfig:        s.RestConfig,
+		config:            s.Config,
 	}
 }

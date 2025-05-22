@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -50,7 +49,7 @@ spec:
 	newWf := wf.DeepCopy()
 	wfClientSet := argofake.NewSimpleClientset()
 	ctx := context.Background()
-	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
+	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, nil, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
 	assert.Equal(t, wf.Status, newWf.Status)
@@ -77,7 +76,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	wf.Status.Nodes.Set(onExitID, onExitNode)
 	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	require.NoError(t, err)
-	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
+	newWFOnExitName := newWF.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
@@ -113,7 +112,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				}
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
-			assert.Equal(t, len(body), len(filePaths))
+			assert.Len(t, filePaths, len(body))
 			require.NoError(t, err)
 			for i := range body {
 				assert.Equal(t, body[i], []byte(tc.contents[i]))
@@ -267,7 +266,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
+		assert.Empty(t, wf.Status.Nodes.FindByDisplayName("approve").Message)
 	})
 
 	t.Run("With user info", func(t *testing.T) {
@@ -467,15 +466,15 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
 	require.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
 	require.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}}, creator.ActionNone)
 	require.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}}, creator.ActionNone)
 	require.NoError(t, err)
 
 	// make sure global variable was updated
@@ -490,7 +489,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"] = node
 	_, err = wfIf.Create(ctx, noSpaceWf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
 	require.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
 }
 
@@ -1026,51 +1025,6 @@ func TestRetryExitHandler(t *testing.T) {
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
-	createdTime := metav1.Time{Time: time.Now().Add(-1 * time.Second).UTC()}
-	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
-	t.Run("Steps", func(t *testing.T) {
-		wf := &wfv1.Workflow{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "my-steps",
-				Labels: map[string]string{
-					common.LabelKeyCompleted:               "true",
-					common.LabelKeyWorkflowArchivingStatus: "Pending",
-				},
-			},
-			Status: wfv1.WorkflowStatus{
-				Phase:      wfv1.WorkflowFailed,
-				StartedAt:  createdTime,
-				FinishedAt: finishedTime,
-				Nodes: map[string]wfv1.NodeStatus{
-					"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
-					"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
-			},
-		}
-		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-		require.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
-		require.NoError(t, err)
-		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-		assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
-		assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
-		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
-		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
-		for _, node := range wf.Status.Nodes {
-			switch node.Phase {
-			case wfv1.NodeSucceeded:
-				assert.Equal(t, "succeeded", node.Message)
-				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-				assert.Equal(t, createdTime, node.StartedAt)
-				assert.Equal(t, finishedTime, node.FinishedAt)
-			case wfv1.NodeFailed:
-				assert.Equal(t, "", node.Message)
-				assert.Equal(t, wfv1.NodeRunning, node.Phase)
-				assert.Equal(t, metav1.Time{}, node.FinishedAt)
-				assert.True(t, node.StartedAt.After(createdTime.Time))
-			}
-		}
-
-	})
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1080,15 +1034,14 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeTaskGroup}},
+					"my-dag": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Name: "my-dag", ID: "my-dag"}},
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		require.Len(t, wf.Status.Nodes, 1)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
+		assert.Len(t, wf.Status.Nodes, 1)
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1099,12 +1052,12 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"entrypoint": {ID: "entrypoint", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"suspended", "skipped"}},
+					"wf-with-skipped-and-suspended-nodes": {ID: "wf-with-skipped-and-suspended-nodes", Name: "wf-with-skipped-and-suspended-nodes", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG, Children: []string{"suspended", "skipped"}},
 					"suspended": {
 						ID:         "suspended",
 						Phase:      wfv1.NodeSucceeded,
 						Type:       wfv1.NodeTypeSuspend,
-						BoundaryID: "entrypoint",
+						BoundaryID: "wf-with-skipped-and-suspended-nodes",
 						Children:   []string{"child"},
 						Outputs: &wfv1.Outputs{Parameters: []wfv1.Parameter{{
 							Name:      "param-1",
@@ -1119,14 +1072,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
 		require.NoError(t, err)
-		require.Len(t, wf.Status.Nodes, 3)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
-		assert.Equal(t, wfv1.Parameter{
-			Name:      "param-1",
-			Value:     nil,
-			ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
-		}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
+		require.Len(t, wf.Status.Nodes, 2)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["wf-with-skipped-and-suspended-nodes"].Phase)
 		assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
 	})
 	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
@@ -1138,7 +1085,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Name: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG, Children: []string{"1"}},
 					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1", Children: []string{"2", "4"}},
 					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
@@ -1151,7 +1098,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
 		require.Len(t, wf.Status.Nodes, 3)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["my-nested-dag-1"].Phase)
 		// The parent group nodes should be running.
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
@@ -1165,9 +1112,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"my-nested-dag-2": {ID: "my-nested-dag-2", Name: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG, Children: []string{"1"}},
 					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2", Children: []string{"2", "4"}},
-					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
 					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
@@ -1178,12 +1125,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
 		require.Len(t, wf.Status.Nodes, 4)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["my-nested-dag-2"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-		assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
-
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1199,7 +1144,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"override-param-wf": {ID: "override-param-wf", Name: "override-param-wf", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG},
 				}},
 		}
 		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
@@ -1222,7 +1167,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"override-param-wf": {ID: "override-param-wf", Name: "override-param-wf", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
 				},
 				StoredWorkflowSpec: &wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
 					Parameters: []wfv1.Parameter{
@@ -1300,11 +1245,11 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowSucceeded,
 				Nodes: map[string]wfv1.NodeStatus{
-					"successful-workflow-2": {ID: "successful-workflow-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
-					"1":                     {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-2", Children: []string{"2", "4"}},
-					"2":                     {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
-					"3":                     {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
-					"4":                     {ID: "4", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+					"successful-workflow-2": {ID: "successful-workflow-2", Name: "successful-workflow-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG, Children: []string{"1"}},
+					"1":                     {ID: "1", Name: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-2", Children: []string{"2", "4"}},
+					"2":                     {ID: "2", Name: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
+					"3":                     {ID: "3", Name: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":                     {ID: "4", Name: "4", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
@@ -1313,7 +1258,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		// Node #4 is deleted and will be recreated so only 4 nodes left in wf.Status.Nodes
 		require.Len(t, wf.Status.Nodes, 4)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["successful-workflow-2"].Phase)
 		// The parent group nodes should be running.
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
@@ -1329,7 +1274,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"continue-on-failed-workflow": {ID: "continue-on-failed-workflow", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
+					"continue-on-failed-workflow": {ID: "continue-on-failed-workflow", Name: "continue-on-failed-workflow", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
 					"1":                           {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"2", "4"}, Name: "node1"},
 					"2":                           {ID: "2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"3"}, Name: "node2"},
 					"3":                           {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Name: "node3"},
@@ -1342,9 +1287,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
 		require.Len(t, wf.Status.Nodes, 4)
-		assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-		assert.Len(t, podsToDelete, 2)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+		assert.Len(t, podsToDelete, 1)
 	})
 
 	t.Run("Retry continue on failed workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
@@ -1356,7 +1300,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"continue-on-failed-workflow-2": {ID: "continue-on-failed-workflow-2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
+					"continue-on-failed-workflow-2": {ID: "continue-on-failed-workflow-2", Name: "continue-on-failed-workflow-2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
 					"1":                             {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"2", "4"}, Name: "node1"},
 					"2":                             {ID: "2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"3"}, Name: "node2"},
 					"3":                             {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Name: "node3"},
@@ -1371,7 +1315,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.Len(t, wf.Status.Nodes, 2)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
-		assert.Len(t, podsToDelete, 4)
+		assert.Len(t, podsToDelete, 3)
 	})
 }
 
@@ -1382,7 +1326,8 @@ kind: CronWorkflow
 metadata:
   name: example-integers
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowSpec:
     entrypoint: whalesay
     templates:
@@ -1916,24 +1861,23 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
 	require.NoError(t, err)
 	assert.Len(t, wf.Status.Nodes, 1)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Len(t, podsToDelete, 6)
 
 	// Retry top individual suspend node
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 3)
+	require.Len(t, wf.Status.Nodes, 2)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	assert.Len(t, podsToDelete, 5)
 
 	// Retry the starting on first DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
+
+	assert.Len(t, wf.Status.Nodes, 9)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1944,17 +1888,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
-	// The nodes in the retrying branch are reset
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Len(t, podsToDelete, 3)
 
 	// Retry the starting on second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
+	assert.Len(t, wf.Status.Nodes, 10)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1967,15 +1907,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Len(t, podsToDelete, 3)
 
 	// Retry the first individual node (suspended node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
+	assert.Len(t, wf.Status.Nodes, 11)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1989,7 +1927,6 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Len(t, podsToDelete, 3)
 
 	// Retry the second individual node (pod node) connecting to the second DAG in one of the branches
@@ -2041,7 +1978,7 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 15)
+	assert.Len(t, wf.Status.Nodes, 14)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -2054,34 +1991,20 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	// The suspended node remains succeeded
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Len(t, podsToDelete, 1)
 
 	// Retry the node that connects the two branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step4", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 16)
+	assert.Len(t, wf.Status.Nodes, 15)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
-	// All nodes in two branches remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
 	assert.Len(t, podsToDelete, 1)
 
 	// Retry the last node (failing node)
@@ -2092,18 +2015,2165 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
-	// All nodes in two branches remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
 	assert.Len(t, podsToDelete, 1)
+}
+
+const stepsRetryFormulate = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-09-19T02:41:51Z"
+  generateName: steps-
+  generation: 29
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: steps-4k5vn
+  namespace: argo
+  resourceVersion: "50080"
+  uid: 0e7608c7-4555-46a4-8697-3be04eec428b
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: hello-hello-hello
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: hello-hello-hello
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello2a
+        name: hello2a
+        template: whalesay
+      - arguments:
+          parameters:
+          - name: message
+            value: hello2b
+        name: hello2b
+        template: whalesay
+  - container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-09-19T02:43:44Z"
+  nodes:
+    steps-4k5vn:
+      children:
+      - steps-4k5vn-899690889
+      displayName: steps-4k5vn
+      finishedAt: "2024-09-19T02:43:44Z"
+      id: steps-4k5vn
+      name: steps-4k5vn
+      outboundNodes:
+      - steps-4k5vn-2627784879
+      - steps-4k5vn-2644562498
+      phase: Succeeded
+      progress: 3/3
+      resourcesDuration:
+        cpu: 1
+        memory: 22
+      startedAt: "2024-09-19T02:43:30Z"
+      templateName: hello-hello-hello
+      templateScope: local/steps-4k5vn
+      type: Steps
+    steps-4k5vn-899690889:
+      boundaryID: steps-4k5vn
+      children:
+      - steps-4k5vn-1044844302
+      displayName: '[0]'
+      finishedAt: "2024-09-19T02:42:12Z"
+      id: steps-4k5vn-899690889
+      name: steps-4k5vn[0]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 3/3
+      resourcesDuration:
+        cpu: 1
+        memory: 22
+      startedAt: "2024-09-19T02:41:51Z"
+      templateScope: local/steps-4k5vn
+      type: StepGroup
+    steps-4k5vn-1044844302:
+      boundaryID: steps-4k5vn
+      children:
+      - steps-4k5vn-4053927188
+      displayName: hello1
+      finishedAt: "2024-09-19T02:42:09Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: steps-4k5vn-1044844302
+      inputs:
+        parameters:
+        - name: message
+          value: hello1
+      name: steps-4k5vn[0].hello1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: steps-4k5vn/steps-4k5vn-whalesay-1044844302/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 1
+        memory: 11
+      startedAt: "2024-09-19T02:41:51Z"
+      templateName: whalesay
+      templateScope: local/steps-4k5vn
+      type: Pod
+    steps-4k5vn-2627784879:
+      boundaryID: steps-4k5vn
+      displayName: hello2a
+      finishedAt: "2024-09-19T02:43:39Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: steps-4k5vn-2627784879
+      inputs:
+        parameters:
+        - name: message
+          value: hello2a
+      name: steps-4k5vn[1].hello2a
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: steps-4k5vn/steps-4k5vn-whalesay-2627784879/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 5
+      startedAt: "2024-09-19T02:43:30Z"
+      templateName: whalesay
+      templateScope: local/steps-4k5vn
+      type: Pod
+    steps-4k5vn-2644562498:
+      boundaryID: steps-4k5vn
+      displayName: hello2b
+      finishedAt: "2024-09-19T02:43:41Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: steps-4k5vn-2644562498
+      inputs:
+        parameters:
+        - name: message
+          value: hello2b
+      name: steps-4k5vn[1].hello2b
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: steps-4k5vn/steps-4k5vn-whalesay-2644562498/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2024-09-19T02:43:30Z"
+      templateName: whalesay
+      templateScope: local/steps-4k5vn
+      type: Pod
+    steps-4k5vn-4053927188:
+      boundaryID: steps-4k5vn
+      children:
+      - steps-4k5vn-2627784879
+      - steps-4k5vn-2644562498
+      displayName: '[1]'
+      finishedAt: "2024-09-19T02:43:44Z"
+      id: steps-4k5vn-4053927188
+      name: steps-4k5vn[1]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 11
+      startedAt: "2024-09-19T02:43:30Z"
+      templateScope: local/steps-4k5vn
+      type: StepGroup
+  phase: Succeeded
+  progress: 3/3
+  resourcesDuration:
+    cpu: 1
+    memory: 22
+  startedAt: "2024-09-19T02:43:30Z"
+  taskResultsCompletionStatus:
+    steps-4k5vn-1044844302: true
+    steps-4k5vn-2627784879: true
+    steps-4k5vn-2644562498: true
+
+`
+
+func TestStepsRetryWorkflow(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(stepsRetryFormulate)
+	selectorStr := "id=steps-4k5vn-2627784879"
+
+	running := map[string]bool{
+		"steps-4k5vn-4053927188": true,
+		"steps-4k5vn":            true,
+	}
+
+	deleted := map[string]bool{
+		"steps-4k5vn-2627784879": true,
+	}
+
+	succeeded := make(map[string]bool)
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
+	require.NoError(err)
+	assert.Len(podsToDelete, 1)
+	assert.Len(newWf.Status.Nodes, 5)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+
+}
+
+func TestDagConversion(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(stepsRetryFormulate)
+
+	nodes, err := newWorkflowsDag(wf)
+	require.NoError(err)
+	assert.Len(nodes, len(wf.Status.Nodes))
+
+	numNilParent := 0
+	for _, n := range nodes {
+		if n.parent == nil {
+			numNilParent++
+		}
+	}
+	assert.Equal(1, numNilParent)
+}
+
+const dagDiamondRetry = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-10-01T04:27:23Z"
+  generateName: dag-diamond-
+  generation: 16
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: dag-diamond-82q7s
+  namespace: argo
+  resourceVersion: "4633"
+  uid: dd3d2674-43d8-446a-afdf-17ec95afade2
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: diamond
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: A
+        name: A
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: B
+        depends: A
+        name: B
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: C
+        depends: A
+        name: C
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: D
+        depends: B && C
+        name: D
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - container:
+      command:
+      - echo
+      - '{{inputs.parameters.message}}'
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: echo
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-10-01T04:27:42Z"
+  nodes:
+    dag-diamond-82q7s:
+      children:
+      - dag-diamond-82q7s-1310542453
+      displayName: dag-diamond-82q7s
+      finishedAt: "2024-10-01T04:27:42Z"
+      id: dag-diamond-82q7s
+      name: dag-diamond-82q7s
+      outboundNodes:
+      - dag-diamond-82q7s-1226654358
+      phase: Succeeded
+      progress: 4/4
+      resourcesDuration:
+        cpu: 0
+        memory: 8
+      startedAt: "2024-10-01T04:27:23Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-82q7s
+      type: DAG
+    dag-diamond-82q7s-1226654358:
+      boundaryID: dag-diamond-82q7s
+      displayName: D
+      finishedAt: "2024-10-01T04:27:39Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-82q7s-1226654358
+      inputs:
+        parameters:
+        - name: message
+          value: D
+      name: dag-diamond-82q7s.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-diamond-82q7s/dag-diamond-82q7s-echo-1226654358/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-01T04:27:36Z"
+      templateName: echo
+      templateScope: local/dag-diamond-82q7s
+      type: Pod
+    dag-diamond-82q7s-1260209596:
+      boundaryID: dag-diamond-82q7s
+      children:
+      - dag-diamond-82q7s-1226654358
+      displayName: B
+      finishedAt: "2024-10-01T04:27:33Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-82q7s-1260209596
+      inputs:
+        parameters:
+        - name: message
+          value: B
+      name: dag-diamond-82q7s.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-diamond-82q7s/dag-diamond-82q7s-echo-1260209596/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-01T04:27:30Z"
+      templateName: echo
+      templateScope: local/dag-diamond-82q7s
+      type: Pod
+    dag-diamond-82q7s-1276987215:
+      boundaryID: dag-diamond-82q7s
+      children:
+      - dag-diamond-82q7s-1226654358
+      displayName: C
+      finishedAt: "2024-10-01T04:27:33Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-82q7s-1276987215
+      inputs:
+        parameters:
+        - name: message
+          value: C
+      name: dag-diamond-82q7s.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-diamond-82q7s/dag-diamond-82q7s-echo-1276987215/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-01T04:27:30Z"
+      templateName: echo
+      templateScope: local/dag-diamond-82q7s
+      type: Pod
+    dag-diamond-82q7s-1310542453:
+      boundaryID: dag-diamond-82q7s
+      children:
+      - dag-diamond-82q7s-1260209596
+      - dag-diamond-82q7s-1276987215
+      displayName: A
+      finishedAt: "2024-10-01T04:27:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-82q7s-1310542453
+      inputs:
+        parameters:
+        - name: message
+          value: A
+      name: dag-diamond-82q7s.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-diamond-82q7s/dag-diamond-82q7s-echo-1310542453/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-01T04:27:23Z"
+      templateName: echo
+      templateScope: local/dag-diamond-82q7s
+      type: Pod
+  phase: Succeeded
+  progress: 4/4
+  resourcesDuration:
+    cpu: 0
+    memory: 8
+  startedAt: "2024-10-01T04:27:23Z"
+  taskResultsCompletionStatus:
+    dag-diamond-82q7s-1226654358: true
+    dag-diamond-82q7s-1260209596: true
+    dag-diamond-82q7s-1276987215: true
+    dag-diamond-82q7s-1310542453: true
+
+`
+
+func TestDAGDiamondRetryWorkflow(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(dagDiamondRetry)
+	selectorStr := "id=dag-diamond-82q7s-1260209596"
+
+	running := map[string]bool{
+		"dag-diamond-82q7s": true,
+	}
+
+	deleted := map[string]bool{
+		"dag-diamond-82q7s-1226654358": true,
+	}
+
+	succeeded := make(map[string]bool)
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
+
+	require.NoError(err)
+	assert.Len(podsToDelete, 2)
+	assert.Len(newWf.Status.Nodes, 3)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
+const onExitWorkflowRetry = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-10-02T05:54:00Z"
+  generateName: work-avoidance-
+  generation: 25
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+    workflows.argoproj.io/resubmitted-from-workflow: work-avoidance-xghlj
+  name: work-avoidance-trkkq
+  namespace: argo
+  resourceVersion: "2661"
+  uid: 0271624e-0096-428a-81da-643dbbd69440
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: main
+  onExit: save-markers
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: load-markers
+        template: load-markers
+    - - arguments:
+          parameters:
+          - name: num
+            value: '{{item}}'
+        name: echo
+        template: echo
+        withSequence:
+          count: "3"
+  - container:
+      command:
+      - mkdir
+      - -p
+      - /work/markers
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+      volumeMounts:
+      - mountPath: /work
+        name: work
+    inputs:
+      artifacts:
+      - name: markers
+        optional: true
+        path: /work/markers
+        s3:
+          accessKeySecret:
+            key: accesskey
+            name: my-minio-cred
+          bucket: my-bucket
+          endpoint: minio:9000
+          insecure: true
+          key: work-avoidance-markers
+          secretKeySecret:
+            key: secretkey
+            name: my-minio-cred
+    metadata: {}
+    name: load-markers
+    outputs: {}
+  - inputs:
+      parameters:
+      - name: num
+    metadata: {}
+    name: echo
+    outputs: {}
+    script:
+      command:
+      - bash
+      - -eux
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+      source: |
+        marker=/work/markers/$(date +%Y-%m-%d)-echo-{{inputs.parameters.num}}
+        if [ -e  ${marker} ]; then
+          echo "work already done"
+          exit 0
+        fi
+        echo "working very hard"
+        # toss a virtual coin and exit 1 if 1
+        if [ $(($(($RANDOM%10))%2)) -eq 1 ]; then
+          echo "oh no!"
+          exit 1
+        fi
+        touch ${marker}
+      volumeMounts:
+      - mountPath: /work
+        name: work
+  - container:
+      command:
+      - "true"
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+      volumeMounts:
+      - mountPath: /work
+        name: work
+    inputs: {}
+    metadata: {}
+    name: save-markers
+    outputs:
+      artifacts:
+      - name: markers
+        path: /work/markers
+        s3:
+          accessKeySecret:
+            key: accesskey
+            name: my-minio-cred
+          bucket: my-bucket
+          endpoint: minio:9000
+          insecure: true
+          key: work-avoidance-markers
+          secretKeySecret:
+            key: secretkey
+            name: my-minio-cred
+  volumeClaimTemplates:
+  - metadata:
+      creationTimestamp: null
+      name: work
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Mi
+    status: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-10-02T05:54:41Z"
+  nodes:
+    work-avoidance-trkkq:
+      children:
+      - work-avoidance-trkkq-88427725
+      displayName: work-avoidance-trkkq
+      finishedAt: "2024-10-02T05:54:30Z"
+      id: work-avoidance-trkkq
+      name: work-avoidance-trkkq
+      outboundNodes:
+      - work-avoidance-trkkq-4180283560
+      - work-avoidance-trkkq-605537244
+      - work-avoidance-trkkq-4183398008
+      phase: Succeeded
+      progress: 4/4
+      resourcesDuration:
+        cpu: 1
+        memory: 22
+      startedAt: "2024-10-02T05:54:00Z"
+      templateName: main
+      templateScope: local/work-avoidance-trkkq
+      type: Steps
+    work-avoidance-trkkq-21464344:
+      boundaryID: work-avoidance-trkkq
+      children:
+      - work-avoidance-trkkq-4180283560
+      - work-avoidance-trkkq-605537244
+      - work-avoidance-trkkq-4183398008
+      displayName: '[1]'
+      finishedAt: "2024-10-02T05:54:30Z"
+      id: work-avoidance-trkkq-21464344
+      name: work-avoidance-trkkq[1]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 3/3
+      resourcesDuration:
+        cpu: 1
+        memory: 18
+      startedAt: "2024-10-02T05:54:14Z"
+      templateScope: local/work-avoidance-trkkq
+      type: StepGroup
+    work-avoidance-trkkq-88427725:
+      boundaryID: work-avoidance-trkkq
+      children:
+      - work-avoidance-trkkq-3329426915
+      displayName: '[0]'
+      finishedAt: "2024-10-02T05:54:14Z"
+      id: work-avoidance-trkkq-88427725
+      name: work-avoidance-trkkq[0]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 4/4
+      resourcesDuration:
+        cpu: 1
+        memory: 22
+      startedAt: "2024-10-02T05:54:00Z"
+      templateScope: local/work-avoidance-trkkq
+      type: StepGroup
+    work-avoidance-trkkq-605537244:
+      boundaryID: work-avoidance-trkkq
+      displayName: echo(1:1)
+      finishedAt: "2024-10-02T05:54:24Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: work-avoidance-trkkq-605537244
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      name: work-avoidance-trkkq[1].echo(1:1)
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: work-avoidance-trkkq/work-avoidance-trkkq-echo-605537244/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2024-10-02T05:54:14Z"
+      templateName: echo
+      templateScope: local/work-avoidance-trkkq
+      type: Pod
+    work-avoidance-trkkq-1461956272:
+      displayName: work-avoidance-trkkq.onExit
+      finishedAt: "2024-10-02T05:54:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: work-avoidance-trkkq-1461956272
+      name: work-avoidance-trkkq.onExit
+      nodeFlag:
+        hooked: true
+      outputs:
+        artifacts:
+        - name: markers
+          path: /work/markers
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: work-avoidance-markers
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        - name: main-logs
+          s3:
+            key: work-avoidance-trkkq/work-avoidance-trkkq-save-markers-1461956272/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 5
+      startedAt: "2024-10-02T05:54:30Z"
+      templateName: save-markers
+      templateScope: local/work-avoidance-trkkq
+      type: Pod
+    work-avoidance-trkkq-3329426915:
+      boundaryID: work-avoidance-trkkq
+      children:
+      - work-avoidance-trkkq-21464344
+      displayName: load-markers
+      finishedAt: "2024-10-02T05:54:12Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: work-avoidance-trkkq-3329426915
+      inputs:
+        artifacts:
+        - name: markers
+          optional: true
+          path: /work/markers
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: work-avoidance-markers
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      name: work-avoidance-trkkq[0].load-markers
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: work-avoidance-trkkq/work-avoidance-trkkq-load-markers-3329426915/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 4
+      startedAt: "2024-10-02T05:54:00Z"
+      templateName: load-markers
+      templateScope: local/work-avoidance-trkkq
+      type: Pod
+    work-avoidance-trkkq-4180283560:
+      boundaryID: work-avoidance-trkkq
+      displayName: echo(0:0)
+      finishedAt: "2024-10-02T05:54:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: work-avoidance-trkkq-4180283560
+      inputs:
+        parameters:
+        - name: num
+          value: "0"
+      name: work-avoidance-trkkq[1].echo(0:0)
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: work-avoidance-trkkq/work-avoidance-trkkq-echo-4180283560/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 1
+        memory: 8
+      startedAt: "2024-10-02T05:54:14Z"
+      templateName: echo
+      templateScope: local/work-avoidance-trkkq
+      type: Pod
+    work-avoidance-trkkq-4183398008:
+      boundaryID: work-avoidance-trkkq
+      displayName: echo(2:2)
+      finishedAt: "2024-10-02T05:54:21Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: work-avoidance-trkkq-4183398008
+      inputs:
+        parameters:
+        - name: num
+          value: "2"
+      name: work-avoidance-trkkq[1].echo(2:2)
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: work-avoidance-trkkq/work-avoidance-trkkq-echo-4183398008/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 4
+      startedAt: "2024-10-02T05:54:14Z"
+      templateName: echo
+      templateScope: local/work-avoidance-trkkq
+      type: Pod
+  phase: Succeeded
+  progress: 5/5
+  resourcesDuration:
+    cpu: 1
+    memory: 27
+  startedAt: "2024-10-02T05:54:00Z"
+  taskResultsCompletionStatus:
+    work-avoidance-trkkq-605537244: true
+    work-avoidance-trkkq-1461956272: true
+    work-avoidance-trkkq-3329426915: true
+    work-avoidance-trkkq-4180283560: true
+    work-avoidance-trkkq-4183398008: true
+`
+
+func TestOnExitWorkflowRetry(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflowRetry)
+	running := map[string]bool{
+		"work-avoidance-trkkq-21464344": true,
+		"work-avoidance-trkkq":          true,
+	}
+	deleted := map[string]bool{
+		"work-avoidance-trkkq-1461956272": true,
+		"work-avoidance-trkkq-4183398008": true,
+	}
+
+	succeeded := make(map[string]bool)
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+
+	selectorStr := "id=work-avoidance-trkkq-4183398008"
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
+	require.NoError(err)
+	assert.Len(newWf.Status.Nodes, 6)
+	assert.Len(podsToDelete, 2)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+
+}
+
+const onExitWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-10-14T09:21:14Z"
+  generation: 10
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: retry-workflow-with-failed-exit-handler
+  namespace: argo
+  resourceVersion: "13510"
+  uid: f72bf6f7-3d8c-4b31-893b-ef03d4718959
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: hello
+  onExit: exit-handler
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - echo hello
+      command:
+      - sh
+      - -c
+      image: alpine:3.18
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: hello
+    outputs: {}
+  - container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.18
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-10-14T09:21:27Z"
+  message: Error (exit code 1)
+  nodes:
+    retry-workflow-with-failed-exit-handler:
+      displayName: retry-workflow-with-failed-exit-handler
+      finishedAt: "2024-10-14T09:21:18Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: retry-workflow-with-failed-exit-handler
+      name: retry-workflow-with-failed-exit-handler
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: retry-workflow-with-failed-exit-handler/retry-workflow-with-failed-exit-handler/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-14T09:21:14Z"
+      templateName: hello
+      templateScope: local/retry-workflow-with-failed-exit-handler
+      type: Pod
+    retry-workflow-with-failed-exit-handler-512308683:
+      displayName: retry-workflow-with-failed-exit-handler.onExit
+      finishedAt: "2024-10-14T09:21:24Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: retry-workflow-with-failed-exit-handler-512308683
+      message: Error (exit code 1)
+      name: retry-workflow-with-failed-exit-handler.onExit
+      nodeFlag:
+        hooked: true
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: retry-workflow-with-failed-exit-handler/retry-workflow-with-failed-exit-handler-exit-handler-512308683/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-14T09:21:21Z"
+      templateName: exit-handler
+      templateScope: local/retry-workflow-with-failed-exit-handler
+      type: Pod
+  phase: Failed
+  progress: 1/2
+  resourcesDuration:
+    cpu: 0
+    memory: 4
+  startedAt: "2024-10-14T09:21:14Z"
+  taskResultsCompletionStatus:
+    retry-workflow-with-failed-exit-handler: true
+    retry-workflow-with-failed-exit-handler-512308683: true
+`
+
+func TestOnExitWorkflow(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflow)
+
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{})
+	require.NoError(err)
+	assert.Len(podsToDelete, 1)
+	assert.Len(newWf.Status.Nodes, 1)
+	assert.Equal(wfv1.NodeSucceeded, newWf.Status.Nodes["retry-workflow-with-failed-exit-handler"].Phase)
+
+}
+
+const nestedDAG = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-10-16T04:12:51Z"
+  generateName: dag-nested-
+  generation: 39
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+    workflows.argoproj.io/resubmitted-from-workflow: dag-nested-52l5t
+  name: dag-nested-zxlc2
+  namespace: argo
+  resourceVersion: "11348"
+  uid: 402ed1f0-0dbf-42fd-92b8-b7858ba2979c
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: diamond
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      command:
+      - echo
+      - '{{inputs.parameters.message}}'
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: echo
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: A
+        name: A
+        template: nested-diamond
+      - arguments:
+          parameters:
+          - name: message
+            value: B
+        depends: A
+        name: B
+        template: nested-diamond
+      - arguments:
+          parameters:
+          - name: message
+            value: C
+        depends: A
+        name: C
+        template: nested-diamond
+      - arguments:
+          parameters:
+          - name: message
+            value: D
+        depends: B && C
+        name: D
+        template: nested-diamond
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}A'
+        name: A
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}B'
+        depends: A
+        name: B
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}C'
+        depends: A
+        name: C
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}D'
+        depends: B && C
+        name: D
+        template: echo
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: nested-diamond
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-10-16T04:13:49Z"
+  nodes:
+    dag-nested-zxlc2:
+      children:
+      - dag-nested-zxlc2-1970677234
+      displayName: dag-nested-zxlc2
+      finishedAt: "2024-10-16T04:13:49Z"
+      id: dag-nested-zxlc2
+      name: dag-nested-zxlc2
+      outboundNodes:
+      - dag-nested-zxlc2-644277987
+      phase: Succeeded
+      progress: 16/16
+      resourcesDuration:
+        cpu: 0
+        memory: 30
+      startedAt: "2024-10-16T04:12:51Z"
+      templateName: diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-644277987:
+      boundaryID: dag-nested-zxlc2-1920344377
+      displayName: D
+      finishedAt: "2024-10-16T04:13:46Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-644277987
+      inputs:
+        parameters:
+        - name: message
+          value: DD
+      name: dag-nested-zxlc2.D.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-644277987/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:43Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-694610844:
+      boundaryID: dag-nested-zxlc2-1920344377
+      children:
+      - dag-nested-zxlc2-744943701
+      - dag-nested-zxlc2-728166082
+      displayName: A
+      finishedAt: "2024-10-16T04:13:33Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-694610844
+      inputs:
+        parameters:
+        - name: message
+          value: DA
+      name: dag-nested-zxlc2.D.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-694610844/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 1
+      startedAt: "2024-10-16T04:13:30Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-725087280:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-1953899615
+      - dag-nested-zxlc2-1937121996
+      displayName: D
+      finishedAt: "2024-10-16T04:13:07Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-725087280
+      inputs:
+        parameters:
+        - name: message
+          value: AD
+      name: dag-nested-zxlc2.A.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-725087280/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:03Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-728166082:
+      boundaryID: dag-nested-zxlc2-1920344377
+      children:
+      - dag-nested-zxlc2-644277987
+      displayName: C
+      finishedAt: "2024-10-16T04:13:40Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-728166082
+      inputs:
+        parameters:
+        - name: message
+          value: DC
+      name: dag-nested-zxlc2.D.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-728166082/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:36Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-744943701:
+      boundaryID: dag-nested-zxlc2-1920344377
+      children:
+      - dag-nested-zxlc2-644277987
+      displayName: B
+      finishedAt: "2024-10-16T04:13:40Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-744943701
+      inputs:
+        parameters:
+        - name: message
+          value: DB
+      name: dag-nested-zxlc2.D.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-744943701/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:36Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-808975375:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-825752994
+      - dag-nested-zxlc2-842530613
+      displayName: A
+      finishedAt: "2024-10-16T04:12:54Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-808975375
+      inputs:
+        parameters:
+        - name: message
+          value: AA
+      name: dag-nested-zxlc2.A.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-808975375/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 1
+      startedAt: "2024-10-16T04:12:51Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-825752994:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-725087280
+      displayName: B
+      finishedAt: "2024-10-16T04:13:00Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-825752994
+      inputs:
+        parameters:
+        - name: message
+          value: AB
+      name: dag-nested-zxlc2.A.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-825752994/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:12:57Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-842530613:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-725087280
+      displayName: C
+      finishedAt: "2024-10-16T04:13:00Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-842530613
+      inputs:
+        parameters:
+        - name: message
+          value: AC
+      name: dag-nested-zxlc2.A.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-842530613/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:12:57Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-903321510:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-1920344377
+      displayName: D
+      finishedAt: "2024-10-16T04:13:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-903321510
+      inputs:
+        parameters:
+        - name: message
+          value: CD
+      name: dag-nested-zxlc2.C.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-903321510/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:23Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-936876748:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-903321510
+      displayName: B
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-936876748
+      inputs:
+        parameters:
+        - name: message
+          value: CB
+      name: dag-nested-zxlc2.C.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-936876748/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-953654367:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-903321510
+      displayName: C
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-953654367
+      inputs:
+        parameters:
+        - name: message
+          value: CC
+      name: dag-nested-zxlc2.C.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-953654367/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-987209605:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-936876748
+      - dag-nested-zxlc2-953654367
+      displayName: A
+      finishedAt: "2024-10-16T04:13:13Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-987209605
+      inputs:
+        parameters:
+        - name: message
+          value: CA
+      name: dag-nested-zxlc2.C.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-987209605/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-1920344377:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-694610844
+      displayName: D
+      finishedAt: "2024-10-16T04:13:49Z"
+      id: dag-nested-zxlc2-1920344377
+      inputs:
+        parameters:
+        - name: message
+          value: D
+      name: dag-nested-zxlc2.D
+      outboundNodes:
+      - dag-nested-zxlc2-644277987
+      phase: Succeeded
+      progress: 4/4
+      resourcesDuration:
+        cpu: 0
+        memory: 7
+      startedAt: "2024-10-16T04:13:30Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-1937121996:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-987209605
+      displayName: C
+      finishedAt: "2024-10-16T04:13:30Z"
+      id: dag-nested-zxlc2-1937121996
+      inputs:
+        parameters:
+        - name: message
+          value: C
+      name: dag-nested-zxlc2.C
+      outboundNodes:
+      - dag-nested-zxlc2-903321510
+      phase: Succeeded
+      progress: 8/8
+      resourcesDuration:
+        cpu: 0
+        memory: 15
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-1953899615:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-3753141766
+      displayName: B
+      finishedAt: "2024-10-16T04:13:30Z"
+      id: dag-nested-zxlc2-1953899615
+      inputs:
+        parameters:
+        - name: message
+          value: B
+      name: dag-nested-zxlc2.B
+      outboundNodes:
+      - dag-nested-zxlc2-3837029861
+      phase: Succeeded
+      progress: 8/8
+      resourcesDuration:
+        cpu: 0
+        memory: 15
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-1970677234:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-808975375
+      displayName: A
+      finishedAt: "2024-10-16T04:13:10Z"
+      id: dag-nested-zxlc2-1970677234
+      inputs:
+        parameters:
+        - name: message
+          value: A
+      name: dag-nested-zxlc2.A
+      outboundNodes:
+      - dag-nested-zxlc2-725087280
+      phase: Succeeded
+      progress: 16/16
+      resourcesDuration:
+        cpu: 0
+        memory: 30
+      startedAt: "2024-10-16T04:12:51Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-3719586528:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-3837029861
+      displayName: C
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3719586528
+      inputs:
+        parameters:
+        - name: message
+          value: BC
+      name: dag-nested-zxlc2.B.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3719586528/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-3736364147:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-3837029861
+      displayName: B
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3736364147
+      inputs:
+        parameters:
+        - name: message
+          value: BB
+      name: dag-nested-zxlc2.B.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3736364147/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-3753141766:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-3736364147
+      - dag-nested-zxlc2-3719586528
+      displayName: A
+      finishedAt: "2024-10-16T04:13:13Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3753141766
+      inputs:
+        parameters:
+        - name: message
+          value: BA
+      name: dag-nested-zxlc2.B.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3753141766/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-3837029861:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-1920344377
+      displayName: D
+      finishedAt: "2024-10-16T04:13:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3837029861
+      inputs:
+        parameters:
+        - name: message
+          value: BD
+      name: dag-nested-zxlc2.B.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3837029861/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:23Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+  phase: Succeeded
+  progress: 16/16
+  resourcesDuration:
+    cpu: 0
+    memory: 30
+  startedAt: "2024-10-16T04:12:51Z"
+  taskResultsCompletionStatus:
+    dag-nested-zxlc2-644277987: true
+    dag-nested-zxlc2-694610844: true
+    dag-nested-zxlc2-725087280: true
+    dag-nested-zxlc2-728166082: true
+    dag-nested-zxlc2-744943701: true
+    dag-nested-zxlc2-808975375: true
+    dag-nested-zxlc2-825752994: true
+    dag-nested-zxlc2-842530613: true
+    dag-nested-zxlc2-903321510: true
+    dag-nested-zxlc2-936876748: true
+    dag-nested-zxlc2-953654367: true
+    dag-nested-zxlc2-987209605: true
+    dag-nested-zxlc2-3719586528: true
+    dag-nested-zxlc2-3736364147: true
+    dag-nested-zxlc2-3753141766: true
+    dag-nested-zxlc2-3837029861: true
+
+`
+
+func TestNestedDAG(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
+
+	running := map[string]bool{
+		"dag-nested-zxlc2-1920344377":  true,
+		"dag-nested-zxlc2-1970677234 ": true,
+		"dag-nested-zxlc2":             true,
+	}
+	deleted := map[string]bool{
+		"dag-nested-zxlc2-744943701": true,
+		"dag-nested-zxlc2-644277987": true,
+	}
+
+	succeeded := map[string]bool{}
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
+	require.NoError(err)
+	assert.Len(podsToDelete, 2)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+
+}
+
+const onExitPanic = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-02-11T05:25:47Z"
+  generateName: exit-handlers-
+  generation: 21
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: exit-handlers-n7s4n
+  namespace: argo
+  resourceVersion: "2255"
+  uid: 7b2f1451-9a9a-4f66-a0d9-0364f814d948
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - echo intentional failure; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: intentional-fail
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: notify
+        template: send-email
+      - arguments: {}
+        name: celebrate
+        template: celebrate
+        when: '{{workflow.status}} == Succeeded'
+      - arguments: {}
+        name: cry
+        template: cry
+        when: '{{workflow.status}} != Succeeded'
+  - container:
+      args:
+      - 'echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}.
+        Failed steps {{workflow.failures}}'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: send-email
+    outputs: {}
+  - container:
+      args:
+      - echo hooray!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: celebrate
+    outputs: {}
+  - container:
+      args:
+      - echo boohoo!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: cry
+    outputs: {}
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2025-02-11T05:31:30Z"
+  message: 'main: Error (exit code 1)'
+  nodes:
+    exit-handlers-n7s4n:
+      displayName: exit-handlers-n7s4n
+      finishedAt: "2025-02-11T05:31:18Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n
+      message: 'main: Error (exit code 1)'
+      name: exit-handlers-n7s4n
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 4
+      startedAt: "2025-02-11T05:31:12Z"
+      templateName: intentional-fail
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+    exit-handlers-n7s4n-134905866:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: celebrate
+      finishedAt: "2025-02-11T05:31:21Z"
+      id: exit-handlers-n7s4n-134905866
+      message: when 'Failed == Succeeded' evaluated false
+      name: exit-handlers-n7s4n.onExit[0].celebrate
+      nodeFlag: {}
+      phase: Skipped
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: celebrate
+      templateScope: local/exit-handlers-n7s4n
+      type: Skipped
+    exit-handlers-n7s4n-975057257:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      children:
+      - exit-handlers-n7s4n-3201878844
+      - exit-handlers-n7s4n-134905866
+      - exit-handlers-n7s4n-2699669595
+      displayName: '[0]'
+      finishedAt: "2025-02-11T05:31:30Z"
+      id: exit-handlers-n7s4n-975057257
+      name: exit-handlers-n7s4n.onExit[0]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-02-11T05:31:21Z"
+      templateScope: local/exit-handlers-n7s4n
+      type: StepGroup
+    exit-handlers-n7s4n-1410405845:
+      children:
+      - exit-handlers-n7s4n-975057257
+      displayName: exit-handlers-n7s4n.onExit
+      finishedAt: "2025-02-11T05:31:30Z"
+      id: exit-handlers-n7s4n-1410405845
+      name: exit-handlers-n7s4n.onExit
+      nodeFlag:
+        hooked: true
+      outboundNodes:
+      - exit-handlers-n7s4n-3201878844
+      - exit-handlers-n7s4n-134905866
+      - exit-handlers-n7s4n-2699669595
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: exit-handler
+      templateScope: local/exit-handlers-n7s4n
+      type: Steps
+    exit-handlers-n7s4n-2699669595:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: cry
+      finishedAt: "2025-02-11T05:31:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n-2699669595
+      name: exit-handlers-n7s4n.onExit[0].cry
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n-cry-2699669595/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: cry
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+    exit-handlers-n7s4n-3201878844:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: notify
+      finishedAt: "2025-02-11T05:31:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n-3201878844
+      name: exit-handlers-n7s4n.onExit[0].notify
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n-send-email-3201878844/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: send-email
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+  phase: Failed
+  progress: 2/3
+  resourcesDuration:
+    cpu: 0
+    memory: 10
+  startedAt: "2025-02-11T05:31:12Z"
+  taskResultsCompletionStatus:
+    exit-handlers-n7s4n: true
+    exit-handlers-n7s4n-2699669595: true
+    exit-handlers-n7s4n-3201878844: true
+`
+
+func TestRegressions(t *testing.T) {
+	t.Run("exit handler", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(onExitPanic)
+		newWf, _, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
+		require.NoError(t, err)
+		// we can't really handle exit handlers granually yet
+		assert.Empty(t, newWf.Status.Nodes)
+	})
 }

@@ -18,9 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-
-	"github.com/argoproj/pkg/file"
-	"github.com/pkg/errors"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -90,7 +88,7 @@ func determineAccountName(containerUrl *url.URL) (string, error) {
 	if strings.HasPrefix(hostname, "127.0.0.1") || strings.HasPrefix(hostname, "localhost") {
 		parts := strings.Split(containerUrl.Path, "/")
 		if len(parts) <= 2 {
-			return "", errors.Errorf("unable to determine storage account name from %s", containerUrl)
+			return "", fmt.Errorf("unable to determine storage account name from %s", containerUrl)
 		}
 		return parts[1], nil
 	} else {
