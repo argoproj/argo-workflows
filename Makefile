@@ -33,6 +33,20 @@ DOCKER_PUSH           ?= false
 TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
 K3D_CLUSTER_NAME      ?= k3s-default # declares which cluster to import to in case it's not the default name
 
+# -- dev container options
+DEVCONTAINER_PUSH     ?= false
+# Extract image name from devcontainer.json
+DEVCONTAINER_IMAGE    ?= $(shell sed --quiet 's/^ *"image": "\([^"]*\)",/\1/p' .devcontainer/devcontainer.json)
+ifeq ($(DEVCONTAINER_PUSH),true)
+# Export both image and cache to the registry using zstd, since that produces much smaller images than gzip.
+# Docs: https://docs.docker.com/build/exporters/image-registry/ and https://docs.docker.com/build/cache/backends/registry/
+DEVCONTAINER_EXPORTER_COMMON_FLAGS ?= type=registry,compression=zstd,force-compression=true,oci-mediatypes=true
+DEVCONTAINER_FLAGS    ?= --output $(DEVCONTAINER_EXPORTER_COMMON_FLAGS) \
+	--cache-to $(DEVCONTAINER_EXPORTER_COMMON_FLAGS),ref=$(DEVCONTAINER_IMAGE):cache,mode=max
+else
+DEVCONTAINER_FLAGS    ?= --output type=cacheonly
+endif
+
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
@@ -116,6 +130,7 @@ TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
 TOOL_MDSPELL                := $(NVM_BIN)/mdspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
 TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
+TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
 TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
 TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
 
@@ -823,6 +838,7 @@ release-notes: /dev/null
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
 
+# feature notes
 FEATURE_FILENAME?=$(shell git branch --show-current)
 .PHONY: feature-new
 feature-new: hack/featuregen/featuregen
@@ -856,3 +872,22 @@ features-release: hack/featuregen/featuregen
 hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
 	go test ./hack/featuregen
 	go build -o $@ ./hack/featuregen
+
+# dev container
+
+$(TOOL_DEVCONTAINER): Makefile
+	npm list -g @devcontainers/cli@0.75.0 > /dev/null || npm i -g @devcontainers/cli@0.75.0
+
+.PHONY: devcontainer-build
+devcontainer-build: $(TOOL_DEVCONTAINER)
+	devcontainer build \
+		--workspace-folder . \
+		--config .devcontainer/builder/devcontainer.json \
+		--platform $(TARGET_PLATFORM) \
+		--image-name $(DEVCONTAINER_IMAGE) \
+		--cache-from $(DEVCONTAINER_IMAGE):cache \
+		$(DEVCONTAINER_FLAGS)
+
+.PHONY: devcontainer-up
+devcontainer-up: $(TOOL_DEVCONTAINER)
+	devcontainer up --workspace-folder .
