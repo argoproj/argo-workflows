@@ -80,6 +80,33 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
+func (woc *wfOperationCtx) processPodSpecPatch(tmpl *wfv1.Template, pod *apiv1.Pod) ([]string, error) {
+	podSpecPatches := []string{}
+	localParams := make(map[string]string)
+	if tmpl.IsPodType() {
+		localParams[common.LocalVarPodName] = pod.Name
+	}
+	toProcess := []string{}
+	if woc.execWf.Spec.HasPodSpecPatch() {
+		toProcess = append(toProcess, woc.execWf.Spec.PodSpecPatch)
+	}
+	if tmpl.HasPodSpecPatch() {
+		toProcess = append(toProcess, tmpl.PodSpecPatch)
+	}
+
+	for _, patch := range toProcess {
+		newTmpl := tmpl.DeepCopy()
+		newTmpl.PodSpecPatch = patch
+		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
+		}
+		podSpecPatches = append(podSpecPatches, processedTmpl.PodSpecPatch)
+	}
+	return podSpecPatches, nil
+
+}
+
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
@@ -361,22 +388,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Apply the patch string from workflow and template
 	var podSpecPatchs []string
-	if woc.execWf.Spec.HasPodSpecPatch() {
-		// Final substitution for workflow level PodSpecPatch
-		localParams := make(map[string]string)
-		if tmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = pod.Name
-		}
-		newTmpl := tmpl.DeepCopy()
-		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
-		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
-		}
-		podSpecPatchs = append(podSpecPatchs, processedTmpl.PodSpecPatch)
-	}
-	if tmpl.HasPodSpecPatch() {
-		podSpecPatchs = append(podSpecPatchs, tmpl.PodSpecPatch)
+	podSpecPatchs, err = woc.processPodSpecPatch(tmpl, pod)
+	if err != nil {
+		return nil, err
 	}
 	if len(podSpecPatchs) > 0 {
 		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
