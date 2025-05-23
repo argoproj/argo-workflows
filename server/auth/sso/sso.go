@@ -7,8 +7,11 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -32,6 +35,8 @@ import (
 const (
 	Prefix                              = "Bearer v2:"
 	issuer                              = "argo-server"                // the JWT issuer
+	sessionAudience                     = "argo-session"               // the default audience for the JWT
+	cliAudience                         = "cli-auth"                   // the audience for the CLI JWT
 	secretName                          = "sso"                        // where we store SSO secret
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
@@ -47,6 +52,7 @@ type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
+	HandleCliExchange(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
 }
 
@@ -223,6 +229,53 @@ func newSso(
 	}, nil
 }
 
+func (s *sso) HandleCliExchange(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "invalid method: only POST is allowed", 400)
+		return
+	}
+	defer r.Body.Close()
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "invalid content type: only application/json is allowed", 400)
+		return
+	}
+	codeExchangeRequest := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(&codeExchangeRequest)
+	if err != nil {
+		http.Error(w, "failed to decode request body", 400)
+		return
+	}
+
+	code := codeExchangeRequest["code"]
+	if code == "" {
+		http.Error(w, "no code provided", 400)
+		return
+	}
+
+	// audience and original passed cli state should match
+	argoClaims, err := s.parseClaims(code, jwt.Expected{Issuer: issuer, Audience: jwt.Audience{cliAudience}, ID: codeExchangeRequest["state"]})
+	if err != nil {
+		http.Error(w, "failed to validate claims", 400)
+	}
+
+	// update audience and expiration time
+	argoClaims.Expiry = jwt.NewNumericDate(time.Now().Add(s.expiry))
+	argoClaims.Audience = jwt.Audience{sessionAudience}
+
+	// issue a new token
+	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
+	if err != nil {
+		log.WithError(err).Errorf("failed to encrypt and serialize the jwt token")
+		w.WriteHeader(400)
+		return
+	}
+
+	w.WriteHeader(200)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"token": Prefix + raw,
+	})
+}
+
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	finalRedirectUrl := r.URL.Query().Get("redirect")
 	if !isValidFinalRedirectUrl(finalRedirectUrl) {
@@ -234,9 +287,26 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
+
+	cookieData := map[string]string{
+		"redirect": finalRedirectUrl,
+	}
+
+	if r.URL.Query().Get("cli") != "" {
+		cookieData["cli"] = "true"                               // to differentiate between CLI and web flow
+		cookieData["cli_state"] = r.URL.Query().Get("cli_state") // to pass the state from the CLI to the web flow and store in JWT jti
+	}
+
+	cookieJson, err := json.Marshal(cookieData)
+	if err != nil {
+		log.WithError(err).Error("failed to create cookie")
+		w.WriteHeader(500)
+		return
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    finalRedirectUrl,
+		Value:    base64.StdEncoding.EncodeToString(cookieJson),
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -257,6 +327,26 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
+
+	cookieJson, err := base64.StdEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		log.WithError(err).Error("failed to decode cookie")
+		w.WriteHeader(400)
+		return
+	}
+
+	// Decode the cookie value
+	cookieValue := make(map[string]string)
+	err = json.Unmarshal(cookieJson, &cookieValue)
+	if err != nil {
+		log.WithError(err).Error("failed to decode cookie value")
+		w.WriteHeader(400)
+		return
+	}
+
+	cliFlow := isLocalhost(cookieValue["redirect"]) && cookieValue["cli"] == "true"
+	cliState := cookieValue["cli_state"]
+
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
 	// Use sso.httpClient in order to respect TLSOptions
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
@@ -318,12 +408,21 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		groups = filteredGroups
 	}
 
+	jwtClaims := jwt.Claims{
+		Issuer:   issuer,
+		Subject:  c.Subject,
+		Expiry:   jwt.NewNumericDate(time.Now().Add(s.expiry)),
+		Audience: jwt.Audience{sessionAudience},
+	}
+
+	if cliFlow {
+		jwtClaims.Audience = jwt.Audience{cliAudience}
+		jwtClaims.Expiry = jwt.NewNumericDate(time.Now().Add(10 * time.Second))
+		jwtClaims.ID = cliState
+	}
+
 	argoClaims := &types.Claims{
-		Claims: jwt.Claims{
-			Issuer:  issuer,
-			Subject: c.Subject,
-			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
-		},
+		Claims:                  jwtClaims,
 		Groups:                  groups,
 		Email:                   c.Email,
 		EmailVerified:           c.EmailVerified,
@@ -338,23 +437,40 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		return
 	}
+
+	finalRedirectUrl := cookieValue["redirect"]
+	if !isValidFinalRedirectUrl(finalRedirectUrl) {
+		finalRedirectUrl = s.baseHRef
+	}
+
 	value := Prefix + raw
 	log.Debugf("handing oauth2 callback %v", value)
-	http.SetCookie(w, &http.Cookie{
-		Value:    value,
-		Name:     "authorization",
-		Path:     s.baseHRef,
-		Expires:  time.Now().Add(s.expiry),
-		SameSite: http.SameSiteStrictMode,
-		Secure:   s.secure,
-	})
 
-	finalRedirectUrl := cookie.Value
-	if !isValidFinalRedirectUrl(cookie.Value) {
-		finalRedirectUrl = s.baseHRef
-
+	// for localhost we don't need to set the cookie, but we need to generate temporary jwt token for exchange and send to the client
+	if cliFlow {
+		finalRedirectUrl = fmt.Sprintf("%s?code=%s", finalRedirectUrl, url.QueryEscape(raw))
+	} else {
+		http.SetCookie(w, &http.Cookie{
+			Value:    value,
+			Name:     "authorization",
+			Path:     s.baseHRef,
+			Expires:  time.Now().Add(s.expiry),
+			SameSite: http.SameSiteStrictMode,
+			Secure:   s.secure,
+		})
 	}
+
 	http.Redirect(w, r, finalRedirectUrl, http.StatusFound)
+}
+
+func isLocalhost(urlString string) bool {
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return false
+	}
+
+	hostname := u.Hostname()
+	return hostname == "localhost" || hostname == "127.0.0.1" || strings.HasPrefix(hostname, "127.")
 }
 
 // isValidFinalRedirectUrl checks whether the final redirect URL is safe.
@@ -374,13 +490,22 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 // "https" while the request scheme would be "http"
 // (see https://github.com/argoproj/argo-workflows/issues/13031).
 func isValidFinalRedirectUrl(redirect string) bool {
+	// allow redirect to localhost for CLI flow
+	if isLocalhost(redirect) {
+		return true
+	}
+
 	// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L47
 	return strings.HasPrefix(redirect, "/") && !strings.HasPrefix(redirect, "//") && !invalidRedirectRegex.MatchString(redirect)
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
-	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
+	return s.parseClaims(strings.TrimPrefix(authorization, Prefix), jwt.Expected{Issuer: issuer, Audience: jwt.Audience{sessionAudience}})
+}
+
+func (s *sso) parseClaims(jwtToken string, expected jwt.Expected) (*types.Claims, error) {
+	tok, err := jwt.ParseEncrypted(jwtToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token %v", err)
 	}
@@ -389,7 +514,7 @@ func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
 
-	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
+	if err := c.Validate(expected); err != nil {
 		return nil, fmt.Errorf("failed to validate claims: %v", err)
 	}
 

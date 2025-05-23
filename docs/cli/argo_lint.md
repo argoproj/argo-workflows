@@ -43,6 +43,7 @@ argo lint FILE... [flags]
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
+      --config string                  config file (default is $HOME/.argo/config.yaml)
       --context string                 The name of the kubeconfig context to use
       --disable-compression            If true, opt-out of response compression for all requests to the server
       --gloglevel int                  Set the glog logging level
