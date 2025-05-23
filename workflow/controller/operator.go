@@ -3301,7 +3301,7 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 		art.FromExpression = ""
 		art.Deleted = true
 		art.ArtifactLocation = wfv1.ArtifactLocation{}
-		art.ArtifactLocation.Raw = &wfv1.RawArtifact{Data: ""}
+		art.Raw = &wfv1.RawArtifact{Data: ""}
 		art.ArtifactGC = nil
 		scope.addArtifactToScope(key, art)
 	}
