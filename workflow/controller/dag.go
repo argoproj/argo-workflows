@@ -657,7 +657,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
 	scope := createScope(dagCtx.tmpl)
-	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, scope)
+	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, scope, nil)
 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name)
 	for _, ancestor := range ancestors {

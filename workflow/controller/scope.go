@@ -57,6 +57,11 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 	s.scope[key] = artifact
 }
 
+func (s *wfScope) hasArtifact(key string) bool {
+	_, ok := s.scope[key]
+	return ok
+}
+
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	m := make(map[string]interface{})

@@ -2587,8 +2587,10 @@ func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
-var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
-var displayNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
+var (
+	stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
+	displayNameRegex    = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
+)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
@@ -2981,7 +2983,6 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
 	})
-
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
@@ -3222,10 +3223,20 @@ func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*w
 // buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
 func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+
+	var artifacts wfv1.Artifacts
+
 	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
 	// in the retry group instead of the retry node itself.
 	if lastChildNode := woc.possiblyGetRetryChildNode(node); lastChildNode != nil {
 		node = lastChildNode
+	}
+
+	tmpl, err := woc.GetNodeTemplate(node)
+	if err != nil || tmpl == nil {
+		woc.log.Warnf("was unable to obtain template for node: %s when building local scope", node.Name)
+	} else {
+		artifacts = tmpl.Outputs.Artifacts
 	}
 
 	if node.ID != "" {
@@ -3255,12 +3266,15 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		key := fmt.Sprintf("%s.hostNodeName", prefix)
 		scope.addParamToScope(key, string(node.HostNodeName))
 	}
-	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
+	woc.addOutputsToLocalScope(prefix, node.Outputs, scope, artifacts)
 }
 
-func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
-	if outputs == nil || scope == nil {
+func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope, tmplArts wfv1.Artifacts) {
+	if (outputs == nil && len(tmplArts) == 0) || scope == nil {
 		return
+	}
+	if outputs == nil {
+		outputs = &wfv1.Outputs{}
 	}
 	if prefix != "workflow" && outputs.Result != nil {
 		scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), *outputs.Result)
@@ -3275,6 +3289,21 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 	}
 	for _, art := range outputs.Artifacts {
 		scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name), art)
+	}
+
+	for _, art := range tmplArts {
+		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)
+		if scope.hasArtifact(key) {
+			continue
+		}
+
+		art.From = ""
+		art.FromExpression = ""
+		art.Deleted = true
+		art.ArtifactLocation = wfv1.ArtifactLocation{}
+		art.ArtifactLocation.Raw = &wfv1.RawArtifact{Data: ""}
+		art.ArtifactGC = nil
+		scope.addArtifactToScope(key, art)
 	}
 }
 
