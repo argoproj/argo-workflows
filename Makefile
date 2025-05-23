@@ -33,6 +33,20 @@ DOCKER_PUSH           ?= false
 TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
 K3D_CLUSTER_NAME      ?= k3s-default # declares which cluster to import to in case it's not the default name
 
+# -- dev container options
+DEVCONTAINER_PUSH     ?= false
+# Extract image name from devcontainer.json
+DEVCONTAINER_IMAGE    ?= $(shell sed --quiet 's/^ *"image": "\([^"]*\)",/\1/p' .devcontainer/devcontainer.json)
+ifeq ($(DEVCONTAINER_PUSH),true)
+# Export both image and cache to the registry using zstd, since that produces much smaller images than gzip.
+# Docs: https://docs.docker.com/build/exporters/image-registry/ and https://docs.docker.com/build/cache/backends/registry/
+DEVCONTAINER_EXPORTER_COMMON_FLAGS ?= type=registry,compression=zstd,force-compression=true,oci-mediatypes=true
+DEVCONTAINER_FLAGS    ?= --output $(DEVCONTAINER_EXPORTER_COMMON_FLAGS) \
+	--cache-to $(DEVCONTAINER_EXPORTER_COMMON_FLAGS),ref=$(DEVCONTAINER_IMAGE):cache,mode=max
+else
+DEVCONTAINER_FLAGS    ?= --output type=cacheonly
+endif
+
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
@@ -116,6 +130,7 @@ TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
 TOOL_MDSPELL                := $(NVM_BIN)/mdspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
 TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
+TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
 TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
 TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
 
@@ -264,6 +279,7 @@ else
 endif
 
 argoexec-image:
+argoexec-nonroot-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
@@ -317,7 +333,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/vektra/mockery/v2@v2.42.2
+	go install github.com/vektra/mockery/v2@v2.53.3
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -474,7 +490,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.1.1
 
 .PHONY: lint
 lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
@@ -818,3 +834,22 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
+
+# dev container
+
+$(TOOL_DEVCONTAINER): Makefile
+	npm list -g @devcontainers/cli@0.75.0 > /dev/null || npm i -g @devcontainers/cli@0.75.0
+
+.PHONY: devcontainer-build
+devcontainer-build: $(TOOL_DEVCONTAINER)
+	devcontainer build \
+		--workspace-folder . \
+		--config .devcontainer/builder/devcontainer.json \
+		--platform $(TARGET_PLATFORM) \
+		--image-name $(DEVCONTAINER_IMAGE) \
+		--cache-from $(DEVCONTAINER_IMAGE):cache \
+		$(DEVCONTAINER_FLAGS)
+
+.PHONY: devcontainer-up
+devcontainer-up: $(TOOL_DEVCONTAINER)
+	devcontainer up --workspace-folder .

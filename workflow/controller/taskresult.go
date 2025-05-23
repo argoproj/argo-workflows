@@ -77,10 +77,11 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
 		// If the task result is completed, set the state to true.
-		if label == "true" {
+		switch label {
+		case "true":
 			woc.log.Debugf("Marking task result complete %s", resultName)
 			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else if label == "false" {
+		case "false":
 			woc.log.Debugf("Marking task result incomplete %s", resultName)
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}

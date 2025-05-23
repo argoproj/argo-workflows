@@ -21,7 +21,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -54,31 +53,31 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", sutils.ListOptions{Limit: 2, Offset: 0}).Return(wfv1.Workflows{{}, {}}, nil)
-	repo.On("ListWorkflows", sutils.ListOptions{Limit: 2, Offset: 1}).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Limit: 2, Offset: 1}).Return(v1alpha1.Workflows{{}}, nil)
 	minStartAt, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
 	maxStartAt, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 	createdTime := metav1.Time{Time: time.Now().UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
-	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(wfv1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
 	repo.On("CountWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(int64(5), nil)
 	repo.On("CountWorkflows", sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(int64(5), nil)
 	repo.On("GetWorkflow", "", "", "").Return(nil, nil)
-	repo.On("GetWorkflow", "my-uid", "", "").Return(&wfv1.Workflow{
+	repo.On("GetWorkflow", "my-uid", "", "").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
-		Spec: wfv1.WorkflowSpec{
+		Spec: v1alpha1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
-			Templates: []wfv1.Template{
+			Templates: []v1alpha1.Template{
 				{Name: "my-entrypoint", Container: &apiv1.Container{}},
 			},
 		},
 	}, nil)
-	repo.On("GetWorkflow", "failed-uid", "", "").Return(&wfv1.Workflow{
+	repo.On("GetWorkflow", "failed-uid", "", "").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "failed-wf",
 			Labels: map[string]string{
@@ -86,44 +85,44 @@ func Test_archivedWorkflowServer(t *testing.T) {
 				common.LabelKeyWorkflowArchivingStatus: "Pending",
 			},
 		},
-		Status: wfv1.WorkflowStatus{
-			Phase:      wfv1.WorkflowFailed,
+		Status: v1alpha1.WorkflowStatus{
+			Phase:      v1alpha1.WorkflowFailed,
 			StartedAt:  createdTime,
 			FinishedAt: finishedTime,
-			Nodes: map[string]wfv1.NodeStatus{
-				"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
-				"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
+			Nodes: map[string]v1alpha1.NodeStatus{
+				"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: v1alpha1.NodeFailed, Message: "failed"},
+				"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: v1alpha1.NodeSucceeded, Message: "succeeded"}},
 		},
 	}, nil)
-	repo.On("GetWorkflow", "resubmit-uid", "", "").Return(&wfv1.Workflow{
+	repo.On("GetWorkflow", "resubmit-uid", "", "").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "resubmit-wf"},
-		Spec: wfv1.WorkflowSpec{
+		Spec: v1alpha1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
-			Templates: []wfv1.Template{
+			Templates: []v1alpha1.Template{
 				{Name: "my-entrypoint", Container: &apiv1.Container{Image: "docker/whalesay:latest"}},
 			},
 		},
 	}, nil)
 	wfClient.AddReactor("create", "workflows", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, &wfv1.Workflow{
+		return true, &v1alpha1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
 		}, nil
 	})
 	repo.On("DeleteWorkflow", "my-uid").Return(nil)
-	repo.On("ListWorkflowsLabelKeys").Return(&wfv1.LabelKeys{
+	repo.On("ListWorkflowsLabelKeys").Return(&v1alpha1.LabelKeys{
 		Items: []string{"foo", "bar"},
 	}, nil)
-	repo.On("ListWorkflowsLabelValues", "my-key").Return(&wfv1.LabelValues{
+	repo.On("ListWorkflowsLabelValues", "my-key").Return(&v1alpha1.LabelValues{
 		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
-	repo.On("RetryWorkflow", "failed-uid").Return(&wfv1.Workflow{
+	repo.On("RetryWorkflow", "failed-uid").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "failed-wf"},
 	}, nil)
-	repo.On("ResubmitWorkflow", "my-uid").Return(&wfv1.Workflow{
+	repo.On("ResubmitWorkflow", "my-uid").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
-		Spec: wfv1.WorkflowSpec{
+		Spec: v1alpha1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
-			Templates: []wfv1.Template{
+			Templates: []v1alpha1.Template{
 				{Name: "my-entrypoint", Container: &apiv1.Container{}},
 			},
 		},
@@ -162,7 +161,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.name=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z,ext.showRemainingItemCount=true", Limit: 1}, NamePrefix: "my-"})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, int64(4), *resp.ListMeta.RemainingItemCount)
+		assert.Equal(t, int64(4), *resp.RemainingItemCount)
 		assert.Empty(t, resp.Continue)
 		/////// Currently, for the purpose of backward compatibility, namespace is supported both as its own query parameter and as part of the field selector
 		/////// need to test both
@@ -199,11 +198,11 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, wf)
 
-		repo.On("GetWorkflow", "", "my-ns", "my-name").Return(&wfv1.Workflow{
+		repo.On("GetWorkflow", "", "my-ns", "my-name").Return(&v1alpha1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name", Namespace: "my-ns"},
-			Spec: wfv1.WorkflowSpec{
+			Spec: v1alpha1.WorkflowSpec{
 				Entrypoint: "my-entrypoint",
-				Templates: []wfv1.Template{
+				Templates: []v1alpha1.Template{
 					{Name: "my-entrypoint", Container: &apiv1.Container{}},
 				},
 			},

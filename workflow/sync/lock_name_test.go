@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeLockName(t *testing.T) {
@@ -44,6 +45,18 @@ func TestDecodeLockName(t *testing.T) {
 			},
 		},
 		{
+			"TestDatabaseLockNamesWork",
+			args{"default/Database/foo"},
+			&lockName{
+				Namespace:    "default",
+				ResourceName: "foo",
+				Kind:         lockKindDatabase,
+			},
+			func(t assert.TestingT, err error, i ...interface{}) bool {
+				return true
+			},
+		},
+		{
 			"TestConfigMapLockNamesWork",
 			args{"default/ConfigMap/foo/bar"},
 			&lockName{
@@ -73,6 +86,69 @@ func TestDecodeLockName(t *testing.T) {
 			}
 			assert.Equalf(t, tt.want, got, "decodeLockName(%v)", tt.args.lockName)
 			got.validateEncoding(tt.args.lockName)
+		})
+	}
+}
+
+func TestNeedDBSession(t *testing.T) {
+	tests := []struct {
+		name     string
+		lockKeys []string
+		want     bool
+		wantErr  bool
+	}{
+		{
+			name: "NoDatabaseLocks",
+			lockKeys: []string{
+				"default/ConfigMap/foo/bar",
+				"default/Mutex/test",
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "SingleDatabaseLock",
+			lockKeys: []string{
+				"default/Database/foo",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "MixedLockTypesWithDatabase",
+			lockKeys: []string{
+				"default/ConfigMap/foo/bar",
+				"default/Database/foo",
+				"default/Mutex/test",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "InvalidLockName",
+			lockKeys: []string{
+				"default/Invalid/foo",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:     "EmptyLockKeys",
+			lockKeys: []string{},
+			want:     false,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := needDBSession(tt.lockKeys)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equalf(t, tt.want, got, "needDBS(%v)", tt.lockKeys)
 		})
 	}
 }

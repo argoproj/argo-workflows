@@ -162,9 +162,9 @@ type Workflows []Workflow
 func (w Workflows) Len() int      { return len(w) }
 func (w Workflows) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
 func (w Workflows) Less(i, j int) bool {
-	iStart := w[i].ObjectMeta.CreationTimestamp
+	iStart := w[i].CreationTimestamp
 	iFinish := w[i].Status.FinishedAt
-	jStart := w[j].ObjectMeta.CreationTimestamp
+	jStart := w[j].CreationTimestamp
 	jFinish := w[j].Status.FinishedAt
 	if iFinish.IsZero() && jFinish.IsZero() {
 		return !iStart.Before(&jStart)
@@ -230,7 +230,7 @@ func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
-			return wf.ObjectMeta.CreationTimestamp.After(t)
+			return wf.CreationTimestamp.After(t)
 		}
 	}
 	WorkflowFinishedBefore = func(t time.Time) WorkflowPredicate {
@@ -240,7 +240,7 @@ var (
 	}
 	WorkflowRanBetween = func(startTime time.Time, endTime time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
-			return wf.ObjectMeta.CreationTimestamp.After(startTime) && !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(endTime)
+			return wf.CreationTimestamp.After(startTime) && !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(endTime)
 		}
 	}
 )
@@ -1705,12 +1705,18 @@ func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelec
 	return selectors
 }
 
+type SyncDatabaseRef struct {
+	Key string `json:"key" protobuf:"bytes,1,name=key"`
+}
+
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
-	// ConfigMapKeyRef is configmap selector for Semaphore configuration
+	// ConfigMapKeyRef is a configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
 	// Namespace is the namespace of the configmap, default: [namespace of workflow]
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// SyncDatabaseRef is a database reference for Semaphore configuration
+	Database *SyncDatabaseRef `json:"database,omitempty" protobuf:"bytes,3,opt,name=database"`
 }
 
 // Mutex holds Mutex configuration
@@ -1719,6 +1725,8 @@ type Mutex struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// Namespace is the namespace of the mutex, default: [namespace of workflow]
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// Database specifies this is database controlled if this is set true
+	Database bool `json:"database,omitempty" protobuf:"bytes,3,opt,name=database"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -2416,7 +2424,7 @@ func (ws *WorkflowStatus) GetDuration() time.Duration {
 	if ws.FinishedAt.IsZero() {
 		return 0
 	}
-	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
+	return ws.FinishedAt.Sub(ws.StartedAt.Time)
 }
 
 // Pending returns whether or not the node is in pending state
@@ -3474,12 +3482,12 @@ func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
-	if name == wf.ObjectMeta.Name {
-		return wf.ObjectMeta.Name
+	if name == wf.Name {
+		return wf.Name
 	}
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
-	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+	return fmt.Sprintf("%s-%v", wf.Name, h.Sum32())
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.

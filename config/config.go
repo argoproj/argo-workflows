@@ -108,15 +108,14 @@ type Config struct {
 	// Workflow retention by number of workflows
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 
-	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
-	// for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
-	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
-
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
 
 	// SSO in settings for single-sign on
 	SSO SSOConfig `json:"sso,omitempty"`
+
+	// Synchronization via databases config
+	Synchronization *SyncConfig `json:"synchronization,omitempty"`
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -223,6 +222,22 @@ func (c PersistConfig) GetClusterName() string {
 		return c.ClusterName
 	}
 	return "default"
+}
+
+type SyncConfig struct {
+	DBConfig
+	ControllerName            string `json:"controllerName"`
+	SkipMigration             bool   `json:"skipMigration,omitempty"`
+	LimitTableName            string `json:"limitTableName,omitempty"`
+	StateTableName            string `json:"stateTableName,omitempty"`
+	ControllerTableName       string `json:"controllerTableName,omitempty"`
+	LockTableName             string `json:"lockTableName,omitempty"`
+	PollSeconds               *int   `json:"pollSeconds,omitempty"`
+	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
+	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`
+	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
+	// for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked).
+	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
 }
 
 type ConnectionPool struct {

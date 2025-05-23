@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
@@ -205,6 +206,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	creator.LabelCreator(ctx, newWF)
 
 	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, w.wfDefaults, &wfv1.SubmitOpts{})
 	if err != nil {
@@ -246,8 +248,8 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
-		wf.ObjectMeta.ResourceVersion = ""
-		wf.ObjectMeta.UID = ""
+		wf.ResourceVersion = ""
+		wf.UID = ""
 		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)

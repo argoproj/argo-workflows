@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
-    globals()['IoArgoprojEventsV1alpha1Sensor'] = IoArgoprojEventsV1alpha1Sensor
+    from argo_workflows.model.github_com_argoproj_argo_events_pkg_apis_events_v1alpha1_sensor import GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
+    globals()['GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor'] = GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor
 
 
 class SensorUpdateSensorRequest(ModelNormal):
@@ -89,7 +89,7 @@ class SensorUpdateSensorRequest(ModelNormal):
         return {
             'name': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
-            'sensor': (IoArgoprojEventsV1alpha1Sensor,),  # noqa: E501
+            'sensor': (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor,),  # noqa: E501
         }
 
     @cached_property
@@ -146,7 +146,7 @@ class SensorUpdateSensorRequest(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
-            sensor (IoArgoprojEventsV1alpha1Sensor): [optional]  # noqa: E501
+            sensor (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -230,7 +230,7 @@ class SensorUpdateSensorRequest(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
-            sensor (IoArgoprojEventsV1alpha1Sensor): [optional]  # noqa: E501
+            sensor (GithubComArgoprojArgoEventsPkgApisEventsV1alpha1Sensor): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

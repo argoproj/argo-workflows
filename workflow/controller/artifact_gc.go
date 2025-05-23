@@ -478,10 +478,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		pod.Spec.ServiceAccountName = podInfo.serviceAccount
 	}
 	for label, labelVal := range podInfo.podMetadata.Labels {
-		pod.ObjectMeta.Labels[label] = labelVal
+		pod.Labels[label] = labelVal
 	}
 	for annotation, annotationVal := range podInfo.podMetadata.Annotations {
-		pod.ObjectMeta.Annotations[annotation] = annotationVal
+		pod.Annotations[annotation] = annotationVal
 	}
 
 	if v := woc.controller.Config.InstanceID; v != "" {

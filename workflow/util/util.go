@@ -167,8 +167,8 @@ func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
 func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
-	if wf.ObjectMeta.Labels != nil {
-		return wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true"
+	if wf.Labels != nil {
+		return wf.Labels[common.LabelKeyCompleted] == "true"
 	}
 	return false
 }
@@ -290,10 +290,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		return err
 	}
 	if opts.GenerateName != "" {
-		wf.ObjectMeta.GenerateName = opts.GenerateName
+		wf.GenerateName = opts.GenerateName
 	}
 	if opts.Name != "" {
-		wf.ObjectMeta.Name = opts.Name
+		wf.Name = opts.Name
 	}
 	if opts.OwnerReference != nil {
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
@@ -639,10 +639,10 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	newWF.TypeMeta = wf.TypeMeta
 
 	// Resubmitted workflow will use generated names
-	if wf.ObjectMeta.GenerateName != "" {
-		newWF.ObjectMeta.GenerateName = wf.ObjectMeta.GenerateName
+	if wf.GenerateName != "" {
+		newWF.GenerateName = wf.GenerateName
 	} else {
-		newWF.ObjectMeta.GenerateName = wf.ObjectMeta.Name + "-"
+		newWF.GenerateName = wf.Name + "-"
 	}
 	// When resubmitting workflow with memoized nodes, we need to use a predetermined workflow name
 	// in order to formulate the node statuses. Which means we cannot reuse metadata.generateName
@@ -653,7 +653,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandSuffix()
+		newWF.Name = newWF.GenerateName + RandSuffix()
 	}
 
 	// carry over the unmodified spec
@@ -667,16 +667,16 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	newWF.Spec.Shutdown = ""
 
 	// carry over user labels and annotations from previous workflow.
-	if newWF.ObjectMeta.Labels == nil {
-		newWF.ObjectMeta.Labels = make(map[string]string)
+	if newWF.Labels == nil {
+		newWF.Labels = make(map[string]string)
 	}
-	for key, val := range wf.ObjectMeta.Labels {
+	for key, val := range wf.Labels {
 		switch key {
 		case common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername,
 			common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
-			newWF.ObjectMeta.Labels[key] = val
+			newWF.Labels[key] = val
 		}
 	}
 	// Apply creator labels based on the authentication information of the current request,
@@ -684,12 +684,12 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	creator.LabelCreator(ctx, &newWF)
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
-	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
-	if newWF.ObjectMeta.Annotations == nil {
-		newWF.ObjectMeta.Annotations = make(map[string]string)
+	newWF.Labels[common.LabelKeyPreviousWorkflowName] = wf.Name
+	if newWF.Annotations == nil {
+		newWF.Annotations = make(map[string]string)
 	}
-	for key, val := range wf.ObjectMeta.Annotations {
-		newWF.ObjectMeta.Annotations[key] = val
+	for key, val := range wf.Annotations {
+		newWF.Annotations[key] = val
 	}
 
 	// Setting OwnerReference from original Workflow
@@ -697,7 +697,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 
 	// Override parameters
 	if parameters != nil {
-		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
+		if _, ok := wf.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
 			log.Warnln("Overriding parameters on memoized or resubmitted workflows may have unexpected results")
 		}
 		err := overrideParameters(&newWF, parameters)
@@ -711,9 +711,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	}
 
 	// Iterate the previous nodes.
-	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
+	replaceRegexp := regexp.MustCompile("^" + wf.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	onExitNodeName := wf.Name + ".onExit"
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Panic(err)
@@ -724,7 +724,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			continue
 		}
 		originalID := node.ID
-		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
+		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
 		newNode.ID = newWF.NodeID(newNode.Name)
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
@@ -774,7 +774,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 // convertNodeID converts an old nodeID to a new nodeID
 func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
 	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.ObjectMeta.Name)
+	newNodeName := regex.ReplaceAllString(node.Name, newWf.Name)
 	return newWf.NodeID(newNodeName)
 }
 
@@ -810,7 +810,7 @@ func createNewRetryWorkflow(wf *wfv1.Workflow, parameters []string) (*wfv1.Workf
 	delete(newWF.Labels, common.LabelKeyCompleted)
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
-	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
+	newWF.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.WorkflowRunning
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
@@ -827,7 +827,7 @@ func createNewRetryWorkflow(wf *wfv1.Workflow, parameters []string) (*wfv1.Workf
 	}
 	// Override parameters
 	if parameters != nil {
-		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok {
+		if _, ok := wf.Labels[common.LabelKeyPreviousWorkflowName]; ok {
 			log.Warnln("Overriding parameters on resubmitted workflows may have unexpected results")
 		}
 		err := overrideParameters(newWF, parameters)
@@ -861,7 +861,7 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 
 	for _, wfNode := range wf.Status.Nodes {
 		parentWfNode, ok := parentsMap[wfNode.ID]
-		if !ok && wfNode.Name != wf.Name && !strings.HasPrefix(wfNode.Name, wf.ObjectMeta.Name+".onExit") {
+		if !ok && wfNode.Name != wf.Name && !strings.HasPrefix(wfNode.Name, wf.Name+".onExit") {
 			return nil, fmt.Errorf("couldn't find parent node for %s", wfNode.ID)
 		}
 
@@ -870,7 +870,7 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 			parentNode = nodes[parentWfNode.ID]
 		}
 
-		children := []*dagNode{}
+		children := make([]*dagNode, 0)
 
 		for _, childID := range wfNode.Children {
 			childNode, ok := nodes[childID]
@@ -883,7 +883,7 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 		nodes[wfNode.ID].children = children
 	}
 
-	values := []*dagNode{}
+	values := make([]*dagNode, 0)
 	for _, v := range nodes {
 		values = append(values, v)
 	}
@@ -905,13 +905,17 @@ func singularPath(nodes []*dagNode, toNode string) ([]*dagNode, error) {
 		}
 	}
 
+	if root == nil {
+		return nil, fmt.Errorf("was unable to find root")
+	}
+
 	if leaf == nil {
 		return nil, fmt.Errorf("was unable to find %s", toNode)
 	}
 
 	curr := leaf
 
-	reverseNodes := []*dagNode{}
+	reverseNodes := make([]*dagNode, 0)
 	for {
 		reverseNodes = append(reverseNodes, curr)
 		if curr.n.ID == root.n.ID {
@@ -949,37 +953,32 @@ func getChildren(n *dagNode) map[string]bool {
 
 type resetFn func(string)
 type deleteFn func(string)
+type matchFn func(*dagNode) bool
 
-// untilFn is a function that returns two variables, the first indicates
-// a `found` boolean while the second indicates if reset should be called.
-type untilFn func(*dagNode) (bool, bool)
-
-func getUntilFnNodeType(nodeType wfv1.NodeType) untilFn {
-	return func(n *dagNode) (bool, bool) {
-		return n.n.Type == nodeType, true
+func matchNodeType(nodeType wfv1.NodeType) matchFn {
+	return func(n *dagNode) bool {
+		return n.n.Type == nodeType
 	}
 }
 
-func resetUntil(n *dagNode, should untilFn, resetFunc resetFn) (*dagNode, error) {
+func resetUntil(n *dagNode, matchFunc matchFn, resetFunc resetFn) (*dagNode, error) {
 	curr := n
 	for {
 		if curr == nil {
 			return nil, fmt.Errorf("was seeking node but ran out of nodes to explore")
 		}
 
-		if foundNode, shouldReset := should(curr); foundNode {
-			if shouldReset {
-				resetFunc(curr.n.ID)
-			}
+		if match := matchFunc(curr); match {
+			resetFunc(curr.n.ID)
 			return curr, nil
 		}
 		curr = curr.parent
 	}
 }
 
-func getTillBoundaryFn(boundaryID string) untilFn {
-	return func(n *dagNode) (bool, bool) {
-		return n.n.ID == boundaryID, n.n.BoundaryID != ""
+func matchBoundaryID(boundaryID string) matchFn {
+	return func(n *dagNode) bool {
+		return n.n.ID == boundaryID
 	}
 }
 
@@ -989,6 +988,10 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 		if curr == nil {
 			return curr, nil
 		}
+		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeRetry {
+			resetFunc(curr.parent.n.ID)
+			curr = curr.parent
+		}
 		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
 			resetFunc(curr.parent.n.ID)
 		}
@@ -997,41 +1000,17 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 			return curr.parent, nil
 		}
 		var err error
-		curr, err = resetUntil(curr, getTillBoundaryFn(seekingBoundaryID), resetFunc)
+		curr, err = resetUntil(curr, matchBoundaryID(seekingBoundaryID), resetFunc)
 		if err != nil {
 			return nil, err
 		}
 	}
 }
 
-func resetStepGroup(n *dagNode, resetFunc resetFn) (*dagNode, error) {
-	return resetUntil(n, getUntilFnNodeType(wfv1.NodeTypeStepGroup), resetFunc)
-}
-
-func resetSteps(n *dagNode, resetFunc resetFn) (*dagNode, error) {
-	n, err := resetUntil(n, getUntilFnNodeType(wfv1.NodeTypeSteps), resetFunc)
-	if err != nil {
-		return nil, err
-	}
-	return resetBoundaries(n, resetFunc)
-}
-
-func resetTaskGroup(n *dagNode, resetFunc resetFn) (*dagNode, error) {
-	return resetUntil(n, getUntilFnNodeType(wfv1.NodeTypeTaskGroup), resetFunc)
-}
-
-func resetDAG(n *dagNode, resetFunc resetFn) (*dagNode, error) {
-	n, err := resetUntil(n, getUntilFnNodeType(wfv1.NodeTypeDAG), resetFunc)
-	if err != nil {
-		return nil, err
-	}
-	return resetBoundaries(n, resetFunc)
-}
-
 // resetPod is only called in the event a Container was found. This implies that there is a parent pod.
 func resetPod(n *dagNode, resetFunc resetFn, addToDelete deleteFn) (*dagNode, error) {
 	// this sets to reset but resets are overridden by deletes in the final FormulateRetryWorkflow logic.
-	curr, err := resetUntil(n, getUntilFnNodeType(wfv1.NodeTypePod), resetFunc)
+	curr, err := resetUntil(n, matchNodeType(wfv1.NodeTypePod), resetFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -1075,83 +1054,27 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 		nodesToDelete[nodeID] = true
 	}
 
-	var mustFind wfv1.NodeType
-	mustFind = ""
+	for curr != nil {
 
-	if curr.n.Type == wfv1.NodeTypeContainer {
-		// special case where the retry node is the container of a containerSet
-		mustFind = wfv1.NodeTypePod
-	}
-
-	findBoundaries := false
-	for {
-
-		if curr == nil {
-			break
-		}
-
-		switch curr.n.Type {
-		case wfv1.NodeTypePod:
-			//ignore
-		case wfv1.NodeTypeContainer:
-			//ignore
-		case wfv1.NodeTypeSteps:
+		switch {
+		case isGroupNodeType(curr.n.Type):
 			addToReset(curr.n.ID)
-			findBoundaries = true
-		case wfv1.NodeTypeStepGroup:
-			addToReset(curr.n.ID)
-			findBoundaries = true
-		case wfv1.NodeTypeDAG:
-			addToReset(curr.n.ID)
-			findBoundaries = true
-		case wfv1.NodeTypeTaskGroup:
-			addToReset(curr.n.ID)
-			findBoundaries = true
-		case wfv1.NodeTypeRetry:
-			addToReset(curr.n.ID)
-		case wfv1.NodeTypeSkipped:
-			// ignore -> doesn't make sense to reach this
-		case wfv1.NodeTypeSuspend:
-			// ignore
-		case wfv1.NodeTypeHTTP:
-			// ignore
-		case wfv1.NodeTypePlugin:
-			addToReset(curr.n.ID)
-		}
-
-		if mustFind == "" && !findBoundaries {
-			curr = curr.parent
-			continue
-		}
-
-		if findBoundaries {
 			curr, err = resetBoundaries(curr, addToReset)
 			if err != nil {
 				return nil, nil, err
 			}
-			findBoundaries = false
+			continue
+		case curr.n.Type == wfv1.NodeTypeRetry:
+			addToReset(curr.n.ID)
+		case curr.n.Type == wfv1.NodeTypeContainer:
+			curr, err = resetPod(curr, addToReset, addToDelete)
+			if err != nil {
+				return nil, nil, err
+			}
 			continue
 		}
 
-		switch mustFind {
-		case wfv1.NodeTypePod:
-			curr, err = resetPod(curr, addToReset, addToDelete)
-		case wfv1.NodeTypeSteps:
-			curr, err = resetSteps(curr, addToReset)
-		case wfv1.NodeTypeStepGroup:
-			curr, err = resetStepGroup(curr, addToReset)
-		case wfv1.NodeTypeDAG:
-			curr, err = resetDAG(curr, addToReset)
-		case wfv1.NodeTypeTaskGroup:
-			curr, err = resetTaskGroup(curr, addToReset)
-		default:
-			return nil, nil, fmt.Errorf("invalid mustFind of %s supplied", mustFind)
-		}
-		mustFind = ""
-		if err != nil {
-			return nil, nil, err
-		}
-
+		curr = curr.parent
 	}
 	return nodesToReset, nodesToDelete, nil
 }
@@ -1170,11 +1093,13 @@ func setUnion[T comparable](m1 map[T]bool, m2 map[T]bool) map[T]bool {
 	}
 	return res
 }
-func shouldRetryFailedType(nodeTyp wfv1.NodeType) bool {
-	if nodeTyp == wfv1.NodeTypePod || nodeTyp == wfv1.NodeTypeContainer {
-		return true
-	}
-	return false
+
+func isGroupNodeType(nodeType wfv1.NodeType) bool {
+	return nodeType == wfv1.NodeTypeDAG || nodeType == wfv1.NodeTypeTaskGroup || nodeType == wfv1.NodeTypeStepGroup || nodeType == wfv1.NodeTypeSteps
+}
+
+func isExecutionNodeType(nodeType wfv1.NodeType) bool {
+	return nodeType == wfv1.NodeTypeContainer || nodeType == wfv1.NodeTypePod || nodeType == wfv1.NodeTypeHTTP || nodeType == wfv1.NodeTypePlugin
 }
 
 // dagSortedNodes sorts the nodes based on topological order, omits onExitNode
@@ -1220,14 +1145,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
-		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
+		if !restartSuccessful || len(nodeFieldSelector) <= 0 {
 			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
 		}
 	default:
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	onExitNodeName := wf.Name + ".onExit"
 
 	newWf, err := createNewRetryWorkflow(wf, parameters)
 	if err != nil {
@@ -1241,8 +1166,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	failed := make(map[string]bool)
 	for nodeID, node := range wf.Status.Nodes {
-		if node.Phase.FailedOrError() && shouldRetryFailedType(node.Type) && !isDescendantNodeSucceeded(wf, node, deleteNodesMap) {
-			failed[nodeID] = true
+		if node.FailedOrError() && isExecutionNodeType(node.Type) {
+			// Check its parent if current node is retry node
+			if node.NodeFlag != nil && node.NodeFlag.Retried {
+				node = *wf.Status.Nodes.Find(func(nodeStatus wfv1.NodeStatus) bool {
+					return nodeStatus.HasChild(node.ID)
+				})
+			}
+			if !isDescendantNodeSucceeded(wf, node, deleteNodesMap) {
+				failed[nodeID] = true
+			}
 		}
 	}
 	for failedNode := range failed {
@@ -1295,7 +1228,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	for nodeID := range toReset {
-		// avoid reseting nodes that are marked for deletion
+		// avoid resetting nodes that are marked for deletion
 		if in := toDelete[nodeID]; in {
 			continue
 		}
@@ -1339,9 +1272,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 				queue.Remove(currNode)
 			}
-		}
-		if n.Name == wf.Name && !shouldRetryFailedType(n.Type) {
-			newWf.Status.Nodes.Set(id, resetNode(*n.DeepCopy()))
 		}
 	}
 	for id, oldWfNode := range wf.Status.Nodes {

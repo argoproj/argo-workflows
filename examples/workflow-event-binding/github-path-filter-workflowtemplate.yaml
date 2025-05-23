@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: github-path-filter
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: files
+        value: []
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: argosay
+            arguments:
+              parameters:
+                - name: files
+                  value: "{{workflow.parameters.files}}"
+
+    - name: argosay
+      inputs:
+        parameters:
+          - name: files
+      container:
+        image: argoproj/argosay:v2
+        args: [ echo, "Files affected by commit: {{inputs.parameters.files}}" ]

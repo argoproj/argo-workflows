@@ -179,7 +179,7 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 	workflows = workflows.
 		Filter(func(wf wfv1.Workflow) bool {
-			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
+			return strings.HasPrefix(wf.Name, flags.prefix)
 		})
 	if flags.createdSince != "" && flags.finishedBefore != "" {
 		startTime, err := argotime.ParseSince(flags.createdSince)

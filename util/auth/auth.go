@@ -9,23 +9,35 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CanI(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
+// CanIArgo attempts to determine if a verb is actionable by a certain resource, this resource must be an argo resource
+func CanIArgo(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
 	logCtx := log.WithFields(log.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
 	logCtx.Debug("CanI")
+	return CanI(ctx, kubeclientset, []string{verb}, "argoproj.io", namespace, resource)
+}
 
-	review, err := kubeclientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, &auth.SelfSubjectAccessReview{
-		Spec: auth.SelfSubjectAccessReviewSpec{
-			ResourceAttributes: &auth.ResourceAttributes{
-				Namespace: namespace,
-				Verb:      verb,
-				Group:     "argoproj.io",
-				Resource:  resource,
-			},
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		return false, err
+// CanI attempts to determine if a verb is actionable by a certain resource
+func CanI(ctx context.Context, kubeclientset kubernetes.Interface, verbs []string, group, namespace, resource string) (bool, error) {
+	if len(verbs) == 0 {
+		return true, nil
 	}
-	logCtx.WithField("status", review.Status).Debug("CanI")
-	return review.Status.Allowed, nil
+	for _, verb := range verbs {
+		review, err := kubeclientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, &auth.SelfSubjectAccessReview{
+			Spec: auth.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: &auth.ResourceAttributes{
+					Namespace: namespace,
+					Verb:      verb,
+					Group:     group,
+					Resource:  resource,
+				},
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return false, err
+		}
+		if !review.Status.Allowed {
+			return false, nil
+		}
+	}
+	return true, nil
 }

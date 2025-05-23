@@ -892,6 +892,8 @@ func TestResubmitWorkflow(t *testing.T) {
 		wf, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "hello-world-9tql2", Namespace: "workflows"})
 		require.NoError(t, err)
 		assert.NotNil(t, wf)
+		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "unlabelled", Namespace: "workflows"})

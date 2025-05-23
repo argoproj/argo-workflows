@@ -79,6 +79,33 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
+func (woc *wfOperationCtx) processPodSpecPatch(tmpl *wfv1.Template, pod *apiv1.Pod) ([]string, error) {
+	podSpecPatches := []string{}
+	localParams := make(map[string]string)
+	if tmpl.IsPodType() {
+		localParams[common.LocalVarPodName] = pod.Name
+	}
+	toProcess := []string{}
+	if woc.execWf.Spec.HasPodSpecPatch() {
+		toProcess = append(toProcess, woc.execWf.Spec.PodSpecPatch)
+	}
+	if tmpl.HasPodSpecPatch() {
+		toProcess = append(toProcess, tmpl.PodSpecPatch)
+	}
+
+	for _, patch := range toProcess {
+		newTmpl := tmpl.DeepCopy()
+		newTmpl.PodSpecPatch = patch
+		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
+		}
+		podSpecPatches = append(podSpecPatches, processedTmpl.PodSpecPatch)
+	}
+	return podSpecPatches, nil
+
+}
+
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
@@ -164,10 +191,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Namespace: woc.wf.Namespace,
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
+				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
@@ -186,12 +213,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
-		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
+		pod.Finalizers = append(pod.Finalizers, common.FinalizerPodStatus)
 	}
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
-		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
+		pod.Labels[common.LabelKeyOnExit] = "true"
 	}
 
 	if woc.execWf.Spec.HostNetwork != nil {
@@ -201,7 +228,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addDNSConfig(pod)
 
 	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
 	woc.addArchiveLocation(tmpl)
@@ -234,10 +261,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			break
 		}
 	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
+	pod.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
 
 	if podGC := woc.execWf.Spec.PodGC; podGC != nil {
-		pod.ObjectMeta.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(podGC))
+		pod.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(podGC))
 	}
 
 	// Add init container only if it needs input artifacts. This is also true for
@@ -249,7 +276,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addMetadata(pod, tmpl)
 
 	// Set initial progress from pod metadata if exists.
-	if x, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyProgress]; ok {
+	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
@@ -361,22 +388,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Apply the patch string from workflow and template
 	var podSpecPatchs []string
-	if woc.execWf.Spec.HasPodSpecPatch() {
-		// Final substitution for workflow level PodSpecPatch
-		localParams := make(map[string]string)
-		if tmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = pod.Name
-		}
-		newTmpl := tmpl.DeepCopy()
-		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
-		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
-		}
-		podSpecPatchs = append(podSpecPatchs, processedTmpl.PodSpecPatch)
-	}
-	if tmpl.HasPodSpecPatch() {
-		podSpecPatchs = append(podSpecPatchs, tmpl.PodSpecPatch)
+	podSpecPatchs, err = woc.processPodSpecPatch(tmpl, pod)
+	if err != nil {
+		return nil, err
 	}
 	if len(podSpecPatchs) > 0 {
 		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
@@ -436,9 +450,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		cm := &apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      cmName,
-				Namespace: woc.wf.ObjectMeta.Namespace,
+				Namespace: woc.wf.Namespace,
 				Labels: map[string]string{
-					common.LabelKeyWorkflow: woc.wf.ObjectMeta.Name,
+					common.LabelKeyWorkflow: woc.wf.Name,
 				},
 				Annotations: map[string]string{
 					common.AnnotationKeyNodeName: nodeName,
@@ -736,18 +750,18 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.execWf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
 		for k, v := range woc.execWf.Spec.PodMetadata.Annotations {
-			pod.ObjectMeta.Annotations[k] = v
+			pod.Annotations[k] = v
 		}
 		for k, v := range woc.execWf.Spec.PodMetadata.Labels {
-			pod.ObjectMeta.Labels[k] = v
+			pod.Labels[k] = v
 		}
 	}
 
 	for k, v := range tmpl.Metadata.Annotations {
-		pod.ObjectMeta.Annotations[k] = v
+		pod.Annotations[k] = v
 	}
 	for k, v := range tmpl.Metadata.Labels {
-		pod.ObjectMeta.Labels[k] = v
+		pod.Labels[k] = v
 	}
 }
 

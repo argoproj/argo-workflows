@@ -25,7 +25,7 @@ func (w ClusterWorkflowTemplates) Len() int {
 }
 
 func (w ClusterWorkflowTemplates) Less(i, j int) bool {
-	return strings.Compare(w[j].ObjectMeta.Name, w[i].ObjectMeta.Name) > 0
+	return strings.Compare(w[j].Name, w[i].Name) > 0
 }
 
 func (w ClusterWorkflowTemplates) Swap(i, j int) {

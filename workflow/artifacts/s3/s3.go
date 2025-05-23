@@ -469,11 +469,12 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	}
 
 	var bucketLookupType minio.BucketLookupType
-	if s3cli.AddressingStyle == PathStyle {
+	switch s3cli.AddressingStyle {
+	case PathStyle:
 		bucketLookupType = minio.BucketLookupPath
-	} else if s3cli.AddressingStyle == VirtualHostedStyle {
+	case VirtualHostedStyle:
 		bucketLookupType = minio.BucketLookupDNS
-	} else {
+	default:
 		bucketLookupType = minio.BucketLookupAuto
 	}
 	minioOpts := &minio.Options{Creds: credentials, Secure: s3cli.Secure, Transport: opts.Transport, Region: s3cli.Region, BucketLookup: bucketLookupType}
