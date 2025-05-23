@@ -1,53 +1,33 @@
 # Running Locally
 
-You have two options:
+## Development Environment Setup
 
-1. Use the [Dev Container](#development-container). This takes about 7 minutes. This can be used with VSCode, the `devcontainer` CLI, or GitHub Codespaces.
-1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
+You have two options for setting up your development environment:
 
-## Development Container
+1. Use the [Dev Container](#development-container), either locally or via [GitHub Codespaces](https://github.com/codespaces). This is usually the fastest and easiest way to get started.
+1. [Manual installation](#manual-installation) of the necessary tooling. This requires a basic understanding of administering Kubernetes and package management for your OS.
 
-The development container should be able to do everything you need to do to develop Argo Workflows without installing tools on your local machine. It takes quite a long time to build the container. It runs `k3d` inside the container so you have a cluster to test against. To communicate with services running either in other development containers or directly on the local machine (e.g. a database), the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows which need to connect to a database or an API server.
+### Initial Local Setup
+
+Unless you're using GitHub Codespaces, the first step is cloning the Git repo into `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
+
+### Development Container
+
+Prebuilt [development container](https://containers.dev/) images are provided for both `amd64` and `arm64` containing all you need to develop Argo Workflows, without installing tools on your local machine. Provisioning a dev container is fully automated and typically takes ~1 minute.
 
 You can use the development container in a few different ways:
 
 1. [Visual Studio Code](https://code.visualstudio.com/) with [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). Open your `argo-workflows` folder in VSCode and it should offer to use the development container automatically. VSCode will allow you to forward ports to allow your external browser to access the running components.
-1. [`devcontainer` CLI](https://github.com/devcontainers/cli). Once installed, go to your `argo-workflows` folder and run `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.
+1. [`devcontainer` CLI](https://github.com/devcontainers/cli). In your `argo-workflows` folder, run `make devcontainer-up`, which will automatically install the CLI and start the container. Then, use `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.
 1. [GitHub Codespaces](https://github.com/codespaces). You can start editing as soon as VSCode is open, though you may want to wait for `pre-build.sh` to finish installing dependencies, building binaries, and setting up the cluster before running any commands in the terminal. Once you start running services (see next steps below), you can click on the "PORTS" tab in the VSCode terminal to see all forwarded ports. You can open the Web UI in a new tab from there.
 
 Once you have entered the container, continue to [Developing Locally](#developing-locally).
 
-Note:
+The container runs [k3d](https://k3d.io/) via [docker-in-docker](https://github.com/devcontainers/features/tree/main/src/docker-in-docker) so you have a cluster to test against. To communicate with services running either in other development containers or directly on the local machine (e.g. a database), the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows which need to connect to a database or an API server.
 
-* for **Apple Silicon**
-    * This platform can spend 3 times the indicated time
-    * Configure Docker Desktop to use BuildKit:
+Note for Windows: configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
-    ```json
-    "features": {
-      "buildkit": true
-    },
-    ```
-
-* For **Windows WSL2**
-    * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
-
-* For **Linux**
-    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d.
-
-## Requirements
-
-Clone the Git repo into: `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
-
-Add the following to your `/etc/hosts`:
-
-```text
-127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-```
+### Manual Installation
 
 To build on your own machine without using the Dev Container you will need:
 
@@ -57,6 +37,15 @@ To build on your own machine without using the Dev Container you will need:
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`node`](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
+* The following entries in your `/etc/hosts` file:
+
+    ```text
+    127.0.0.1 dex
+    127.0.0.1 minio
+    127.0.0.1 postgres
+    127.0.0.1 mysql
+    127.0.0.1 azurite
+    ```
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
