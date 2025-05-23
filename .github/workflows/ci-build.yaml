@@ -84,6 +84,7 @@ jobs:
               - .clang-format
             lint:
               - *tests
+              - .features/**
               # plus lint config
               - .golangci.yml
               # all GH workflows / actions
@@ -99,6 +100,7 @@ jobs:
               # docs scripts & tools from `make docs`
               - hack/docs/copy-readme.sh
               - hack/docs/check-env-doc.sh
+              - hack/featuregen/**
               - .markdownlint.yaml
               - .mlc_config.json
               - .spelling

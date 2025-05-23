@@ -278,6 +278,44 @@ git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
 ```
 
+### Creating Feature Descriptions
+
+When adding a new feature, you must create a feature description file that will be used to generate new feature information when we do a feature release:
+
+```bash
+make feature-new
+```
+
+This will create a new feature description file in the `.features` directory which you must then edit to describe your feature.
+By default, it uses your current branch name as the file name.
+The name of the file doesn't get used by the tooling, it just needs to be unique to your feature so as not to collide on merge.
+You can also specify a custom file name:
+
+```bash
+make feature-new FEATURE_FILENAME=my-awesome-feature
+```
+
+You must have an issue number to associate with your PR for features, and that must be placed in this file.
+It seems reasonable that all new features are discussed in an issue before being developed.
+There is a `Component` field which must match one of the fields in `hack/featuregen/components.go`
+
+The feature file should be included in your PR to document your changes.
+Before submitting, you can validate your feature file:
+
+```bash
+make features-validate
+```
+
+The `pre-commit` target will also do that.
+
+You can also preview how your feature will appear in the release notes:
+
+```bash
+make features-preview
+```
+
+This command runs a dry-run of the release notes generation process, showing you how your feature will appear in the markdown file that will be used to generate the release notes.
+
 ## Troubleshooting
 
 * When running `make pre-commit -B`, if you encounter errors like

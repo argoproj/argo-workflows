@@ -8,6 +8,7 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+hack/featuregen/featuregen
 /argo
 /argoexec
 release-notes
@@ -46,6 +47,6 @@ sdks/python/client/dist/*
 manifests/install.yaml
 manifests/namespace-install.yaml
 /logs
-node_modules 
+node_modules
 result
 .devenv
