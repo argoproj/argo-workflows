@@ -9,6 +9,7 @@ import (
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1188,4 +1189,74 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	woc.operate(ctx)
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+const podSpecPatchTemplateLevelWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-
+spec:
+  entrypoint: wf
+  templates:
+  - name: wf
+    steps:
+
+    - - name: run-task1
+        template: run-task
+        arguments:
+          parameters:
+            - name: memreqnum
+              value: '25'
+            - name: memrequnit
+              value: Mi
+            - name: message
+              value: "hello from run-task1"
+  - name: run-task
+    inputs:
+      parameters:
+        - name: memreqnum
+        - name: memrequnit
+        - name: message
+    retryStrategy:
+      limit: "2"
+      retryPolicy: "Always"
+      expression: 'lastRetry.status == "Error" or (lastRetry.status == "Failed" and asInt(lastRetry.exitCode) not in [1,2,127])'
+    podSpecPatch: |
+      containers:
+      - name: main
+        resources:
+          requests:
+            memory: "{{=(sprig.int(retries)+1)*sprig.int(inputs.parameters.memreqnum)}}{{inputs.parameters.memrequnit}}"
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestPodSpecPatchTemplateLevel(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(podSpecPatchTemplateLevelWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	pod := pods.Items[0]
+	var mainContainer apiv1.Container
+	for _, container := range pod.Spec.Containers {
+		if container.Name == "main" {
+			mainContainer = container
+		}
+	}
+	require.NotNil(t, mainContainer)
+	assert.Equal(t, "25Mi", mainContainer.Resources.Requests.Memory().String())
 }
