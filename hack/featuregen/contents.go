@@ -18,12 +18,13 @@ type feature struct {
 	Details     string
 }
 
-// Combined regex patterns for metadata fields
-var metadataPatterns = map[string]*regexp.Regexp{
-	"component":   regexp.MustCompile(`Component:\s*(.*?)(?:\n|$)`),
-	"issues":      regexp.MustCompile(`Issues:\s*(.*?)(?:\n|$)`),
-	"description": regexp.MustCompile(`Description:\s*(.*?)(?:\n|$)`),
-	"author":      regexp.MustCompile(`Author:\s*(.*?)(?:\n|$)`),
+// Metadata field definitions
+var (
+	metadataFields = []string{"Component", "Issues", "Description", "Author"}
+)
+
+func getMetadataPattern(field string) *regexp.Regexp {
+	return regexp.MustCompile(field + `:\s*(.*?)(?:\n|$)`)
 }
 
 func validateHeaders(content string) (bool, string) {
@@ -49,11 +50,14 @@ func validateMetadataOrder(content string) (bool, string) {
 	metadataEnd := 0
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
-		if !strings.HasPrefix(line, "Component:") &&
-			!strings.HasPrefix(line, "Issues:") &&
-			!strings.HasPrefix(line, "Description:") &&
-			!strings.HasPrefix(line, "Author:") &&
-			line != "" {
+		isMetadata := false
+		for _, field := range metadataFields {
+			if strings.HasPrefix(line, field+":") {
+				isMetadata = true
+				break
+			}
+		}
+		if !isMetadata && line != "" {
 			metadataEnd = i
 			break
 		}
@@ -62,11 +66,10 @@ func validateMetadataOrder(content string) (bool, string) {
 	// Check if any metadata fields appear after this point
 	for i := metadataEnd; i < len(lines); i++ {
 		line := lines[i]
-		if strings.HasPrefix(line, "Component:") ||
-			strings.HasPrefix(line, "Issues:") ||
-			strings.HasPrefix(line, "Description:") ||
-			strings.HasPrefix(line, "Author:") {
-			return false, fmt.Sprintf("Metadata field '%s' must appear before any other content", line)
+		for _, field := range metadataFields {
+			if strings.HasPrefix(line, field+":") {
+				return false, fmt.Sprintf("Metadata field '%s' must appear before any other content", line)
+			}
 		}
 	}
 
@@ -75,11 +78,10 @@ func validateMetadataOrder(content string) (bool, string) {
 
 func parseContent(source string, content string) (bool, feature, error) {
 	// Check required sections
-	requiredSections := []string{"Component:", "Issues:", "Description:", "Author:"}
 	isValid := true
-	for _, section := range requiredSections {
-		if !strings.Contains(content, section) {
-			fmt.Printf("Error: Missing required section '%s' in %s\n", section, source)
+	for _, field := range metadataFields {
+		if !strings.Contains(content, field+":") {
+			fmt.Printf("Error: Missing required section '%s:' in %s\n", field, source)
 			isValid = false
 		}
 	}
@@ -96,7 +98,7 @@ func parseContent(source string, content string) (bool, feature, error) {
 
 	// Extract metadata fields
 	component := ""
-	if matches := metadataPatterns["component"].FindStringSubmatch(content); len(matches) > 1 {
+	if matches := getMetadataPattern("Component").FindStringSubmatch(content); len(matches) > 1 {
 		component = strings.TrimSpace(matches[1])
 		if !isValidComponent(component) {
 			fmt.Printf("Error: Invalid component '%s' in %s. Valid components are: %s. Add more in hack/featuregen/components.go\n", component, source, listValidComponents())
@@ -105,7 +107,7 @@ func parseContent(source string, content string) (bool, feature, error) {
 	}
 
 	issuesSection := ""
-	if matches := metadataPatterns["issues"].FindStringSubmatch(content); len(matches) > 1 {
+	if matches := getMetadataPattern("Issues").FindStringSubmatch(content); len(matches) > 1 {
 		issuesSection = matches[1]
 	}
 	issues := regexp.MustCompile(`(\d+)`).FindAllStringSubmatch(issuesSection, -1)
@@ -119,18 +121,19 @@ func parseContent(source string, content string) (bool, feature, error) {
 	}
 
 	description := ""
-	if matches := metadataPatterns["description"].FindStringSubmatch(content); len(matches) > 1 {
+	if matches := getMetadataPattern("Description").FindStringSubmatch(content); len(matches) > 1 {
 		description = strings.TrimSpace(matches[1])
 	}
 
 	author := ""
-	if matches := metadataPatterns["author"].FindStringSubmatch(content); len(matches) > 1 {
+	if matches := getMetadataPattern("Author").FindStringSubmatch(content); len(matches) > 1 {
 		author = strings.TrimSpace(matches[1])
 	}
 
 	// Extract details (everything after metadata)
 	details := ""
-	if detailsMatch := regexp.MustCompile(`(?s)(?:Component:|Issues:|Description:|Author:).*?\n\n(.*)`).FindStringSubmatch(content); len(detailsMatch) > 1 {
+	pattern := `(?s)(?:` + strings.Join(metadataFields, ":|") + `:).*?\n\n(.*)`
+	if detailsMatch := regexp.MustCompile(pattern).FindStringSubmatch(content); len(detailsMatch) > 1 {
 		details = strings.TrimSpace(detailsMatch[1])
 	}
 
