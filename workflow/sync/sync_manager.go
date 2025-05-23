@@ -373,7 +373,9 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 	}
 
 	if wf.Status.Synchronization.Mutex != nil {
-		for _, holding := range wf.Status.Synchronization.Mutex.Holding {
+		h := make([]wfv1.MutexHolding, len(wf.Status.Synchronization.Mutex.Holding))
+		copy(h, wf.Status.Synchronization.Mutex.Holding)
+		for _, holding := range h {
 			syncLockHolder := sm.syncLockMap[holding.Mutex]
 			if syncLockHolder == nil {
 				continue
