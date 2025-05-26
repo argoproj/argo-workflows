@@ -518,16 +518,8 @@ dist/argosay:
 	cp test/e2e/images/argosay/v2/argosay dist/
 
 .PHONY: kit
-kit:
-ifeq ($(shell command -v kit),)
-ifeq ($(shell uname),Darwin)
-	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
-	brew install kit
-else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
-endif
-endif
-
+kit: Makefile
+	go install github.com/kitproj/kit@v0.1.79
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
