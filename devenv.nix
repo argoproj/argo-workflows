@@ -95,6 +95,6 @@ in
     yarn --cwd ui install;
     sleep 5;
     clear;
-    echo "Development shell is now ready, note that port-forwarding is running in the background"
+    make install PROFILE=minimal
   '';
 } 

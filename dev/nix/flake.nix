@@ -363,6 +363,7 @@
                 protobuf
                 myyarn
                 diffutils
+                kustomize
               ];
             };
 
@@ -393,6 +394,7 @@
                     myyarn
                     diffutils
                     config.packages.${package.name}
+                    kustomize
                   ];
                   enterShell = ''
                     unset GOPATH;
