@@ -11617,5 +11617,5 @@ func TestWithItemsOptionalArtWF(t *testing.T) {
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("consume-artifact(0:hello world)")
 	require.NotNil(t, node)
-	assert.Equal(t, node.Phase, wfv1.NodePending)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
 }

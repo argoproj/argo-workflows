@@ -484,7 +484,6 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 			resolvedArt.Name = art.Name
 			artifacts = append(artifacts, *resolvedArt)
-			// newStep.Arguments.Artifacts[j] = *resolvedArt
 		}
 		newStep.Arguments.Artifacts = artifacts
 		newStepGroup[i] = newStep
