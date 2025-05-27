@@ -5,8 +5,8 @@ Argo Workflows has some basic support for Nix which is enough to get Argo Workfl
 Here are the steps to follow:
 
   1. Modify your hosts file and set up a Kubernetes cluster according to [Running Locally](running-locally.md). Don't worry about the other instructions.
-  2. Install [Nix](https://nixos.org/download.html).
-  3. Install [direnv](https://devenv.sh/getting-started/)
+  2. Install [`Nix`](https://nixos.org/download.html).
+  3. Install [`direnv`](https://devenv.sh/getting-started/)
   4. Enable nix flakes add the line `experimental-features = nix-command flakes` in either `~/.config/nix/nix.conf` (local install) or `/etc/nix/nix.conf` global install.
   5. Run `devenv up`.
 
