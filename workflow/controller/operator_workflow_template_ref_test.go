@@ -690,7 +690,7 @@ func TestWorkflowTemplateWithPodMetadata(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), controller)
+	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)

@@ -268,7 +268,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 	// pre-execute daemoned tasks
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.getTaskNode(task.Name)
+		taskNode := dagCtx.getTaskNode(ctx, task.Name)
 		if err != nil {
 			continue
 		}

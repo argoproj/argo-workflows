@@ -870,12 +870,12 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.LessOrEqual(backoff, 600)
 	require.Less(595, backoff)
 
-	woc.initializeNode(nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
-	woc.addChildNode(nodeName, nodeName+"(2)")
+	woc.initializeNode(ctx, nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.addChildNode(ctx, nodeName, nodeName+"(2)")
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(err)
 
-	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	n, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(err)
 	require.Equal(wfv1.NodeRunning, n.Phase)
 
@@ -1548,7 +1548,7 @@ func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
 	iterations := 5
 	var woc *wfOperationCtx
 	for i := 1; i <= iterations; i++ {
-		woc = newWorkflowOperationCtx(wf, controller)
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
 		if i != 1 {
 			makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(1))
 		}

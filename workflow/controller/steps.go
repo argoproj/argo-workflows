@@ -342,7 +342,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	}
 	if !completed {
 		if node.Fulfilled() {
-			return woc.markNodePhase(sgNodeName, wfv1.NodeRunning), nil
+			return woc.markNodePhase(ctx, sgNodeName, wfv1.NodeRunning), nil
 		}
 		return node, nil
 	}
