@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	log "github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -56,7 +55,7 @@ type Controller struct {
 	metrics              *metrics.Metrics
 	eventRecorderManager events.EventRecorderManager
 	cronWorkflowWorkers  int
-	logger               logging.Logger
+	logger               log.Logger
 }
 
 const (
