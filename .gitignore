@@ -49,3 +49,4 @@ manifests/namespace-install.yaml
 node_modules 
 result
 .devenv
+.devenv.flake.nix

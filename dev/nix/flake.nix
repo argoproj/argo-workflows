@@ -4,9 +4,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
-    devenv.url = "github:cachix/devenv";
+    devenv = {
+      url = "github:cachix/devenv/v1.6.1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-filter.url = "github:numtide/nix-filter";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs:
@@ -20,10 +25,11 @@
           filter = inputs.nix-filter.lib;
 
           # dependencies for building the go binaries
-          src = filter {
+          initialFilteredSrc = filter {
             root = ../../.;
             include = [
               "." # Way easier to tell it what to exclude than what to include so include all. 
+              "devenv.yaml"
             ];
             exclude = [
               ".devcontainer"
@@ -178,9 +184,10 @@
           _module.args = import inputs.nixpkgs {
             inherit system;
             overlays = [
+              inputs.rust-overlay.overlays.default
               (self: super: {
-                go = super.go_1_20;
-                buildGoModule = super.buildGo120Module;
+                go = super.go_1_24;
+                buildGoModule = super.buildGo124Module;
               })
             ];
           };
@@ -189,28 +196,47 @@
             ${package.name} = pkgs.buildGoModule {
               pname = package.name;
               inherit (package) version;
-              inherit src;
-              vendorHash = "sha256-DHqQigUi31GdCFsjvAu1jU1PRNuPW/f3ECrgVd6bvuk=";
+              src = pkgs.runCommand "${package.name}-src-with-placeholder-ui" {
+                  nativeBuildInputs = [ pkgs.coreutils ];
+                  inherit initialFilteredSrc;
+                } ''
+                  echo "Copying original sources to $out ..."
+                  cp -rT ${initialFilteredSrc} $out
+
+                  echo "Making copied files writable ..."
+                  chmod -R u+w $out
+
+                  echo "Creating placeholder UI in $out/ui/dist/app ..."
+                  mkdir -p $out/ui/dist/app
+                  echo "<html><body>Placeholder UI for Nix build</body></html>" > $out/ui/dist/app/index.html
+                  echo "This is a placeholder file for Nix build." > $out/ui/dist/app/README.txt
+                '';
+              vendorHash = "sha256-zUfxtBSLyygW0UwVG8dodU8MPdP2hEezvwXa34EyqKU=";
               doCheck = false;
             };
 
-            mockery = pkgs.buildGoModule rec { 
-              pname = "mockery";
-              version = "2.42.2"; # upgrade this in the Makefile if upgraded here
+            kubeauto = pkgs.buildGoModule rec {
+              pname = "kubeauto";
+              version = "0.0.7";
+              src = pkgs.fetchFromGitHub {
+                owner = "kitproj";
+                repo = "kubeauto";
+                rev = "v${version}";
+                sha256 = "sha256-WbGiTjxQBykwejx6iDctAZ53gwGgr2vAkK42kbQzkeE=";
+              };
+              vendorHash = "sha256-de5YVcBpU3tNpqilBwx68nuqBzU4e5ca/WNDPCsFPKA=";
+            };
 
+            mockery = pkgs.go-mockery.overrideAttrs(old: rec {
+              version = "2.53.3";
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-wwt7rhHWPlYtvudWKb8vk8t19MeN7AMfMugs0XeBDVk=";
+                sha256 = "sha256-X0cHpv4o6pzgjg7+ULCuFkspeff95WFtJbVHqy4LxAg=";
               };
-              doCheck = false;
-              vendorHash = "sha256-J7eL2AQ6v5nG2lZOSSZQOTKBhfk7GtDtqZ7Felo0l54=";
-
-              ldflags = [
-                "-X 'github.com/vektra/mockery/v2/pkg/logging.SemVer=v${version}'" # IMPERATIVE TO ENSURE PATH STAYS THE SAME WHEN VERSION CHANGES
-              ];
-            };
+              vendorHash = "sha256-AQY4x2bLqMwHIjoKHzEm1hebR29gRs3LJN8i00Uup5o=";
+            });
 
             protoc-gen-gogo-all = pkgs.buildGoModule rec {
               pname = "protoc-gen-gogo";
@@ -239,33 +265,27 @@
               vendorHash = "sha256-jVOb2uHjPley+K41pV+iMPNx67jtb75Rb/ENhw+ZMoM=";
             };
 
-            go-swagger = pkgs.buildGoModule rec {
-              pname = "go-swagger";
-              version = "0.28.0"; # upgrade this in the Makefile if upgraded here
-
+            go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {
+              version = "0.31.0";
               src = pkgs.fetchFromGitHub {
                 owner = "go-swagger";
                 repo = "go-swagger";
                 rev = "v${version}";
-                sha256 = "sha256-Bw84HQxrI8cSBEM1cxXmWCPqKZa5oGsob2iuUsiAZ+A=";
+                sha256 = "sha256-PeH9bkRObsw4+ttuWhaPfPQQTOAw8pwlgTEtPoUBiIQ=";
               };
-              doCheck = false;
-              vendorHash = "sha256-lhb3tvwhTPNo5+OhGgc3p3ddxFtL1gaIVTpZw0krBhM=";
-            };
+              vendorHash = "sha256-PBzJMXPZ2gVdrW3ZeerhR1BeT9vWIIS1vCTjz3UFHes=";
+            });
 
-            controller-tools = pkgs.buildGoModule rec {
-              pname = "controller-tools";
-              version = "0.14.0"; # upgrade this in the Makefile if upgraded here
-
+            controller-tools = pkgs.kubernetes-controller-tools.overrideAttrs (old: rec {
+              version = "0.17.2";
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes-sigs";
                 repo = "controller-tools";
                 rev = "v${version}";
-                sha256 = "sha256-G0jBQ12cpjfWGhXYppV9dB2n68bExi6ME9QbxXsUWvw=";
+                sha256 = "sha256-AUYduzIEWCJDskoChXmQViR5ON4YZr4MKvFys03hBkY=";  # Replace with correct hash
               };
-              vendorHash = "sha256-89hzPiqP++tQpPkcSvzc1tHxHcj5PI71RxxxUCgm0BI=";
-              doCheck = false;
-            };
+              vendorHash = "sha256-Y7xYmD3fxAIo/NyLzBuSdbHIrduJ33SpK2I6LfOzNac=";
+            });
 
             k8sio-tools = pkgs.buildGoModule rec {
               pname = "k8sio-tools";
@@ -317,8 +337,12 @@
                 unset GOROOT;
                 unset GOPATH;
               '';
-              inputsFrom = [ config.packages.${package.name} ];
+              inputsFrom = [ 
+                (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
+                config.packages.${package.name} 
+              ];
               packages = with pkgs; [
+                (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
                 config.packages.mockery
                 config.packages.protoc-gen-gogo-all
                 config.packages.grpc-ecosystem
@@ -328,6 +352,7 @@
                 config.packages.goreman
                 config.packages.stern
                 config.packages.${package.name}
+                config.packages.kubeauto
                 nodePackages.shell.nodeDependencies
                 gopls
                 go
@@ -338,6 +363,7 @@
                 protobuf
                 myyarn
                 diffutils
+                kustomize
               ];
             };
 
@@ -356,7 +382,7 @@
                     config.packages.k8sio-tools
                     config.packages.goreman
                     config.packages.stern
-                    config.packages.${package.name}
+                    config.packages.kubeauto
                     nodePackages.shell.nodeDependencies
                     gopls
                     go
@@ -367,27 +393,20 @@
                     protobuf
                     myyarn
                     diffutils
+                    config.packages.${package.name}
+                    kustomize
                   ];
                   enterShell = ''
                     unset GOPATH;
                     unset GOROOT;
-                    ./hack/port-forward.sh;
                     ./hack/free-port.sh 9090;
                     ./hack/free-port.sh 2746;
                     ./hack/free-port.sh 8080;
                     yarn --cwd ui install;
+                    sleep 5;
+                    clear;
+                    echo "Development shell is now ready, note that port-forwarding is running in the background"
                   '';
-                  processes = {
-                    workflow-controller = {
-                      exec = controllerCmd;
-                    };
-                    argo-server = {
-                      exec = argoServerCmd;
-                    };
-                    ui = {
-                      exec = uiCmd;
-                    };
-                  };
                 })
               ];
             };
