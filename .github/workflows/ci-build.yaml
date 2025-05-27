@@ -23,6 +23,7 @@ jobs:
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
+      nix-build: ${{ steps.changed-files.outputs.nix-build_any_modified == 'true' }}
       e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
@@ -106,6 +107,13 @@ jobs:
             ui:
               - *common
               - ui/**
+            nix-build:
+              - *tests
+              # plus nix files
+              - devenv.nix
+              - devenv.yaml
+              - devenv.lock
+              - dev/nix/**
 
   tests:
     name: Unit Tests
@@ -128,6 +136,15 @@ jobs:
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  nix-build:
+    name: Controller builds under Nix
+    if: ${{ needs.changed-files.outputs.nix-build == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - run: nix build ./dev/run#controller
 
   tests-windows:
     name: Windows Unit Tests
