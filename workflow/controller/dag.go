@@ -915,7 +915,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 		}
 	}
 
-	evalLogic := strings.Replace(d.GetTaskDependsLogic(ctx, taskName), "-", "_", -1)
+	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(ctx, taskName), "-", "_")
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
