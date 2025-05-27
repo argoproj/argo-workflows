@@ -43,9 +43,9 @@ func (c serverSentEventsClient) RecvMsg(interface{}) error {
 
 const prefixLength = len("data: ")
 
-func (f serverSentEventsClient) RecvEvent(v interface{}) error {
+func (c serverSentEventsClient) RecvEvent(v interface{}) error {
 	for {
-		line, err := f.reader.ReadBytes('\n')
+		line, err := c.reader.ReadBytes('\n')
 		if err != nil {
 			return err
 		}
