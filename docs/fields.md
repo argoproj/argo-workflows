@@ -470,6 +470,19 @@ WorkflowEventBinding is the definition of an event resource
 |`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`WorkflowEventBindingSpec`](#workfloweventbindingspec)|_No description available_|
 
+## InfoResponse
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`columns`|`Array<`[`Column`](#column)`>`|_No description available_|
+|`links`|`Array<`[`Link`](#link)`>`|_No description available_|
+|`managedNamespace`|`string`|_No description available_|
+|`modals`|`Map< boolean , string >`|which modals to show|
+|`navColor`|`string`|_No description available_|
+
 ## WorkflowSpec
 
 WorkflowSpec is the specification of a Workflow.
@@ -1373,6 +1386,28 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`event`|[`Event`](#event)|Event is the event to bind to|
 |`submit`|[`Submit`](#submit)|Submit is the workflow template to submit|
+
+## Column
+
+Column is a custom column that will be exposed in the Workflow List View.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|The key of the label or annotation, e.g., "workflows.argoproj.io/completed".|
+|`name`|`string`|The name of this column, e.g., "Workflow Completed".|
+|`type`|`string`|The type of this column, "label" or "annotation".|
+
+## Link
+
+A link to another app.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|The name of the link, E.g. "Workflow Logs" or "Pod Logs"|
+|`scope`|`string`|"workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"|
+|`url`|`string`|The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}"|
 
 ## Arguments
 

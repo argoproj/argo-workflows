@@ -16,13 +16,15 @@ import (
 )
 
 type ResourceRateLimit struct {
+	// Limit is the maximum rate at which pods can be created
 	Limit float64 `json:"limit"`
-	Burst int     `json:"burst"`
+	// Burst allows temporary spikes above the limit
+	Burst int `json:"burst"`
 }
 
-// Config contains the configuration settings for the workflow controller
+// Config contains the root of the configuration settings for the workflow controller
+// as read from the ConfigMap called workflow-controller-configmap
 type Config struct {
-
 	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
 
@@ -191,23 +193,32 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
+// DBConfig contains database configuration settings
 type DBConfig struct {
-	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
+	// PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time
+	PostgreSQL *PostgreSQLConfig `json:"postgresql,omitempty"`
+	// MySQL configuration for MySQL database, don't use PostgreSQL at the same time
+	MySQL *MySQLConfig `json:"mysql,omitempty"`
+	// Pooled connection settings for all types of database connections
+	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
 }
 
+// PersistConfig contains workflow persistence configuration
 type PersistConfig struct {
 	DBConfig
+	// NodeStatusOffload saves node status only to the persistence DB to avoid the 1MB limit in etcd
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
-	// Archive workflows to persistence.
+	// Archive completed and Workflows to persistence so you can access them after they're
+	// removed from kubernetes
 	Archive bool `json:"archive,omitempty"`
-	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
+	// ArchiveLabelSelector holds LabelSelector to determine which Workflows to archive
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
-	// in days
-	ArchiveTTL    TTL    `json:"archiveTTL,omitempty"`
-	ClusterName   string `json:"clusterName,omitempty"`
-	SkipMigration bool   `json:"skipMigration,omitempty"`
+	// ArchiveTTL is the time to live for archived Workflows
+	ArchiveTTL TTL `json:"archiveTTL,omitempty"`
+	// ClusterName is the name of the cluster (or technically controller) for the persistence database
+	ClusterName string `json:"clusterName,omitempty"`
+	// SkipMigration skips database migration even if needed
+	SkipMigration bool `json:"skipMigration,omitempty"`
 }
 
 func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
@@ -224,34 +235,55 @@ func (c PersistConfig) GetClusterName() string {
 	return "default"
 }
 
+// SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)
 type SyncConfig struct {
 	DBConfig
-	ControllerName            string `json:"controllerName"`
-	SkipMigration             bool   `json:"skipMigration,omitempty"`
-	LimitTableName            string `json:"limitTableName,omitempty"`
-	StateTableName            string `json:"stateTableName,omitempty"`
-	ControllerTableName       string `json:"controllerTableName,omitempty"`
-	LockTableName             string `json:"lockTableName,omitempty"`
-	PollSeconds               *int   `json:"pollSeconds,omitempty"`
-	HeartbeatSeconds          *int   `json:"heartbeatSeconds,omitempty"`
-	InactiveControllerSeconds *int   `json:"inactiveControllerSeconds,omitempty"`
+	// ControllerName sets a unique name for this controller instance
+	ControllerName string `json:"controllerName"`
+	// SkipMigration skips database migration if needed
+	SkipMigration bool `json:"skipMigration,omitempty"`
+	// LimitTableName customizes the table name for semaphore limits, if not set, the default value is "sync_limit"
+	LimitTableName string `json:"limitTableName,omitempty"`
+	// StateTableName customizes the table name for current lock state, if not set, the default value is "sync_state"
+	StateTableName string `json:"stateTableName,omitempty"`
+	// ControllerTableName customizes the table name for controller heartbeats, if not set, the default value is "sync_controller"
+	ControllerTableName string `json:"controllerTableName,omitempty"`
+	// LockTableName customizes the table name for lock coordination data, if not set, the default value is "sync_lock"
+	LockTableName string `json:"lockTableName,omitempty"`
+	// PollSeconds specifies how often to check for lock changes, if not set, the default value is 5 seconds
+	PollSeconds *int `json:"pollSeconds,omitempty"`
+	// HeartbeatSeconds specifies how often to update controller heartbeat, if not set, the default value is 60 seconds
+	HeartbeatSeconds *int `json:"heartbeatSeconds,omitempty"`
+	// InactiveControllerSeconds specifies when to consider a controller dead, if not set, the default value is 300 seconds
+	InactiveControllerSeconds *int `json:"inactiveControllerSeconds,omitempty"`
 	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
 	// for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked).
 	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
 }
 
+// ConnectionPool contains database connection pool settings
 type ConnectionPool struct {
-	MaxIdleConns    int `json:"maxIdleConns,omitempty"`
-	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
+	// MaxIdleConns sets the maximum number of idle connections in the pool
+	MaxIdleConns int `json:"maxIdleConns,omitempty"`
+	// MaxOpenConns sets the maximum number of open connections to the database
+	MaxOpenConns int `json:"maxOpenConns,omitempty"`
+	// ConnMaxLifetime sets the maximum amount of time a connection may be reused
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
 
+// DatabaseConfig contains common database connection settings
 type DatabaseConfig struct {
-	Host           string                  `json:"host"`
-	Port           int                     `json:"port,omitempty"`
-	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName,omitempty"`
+	// Host is the database server hostname
+	Host string `json:"host"`
+	// Port is the database server port
+	Port int `json:"port,omitempty"`
+	// Database is the name of the database to connect to
+	Database string `json:"database"`
+	// TableName is the name of the table to use, must be set
+	TableName string `json:"tableName,omitempty"`
+	// UsernameSecret references a secret containing the database username
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	// PasswordSecret references a secret containing the database password
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
@@ -262,14 +294,19 @@ func (c DatabaseConfig) GetHostname() string {
 	return fmt.Sprintf("%s:%v", c.Host, c.Port)
 }
 
+// PostgreSQLConfig contains PostgreSQL-specific database configuration
 type PostgreSQLConfig struct {
 	DatabaseConfig
-	SSL     bool   `json:"ssl,omitempty"`
+	// SSL enables SSL connection to the database
+	SSL bool `json:"ssl,omitempty"`
+	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
 	SSLMode string `json:"sslMode,omitempty"`
 }
 
+// MySQLConfig contains MySQL-specific database configuration
 type MySQLConfig struct {
 	DatabaseConfig
+	// Options contains additional MySQL connection options
 	Options map[string]string `json:"options,omitempty"`
 }
 
@@ -284,11 +321,14 @@ type MetricModifier struct {
 	HistogramBuckets []float64 `json:"histogramBuckets,omitempty"`
 }
 
+// MetricsTemporality defines the temporality of OpenTelemetry metrics
 type MetricsTemporality string
 
 const (
+	// MetricsTemporalityCumulative indicates cumulative temporality
 	MetricsTemporalityCumulative MetricsTemporality = "Cumulative"
-	MetricsTemporalityDelta      MetricsTemporality = "Delta"
+	// MetricsTemporalityDelta indicates delta temporality
+	MetricsTemporalityDelta MetricsTemporality = "Delta"
 )
 
 // MetricsConfig defines a config for a metrics server
@@ -338,14 +378,19 @@ func (mc *MetricsConfig) GetTemporality() metricsdk.TemporalitySelector {
 	}
 }
 
+// WorkflowRestrictions contains restrictions for workflow execution
 type WorkflowRestrictions struct {
+	// TemplateReferencing controls how templates can be referenced
 	TemplateReferencing TemplateReferencing `json:"templateReferencing,omitempty"`
 }
 
+// TemplateReferencing defines how templates can be referenced in workflows
 type TemplateReferencing string
 
 const (
+	// TemplateReferencingStrict requires templates to be referenced, not embedded
 	TemplateReferencingStrict TemplateReferencing = "Strict"
+	// TemplateReferencingSecure requires templates to be referenced and prevents spec changes
 	TemplateReferencingSecure TemplateReferencing = "Secure"
 )
 
