@@ -142,8 +142,8 @@ jobs:
     if: ${{ needs.changed-files.outputs.nix-build == 'true' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: cachix/install-nix-action@526118121621777ccd86f79b04685a9319637641  # v31.3.0
       - run: nix build ./dev/run#controller
 
   tests-windows:
