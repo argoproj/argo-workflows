@@ -338,7 +338,7 @@ endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.18.0
 endif
 $(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
@@ -490,7 +490,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.1.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.1.6
 
 .PHONY: lint
 lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
@@ -702,7 +702,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.32.2/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.33.1/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
