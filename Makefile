@@ -184,6 +184,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
+GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md
 
 # protoc,my.proto
 define protoc
@@ -298,7 +299,7 @@ argoexec-nonroot-image:
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
-codegen: types swagger manifests $(TOOL_MOCKERY) docs/fields.md docs/cli/argo.md
+codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS)
 	go generate ./...
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
@@ -741,11 +742,12 @@ docs/assets/diagram.png: go-diagrams/diagram.dot
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) ui/dist/app/index.html hack/docs/fields.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs fields
 
+docs/workflow-controller-configmap.md: config/*.go hack/docs/workflow-controller-configmap.md hack/docs/configdoc.go
+	go run ./hack/docs configdoc
+
 # generates several other files
 docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
 	go run ./hack/docs cli
-
-# docs
 
 $(TOOL_MDSPELL): Makefile
 # update this in Nix when upgrading it here
@@ -756,7 +758,7 @@ endif
 .PHONY: docs-spellcheck
 docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md
 	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
 
@@ -776,7 +778,6 @@ $(TOOL_MARKDOWNLINT): Makefile
 ifneq ($(USE_NIX), true)
 	npm list -g markdownlint-cli@0.33.0 > /dev/null || npm i -g markdownlint-cli@0.33.0
 endif
-
 
 .PHONY: docs-lint
 docs-lint: $(TOOL_MARKDOWNLINT) docs/metrics.md
