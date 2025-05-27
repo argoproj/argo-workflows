@@ -23,8 +23,8 @@ jobs:
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
-      nix-build: ${{ steps.changed-files.outputs.nix-build_any_modified == 'true' }}
-      e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
+      nix-build: ${{ steps.changed-files.outputs.-e2e-tests_any_modified == 'true' }}
+      e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'false' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
