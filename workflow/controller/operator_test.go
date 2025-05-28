@@ -11561,7 +11561,7 @@ func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
 	assert.True(t, found)
 }
 
-const withItemsOptionalArtWF = `apiVersion: argoproj.io/v1alpha1
+const withItemsOptionalArtStepsWF = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: fail-optional-artifact-with-items
@@ -11605,8 +11605,69 @@ spec:
         command: [sh, -c]
         args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
 
-func TestWithItemsOptionalArtWF(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtWF)
+func TestWithItemsOptionalArtStepsWF(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtStepsWF)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("consume-artifact(0:hello world)")
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+}
+
+const withItemsOptionalArtDAGWF = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: fail-optional-artifact-with-items-dag
+spec:
+  entrypoint: artifact-example
+  templates:
+    - name: artifact-example
+      dag:
+        tasks:
+          - name: generate-artifact
+            template: whalesay
+          - name: consume-artifact
+            template: print-message
+            dependencies: [generate-artifact]
+            arguments:
+              artifacts:
+                - name: message
+                  optional: true
+                  from: "{{tasks.generate-artifact.outputs.artifacts.message}}"
+            withItems:
+              - hello world
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["sleep 1;"]
+      outputs:
+        artifacts:
+          - name: message
+            optional: true
+            path: /tmp/hello_world
+           
+
+    - name: print-message
+      inputs:
+        artifacts:
+          - name: message
+            optional: true
+            path: /tmp/message
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
+
+func TestWithItemsOptionalArtDAGWF(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtDAGWF)
 	cancel, controller := newController(wf)
 	defer cancel()
 
