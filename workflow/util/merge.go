@@ -97,7 +97,34 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 	if wfSpec.Suspend != targetWf.Spec.Suspend {
 		targetWf.Spec.Suspend = wfSpec.Suspend
 	}
+	// The value of an argument should respect the priority order of the merge.
+	// However, if Value, ValueFrom and Default are set in different places,
+	// i.e. the Workflow, WorflowTemplate and WorkflowDefault, we should only keep the one with the greatest priority.
+	wfParamsMap := parametersToMapByName(wfSpec)
+	wftParamsMap := parametersToMapByName(wftSpec)
+	for index, parameter := range targetWf.Spec.Arguments.Parameters {
+		if parameter.HasValue() {
+			if param, ok := wfParamsMap[parameter.Name]; ok {
+				targetWf.Spec.Arguments.Parameters[index] = *param.DeepCopy()
+			} else if param, ok := wftParamsMap[parameter.Name]; ok {
+				targetWf.Spec.Arguments.Parameters[index] = *param.DeepCopy()
+			}
+			// If none of the above conditions are met, we can safely assume that the parameter is set from the wfDefaultSpec.
+		}
+	}
 	return &targetWf, nil
+}
+
+func parametersToMapByName(spec *wfv1.WorkflowSpec) map[string]wfv1.Parameter {
+	parameterMap := make(map[string]wfv1.Parameter)
+	if spec != nil {
+		for _, param := range spec.Arguments.Parameters {
+			if param.HasValue() {
+				parameterMap[param.Name] = param
+			}
+		}
+	}
+	return parameterMap
 }
 
 // mergeMetadata will merge the labels and annotations into the target metadata.
