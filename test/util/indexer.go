@@ -1,8 +1,6 @@
 package util
 
 import (
-	"context"
-
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -42,15 +40,3 @@ func (i Indexer) ByIndex(indexName, indexedValue string) ([]interface{}, error) 
 }
 func (i Indexer) GetIndexers() cache.Indexers      { panic("implement me") }
 func (i Indexer) AddIndexers(cache.Indexers) error { panic("implement me") }
-
-func (s SharedIndexInformer) AddEventHandlerWithOptions(handler cache.ResourceEventHandler, options cache.HandlerOptions) (cache.ResourceEventHandlerRegistration, error) {
-	panic("implement me")
-}
-
-func (s SharedIndexInformer) RunWithContext(ctx context.Context) {
-	panic("implement me")
-}
-
-func (s SharedIndexInformer) SetWatchErrorHandlerWithContext(handler cache.WatchErrorHandlerWithContext) error {
-	panic("implement me")
-}
