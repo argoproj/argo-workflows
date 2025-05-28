@@ -67,9 +67,9 @@ func isTransientGCSErr(err error) bool {
 	return false
 }
 
-func (g *ArtifactDriver) newGCSClient() (*storage.Client, error) {
-	if g.ServiceAccountKey != "" {
-		return newGCSClientWithCredential(g.ServiceAccountKey)
+func (h *ArtifactDriver) newGCSClient() (*storage.Client, error) {
+	if h.ServiceAccountKey != "" {
+		return newGCSClientWithCredential(h.ServiceAccountKey)
 	}
 	// Assume it uses Workload Identity
 	return newGCSClientDefault()
@@ -98,12 +98,12 @@ func newGCSClientDefault() (*storage.Client, error) {
 }
 
 // Load function downloads objects from GCS
-func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			key := filepath.Clean(inputArtifact.GCS.Key)
 			log.Infof("GCS Load path: %s, key: %s", path, key)
-			gcsClient, err := g.newGCSClient()
+			gcsClient, err := h.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return !isTransientGCSErr(err), err
@@ -212,18 +212,18 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 	return results, nil
 }
 
-func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+func (h *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, g)
+	return common.LoadToStream(a, h)
 }
 
 // Save an artifact to GCS compliant storage, e.g., uploading a local file to GCS bucket
-func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			key := filepath.Clean(outputArtifact.GCS.Key)
 			log.Infof("GCS Save path: %s, key: %s", path, key)
-			client, err := g.newGCSClient()
+			client, err := h.newGCSClient()
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
@@ -348,12 +348,12 @@ func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
 	return err
 }
 
-func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			log.Infof("GCS List bucket: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
-			client, err := g.newGCSClient()
+			client, err := h.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return !isTransientGCSErr(err), err
@@ -368,6 +368,6 @@ func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) 
 	return files, err
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (h *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
 	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for GCS")
 }
