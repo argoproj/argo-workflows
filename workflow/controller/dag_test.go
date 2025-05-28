@@ -3396,7 +3396,7 @@ func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 	assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
 }
 
-var dagHttpChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
+var dagHTTPChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: http-template-nv52d
@@ -3459,7 +3459,7 @@ status:
 `
 
 func TestDagHttpChildrenAssigned(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagHttpChildrenAssigned)
+	wf := wfv1.MustUnmarshalWorkflow(dagHTTPChildrenAssigned)
 	cancel, controller := newController(wf)
 	defer cancel()
 

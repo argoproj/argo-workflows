@@ -42,8 +42,6 @@ linters:
     staticcheck:
       checks:
         - all
-        # Capitalised variable names
-        - "-ST1003"
         # Capitalised error strings
         - "-ST1005"
     govet:

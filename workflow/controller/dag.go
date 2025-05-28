@@ -155,7 +155,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 	for !uniqueQueue.empty() {
 		curr := uniqueQueue.pop()
 
-		node, err := nodes.Get(curr.nodeId)
+		node, err := nodes.Get(curr.nodeID)
 		if err != nil {
 			// this is okay, this means that
 			// we are still running

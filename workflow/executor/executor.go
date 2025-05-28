@@ -56,7 +56,7 @@ type WorkflowExecutor struct {
 	podUID              types.UID
 	workflow            string
 	workflowUID         types.UID
-	nodeId              string
+	nodeID              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
@@ -115,7 +115,7 @@ func NewExecutor(
 	podUID types.UID,
 	workflow string,
 	workflowUID types.UID,
-	nodeId, namespace string,
+	nodeID, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -128,7 +128,7 @@ func NewExecutor(
 		podUID:                       podUID,
 		workflow:                     workflow,
 		workflowUID:                  workflowUID,
-		nodeId:                       nodeId,
+		nodeID:                       nodeID,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
@@ -359,11 +359,11 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		if err != nil {
 			return err
 		}
-		art_location, err := we.Template.ArchiveLocation.Get()
+		artLocation, err := we.Template.ArchiveLocation.Get()
 		if err != nil {
 			return err
 		}
-		if err = art.SetType(art_location); err != nil {
+		if err = art.SetType(artLocation); err != nil {
 			return err
 		}
 		if err := art.SetKey(path.Join(key, fileName)); err != nil {
