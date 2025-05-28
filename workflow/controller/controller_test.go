@@ -452,14 +452,14 @@ type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
 func withOutputs(outputs wfv1.Outputs) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
-		nodeId := woc.nodeID(pod)
+		nodeID := woc.nodeID(pod)
 		taskResult := &wfv1.WorkflowTaskResult{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: workflow.APIVersion,
 				Kind:       workflow.WorkflowTaskResultKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: nodeId,
+				Name: nodeID,
 				Labels: map[string]string{
 					common.LabelKeyWorkflow:               woc.wf.Name,
 					common.LabelKeyReportOutputsCompleted: "true",

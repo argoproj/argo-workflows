@@ -13,11 +13,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 /*

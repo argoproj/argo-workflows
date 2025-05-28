@@ -112,7 +112,7 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	return &entry, nil
 }
 
-func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, value *wfv1.Outputs) error {
+func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
 		errString := fmt.Sprintf("invalid cache key: %s", key)
 		err := errors.New(errString)
@@ -123,7 +123,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.logInfo(log.Fields{"key": key, "nodeId": nodeId}, "Saving ConfigMap cache entry")
+	c.logInfo(log.Fields{"key": key, "nodeID": nodeID}, "Saving ConfigMap cache entry")
 
 	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) || cache == nil {
@@ -133,7 +133,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
-			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
+			c.logError(err, log.Fields{"key": key, "nodeID": nodeID}, "Error saving to ConfigMap cache")
 			return fmt.Errorf("could not save to config map cache: %w", err)
 		}
 	} else {
@@ -147,7 +147,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	cache.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache})
 
 	newEntry := Entry{
-		NodeID:            nodeId,
+		NodeID:            nodeID,
 		Outputs:           value,
 		CreationTimestamp: metav1.Time{Time: creationTime},
 		LastHitTimestamp:  metav1.Time{Time: creationTime},
@@ -155,7 +155,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 
 	entryJSON, err := json.Marshal(newEntry)
 	if err != nil {
-		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Unable to marshal cache entry")
+		c.logError(err, log.Fields{"key": key, "nodeID": nodeID}, "Unable to marshal cache entry")
 		return fmt.Errorf("unable to marshal cache entry: %w", err)
 	}
 
@@ -166,7 +166,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cache, metav1.UpdateOptions{})
 	if err != nil {
-		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
+		c.logError(err, log.Fields{"key": key, "nodeID": nodeID}, "Kubernetes error creating new cache entry")
 		return fmt.Errorf("error creating cache entry: %w. Please check out this page for help: https://argo-workflows.readthedocs.io/en/latest/memoization/#faqs", err)
 	}
 	return nil

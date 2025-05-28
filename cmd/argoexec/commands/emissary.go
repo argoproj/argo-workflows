@@ -15,16 +15,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+	os2 "github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 var (
@@ -49,7 +49,7 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 			}()
 
-			osspecific.AllowGrantingAccessToEveryone()
+			os2.AllowGrantingAccessToEveryone()
 
 			// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
 			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
@@ -86,7 +86,7 @@ func NewEmissaryCommand() *cobra.Command {
 							// If we receive a terminated or killed signal, we should exit immediately.
 							case s := <-signals:
 								switch s {
-								case osspecific.Term:
+								case os2.Term:
 									// exit with 128 + 15 (SIGTERM)
 									return errors.NewExitErr(143)
 								case os.Kill:
@@ -144,13 +144,13 @@ func NewEmissaryCommand() *cobra.Command {
 
 				go func() {
 					for s := range signals {
-						if osspecific.CanIgnoreSignal(s) {
+						if os2.CanIgnoreSignal(s) {
 							logger.Debugf("ignore signal %s", s)
 							continue
 						}
 
 						logger.Debugf("forwarding signal %s", s)
-						_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
+						_ = os2.Kill(command.Process.Pid, s.(syscall.Signal))
 					}
 				}()
 				pid := command.Process.Pid
@@ -166,13 +166,13 @@ func NewEmissaryCommand() *cobra.Command {
 							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 							s, _ := strconv.Atoi(string(data))
 							if s > 0 {
-								_ = osspecific.Kill(pid, syscall.Signal(s))
+								_ = os2.Kill(pid, syscall.Signal(s))
 							}
 							time.Sleep(2 * time.Second)
 						}
 					}
 				}()
-				return osspecific.Wait(command.Process)
+				return os2.Wait(command.Process)
 
 			})
 			logger.WithError(err).Info("sub-process exited")
@@ -255,7 +255,7 @@ func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cm
 	command.Stdout = stdout
 	command.Stderr = stderr
 
-	cmdCloser, err := osspecific.StartCommand(command)
+	cmdCloser, err := os2.StartCommand(command)
 	if err != nil {
 		return nil, nil, err
 	}

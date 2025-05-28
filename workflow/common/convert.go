@@ -85,8 +85,8 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 		Spec:       cronWf.Spec.WorkflowSpec,
 	}
 
-	if instanceId, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
-		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceId
+	if instanceID, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
 	}
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name

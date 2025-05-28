@@ -224,9 +224,9 @@ func newSso(
 }
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	finalRedirectUrl := r.URL.Query().Get("redirect")
-	if !isValidFinalRedirectUrl(finalRedirectUrl) {
-		finalRedirectUrl = s.baseHRef
+	finalRedirectUURL := r.URL.Query().Get("redirect")
+	if !isValidFinalRedirectURL(finalRedirectUURL) {
+		finalRedirectUURL = s.baseHRef
 	}
 	state, err := pkgrand.RandString(10)
 	if err != nil {
@@ -236,14 +236,14 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    finalRedirectUrl,
+		Value:    finalRedirectUURL,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
 
-	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
 	http.Redirect(w, r, s.config.AuthCodeURL(state, redirectOption), http.StatusFound)
 }
 
@@ -257,7 +257,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
 	// Use sso.httpClient in order to respect TLSOptions
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
 	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
@@ -349,15 +349,15 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Secure:   s.secure,
 	})
 
-	finalRedirectUrl := cookie.Value
-	if !isValidFinalRedirectUrl(cookie.Value) {
-		finalRedirectUrl = s.baseHRef
+	finalRedirectURL := cookie.Value
+	if !isValidFinalRedirectURL(cookie.Value) {
+		finalRedirectURL = s.baseHRef
 
 	}
-	http.Redirect(w, r, finalRedirectUrl, http.StatusFound)
+	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
 }
 
-// isValidFinalRedirectUrl checks whether the final redirect URL is safe.
+// isValidFinalRedirectURL checks whether the final redirect URL is safe.
 //
 // We only allow path-absolute-URL strings (e.g. /foo/bar), as defined in the
 // WHATWG URL standard and RFC 3986:
@@ -373,7 +373,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 // behind a TLS termination proxy, since the redirect URL would have the scheme
 // "https" while the request scheme would be "http"
 // (see https://github.com/argoproj/argo-workflows/issues/13031).
-func isValidFinalRedirectUrl(redirect string) bool {
+func isValidFinalRedirectURL(redirect string) bool {
 	// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L47
 	return strings.HasPrefix(redirect, "/") && !strings.HasPrefix(redirect, "//") && !invalidRedirectRegex.MatchString(redirect)
 }
@@ -396,7 +396,7 @@ func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 	return c, nil
 }
 
-func (s *sso) getRedirectUrl(r *http.Request) string {
+func (s *sso) getRedirectURL(r *http.Request) string {
 	if s.config.RedirectURL != "" {
 		return s.config.RedirectURL
 	}
