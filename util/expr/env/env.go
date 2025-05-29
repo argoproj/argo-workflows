@@ -95,7 +95,7 @@ func GetFuncMap(m map[string]interface{}) map[string]interface{} {
 	// Alias for the built-in `float` function, for backwards compatibility.
 	env["asFloat"] = builtin.Float
 	env["jsonpath"] = jsonPath
-	env["toJSON"] = toJSON
+	env["toJson"] = toJSON
 	env["sprig"] = sprigFuncMap
 	return env
 }

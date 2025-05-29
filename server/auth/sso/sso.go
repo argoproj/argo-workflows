@@ -224,9 +224,9 @@ func newSso(
 }
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	finalRedirectUURL := r.URL.Query().Get("redirect")
-	if !isValidFinalRedirectURL(finalRedirectUURL) {
-		finalRedirectUURL = s.baseHRef
+	finalRedirectURL := r.URL.Query().Get("redirect")
+	if !isValidFinalRedirectURL(finalRedirectURL) {
+		finalRedirectURL = s.baseHRef
 	}
 	state, err := pkgrand.RandString(10)
 	if err != nil {
@@ -236,7 +236,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    finalRedirectUURL,
+		Value:    finalRedirectURL,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
