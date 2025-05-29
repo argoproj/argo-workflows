@@ -46,8 +46,6 @@ linters:
         - "-ST1003"
         # Capitalised error strings
         - "-ST1005"
-        # Receiver names
-        - "-ST1016"
     govet:
       enable: [nilness]
   exclusions:

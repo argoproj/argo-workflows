@@ -39,15 +39,27 @@ type ArgoKubeOpts struct {
 	// Closing caching channel will stop caching informers
 	CachingCloseCh chan struct{}
 
-	// Whether to cache WorkflowTemplates, ClusterWorkflowTemplates and Workflows
-	// This improves performance of reading
-	// It is especially visible during validating templates,
+	// Whether to cache Workflows
+	// This improves performance of reading Workflows, but it increases memory usage and startup time
+	//
+	// Workflow caching uses in-memory SQLite DB and it provides full capabilities
+	CacheWorkflows bool
+
+	// Whether to cache WorkflowTemplates
+	// This improves performance of reading WorkflowTemplates, but it increases memory usage and startup time
+	// It is especially visible during validating templates with many references,
 	//
 	// Note that templates caching currently uses informers, so not all template
 	// get/list can use it, since informer has limited capabilities (such as filtering)
+	CacheWorkflowTemplates bool
+
+	// Whether to cache ClusterWorkflowTemplates
+	// This improves performance of reading ClusterWorkflowTemplates, but it increases memory usage and startup time
+	// It is especially visible during validating templates with many references,
 	//
-	// Workflow caching uses in-memory SQLite DB and it provides full capabilities
-	UseCaching bool
+	// Note that templates caching currently uses informers, so not all template
+	// get/list can use it, since informer has limited capabilities (such as filtering)
+	CacheClusterWorkflowTemplates bool
 }
 
 type argoKubeClient struct {
@@ -120,28 +132,36 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 }
 
 func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
-	if a.opts.UseCaching {
-		wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, a.namespace)
-		if err != nil {
-			return err
-		}
-		cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
-		if err != nil {
-			return err
-		}
+	if a.opts.CacheWorkflows {
 		wfStore, err := store.NewSQLiteStore(a.instanceIDService)
 		if err != nil {
 			return err
 		}
-		wftmplInformer.Run(a.opts.CachingCloseCh)
-		cwftmplInformer.Run(a.opts.CachingCloseCh)
 		a.wfStore = wfStore
 		a.wfLister = wfStore
-		a.wfTmplStore = wftmplInformer
-		a.cwfTmplStore = cwftmplInformer
 	} else {
 		a.wfLister = store.NewKubeLister(a.wfClient)
+	}
+
+	if a.opts.CacheWorkflowTemplates {
+		wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, a.namespace)
+		if err != nil {
+			return err
+		}
+		wftmplInformer.Run(a.opts.CachingCloseCh)
+		a.wfTmplStore = wftmplInformer
+	} else {
 		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
+	}
+
+	if a.opts.CacheClusterWorkflowTemplates {
+		cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
+		if err != nil {
+			return err
+		}
+		cwftmplInformer.Run(a.opts.CachingCloseCh)
+		a.cwfTmplStore = cwftmplInformer
+	} else {
 		a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
 	}
 	return nil

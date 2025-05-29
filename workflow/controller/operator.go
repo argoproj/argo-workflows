@@ -1486,14 +1486,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 	}
 
-	for _, c := range pod.Status.InitContainerStatuses {
-		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
-			new.Phase = wfv1.NodeFailed
-			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
-			break
-		}
-	}
-
 	waitContainerCleanedUp := true
 	// We cannot fail the node if the wait container is still running because it may be busy saving outputs, and these
 	// would not get captured successfully.
@@ -2221,6 +2213,23 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// Inject the retryAttempt number
 		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 
+		// Inject lastRetry variables
+		// the first node will not have "lastRetry" variables so they must have default values
+		// for the expression to resolve
+		lastRetryExitCode, lastRetryDuration := "0", "0"
+		var lastRetryStatus, lastRetryMessage string
+		if lastChildNode != nil {
+			if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
+				lastRetryExitCode = *lastChildNode.Outputs.ExitCode
+			}
+			lastRetryStatus = string(lastChildNode.Phase)
+			lastRetryDuration = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+			lastRetryMessage = lastChildNode.Message
+		}
+		localParams[common.LocalVarRetriesLastExitCode] = lastRetryExitCode
+		localParams[common.LocalVarRetriesLastDuration] = lastRetryDuration
+		localParams[common.LocalVarRetriesLastStatus] = lastRetryStatus
+		localParams[common.LocalVarRetriesLastMessage] = lastRetryMessage
 		processedTmpl, err = common.SubstituteParams(processedTmpl, woc.globalParams, localParams)
 		if errorsutil.IsTransientErr(err) {
 			return node, err

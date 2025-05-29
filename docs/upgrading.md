@@ -3,6 +3,12 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.7
+
+### Deprecations
+
+Several Sprig functions have been deprecated in favor of Expr standard library alternatives. While these functions continue to work, they will be removed in a future version. See [available Sprig functions](variables.md#sprig-functions) for the complete list and [Expression language](variables.md#expression) for alternatives.
+
 ## Upgrading to v3.6
 
 See also the list of [new features in 3.6](new-features.md).
