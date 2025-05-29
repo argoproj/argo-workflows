@@ -66,12 +66,12 @@ func getMutexLockName(mtx *v1alpha1.Mutex, wfNamespace string) *lockName {
 	return newLockName(namespace, mtx.Name, "", lockKindMutex)
 }
 
-func (item *syncItem) lockName(wfNamespace string) (*lockName, error) {
+func (i *syncItem) lockName(wfNamespace string) (*lockName, error) {
 	switch {
-	case item.semaphore != nil:
-		return getSemaphoreLockName(item.semaphore, wfNamespace)
-	case item.mutex != nil:
-		return getMutexLockName(item.mutex, wfNamespace), nil
+	case i.semaphore != nil:
+		return getSemaphoreLockName(i.semaphore, wfNamespace)
+	case i.mutex != nil:
+		return getMutexLockName(i.mutex, wfNamespace), nil
 	default:
 		return nil, fmt.Errorf("cannot get lockName if not semaphore or mutex")
 	}

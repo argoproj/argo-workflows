@@ -2,7 +2,7 @@
 
 !!! Note "Alternatives"
     Alternative methods of building containers, such as [Kaniko](https://github.com/GoogleContainerTools/kaniko) or [Buildkit](https://github.com/moby/buildkit) can be simpler and more secure.
-    See the [Buildkit template](https://github.com/argoproj/argo-workflows/main/examples/buildkit-template.yaml) as an example.
+    See the [Buildkit template](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml) as an example.
 
 You can use [sidecars](sidecars.md) to implement Docker-in-Docker (DIND).
 You can use DIND to run Docker commands inside a container, such as to build and push a container image.
