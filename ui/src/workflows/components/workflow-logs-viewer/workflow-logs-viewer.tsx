@@ -181,7 +181,9 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
             try {
                 if (node.templateRef.clusterScope) {
                     console.log(`Fetching template from ClusterWorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}`);
-                    const tmpl = await services.clusterWorkflowTemplate.get(node.templateRef.name);
+                    const tmpl = node.templateRef.clusterScope ?
+                        await services.clusterWorkflowTemplate.get(node.templateRef.name) :
+                        await services.workflowTemplate.get(node.templateRef.name, workflow.metadata.namespace)
                     const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
 
                     if (matchingTemplate) {
