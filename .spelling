@@ -152,6 +152,7 @@ codebase
 config
 cpu
 cron
+crypto
 daemoned
 dependabot
 dev
@@ -219,6 +220,7 @@ runtime
 runtimes
 s3
 sandboxed
+semver
 shortcodes
 stateful
 stderr
