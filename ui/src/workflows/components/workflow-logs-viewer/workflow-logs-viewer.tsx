@@ -180,7 +180,6 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         const fetchTemplate = async () => {
             try {
                 if (node.templateRef.clusterScope) {
-                    console.log(`Fetching template from ClusterWorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}`);
                     const tmpl = node.templateRef.clusterScope ?
                         await services.clusterWorkflowTemplate.get(node.templateRef.name) :
                         await services.workflowTemplate.get(node.templateRef.name, workflow.metadata.namespace)
@@ -189,20 +188,15 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                     if (matchingTemplate) {
                         setTemplateFromRef(matchingTemplate);
                     } else {
-                        console.warn(`Template '${node.templateRef.template}' not found in ClusterWorkflowTemplate '${node.templateRef.name}'`);
                         setTemplateFromRef(null);
                     }
                 } else {
-                    console.log(
-                        `Fetching template from WorkflowTemplate: ${node.templateRef.name}, template: ${node.templateRef.template}, namespace: ${workflow.metadata.namespace}`
-                    );
                     const tmpl = await services.workflowTemplate.get(node.templateRef.name, workflow.metadata.namespace);
                     const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
 
                     if (matchingTemplate) {
                         setTemplateFromRef(matchingTemplate);
                     } else {
-                        console.warn(`Template '${node.templateRef.template}' not found in WorkflowTemplate '${node.templateRef.name}'`);
                         setTemplateFromRef(null);
                     }
                 }
