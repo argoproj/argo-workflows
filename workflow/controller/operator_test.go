@@ -11629,7 +11629,7 @@ func TestWithItemsOptionalArtStepsWF(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
@@ -11690,7 +11690,7 @@ func TestWithItemsOptionalArtDAGWF(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
