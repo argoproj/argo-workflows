@@ -268,7 +268,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 	// pre-execute daemoned tasks
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.getTaskNode(task.Name)
+		taskNode := dagCtx.getTaskNode(ctx, task.Name)
 		if err != nil {
 			continue
 		}
@@ -915,7 +915,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 		}
 	}
 
-	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(taskName), "-", "_")
+	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(ctx, taskName), "-", "_")
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)

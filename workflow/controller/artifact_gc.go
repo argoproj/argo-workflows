@@ -176,7 +176,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		// get the Template for the Artifact
 		node, err := woc.wf.Status.Nodes.Get(artifactSearchResult.NodeID)
 		if err != nil {
-			woc.log.Errorf("Was unable to obtain node for %s", artifactSearchResult.NodeID)
+			woc.log.Errorf(ctx, "Was unable to obtain node for %s", artifactSearchResult.NodeID)
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status", strategy, artifactSearchResult.NodeID)
 		}
 		templateName := util.GetTemplateFromNode(*node)

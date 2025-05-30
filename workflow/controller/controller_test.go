@@ -1319,7 +1319,7 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
