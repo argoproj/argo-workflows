@@ -43,9 +43,9 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-				woc.log.WithField("podName", pod.Name).
-					WithField("shutdownStrategy", woc.GetShutdownStrategy()).
-					Info("Terminating pod as part of workflow shutdown")
+				woc.log.WithField(ctx, "podName", pod.Name).
+					WithField(ctx, "shutdownStrategy", woc.GetShutdownStrategy()).
+					Info(ctx, "Terminating pod as part of workflow shutdown")
 				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
 				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
 				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, msg)
@@ -58,19 +58,19 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			// pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
-				woc.log.WithField("podName", pod.Name).
-					WithField(" workflowDeadline", woc.workflowDeadline).
-					Info("Terminating pod which has exceeded workflow deadline")
+				woc.log.WithField(ctx, "podName", pod.Name).
+					WithField(ctx, "workflowDeadline", woc.workflowDeadline).
+					Info(ctx, "Terminating pod which has exceeded workflow deadline")
 				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
-				woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
+				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, "Step exceeded its deadline")
 				return
 			}
 		}
 	}
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-			woc.log.WithField("podName", pod.Name).
-				Info("Terminating on-exit pod")
+			woc.log.WithField(ctx, "podName", pod.Name).
+				Info(ctx, "Terminating on-exit pod")
 			woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
 		}
 	}

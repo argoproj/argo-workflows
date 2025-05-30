@@ -1143,7 +1143,7 @@ spec:
 	updatedPod, _ := podcs.Update(ctx, pod, metav1.UpdateOptions{})
 	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(pod))
 	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running")

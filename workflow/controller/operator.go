@@ -979,7 +979,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 			return node, true, nil
 		}
 		// last child node is still running.
-		node = woc.markNodePhase(node.Name, lastChildNode.Phase)
+		node = woc.markNodePhase(ctx, node.Name, lastChildNode.Phase)
 		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
 			node.Daemoned = ptr.To(true)
 		}
@@ -1096,7 +1096,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 
 	if ((lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.IsDaemoned() && (lastChildNode.Phase == wfv1.NodeSucceeded)) && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
 		woc.log.Infof(ctx, "Node not set to be retried after status: %s", lastChildNode.Phase)
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
+		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	if !lastChildNode.CanRetry() {
@@ -1137,7 +1137,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) {
 	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
-		woc.log.Error("was unable to retrieve workflow pods")
+		woc.log.Error(ctx, "was unable to retrieve workflow pods")
 		return err, false
 	}
 	seenPods := make(map[string]*apiv1.Pod)
@@ -1391,7 +1391,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
 		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
 		if tmpl.IsDaemon() {
-			woc.log.Debugf("Daemoned pod %s succeeded. Marking it as failed", pod.Name)
+			woc.log.Debugf(ctx, "Daemoned pod %s succeeded. Marking it as failed", pod.Name)
 			new.Phase = wfv1.NodeFailed
 		} else {
 			new.Phase = wfv1.NodeSucceeded
@@ -1401,8 +1401,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
 		new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
-		woc.log.WithField("displayName", old.DisplayName).WithField("templateName", wfutil.GetTemplateFromNode(*old)).
-			WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
+		woc.log.WithField(ctx, "displayName", old.DisplayName).WithField(ctx, "templateName", wfutil.GetTemplateFromNode(*old)).
+			WithField(ctx, "pod", pod.Name).Infof(ctx, "Pod failed: %s", new.Message)
 		new.Daemoned = nil
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
@@ -1459,11 +1459,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeFailed, message)
 			}
 		case pod.Status.Phase == apiv1.PodFailed:
-			woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, `Pod Failed whilst container running`)
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeFailed, `Pod Failed whilst container running`)
 		case c.State.Waiting != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodePending)
 		case c.State.Running != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeRunning)
 		}
 	}
 
@@ -1496,7 +1496,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			waitContainerCleanedUp = false
 			switch {
 			case c.State.Running != nil && new.Phase.Completed() && pod.Status.Phase != apiv1.PodFailed:
-				woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
+				woc.log.WithField(ctx, "new.phase", new.Phase).Info(ctx, "leaving phase un-changed: wait container is not yet terminated ")
 				new.Phase = old.Phase
 			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
 				// Mark its taskResult as completed directly since wait container did not exit normally,
@@ -1716,7 +1716,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		// PVC name will be <workflowname>-<volumeclaimtemplatename>
 		refName := pvcTmpl.Name
 		pvcName := fmt.Sprintf("%s-%s", woc.wf.Name, pvcTmpl.Name)
-		woc.log.Infof("Creating pvc %s", pvcName)
+		woc.log.Infof(ctx, "Creating pvc %s", pvcName)
 		pvcTmpl.Name = pvcName
 		if pvcTmpl.Labels == nil {
 			pvcTmpl.Labels = make(map[string]string)
@@ -1937,7 +1937,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	if node != nil {
 		if node.DisplayName == "dependencyTesting" {
-			woc.log.Debugf("Node %s already exists, will be updated", nodeName)
+			woc.log.Debugf(ctx, "Node %s already exists, will be updated", nodeName)
 		}
 	}
 
@@ -1988,10 +1988,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
 		if !displayNameRegex.MatchString(displayName) {
 			err = fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())
-			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+			return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 
-		woc.log.Debugf("Updating node %s display name to %s", node.DisplayName, displayName)
+		woc.log.Debugf(ctx, "Updating node %s display name to %s", node.DisplayName, displayName)
 		woc.setNodeDisplayName(node, displayName)
 	}
 
@@ -2321,7 +2321,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 
 		if !node.Phase.Fulfilled() && node.IsDaemoned() {
-			retryNode = woc.markNodePhase(retryNodeName, node.Phase)
+			retryNode = woc.markNodePhase(ctx, retryNodeName, node.Phase)
 			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
 				retryNode.Daemoned = ptr.To(true)
 			}
@@ -2462,7 +2462,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	if phase == wfv1.WorkflowError {
 		entryNode, err := woc.wf.Status.Nodes.Get(woc.wf.Name)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", woc.wf.Name)
+			woc.log.Errorf(ctx, "was unable to obtain node for %s", woc.wf.Name)
 		}
 		if (err == nil) && entryNode.Phase == wfv1.NodeRunning {
 			entryNode.Phase = wfv1.NodeError
@@ -2546,7 +2546,7 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Template, error) {
+func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
@@ -3868,7 +3868,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 
 		proceed, err := shouldExecute(metricTmpl.When)
 		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to compute 'when' clause for metric '%s': %s", woc.wf.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to compute 'when' clause for metric '%s': %s", woc.wf.Name, err))
 			continue
 		}
 		if !proceed {
@@ -3879,7 +3879,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 			// Finally substitute value parameters
 			value := metricTmpl.Gauge.Value
 			if !strings.HasPrefix(value, "{{") || !strings.HasSuffix(value, "}}") {
-				woc.reportMetricEmissionError("real time metrics can only be used with metric variables")
+				woc.reportMetricEmissionError(ctx, "real time metrics can only be used with metric variables")
 				continue
 			}
 			value = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}"))
