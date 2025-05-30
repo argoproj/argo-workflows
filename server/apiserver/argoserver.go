@@ -418,6 +418,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	mux.Handle("/oauth2/cli/exchange", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCliExchange)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
 			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})

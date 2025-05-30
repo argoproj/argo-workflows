@@ -50,6 +50,11 @@ func (_m *Interface) HandleCallback(writer http.ResponseWriter, request *http.Re
 	_m.Called(writer, request)
 }
 
+// HandleCliExchange provides a mock function with given fields: writer, request
+func (_m *Interface) HandleCliExchange(writer http.ResponseWriter, request *http.Request) {
+	_m.Called(writer, request)
+}
+
 // HandleRedirect provides a mock function with given fields: writer, request
 func (_m *Interface) HandleRedirect(writer http.ResponseWriter, request *http.Request) {
 	_m.Called(writer, request)
