@@ -21,6 +21,7 @@ data:
         cpu: 0.5
         memory: 256Mi
   retentionPolicy: |
-    completed: 10
+    completed: 4
+    succeeded: 2
     failed: 2
     errored: 2

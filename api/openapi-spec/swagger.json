@@ -11197,6 +11197,10 @@
           "description": "SecondsAfterCompletion is the number of seconds to live after completion",
           "type": "integer"
         },
+        "secondsAfterError": {
+          "description": "SecondsAfterError is the number of seconds to live after error",
+          "type": "integer"
+        },
         "secondsAfterFailure": {
           "description": "SecondsAfterFailure is the number of seconds to live after failure",
           "type": "integer"
