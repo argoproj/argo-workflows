@@ -29,7 +29,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 			}
 		}
 		if execute {
-			woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
+			woc.log.WithField(ctx, "lifeCycleHook", exitHook).Infof(ctx, "Running OnExit handler")
 			onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
 			resolvedArgs := exitHook.Arguments
 			if !resolvedArgs.IsEmpty() {
@@ -44,7 +44,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 				onExitTemplate: true,
 				nodeFlag:       &wfv1.NodeFlag{Hooked: true},
 			})
-			woc.addChildNode(parentNode.Name, onExitNodeName)
+			woc.addChildNode(ctx, parentNode.Name, onExitNodeName)
 			return true, onExitNode, err
 		}
 	}

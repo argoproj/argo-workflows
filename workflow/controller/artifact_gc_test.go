@@ -345,7 +345,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
@@ -564,14 +564,15 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	// verify that we update these Status fields:
 	// - Artifact.Deleted
 	// - Conditions
 
-	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
+	_, err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
 	require.NoError(t, err)
 
 	for _, expectedArtifact := range []struct {
@@ -712,7 +713,8 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(workflowSpec)
 			cancel, controller := newController(wf)
 			defer cancel()
-			woc := newWorkflowOperationCtx(wf, controller)
+			ctx := context.Background()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 			hasArtifact := woc.HasArtifactGC()
 

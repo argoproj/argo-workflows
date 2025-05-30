@@ -233,7 +233,7 @@ func TestDataTemplateCreatesPod(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("collect-artifact")
