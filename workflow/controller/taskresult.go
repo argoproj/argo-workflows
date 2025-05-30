@@ -83,7 +83,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 			woc.log.Debugf(ctx, "Marking task result complete %s", resultName)
 			woc.wf.Status.MarkTaskResultComplete(resultName)
 		case "false":
-			woc.log.Debugf("Marking task result incomplete %s", resultName)
+			woc.log.Debugf(ctx, "Marking task result incomplete %s", resultName)
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
 

@@ -24,7 +24,7 @@ func (woc *wfOperationCtx) getPodGCDelay(ctx context.Context, podGC *wfv1.PodGC)
 
 func (woc *wfOperationCtx) queuePodsForCleanup(ctx context.Context) {
 	podGC := woc.execWf.Spec.PodGC
-	delay := woc.getPodGCDelay(podGC)
+	delay := woc.getPodGCDelay(ctx, podGC)
 	strategy := podGC.GetStrategy()
 	selector, _ := podGC.GetLabelSelector()
 	workflowPhase := woc.wf.Status.Phase
