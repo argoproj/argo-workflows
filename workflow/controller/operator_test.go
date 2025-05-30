@@ -2574,7 +2574,7 @@ func TestSequence(t *testing.T) {
 	assert.True(t, found101)
 }
 
-var inputParametersAsJson = `
+var inputParametersAsJSON = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -2615,7 +2615,7 @@ func TestInputParametersAsJson(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(inputParametersAsJson)
+	wf := wfv1.MustUnmarshalWorkflow(inputParametersAsJSON)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -3932,7 +3932,7 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	}
 }
 
-var withParamAsJsonList = `
+var withParamAsJSONList = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -3970,7 +3970,7 @@ func TestWithParamAsJsonList(t *testing.T) {
 
 	// Test list expansion
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(withParamAsJsonList)
+	wf := wfv1.MustUnmarshalWorkflow(withParamAsJSONList)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -11214,13 +11214,13 @@ status:
 	delete(wf.Labels, common.LabelKeyCompleted)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
-	nodeId := "wf-retry-stopped-pn6mm-1672493720"
+	nodeID := "wf-retry-stopped-pn6mm-1672493720"
 
-	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
-	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 
@@ -11228,11 +11228,11 @@ status:
 	woc = newWorkflowOperationCtx(wf, controller)
 	n := woc.markNodePhase(wf.Name, wfv1.NodeError)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
-	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
-	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 
@@ -11240,11 +11240,11 @@ status:
 	woc = newWorkflowOperationCtx(wf, controller)
 	n = woc.markNodePhase(wf.Name, wfv1.NodeSucceeded)
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
-	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
-	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

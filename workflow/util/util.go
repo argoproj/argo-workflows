@@ -333,7 +333,7 @@ func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
 	var body []byte
 	var err error
 	if cmdutil.IsURL(file) {
-		body, err = ReadFromUrl(file)
+		body, err = ReadFromURL(file)
 		if err != nil {
 			return err
 		}
@@ -1456,7 +1456,7 @@ func ReadFromStdin() ([]byte, error) {
 }
 
 // Reads the content of a url
-func ReadFromUrl(url string) ([]byte, error) {
+func ReadFromURL(url string) ([]byte, error) {
 	response, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return nil, err
@@ -1474,14 +1474,14 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 	var fileContents [][]byte
 	var body []byte
 	var err error
-	for _, filePathOrUrl := range filePathsOrUrls {
-		if cmdutil.IsURL(filePathOrUrl) {
-			body, err = ReadFromUrl(filePathOrUrl)
+	for _, filePathOrURL := range filePathsOrUrls {
+		if cmdutil.IsURL(filePathOrURL) {
+			body, err = ReadFromURL(filePathOrURL)
 			if err != nil {
 				return [][]byte{}, err
 			}
 		} else {
-			body, err = os.ReadFile(filepath.Clean(filePathOrUrl))
+			body, err = os.ReadFile(filepath.Clean(filePathOrURL))
 			if err != nil {
 				return [][]byte{}, err
 			}
@@ -1527,31 +1527,31 @@ func ConvertYAMLToJSON(str string) (string, error) {
 }
 
 func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*apiv1.PodSpec, error) {
-	podSpecJson, err := json.Marshal(podSpec)
+	podSpecJSON, err := json.Marshal(podSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
 	}
 
 	for _, podSpecPatchYaml := range podSpecPatchYamls {
 		// must convert to json because PodSpec has only json tags
-		podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
+		podSpecPatchJSON, err := ConvertYAMLToJSON(podSpecPatchYaml)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
 		}
 
 		// validate the patch to be a PodSpec
-		if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
+		if err := json.Unmarshal([]byte(podSpecPatchJSON), &apiv1.PodSpec{}); err != nil {
 			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
 		}
 
-		podSpecJson, err = strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
+		podSpecJSON, err = strategicpatch.StrategicMergePatch(podSpecJSON, []byte(podSpecPatchJSON), apiv1.PodSpec{})
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
 		}
 	}
 
 	var newPodSpec apiv1.PodSpec
-	err = json.Unmarshal(podSpecJson, &newPodSpec)
+	err = json.Unmarshal(podSpecJSON, &newPodSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 	}

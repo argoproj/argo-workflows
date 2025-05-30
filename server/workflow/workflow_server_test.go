@@ -3,7 +3,6 @@ package workflow
 import (
 	"context"
 	"fmt"
-
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -629,9 +628,9 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	listOptions := &metav1.ListOptions{}
-	instanceIdSvc := instanceid.NewService("my-instanceid")
-	instanceIdSvc.With(listOptions)
-	wfStore, err := store.NewSQLiteStore(instanceIdSvc)
+	instanceIDSvc := instanceid.NewService("my-instanceid")
+	instanceIDSvc.With(listOptions)
+	wfStore, err := store.NewSQLiteStore(instanceIDSvc)
 	if err != nil {
 		panic(err)
 	}
@@ -647,7 +646,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	namespaceAll := metav1.NamespaceAll
 	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	server := NewWorkflowServer(instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
 	return server, ctx
 }
 

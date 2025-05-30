@@ -155,7 +155,7 @@ func TestGetSessionExpiry(t *testing.T) {
 	assert.Equal(t, 5*time.Hour, config.GetSessionExpiry())
 }
 
-func TestIsValidFinalRedirectUrl(t *testing.T) {
+func TestIsValidFinalRedirectURL(t *testing.T) {
 	testCases := []struct {
 		name     string
 		url      string
@@ -192,7 +192,7 @@ func TestIsValidFinalRedirectUrl(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, isValidFinalRedirectUrl(tc.url))
+			assert.Equal(t, tc.expected, isValidFinalRedirectURL(tc.url))
 		})
 	}
 }

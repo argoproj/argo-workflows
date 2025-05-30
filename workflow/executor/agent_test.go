@@ -25,7 +25,7 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	go ae.taskWorker(context.Background(), taskQueue, responseQueue)
 
 	taskQueue <- task{
-		NodeId: "a",
+		NodeID: "a",
 		// This template type is not supported
 		Template: v1alpha1.Template{
 			DAG: &v1alpha1.DAGTemplate{},

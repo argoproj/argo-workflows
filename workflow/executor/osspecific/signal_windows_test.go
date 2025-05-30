@@ -1,6 +1,6 @@
 //go:build windows
 
-package os_specific
+package osspecific
 
 import (
 	"os/exec"

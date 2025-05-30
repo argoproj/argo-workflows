@@ -632,7 +632,7 @@ func TestNewS3Client(t *testing.T) {
 		RoleARN:         "",
 		RoleSessionName: "",
 		UseSDKCreds:     false,
-		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyId: "", KmsEncryptionContext: ""},
+		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyID: "", KmsEncryptionContext: ""},
 	}
 	s3If, err := NewS3Client(context.Background(), opts)
 	require.NoError(t, err)
@@ -712,7 +712,7 @@ func TestDisallowedComboOptions(t *testing.T) {
 			Region:      "us-south-3",
 			Secure:      true,
 			Trace:       true,
-			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyId: "00000000-0000-0000-0000-000000000000", KmsEncryptionContext: ""},
+			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyID: "00000000-0000-0000-0000-000000000000", KmsEncryptionContext: ""},
 		}
 		_, err := NewS3Client(context.Background(), opts)
 		assert.Error(t, err)
@@ -724,7 +724,7 @@ func TestDisallowedComboOptions(t *testing.T) {
 			Region:      "us-south-3",
 			Secure:      false,
 			Trace:       true,
-			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyId: "", KmsEncryptionContext: ""},
+			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyID: "", KmsEncryptionContext: ""},
 		}
 		_, err := NewS3Client(context.Background(), opts)
 		assert.Error(t, err)

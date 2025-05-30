@@ -133,11 +133,11 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 		timeStr := scheTime.String()
 		scheList = append(scheList, timeStr)
 	}
-	wfJsonByte, err := json.Marshal(wf)
+	wfJSONByte, err := json.Marshal(wf)
 	if err != nil {
 		return err
 	}
-	yamlbyte, err := yaml.JSONToYAML(wfJsonByte)
+	yamlbyte, err := yaml.JSONToYAML(wfJSONByte)
 	if err != nil {
 		return err
 	}
