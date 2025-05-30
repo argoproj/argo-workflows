@@ -349,8 +349,8 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 			},
 		},
 	}
-
-	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+	ctx := context.Background()
+	p := AddParamToGlobalScope(ctx, &wf, nil, wfv1.Parameter{
 		Name:       "test",
 		Value:      nil,
 		GlobalName: "test",
