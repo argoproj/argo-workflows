@@ -147,7 +147,7 @@ class EnvFromSource(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             config_map_ref (ConfigMapEnvSource): [optional]  # noqa: E501
-            prefix (str): An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.. [optional]  # noqa: E501
+            prefix (str): Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.. [optional]  # noqa: E501
             secret_ref (SecretEnvSource): [optional]  # noqa: E501
         """
 
@@ -231,7 +231,7 @@ class EnvFromSource(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             config_map_ref (ConfigMapEnvSource): [optional]  # noqa: E501
-            prefix (str): An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.. [optional]  # noqa: E501
+            prefix (str): Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.. [optional]  # noqa: E501
             secret_ref (SecretEnvSource): [optional]  # noqa: E501
         """
 

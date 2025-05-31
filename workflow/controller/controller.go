@@ -447,7 +447,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
+	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
 		},
