@@ -1,5 +1,37 @@
 # Changelog
 
+## v3.6.8 (2025-05-28)
+
+Full Changelog: [v3.6.7...v3.6.8](https://github.com/argoproj/argo-workflows/compare/v3.6.7...v3.6.8)
+
+### Selected Changes
+
+* [23eda86c4](https://github.com/argoproj/argo-workflows/commit/23eda86c404b1f11cde47083ed7a7a6eb3e9bdf9) fix: ignore failing resolveArt when Art is optional. Fixes #14267 (cherry-pick #14503) (#14521)
+* [89417c34a](https://github.com/argoproj/argo-workflows/commit/89417c34af80e6b234ac92b7df806cebbcbd89c7) chore(deps): bump golang.org/x/net (release-3.6) (#14508)
+* [95e5f6493](https://github.com/argoproj/argo-workflows/commit/95e5f64936ed1e048cc494b3b52a39ec6b23a71e) fix: correctly release all mutexes when multiple mutexes are held. FIxes #14461 (cherry-pick #14467) (#14486)
+* [6fe7eaa4a](https://github.com/argoproj/argo-workflows/commit/6fe7eaa4ac205de4bfbd9226cdc118ae79b31cd0) fix: ensure variable sub and processing is performed. Fixes #12941 (cherry-pick #14444) (#14481)
+* [0ab1b60c6](https://github.com/argoproj/argo-workflows/commit/0ab1b60c6cff04e93fb9f6d46309c29e2bc378ba) fix: added pagination to the workflow and pod listings. Fixes #14374 (cherry-pick #14373) (#14479)
+* [51675915a](https://github.com/argoproj/argo-workflows/commit/51675915ae3acd63ec42d133e923812f4a34c497) feat: non-root argoexec (#14477)
+* [899f42b65](https://github.com/argoproj/argo-workflows/commit/899f42b651bcdc1bc58b1b0202a3770fc1cc490f) fix: update TLS config to support ALPN. Fixes #14422 (#14435)
+* [81146ca72](https://github.com/argoproj/argo-workflows/commit/81146ca720ffdabc34c1e628f4247205342eb7ca) fix: add content-md5 header for artifacts (#14191) (#14483)
+* [cd6270237](https://github.com/argoproj/argo-workflows/commit/cd6270237eb87f196999d103ee727f15795ee96d) fix: Remove nil ConfigMap reference in cache gc (cherry-pick #14442) (#14453)
+* [e3ac61fc5](https://github.com/argoproj/argo-workflows/commit/e3ac61fc5d6b57c6fe4c7f1c0eacb6851c80992d) fix: Reference existing attributes in example (cherry-pick #14448) (#14452)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Alec Kloss
+* atgane
+* Copilot
+* Emmanuel Ferdman
+* Isitha Subasinghe
+* Mason Malone
+* Mikael Johansson
+* Rauñ
+* Ville Vesilehto
+
+</details>
+
 ## v3.6.7 (2025-04-29)
 
 Full Changelog: [v3.6.6...v3.6.7](https://github.com/argoproj/argo-workflows/compare/v3.6.6...v3.6.7)
