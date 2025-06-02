@@ -190,7 +190,6 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                         setTemplateFromRef(null);
                     }
             } catch (err) {
-                console.error(`Failed to fetch template from reference: ${err}`);
                 setTemplateFromRef(null);
             }
         };
