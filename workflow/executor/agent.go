@@ -64,12 +64,12 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 }
 
 type task struct {
-	NodeId   string
+	NodeID   string
 	Template wfv1.Template
 }
 
 type response struct {
-	NodeId string
+	NodeID string
 	Result *wfv1.NodeResult
 }
 
@@ -113,7 +113,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
-				taskQueue <- task{NodeId: nodeID, Template: tmpl}
+				taskQueue <- task{NodeID: nodeID, Template: tmpl}
 			}
 		}
 	}
@@ -125,7 +125,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		if !ok {
 			break
 		}
-		nodeID, tmpl := task.NodeId, task.Template
+		nodeID, tmpl := task.NodeID, task.Template
 		log := log.WithField("nodeID", nodeID)
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
@@ -153,7 +153,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			Info("Sending result")
 
 		if result.Phase != "" {
-			responseQueue <- response{NodeId: nodeID, Result: result}
+			responseQueue <- response{NodeID: nodeID, Result: result}
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
@@ -172,7 +172,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 	for {
 		select {
 		case res := <-responseQueue:
-			nodeResults[res.NodeId] = *res.Result
+			nodeResults[res.NodeID] = *res.Result
 		case <-ticker.C:
 			if len(nodeResults) == 0 {
 				continue
@@ -363,7 +363,7 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 			ObjectMeta: executorplugins.ObjectMeta{
 				Name:      ae.WorkflowName,
 				Namespace: ae.Namespace,
-				Uid:       ae.workflowUID,
+				UID:       ae.workflowUID,
 			},
 		},
 		Template: &tmpl,

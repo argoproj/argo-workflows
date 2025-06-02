@@ -1,6 +1,6 @@
 //go:build linux || darwin
 
-package os_specific
+package osspecific
 
 import (
 	"fmt"

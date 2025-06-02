@@ -12,7 +12,7 @@ import (
 type databaseSemaphore struct {
 	name         string
 	limitGetter  limitProvider
-	shortDbKey   string
+	shortDBKey   string
 	nextWorkflow NextWorkflow
 	log          *log.Entry
 	info         dbInfo
@@ -68,7 +68,7 @@ var _ semaphore = &databaseSemaphore{}
 func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo, syncLimitCacheTTL time.Duration) (*databaseSemaphore, error) {
 	sem := &databaseSemaphore{
 		name:         name,
-		shortDbKey:   dbKey,
+		shortDBKey:   dbKey,
 		limitGetter:  nil,
 		nextWorkflow: nextWorkflow,
 		log: log.WithFields(log.Fields{
@@ -87,11 +87,11 @@ func newDatabaseSemaphore(name string, dbKey string, nextWorkflow NextWorkflow, 
 	return sem, err
 }
 
-func (s *databaseSemaphore) longDbKey() string {
+func (s *databaseSemaphore) longDBKey() string {
 	if s.isMutex {
-		return "mtx/" + s.shortDbKey
+		return "mtx/" + s.shortDBKey
 	}
-	return "sem/" + s.shortDbKey
+	return "sem/" + s.shortDBKey
 }
 
 func (s *databaseSemaphore) getName() string {
@@ -104,15 +104,15 @@ func (s *databaseSemaphore) getLimitFromDB(_ string) (int, error) {
 	err := s.info.session.SQL().
 		Select(limitSizeField).
 		From(s.info.config.limitTable).
-		Where(db.Cond{limitNameField: s.shortDbKey}).
+		Where(db.Cond{limitNameField: s.shortDBKey}).
 		One(limit)
 	if err != nil {
-		s.log.WithField("key", s.shortDbKey).WithError(err).Error("Failed to get limit")
+		s.log.WithField("key", s.shortDBKey).WithError(err).Error("Failed to get limit")
 		return 0, err
 	}
 	s.log.WithFields(log.Fields{
 		"limit": limit.SizeLimit,
-		"key":   s.shortDbKey,
+		"key":   s.shortDBKey,
 	}).Debug("Current limit")
 	return limit.SizeLimit, nil
 }
@@ -121,9 +121,9 @@ func (s *databaseSemaphore) getLimitFromDB(_ string) (int, error) {
 // Otherwise queries the database for the limit.
 func (s *databaseSemaphore) getLimit() int {
 	log.WithFields(log.Fields{
-		"dbKey": s.shortDbKey,
+		"dbKey": s.shortDBKey,
 	}).Infof("getLimit")
-	limit, _, err := s.limitGetter.get(s.shortDbKey)
+	limit, _, err := s.limitGetter.get(s.shortDBKey)
 	if err != nil {
 		s.log.WithError(err).Errorf("Failed to get limit for semaphore %s", s.name)
 		return 0
@@ -137,7 +137,7 @@ func (s *databaseSemaphore) currentState(session db.Session, held bool) ([]strin
 		Select(stateKeyField).
 		From(s.info.config.stateTable).
 		Where(db.Cond{stateHeldField: held}).
-		And(db.Cond{stateNameField: s.longDbKey()}).
+		And(db.Cond{stateNameField: s.longDBKey()}).
 		All(&states)
 	if err != nil {
 		s.log.WithField("held", held).WithError(err).Error("Failed to get current state")
@@ -168,18 +168,18 @@ func (s *databaseSemaphore) lock() bool {
 	err := s.info.session.SQL().
 		Select(lockNameField).
 		From(s.info.config.lockTable).
-		Where(db.Cond{lockNameField: s.longDbKey()}).
+		Where(db.Cond{lockNameField: s.longDBKey()}).
 		And(db.Cond{lockControllerField: s.info.config.controllerName}).
 		All(&existingLocks)
 
 	if err == nil && len(existingLocks) > 0 {
 		// Lock already exists
-		s.log.WithField("key", s.longDbKey()).Debug("Lock already exists")
+		s.log.WithField("key", s.longDBKey()).Debug("Lock already exists")
 		return true
 	}
 
 	record := &lockRecord{
-		Name:       s.longDbKey(),
+		Name:       s.longDBKey(),
 		Controller: s.info.config.controllerName,
 		Time:       time.Now(),
 	}
@@ -191,7 +191,7 @@ func (s *databaseSemaphore) unlock() {
 	for {
 		_, err := s.info.session.SQL().
 			DeleteFrom(s.info.config.lockTable).
-			Where(db.Cond{lockNameField: s.longDbKey()}).
+			Where(db.Cond{lockNameField: s.longDBKey()}).
 			Exec()
 		if err == nil {
 			break
@@ -204,7 +204,7 @@ func (s *databaseSemaphore) release(key string) bool {
 	_, err := s.info.session.SQL().
 		DeleteFrom(s.info.config.stateTable).
 		Where(db.Cond{stateHeldField: true}).
-		And(db.Cond{stateNameField: s.longDbKey()}).
+		And(db.Cond{stateNameField: s.longDBKey()}).
 		And(db.Cond{stateKeyField: key}).
 		And(db.Cond{stateControllerField: s.info.config.controllerName}).
 		Exec()
@@ -231,7 +231,7 @@ func (s *databaseSemaphore) queueOrdered(session db.Session) ([]stateRecord, err
 	err := session.SQL().
 		Select(stateKeyField, stateControllerField).
 		From(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.longDbKey()}).
+		Where(db.Cond{stateNameField: s.longDBKey()}).
 		And(db.Cond{stateHeldField: false}).
 		And(db.Cond{
 			"controller IN": subquery,
@@ -286,7 +286,7 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 	err := s.info.session.SQL().
 		Select(stateKeyField).
 		From(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.longDbKey()}).
+		Where(db.Cond{stateNameField: s.longDBKey()}).
 		And(db.Cond{stateKeyField: holderKey}).
 		And(db.Cond{stateControllerField: s.info.config.controllerName}).
 		All(&states)
@@ -297,7 +297,7 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 		return nil
 	}
 	record := &stateRecord{
-		Name:       s.longDbKey(),
+		Name:       s.longDBKey(),
 		Key:        holderKey,
 		Controller: s.info.config.controllerName,
 		Held:       false,
@@ -311,7 +311,7 @@ func (s *databaseSemaphore) addToQueue(holderKey string, priority int32, creatio
 func (s *databaseSemaphore) removeFromQueue(holderKey string) error {
 	_, err := s.info.session.SQL().
 		DeleteFrom(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.longDbKey()}).
+		Where(db.Cond{stateNameField: s.longDBKey()}).
 		And(db.Cond{stateKeyField: holderKey}).
 		And(db.Cond{stateHeldField: false}).
 		Exec()
@@ -348,7 +348,7 @@ func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (boo
 		}).Info("CheckAcquire - already held")
 		return false, true, ""
 	}
-	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDbKey(), len(holders), limit)
+	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), len(holders), limit)
 
 	if len(holders) >= limit {
 		s.log.WithFields(log.Fields{
@@ -428,7 +428,7 @@ func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 		err := (*tx.db).SQL().
 			Select(stateKeyField).
 			From(s.info.config.stateTable).
-			Where(db.Cond{stateNameField: s.longDbKey()}).
+			Where(db.Cond{stateNameField: s.longDBKey()}).
 			And(db.Cond{stateKeyField: holderKey}).
 			And(db.Cond{stateControllerField: s.info.config.controllerName}).
 			And(db.Cond{stateHeldField: false}).
@@ -440,7 +440,7 @@ func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 		if len(pending) > 0 {
 			_, err := (*tx.db).SQL().Update(s.info.config.stateTable).
 				Set(stateHeldField, true).
-				Where(db.Cond{stateNameField: s.longDbKey()}).
+				Where(db.Cond{stateNameField: s.longDBKey()}).
 				And(db.Cond{stateKeyField: holderKey}).
 				And(db.Cond{stateControllerField: s.info.config.controllerName}).
 				And(db.Cond{stateHeldField: false}).
@@ -451,7 +451,7 @@ func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) bool {
 			}
 		} else {
 			record := &stateRecord{
-				Name:       s.longDbKey(),
+				Name:       s.longDBKey(),
 				Key:        holderKey,
 				Controller: s.info.config.controllerName,
 				Held:       true,

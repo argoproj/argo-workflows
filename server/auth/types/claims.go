@@ -24,11 +24,11 @@ type UserInfo struct {
 	Groups []string `json:"groups"`
 }
 
-type HttpClient interface {
+type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var httpClient HttpClient
+var httpClient HTTPClient
 
 func init() {
 	httpClient = &http.Client{}
@@ -85,7 +85,7 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func (c *Claims) GetUserInfoGroups(httpClient HttpClient, accessToken, issuer, userInfoPath string) ([]string, error) {
+func (c *Claims) GetUserInfoGroups(httpClient HTTPClient, accessToken, issuer, userInfoPath string) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
 	request, err := http.NewRequest("GET", url, nil)
 

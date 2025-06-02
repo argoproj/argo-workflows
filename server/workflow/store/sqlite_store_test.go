@@ -69,12 +69,12 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestStoreOperation(t *testing.T) {
-	instanceIdSvc := instanceid.NewService("my-instanceid")
+	instanceIDSvc := instanceid.NewService("my-instanceid")
 	conn, err := initDB()
 	require.NoError(t, err)
 	store := SQLiteStore{
 		conn:            conn,
-		instanceService: instanceIdSvc,
+		instanceService: instanceIDSvc,
 	}
 	t.Run("TestAddWorkflow", func(t *testing.T) {
 		for i := 0; i < 10; i++ {
