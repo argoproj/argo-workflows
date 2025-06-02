@@ -1364,7 +1364,7 @@ type ArtifactSearchQuery struct {
 	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
 	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
 	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
-	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
+	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"` //nolint:staticcheck
 	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 	NodeTypes            map[NodeType]bool           `json:"nodeTypes,omitempty" protobuf:"bytes,6,opt,name=nodeTypes"`
 }
@@ -1867,9 +1867,9 @@ func SucceededPodNode(n NodeStatus) bool {
 }
 
 // Children returns the children of the parent.
-func (in Nodes) Children(parentNodeId string) Nodes {
+func (in Nodes) Children(parentNodeID string) Nodes {
 	childNodes := make(Nodes)
-	parentNode, ok := in[parentNodeId]
+	parentNode, ok := in[parentNodeID]
 	if !ok {
 		return childNodes
 	}
@@ -1883,10 +1883,10 @@ func (in Nodes) Children(parentNodeId string) Nodes {
 
 // NestedChildrenStatus takes in a nodeID and returns all its children, this involves a tree search using DFS.
 // This is needed to mark all children nodes as failed for example.
-func (in Nodes) NestedChildrenStatus(parentNodeId string) ([]NodeStatus, error) {
-	parentNode, ok := in[parentNodeId]
+func (in Nodes) NestedChildrenStatus(parentNodeID string) ([]NodeStatus, error) {
+	parentNode, ok := in[parentNodeID]
 	if !ok {
-		return nil, fmt.Errorf("could not find %s in nodes when searching for nested children", parentNodeId)
+		return nil, fmt.Errorf("could not find %s in nodes when searching for nested children", parentNodeID)
 	}
 
 	children := []NodeStatus{}
@@ -2589,7 +2589,7 @@ type S3Bucket struct {
 // S3EncryptionOptions used to determine encryption options during s3 operations
 type S3EncryptionOptions struct {
 	// KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
-	KmsKeyId string `json:"kmsKeyId,omitempty" protobuf:"bytes,1,opt,name=kmsKeyId"`
+	KmsKeyId string `json:"kmsKeyId,omitempty" protobuf:"bytes,1,opt,name=kmsKeyId"` //nolint:staticcheck
 
 	// KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information
 	KmsEncryptionContext string `json:"kmsEncryptionContext,omitempty" protobuf:"bytes,2,opt,name=kmsEncryptionContext"`

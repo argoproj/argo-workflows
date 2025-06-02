@@ -67,16 +67,16 @@ func TestSprigFuncMapAllowlist(t *testing.T) {
 func TestToJson(t *testing.T) {
 	// Test with a simple map
 	data := map[string]interface{}{"key": "value", "number": 123}
-	expectedJson := `{"key":"value","number":123}`
-	assert.JSONEq(t, expectedJson, toJson(data))
+	expectedJSON := `{"key":"value","number":123}`
+	assert.JSONEq(t, expectedJSON, toJSON(data))
 
 	// Test with a slice
 	sliceData := []interface{}{1, "two", 3.0}
-	expectedSliceJson := `[1,"two",3.0]`
-	assert.JSONEq(t, expectedSliceJson, toJson(sliceData))
+	expectedSliceJSON := `[1,"two",3.0]`
+	assert.JSONEq(t, expectedSliceJSON, toJSON(sliceData))
 
 	// Test with a simple string (should be JSON-encoded string)
-	assert.Equal(t, `"hello"`, toJson("hello"))
+	assert.Equal(t, `"hello"`, toJSON("hello"))
 }
 
 func TestJsonPath(t *testing.T) {
