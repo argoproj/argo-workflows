@@ -283,19 +283,29 @@ argoexec-nonroot-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
+	# Special handling for argoexec-nonroot to create argoexec:VERSION-nonroot instead of argoexec-nonroot:VERSION
+	if [ "$*" = "argoexec-nonroot" ]; then \
+		image_name="$(IMAGE_NAMESPACE)/argoexec:$(VERSION)-nonroot"; \
+	else \
+		image_name="$(IMAGE_NAMESPACE)/$*:$(VERSION)"; \
+	fi; \
 	docker buildx build \
 		--platform $(TARGET_PLATFORM) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg GIT_TAG=$(GIT_TAG) \
 		--build-arg GIT_TREE_STATE=$(GIT_TREE_STATE) \
-		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
+		-t $$image_name \
 		--target $* \
 		--load \
 		 .
 	[ ! -e $* ] || mv $* dist/
-	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
-	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
+	docker run --rm -t $$image_name version
+	if [ $(K3D) = true ]; then \
+		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
+	fi
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then \
+		docker push $$image_name; \
+	fi
 
 .PHONY: codegen
 codegen: types swagger manifests $(TOOL_MOCKERY) docs/fields.md docs/cli/argo.md
