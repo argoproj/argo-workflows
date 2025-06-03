@@ -77,7 +77,13 @@ jobs:
           GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
           GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+
+          # Special handling for argoexec-nonroot to create argoexec:tag-nonroot-platform instead
+          if [ "$TARGET" = "argoexec-nonroot" ]; then
+            image_name="${DOCKERIO_ORG}/argoexec:${tag}-nonroot-${tag_suffix}"
+          else
+            image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+          fi
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
@@ -181,11 +187,15 @@ jobs:
 
           targets="workflow-controller argoexec argoexec-nonroot argocli"
           for target in $targets; do
-            image_name="${docker_org}/${target}:${tag}"
-
-            if [ $target = "argoexec" ]; then
+            if [ "$target" = "argoexec-nonroot" ]; then
+              # Special handling for argoexec-nonroot: create argoexec:tag-nonroot manifest
+              image_name="${docker_org}/argoexec:${tag}-nonroot"
+              docker manifest create quay.io/$image_name quay.io/${docker_org}/argoexec:${tag}-nonroot-linux-arm64 quay.io/${docker_org}/argoexec:${tag}-nonroot-linux-amd64
+            elif [ "$target" = "argoexec" ]; then
+              image_name="${docker_org}/${target}:${tag}"
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
+              image_name="${docker_org}/${target}:${tag}"
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
@@ -229,7 +239,11 @@ jobs:
             tag="latest"
           fi
 
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
+          if [ "$TARGET" = "argoexec-nonroot" ]; then
+            image_name="${DOCKERIO_ORG}/argoexec:${tag}-nonroot"
+          else
+            image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
+          fi
           docker pull quay.io/$image_name
 
   test-images-windows:
@@ -309,7 +323,7 @@ jobs:
       - run: bom generate --image quay.io/argoproj/workflow-controller:$VERSION -o dist/workflow-controller.spdx
       - run: bom generate --image quay.io/argoproj/argocli:$VERSION -o dist/argocli.spdx
       - run: bom generate --image quay.io/argoproj/argoexec:$VERSION -o dist/argoexec.spdx
-      - run: bom generate --image quay.io/argoproj/argoexec-nonroot:$VERSION -o dist/argoexec-nonroot.spdx
+      - run: bom generate --image quay.io/argoproj/argoexec:$VERSION-nonroot -o dist/argoexec-nonroot.spdx
       # pack the boms into one file to make it easy to download
       - run: tar -zcf dist/sbom.tar.gz dist/*.spdx
       - run: make release-notes VERSION=$VERSION
