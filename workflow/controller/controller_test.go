@@ -299,6 +299,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
+		workflowVersionChecker:    NewWorkflowVersionChecker(NoExpiration),
 	}
 
 	for _, opt := range options {
