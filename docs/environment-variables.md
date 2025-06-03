@@ -57,6 +57,7 @@ This document outlines environment variables that can be used to customize behav
 | `SEMAPHORE_NOTIFY_DELAY`                 | `time.Duration`     | `1s`                                                                                        | Tuning Delay when notifying semaphore waiters about availability in the semaphore                                                                                                                                                                                        |
 | `WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS` | `bool` | `true` | Whether to watch the Controller's ConfigMap and semaphore ConfigMaps for run-time changes. When disabled, the Controller will only read these ConfigMaps once and will have to be manually restarted to pick up new changes. |
 | `SKIP_WORKFLOW_DURATION_ESTIMATION` | `bool` | `false` | Whether to lookup resource usage from prior workflows to estimate usage for new workflows. |
+| `PROCESSED_WORKFLOW_VERSIONS_TTL` | `time.Duration` | `10s` | How long the workflow versions cache stores. Should be set as the max workflow informer delay anticipated to avoid processing the same workflow version multiple times. |
 
 CLI parameters of the Controller can be specified as environment variables with the `ARGO_` prefix.
 For example:

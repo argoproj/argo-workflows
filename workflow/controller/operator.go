@@ -794,6 +794,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		panic("workflow should be hydrated")
 	}
 
+	woc.updateOutdatedVersionIfChanged(ctx, woc.orig, woc.wf)
 	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
@@ -824,6 +825,14 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be labeled multiple times.
 	woc.queuePodsForCleanup(ctx)
+}
+
+func (woc *wfOperationCtx) updateOutdatedVersionIfChanged(ctx context.Context, origWf metav1.Object, newWf metav1.Object) {
+	if origWf.GetResourceVersion() != newWf.GetResourceVersion() {
+		woc.controller.workflowVersionChecker.UpdateOutdatedVersion(origWf)
+	} else {
+		woc.log.WithFields(logging.Fields{"workflow": origWf.GetName(), "version": origWf.GetResourceVersion()}).Info(ctx, "Version not changed. Will not update outdated version")
+	}
 }
 
 func (woc *wfOperationCtx) checkTaskResultsInProgress(ctx context.Context) bool {
@@ -935,6 +944,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if err == nil {
 			woc.log.WithField("attempt", attempt).Info(ctx, "Update retry attempt successful")
 			woc.controller.hydrator.HydrateWithNodes(wf, nodes)
+			woc.updateOutdatedVersionIfChanged(ctx, currWf, wf)
 			return wf, nil
 		}
 		attempt++
