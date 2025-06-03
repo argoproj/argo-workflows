@@ -1,5 +1,19 @@
 # Changelog
 
+## v3.6.9 (2025-06-03)
+
+Full Changelog: [v3.6.8...v3.6.9](https://github.com/argoproj/argo-workflows/compare/v3.6.8...v3.6.9)
+
+### Selected Changes
+
+* [138b39281](https://github.com/argoproj/argo-workflows/commit/138b39281cb519358605a2adbe9f60f1300c667b) fix: change non-root image to use tag (#14530)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
 ## v3.6.8 (2025-05-28)
 
 Full Changelog: [v3.6.7...v3.6.8](https://github.com/argoproj/argo-workflows/compare/v3.6.7...v3.6.8)
