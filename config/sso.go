@@ -20,8 +20,13 @@ type SSOConfig struct {
 	// customGroupClaimName will override the groups claim name
 	CustomGroupClaimName string   `json:"customGroupClaimName,omitempty"`
 	UserInfoPath         string   `json:"userInfoPath,omitempty"`
-	InsecureSkipVerify   bool     `json:"insecureSkipVerify,omitempty"`
 	FilterGroupsRegex    []string `json:"filterGroupsRegex,omitempty"`
+	// client certificates used for mTLS with the provider
+	ClientCert         string `json:"clientCert,omitempty"`
+	ClientKey          string `json:"clientKey,omitempty"`
+	InsecureSkipVerify bool   `json:"insecureSkipVerify,omitempty"`
+	// custom CA certificate file
+	CACert string `json:"caCert,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {
