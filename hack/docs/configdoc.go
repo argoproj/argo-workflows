@@ -194,8 +194,20 @@ func processField(field *ast.Field, rows *[][]string, typesToRecurse *[]string) 
 		}
 	}
 
-	// Get type and create link
 	typeStr := exprString(field.Type)
+	processFieldWithNames(field, typeStr, names, rows, typesToRecurse)
+}
+
+// processFieldAsRegular processes an embedded field as if it were a regular named field
+func processFieldAsRegular(field *ast.Field, typeStr string, rows *[][]string, typesToRecurse *[]string) {
+	// Use the type name as the field name for embedded non-structs
+	baseType := baseTypeName(typeStr)
+	names := []string{baseType}
+	processFieldWithNames(field, typeStr, names, rows, typesToRecurse)
+}
+
+// processFieldWithNames handles the common logic for processing fields with given names
+func processFieldWithNames(field *ast.Field, typeStr string, names []string, rows *[][]string, typesToRecurse *[]string) {
 	linkedTypeStr := createTypeLink(typeStr)
 
 	// Get documentation with fallback
@@ -220,37 +232,18 @@ func processField(field *ast.Field, rows *[][]string, typesToRecurse *[]string) 
 
 	// Collect types to recurse into later
 	if baseType := baseTypeName(typeStr); typeSpecs[baseType] != nil && !visited[baseType] {
-		*typesToRecurse = append(*typesToRecurse, baseType)
+		addToRecursionList(typesToRecurse, baseType)
 	}
 }
 
-// processFieldAsRegular processes an embedded field as if it were a regular named field
-func processFieldAsRegular(field *ast.Field, typeStr string, rows *[][]string, typesToRecurse *[]string) {
-	linkedTypeStr := createTypeLink(typeStr)
-
-	// Get documentation with fallback
-	doc := "-"
-	if field.Doc != nil {
-		doc = normalizeComment(field.Doc.Text())
-	} else if field.Comment != nil {
-		doc = normalizeComment(field.Comment.Text())
+// addToRecursionList adds a type to the recursion list only if it's not already present
+func addToRecursionList(typesToRecurse *[]string, baseType string) {
+	for _, existing := range *typesToRecurse {
+		if existing == baseType {
+			return // Already in the list, skip
+		}
 	}
-	if doc == "" {
-		doc = "-"
-	}
-
-	// Use the type name as the field name for embedded non-structs
-	baseType := baseTypeName(typeStr)
-	*rows = append(*rows, []string{
-		fmt.Sprintf("`%s`", baseType),
-		linkedTypeStr,
-		doc,
-	})
-
-	// Collect types to recurse into later
-	if typeSpecs[baseType] != nil && !visited[baseType] {
-		*typesToRecurse = append(*typesToRecurse, baseType)
-	}
+	*typesToRecurse = append(*typesToRecurse, baseType)
 }
 
 // createTypeLink creates markdown links for type references
