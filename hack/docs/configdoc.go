@@ -141,44 +141,29 @@ func writeStructDoc(builder *md.Markdown, ts *ast.TypeSpec, name string) {
 	var typesToRecurse []string
 
 	for _, field := range st.Fields.List {
-		// Get field name(s) - handle both named and embedded fields
-		var names []string
+		// Handle embedded fields by inlining their fields
 		if len(field.Names) == 0 {
-			// Embedded field - use type name
-			names = []string{exprString(field.Type)}
-		} else {
-			for _, n := range field.Names {
-				names = append(names, n.Name)
+			// Embedded field - inline its fields if it's a struct
+			typeStr := exprString(field.Type)
+			baseType := baseTypeName(typeStr)
+
+			if embeddedTS, ok := typeSpecs[baseType]; ok {
+				if embeddedST, ok := embeddedTS.Type.(*ast.StructType); ok {
+					// Recursively process embedded struct fields
+					for _, embeddedField := range embeddedST.Fields.List {
+						processField(embeddedField, &rows, &typesToRecurse)
+					}
+				} else {
+					// Not a struct, treat as regular field with type name
+					processFieldAsRegular(field, typeStr, &rows, &typesToRecurse)
+				}
+			} else {
+				// Type not found in our specs, treat as regular field
+				processFieldAsRegular(field, typeStr, &rows, &typesToRecurse)
 			}
-		}
-
-		// Get type and create link
-		typeStr := exprString(field.Type)
-		linkedTypeStr := createTypeLink(typeStr)
-
-		// Get documentation with fallback
-		doc := "-"
-		if field.Doc != nil {
-			doc = normalizeComment(field.Doc.Text())
-		} else if field.Comment != nil {
-			doc = normalizeComment(field.Comment.Text())
-		}
-		if doc == "" {
-			doc = "-"
-		}
-
-		// Add table rows for all field names
-		for _, fname := range names {
-			rows = append(rows, []string{
-				fmt.Sprintf("`%s`", fname),
-				linkedTypeStr,
-				doc,
-			})
-		}
-
-		// Collect types to recurse into later
-		if baseType := baseTypeName(typeStr); typeSpecs[baseType] != nil && !visited[baseType] {
-			typesToRecurse = append(typesToRecurse, baseType)
+		} else {
+			// Named field - process normally
+			processField(field, &rows, &typesToRecurse)
 		}
 	}
 
@@ -193,6 +178,78 @@ func writeStructDoc(builder *md.Markdown, ts *ast.TypeSpec, name string) {
 		if tts, ok := typeSpecs[baseType]; ok && !visited[baseType] {
 			writeStructDoc(builder, tts, baseType)
 		}
+	}
+}
+
+// processField handles processing a single field (named or embedded struct field)
+func processField(field *ast.Field, rows *[][]string, typesToRecurse *[]string) {
+	// Get field name(s)
+	var names []string
+	if len(field.Names) == 0 {
+		// This shouldn't happen in processField, but handle gracefully
+		names = []string{exprString(field.Type)}
+	} else {
+		for _, n := range field.Names {
+			names = append(names, n.Name)
+		}
+	}
+
+	// Get type and create link
+	typeStr := exprString(field.Type)
+	linkedTypeStr := createTypeLink(typeStr)
+
+	// Get documentation with fallback
+	doc := "-"
+	if field.Doc != nil {
+		doc = normalizeComment(field.Doc.Text())
+	} else if field.Comment != nil {
+		doc = normalizeComment(field.Comment.Text())
+	}
+	if doc == "" {
+		doc = "-"
+	}
+
+	// Add table rows for all field names
+	for _, fname := range names {
+		*rows = append(*rows, []string{
+			fmt.Sprintf("`%s`", fname),
+			linkedTypeStr,
+			doc,
+		})
+	}
+
+	// Collect types to recurse into later
+	if baseType := baseTypeName(typeStr); typeSpecs[baseType] != nil && !visited[baseType] {
+		*typesToRecurse = append(*typesToRecurse, baseType)
+	}
+}
+
+// processFieldAsRegular processes an embedded field as if it were a regular named field
+func processFieldAsRegular(field *ast.Field, typeStr string, rows *[][]string, typesToRecurse *[]string) {
+	linkedTypeStr := createTypeLink(typeStr)
+
+	// Get documentation with fallback
+	doc := "-"
+	if field.Doc != nil {
+		doc = normalizeComment(field.Doc.Text())
+	} else if field.Comment != nil {
+		doc = normalizeComment(field.Comment.Text())
+	}
+	if doc == "" {
+		doc = "-"
+	}
+
+	// Use the type name as the field name for embedded non-structs
+	baseType := baseTypeName(typeStr)
+	*rows = append(*rows, []string{
+		fmt.Sprintf("`%s`", baseType),
+		linkedTypeStr,
+		doc,
+	})
+
+	// Collect types to recurse into later
+	if typeSpecs[baseType] != nil && !visited[baseType] {
+		*typesToRecurse = append(*typesToRecurse, baseType)
 	}
 }
 
@@ -400,9 +457,9 @@ func getInlineTypeDoc(typeName string) string {
 	// Get comment from GenDecl or TypeSpec
 	var comment string
 	if commentGroup, ok := typeComments[typeName]; ok && commentGroup != nil {
-		comment = strings.TrimSpace(commentGroup.Text())
+		comment = normalizeComment(commentGroup.Text())
 	} else if ts.Doc != nil {
-		comment = strings.TrimSpace(ts.Doc.Text())
+		comment = normalizeComment(ts.Doc.Text())
 	}
 
 	// Get underlying type
