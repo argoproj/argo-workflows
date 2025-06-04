@@ -79,7 +79,7 @@ require (
 	k8s.io/apimachinery v0.33.1
 	k8s.io/cli-runtime v0.33.1
 	k8s.io/client-go v0.33.1
-	k8s.io/gengo v0.0.0-20250531010418-b22feca77200
+	k8s.io/gengo v0.0.0-20250604051438-85fd79dbfd9f
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
 	k8s.io/kubectl v0.33.1
@@ -350,5 +350,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
 
-// https://github.com/olekukonko/tablewriter/issues/270
+// https://github.com/nao1215/markdown/issues/49
 replace github.com/olekukonko/tablewriter => github.com/olekukonko/tablewriter v0.0.5

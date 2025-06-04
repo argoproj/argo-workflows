@@ -51,8 +51,9 @@ plugins:
   - search # re-include the default: https://www.mkdocs.org/user-guide/configuration/#plugins,
 validation:
   omitted_files: warn
-  absolute_links: warn
+  absolute_links: relative_to_docs
   unrecognized_links: warn
+  anchors: warn
 exclude_docs: |
   /proposals/
   /requirements.txt
