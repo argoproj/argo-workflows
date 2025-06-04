@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"go/ast"
@@ -12,6 +11,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	md "github.com/nao1215/markdown"
 )
 
 // Set this to the root of the repo
@@ -80,22 +81,30 @@ func generateConfigDocs() {
 		log.Fatalf("failed to walk config directory: %v", err)
 	}
 
-	var buf bytes.Buffer
-	buf.WriteString(header)
+	f, err := os.Create(outputFile)
+	if err != nil {
+		log.Fatalf("failed to create output file: %v", err)
+	}
+	defer f.Close()
+
+	// Create markdown builder starting with the header
+	builder := md.NewMarkdown(f).PlainText(header)
+
 	if ts, ok := typeSpecs["Config"]; ok {
-		writeStructDoc(&buf, ts, "Config")
+		writeStructDoc(builder, ts, "Config")
 	} else {
 		log.Fatalf("Config struct not found in %s directory", configDir)
 	}
 
-	err = os.WriteFile(outputFile, buf.Bytes(), 0644)
+	err = builder.Build()
 	if err != nil {
-		log.Fatalf("failed to write output: %v", err)
+		log.Fatalf("failed to build markdown: %v", err)
 	}
+
 	fmt.Printf("Wrote %s\n", outputFile)
 }
 
-func writeStructDoc(buf *bytes.Buffer, ts *ast.TypeSpec, name string) {
+func writeStructDoc(builder *md.Markdown, ts *ast.TypeSpec, name string) {
 	if visited[name] {
 		return
 	}
@@ -109,16 +118,24 @@ func writeStructDoc(buf *bytes.Buffer, ts *ast.TypeSpec, name string) {
 		return
 	}
 
-	buf.WriteString(fmt.Sprintf("\n## %s\n\n", name))
+	builder.H2(name)
+	builder.PlainText("")
+
 	// Check for comment from GenDecl first, then TypeSpec
 	if comment, ok := typeComments[name]; ok && comment != nil {
-		buf.WriteString(normalizeComment(comment.Text()) + "\n\n")
+		builder.PlainText(normalizeComment(comment.Text()))
+		builder.PlainText("")
 	} else if ts.Doc != nil {
-		buf.WriteString(normalizeComment(ts.Doc.Text()) + "\n\n")
+		builder.PlainText(normalizeComment(ts.Doc.Text()))
+		builder.PlainText("")
 	}
-	buf.WriteString("### Fields\n\n")
-	buf.WriteString("| Field Name | Field Type | Description |\n")
-	buf.WriteString("|:----------:|:----------:|:------------|\n")
+
+	builder.H3("Fields")
+	builder.PlainText("")
+
+	// Prepare table data
+	headers := []string{"Field Name", "Field Type", "Description"}
+	var rows [][]string
 
 	// Collect types to recurse into after processing all fields
 	var typesToRecurse []string
@@ -150,9 +167,13 @@ func writeStructDoc(buf *bytes.Buffer, ts *ast.TypeSpec, name string) {
 			doc = "-"
 		}
 
-		// Write table rows for all field names
+		// Add table rows for all field names
 		for _, fname := range names {
-			buf.WriteString(fmt.Sprintf("| `%s` | %s | %s |\n", fname, linkedTypeStr, doc))
+			rows = append(rows, []string{
+				fmt.Sprintf("`%s`", fname),
+				linkedTypeStr,
+				doc,
+			})
 		}
 
 		// Collect types to recurse into later
@@ -161,10 +182,16 @@ func writeStructDoc(buf *bytes.Buffer, ts *ast.TypeSpec, name string) {
 		}
 	}
 
+	// Add the table to the builder
+	builder.CustomTable(md.TableSet{
+		Header: headers,
+		Rows:   rows,
+	}, md.TableOptions{AutoWrapText: false})
+
 	// Now recurse into all the collected types
 	for _, baseType := range typesToRecurse {
 		if tts, ok := typeSpecs[baseType]; ok && !visited[baseType] {
-			writeStructDoc(buf, tts, baseType)
+			writeStructDoc(builder, tts, baseType)
 		}
 	}
 }
