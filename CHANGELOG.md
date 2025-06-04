@@ -2,7 +2,7 @@
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.9...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.9...v3.7.0-rc1)
+Full Changelog: [v3.6.10...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.10...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -209,6 +209,20 @@ Full Changelog: [v3.6.9...v3.7.0-rc1](https://github.com/argoproj/argo-workflows
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.10 (2025-06-04)
+
+Full Changelog: [v3.6.9...v3.6.10](https://github.com/argoproj/argo-workflows/compare/v3.6.9...v3.6.10)
+
+### Selected Changes
+
+* [1285c11c8](https://github.com/argoproj/argo-workflows/commit/1285c11c80efa606ba87b138300309a57dd36368) Revert "fix: update TLS config to support ALPN. Fixes #14422 (#14435)"
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
 
 </details>
 
