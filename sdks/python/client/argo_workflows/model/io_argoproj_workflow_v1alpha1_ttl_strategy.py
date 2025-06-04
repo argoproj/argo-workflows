@@ -82,6 +82,7 @@ class IoArgoprojWorkflowV1alpha1TTLStrategy(ModelNormal):
         """
         return {
             'seconds_after_completion': (int,),  # noqa: E501
+            'seconds_after_error': (int,),  # noqa: E501
             'seconds_after_failure': (int,),  # noqa: E501
             'seconds_after_success': (int,),  # noqa: E501
         }
@@ -93,6 +94,7 @@ class IoArgoprojWorkflowV1alpha1TTLStrategy(ModelNormal):
 
     attribute_map = {
         'seconds_after_completion': 'secondsAfterCompletion',  # noqa: E501
+        'seconds_after_error': 'secondsAfterError',  # noqa: E501
         'seconds_after_failure': 'secondsAfterFailure',  # noqa: E501
         'seconds_after_success': 'secondsAfterSuccess',  # noqa: E501
     }
@@ -139,6 +141,7 @@ class IoArgoprojWorkflowV1alpha1TTLStrategy(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             seconds_after_completion (int): SecondsAfterCompletion is the number of seconds to live after completion. [optional]  # noqa: E501
+            seconds_after_error (int): SecondsAfterError is the number of seconds to live after error. [optional]  # noqa: E501
             seconds_after_failure (int): SecondsAfterFailure is the number of seconds to live after failure. [optional]  # noqa: E501
             seconds_after_success (int): SecondsAfterSuccess is the number of seconds to live after success. [optional]  # noqa: E501
         """
@@ -223,6 +226,7 @@ class IoArgoprojWorkflowV1alpha1TTLStrategy(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             seconds_after_completion (int): SecondsAfterCompletion is the number of seconds to live after completion. [optional]  # noqa: E501
+            seconds_after_error (int): SecondsAfterError is the number of seconds to live after error. [optional]  # noqa: E501
             seconds_after_failure (int): SecondsAfterFailure is the number of seconds to live after failure. [optional]  # noqa: E501
             seconds_after_success (int): SecondsAfterSuccess is the number of seconds to live after success. [optional]  # noqa: E501
         """

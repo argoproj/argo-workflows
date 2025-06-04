@@ -10881,6 +10881,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     ttl_strategy=IoArgoprojWorkflowV1alpha1TTLStrategy(
                         seconds_after_completion=1,
+                        seconds_after_error=1,
                         seconds_after_failure=1,
                         seconds_after_success=1,
                     ),
@@ -22540,6 +22541,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     ttl_strategy=IoArgoprojWorkflowV1alpha1TTLStrategy(
                         seconds_after_completion=1,
+                        seconds_after_error=1,
                         seconds_after_failure=1,
                         seconds_after_success=1,
                     ),
@@ -34284,6 +34286,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     ttl_strategy=IoArgoprojWorkflowV1alpha1TTLStrategy(
                         seconds_after_completion=1,
+                        seconds_after_error=1,
                         seconds_after_failure=1,
                         seconds_after_success=1,
                     ),

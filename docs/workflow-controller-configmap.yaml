@@ -389,11 +389,17 @@ data:
   # adds initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
   # initialDelay: 5s
 
-  # Workflow retention by number of workflows
-  # retentionPolicy: |
-  #   completed: 10
-  #   failed: 3
-  #   errored: 3
+  # Workflow retention by number of workflows based on their phase, with individual limits defined for each phase. 
+  # When the number of workflows in a specific phase exceeds its defined limit, the oldest workflows in that phase 
+  # will be deleted (based on their creation timestamp).
+  # While Succeeded, Failed, and Errored are technically distinct phases, they are all considered part of the Completed phase.
+  # When the limit for Succeeded, Failed, or Errored phase is exceeded, only workflows in that exact phase are deleted.
+  # If the Completed limit is reached, workflows are deleted from Succeeded, Failed, or Errored phases.
+  retentionPolicy: |
+    completed: 10
+    succeeded: 8
+    failed: 3
+    errored: 3
 
   # SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
   # for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
