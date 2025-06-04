@@ -298,12 +298,12 @@ argoexec-nonroot-image:
 		-t $$image_name \
 		--target $* \
 		--load \
-		 .
-	[ ! -e $* ] || mv $* dist/
-	docker run --rm -t $$image_name version
+		.; \
+	[ ! -e $* ] || mv $* dist/; \
+	docker run --rm -t $$image_name version; \
 	if [ $(K3D) = true ]; then \
 		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
-	fi
+	fi; \
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then \
 		docker push $$image_name; \
 	fi
