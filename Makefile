@@ -310,6 +310,8 @@ argoexec-nonroot-image:
 .PHONY: codegen
 codegen: types swagger manifests $(TOOL_MOCKERY) docs/fields.md docs/cli/argo.md
 	go generate ./...
+ 	# The generated markdown contains links to nowhere for interfaces, so remove them
+	sed -i.bak 's/\[interface{}\](#interface)/`interface{}`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
