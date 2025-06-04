@@ -1,5 +1,92 @@
 # Changelog
 
+## v3.6.9 (2025-06-03)
+
+Full Changelog: [v3.6.8...v3.6.9](https://github.com/argoproj/argo-workflows/compare/v3.6.8...v3.6.9)
+
+### Selected Changes
+
+* [138b39281](https://github.com/argoproj/argo-workflows/commit/138b39281cb519358605a2adbe9f60f1300c667b) fix: change non-root image to use tag (#14530)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
+## v3.6.8 (2025-05-28)
+
+Full Changelog: [v3.6.7...v3.6.8](https://github.com/argoproj/argo-workflows/compare/v3.6.7...v3.6.8)
+
+### Selected Changes
+
+* [23eda86c4](https://github.com/argoproj/argo-workflows/commit/23eda86c404b1f11cde47083ed7a7a6eb3e9bdf9) fix: ignore failing resolveArt when Art is optional. Fixes #14267 (cherry-pick #14503) (#14521)
+* [89417c34a](https://github.com/argoproj/argo-workflows/commit/89417c34af80e6b234ac92b7df806cebbcbd89c7) chore(deps): bump golang.org/x/net (release-3.6) (#14508)
+* [95e5f6493](https://github.com/argoproj/argo-workflows/commit/95e5f64936ed1e048cc494b3b52a39ec6b23a71e) fix: correctly release all mutexes when multiple mutexes are held. FIxes #14461 (cherry-pick #14467) (#14486)
+* [6fe7eaa4a](https://github.com/argoproj/argo-workflows/commit/6fe7eaa4ac205de4bfbd9226cdc118ae79b31cd0) fix: ensure variable sub and processing is performed. Fixes #12941 (cherry-pick #14444) (#14481)
+* [0ab1b60c6](https://github.com/argoproj/argo-workflows/commit/0ab1b60c6cff04e93fb9f6d46309c29e2bc378ba) fix: added pagination to the workflow and pod listings. Fixes #14374 (cherry-pick #14373) (#14479)
+* [51675915a](https://github.com/argoproj/argo-workflows/commit/51675915ae3acd63ec42d133e923812f4a34c497) feat: non-root argoexec (#14477)
+* [899f42b65](https://github.com/argoproj/argo-workflows/commit/899f42b651bcdc1bc58b1b0202a3770fc1cc490f) fix: update TLS config to support ALPN. Fixes #14422 (#14435)
+* [81146ca72](https://github.com/argoproj/argo-workflows/commit/81146ca720ffdabc34c1e628f4247205342eb7ca) fix: add content-md5 header for artifacts (#14191) (#14483)
+* [cd6270237](https://github.com/argoproj/argo-workflows/commit/cd6270237eb87f196999d103ee727f15795ee96d) fix: Remove nil ConfigMap reference in cache gc (cherry-pick #14442) (#14453)
+* [e3ac61fc5](https://github.com/argoproj/argo-workflows/commit/e3ac61fc5d6b57c6fe4c7f1c0eacb6851c80992d) fix: Reference existing attributes in example (cherry-pick #14448) (#14452)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Alec Kloss
+* atgane
+* Copilot
+* Emmanuel Ferdman
+* Isitha Subasinghe
+* Mason Malone
+* Mikael Johansson
+* Rauñ
+* Ville Vesilehto
+
+</details>
+
+## v3.6.7 (2025-04-29)
+
+Full Changelog: [v3.6.6...v3.6.7](https://github.com/argoproj/argo-workflows/compare/v3.6.6...v3.6.7)
+
+### Selected Changes
+
+* [8d7dae690](https://github.com/argoproj/argo-workflows/commit/8d7dae690e152d19fb40f7affbb68fb783b32172) fix: disable ALPN in argo-server as a workaround (#14433)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
+## v3.6.6 (2025-04-28)
+
+Full Changelog: [v3.6.5...v3.6.6](https://github.com/argoproj/argo-workflows/compare/v3.6.5...v3.6.6)
+
+### Selected Changes
+
+* [0c14fbb55](https://github.com/argoproj/argo-workflows/commit/0c14fbb55566cc17c66eba78bad2b559d9a20e0d) fix: correct manual retry logic. Fixes #14124 (#14328) (release-3.6) (#14430)
+* [dcaca6343](https://github.com/argoproj/argo-workflows/commit/dcaca6343a5afe9ccb5f5b33addf7e7019a44bef) fix: manual retries exit handler cleanup. Fixes #14180 (#14181) (release-3.6) (#14429)
+* [3993b120d](https://github.com/argoproj/argo-workflows/commit/3993b120d85c91142f9f6e44a5f43cb731b4bff6) fix: correct retry logic (#13734) (release-3.6) (#14428)
+* [a0a87bf1e](https://github.com/argoproj/argo-workflows/commit/a0a87bf1e82abaf4354329d7cdf414e5bdb41e15) chore(deps)!: update k8s and argo-events (release-3.6) (#14424)
+* [f1cae2162](https://github.com/argoproj/argo-workflows/commit/f1cae2162c9b27846e4a263a77f8f1ef230d53bf) chore(deps): bump github.com/expr-lang/expr from 1.16.9 to 1.17.0 (#14307) (release-3.6) (#14421)
+* [2863f0ebd](https://github.com/argoproj/argo-workflows/commit/2863f0ebdb720e5d1262d36fd34bce38cd74749e) fix: prevent dfs sorter infinite recursion on cycle. Fixes #13395 (cherry-pick #14391) (#14420)
+* [fbda98503](https://github.com/argoproj/argo-workflows/commit/fbda985031d51cd89d374463d93e9d9988be68c1) fix: gracefully handle invalid CronWorkflows and simplify logic.  (cherry-pick #14197) (#14419)
+* [8e0308373](https://github.com/argoproj/argo-workflows/commit/8e03083732f3c526cc7f2a4f84fb7af28d9cd2b0) fix(workflow/sync): use RWMutex to prevent concurrent map access (cherry-pick #14321) (#14322)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Isitha Subasinghe
+* jswxstw
+* Mason Malone
+* Ryan Currah
+* William Van Hevelingen
+
+</details>
+
 ## v3.6.5 (2025-03-11)
 
 Full Changelog: [v3.6.4...v3.6.5](https://github.com/argoproj/argo-workflows/compare/v3.6.4...v3.6.5)

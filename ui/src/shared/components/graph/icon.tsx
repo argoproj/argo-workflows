@@ -4,6 +4,20 @@ import {Icon} from '../icon';
 import {icons} from '../icons';
 
 export function GraphIcon({nodeSize, progress, icon}: {icon: Icon; progress?: number; nodeSize: number}) {
+    if (icon === 'database') {
+        return (
+            <>
+                <text className='fa icon' style={{fontSize: nodeSize / 2}}>
+                    {icons['check']}
+                </text>
+                <circle cx={nodeSize / 3} cy={nodeSize / 3} r={nodeSize / 4} fill='#18be94' />
+                <text className='fa icon' style={{fontSize: nodeSize / 4, transform: `translate(${nodeSize / 3}px, ${nodeSize / 3}px)`}}>
+                    {icons['database']}
+                </text>
+            </>
+        );
+    }
+
     if (!progress) {
         return (
             <text className='fa icon' style={{fontSize: nodeSize / 2}}>

@@ -218,12 +218,12 @@ func TestGetCustomGroup(t *testing.T) {
 	})
 }
 
-type HttpClientMock struct {
+type HTTPClientMock struct {
 	StatusCode int
 	Body       io.ReadCloser
 }
 
-func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
+func (c *HTTPClientMock) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: c.StatusCode,
 		Body:       c.Body,
@@ -236,7 +236,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 		userInfoBytes, _ := json.Marshal(userInfo)
 		body := io.NopCloser(bytes.NewReader(userInfoBytes))
 
-		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
+		httpClient = &HTTPClientMock{StatusCode: 200, Body: body}
 
 		claims := &Claims{}
 		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")

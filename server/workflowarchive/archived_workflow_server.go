@@ -223,7 +223,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	oriUid := wf.UID
+	oriUID := wf.UID
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
@@ -248,15 +248,15 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
-		wf.ObjectMeta.ResourceVersion = ""
-		wf.ObjectMeta.UID = ""
+		wf.ResourceVersion = ""
+		wf.UID = ""
 		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 		// if the Workflow was dehydrated before, we need to capture and maintain its previous state for the new Workflow
 		if !w.hydrator.IsHydrated(wf) {
-			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
+			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUID), wf.GetOffloadNodeStatusVersion())
 			if err != nil {
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}

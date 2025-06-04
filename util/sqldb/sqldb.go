@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util"
 )
 
@@ -21,6 +20,16 @@ func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, na
 		return createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
 	} else if dbConfig.MySQL != nil {
 		return createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+	}
+	return nil, fmt.Errorf("no databases are configured")
+}
+
+// CreateDBSessionWithCreds creates a database session using direct username and password
+func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, error) {
+	if dbConfig.PostgreSQL != nil {
+		return createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+	} else if dbConfig.MySQL != nil {
+		return createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
 	}
 	return nil, fmt.Errorf("no databases are configured")
 }
@@ -36,9 +45,28 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 		return nil, err
 	}
 
+	return createPostGresDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+}
+
+// createMySQLDBSession creates Mysql DB session
+func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	if err != nil {
+		return nil, err
+	}
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	if err != nil {
+		return nil, err
+	}
+
+	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+}
+
+// createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
+func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
 	settings := postgresqladp.ConnectionURL{
-		User:     string(userNameByte),
-		Password: string(passwordByte),
+		User:     username,
+		Password: password,
 		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
 	}
@@ -60,24 +88,11 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 	return session, nil
 }
 
-// createMySQLDBSession creates Mysql DB session
-func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
-	if cfg.TableName == "" {
-		return nil, errors.InternalError("tableName is empty")
-	}
-
-	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
-	if err != nil {
-		return nil, err
-	}
-	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
-	if err != nil {
-		return nil, err
-	}
-
+// createMySQLDBSessionWithCreds creates MySQL DB session with direct credentials
+func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
 	session, err := mysqladp.Open(mysqladp.ConnectionURL{
-		User:     string(userNameByte),
-		Password: string(passwordByte),
+		User:     username,
+		Password: password,
 		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
 		Options:  cfg.Options,

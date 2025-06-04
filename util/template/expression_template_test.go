@@ -3,6 +3,8 @@ package template
 import (
 	"testing"
 
+	"github.com/expr-lang/expr/file"
+	"github.com/expr-lang/expr/parser/lexer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,19 +20,18 @@ func Test_hasRetries(t *testing.T) {
 }
 
 func Test_hasWorkflowParameters(t *testing.T) {
-	t.Run("hasWorkflowStatusInExpression", func(t *testing.T) {
-		assert.True(t, hasWorkflowStatus("workflow.status"))
-		assert.True(t, hasWorkflowStatus(`workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"`))
-		assert.False(t, hasWorkflowStatus(`"workflow.status" == "Succeeded" ? "SUCCESSFUL" : "FAILED"`))
-		assert.False(t, hasWorkflowStatus("workflow status"))
-		assert.False(t, hasWorkflowStatus("workflow .status"))
-	})
+	t.Run("hasVariableInExpression", func(t *testing.T) {
+		expression := `workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"`
+		exprToks, _ := lexer.Lex(file.NewSource(expression))
+		variableToks, _ := lexer.Lex(file.NewSource("workflow.status"))
+		variableToks = filterEOF(variableToks)
+		assert.True(t, searchTokens(exprToks, variableToks))
+		assert.True(t, hasVariableInExpression(expression, "workflow.status"))
 
-	t.Run("hasWorkflowFailuresInExpression", func(t *testing.T) {
-		assert.True(t, hasWorkflowFailures("workflow.failures"))
-		assert.True(t, hasWorkflowFailures(`workflow.failures == "Succeeded" ? "SUCCESSFUL" : "FAILED"`))
-		assert.False(t, hasWorkflowFailures(`"workflow.failures" == "Succeeded" ? "SUCCESSFUL" : "FAILED"`))
-		assert.False(t, hasWorkflowFailures("workflow failures"))
-		assert.False(t, hasWorkflowFailures("workflow .failures"))
+		assert.False(t, hasVariableInExpression(expression, "workflow status"))
+		assert.False(t, hasVariableInExpression(expression, "workflow .status"))
+
+		expression = `"workflow.status" == "Succeeded" ? "SUCCESSFUL" : "FAILED"`
+		assert.False(t, hasVariableInExpression(expression, "workflow .status"))
 	})
 }

@@ -16,7 +16,7 @@ For example:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/workflow-controller:v2.5.1
+        - quay.io/argoproj/workflow-controller:v3.6.7
         - --namespaced
         - --managed-namespace
         - default

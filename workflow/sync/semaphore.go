@@ -10,31 +10,36 @@ import (
 )
 
 type prioritySemaphore struct {
-	name           string
-	limit          int
-	limitTimestamp time.Time
-	pending        *priorityQueue
-	semaphore      *sema.Weighted
-	lockHolder     map[string]bool
-	nextWorkflow   NextWorkflow
-	log            *log.Entry
+	name         string
+	limitGetter  limitProvider
+	pending      *priorityQueue
+	semaphore    *sema.Weighted
+	lockHolder   map[string]bool
+	nextWorkflow NextWorkflow
+	log          *log.Entry
 }
 
 var _ semaphore = &prioritySemaphore{}
 
-func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string) *prioritySemaphore {
-	return &prioritySemaphore{
-		name:           name,
-		limit:          limit,
-		limitTimestamp: nowFn(),
-		pending:        &priorityQueue{itemByKey: make(map[string]*item)},
-		semaphore:      sema.NewWeighted(int64(limit)),
-		lockHolder:     make(map[string]bool),
-		nextWorkflow:   nextWorkflow,
+func newInternalSemaphore(name string, nextWorkflow NextWorkflow, configMapGetter GetSyncLimit, syncLimitCacheTTL time.Duration) (*prioritySemaphore, error) {
+	sem := &prioritySemaphore{
+		name:         name,
+		limitGetter:  newCachedLimit(configMapGetter, syncLimitCacheTTL),
+		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
+		semaphore:    sema.NewWeighted(int64(0)),
+		lockHolder:   make(map[string]bool),
+		nextWorkflow: nextWorkflow,
 		log: log.WithFields(log.Fields{
-			lockType: name,
+			"name":     name,
+			"lockType": lockTypeSemaphore,
 		}),
 	}
+	var err error
+	limit := sem.getLimit()
+	if limit == 0 {
+		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	}
+	return sem, err
 }
 
 func (s *prioritySemaphore) getName() string {
@@ -42,31 +47,37 @@ func (s *prioritySemaphore) getName() string {
 }
 
 func (s *prioritySemaphore) getLimit() int {
-	return s.limit
+	limit, changed, err := s.limitGetter.get(s.name)
+	if err != nil {
+		s.log.WithError(err).Errorf("failed to get limit for semaphore %s", s.name)
+		return 0
+	}
+	if changed {
+		s.resize(limit)
+	}
+	return limit
 }
 
-func (s *prioritySemaphore) getLimitTimestamp() time.Time {
-	return s.limitTimestamp
+func (s *prioritySemaphore) lock() bool {
+	return true
 }
 
-func (s *prioritySemaphore) resetLimitTimestamp() {
-	s.limitTimestamp = nowFn()
-}
+func (s *prioritySemaphore) unlock() {}
 
-func (s *prioritySemaphore) getCurrentPending() []string {
+func (s *prioritySemaphore) getCurrentPending() ([]string, error) {
 	var keys []string
 	for _, item := range s.pending.items {
 		keys = append(keys, item.key)
 	}
-	return keys
+	return keys, nil
 }
 
-func (s *prioritySemaphore) getCurrentHolders() []string {
+func (s *prioritySemaphore) getCurrentHolders() ([]string, error) {
 	var keys []string
 	for k := range s.lockHolder {
 		keys = append(keys, k)
 	}
-	return keys
+	return keys, nil
 }
 
 func (s *prioritySemaphore) resize(n int) bool {
@@ -81,23 +92,22 @@ func (s *prioritySemaphore) resize(n int) bool {
 	if status {
 		s.log.Infof("%s semaphore resized from %d to %d", s.name, cur, n)
 		s.semaphore = semaphore
-		s.limit = n
-		s.limitTimestamp = nowFn()
 	}
 	return status
 }
 
 func (s *prioritySemaphore) release(key string) bool {
+	limit := s.getLimit()
 	if _, ok := s.lockHolder[key]; ok {
 		delete(s.lockHolder, key)
 		// When semaphore resized downward
 		// Remove the excess holders from map once the done.
-		if len(s.lockHolder) >= s.limit {
+		if len(s.lockHolder) >= limit {
 			return true
 		}
 
 		s.semaphore.Release(1)
-		availableLocks := s.limit - len(s.lockHolder)
+		availableLocks := limit - len(s.lockHolder)
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, availableLocks)
 		if s.pending.Len() > 0 {
 			s.notifyWaiters()
@@ -109,46 +119,48 @@ func (s *prioritySemaphore) release(key string) bool {
 // notifyWaiters enqueues the next N workflows who are waiting for the semaphore to the workqueue,
 // where N is the availability of the semaphore. If semaphore is out of capacity, this does nothing.
 func (s *prioritySemaphore) notifyWaiters() {
-	triggerCount := s.limit - len(s.lockHolder)
+	triggerCount := s.getLimit() - len(s.lockHolder)
 	if s.pending.Len() < triggerCount {
 		triggerCount = s.pending.Len()
 	}
 	for idx := 0; idx < triggerCount; idx++ {
 		item := s.pending.items[idx]
-		wfKey := workflowKey(item)
+		wfKey := workflowKey(item.key)
 		s.log.Debugf("Enqueue the workflow %s", wfKey)
 		s.nextWorkflow(wfKey)
 	}
 }
 
 // workflowKey formulates the proper workqueue key given a semaphore queue item
-func workflowKey(i *item) string {
-	parts := strings.Split(i.key, "/")
+func workflowKey(key string) string {
+	parts := strings.Split(key, "/")
 	if len(parts) == 3 {
 		// the item is template semaphore (namespace/workflow-name/node-id) and so key must be
 		// truncated to just: namespace/workflow-name
 		return fmt.Sprintf("%s/%s", parts[0], parts[1])
 	}
-	return i.key
+	return key
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (s *prioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) error {
 	if _, ok := s.lockHolder[holderKey]; ok {
 		s.log.Debugf("Lock is already acquired by %s", holderKey)
-		return
+		return nil
 	}
 
 	s.pending.add(holderKey, priority, creationTime)
 	s.log.Debugf("Added into queue: %s", holderKey)
+	return nil
 }
 
-func (s *prioritySemaphore) removeFromQueue(holderKey string) {
+func (s *prioritySemaphore) removeFromQueue(holderKey string) error {
 	s.pending.remove(holderKey)
 	s.log.Debugf("Removed from queue: %s", holderKey)
+	return nil
 }
 
-func (s *prioritySemaphore) acquire(holderKey string) bool {
+func (s *prioritySemaphore) acquire(holderKey string, _ *transaction) bool {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
 		return true
@@ -174,7 +186,8 @@ func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
 //	false, true if we already have the lock
 //	false, false if the lock is not acquirable
 //	string return is a user facing message when not acquirable
-func (s *prioritySemaphore) checkAcquire(holderKey string) (bool, bool, string) {
+func (s *prioritySemaphore) checkAcquire(holderKey string, _ *transaction) (bool, bool, string) {
+	limit := s.getLimit()
 	if holderKey == "" {
 		return false, false, "bug: attempt to check semaphore with empty holder key"
 	}
@@ -184,7 +197,11 @@ func (s *prioritySemaphore) checkAcquire(holderKey string) (bool, bool, string) 
 		return false, true, ""
 	}
 
-	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, s.limit-len(s.lockHolder), s.limit)
+	if limit == 0 {
+		return false, false, fmt.Sprintf("Failed to get semaphore limit for %s", s.name)
+	}
+
+	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, limit-len(s.lockHolder), limit)
 
 	// Check whether requested holdkey is in front of priority queue.
 	// If it is in front position, it will allow to acquire lock.
@@ -193,8 +210,8 @@ func (s *prioritySemaphore) checkAcquire(holderKey string) (bool, bool, string) 
 		item := s.pending.peek()
 		if !isSameWorkflowNodeKeys(holderKey, item.key) {
 			// Enqueue the front workflow if lock is available
-			if len(s.lockHolder) < s.limit {
-				s.nextWorkflow(workflowKey(item))
+			if len(s.lockHolder) < limit {
+				s.nextWorkflow(workflowKey(item.key))
 			}
 			s.log.Infof("%s isn't at the front", holderKey)
 			return false, false, waitingMsg
@@ -209,20 +226,23 @@ func (s *prioritySemaphore) checkAcquire(holderKey string) (bool, bool, string) 
 	return false, false, waitingMsg
 }
 
-func (s *prioritySemaphore) tryAcquire(holderKey string) (bool, string) {
-	acq, already, msg := s.checkAcquire(holderKey)
+func (s *prioritySemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string) {
+	acq, already, msg := s.checkAcquire(holderKey, tx)
 	if already {
 		return true, msg
 	}
 	if !acq {
 		return false, msg
 	}
-	if s.acquire(holderKey) {
+	if s.acquire(holderKey, tx) {
 		s.pending.pop()
-		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, s.limit-len(s.lockHolder), s.limit)
+		limit := s.getLimit()
+		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, limit-len(s.lockHolder), limit)
 		s.notifyWaiters()
 		return true, ""
 	}
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
 	return false, msg
 }
+
+func (s *prioritySemaphore) probeWaiting() {}

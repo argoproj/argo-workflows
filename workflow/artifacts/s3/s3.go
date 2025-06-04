@@ -73,7 +73,7 @@ type S3Client interface {
 }
 
 type EncryptOpts struct {
-	KmsKeyId              string
+	KmsKeyID              string
 	KmsEncryptionContext  string
 	Enabled               bool
 	ServerSideCustomerKey string
@@ -125,7 +125,7 @@ type ArtifactDriver struct {
 	RoleARN               string
 	UseSDKCreds           bool
 	Context               context.Context
-	KmsKeyId              string
+	KmsKeyID              string
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
@@ -146,7 +146,7 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 		Trace:        os.Getenv(common.EnvVarArgoTrace) == "1",
 		UseSDKCreds:  s3Driver.UseSDKCreds,
 		EncryptOpts: EncryptOpts{
-			KmsKeyId:              s3Driver.KmsKeyId,
+			KmsKeyID:              s3Driver.KmsKeyID,
 			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
@@ -469,11 +469,12 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	}
 
 	var bucketLookupType minio.BucketLookupType
-	if s3cli.AddressingStyle == PathStyle {
+	switch s3cli.AddressingStyle {
+	case PathStyle:
 		bucketLookupType = minio.BucketLookupPath
-	} else if s3cli.AddressingStyle == VirtualHostedStyle {
+	case VirtualHostedStyle:
 		bucketLookupType = minio.BucketLookupDNS
-	} else {
+	default:
 		bucketLookupType = minio.BucketLookupAuto
 	}
 	minioOpts := &minio.Options{Creds: credentials, Secure: s3cli.Secure, Transport: opts.Transport, Region: s3cli.Region, BucketLookup: bucketLookupType}
@@ -485,7 +486,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 		minioClient.TraceOn(log.StandardLogger().Out)
 	}
 
-	if opts.EncryptOpts.KmsKeyId != "" && opts.EncryptOpts.ServerSideCustomerKey != "" {
+	if opts.EncryptOpts.KmsKeyID != "" && opts.EncryptOpts.ServerSideCustomerKey != "" {
 		return nil, fmt.Errorf("EncryptOpts.KmsKeyId and EncryptOpts.SSECPassword cannot be set together")
 	}
 
@@ -746,13 +747,13 @@ func (s *s3client) setBucketEnc(bucketName string) error {
 	}
 
 	var config *sse.Configuration
-	if s.EncryptOpts.KmsKeyId != "" {
-		config = sse.NewConfigurationSSEKMS(s.EncryptOpts.KmsKeyId)
+	if s.EncryptOpts.KmsKeyID != "" {
+		config = sse.NewConfigurationSSEKMS(s.EncryptOpts.KmsKeyID)
 	} else {
 		config = sse.NewConfigurationSSES3()
 	}
 
-	log.WithFields(log.Fields{"KmsKeyId": s.EncryptOpts.KmsKeyId, "bucketName": bucketName}).Info("Setting Bucket Encryption")
+	log.WithFields(log.Fields{"KmsKeyID": s.EncryptOpts.KmsKeyID, "bucketName": bucketName}).Info("Setting Bucket Encryption")
 	err := s.minioClient.SetBucketEncryption(s.ctx, bucketName, config)
 	return err
 }
@@ -769,7 +770,7 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 		return encryption, nil
 	}
 
-	if e.KmsKeyId != "" {
+	if e.KmsKeyID != "" {
 		encryptionCtx, err := parseKMSEncCntx(e.KmsEncryptionContext)
 
 		if err != nil {
@@ -778,7 +779,7 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 
 		if encryptionCtx == nil {
 			// To overcome a limitation in Minio which checks interface{} == nil.
-			kms, err := encrypt.NewSSEKMS(e.KmsKeyId, nil)
+			kms, err := encrypt.NewSSEKMS(e.KmsKeyID, nil)
 
 			if err != nil {
 				return nil, err
@@ -787,7 +788,7 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 			return kms, nil
 		}
 
-		kms, err := encrypt.NewSSEKMS(e.KmsKeyId, encryptionCtx)
+		kms, err := encrypt.NewSSEKMS(e.KmsKeyID, encryptionCtx)
 
 		if err != nil {
 			return nil, err

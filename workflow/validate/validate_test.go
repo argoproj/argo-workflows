@@ -2784,7 +2784,7 @@ spec:
             - name: 'foo'
               image: docker/whalesay
               command: [cowsay]
-              args: ["{{=sprig.replace("bar", "baz", inputs.parameters.strParam)}}"]
+              args: ["{{=replace("bar", "baz", inputs.parameters.strParam)}}"]
               ports:
               - containerPort: {{=asInt(inputs.parameters.intParam)}}
 `
