@@ -103,7 +103,7 @@ git push upstream v3.3.4 # or origin if you do not use upstream
 
 GitHub Actions will automatically build and publish your release.
 This takes about 1h.
-Set your self a reminder to check this was successful.
+Set yourself a reminder to check this was successful.
 
 ## Update Changelog (all releases)
 
