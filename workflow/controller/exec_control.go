@@ -46,7 +46,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 					WithField("shutdownStrategy", woc.GetShutdownStrategy()).
 					Info("Terminating pod as part of workflow shutdown")
 				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
-				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
+				msg := fmt.Sprintf("here: workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
 				woc.handleExecutionControlError(nodeID, wfNodesLock, msg)
 				return
 			}

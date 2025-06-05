@@ -27,6 +27,7 @@ Name | Type | Description | Notes
 **resources_duration** | **{str: (int,)}** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. | [optional] 
 **started_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 
 **synchronization_status** | [**IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus**](IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus.md) |  | [optional] 
+**task_result_synced** | **bool** | TaskResultSynced is used to determine if the node&#39;s output has been received | [optional] 
 **template_name** | **str** | TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup) | [optional] 
 **template_ref** | [**IoArgoprojWorkflowV1alpha1TemplateRef**](IoArgoprojWorkflowV1alpha1TemplateRef.md) |  | [optional] 
 **template_scope** | **str** | TemplateScope is the template scope in which the template of this node was retrieved. | [optional] 
