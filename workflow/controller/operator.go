@@ -2655,7 +2655,7 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 // It maybe that this type of node never gets progress.
 func executable(nodeType wfv1.NodeType) bool {
 	switch nodeType {
-	case wfv1.NodeTypePod, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeContainer, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypePod, wfv1.NodeTypeContainer:
 		return true
 	default:
 		return false
