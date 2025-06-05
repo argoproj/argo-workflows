@@ -79,7 +79,7 @@ For the final release you should create a tag at the same place as the final rel
 You must also create a `release/<version>` branch from that same point.
 
 Now you can add the branch to ["Read the Docs"](https://app.readthedocs.org/projects/argo-workflows/) and then the new branch should be built and published.
-Close the release candidate GitHub issue and unpin it, and create a new issue patches to this branch.
+Close the release candidate GitHub issue and unpin it, and create a new issue for patches to this branch.
 
 ### Expire old branches
 
