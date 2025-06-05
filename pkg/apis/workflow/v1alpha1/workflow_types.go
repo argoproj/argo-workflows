@@ -1371,7 +1371,6 @@ type ArtifactSearchQuery struct {
 
 // ArtGCStatus maintains state related to ArtifactGC
 type ArtGCStatus struct {
-
 	// have Pods been started to perform this strategy? (enables us not to re-process what we've already done)
 	StrategiesProcessed map[ArtifactGCStrategy]bool `json:"strategiesProcessed,omitempty" protobuf:"bytes,1,opt,name=strategiesProcessed"`
 
@@ -1412,6 +1411,7 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	}
 	return false
 }
+
 func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 	if gcStatus.PodsRecouped == nil {
 		return false
@@ -1455,7 +1455,6 @@ func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 }
 
 func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
-
 	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
@@ -1578,6 +1577,7 @@ func (s *WorkflowStep) GetName() string {
 func (s *WorkflowStep) IsDAGTask() bool {
 	return false
 }
+
 func (s *WorkflowStep) IsWorkflowStep() bool {
 	return true
 }
@@ -1850,6 +1850,7 @@ func (in Nodes) GetName(key string) (string, error) {
 	}
 	return val.Name, nil
 }
+
 func NodeWithName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.Name == name }
 }
@@ -2008,6 +2009,13 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 		in.TaskResultsCompletionStatus = make(map[string]bool)
 	}
 	in.TaskResultsCompletionStatus[name] = false
+	node, err := in.Nodes.Get(name)
+	if err != nil {
+		return
+	}
+	tmp := false
+	node.TaskResultSynced = &tmp
+	in.Nodes.Set(name, *node)
 }
 
 func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
@@ -2015,6 +2023,13 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 		in.TaskResultsCompletionStatus = make(map[string]bool)
 	}
 	in.TaskResultsCompletionStatus[name] = true
+	node, err := in.Nodes.Get(name)
+	if err != nil {
+		return
+	}
+	tmp := true
+	node.TaskResultSynced = &tmp
+	in.Nodes.Set(name, *node)
 }
 
 func (in *WorkflowStatus) TaskResultsInProgress() bool {
@@ -2247,7 +2262,7 @@ const (
 	ConditionTypeSpecError ConditionType = "SpecError"
 	// ConditionTypeMetricsError is an error during metric emission
 	ConditionTypeMetricsError ConditionType = "MetricsError"
-	//ConditionTypeArtifactGCError is an error on artifact garbage collection
+	// ConditionTypeArtifactGCError is an error on artifact garbage collection
 	ConditionTypeArtifactGCError ConditionType = "ArtifactGCError"
 )
 
@@ -2355,6 +2370,18 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
+
+	// TaskResultSynced is used to determine if the node's output has been received
+	TaskResultSynced *bool `json:"taskResultSynced,omitempty" protobuf:"bytes,28,opt,name=taskResultSynced"`
+}
+
+// Completed is used to determine if this node can proceed
+func (n *NodeStatus) Completed() bool {
+	synced := true
+	if n.TaskResultSynced != nil {
+		synced = *n.TaskResultSynced
+	}
+	return n.Phase.Completed() && synced
 }
 
 func (n *NodeStatus) GetName() string {
@@ -2370,8 +2397,12 @@ func (n *NodeStatus) IsWorkflowStep() bool {
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
-func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
+func (phase NodePhase) Fulfilled(synced *bool) bool {
+	if synced == nil {
+		tmp := true
+		synced = &tmp
+	}
+	return phase.Completed() && *synced || phase == NodeSkipped || phase == NodeOmitted
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
@@ -2408,12 +2439,11 @@ func (in WorkflowStatus) FinishTime() *metav1.Time {
 
 // Fulfilled returns whether a node is fulfilled, i.e. it finished execution, was skipped, or was dameoned successfully
 func (n NodeStatus) Fulfilled() bool {
-	return n.Phase.Fulfilled() || n.IsDaemoned() && n.Phase != NodePending
-}
-
-// Completed returns whether a node completed. Notably, a skipped node is not considered as having completed
-func (n NodeStatus) Completed() bool {
-	return n.Phase.Completed()
+	synced := true
+	if n.TaskResultSynced != nil {
+		synced = *n.TaskResultSynced
+	}
+	return n.Phase.Fulfilled(n.TaskResultSynced) && synced || n.IsDaemoned() && n.Phase != NodePending
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {

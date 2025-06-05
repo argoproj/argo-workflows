@@ -29,6 +29,7 @@ Name | Type | Description | Notes
 **resourcesDuration** | **Map&lt;String, Long&gt;** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. |  [optional]
 **startedAt** | **java.time.Instant** |  |  [optional]
 **synchronizationStatus** | [**IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus**](IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus.md) |  |  [optional]
+**taskResultSynced** | **Boolean** | TaskResultSynced is used to determine if the node&#39;s output has been received |  [optional]
 **templateName** | **String** | TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup) |  [optional]
 **templateRef** | [**IoArgoprojWorkflowV1alpha1TemplateRef**](IoArgoprojWorkflowV1alpha1TemplateRef.md) |  |  [optional]
 **templateScope** | **String** | TemplateScope is the template scope in which the template of this node was retrieved. |  [optional]
