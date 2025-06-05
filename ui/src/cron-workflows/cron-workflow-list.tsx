@@ -36,8 +36,8 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-    const [labels, setLabels] = useState<string[]>([]);
-    const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
+    const [labels, setLabels] = useState<string[]>(queryParams.get('labels') ? queryParams.get('labels').split(',') : []);
+    const [states, setStates] = useState(queryParams.get('states') ? queryParams.get('states').split(',') : ['Running', 'Suspended']); // check all by default
 
     const [storedDisplayISOFormatCreation, setStoredDisplayISOFormatCreation] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION);
     const [storedDisplayISOFormatNextScheduled, setStoredDisplayISOFormatNextScheduled] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED);
@@ -45,6 +45,12 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     useEffect(
         useQueryParams(history, p => {
             setSidePanel(p.get('sidePanel') === 'true');
+            if (p.get('labels') !== null) {
+                setLabels(p.get('labels').split(','));
+            }
+            if (p.get('states') !== null) {
+                setStates(p.get('states').split(','));
+            }
         }),
         [history]
     );
@@ -58,10 +64,12 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
         history.push(
             historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
-                sidePanel
+                sidePanel,
+                labels: labels.length > 0 ? labels.join(',') : undefined,
+                states: states.length === 2 ? undefined : states.join(',')
             })
         );
-    }, [namespace, sidePanel]);
+    }, [namespace, sidePanel, labels.toString(), states.toString()]);
 
     // internal state
     const [error, setError] = useState<Error>();
