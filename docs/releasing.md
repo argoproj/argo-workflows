@@ -2,7 +2,7 @@
 
 This page covers instructions for releasing Argo Workflows.
 It is intended for Argo release managers, who will be responsible for coordinating the release.
-Release managers must be approvers on the Argo project.
+Release managers must be Approvers on the Argo project.
 
 ## Patch Releases
 
@@ -60,17 +60,17 @@ See [Release Cycle](releases.md#release-cycle) for information about release can
 ### Release candidates
 
 For release candidates you should tag `main` for the release.
-These take the form of 3.6.0-rc1 and the final digit increases for each RC.
+These take the form of `3.6.0-rc1` and the final digit increases for each RC.
 
 ### Documentation
 
-Before or after the first release candidate you should ensure that [new-features.md](new-features.md) and [upgrading.md](upgrading.md) are updated.
+Before or after the first release candidate you should ensure that [`new-features.md`](new-features.md) and [`upgrading.md`](upgrading.md) are updated.
 A post should be made on a blog site (we usually use medium) announcing the release, and the new features.
 This post should celebrate the new features and thank the contributors, including statistics from the release.
 
 Post this blog post to the [Argo Workflows Contributors](https://cloud-native.slack.com/archives/C0510EUH90V) Slack channel and [Argo Maintainers](https://cloud-native.slack.com/archives/C022F03E6BD) Slack channel for comments.
 
-Update these three items ([new-features.md](new-features.md), [upgrading.md](upgrading.md), blog post) for each release candidate and the final release.
+Update these three items ([`new-features.md`](new-features.md), [`upgrading.md`](upgrading.md), blog post) for each release candidate and the final release.
 
 ### Final release
 
@@ -78,8 +78,8 @@ There should be no changes between the final release candidate and the actual re
 For the final release you should create a tag at the same place as the final release candidate.
 You must also create a `release/<version>` branch from that same point.
 
-Now you can add the branch to [readthedocs](https://app.readthedocs.org/projects/argo-workflows/) and then the new branch should be built and published.
-Close the release candidate github issue and unpin it, and create a new issue patches to this branch.
+Now you can add the branch to ["Read the Docs"](https://app.readthedocs.org/projects/argo-workflows/) and then the new branch should be built and published.
+Close the release candidate GitHub issue and unpin it, and create a new issue patches to this branch.
 
 ### Expire old branches
 
@@ -87,7 +87,7 @@ Release n-2 is now out of support.
 You should not delete anything to do with it.
 Consider whether to do one final release for it.
 Once that is done the old branch should be kept, but the pinned issue tracker issue should be unpinned and closed.
-The readthedocs documentation build should be kept.
+The "Read the Docs" documentation build should be kept.
 
 ## Publish Release (all releases)
 
