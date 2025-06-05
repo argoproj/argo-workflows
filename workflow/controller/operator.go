@@ -101,7 +101,7 @@ type wfOperationCtx struct {
 	eventRecorder    record.EventRecorder
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
-	preExecutionNodePhases map[string]wfv1.NodePhase
+	preExecutionNodePhases map[string]wfv1.NodeStatus
 	// execWf holds the Workflow for use in execution.
 	// In Normal workflow scenario: It holds copy of workflow object
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
@@ -164,7 +164,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		volumes:                wf.Spec.DeepCopy().Volumes,
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
-		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		preExecutionNodePhases: make(map[string]wfv1.NodeStatus),
 		taskSet:                make(map[string]wfv1.Template),
 		currentStackDepth:      0,
 	}
@@ -272,7 +272,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
-		woc.preExecutionNodePhases[node.ID] = node.Phase
+		woc.preExecutionNodePhases[node.ID] = *node.DeepCopy()
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
@@ -955,7 +955,7 @@ func (woc *wfOperationCtx) requeue() {
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
-	if node.Phase.Fulfilled() {
+	if node.Phase.Fulfilled(node.TaskResultSynced) {
 		return node, true, nil
 	}
 
@@ -972,7 +972,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		node.Daemoned = ptr.To(true)
 	}
 
-	if !lastChildNode.Phase.Fulfilled() {
+	if !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
 		if !lastChildNode.IsDaemoned() {
 			return node, true, nil
 		}
@@ -1228,7 +1228,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
 	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Phase.Fulfilled() || node.StartedAt.IsZero() {
+		if node.Type != wfv1.NodeTypePod || node.Phase.Fulfilled(node.TaskResultSynced) || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
@@ -2191,7 +2191,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 
 		var retryNum int
-		if lastChildNode != nil && !lastChildNode.Phase.Fulfilled() {
+		if lastChildNode != nil && !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
 			// Last child node is either still running, or in some cases the corresponding Pod hasn't even been
 			// created yet, for example if it exceeded the ResourceQuota
 			nodeName = lastChildNode.Name
@@ -2311,14 +2311,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return node, err
 		}
 
-		if !retryNode.Phase.Fulfilled() && node.Phase.Fulfilled() { // if the retry child has completed we need to update the parent's status
+		if !retryNode.Phase.Fulfilled(retryNode.TaskResultSynced) && node.Phase.Fulfilled(node.TaskResultSynced) { // if the retry child has completed we need to update the parent's status
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
 			}
 		}
 
-		if !node.Phase.Fulfilled() && node.IsDaemoned() {
+		if !node.Phase.Fulfilled(node.TaskResultSynced) && node.IsDaemoned() {
 			retryNode = woc.markNodePhase(retryNodeName, node.Phase)
 			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
 				retryNode.Daemoned = ptr.To(true)
@@ -2353,7 +2353,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 }
 
 func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) *wfv1.NodeStatus {
-	if node == nil || !node.Phase.Fulfilled() {
+	if node == nil || !node.Phase.Fulfilled(node.TaskResultSynced) {
 		return nil
 	}
 
@@ -2411,6 +2411,9 @@ func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
+	if phase == wfv1.WorkflowRunning {
+		fmt.Println("here we are")
+	}
 	// Check whether or not the workflow needs to continue processing when it is completed
 	if phase.Completed() && (woc.checkTaskResultsInProgress() || woc.hasDaemonNodes()) {
 		woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
@@ -2648,6 +2651,17 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 	return node
 }
 
+// executable states that the progress of this node type is updated by other code. It should not be summed.
+// It maybe that this type of node never gets progress.
+func executable(nodeType wfv1.NodeType) bool {
+	switch nodeType {
+	case wfv1.NodeTypePod, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeContainer, wfv1.NodeTypeSuspend:
+		return true
+	default:
+		return false
+	}
+}
+
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
@@ -2656,6 +2670,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	if ok {
 		panic(fmt.Sprintf("node %s already initialized", nodeName))
 	}
+	synced := !executable(nodeType)
 
 	node := wfv1.NodeStatus{
 		ID:                nodeID,
@@ -2669,6 +2684,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		NodeFlag:          nodeFlag,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(nodeName),
+		TaskResultSynced:  &synced,
 	}
 
 	if boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID); err == nil {
@@ -2721,7 +2737,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		node = &wfv1.NodeStatus{}
 	}
 	if node.Phase != phase {
-		if node.Phase.Fulfilled() {
+		if node.Phase.Fulfilled(node.TaskResultSynced) {
 			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
 				Error("node is already fulfilled")
 		}

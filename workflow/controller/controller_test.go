@@ -686,19 +686,9 @@ func TestClusterController(t *testing.T) {
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
 }
-
 func TestParallelism(t *testing.T) {
-	for tt, f := range map[string]func(controller *WorkflowController){
-		"Parallelism": func(x *WorkflowController) {
-			x.Config.Parallelism = 1
-		},
-		"NamespaceParallelism": func(x *WorkflowController) {
-			x.Config.NamespaceParallelism = 1
-		},
-	} {
-		t.Run(tt, func(t *testing.T) {
-			cancel, controller := newController(
-				wfv1.MustUnmarshalWorkflow(`
+	cancel, controller := newController(
+		wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-0
 spec:
@@ -708,7 +698,7 @@ spec:
       container:
         image: my-image
 `),
-				wfv1.MustUnmarshalWorkflow(`
+		wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-1
 spec:
@@ -718,7 +708,7 @@ spec:
       container:
         image: my-image
 `),
-				wfv1.MustUnmarshalWorkflow(`
+		wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-2
 spec:
@@ -729,29 +719,90 @@ spec:
       container:
         image: my-image
 `),
-				f,
-			)
-			defer cancel()
-			ctx := context.Background()
-			assert.True(t, controller.processNextItem(ctx))
-			assert.True(t, controller.processNextItem(ctx))
-			assert.True(t, controller.processNextItem(ctx))
+		func(x *WorkflowController) {
+			x.Config.Parallelism = 1
+			x.Config.NamespaceParallelism = 0
+		},
+	)
+	defer cancel()
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
 
-			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
-				require.NotNil(t, wf)
-				assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-			})
-			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
-				require.NotNil(t, wf)
-				assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-				assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
-			})
-			expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
-				require.NotNil(t, wf)
-				assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
-			})
-		})
-	}
+	expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+	})
+	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+		assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+	})
+	expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
+		ctrl := controller
+		_ = ctrl
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
+	})
+}
+
+func TestNamespaceParallelism(t *testing.T) {
+	cancel, controller := newController(
+		wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-0
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+		wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-1
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+		wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-2
+spec:
+  shutdown: Terminate
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+		func(x *WorkflowController) {
+			x.Config.NamespaceParallelism = 1
+		},
+	)
+	defer cancel()
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+	})
+	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+		assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+	})
+	expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
+	})
 }
 
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {

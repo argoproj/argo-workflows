@@ -38,5 +38,5 @@ type NodeResult struct {
 }
 
 func (in NodeResult) Fulfilled() bool {
-	return in.Phase.Fulfilled()
+	return in.Phase.Fulfilled(nil)
 }
