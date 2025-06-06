@@ -137,18 +137,17 @@ MetricsConfig defines a config for a metrics server
 
 ### Fields
 
-|   Field Name    |                                                       Field Type                                                        |                                                                          Description                                                                           |
-|-----------------|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Enabled`       | `bool`                                                                                                                  | Enabled controls metric emission. Default is true, set "enabled: false" to turn off                                                                            |
-| `DisableLegacy` | `bool`                                                                                                                  | DisableLegacy turns off legacy metrics DEPRECATED: Legacy metrics are now removed, this field is ignored                                                       |
-| `MetricsTTL`    | `TTL` (time.Duration forces you to specify in millis, and does not support days                                         | MetricsTTL sets how often custom metrics are cleared from memory                                                                                               |
-|                 | see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) |                                                                                                                                                                |
-| `Path`          | `string`                                                                                                                | Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"                                                                       |
-| `Port`          | `int`                                                                                                                   | Port is the port where metrics are emitted. Default is "9090"                                                                                                  |
-| `IgnoreErrors`  | `bool`                                                                                                                  | IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors                                                                              |
-| `Secure`        | `bool`                                                                                                                  | Secure is a flag that starts the metrics servers using TLS, defaults to true                                                                                   |
-| `Modifiers`     | `Map<string,`[`MetricModifier`](#metricmodifier)`>`                                                                     | Modifiers configure metrics by name                                                                                                                            |
-| `Temporality`   | `MetricsTemporality` (MetricsTemporality defines the temporality of OpenTelemetry metrics (underlying type: string))    | Temporality of the OpenTelemetry metrics. Enum of Cumulative or Delta, defaulting to Cumulative. No effect on Prometheus metrics, which are always Cumulative. |
+|   Field Name    |                                                                                               Field Type                                                                                                |                                                                          Description                                                                           |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Enabled`       | `bool`                                                                                                                                                                                                  | Enabled controls metric emission. Default is true, set "enabled: false" to turn off                                                                            |
+| `DisableLegacy` | `bool`                                                                                                                                                                                                  | DisableLegacy turns off legacy metrics DEPRECATED: Legacy metrics are now removed, this field is ignored                                                       |
+| `MetricsTTL`    | `TTL` (time.Duration forces you to specify in millis, and does not support days see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) | MetricsTTL sets how often custom metrics are cleared from memory                                                                                               |
+| `Path`          | `string`                                                                                                                                                                                                | Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"                                                                       |
+| `Port`          | `int`                                                                                                                                                                                                   | Port is the port where metrics are emitted. Default is "9090"                                                                                                  |
+| `IgnoreErrors`  | `bool`                                                                                                                                                                                                  | IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors                                                                              |
+| `Secure`        | `bool`                                                                                                                                                                                                  | Secure is a flag that starts the metrics servers using TLS, defaults to true                                                                                   |
+| `Modifiers`     | `Map<string,`[`MetricModifier`](#metricmodifier)`>`                                                                                                                                                     | Modifiers configure metrics by name                                                                                                                            |
+| `Temporality`   | `MetricsTemporality` (MetricsTemporality defines the temporality of OpenTelemetry metrics (underlying type: string))                                                                                    | Temporality of the OpenTelemetry metrics. Enum of Cumulative or Delta, defaulting to Cumulative. No effect on Prometheus metrics, which are always Cumulative. |
 
 ## MetricModifier
 
@@ -177,28 +176,17 @@ PersistConfig contains workflow persistence configuration
 
 ### Fields
 
-|       Field Name       |                                                       Field Type                                                        |                                                 Description                                                 |
-|------------------------|-------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `DBConfig`             | [`DBConfig`](#dbconfig)                                                                                                 | -                                                                                                           |
-| `NodeStatusOffload`    | `bool`                                                                                                                  | NodeStatusOffload saves node status only to the persistence DB to avoid the 1MB limit in etcd               |
-| `Archive`              | `bool`                                                                                                                  | Archive completed and Workflows to persistence so you can access them after they're removed from kubernetes |
-| `ArchiveLabelSelector` | [`metav1.LabelSelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#labelselector-v1-meta)    | ArchiveLabelSelector holds LabelSelector to determine which Workflows to archive                            |
-| `ArchiveTTL`           | `TTL` (time.Duration forces you to specify in millis, and does not support days                                         | ArchiveTTL is the time to live for archived Workflows                                                       |
-|                        | see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) |                                                                                                             |
-| `ClusterName`          | `string`                                                                                                                | ClusterName is the name of the cluster (or technically controller) for the persistence database             |
-| `SkipMigration`        | `bool`                                                                                                                  | SkipMigration skips database migration even if needed                                                       |
-
-## DBConfig
-
-DBConfig contains database configuration settings
-
-### Fields
-
-|    Field Name    |               Field Type                |                                    Description                                     |
-|------------------|-----------------------------------------|------------------------------------------------------------------------------------|
-| `PostgreSQL`     | [`PostgreSQLConfig`](#postgresqlconfig) | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time |
-| `MySQL`          | [`MySQLConfig`](#mysqlconfig)           | MySQL configuration for MySQL database, don't use PostgreSQL at the same time      |
-| `ConnectionPool` | [`ConnectionPool`](#connectionpool)     | Pooled connection settings for all types of database connections                   |
+|       Field Name       |                                                                                               Field Type                                                                                                |                                                 Description                                                 |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `PostgreSQL`           | [`PostgreSQLConfig`](#postgresqlconfig)                                                                                                                                                                 | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time                          |
+| `MySQL`                | [`MySQLConfig`](#mysqlconfig)                                                                                                                                                                           | MySQL configuration for MySQL database, don't use PostgreSQL at the same time                               |
+| `ConnectionPool`       | [`ConnectionPool`](#connectionpool)                                                                                                                                                                     | Pooled connection settings for all types of database connections                                            |
+| `NodeStatusOffload`    | `bool`                                                                                                                                                                                                  | NodeStatusOffload saves node status only to the persistence DB to avoid the 1MB limit in etcd               |
+| `Archive`              | `bool`                                                                                                                                                                                                  | Archive completed and Workflows to persistence so you can access them after they're removed from kubernetes |
+| `ArchiveLabelSelector` | [`metav1.LabelSelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#labelselector-v1-meta)                                                                                    | ArchiveLabelSelector holds LabelSelector to determine which Workflows to archive                            |
+| `ArchiveTTL`           | `TTL` (time.Duration forces you to specify in millis, and does not support days see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) | ArchiveTTL is the time to live for archived Workflows                                                       |
+| `ClusterName`          | `string`                                                                                                                                                                                                | ClusterName is the name of the cluster (or technically controller) for the persistence database             |
+| `SkipMigration`        | `bool`                                                                                                                                                                                                  | SkipMigration skips database migration even if needed                                                       |
 
 ## PostgreSQLConfig
 
@@ -206,15 +194,20 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 
 ### Fields
 
-|    Field Name    |             Field Type              |                                Description                                |
-|------------------|-------------------------------------|---------------------------------------------------------------------------|
-| `DatabaseConfig` | [`DatabaseConfig`](#databaseconfig) | -                                                                         |
-| `SSL`            | `bool`                              | SSL enables SSL connection to the database                                |
-| `SSLMode`        | `string`                            | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full) |
+|    Field Name    |                                                         Field Type                                                          |                                Description                                |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| `Host`           | `string`                                                                                                                    | Host is the database server hostname                                      |
+| `Port`           | `int`                                                                                                                       | Port is the database server port                                          |
+| `Database`       | `string`                                                                                                                    | Database is the name of the database to connect to                        |
+| `TableName`      | `string`                                                                                                                    | TableName is the name of the table to use, must be set                    |
+| `UsernameSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | UsernameSecret references a secret containing the database username       |
+| `PasswordSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | PasswordSecret references a secret containing the database password       |
+| `SSL`            | `bool`                                                                                                                      | SSL enables SSL connection to the database                                |
+| `SSLMode`        | `string`                                                                                                                    | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full) |
 
-## DatabaseConfig
+## MySQLConfig
 
-DatabaseConfig contains common database connection settings
+MySQLConfig contains MySQL-specific database configuration
 
 ### Fields
 
@@ -226,17 +219,7 @@ DatabaseConfig contains common database connection settings
 | `TableName`      | `string`                                                                                                                    | TableName is the name of the table to use, must be set              |
 | `UsernameSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | UsernameSecret references a secret containing the database username |
 | `PasswordSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | PasswordSecret references a secret containing the database password |
-
-## MySQLConfig
-
-MySQLConfig contains MySQL-specific database configuration
-
-### Fields
-
-|    Field Name    |             Field Type              |                     Description                      |
-|------------------|-------------------------------------|------------------------------------------------------|
-| `DatabaseConfig` | [`DatabaseConfig`](#databaseconfig) | -                                                    |
-| `Options`        | `Map<string,string>`                | Options contains additional MySQL connection options |
+| `Options`        | `Map<string,string>`                                                                                                        | Options contains additional MySQL connection options                |
 
 ## ConnectionPool
 
@@ -244,12 +227,11 @@ ConnectionPool contains database connection pool settings
 
 ### Fields
 
-|    Field Name     |                                                       Field Type                                                        |                                Description                                 |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `MaxIdleConns`    | `int`                                                                                                                   | MaxIdleConns sets the maximum number of idle connections in the pool       |
-| `MaxOpenConns`    | `int`                                                                                                                   | MaxOpenConns sets the maximum number of open connections to the database   |
-| `ConnMaxLifetime` | `TTL` (time.Duration forces you to specify in millis, and does not support days                                         | ConnMaxLifetime sets the maximum amount of time a connection may be reused |
-|                   | see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) |                                                                            |
+|    Field Name     |                                                                                               Field Type                                                                                                |                                Description                                 |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `MaxIdleConns`    | `int`                                                                                                                                                                                                   | MaxIdleConns sets the maximum number of idle connections in the pool       |
+| `MaxOpenConns`    | `int`                                                                                                                                                                                                   | MaxOpenConns sets the maximum number of open connections to the database   |
+| `ConnMaxLifetime` | `TTL` (time.Duration forces you to specify in millis, and does not support days see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) | ConnMaxLifetime sets the maximum amount of time a connection may be reused |
 
 ## PodSpecLogStrategy
 
@@ -332,16 +314,18 @@ SyncConfig contains synchronization configuration for database locks (semaphores
 
 ### Fields
 
-|          Field Name          |       Field Type        |                                                                                                                Description                                                                                                                 |
-|------------------------------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `DBConfig`                   | [`DBConfig`](#dbconfig) | -                                                                                                                                                                                                                                          |
-| `ControllerName`             | `string`                | ControllerName sets a unique name for this controller instance                                                                                                                                                                             |
-| `SkipMigration`              | `bool`                  | SkipMigration skips database migration if needed                                                                                                                                                                                           |
-| `LimitTableName`             | `string`                | LimitTableName customizes the table name for semaphore limits, if not set, the default value is "sync_limit"                                                                                                                               |
-| `StateTableName`             | `string`                | StateTableName customizes the table name for current lock state, if not set, the default value is "sync_state"                                                                                                                             |
-| `ControllerTableName`        | `string`                | ControllerTableName customizes the table name for controller heartbeats, if not set, the default value is "sync_controller"                                                                                                                |
-| `LockTableName`              | `string`                | LockTableName customizes the table name for lock coordination data, if not set, the default value is "sync_lock"                                                                                                                           |
-| `PollSeconds`                | `int`                   | PollSeconds specifies how often to check for lock changes, if not set, the default value is 5 seconds                                                                                                                                      |
-| `HeartbeatSeconds`           | `int`                   | HeartbeatSeconds specifies how often to update controller heartbeat, if not set, the default value is 60 seconds                                                                                                                           |
-| `InactiveControllerSeconds`  | `int`                   | InactiveControllerSeconds specifies when to consider a controller dead, if not set, the default value is 300 seconds                                                                                                                       |
-| `SemaphoreLimitCacheSeconds` | `int64`                 | SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked). |
+|          Field Name          |               Field Type                |                                                                                                                Description                                                                                                                 |
+|------------------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PostgreSQL`                 | [`PostgreSQLConfig`](#postgresqlconfig) | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time                                                                                                                                                         |
+| `MySQL`                      | [`MySQLConfig`](#mysqlconfig)           | MySQL configuration for MySQL database, don't use PostgreSQL at the same time                                                                                                                                                              |
+| `ConnectionPool`             | [`ConnectionPool`](#connectionpool)     | Pooled connection settings for all types of database connections                                                                                                                                                                           |
+| `ControllerName`             | `string`                                | ControllerName sets a unique name for this controller instance                                                                                                                                                                             |
+| `SkipMigration`              | `bool`                                  | SkipMigration skips database migration if needed                                                                                                                                                                                           |
+| `LimitTableName`             | `string`                                | LimitTableName customizes the table name for semaphore limits, if not set, the default value is "sync_limit"                                                                                                                               |
+| `StateTableName`             | `string`                                | StateTableName customizes the table name for current lock state, if not set, the default value is "sync_state"                                                                                                                             |
+| `ControllerTableName`        | `string`                                | ControllerTableName customizes the table name for controller heartbeats, if not set, the default value is "sync_controller"                                                                                                                |
+| `LockTableName`              | `string`                                | LockTableName customizes the table name for lock coordination data, if not set, the default value is "sync_lock"                                                                                                                           |
+| `PollSeconds`                | `int`                                   | PollSeconds specifies how often to check for lock changes, if not set, the default value is 5 seconds                                                                                                                                      |
+| `HeartbeatSeconds`           | `int`                                   | HeartbeatSeconds specifies how often to update controller heartbeat, if not set, the default value is 60 seconds                                                                                                                           |
+| `InactiveControllerSeconds`  | `int`                                   | InactiveControllerSeconds specifies when to consider a controller dead, if not set, the default value is 300 seconds                                                                                                                       |
+| `SemaphoreLimitCacheSeconds` | `int64`                                 | SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked). |
