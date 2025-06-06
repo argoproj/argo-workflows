@@ -72,6 +72,7 @@ This would normally be used to share locks across multiple clusters, but can als
 
 To configure multiple controller locks, you need to set up a database (either PostgreSQL or MySQL) and [configure it](#database-configuration) in the workflow-controller-configmap ConfigMap.
 All controllers which want to share locks must share all of these tables.
+If you do not configure the database you will get an error if you try to use database locks.
 
 A Workflow that uses a Workflow-level database mutex would look like this:
 
@@ -112,7 +113,7 @@ The above example Workflow would need something like
 INSERT INTO sync_limit (name, sizelimit) VALUES ('foo/bar', 3);
 ```
 
-### Time
+#### Cluster Time
 
 The time on the clusters must be synchronized.
 The time-stamps put into the database are used to determine if a controller is responsive, and if the times on the clusters differ this will not work correctly.
@@ -293,6 +294,11 @@ You can monitor the status of locks in several ways:
 You can also [restrict parallelism at the Controller-level](parallelism.md).
 
 ## Database configuration
+
+In order to use multiple controller locks you need to configure the database in the workflow-controller-configmap ConfigMap.
+This is done by setting up the [`SyncConfig` section](workflow-controller-configmap.md#syncconfig).
+
+If you try to use multiple controller locks without configuring the database you will get an error.
 
 ### Limit Table
 
