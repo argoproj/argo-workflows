@@ -50,6 +50,37 @@ git tag v3.3.4
 git push upstream v3.3.4 # or origin if you do not use upstream
 ```
 
+### Feature Releases
+
+For feature releases (e.g., v3.6.0, v3.7.0) and not patch releases (e.g., v3.6.1, v3.6.5), you need to update the feature descriptions with the new version.
+
+For release candidates, use:
+
+```bash
+make features-update VERSION=v3.6.0
+git add docs/new-features.md
+git commit -m "chore: Update feature descriptions for v3.6.0"
+git push
+```
+
+This will update all pending feature descriptions with the current version and include them in the upcoming release notes.
+The features will remain in the pending directory, allowing for further updates if needed.
+
+For the final release, use:
+
+```bash
+make features-release VERSION=v3.6.0
+git add .features
+git add docs/new-features.md
+git commit -m "chore: Release feature descriptions for v3.6.0"
+git push
+```
+
+This will update the feature descriptions and move them from the pending directory to the released directory for the specific version.
+This is the final step that should be done when releasing a new version.
+
+### Release Build
+
 GitHub Actions will automatically build and publish your release. This takes about 1h. Set your self a reminder to check
 this was successful.
 
