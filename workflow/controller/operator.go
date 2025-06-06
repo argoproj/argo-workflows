@@ -791,6 +791,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		panic("workflow should be hydrated")
 	}
 
+	woc.controller.workflowVersionChecker.UpdateLatestVersion(woc.wf)
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
