@@ -49,7 +49,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			woc.log.Fatalf("was unable to obtain nodePhase for %s", node.ID)
 			panic(fmt.Sprintf("unable to obtain nodePhase for %s", node.ID))
 		}
-		if nodePhase.Fulfilled() {
+		if nodePhase.Fulfilled(node.TaskResultSynced) {
 			woc.killDaemonedChildren(node.ID)
 		}
 	}()
