@@ -1,8 +1,8 @@
 # Release Instructions
 
 This page covers instructions for releasing Argo Workflows.
-It is intended for Argo release managers, who will be responsible for coordinating the release.
-Release managers must be Approvers on the Argo project.
+It is intended for Argo Workflows release managers, who will be responsible for coordinating the release.
+Release managers must be Approvers on the Argo Workflows sub-project.
 
 ## Patch Releases
 
