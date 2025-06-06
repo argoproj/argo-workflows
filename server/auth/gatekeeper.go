@@ -256,6 +256,7 @@ func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (
 		}
 		allow, err := argoexpr.EvalBool(rule, v)
 		if err != nil {
+			log.WithFields(log.Fields{"rule": rule, "claims": v}).Debugf("failed to evaluate rule: %v", err)
 			return nil, fmt.Errorf("failed to evaluate rule: %w", err)
 		}
 		if !allow {
