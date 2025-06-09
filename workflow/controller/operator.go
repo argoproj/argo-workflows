@@ -643,7 +643,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParametersJSON] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+		if param.Value != nil {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				if param.ValueFrom.Default != nil {
@@ -655,8 +657,6 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			} else {
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
-		} else if param.Value != nil {
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else {
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
