@@ -96,9 +96,7 @@ func isTransientEtcdErr(err error) bool {
 
 func isTransientInterruptionErr(err error) bool {
 	// Handle transient node/resource related errors
-	if strings.Contains(err.Error(), "OOMKilled") {
-		return true
-	} else if strings.Contains(err.Error(), "imminent node shutdown") {
+	if strings.Contains(err.Error(), "imminent node shutdown") {
 		return true
 	} else if strings.Contains(err.Error(), "node was low on resource") {
 		return true
