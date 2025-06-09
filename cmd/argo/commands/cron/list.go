@@ -57,7 +57,7 @@ func NewListCommand() *cobra.Command {
 				printTable(ctx, cronWfList.Items, &listArgs)
 			case "name":
 				for _, cronWf := range cronWfList.Items {
-					fmt.Println(cronWf.ObjectMeta.Name)
+					fmt.Println(cronWf.Name)
 				}
 			default:
 				return fmt.Errorf("Unknown output mode: %s", listArgs.output.String())
@@ -80,7 +80,7 @@ func printTable(ctx context.Context, wfList []wfv1.CronWorkflow, listArgs *listF
 	_, _ = fmt.Fprint(w, "\n")
 	for _, cwf := range wfList {
 		if listArgs.allNamespaces {
-			_, _ = fmt.Fprintf(w, "%s\t", cwf.ObjectMeta.Namespace)
+			_, _ = fmt.Fprintf(w, "%s\t", cwf.Namespace)
 		}
 		var cleanLastScheduledTime string
 		if cwf.Status.LastScheduledTime != nil {
@@ -94,7 +94,7 @@ func printTable(ctx context.Context, wfList []wfv1.CronWorkflow, listArgs *listF
 		} else {
 			cleanNextScheduledTime = "N/A"
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%t", cwf.ObjectMeta.Name, humanize.RelativeDurationShort(cwf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.GetScheduleString(), cwf.Spec.Timezone, cwf.Spec.Suspend)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%t", cwf.Name, humanize.RelativeDurationShort(cwf.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.GetScheduleString(), cwf.Spec.Timezone, cwf.Spec.Suspend)
 		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

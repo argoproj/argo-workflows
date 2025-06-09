@@ -346,7 +346,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta:          metav1.ObjectMeta{GenerateName: `"my-wft-pr-"+sprig.toString(payload.foo.pr)+"-"`},
+					ObjectMeta:          metav1.ObjectMeta{GenerateName: `"my-wft-pr-"+string(payload.foo.pr)+"-"`},
 				},
 			},
 		},
@@ -395,7 +395,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	}
 
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow name expression: unexpected token Operator(\"..\") (1:10)\n | payload.......foo[.numeric]\n | .........^", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: cannot use pointer accessor outside closure (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: unexpected token Operator(\".\") (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow annotation \"invalidAnnotation\" expression: expected name (1:6)\n | foo.[..]bar\n | .....^", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a float64", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a bool", <-recorder.Events)

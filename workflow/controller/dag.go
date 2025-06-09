@@ -155,7 +155,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 	for !uniqueQueue.empty() {
 		curr := uniqueQueue.pop()
 
-		node, err := nodes.Get(curr.nodeId)
+		node, err := nodes.Get(curr.nodeID)
 		if err != nil {
 			// this is okay, this means that
 			// we are still running
@@ -261,6 +261,17 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		targetTasks = dagCtx.findLeafTaskNames(tmpl.DAG.Tasks)
 	} else {
 		targetTasks = strings.Split(tmpl.DAG.Target, " ")
+	}
+
+	// pre-execute daemoned tasks
+	for _, task := range tmpl.DAG.Tasks {
+		taskNode := dagCtx.getTaskNode(task.Name)
+		if err != nil {
+			continue
+		}
+		if taskNode != nil && taskNode.IsDaemoned() {
+			woc.executeDAGTask(ctx, dagCtx, task.Name)
+		}
 	}
 
 	// kick off execution of each target task asynchronously
@@ -429,7 +440,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 	}
 
-	if node != nil && node.Fulfilled() {
+	if node != nil && node.Phase.Fulfilled() {
 		// Collect the completed task metrics
 		_, tmpl, _, tmplErr := dagCtx.tmplCtx.ResolveTemplate(task)
 		if tmplErr != nil {
@@ -659,6 +670,10 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 			var ancestorNodes []wfv1.NodeStatus
 			for _, node := range woc.wf.Status.Nodes {
 				if node.BoundaryID == dagCtx.boundaryID && strings.HasPrefix(node.Name, ancestorNode.Name+"(") {
+					// Filter retried nodes and only aggregate outputs of their parent nodes.
+					if node.NodeFlag != nil && node.NodeFlag.Retried {
+						continue
+					}
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
@@ -730,9 +745,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return &newTask, nil
 	}
 
+	artifacts := wfv1.Artifacts{}
 	// replace all artifact references
-	for j, art := range newTask.Arguments.Artifacts {
-		if art.From == "" {
+	for _, art := range newTask.Arguments.Artifacts {
+		if art.From == "" && art.FromExpression == "" {
+			artifacts = append(artifacts, art)
 			continue
 		}
 		resolvedArt, err := scope.resolveArtifact(&art)
@@ -744,8 +761,9 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 			return nil, err
 		}
 		resolvedArt.Name = art.Name
-		newTask.Arguments.Artifacts[j] = *resolvedArt
+		artifacts = append(artifacts, *resolvedArt)
 	}
+	newTask.Arguments.Artifacts = artifacts
 	return &newTask, nil
 }
 
@@ -858,7 +876,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			return false, false, nil
 		}
 
-		evalTaskName := strings.Replace(taskName, "-", "_", -1)
+		evalTaskName := strings.ReplaceAll(taskName, "-", "_")
 		if _, ok := evalScope[evalTaskName]; ok {
 			continue
 		}
@@ -894,7 +912,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 		}
 	}
 
-	evalLogic := strings.Replace(d.GetTaskDependsLogic(taskName), "-", "_", -1)
+	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(taskName), "-", "_")
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)

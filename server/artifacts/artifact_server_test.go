@@ -79,7 +79,7 @@ var bucketsOfKeys = map[string][]string{
 func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser, error) {
 	//fmt.Printf("deletethis: artifact=%+v\n", artifact)
 
-	key, err := artifact.ArtifactLocation.GetKey()
+	key, err := artifact.GetKey()
 	if err != nil {
 		return nil, err
 	}
@@ -153,10 +153,10 @@ func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, err
 func newServer() *ArtifactServer {
 	gatekeeper := &authmocks.Gatekeeper{}
 	kube := kubefake.NewSimpleClientset()
-	instanceId := "my-instanceid"
+	instanceID := "my-instanceid"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
-			common.LabelKeyControllerInstanceID: instanceId,
+			common.LabelKeyControllerInstanceID: instanceID,
 		}},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{
@@ -369,7 +369,7 @@ func newServer() *ArtifactServer {
 		},
 	})
 
-	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories)
 }
 
 func TestArtifactServer_GetArtifactFile(t *testing.T) {
@@ -477,7 +477,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 					// verify that the files are contained in the listing we got back
 					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))
 					for _, file := range tt.directoryFiles {
-						assert.True(t, strings.Contains(string(all), file))
+						assert.Contains(t, string(all), file)
 					}
 				} else {
 					assert.Equal(t, "my-data", string(all))

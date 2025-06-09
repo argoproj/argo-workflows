@@ -15,12 +15,9 @@ function user(token: string) {
     document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
     document.location.href = path;
 }
-function getRedirect(): string {
-    const urlParams = new URLSearchParams(new URL(document.location.href).search);
-    if (urlParams.has('redirect')) {
-        return 'redirect=' + urlParams.get('redirect');
-    }
-    return 'redirect=' + window.location.origin + '/workflows';
+function getRedirect(): URLSearchParams {
+    const urlParams = new URLSearchParams(document.location.search);
+    return new URLSearchParams({redirect: urlParams.get('redirect') ?? '/workflows'});
 }
 
 export function Login() {
@@ -47,7 +44,7 @@ export function Login() {
                             <button
                                 className='argo-button argo-button--base-o'
                                 onClick={() => {
-                                    document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
+                                    document.location.href = uiUrlWithParams('oauth2/redirect', getRedirect());
                                 }}>
                                 <i className='fa fa-sign-in-alt' /> Login
                             </button>

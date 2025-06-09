@@ -112,12 +112,12 @@ jobs:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload coverage report
@@ -139,7 +139,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
       - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
@@ -170,7 +170,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache: true
       - name: Build
         run: make ${{matrix.target}}
@@ -271,6 +271,14 @@ jobs:
             k8s_version: min
             profile: minimal
             use-api: false
+          - test: test-dbsemaphore
+            k8s_version: min
+            profile: mysql
+            use-api: false
+          - test: test-dbsemaphore
+            k8s_version: min
+            profile: postgres
+            use-api: false
     steps:
       - name: Free up unused disk space
         run: |
@@ -283,7 +291,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -435,7 +443,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache: true
       - name: Install protoc
         run: |
@@ -472,7 +480,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build

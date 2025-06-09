@@ -10,11 +10,82 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/expand"
 )
 
-var sprigFuncMap = sprig.GenericFuncMap() // a singleton for better performance
+// sprigFuncMap is a subset of Masterminds/sprig helpers.
+// It keeps only those functions that do **not** have a direct equivalent
+// in the Expr standard library and that we still consider safe to expose.
+var sprigFuncMap map[string]interface{}
 
 func init() {
-	delete(sprigFuncMap, "env")
-	delete(sprigFuncMap, "expandenv")
+	full := sprig.GenericFuncMap()
+
+	allowed := map[string]struct{}{
+		// Random / crypto
+		"randAlpha":    {},
+		"randAlphaNum": {},
+		"randAscii":    {},
+		"randNumeric":  {},
+		"randBytes":    {},
+		"randInt":      {},
+		"uuidv4":       {},
+		// Regex helpers
+		"regexFindAll":           {},
+		"regexSplit":             {},
+		"regexReplaceAll":        {},
+		"regexReplaceAllLiteral": {},
+		"regexQuoteMeta":         {},
+		// Text layout / case helpers
+		"wrap":      {},
+		"wrapWith":  {},
+		"nospace":   {},
+		"title":     {},
+		"untitle":   {},
+		"plural":    {},
+		"initials":  {},
+		"snakecase": {},
+		"camelcase": {},
+		"kebabcase": {},
+		"swapcase":  {},
+		"shuffle":   {},
+		"trunc":     {},
+		// Dict & reflection helpers
+		"dict":           {},
+		"set":            {},
+		"deepCopy":       {},
+		"merge":          {},
+		"mergeOverwrite": {},
+		"mergeRecursive": {},
+		"dig":            {},
+		"pluck":          {},
+		"typeIsLike":     {},
+		"kindIs":         {},
+		"typeOf":         {},
+		// Path / URL helpers
+		"base":     {},
+		"dir":      {},
+		"ext":      {},
+		"clean":    {},
+		"urlParse": {},
+		"urlJoin":  {},
+		// SemVer helpers
+		"semver":        {},
+		"semverCompare": {},
+		// Flow‑control helpers
+		"fail":     {},
+		"required": {},
+		// Encoding / YAML helpers
+		"b32enc":   {},
+		"b32dec":   {},
+		"toYaml":   {},
+		"fromYaml": {},
+	}
+
+	// Build the curated func‑map
+	sprigFuncMap = make(map[string]interface{}, len(allowed))
+	for name, fn := range full {
+		if _, ok := allowed[name]; ok {
+			sprigFuncMap[name] = fn
+		}
+	}
 }
 
 func GetFuncMap(m map[string]interface{}) map[string]interface{} {
@@ -24,12 +95,12 @@ func GetFuncMap(m map[string]interface{}) map[string]interface{} {
 	// Alias for the built-in `float` function, for backwards compatibility.
 	env["asFloat"] = builtin.Float
 	env["jsonpath"] = jsonPath
-	env["toJson"] = toJson
+	env["toJson"] = toJSON
 	env["sprig"] = sprigFuncMap
 	return env
 }
 
-func toJson(v interface{}) string {
+func toJSON(v interface{}) string {
 	output, err := json.Marshal(v)
 	if err != nil {
 		panic(err)

@@ -22,15 +22,15 @@ import (
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
 // Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
-	baseUrl            string
+	baseURL            string
 	authorization      string
 	insecureSkipVerify bool
 	headers            []string
 	httpClient         *http.Client
 }
 
-func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
-	return Facade{baseUrl, authorization, insecureSkipVerify, headers, httpClient}
+func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
+	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient}
 }
 
 func (h Facade) Get(ctx context.Context, in, out interface{}, path string) error {
@@ -152,7 +152,7 @@ func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 	}
 	// remove any that were not provided
 	path = regexp.MustCompile("{[^}]*}").ReplaceAllString(path, "")
-	return url.Parse(h.baseUrl + path + "?" + query.Encode())
+	return url.Parse(h.baseURL + path + "?" + query.Encode())
 }
 
 func errFromResponse(r *http.Response) error {

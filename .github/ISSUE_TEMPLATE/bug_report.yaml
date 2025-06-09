@@ -1,6 +1,6 @@
 name: Reproducible bug report
 description: Create a reproducible bug report. Not for support requests.
-labels: [ type/bug ]
+type: Bug
 body:
   - type: checkboxes
     id: terms

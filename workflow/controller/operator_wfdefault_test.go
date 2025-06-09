@@ -62,7 +62,7 @@ spec:
       args: ["hello world"]
 `
 
-var wf_wfdefaultResult = `
+var wfDefaultResult = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
@@ -199,7 +199,7 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
 	wf := wfv1.MustUnmarshalWorkflow(simpleWf)
 	wf1 := wf.DeepCopy()
-	wfResult := wfv1.MustUnmarshalWorkflow(wf_wfdefaultResult)
+	wfResult := wfv1.MustUnmarshalWorkflow(wfDefaultResult)
 	cancel, controller := newControllerWithDefaults()
 	defer cancel()
 

@@ -50,30 +50,30 @@ type ossCredentials struct {
 }
 
 func (cred *ossCredentials) GetAccessKeyID() string {
-	value, err := cred.teaCred.GetAccessKeyId()
+	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
 		log.Infof("get access key id failed: %+v", err)
 		return ""
 	}
-	return tea.StringValue(value)
+	return tea.StringValue(credential.AccessKeyId)
 }
 
 func (cred *ossCredentials) GetAccessKeySecret() string {
-	value, err := cred.teaCred.GetAccessKeySecret()
+	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
 		log.Infof("get access key secret failed: %+v", err)
 		return ""
 	}
-	return tea.StringValue(value)
+	return tea.StringValue(credential.AccessKeySecret)
 }
 
 func (cred *ossCredentials) GetSecurityToken() string {
-	value, err := cred.teaCred.GetSecurityToken()
+	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
 		log.Infof("get access security token failed: %+v", err)
 		return ""
 	}
-	return tea.StringValue(value)
+	return tea.StringValue(credential.SecurityToken)
 }
 
 type ossCredentialsProvider struct {

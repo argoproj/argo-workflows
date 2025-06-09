@@ -59,7 +59,7 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 
 	entry, err := c.Load(ctx, "hi-there-world")
 	require.NoError(t, err)
-	assert.True(t, entry.LastHitTimestamp.Time.After(entry.CreationTimestamp.Time))
+	assert.True(t, entry.LastHitTimestamp.After(entry.CreationTimestamp.Time))
 
 	outputs := entry.Outputs
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 }
 
 func TestConfigMapCacheSave(t *testing.T) {
-	var MockParamValue string = "Hello world"
+	var MockParamValue = "Hello world"
 	MockParam := wfv1.Parameter{
 		Name:  "hello",
 		Value: wfv1.AnyStringPtr(MockParamValue),

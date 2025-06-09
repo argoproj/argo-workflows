@@ -234,7 +234,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	if err != nil {
 		return nil, err
 	}
-	if node.Fulfilled() {
+	if node.Fulfilled() && woc.childrenFulfilled(node) {
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return node, nil
 	}
@@ -341,6 +341,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		}
 	}
 	if !completed {
+		if node.Fulfilled() {
+			return woc.markNodePhase(sgNodeName, wfv1.NodeRunning), nil
+		}
 		return node, nil
 	}
 
@@ -464,9 +467,11 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil
 		}
 
+		artifacts := wfv1.Artifacts{}
 		// Step 2: replace all artifact references
-		for j, art := range newStep.Arguments.Artifacts {
+		for _, art := range newStep.Arguments.Artifacts {
 			if art.From == "" && art.FromExpression == "" {
+				artifacts = append(artifacts, art)
 				continue
 			}
 
@@ -478,9 +483,9 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 				return fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
-			newStep.Arguments.Artifacts[j] = *resolvedArt
+			artifacts = append(artifacts, *resolvedArt)
 		}
-
+		newStep.Arguments.Artifacts = artifacts
 		newStepGroup[i] = newStep
 		return nil
 	}

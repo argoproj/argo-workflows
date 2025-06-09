@@ -1341,13 +1341,13 @@ definitions:
         title: Represents an empty directory for a pod.
         type: object
     EnvFromSource:
-        description: EnvFromSource represents the source of a set of ConfigMaps
+        description: EnvFromSource represents the source of a set of ConfigMaps or Secrets
         properties:
             configMapRef:
                 $ref: '#/definitions/ConfigMapEnvSource'
             prefix:
                 description: |-
-                    An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.
+                    Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.
                     +optional
                 type: string
             secretRef:
@@ -2132,6 +2132,8 @@ definitions:
                 $ref: '#/definitions/LifecycleHandler'
             preStop:
                 $ref: '#/definitions/LifecycleHandler'
+            stopSignal:
+                $ref: '#/definitions/Signal'
         type: object
     LifecycleHandler:
         description: |-
@@ -2298,6 +2300,9 @@ definitions:
     Mutex:
         description: Mutex holds Mutex configuration
         properties:
+            database:
+                description: Database specifies this is database controlled if this is set true
+                type: boolean
             name:
                 description: name of the mutex
                 type: string
@@ -2950,7 +2955,6 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                     Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
                     +listType=atomic
                     +optional
@@ -2967,7 +2971,6 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                     Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
                     +listType=atomic
                     +optional
@@ -4170,6 +4173,8 @@ definitions:
         properties:
             configMapKeyRef:
                 $ref: '#/definitions/ConfigMapKeySelector'
+            database:
+                $ref: '#/definitions/SyncDatabaseRef'
             namespace:
                 default: '[namespace of workflow]'
                 type: string
@@ -4219,6 +4224,11 @@ definitions:
                     token into.
                 type: string
         type: object
+    Signal:
+        description: |-
+            Signal defines the stop signal of containers
+            +enum
+        type: string
     SleepAction:
         properties:
             seconds:
@@ -4280,6 +4290,11 @@ definitions:
                 description: |-
                     Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
                     Could also be a Duration, e.g.: "2m", "6h"
+                type: string
+        type: object
+    SyncDatabaseRef:
+        properties:
+            key:
                 type: string
         type: object
     Synchronization:

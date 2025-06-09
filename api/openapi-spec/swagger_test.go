@@ -1,4 +1,4 @@
-package openapi_spec
+package openapi_spec //nolint:staticcheck
 
 import (
 	"encoding/json"

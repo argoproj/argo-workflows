@@ -277,10 +277,10 @@ Deprecated features are [explained here](deprecations.md).
 
 `feature` will be one of:
 
-- [`cronworkflow schedule`](deprecations.md#cronworkflow_schedule)
-- [`synchronization mutex`](deprecations.md#synchronization_mutex)
-- [`synchronization semaphore`](deprecations.md#synchronization_semaphore)
-- [`workflow podpriority`](deprecations.md#workflow_podpriority)
+- [`cronworkflow schedule`](deprecations.md#cronworkflow-schedule)
+- [`synchronization mutex`](deprecations.md#synchronization-mutex)
+- [`synchronization semaphore`](deprecations.md#synchronization-semaphore)
+- [`workflow podpriority`](deprecations.md#workflow-podpriority)
 
 #### `error_count`
 

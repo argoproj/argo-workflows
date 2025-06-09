@@ -30,7 +30,7 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 }
 
 func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
-	cronWfLabels := cronWf.ObjectMeta.GetLabels()
+	cronWfLabels := cronWf.GetLabels()
 	wfLabels := make(map[string]string)
 	for _, k := range labelsToPropagate {
 		v, ok := cronWfLabels[k]
@@ -79,14 +79,14 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowKind,
-			APIVersion: cronWf.TypeMeta.APIVersion,
+			APIVersion: cronWf.APIVersion,
 		},
 		ObjectMeta: objectMeta,
 		Spec:       cronWf.Spec.WorkflowSpec,
 	}
 
-	if instanceId, ok := cronWf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID]; ok {
-		wf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID] = instanceId
+	if instanceID, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
 	}
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name

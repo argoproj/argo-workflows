@@ -31,7 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.config_map_key_selector import ConfigMapKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_sync_database_ref import IoArgoprojWorkflowV1alpha1SyncDatabaseRef
     globals()['ConfigMapKeySelector'] = ConfigMapKeySelector
+    globals()['IoArgoprojWorkflowV1alpha1SyncDatabaseRef'] = IoArgoprojWorkflowV1alpha1SyncDatabaseRef
 
 
 class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
@@ -88,6 +90,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
         lazy_import()
         return {
             'config_map_key_ref': (ConfigMapKeySelector,),  # noqa: E501
+            'database': (IoArgoprojWorkflowV1alpha1SyncDatabaseRef,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
         }
 
@@ -98,6 +101,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
 
     attribute_map = {
         'config_map_key_ref': 'configMapKeyRef',  # noqa: E501
+        'database': 'database',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
     }
 
@@ -143,6 +147,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             config_map_key_ref (ConfigMapKeySelector): [optional]  # noqa: E501
+            database (IoArgoprojWorkflowV1alpha1SyncDatabaseRef): [optional]  # noqa: E501
             namespace (str): Namespace is the namespace of the configmap, default: [namespace of workflow]. [optional]  # noqa: E501
         """
 
@@ -226,6 +231,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             config_map_key_ref (ConfigMapKeySelector): [optional]  # noqa: E501
+            database (IoArgoprojWorkflowV1alpha1SyncDatabaseRef): [optional]  # noqa: E501
             namespace (str): Namespace is the namespace of the configmap, default: [namespace of workflow]. [optional]  # noqa: E501
         """
 
