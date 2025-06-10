@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"syscall"
 
-	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
-	
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
+
 	"github.com/spf13/cobra"
 )
 
