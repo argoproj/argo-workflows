@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -858,18 +859,33 @@ func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
 }
 
+func shouldLogRetry(attempt uint64) bool {
+	switch {
+	case attempt < 10:
+		return true // log first 10 attempts
+	case attempt < 100:
+		return attempt%10 == 0 // log every 10 attempts (10–99)
+	case attempt < 1000:
+		return attempt%50 == 0 // log every 50 attempts (100–999)
+	default:
+		return attempt%100 == 0 // log every 100 attempts (1000+)
+	}
+}
+
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
+	var count uint64 // used to avoid spamming with these messages
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    5,
+		Factor:   2.0,
+		Jitter:   0.2,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
-		if apierr.IsForbidden(err) {
+		if apierr.IsForbidden(err) && shouldLogRetry(count) {
 			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		}
+		count++
 		return err
 	})
 }
