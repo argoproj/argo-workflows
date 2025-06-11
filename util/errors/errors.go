@@ -16,13 +16,6 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 )
 
-func IgnoreContainerNotFoundErr(err error) error {
-	if err != nil && strings.Contains(err.Error(), "container not found") {
-		return nil
-	}
-	return err
-}
-
 // IsTransientErr reports whether the error is transient and logs it.
 func IsTransientErr(err error) bool {
 	isTransient := IsTransientErrQuiet(err)
@@ -49,7 +42,7 @@ func isTransientErr(err error) bool {
 	err = argoerrs.Cause(err)
 	return isExceededQuotaErr(err) ||
 		apierr.IsTooManyRequests(err) ||
-		isResourceQuotaConflictErr(err) ||
+		apierr.IsConflict(err) ||
 		isResourceQuotaTimeoutErr(err) ||
 		isTransientNetworkErr(err) ||
 		apierr.IsServerTimeout(err) ||
@@ -73,10 +66,6 @@ func matchTransientErrPattern(err error) bool {
 
 func isExceededQuotaErr(err error) bool {
 	return apierr.IsForbidden(err) && strings.Contains(err.Error(), "exceeded quota")
-}
-
-func isResourceQuotaConflictErr(err error) bool {
-	return apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on resourcequota")
 }
 
 func isResourceQuotaTimeoutErr(err error) bool {
