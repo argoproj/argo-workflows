@@ -11680,3 +11680,39 @@ func TestWithItemsOptionalArtDAGWF(t *testing.T) {
 	require.NotNil(t, node)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 }
+
+var wfWithValueOverriding = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-valuefrom-value-
+spec:
+  entrypoint: echo
+  arguments: &args
+    parameters:
+      - name: message
+        value: "configmap argument overwrite with argument"
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  templates:
+    - name: echo
+      inputs: *args
+      container:
+        image: busybox
+        args: ["printf", "WORKFLOW: %s\nINPUT: %s", "{{workflow.parameters.message}}", "{{inputs.parameters.message}}"]
+`
+
+// https://github.com/argoproj/argo-workflows/issues/14426#issuecomment-2870224091
+func TestSetGlobalParametersOverriding(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithValueOverriding)
+	t.Run("CheckArgumentFromWF", func(t *testing.T) {
+		cancel, controller := newController(wf)
+		defer cancel()
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
+	})
+}
