@@ -200,7 +200,7 @@ spec:
     container:
       image: argoproj/argosay:v2
       command: ["bash"]
-      args: ["-c", "sleep 20 && exit 1"]
+      args: ["-c", "sleep 15 && exit 1"]
   - name: whale-tmpl
     container:
       image: argoproj/argosay:v2
