@@ -882,8 +882,10 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
-		if apierr.IsForbidden(err) && shouldLogRetry(count) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+		if apierr.IsForbidden(err) {
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && shouldLogRetry(count) {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
 		count++
 		return err
