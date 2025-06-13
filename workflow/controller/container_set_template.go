@@ -32,7 +32,7 @@ func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName str
 		ctxNodeName := fmt.Sprintf("%s.%s", nodeName, c.Name)
 		_, err := woc.wf.GetNodeByName(ctxNodeName)
 		if err != nil {
-			_ = woc.initializeNode(ctxNodeName, wfv1.NodeTypeContainer, templateScope, orgTmpl, node.ID, wfv1.NodePending, opts.nodeFlag)
+			_ = woc.initializeNode(ctxNodeName, wfv1.NodeTypeContainer, templateScope, orgTmpl, node.ID, wfv1.NodePending, opts.nodeFlag, true)
 		}
 	}
 	for _, c := range tmpl.ContainerSet.GetGraph() {
