@@ -119,6 +119,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'resources_duration': ({str: (int,)},),  # noqa: E501
             'started_at': (datetime,),  # noqa: E501
             'synchronization_status': (IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus,),  # noqa: E501
+            'task_result_synced': (bool,),  # noqa: E501
             'template_name': (str,),  # noqa: E501
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
             'template_scope': (str,),  # noqa: E501
@@ -152,6 +153,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'resources_duration': 'resourcesDuration',  # noqa: E501
         'started_at': 'startedAt',  # noqa: E501
         'synchronization_status': 'synchronizationStatus',  # noqa: E501
+        'task_result_synced': 'taskResultSynced',  # noqa: E501
         'template_name': 'templateName',  # noqa: E501
         'template_ref': 'templateRef',  # noqa: E501
         'template_scope': 'templateScope',  # noqa: E501
@@ -222,6 +224,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             resources_duration ({str: (int,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             synchronization_status (IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus): [optional]  # noqa: E501
+            task_result_synced (bool): TaskResultSynced is used to determine if the node's output has been received. [optional]  # noqa: E501
             template_name (str): TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup). [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             template_scope (str): TemplateScope is the template scope in which the template of this node was retrieved.. [optional]  # noqa: E501
@@ -333,6 +336,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             resources_duration ({str: (int,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             synchronization_status (IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus): [optional]  # noqa: E501
+            task_result_synced (bool): TaskResultSynced is used to determine if the node's output has been received. [optional]  # noqa: E501
             template_name (str): TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup). [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             template_scope (str): TemplateScope is the template scope in which the template of this node was retrieved.. [optional]  # noqa: E501

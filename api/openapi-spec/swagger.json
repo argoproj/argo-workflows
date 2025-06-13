@@ -10190,6 +10190,10 @@
           "description": "SynchronizationStatus is the synchronization status of the node",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus"
         },
+        "taskResultSynced": {
+          "description": "TaskResultSynced is used to determine if the node's output has been received",
+          "type": "boolean"
+        },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
           "type": "string"
