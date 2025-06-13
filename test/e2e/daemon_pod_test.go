@@ -207,7 +207,7 @@ spec:
           if [ "{{retries}}" -eq 0 ]; then
             sleep 10 && exit 1;
           else
-            sleep 30 && exit 1;
+            sleep 120 && exit 1;
           fi
   - name: whale-tmpl
     container:
