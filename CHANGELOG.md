@@ -570,7 +570,7 @@ Full Changelog: [v3.6.0-rc1...v3.6.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.6.0-rc1 (2024-09-18)
 
-Full Changelog: [v3.5.14...v3.6.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.5.14...v3.6.0-rc1)
+Full Changelog: [v3.5.15...v3.6.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.5.15...v3.6.0-rc1)
 
 ### Selected Changes
 
@@ -1111,6 +1111,25 @@ Full Changelog: [v3.5.14...v3.6.0-rc1](https://github.com/argoproj/argo-workflow
 * Zubair Haque
 * 刘达
 * 名白
+
+</details>
+
+## v3.5.15 (2025-06-13)
+
+Full Changelog: [v3.5.14...v3.5.15](https://github.com/argoproj/argo-workflows/compare/v3.5.14...v3.5.15)
+
+### Selected Changes
+
+* [b44c9b6a2](https://github.com/argoproj/argo-workflows/commit/b44c9b6a21cc60c00ef0cf3ca6a6a49e197a59b7) chore(deps): update for CVEs in deps
+* [dd6368466](https://github.com/argoproj/argo-workflows/commit/dd6368466244ed692dec7c10c1bbe1ad87ae4414) fix: ensure variable sub and processing is performed. Fixes #12941 (cherry-pick #14444) (#14485)
+* [e9e5ed760](https://github.com/argoproj/argo-workflows/commit/e9e5ed76032eafd60f5bc2c9031c3bde3dd80f22) feat: enable cherry-pick bot (#14151)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Alex Collins
+* Isitha Subasinghe
+* Rohan K
 
 </details>
 
