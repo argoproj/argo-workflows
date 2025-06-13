@@ -2013,8 +2013,10 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 	if err != nil {
 		return
 	}
-	tmp := false
-	node.TaskResultSynced = &tmp
+	if node.TaskResultSynced != nil {
+		tmp := false
+		node.TaskResultSynced = &tmp
+	}
 	in.Nodes.Set(name, *node)
 }
 
@@ -2027,8 +2029,10 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 	if err != nil {
 		return
 	}
-	tmp := true
-	node.TaskResultSynced = &tmp
+	if node.TaskResultSynced != nil {
+		tmp := true
+		node.TaskResultSynced = &tmp
+	}
 	in.Nodes.Set(name, *node)
 }
 

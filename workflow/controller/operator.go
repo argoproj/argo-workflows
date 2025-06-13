@@ -1925,7 +1925,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// if this function returns an error, a pod is never created
 	// we should never expect task results to sync
 	defer func() {
-		if err != nil && node != nil {
+		if err != nil && node != nil && node.TaskResultSynced != nil {
 			tmp := true
 			node.TaskResultSynced = &tmp
 		}
