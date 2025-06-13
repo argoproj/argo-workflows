@@ -2752,7 +2752,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	// if we not in a running state (not expecting task results)
 	// and transition into a state that ensures we will never run mark the task results synced
-	if node.Phase != wfv1.NodeRunning && phase.FailedOrError() {
+	if node.Phase != wfv1.NodeRunning && phase.FailedOrError() && node.TaskResultSynced != nil {
 		tmp := true
 		node.TaskResultSynced = &tmp
 	}
