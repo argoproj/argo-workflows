@@ -3,6 +3,8 @@ package pod
 
 import (
 	"fmt"
+	"log"
+	"runtime/debug"
 
 	apiv1 "k8s.io/api/core/v1"
 )
@@ -28,6 +30,8 @@ func (c *Controller) GetPodsByIndex(index, key string) ([]interface{}, error) {
 }
 
 func (c *Controller) TerminateContainers(namespace, name string) {
+	log.Println("[debug]")
+	log.Println(string(debug.Stack()))
 	c.queuePodForCleanup(namespace, name, terminateContainers)
 }
 
