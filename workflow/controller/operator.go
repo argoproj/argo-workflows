@@ -1921,13 +1921,22 @@ type executeTemplateOpts struct {
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (node *wfv1.NodeStatus, err error) {
+	// if this function returns an error, a pod is never created
+	// we should never expect task results to sync
+	defer func() {
+		if err != nil && node != nil {
+			tmp := true
+			node.TaskResultSynced = &tmp
+		}
+	}()
+
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
 
-	node, err := woc.wf.GetNodeByName(nodeName)
+	node, err = woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		// Will be initialized via woc.initializeNodeOrMarkError
 		woc.log.Warnf("Node was nil, will be initialized as type Skipped")
@@ -2582,8 +2591,10 @@ func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
-var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
-var displayNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
+var (
+	stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
+	displayNameRegex    = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-.]{0,61}[a-zA-Z0-9]$`)
+)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
@@ -2735,6 +2746,12 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	if err != nil {
 		woc.log.Warningf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message)
 		node = &wfv1.NodeStatus{}
+	}
+	// if we not in a running state (not expecting task results)
+	// and transition into a state that ensures we will never run mark the task results synced
+	if node.Phase != wfv1.NodeRunning && phase.FailedOrError() {
+		tmp := true
+		node.TaskResultSynced = &tmp
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled(node.TaskResultSynced) {
@@ -2989,7 +3006,6 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
 	})
-
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
