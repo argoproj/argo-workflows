@@ -2420,9 +2420,6 @@ func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
-	if phase == wfv1.WorkflowRunning {
-		fmt.Println("here we are")
-	}
 	// Check whether or not the workflow needs to continue processing when it is completed
 	if phase.Completed() && (woc.checkTaskResultsInProgress() || woc.hasDaemonNodes()) {
 		woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
