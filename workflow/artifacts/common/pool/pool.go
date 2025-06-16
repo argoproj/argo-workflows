@@ -27,7 +27,10 @@ func RunPool(ctx context.Context, workers int, tasks []Task, fn func(Task) error
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	taskCh := make(chan Task)
+	// Create a buffered channel with size proportional to workers
+	// This allows for better throughput while preventing excessive memory usage
+	bufferSize := workers * 2
+	taskCh := make(chan Task, bufferSize)
 	errCh := make(chan error, 1) // buffer 1 so first writer never blocks
 
 	var wg sync.WaitGroup
@@ -63,7 +66,7 @@ func RunPool(ctx context.Context, workers int, tasks []Task, fn func(Task) error
 		for _, t := range tasks {
 			select {
 			case <-ctx.Done():
-				break
+				return
 			case taskCh <- t:
 			}
 		}

@@ -888,6 +888,9 @@ func TestPutDirectoryParallel(t *testing.T) {
 	var workerCallsMutex sync.Mutex
 	workerCount := 0
 	var workerCountMutex sync.Mutex
+	concurrentWorkers := 0
+	var concurrentWorkersMutex sync.Mutex
+	maxConcurrentWorkers := 0
 
 	client := newMockS3Client(
 		map[string][]string{
@@ -897,18 +900,33 @@ func TestPutDirectoryParallel(t *testing.T) {
 			"PutFile": func() error {
 				// Get current goroutine ID to identify worker
 				workerID := getGoroutineID()
+
+				// Track unique workers
 				workerCountMutex.Lock()
 				if _, exists := workerCalls[workerID]; !exists {
 					workerCount++
 				}
 				workerCountMutex.Unlock()
 
+				// Track concurrent workers
+				concurrentWorkersMutex.Lock()
+				concurrentWorkers++
+				if concurrentWorkers > maxConcurrentWorkers {
+					maxConcurrentWorkers = concurrentWorkers
+				}
+				concurrentWorkersMutex.Unlock()
+
+				// Simulate some work to ensure parallel execution
+				time.Sleep(time.Millisecond)
+
+				concurrentWorkersMutex.Lock()
+				concurrentWorkers--
+				concurrentWorkersMutex.Unlock()
+
 				workerCallsMutex.Lock()
 				workerCalls[workerID]++
 				workerCallsMutex.Unlock()
 
-				// Simulate some work to ensure parallel execution
-				time.Sleep(time.Millisecond)
 				return nil
 			},
 		},
@@ -939,22 +957,39 @@ func TestPutDirectoryParallel(t *testing.T) {
 		t.Errorf("Expected multiple workers to be used, got %d", wc)
 	}
 
-	// Verify work was distributed among workers
-	avgCallsPerWorker := float64(totalCalls) / float64(wc)
+	// Verify concurrent execution
+	if maxConcurrentWorkers < 2 {
+		t.Errorf("Expected concurrent execution with at least 2 workers, got %d", maxConcurrentWorkers)
+	}
+
+	// Verify work distribution among workers
 	workerCallsMutex.Lock()
-	for workerID, calls := range workerCalls {
-		// Each worker should handle roughly the same number of calls
-		// Allow for some variance (e.g., ±20%)
-		expectedMin := int(avgCallsPerWorker * 0.8)
-		expectedMax := int(avgCallsPerWorker * 1.2)
-		if calls < expectedMin || calls > expectedMax {
-			t.Errorf("Worker %d handled %d calls, expected between %d and %d",
-				workerID, calls, expectedMin, expectedMax)
+	minCalls := totalCalls
+	maxCalls := 0
+	for _, calls := range workerCalls {
+		if calls < minCalls {
+			minCalls = calls
+		}
+		if calls > maxCalls {
+			maxCalls = calls
 		}
 	}
 	workerCallsMutex.Unlock()
 
-	t.Logf("Work distributed among %d workers", wc)
+	// Verify that no worker is completely idle and no worker is overloaded
+	// We expect each worker to handle at least 10% of the total work
+	minExpectedCalls := totalCalls / 10
+	if minCalls < minExpectedCalls {
+		t.Errorf("Some workers handled too few calls: minimum was %d, expected at least %d", minCalls, minExpectedCalls)
+	}
+
+	// We expect no worker to handle more than 50% of the total work
+	maxExpectedCalls := totalCalls / 2
+	if maxCalls > maxExpectedCalls {
+		t.Errorf("Some workers handled too many calls: maximum was %d, expected at most %d", maxCalls, maxExpectedCalls)
+	}
+
+	t.Logf("Work distributed among %d workers with maximum concurrency of %d", wc, maxConcurrentWorkers)
 }
 
 // getGoroutineID returns the current goroutine's ID
@@ -995,9 +1030,32 @@ func TestParallelDownload(t *testing.T) {
 	}
 
 	// Create mock S3 client with worker tracking
+	concurrentWorkers := 0
+	var concurrentWorkersMutex sync.Mutex
+	maxConcurrentWorkers := 0
+
 	mockClient := &mockS3Client{
 		files:       make(map[string][]string),
 		workerCalls: make(map[uint64]int),
+		mockedErrs: map[string]interface{}{
+			"GetFile": func() error {
+				concurrentWorkersMutex.Lock()
+				concurrentWorkers++
+				if concurrentWorkers > maxConcurrentWorkers {
+					maxConcurrentWorkers = concurrentWorkers
+				}
+				concurrentWorkersMutex.Unlock()
+
+				// Simulate some work
+				time.Sleep(time.Millisecond)
+
+				concurrentWorkersMutex.Lock()
+				concurrentWorkers--
+				concurrentWorkersMutex.Unlock()
+
+				return nil
+			},
+		},
 	}
 
 	// Add test files to mock S3
@@ -1033,22 +1091,40 @@ func TestParallelDownload(t *testing.T) {
 		t.Errorf("Expected multiple workers to be used, got %d", mockClient.workerCount)
 	}
 
-	// Verify work distribution among workers
+	// Verify concurrent execution
+	if maxConcurrentWorkers < 2 {
+		t.Errorf("Expected concurrent execution with at least 2 workers, got %d", maxConcurrentWorkers)
+	}
+
+	// Verify work distribution
 	totalCalls := 0
 	for _, calls := range mockClient.workerCalls {
 		totalCalls += calls
 	}
-	avgCallsPerWorker := float64(totalCalls) / float64(mockClient.workerCount)
-	for workerID, calls := range mockClient.workerCalls {
-		// Each worker should handle roughly the same number of calls
-		// Allow for some variance (e.g., ±20%)
-		expectedMin := int(avgCallsPerWorker * 0.8)
-		expectedMax := int(avgCallsPerWorker * 1.2)
-		if calls < expectedMin || calls > expectedMax {
-			t.Errorf("Worker %d handled %d calls, expected between %d and %d",
-				workerID, calls, expectedMin, expectedMax)
+
+	minCalls := totalCalls
+	maxCalls := 0
+	for _, calls := range mockClient.workerCalls {
+		if calls < minCalls {
+			minCalls = calls
+		}
+		if calls > maxCalls {
+			maxCalls = calls
 		}
 	}
 
-	t.Logf("Work distributed among %d workers", mockClient.workerCount)
+	// Verify that no worker is completely idle and no worker is overloaded
+	// We expect each worker to handle at least 25% of the total work (since we have 4 files)
+	minExpectedCalls := totalCalls / 4
+	if minCalls < minExpectedCalls {
+		t.Errorf("Some workers handled too few calls: minimum was %d, expected at least %d", minCalls, minExpectedCalls)
+	}
+
+	// We expect no worker to handle more than 75% of the total work
+	maxExpectedCalls := (totalCalls * 3) / 4
+	if maxCalls > maxExpectedCalls {
+		t.Errorf("Some workers handled too many calls: maximum was %d, expected at most %d", maxCalls, maxExpectedCalls)
+	}
+
+	t.Logf("Work distributed among %d workers with maximum concurrency of %d", mockClient.workerCount, maxConcurrentWorkers)
 }

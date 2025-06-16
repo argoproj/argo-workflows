@@ -610,21 +610,21 @@ func (s *s3client) PutDirectory(bucket, key, path string) error {
 		return fmt.Errorf("failed to walk directory: %v", err)
 	}
 
-	// Get encryption options
-	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
-	if err != nil {
-		return fmt.Errorf("failed to build encryption options: %v", err)
-	}
-
-	// Configure upload options
-	opts := minio.PutObjectOptions{
-		SendContentMd5:       s.SendContentMd5,
-		ServerSideEncryption: encOpts,
-	}
-
 	// Run parallel uploads
 	return pool.RunPool(s.ctx, s.getParallelTransfers(), tasks, func(t pool.Task) error {
-		_, err := s.minioClient.FPutObject(s.ctx, bucket, t.DestKey, t.SourcePath, opts)
+		// Get encryption options for this specific file
+		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.DestKey)
+		if err != nil {
+			return fmt.Errorf("failed to build encryption options: %v", err)
+		}
+
+		// Configure upload options
+		opts := minio.PutObjectOptions{
+			SendContentMd5:       s.SendContentMd5,
+			ServerSideEncryption: encOpts,
+		}
+
+		_, err = s.minioClient.FPutObject(s.ctx, bucket, t.DestKey, t.SourcePath, opts)
 		return err
 	})
 }
@@ -717,19 +717,19 @@ func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 		})
 	}
 
-	// Get encryption options
-	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, keyPrefix)
-	if err != nil {
-		return fmt.Errorf("failed to build encryption options: %v", err)
-	}
-
-	// Configure download options
-	opts := minio.GetObjectOptions{
-		ServerSideEncryption: encOpts,
-	}
-
 	// Run parallel downloads
 	return pool.RunPool(s.ctx, s.getParallelTransfers(), tasks, func(t pool.Task) error {
+		// Get encryption options for this specific file
+		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.SourcePath)
+		if err != nil {
+			return fmt.Errorf("failed to build encryption options: %v", err)
+		}
+
+		// Configure download options
+		opts := minio.GetObjectOptions{
+			ServerSideEncryption: encOpts,
+		}
+
 		return s.minioClient.FGetObject(s.ctx, bucket, t.SourcePath, t.DestKey, opts)
 	})
 }
@@ -890,20 +890,13 @@ const (
 
 // getParallelTransfers returns the number of parallel transfers to use
 func (s *s3client) getParallelTransfers() int {
-	// Check environment variable first
-	if envVal := os.Getenv("ARGO_S3_PARALLEL_TRANSFERS"); envVal != "" {
-		if val, err := strconv.Atoi(envVal); err == nil && val > 0 {
-			return val
-		}
-	}
-
 	// Use configured value if set
 	if s.ParallelTransfers > 0 {
 		return s.ParallelTransfers
 	}
 
-	// Auto-detect based on CPU count
-	if s.ParallelTransfers == defaultParallel {
+	// Auto-detect based on CPU count if ParallelTransfers is 0 or defaultParallel
+	if s.ParallelTransfers == defaultParallel || s.ParallelTransfers == 0 {
 		parallel := runtime.NumCPU() * 2
 		if parallel > maxParallel {
 			parallel = maxParallel
@@ -911,6 +904,6 @@ func (s *s3client) getParallelTransfers() int {
 		return parallel
 	}
 
-	// Default to 1 if not configured
+	// This case should never be reached since we handle all possible values above
 	return 1
 }
