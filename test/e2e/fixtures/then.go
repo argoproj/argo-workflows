@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/yaml"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -71,14 +70,6 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	}
 	_, _ = fmt.Println(wf.Name, ":", wf.Status.Phase, wf.Status.Message)
 	block(t.t, &wf.ObjectMeta, &wf.Status)
-	if t.t.Failed() {
-		yaml, err := yaml.Marshal(wf)
-		if err != nil {
-			t.t.Log("failed to marshal")
-		} else {
-			t.t.Log(string(yaml))
-		}
-	}
 	return t
 }
 
@@ -263,6 +254,7 @@ func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *test
 	c, err := minio.New("localhost:9000", &minio.Options{
 		Creds: credentials.NewStaticV4("admin", "password", ""),
 	})
+
 	if err != nil {
 		t.t.Error(err)
 	}
