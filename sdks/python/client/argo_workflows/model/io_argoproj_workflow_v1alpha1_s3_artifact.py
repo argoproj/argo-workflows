@@ -99,6 +99,9 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
             'endpoint': (str,),  # noqa: E501
             'insecure': (bool,),  # noqa: E501
             'key': (str,),  # noqa: E501
+            'multipart_concurrency': (int,),  # noqa: E501
+            'multipart_part_size': (int,),  # noqa: E501
+            'parallel_transfers': (int,),  # noqa: E501
             'region': (str,),  # noqa: E501
             'role_arn': (str,),  # noqa: E501
             'secret_key_secret': (SecretKeySelector,),  # noqa: E501
@@ -120,6 +123,9 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
         'endpoint': 'endpoint',  # noqa: E501
         'insecure': 'insecure',  # noqa: E501
         'key': 'key',  # noqa: E501
+        'multipart_concurrency': 'multipartConcurrency',  # noqa: E501
+        'multipart_part_size': 'multipartPartSize',  # noqa: E501
+        'parallel_transfers': 'parallelTransfers',  # noqa: E501
         'region': 'region',  # noqa: E501
         'role_arn': 'roleARN',  # noqa: E501
         'secret_key_secret': 'secretKeySecret',  # noqa: E501
@@ -176,6 +182,9 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
             key (str): Key is the key in the bucket where the artifact resides. [optional]  # noqa: E501
+            multipart_concurrency (int): MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.. [optional]  # noqa: E501
+            multipart_part_size (int): MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.. [optional]  # noqa: E501
+            parallel_transfers (int): ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -270,6 +279,9 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
             key (str): Key is the key in the bucket where the artifact resides. [optional]  # noqa: E501
+            multipart_concurrency (int): MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.. [optional]  # noqa: E501
+            multipart_part_size (int): MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.. [optional]  # noqa: E501
+            parallel_transfers (int): ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501

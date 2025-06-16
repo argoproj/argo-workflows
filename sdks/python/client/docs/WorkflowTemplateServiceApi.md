@@ -573,6 +573,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 endpoint="endpoint_example",
                                 insecure=True,
                                 key="key_example",
+                                multipart_concurrency=1,
+                                multipart_part_size=1,
+                                parallel_transfers=1,
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
@@ -892,6 +895,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -1576,6 +1582,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             endpoint="endpoint_example",
                             insecure=True,
                             key="key_example",
+                            multipart_concurrency=1,
+                            multipart_part_size=1,
+                            parallel_transfers=1,
                             region="region_example",
                             role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
@@ -2444,6 +2453,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 endpoint="endpoint_example",
                                                 insecure=True,
                                                 key="key_example",
+                                                multipart_concurrency=1,
+                                                multipart_part_size=1,
+                                                parallel_transfers=1,
                                                 region="region_example",
                                                 role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
@@ -2733,6 +2745,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         endpoint="endpoint_example",
                                                         insecure=True,
                                                         key="key_example",
+                                                        multipart_concurrency=1,
+                                                        multipart_part_size=1,
+                                                        parallel_transfers=1,
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
@@ -3044,6 +3059,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -3635,6 +3653,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -3966,6 +3987,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -4257,6 +4281,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -5163,6 +5190,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 endpoint="endpoint_example",
                                                 insecure=True,
                                                 key="key_example",
+                                                multipart_concurrency=1,
+                                                multipart_part_size=1,
+                                                parallel_transfers=1,
                                                 region="region_example",
                                                 role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
@@ -5448,6 +5478,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         endpoint="endpoint_example",
                                                         insecure=True,
                                                         key="key_example",
+                                                        multipart_concurrency=1,
+                                                        multipart_part_size=1,
+                                                        parallel_transfers=1,
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
@@ -6414,6 +6447,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 endpoint="endpoint_example",
                                 insecure=True,
                                 key="key_example",
+                                multipart_concurrency=1,
+                                multipart_part_size=1,
+                                parallel_transfers=1,
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
@@ -7282,6 +7318,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     endpoint="endpoint_example",
                                                     insecure=True,
                                                     key="key_example",
+                                                    multipart_concurrency=1,
+                                                    multipart_part_size=1,
+                                                    parallel_transfers=1,
                                                     region="region_example",
                                                     role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
@@ -7571,6 +7610,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             endpoint="endpoint_example",
                                                             insecure=True,
                                                             key="key_example",
+                                                            multipart_concurrency=1,
+                                                            multipart_part_size=1,
+                                                            parallel_transfers=1,
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
@@ -7882,6 +7924,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -8473,6 +8518,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -8804,6 +8852,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -9095,6 +9146,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -10001,6 +10055,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     endpoint="endpoint_example",
                                                     insecure=True,
                                                     key="key_example",
+                                                    multipart_concurrency=1,
+                                                    multipart_part_size=1,
+                                                    parallel_transfers=1,
                                                     region="region_example",
                                                     role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
@@ -10286,6 +10343,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             endpoint="endpoint_example",
                                                             insecure=True,
                                                             key="key_example",
+                                                            multipart_concurrency=1,
+                                                            multipart_part_size=1,
+                                                            parallel_transfers=1,
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
@@ -12157,6 +12217,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 endpoint="endpoint_example",
                                 insecure=True,
                                 key="key_example",
+                                multipart_concurrency=1,
+                                multipart_part_size=1,
+                                parallel_transfers=1,
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
@@ -12476,6 +12539,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -13160,6 +13226,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             endpoint="endpoint_example",
                             insecure=True,
                             key="key_example",
+                            multipart_concurrency=1,
+                            multipart_part_size=1,
+                            parallel_transfers=1,
                             region="region_example",
                             role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
@@ -14028,6 +14097,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 endpoint="endpoint_example",
                                                 insecure=True,
                                                 key="key_example",
+                                                multipart_concurrency=1,
+                                                multipart_part_size=1,
+                                                parallel_transfers=1,
                                                 region="region_example",
                                                 role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
@@ -14317,6 +14389,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         endpoint="endpoint_example",
                                                         insecure=True,
                                                         key="key_example",
+                                                        multipart_concurrency=1,
+                                                        multipart_part_size=1,
+                                                        parallel_transfers=1,
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
@@ -14628,6 +14703,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -15219,6 +15297,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -15550,6 +15631,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -15841,6 +15925,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -16747,6 +16834,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 endpoint="endpoint_example",
                                                 insecure=True,
                                                 key="key_example",
+                                                multipart_concurrency=1,
+                                                multipart_part_size=1,
+                                                parallel_transfers=1,
                                                 region="region_example",
                                                 role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
@@ -17032,6 +17122,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         endpoint="endpoint_example",
                                                         insecure=True,
                                                         key="key_example",
+                                                        multipart_concurrency=1,
+                                                        multipart_part_size=1,
+                                                        parallel_transfers=1,
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
@@ -17998,6 +18091,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 endpoint="endpoint_example",
                                 insecure=True,
                                 key="key_example",
+                                multipart_concurrency=1,
+                                multipart_part_size=1,
+                                parallel_transfers=1,
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
@@ -18866,6 +18962,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     endpoint="endpoint_example",
                                                     insecure=True,
                                                     key="key_example",
+                                                    multipart_concurrency=1,
+                                                    multipart_part_size=1,
+                                                    parallel_transfers=1,
                                                     region="region_example",
                                                     role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
@@ -19155,6 +19254,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             endpoint="endpoint_example",
                                                             insecure=True,
                                                             key="key_example",
+                                                            multipart_concurrency=1,
+                                                            multipart_part_size=1,
+                                                            parallel_transfers=1,
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
@@ -19466,6 +19568,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -20057,6 +20162,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -20388,6 +20496,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -20679,6 +20790,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -21585,6 +21699,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     endpoint="endpoint_example",
                                                     insecure=True,
                                                     key="key_example",
+                                                    multipart_concurrency=1,
+                                                    multipart_part_size=1,
+                                                    parallel_transfers=1,
                                                     region="region_example",
                                                     role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
@@ -21870,6 +21987,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             endpoint="endpoint_example",
                                                             insecure=True,
                                                             key="key_example",
+                                                            multipart_concurrency=1,
+                                                            multipart_part_size=1,
+                                                            parallel_transfers=1,
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
@@ -23652,6 +23772,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 endpoint="endpoint_example",
                                 insecure=True,
                                 key="key_example",
+                                multipart_concurrency=1,
+                                multipart_part_size=1,
+                                parallel_transfers=1,
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
@@ -23971,6 +24094,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -24655,6 +24781,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             endpoint="endpoint_example",
                             insecure=True,
                             key="key_example",
+                            multipart_concurrency=1,
+                            multipart_part_size=1,
+                            parallel_transfers=1,
                             region="region_example",
                             role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
@@ -25523,6 +25652,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 endpoint="endpoint_example",
                                                 insecure=True,
                                                 key="key_example",
+                                                multipart_concurrency=1,
+                                                multipart_part_size=1,
+                                                parallel_transfers=1,
                                                 region="region_example",
                                                 role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
@@ -25812,6 +25944,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         endpoint="endpoint_example",
                                                         insecure=True,
                                                         key="key_example",
+                                                        multipart_concurrency=1,
+                                                        multipart_part_size=1,
+                                                        parallel_transfers=1,
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
@@ -26123,6 +26258,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -26714,6 +26852,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -27045,6 +27186,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -27336,6 +27480,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     endpoint="endpoint_example",
                                     insecure=True,
                                     key="key_example",
+                                    multipart_concurrency=1,
+                                    multipart_part_size=1,
+                                    parallel_transfers=1,
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
@@ -28242,6 +28389,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 endpoint="endpoint_example",
                                                 insecure=True,
                                                 key="key_example",
+                                                multipart_concurrency=1,
+                                                multipart_part_size=1,
+                                                parallel_transfers=1,
                                                 region="region_example",
                                                 role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
@@ -28527,6 +28677,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         endpoint="endpoint_example",
                                                         insecure=True,
                                                         key="key_example",
+                                                        multipart_concurrency=1,
+                                                        multipart_part_size=1,
+                                                        parallel_transfers=1,
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
@@ -29493,6 +29646,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 endpoint="endpoint_example",
                                 insecure=True,
                                 key="key_example",
+                                multipart_concurrency=1,
+                                multipart_part_size=1,
+                                parallel_transfers=1,
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
@@ -30361,6 +30517,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     endpoint="endpoint_example",
                                                     insecure=True,
                                                     key="key_example",
+                                                    multipart_concurrency=1,
+                                                    multipart_part_size=1,
+                                                    parallel_transfers=1,
                                                     region="region_example",
                                                     role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
@@ -30650,6 +30809,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             endpoint="endpoint_example",
                                                             insecure=True,
                                                             key="key_example",
+                                                            multipart_concurrency=1,
+                                                            multipart_part_size=1,
+                                                            parallel_transfers=1,
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
@@ -30961,6 +31123,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -31552,6 +31717,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -31883,6 +32051,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -32174,6 +32345,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         endpoint="endpoint_example",
                                         insecure=True,
                                         key="key_example",
+                                        multipart_concurrency=1,
+                                        multipart_part_size=1,
+                                        parallel_transfers=1,
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
@@ -33080,6 +33254,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     endpoint="endpoint_example",
                                                     insecure=True,
                                                     key="key_example",
+                                                    multipart_concurrency=1,
+                                                    multipart_part_size=1,
+                                                    parallel_transfers=1,
                                                     region="region_example",
                                                     role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
@@ -33365,6 +33542,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             endpoint="endpoint_example",
                                                             insecure=True,
                                                             key="key_example",
+                                                            multipart_concurrency=1,
+                                                            multipart_part_size=1,
+                                                            parallel_transfers=1,
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(

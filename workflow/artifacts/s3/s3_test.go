@@ -3,18 +3,24 @@ package s3
 import (
 	"bytes"
 	"context"
+	crand "crypto/rand"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common/pool"
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -23,13 +29,22 @@ type mockS3Client struct {
 	// files is a map where key is bucket name and value consists of file keys
 	files map[string][]string
 	// mockedErrs is a map where key is the function name and value is the mocked error of that function
-	mockedErrs map[string]error
+	mockedErrs map[string]interface{}
+	// workerCalls tracks the number of calls per worker (goroutine ID)
+	workerCalls map[uint64]int
+	// workerCallsMutex protects workerCalls
+	workerCallsMutex sync.Mutex
+	// workerCount tracks the number of unique workers used
+	workerCount int
+	// workerCountMutex protects workerCount
+	workerCountMutex sync.Mutex
 }
 
-func newMockS3Client(files map[string][]string, mockedErrs map[string]error) S3Client {
+func newMockS3Client(files map[string][]string, mockedErrs map[string]interface{}) S3Client {
 	return &mockS3Client{
-		files:      files,
-		mockedErrs: mockedErrs,
+		files:       files,
+		mockedErrs:  mockedErrs,
+		workerCalls: make(map[uint64]int),
 	}
 }
 
@@ -38,7 +53,13 @@ func (s *mockS3Client) getMockedErr(funcName string) error {
 	if !ok {
 		return nil
 	}
-	return err
+	if fn, ok := err.(func() error); ok {
+		return fn()
+	}
+	if err, ok := err.(error); ok {
+		return err
+	}
+	return nil
 }
 
 // PutFile puts a single file to a bucket at the specified key
@@ -49,12 +70,90 @@ func (s *mockS3Client) PutFile(bucket, key, path string) error {
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
 func (s *mockS3Client) PutDirectory(bucket, key, path string) error {
-	return s.getMockedErr("PutDirectory")
+	// If a mock error is set for PutDirectory, return it immediately
+	if err := s.getMockedErr("PutDirectory"); err != nil {
+		return err
+	}
+	// Ensure the path exists and is a directory
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("failed to stat directory %s: %v", path, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("path %s is not a directory", path)
+	}
+
+	// Collect all files to upload
+	var tasks []pool.Task
+	err = filepath.Walk(path, func(fpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		// Calculate relative path from root
+		relPath, err := filepath.Rel(path, fpath)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %v", err)
+		}
+
+		// Convert to S3-style path
+		s3Path := filepath.ToSlash(relPath)
+		if key != "" {
+			s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
+		}
+
+		tasks = append(tasks, pool.Task{
+			SourcePath: fpath,
+			DestKey:    s3Path,
+			IsUpload:   true,
+		})
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to walk directory: %v", err)
+	}
+
+	// Run parallel uploads using the worker pool
+	return pool.RunPool(context.Background(), 4, tasks, func(t pool.Task) error {
+		return s.PutFile(bucket, t.DestKey, t.SourcePath)
+	})
 }
 
 // GetFile downloads a file to a local file path
 func (s *mockS3Client) GetFile(bucket, key, path string) error {
-	return s.getMockedErr("GetFile")
+	if err := s.getMockedErr("GetFile"); err != nil {
+		return err
+	}
+
+	// Get current goroutine ID to identify worker
+	workerID := getGoroutineID()
+	s.workerCountMutex.Lock()
+	if _, exists := s.workerCalls[workerID]; !exists {
+		s.workerCount++
+	}
+	s.workerCountMutex.Unlock()
+
+	s.workerCallsMutex.Lock()
+	s.workerCalls[workerID]++
+	s.workerCallsMutex.Unlock()
+
+	// Simulate some work to ensure parallel execution
+	time.Sleep(time.Millisecond)
+
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %s: %v", path, err)
+	}
+
+	// Create a test file with some content
+	if err := os.WriteFile(path, []byte("test content"), 0644); err != nil {
+		return fmt.Errorf("failed to create test file %s: %v", path, err)
+	}
+
+	return nil
 }
 
 func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
@@ -79,7 +178,40 @@ func (s *mockS3Client) KeyExists(bucket, key string) (bool, error) {
 
 // GetDirectory downloads a directory to a local file path
 func (s *mockS3Client) GetDirectory(bucket, key, path string) error {
-	return s.getMockedErr("GetDirectory")
+	// If a mock error is set for GetDirectory, return it immediately
+	if err := s.getMockedErr("GetDirectory"); err != nil {
+		return err
+	}
+
+	// Get list of files to download
+	keys, err := s.ListDirectory(bucket, key)
+	if err != nil {
+		return err
+	}
+
+	// Create tasks for parallel download
+	var tasks []pool.Task
+	for _, objKey := range keys {
+		relKeyPath := strings.TrimPrefix(objKey, key)
+		localPath := filepath.Join(path, relKeyPath)
+
+		// Create directory if needed
+		dirPath := filepath.Dir(localPath)
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+		}
+
+		tasks = append(tasks, pool.Task{
+			SourcePath: objKey,
+			DestKey:    localPath,
+			IsUpload:   false,
+		})
+	}
+
+	// Run parallel downloads using the worker pool
+	return pool.RunPool(context.Background(), 4, tasks, func(t pool.Task) error {
+		return s.GetFile(bucket, t.SourcePath, t.DestKey)
+	})
 }
 
 // ListDirectory list the contents of a directory/bucket
@@ -142,7 +274,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art.tar.gz",
 					},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: "/tmp/hello-art.tar.gz",
@@ -151,7 +283,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"No such bucket": {
 			s3client: newMockS3Client(
 				map[string][]string{},
-				map[string]error{
+				map[string]interface{}{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchBucket",
 					},
@@ -168,7 +300,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -185,7 +317,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -202,7 +334,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -262,7 +394,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art.tar.gz",
 					},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: "/tmp/hello-art.tar.gz",
@@ -272,7 +404,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"No such bucket": {
 			s3client: newMockS3Client(
 				map[string][]string{},
-				map[string]error{
+				map[string]interface{}{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchBucket",
 					},
@@ -290,7 +422,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -308,7 +440,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -326,7 +458,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"GetFile": minio.ErrorResponse{
 						Code: "this error is transient",
 					},
@@ -344,7 +476,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -365,7 +497,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -425,7 +557,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: tempFile,
@@ -437,7 +569,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: tempDir,
@@ -447,7 +579,7 @@ func TestSaveS3Artifact(t *testing.T) {
 		"Make Bucket Access Denied": {
 			s3client: newMockS3Client(
 				map[string][]string{},
-				map[string]error{
+				map[string]interface{}{
 					"MakeBucket": minio.ErrorResponse{
 						Code: "AccessDenied",
 					},
@@ -463,7 +595,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"PutDirectory": minio.ErrorResponse{
 						Code: "InternalError",
 					},
@@ -479,7 +611,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"PutFile": minio.ErrorResponse{
 						Code: "InternalError",
 					},
@@ -495,7 +627,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]error{
+				map[string]interface{}{
 					"PutFile": minio.ErrorResponse{
 						Code: "this error is transient",
 					},
@@ -555,7 +687,7 @@ func TestListObjects(t *testing.T) {
 						"/folder/hello-art.tar.gz",
 					},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:           "my-bucket",
 			key:              "/folder",
 			expectedSuccess:  true,
@@ -568,7 +700,7 @@ func TestListObjects(t *testing.T) {
 						"/folder",
 					},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:           "my-bucket",
 			key:              "/folder",
 			expectedSuccess:  true,
@@ -581,7 +713,7 @@ func TestListObjects(t *testing.T) {
 						"/folder",
 					},
 				},
-				map[string]error{}),
+				map[string]interface{}{}),
 			bucket:          "my-bucket",
 			key:             "/non-existent-folder",
 			expectedSuccess: false,
@@ -729,4 +861,194 @@ func TestDisallowedComboOptions(t *testing.T) {
 		_, err := NewS3Client(context.Background(), opts)
 		assert.Error(t, err)
 	})
+}
+
+func TestPutDirectoryParallel(t *testing.T) {
+	// Create test directory with 1000 files
+	dir, err := os.MkdirTemp("", "argo-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	// Create 1000 1KB files
+	for i := 0; i < 1000; i++ {
+		fpath := filepath.Join(dir, fmt.Sprintf("file-%d.txt", i))
+		data := make([]byte, 1024) // 1KB
+		if _, err := crand.Read(data); err != nil {
+			t.Fatalf("Failed to generate random data: %v", err)
+		}
+		if err := os.WriteFile(fpath, data, 0644); err != nil {
+			t.Fatalf("Failed to write test file: %v", err)
+		}
+	}
+
+	// Create mock S3 client with parallel transfers
+	workerCalls := make(map[uint64]int) // Track calls per worker
+	var workerCallsMutex sync.Mutex
+	workerCount := 0
+	var workerCountMutex sync.Mutex
+
+	client := newMockS3Client(
+		map[string][]string{
+			"test-bucket": {},
+		},
+		map[string]interface{}{
+			"PutFile": func() error {
+				// Get current goroutine ID to identify worker
+				workerID := getGoroutineID()
+				workerCountMutex.Lock()
+				if _, exists := workerCalls[workerID]; !exists {
+					workerCount++
+				}
+				workerCountMutex.Unlock()
+
+				workerCallsMutex.Lock()
+				workerCalls[workerID]++
+				workerCallsMutex.Unlock()
+
+				// Simulate some work to ensure parallel execution
+				time.Sleep(time.Millisecond)
+				return nil
+			},
+		},
+	)
+
+	// Upload directory
+	err = client.PutDirectory("test-bucket", "test", dir)
+	if err != nil {
+		t.Fatalf("Failed to upload directory: %v", err)
+	}
+
+	// Verify all files were uploaded
+	totalCalls := 0
+	workerCallsMutex.Lock()
+	for _, calls := range workerCalls {
+		totalCalls += calls
+	}
+	workerCallsMutex.Unlock()
+	if totalCalls != 1000 {
+		t.Errorf("Expected 1000 PutFile calls, got %d", totalCalls)
+	}
+
+	// Verify multiple workers were used
+	workerCountMutex.Lock()
+	wc := workerCount
+	workerCountMutex.Unlock()
+	if wc < 2 {
+		t.Errorf("Expected multiple workers to be used, got %d", wc)
+	}
+
+	// Verify work was distributed among workers
+	avgCallsPerWorker := float64(totalCalls) / float64(wc)
+	workerCallsMutex.Lock()
+	for workerID, calls := range workerCalls {
+		// Each worker should handle roughly the same number of calls
+		// Allow for some variance (e.g., ±20%)
+		expectedMin := int(avgCallsPerWorker * 0.8)
+		expectedMax := int(avgCallsPerWorker * 1.2)
+		if calls < expectedMin || calls > expectedMax {
+			t.Errorf("Worker %d handled %d calls, expected between %d and %d",
+				workerID, calls, expectedMin, expectedMax)
+		}
+	}
+	workerCallsMutex.Unlock()
+
+	t.Logf("Work distributed among %d workers", wc)
+}
+
+// getGoroutineID returns the current goroutine's ID
+func getGoroutineID() uint64 {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	var id uint64
+	_, err := fmt.Sscanf(string(b), "goroutine %d ", &id)
+	if err != nil {
+		return 0
+	}
+	return id
+}
+
+func TestParallelDownload(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir, err := os.MkdirTemp("", "s3-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create test files in the temp directory
+	testFiles := []string{
+		"file1.txt",
+		"file2.txt",
+		"subdir/file3.txt",
+		"subdir/file4.txt",
+	}
+	for _, file := range testFiles {
+		path := filepath.Join(tempDir, file)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("Failed to create directory for %s: %v", file, err)
+		}
+		if err := os.WriteFile(path, []byte("test content"), 0644); err != nil {
+			t.Fatalf("Failed to create test file %s: %v", file, err)
+		}
+	}
+
+	// Create mock S3 client with worker tracking
+	mockClient := &mockS3Client{
+		files:       make(map[string][]string),
+		workerCalls: make(map[uint64]int),
+	}
+
+	// Add test files to mock S3
+	bucket := "test-bucket"
+	keyPrefix := "test-dir"
+	for _, file := range testFiles {
+		s3Key := filepath.ToSlash(filepath.Join(keyPrefix, file))
+		mockClient.files[bucket] = append(mockClient.files[bucket], s3Key)
+	}
+
+	// Create download directory
+	downloadDir := filepath.Join(tempDir, "download")
+	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+		t.Fatalf("Failed to create download directory: %v", err)
+	}
+
+	// Test parallel download
+	err = mockClient.GetDirectory(bucket, keyPrefix, downloadDir)
+	if err != nil {
+		t.Fatalf("Failed to download directory: %v", err)
+	}
+
+	// Verify downloaded files
+	for _, file := range testFiles {
+		expectedPath := filepath.Join(downloadDir, file)
+		if _, err := os.Stat(expectedPath); err != nil {
+			t.Errorf("Failed to find downloaded file %s: %v", file, err)
+		}
+	}
+
+	// Verify parallelism: check that multiple workers were used
+	if mockClient.workerCount < 2 {
+		t.Errorf("Expected multiple workers to be used, got %d", mockClient.workerCount)
+	}
+
+	// Verify work distribution among workers
+	totalCalls := 0
+	for _, calls := range mockClient.workerCalls {
+		totalCalls += calls
+	}
+	avgCallsPerWorker := float64(totalCalls) / float64(mockClient.workerCount)
+	for workerID, calls := range mockClient.workerCalls {
+		// Each worker should handle roughly the same number of calls
+		// Allow for some variance (e.g., ±20%)
+		expectedMin := int(avgCallsPerWorker * 0.8)
+		expectedMax := int(avgCallsPerWorker * 1.2)
+		if calls < expectedMin || calls > expectedMax {
+			t.Errorf("Worker %d handled %d calls, expected between %d and %d",
+				workerID, calls, expectedMin, expectedMax)
+		}
+	}
+
+	t.Logf("Work distributed among %d workers", mockClient.workerCount)
 }

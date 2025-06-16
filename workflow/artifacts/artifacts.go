@@ -42,6 +42,9 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var kmsEncryptionContext string
 		var enableEncryption bool
 		var caKey string
+		var parallelTransfers int
+		var multipartPartSize int64
+		var multipartConcurrency int
 
 		if art.S3.AccessKeySecret != nil && art.S3.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
@@ -90,6 +93,18 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			caKey = caBytes
 		}
 
+		if art.S3.ParallelTransfers != nil {
+			parallelTransfers = int(*art.S3.ParallelTransfers)
+		}
+
+		if art.S3.MultipartPartSize != nil {
+			multipartPartSize = *art.S3.MultipartPartSize
+		}
+
+		if art.S3.MultipartConcurrency != nil {
+			multipartConcurrency = int(*art.S3.MultipartConcurrency)
+		}
+
 		driver := s3.ArtifactDriver{
 			Endpoint:              art.S3.Endpoint,
 			AccessKey:             accessKey,
@@ -104,6 +119,9 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
+			ParallelTransfers:     parallelTransfers,
+			MultipartPartSize:     multipartPartSize,
+			MultipartConcurrency:  multipartConcurrency,
 		}
 
 		return &driver, nil

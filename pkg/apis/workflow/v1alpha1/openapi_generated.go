@@ -5279,6 +5279,27 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
+					"parallelTransfers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"multipartPartSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"multipartConcurrency": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5376,6 +5397,27 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"parallelTransfers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"multipartPartSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"multipartConcurrency": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"keyFormat": {
@@ -5482,6 +5524,27 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"parallelTransfers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"multipartPartSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"multipartConcurrency": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},

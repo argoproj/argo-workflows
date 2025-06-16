@@ -2584,6 +2584,21 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// ParallelTransfers is the number of parallel transfers to use for S3 operations.
+	// If not set, defaults to runtime.NumCPU()*2 (capped at 32).
+	// Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.
+	ParallelTransfers *int32 `json:"parallelTransfers,omitempty" protobuf:"varint,13,opt,name=parallelTransfers"`
+
+	// MultipartPartSize is the size of each part in a multipart upload.
+	// If not set, defaults to 5MB.
+	// Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.
+	MultipartPartSize *int64 `json:"multipartPartSize,omitempty" protobuf:"varint,14,opt,name=multipartPartSize"`
+
+	// MultipartConcurrency is the number of concurrent multipart uploads.
+	// If not set, defaults to 4.
+	// Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.
+	MultipartConcurrency *int32 `json:"multipartConcurrency,omitempty" protobuf:"varint,15,opt,name=multipartConcurrency"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
