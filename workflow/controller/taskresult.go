@@ -64,6 +64,10 @@ func recentlyDeleted(node *wfv1.NodeStatus) bool {
 	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
+func taskResultTimeout(node *wfv1.NodeStatus) bool {
+	return time.Since(node.FinishedAt.Time) >= envutil.LookupEnvDurationOr("TASK_RESULT_TIMEOUT_DURATION", 10*time.Minute)
+}
+
 func (woc *wfOperationCtx) taskResultReconciliation() {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
@@ -91,10 +95,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if err != nil {
 			continue
 		}
-
-		// Mark task result as completed if it has no chance to be completed.
-		if label == "false" && old.Completed() && !woc.nodePodExist(*old) {
-			if recentlyDeleted(old) {
+		// Mark task result as completed if it has no chance to be completed, we use phase here to avoid caring about the sync status.
+		if label == "false" && old.Phase.Completed() {
+			if (!woc.nodePodExist(*old) && recentlyDeleted(old)) || !taskResultTimeout(old) {
 				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
