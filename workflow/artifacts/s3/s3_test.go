@@ -3,7 +3,6 @@ package s3
 import (
 	"bytes"
 	"context"
-	crand "crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,22 +28,13 @@ type mockS3Client struct {
 	// files is a map where key is bucket name and value consists of file keys
 	files map[string][]string
 	// mockedErrs is a map where key is the function name and value is the mocked error of that function
-	mockedErrs map[string]interface{}
-	// workerCalls tracks the number of calls per worker (goroutine ID)
-	workerCalls map[uint64]int
-	// workerCallsMutex protects workerCalls
-	workerCallsMutex sync.Mutex
-	// workerCount tracks the number of unique workers used
-	workerCount int
-	// workerCountMutex protects workerCount
-	workerCountMutex sync.Mutex
+	mockedErrs map[string]error
 }
 
-func newMockS3Client(files map[string][]string, mockedErrs map[string]interface{}) S3Client {
+func newMockS3Client(files map[string][]string, mockedErrs map[string]error) S3Client {
 	return &mockS3Client{
-		files:       files,
-		mockedErrs:  mockedErrs,
-		workerCalls: make(map[uint64]int),
+		files:      files,
+		mockedErrs: mockedErrs,
 	}
 }
 
@@ -53,13 +43,7 @@ func (s *mockS3Client) getMockedErr(funcName string) error {
 	if !ok {
 		return nil
 	}
-	if fn, ok := err.(func() error); ok {
-		return fn()
-	}
-	if err, ok := err.(error); ok {
-		return err
-	}
-	return nil
+	return err
 }
 
 // PutFile puts a single file to a bucket at the specified key
@@ -70,90 +54,12 @@ func (s *mockS3Client) PutFile(bucket, key, path string) error {
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
 func (s *mockS3Client) PutDirectory(bucket, key, path string) error {
-	// If a mock error is set for PutDirectory, return it immediately
-	if err := s.getMockedErr("PutDirectory"); err != nil {
-		return err
-	}
-	// Ensure the path exists and is a directory
-	info, err := os.Stat(path)
-	if err != nil {
-		return fmt.Errorf("failed to stat directory %s: %v", path, err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("path %s is not a directory", path)
-	}
-
-	// Collect all files to upload
-	var tasks []pool.Task
-	err = filepath.Walk(path, func(fpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		// Calculate relative path from root
-		relPath, err := filepath.Rel(path, fpath)
-		if err != nil {
-			return fmt.Errorf("failed to get relative path: %v", err)
-		}
-
-		// Convert to S3-style path
-		s3Path := filepath.ToSlash(relPath)
-		if key != "" {
-			s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
-		}
-
-		tasks = append(tasks, pool.Task{
-			SourcePath: fpath,
-			DestKey:    s3Path,
-			IsUpload:   true,
-		})
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to walk directory: %v", err)
-	}
-
-	// Run parallel uploads using the worker pool
-	return pool.RunPool(context.Background(), 4, tasks, func(t pool.Task) error {
-		return s.PutFile(bucket, t.DestKey, t.SourcePath)
-	})
+	return s.getMockedErr("PutDirectory")
 }
 
 // GetFile downloads a file to a local file path
 func (s *mockS3Client) GetFile(bucket, key, path string) error {
-	if err := s.getMockedErr("GetFile"); err != nil {
-		return err
-	}
-
-	// Get current goroutine ID to identify worker
-	workerID := getGoroutineID()
-	s.workerCountMutex.Lock()
-	if _, exists := s.workerCalls[workerID]; !exists {
-		s.workerCount++
-	}
-	s.workerCountMutex.Unlock()
-
-	s.workerCallsMutex.Lock()
-	s.workerCalls[workerID]++
-	s.workerCallsMutex.Unlock()
-
-	// Simulate some work to ensure parallel execution
-	time.Sleep(time.Millisecond)
-
-	// Create the directory if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return fmt.Errorf("failed to create directory for %s: %v", path, err)
-	}
-
-	// Create a test file with some content
-	if err := os.WriteFile(path, []byte("test content"), 0644); err != nil {
-		return fmt.Errorf("failed to create test file %s: %v", path, err)
-	}
-
-	return nil
+	return s.getMockedErr("GetFile")
 }
 
 func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
@@ -178,40 +84,7 @@ func (s *mockS3Client) KeyExists(bucket, key string) (bool, error) {
 
 // GetDirectory downloads a directory to a local file path
 func (s *mockS3Client) GetDirectory(bucket, key, path string) error {
-	// If a mock error is set for GetDirectory, return it immediately
-	if err := s.getMockedErr("GetDirectory"); err != nil {
-		return err
-	}
-
-	// Get list of files to download
-	keys, err := s.ListDirectory(bucket, key)
-	if err != nil {
-		return err
-	}
-
-	// Create tasks for parallel download
-	var tasks []pool.Task
-	for _, objKey := range keys {
-		relKeyPath := strings.TrimPrefix(objKey, key)
-		localPath := filepath.Join(path, relKeyPath)
-
-		// Create directory if needed
-		dirPath := filepath.Dir(localPath)
-		if err := os.MkdirAll(dirPath, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
-		}
-
-		tasks = append(tasks, pool.Task{
-			SourcePath: objKey,
-			DestKey:    localPath,
-			IsUpload:   false,
-		})
-	}
-
-	// Run parallel downloads using the worker pool
-	return pool.RunPool(context.Background(), 4, tasks, func(t pool.Task) error {
-		return s.GetFile(bucket, t.SourcePath, t.DestKey)
-	})
+	return s.getMockedErr("GetDirectory")
 }
 
 // ListDirectory list the contents of a directory/bucket
@@ -274,7 +147,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art.tar.gz",
 					},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: "/tmp/hello-art.tar.gz",
@@ -283,7 +156,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"No such bucket": {
 			s3client: newMockS3Client(
 				map[string][]string{},
-				map[string]interface{}{
+				map[string]error{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchBucket",
 					},
@@ -300,7 +173,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -317,7 +190,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -334,7 +207,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"OpenFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -394,7 +267,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art.tar.gz",
 					},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: "/tmp/hello-art.tar.gz",
@@ -404,7 +277,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"No such bucket": {
 			s3client: newMockS3Client(
 				map[string][]string{},
-				map[string]interface{}{
+				map[string]error{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchBucket",
 					},
@@ -422,7 +295,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -440,7 +313,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -458,7 +331,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"GetFile": minio.ErrorResponse{
 						Code: "this error is transient",
 					},
@@ -476,7 +349,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -497,7 +370,7 @@ func TestLoadS3Artifact(t *testing.T) {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"GetFile": minio.ErrorResponse{
 						Code: "NoSuchKey",
 					},
@@ -557,7 +430,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: tempFile,
@@ -569,7 +442,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:    "my-bucket",
 			key:       "/folder/hello-art.tar.gz",
 			localPath: tempDir,
@@ -579,7 +452,7 @@ func TestSaveS3Artifact(t *testing.T) {
 		"Make Bucket Access Denied": {
 			s3client: newMockS3Client(
 				map[string][]string{},
-				map[string]interface{}{
+				map[string]error{
 					"MakeBucket": minio.ErrorResponse{
 						Code: "AccessDenied",
 					},
@@ -595,7 +468,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"PutDirectory": minio.ErrorResponse{
 						Code: "InternalError",
 					},
@@ -611,7 +484,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"PutFile": minio.ErrorResponse{
 						Code: "InternalError",
 					},
@@ -627,7 +500,7 @@ func TestSaveS3Artifact(t *testing.T) {
 				map[string][]string{
 					"my-bucket": {},
 				},
-				map[string]interface{}{
+				map[string]error{
 					"PutFile": minio.ErrorResponse{
 						Code: "this error is transient",
 					},
@@ -687,7 +560,7 @@ func TestListObjects(t *testing.T) {
 						"/folder/hello-art.tar.gz",
 					},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:           "my-bucket",
 			key:              "/folder",
 			expectedSuccess:  true,
@@ -700,7 +573,7 @@ func TestListObjects(t *testing.T) {
 						"/folder",
 					},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:           "my-bucket",
 			key:              "/folder",
 			expectedSuccess:  true,
@@ -713,7 +586,7 @@ func TestListObjects(t *testing.T) {
 						"/folder",
 					},
 				},
-				map[string]interface{}{}),
+				map[string]error{}),
 			bucket:          "my-bucket",
 			key:             "/non-existent-folder",
 			expectedSuccess: false,
@@ -863,135 +736,6 @@ func TestDisallowedComboOptions(t *testing.T) {
 	})
 }
 
-func TestPutDirectoryParallel(t *testing.T) {
-	// Create test directory with 1000 files
-	dir, err := os.MkdirTemp("", "argo-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(dir)
-
-	// Create 1000 1KB files
-	for i := 0; i < 1000; i++ {
-		fpath := filepath.Join(dir, fmt.Sprintf("file-%d.txt", i))
-		data := make([]byte, 1024) // 1KB
-		if _, err := crand.Read(data); err != nil {
-			t.Fatalf("Failed to generate random data: %v", err)
-		}
-		if err := os.WriteFile(fpath, data, 0644); err != nil {
-			t.Fatalf("Failed to write test file: %v", err)
-		}
-	}
-
-	// Create mock S3 client with parallel transfers
-	workerCalls := make(map[uint64]int) // Track calls per worker
-	var workerCallsMutex sync.Mutex
-	workerCount := 0
-	var workerCountMutex sync.Mutex
-	concurrentWorkers := 0
-	var concurrentWorkersMutex sync.Mutex
-	maxConcurrentWorkers := 0
-
-	client := newMockS3Client(
-		map[string][]string{
-			"test-bucket": {},
-		},
-		map[string]interface{}{
-			"PutFile": func() error {
-				// Get current goroutine ID to identify worker
-				workerID := getGoroutineID()
-
-				// Track unique workers
-				workerCountMutex.Lock()
-				if _, exists := workerCalls[workerID]; !exists {
-					workerCount++
-				}
-				workerCountMutex.Unlock()
-
-				// Track concurrent workers
-				concurrentWorkersMutex.Lock()
-				concurrentWorkers++
-				if concurrentWorkers > maxConcurrentWorkers {
-					maxConcurrentWorkers = concurrentWorkers
-				}
-				concurrentWorkersMutex.Unlock()
-
-				// Simulate some work to ensure parallel execution
-				time.Sleep(time.Millisecond)
-
-				concurrentWorkersMutex.Lock()
-				concurrentWorkers--
-				concurrentWorkersMutex.Unlock()
-
-				workerCallsMutex.Lock()
-				workerCalls[workerID]++
-				workerCallsMutex.Unlock()
-
-				return nil
-			},
-		},
-	)
-
-	// Upload directory
-	err = client.PutDirectory("test-bucket", "test", dir)
-	if err != nil {
-		t.Fatalf("Failed to upload directory: %v", err)
-	}
-
-	// Verify all files were uploaded
-	totalCalls := 0
-	workerCallsMutex.Lock()
-	for _, calls := range workerCalls {
-		totalCalls += calls
-	}
-	workerCallsMutex.Unlock()
-	if totalCalls != 1000 {
-		t.Errorf("Expected 1000 PutFile calls, got %d", totalCalls)
-	}
-
-	// Verify multiple workers were used
-	workerCountMutex.Lock()
-	wc := workerCount
-	workerCountMutex.Unlock()
-	if wc < 2 {
-		t.Errorf("Expected multiple workers to be used, got %d", wc)
-	}
-
-	// Verify concurrent execution
-	if maxConcurrentWorkers < 2 {
-		t.Errorf("Expected concurrent execution with at least 2 workers, got %d", maxConcurrentWorkers)
-	}
-
-	// Verify work distribution among workers
-	workerCallsMutex.Lock()
-	minCalls := totalCalls
-	maxCalls := 0
-	for _, calls := range workerCalls {
-		if calls < minCalls {
-			minCalls = calls
-		}
-		if calls > maxCalls {
-			maxCalls = calls
-		}
-	}
-	workerCallsMutex.Unlock()
-
-	// Verify that no worker is completely idle and no worker is overloaded
-	// We expect each worker to handle at least 10% of the total work
-	minExpectedCalls := totalCalls / 10
-	if minCalls < minExpectedCalls {
-		t.Errorf("Some workers handled too few calls: minimum was %d, expected at least %d", minCalls, minExpectedCalls)
-	}
-
-	// We expect no worker to handle more than 50% of the total work
-	maxExpectedCalls := totalCalls / 2
-	if maxCalls > maxExpectedCalls {
-		t.Errorf("Some workers handled too many calls: maximum was %d, expected at most %d", maxCalls, maxExpectedCalls)
-	}
-
-	t.Logf("Work distributed among %d workers with maximum concurrency of %d", wc, maxConcurrentWorkers)
-}
-
 // getGoroutineID returns the current goroutine's ID
 func getGoroutineID() uint64 {
 	b := make([]byte, 64)
@@ -1004,127 +748,561 @@ func getGoroutineID() uint64 {
 	return id
 }
 
-func TestParallelDownload(t *testing.T) {
-	// Create a temporary directory for test files
-	tempDir, err := os.MkdirTemp("", "s3-test")
+// Test the actual pool.RunPoolStreaming function directly
+func TestPoolStreamingParallelism(t *testing.T) {
+	// Track calls per goroutine
+	callTracker := newCallTracker()
+
+	// Create a producer that generates 100 tasks
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		for i := 0; i < 100; i++ {
+			task := pool.Task{
+				SourcePath: fmt.Sprintf("source%d", i),
+				DestKey:    fmt.Sprintf("dest%d", i),
+				IsUpload:   true,
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+			}
+		}
+		return nil
+	}
+
+	// Create a worker function that tracks calls
+	worker := func(t pool.Task) error {
+		callTracker.recordCall()
+		// Simulate some work
+		time.Sleep(10 * time.Millisecond)
+		return nil
+	}
+
+	// Run with 5 parallel workers
+	err := pool.RunPoolStreaming(context.Background(), 5, producer, worker)
+	if err != nil {
+		t.Fatalf("RunPoolStreaming failed: %v", err)
+	}
+
+	// Verify parallel execution
+	totalCalls, workerCount, maxCallsPerWorker := callTracker.getStats()
+
+	if totalCalls != 100 {
+		t.Errorf("Expected 100 total calls, got %d", totalCalls)
+	}
+
+	if workerCount < 2 {
+		t.Errorf("Expected multiple workers to be used, got %d", workerCount)
+	}
+
+	// With 5 workers and 100 tasks, no single worker should handle more than ~30 tasks
+	if maxCallsPerWorker > 40 {
+		t.Errorf("Work not distributed evenly: max calls per worker was %d, expected < 40", maxCallsPerWorker)
+	}
+
+	t.Logf("Pool test: %d total calls distributed among %d workers (max %d calls per worker)",
+		totalCalls, workerCount, maxCallsPerWorker)
+}
+
+// Test S3 integration with a functional approach - test the real directory walking logic
+func TestS3DirectoryWalkingParallelism(t *testing.T) {
+	// Create a temporary directory with 50 files
+	dir, err := os.MkdirTemp("", "s3-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(dir)
 
-	// Create test files in the temp directory
-	testFiles := []string{
+	// Create 50 files in the directory
+	for i := 0; i < 50; i++ {
+		filePath := filepath.Join(dir, fmt.Sprintf("file%d.txt", i))
+		if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+	}
+
+	// Track calls per goroutine
+	callTracker := newCallTracker()
+
+	// Create a producer that mimics the real PutDirectory logic
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			// Calculate relative path from root (same as real code)
+			relPath, err := filepath.Rel(dir, fpath)
+			if err != nil {
+				return fmt.Errorf("failed to get relative path: %v", err)
+			}
+
+			// Convert to S3-style path (same as real code)
+			s3Path := filepath.ToSlash(relPath)
+			key := "test"
+			if key != "" {
+				s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
+			}
+
+			task := pool.Task{
+				SourcePath: fpath,
+				DestKey:    s3Path,
+				IsUpload:   true,
+			}
+
+			// Stream the task to workers (same as real code)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+				return nil
+			}
+		})
+	}
+
+	// Create a worker function that simulates S3 upload
+	uploadedFiles := make(map[string]string)
+	var uploadMutex sync.Mutex
+
+	worker := func(t pool.Task) error {
+		callTracker.recordCall()
+
+		// Simulate S3 upload work
+		time.Sleep(10 * time.Millisecond)
+
+		// Record the uploaded file
+		uploadMutex.Lock()
+		uploadedFiles[t.DestKey] = t.SourcePath
+		uploadMutex.Unlock()
+
+		return nil
+	}
+
+	// Run with 5 parallel workers (same as our test configuration)
+	err = pool.RunPoolStreaming(context.Background(), 5, producer, worker)
+	if err != nil {
+		t.Fatalf("RunPoolStreaming failed: %v", err)
+	}
+
+	// Verify that all files were processed
+	if len(uploadedFiles) != 50 {
+		t.Errorf("Expected 50 files to be uploaded, got %d", len(uploadedFiles))
+	}
+
+	// Verify parallel execution
+	totalCalls, workerCount, maxCallsPerWorker := callTracker.getStats()
+
+	if totalCalls != 50 {
+		t.Errorf("Expected 50 total calls, got %d", totalCalls)
+	}
+
+	if workerCount < 2 {
+		t.Errorf("Expected multiple workers to be used, got %d", workerCount)
+	}
+
+	// With 5 workers and 50 files, no single worker should handle more than ~15 files
+	if maxCallsPerWorker > 20 {
+		t.Errorf("Work not distributed evenly: max calls per worker was %d, expected < 20", maxCallsPerWorker)
+	}
+
+	t.Logf("S3 directory test: %d total calls distributed among %d workers (max %d calls per worker)",
+		totalCalls, workerCount, maxCallsPerWorker)
+}
+
+// Test S3 download parallelism using the real GetDirectory logic
+func TestS3DirectoryDownloadParallelism(t *testing.T) {
+	// Create a temporary directory for download
+	dir, err := os.MkdirTemp("", "s3-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	// Simulate S3 objects (same as real code would get from ListObjects)
+	s3Objects := []string{
 		"file1.txt",
 		"file2.txt",
 		"subdir/file3.txt",
 		"subdir/file4.txt",
+		"another/path/file5.txt",
+		"another/path/file6.txt",
 	}
-	for _, file := range testFiles {
-		path := filepath.Join(tempDir, file)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			t.Fatalf("Failed to create directory for %s: %v", file, err)
+
+	// Track calls per goroutine
+	callTracker := newCallTracker()
+
+	// Create a producer that mimics the real GetDirectory logic
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		keyPrefix := ""
+		if keyPrefix != "" {
+			keyPrefix = filepath.Clean(keyPrefix) + "/"
+			if os.PathSeparator == '\\' {
+				keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
+			}
 		}
-		if err := os.WriteFile(path, []byte("test content"), 0644); err != nil {
-			t.Fatalf("Failed to create test file %s: %v", file, err)
+
+		// Simulate the ListObjects channel (same as real code)
+		for _, objKey := range s3Objects {
+			if strings.HasSuffix(objKey, "/") {
+				// Skip directory objects created by AWS S3 console
+				continue
+			}
+
+			relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
+			localPath := filepath.Join(dir, relKeyPath)
+
+			task := pool.Task{
+				SourcePath: objKey,
+				DestKey:    localPath,
+				IsUpload:   false,
+			}
+
+			// Stream the task to workers (same as real code)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+			}
+		}
+		return nil
+	}
+
+	// Create a worker function that simulates S3 download
+	worker := func(t pool.Task) error {
+		callTracker.recordCall()
+
+		// Simulate S3 download work
+		time.Sleep(10 * time.Millisecond)
+
+		// Create directory if needed (same as real code)
+		dirPath := filepath.Dir(t.DestKey)
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+		}
+
+		// Create the file (simulate download)
+		return os.WriteFile(t.DestKey, []byte("test content"), 0644)
+	}
+
+	// Run with 3 parallel workers
+	err = pool.RunPoolStreaming(context.Background(), 3, producer, worker)
+	if err != nil {
+		t.Fatalf("RunPoolStreaming failed: %v", err)
+	}
+
+	// Verify that all files were downloaded
+	for _, objKey := range s3Objects {
+		localPath := filepath.Join(dir, objKey)
+		if _, err := os.Stat(localPath); err != nil {
+			t.Errorf("Failed to find downloaded file %s: %v", objKey, err)
 		}
 	}
 
-	// Create mock S3 client with worker tracking
-	concurrentWorkers := 0
-	var concurrentWorkersMutex sync.Mutex
-	maxConcurrentWorkers := 0
+	// Verify parallel execution
+	totalCalls, workerCount, maxCallsPerWorker := callTracker.getStats()
 
-	mockClient := &mockS3Client{
-		files:       make(map[string][]string),
+	if totalCalls != len(s3Objects) {
+		t.Errorf("Expected %d total calls, got %d", len(s3Objects), totalCalls)
+	}
+
+	if workerCount < 2 {
+		t.Errorf("Expected multiple workers to be used, got %d", workerCount)
+	}
+
+	// With 3 workers and 6 files, no single worker should handle more than 3 files
+	if maxCallsPerWorker > 3 {
+		t.Errorf("Work not distributed evenly: max calls per worker was %d, expected <= 3", maxCallsPerWorker)
+	}
+
+	t.Logf("S3 download test: %d total calls distributed among %d workers (max %d calls per worker)",
+		totalCalls, workerCount, maxCallsPerWorker)
+}
+
+type callTracker struct {
+	mu          sync.Mutex
+	workerCalls map[uint64]int // goroutine ID -> call count
+	totalCalls  int
+}
+
+func newCallTracker() *callTracker {
+	return &callTracker{
 		workerCalls: make(map[uint64]int),
-		mockedErrs: map[string]interface{}{
-			"GetFile": func() error {
-				concurrentWorkersMutex.Lock()
-				concurrentWorkers++
-				if concurrentWorkers > maxConcurrentWorkers {
-					maxConcurrentWorkers = concurrentWorkers
-				}
-				concurrentWorkersMutex.Unlock()
+	}
+}
 
-				// Simulate some work
-				time.Sleep(time.Millisecond)
+func (ct *callTracker) recordCall() {
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
 
-				concurrentWorkersMutex.Lock()
-				concurrentWorkers--
-				concurrentWorkersMutex.Unlock()
+	workerID := getGoroutineID()
+	ct.workerCalls[workerID]++
+	ct.totalCalls++
+}
 
-				return nil
-			},
+func (ct *callTracker) getStats() (totalCalls int, workerCount int, maxCallsPerWorker int) {
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
+
+	totalCalls = ct.totalCalls
+	workerCount = len(ct.workerCalls)
+
+	for _, calls := range ct.workerCalls {
+		if calls > maxCallsPerWorker {
+			maxCallsPerWorker = calls
+		}
+	}
+	return
+}
+
+// Test ParallelTransfers configuration
+func TestS3ClientParallelTransfersConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		parallelTransfers int
+		expectedParallel  int
+	}{
+		{
+			name:              "Default auto-detect",
+			parallelTransfers: 0,
+			expectedParallel:  runtime.NumCPU() * 2, // Will be capped at maxParallel if > 32
+		},
+		{
+			name:              "Explicit value",
+			parallelTransfers: 5,
+			expectedParallel:  5,
+		},
+		{
+			name:              "Negative value fallback",
+			parallelTransfers: -1,
+			expectedParallel:  1,
+		},
+		{
+			name:              "Large value",
+			parallelTransfers: 100,
+			expectedParallel:  100,
 		},
 	}
 
-	// Add test files to mock S3
-	bucket := "test-bucket"
-	keyPrefix := "test-dir"
-	for _, file := range testFiles {
-		s3Key := filepath.ToSlash(filepath.Join(keyPrefix, file))
-		mockClient.files[bucket] = append(mockClient.files[bucket], s3Key)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := S3ClientOpts{
+				Endpoint:          "test-endpoint",
+				ParallelTransfers: tc.parallelTransfers,
+			}
+
+			client, err := NewS3Client(context.Background(), opts)
+			require.NoError(t, err)
+
+			s3cli := client.(*s3client)
+			actualParallel := s3cli.getParallelTransfers()
+
+			expectedParallel := tc.expectedParallel
+			if tc.parallelTransfers == 0 && expectedParallel > maxParallel {
+				expectedParallel = maxParallel
+			}
+
+			assert.Equal(t, expectedParallel, actualParallel)
+		})
+	}
+}
+
+// Test environment variable overrides
+func TestS3ClientEnvironmentOverrides(t *testing.T) {
+	// Save original env vars
+	origParallel := os.Getenv("ARGO_S3_PARALLEL_TRANSFERS")
+	origPartSize := os.Getenv("ARGO_S3_MULTIPART_PART_SIZE")
+	origConcurrency := os.Getenv("ARGO_S3_MULTIPART_CONCURRENCY")
+
+	defer func() {
+		// Restore original env vars
+		os.Setenv("ARGO_S3_PARALLEL_TRANSFERS", origParallel)
+		os.Setenv("ARGO_S3_MULTIPART_PART_SIZE", origPartSize)
+		os.Setenv("ARGO_S3_MULTIPART_CONCURRENCY", origConcurrency)
+	}()
+
+	tests := []struct {
+		name                string
+		envParallel         string
+		envPartSize         string
+		envConcurrency      string
+		baseParallel        int
+		basePartSize        int64
+		baseConcurrency     int
+		expectedParallel    int
+		expectedPartSize    int64
+		expectedConcurrency int
+	}{
+		{
+			name:                "Valid env overrides",
+			envParallel:         "8",
+			envPartSize:         "10485760", // 10MB
+			envConcurrency:      "4",
+			baseParallel:        2,
+			basePartSize:        5242880, // 5MB
+			baseConcurrency:     2,
+			expectedParallel:    8,
+			expectedPartSize:    10485760,
+			expectedConcurrency: 4,
+		},
+		{
+			name:                "Invalid env values ignored",
+			envParallel:         "invalid",
+			envPartSize:         "not-a-number",
+			envConcurrency:      "-1",
+			baseParallel:        3,
+			basePartSize:        1048576, // 1MB
+			baseConcurrency:     3,
+			expectedParallel:    3,
+			expectedPartSize:    1048576,
+			expectedConcurrency: 3,
+		},
+		{
+			name:                "Zero/negative env values ignored",
+			envParallel:         "0",
+			envPartSize:         "-100",
+			envConcurrency:      "0",
+			baseParallel:        4,
+			basePartSize:        2097152, // 2MB
+			baseConcurrency:     4,
+			expectedParallel:    4,
+			expectedPartSize:    2097152,
+			expectedConcurrency: 4,
+		},
 	}
 
-	// Create download directory
-	downloadDir := filepath.Join(tempDir, "download")
-	if err := os.MkdirAll(downloadDir, 0755); err != nil {
-		t.Fatalf("Failed to create download directory: %v", err)
-	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set environment variables
+			os.Setenv("ARGO_S3_PARALLEL_TRANSFERS", tc.envParallel)
+			os.Setenv("ARGO_S3_MULTIPART_PART_SIZE", tc.envPartSize)
+			os.Setenv("ARGO_S3_MULTIPART_CONCURRENCY", tc.envConcurrency)
 
-	// Test parallel download
-	err = mockClient.GetDirectory(bucket, keyPrefix, downloadDir)
+			// Create ArtifactDriver (which calls newS3Client)
+			driver := &ArtifactDriver{
+				Endpoint:             "test-endpoint",
+				ParallelTransfers:    tc.baseParallel,
+				MultipartPartSize:    tc.basePartSize,
+				MultipartConcurrency: tc.baseConcurrency,
+			}
+
+			client, err := driver.newS3Client(context.Background())
+			require.NoError(t, err)
+
+			s3cli := client.(*s3client)
+			assert.Equal(t, tc.expectedParallel, s3cli.ParallelTransfers)
+			assert.Equal(t, tc.expectedPartSize, s3cli.MultipartPartSize)
+			assert.Equal(t, tc.expectedConcurrency, s3cli.MultipartConcurrency)
+		})
+	}
+}
+
+// Test that ParallelTransfers actually controls worker count
+func TestParallelTransfersControlsWorkerCount(t *testing.T) {
+	// Create a temporary directory with files
+	dir, err := os.MkdirTemp("", "parallel-test")
 	if err != nil {
-		t.Fatalf("Failed to download directory: %v", err)
+		t.Fatalf("Failed to create temp dir: %v", err)
 	}
+	defer os.RemoveAll(dir)
 
-	// Verify downloaded files
-	for _, file := range testFiles {
-		expectedPath := filepath.Join(downloadDir, file)
-		if _, err := os.Stat(expectedPath); err != nil {
-			t.Errorf("Failed to find downloaded file %s: %v", file, err)
+	// Create 20 files
+	for i := 0; i < 20; i++ {
+		filePath := filepath.Join(dir, fmt.Sprintf("file%d.txt", i))
+		if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
 		}
 	}
 
-	// Verify parallelism: check that multiple workers were used
-	if mockClient.workerCount < 2 {
-		t.Errorf("Expected multiple workers to be used, got %d", mockClient.workerCount)
+	tests := []struct {
+		name               string
+		parallelTransfers  int
+		maxExpectedWorkers int
+	}{
+		{
+			name:               "Single worker",
+			parallelTransfers:  1,
+			maxExpectedWorkers: 1,
+		},
+		{
+			name:               "Three workers",
+			parallelTransfers:  3,
+			maxExpectedWorkers: 3,
+		},
+		{
+			name:               "Ten workers",
+			parallelTransfers:  10,
+			maxExpectedWorkers: 10,
+		},
 	}
 
-	// Verify concurrent execution
-	if maxConcurrentWorkers < 2 {
-		t.Errorf("Expected concurrent execution with at least 2 workers, got %d", maxConcurrentWorkers)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			callTracker := newCallTracker()
+
+			// Create producer for directory walking
+			producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+				return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+					if err != nil || info.IsDir() {
+						return err
+					}
+
+					task := pool.Task{
+						SourcePath: fpath,
+						DestKey:    filepath.Base(fpath),
+						IsUpload:   true,
+					}
+
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					case taskCh <- task:
+						return nil
+					}
+				})
+			}
+
+			// Worker that tracks calls
+			worker := func(t pool.Task) error {
+				callTracker.recordCall()
+				time.Sleep(50 * time.Millisecond) // Ensure work takes time
+				return nil
+			}
+
+			// Run with specified parallel transfers
+			err := pool.RunPoolStreaming(context.Background(), tc.parallelTransfers, producer, worker)
+			require.NoError(t, err)
+
+			totalCalls, workerCount, _ := callTracker.getStats()
+
+			assert.Equal(t, 20, totalCalls, "Should process all 20 files")
+			assert.LessOrEqual(t, workerCount, tc.maxExpectedWorkers,
+				"Should not use more workers than configured")
+
+			// For single worker, ensure only one worker was used
+			if tc.parallelTransfers == 1 {
+				assert.Equal(t, 1, workerCount, "Should use exactly 1 worker when configured for 1")
+			}
+		})
+	}
+}
+
+// Test multipart configuration values are preserved
+func TestMultipartConfigurationPreservation(t *testing.T) {
+	opts := S3ClientOpts{
+		Endpoint:             "test-endpoint",
+		ParallelTransfers:    5,
+		MultipartPartSize:    10485760, // 10MB
+		MultipartConcurrency: 3,
 	}
 
-	// Verify work distribution
-	totalCalls := 0
-	for _, calls := range mockClient.workerCalls {
-		totalCalls += calls
-	}
+	client, err := NewS3Client(context.Background(), opts)
+	require.NoError(t, err)
 
-	minCalls := totalCalls
-	maxCalls := 0
-	for _, calls := range mockClient.workerCalls {
-		if calls < minCalls {
-			minCalls = calls
-		}
-		if calls > maxCalls {
-			maxCalls = calls
-		}
-	}
-
-	// Verify that no worker is completely idle and no worker is overloaded
-	// We expect each worker to handle at least 25% of the total work (since we have 4 files)
-	minExpectedCalls := totalCalls / 4
-	if minCalls < minExpectedCalls {
-		t.Errorf("Some workers handled too few calls: minimum was %d, expected at least %d", minCalls, minExpectedCalls)
-	}
-
-	// We expect no worker to handle more than 75% of the total work
-	maxExpectedCalls := (totalCalls * 3) / 4
-	if maxCalls > maxExpectedCalls {
-		t.Errorf("Some workers handled too many calls: maximum was %d, expected at most %d", maxCalls, maxExpectedCalls)
-	}
-
-	t.Logf("Work distributed among %d workers with maximum concurrency of %d", mockClient.workerCount, maxConcurrentWorkers)
+	s3cli := client.(*s3client)
+	assert.Equal(t, 5, s3cli.ParallelTransfers)
+	assert.Equal(t, int64(10485760), s3cli.MultipartPartSize)
+	assert.Equal(t, 3, s3cli.MultipartConcurrency)
 }

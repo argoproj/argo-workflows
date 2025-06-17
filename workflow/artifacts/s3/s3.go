@@ -577,41 +577,46 @@ func (s *s3client) PutDirectory(bucket, key, path string) error {
 		return fmt.Errorf("path %s is not a directory", path)
 	}
 
-	// Collect all files to upload
-	var tasks []pool.Task
-	err = filepath.Walk(path, func(fpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
+	// Create a task producer that streams files as they're discovered
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		return filepath.Walk(path, func(fpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
 
-		// Calculate relative path from root
-		relPath, err := filepath.Rel(path, fpath)
-		if err != nil {
-			return fmt.Errorf("failed to get relative path: %v", err)
-		}
+			// Calculate relative path from root
+			relPath, err := filepath.Rel(path, fpath)
+			if err != nil {
+				return fmt.Errorf("failed to get relative path: %v", err)
+			}
 
-		// Convert to S3-style path
-		s3Path := filepath.ToSlash(relPath)
-		if key != "" {
-			s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
-		}
+			// Convert to S3-style path
+			s3Path := filepath.ToSlash(relPath)
+			if key != "" {
+				s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
+			}
 
-		tasks = append(tasks, pool.Task{
-			SourcePath: fpath,
-			DestKey:    s3Path,
-			IsUpload:   true,
+			task := pool.Task{
+				SourcePath: fpath,
+				DestKey:    s3Path,
+				IsUpload:   true,
+			}
+
+			// Stream the task to workers
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+				return nil
+			}
 		})
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to walk directory: %v", err)
 	}
 
-	// Run parallel uploads
-	return pool.RunPool(s.ctx, s.getParallelTransfers(), tasks, func(t pool.Task) error {
+	// Run parallel uploads using streaming approach
+	return pool.RunPoolStreaming(s.ctx, s.getParallelTransfers(), producer, func(t pool.Task) error {
 		// Get encryption options for this specific file
 		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.DestKey)
 		if err != nil {
@@ -693,32 +698,58 @@ func (s *s3client) Delete(bucket, key string) error {
 // GetDirectory downloads a s3 directory to a local path
 func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info("Getting directory from s3")
-	keys, err := s.ListDirectory(bucket, keyPrefix)
-	if err != nil {
-		return err
-	}
 
-	// Create tasks for parallel download
-	var tasks []pool.Task
-	for _, objKey := range keys {
-		relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
-		localPath := filepath.Join(path, relKeyPath)
-
-		// Create directory if needed
-		dirPath := filepath.Dir(localPath)
-		if err := os.MkdirAll(dirPath, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+	// Create a task producer that streams S3 objects as they're discovered
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		// Use the streaming ListDirectory approach to avoid loading all keys into memory
+		if keyPrefix != "" {
+			keyPrefix = filepath.Clean(keyPrefix) + "/"
+			if os.PathSeparator == '\\' {
+				keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
+			}
 		}
 
-		tasks = append(tasks, pool.Task{
-			SourcePath: objKey,
-			DestKey:    localPath,
-			IsUpload:   false,
-		})
+		listOpts := minio.ListObjectsOptions{
+			Prefix:    keyPrefix,
+			Recursive: true,
+		}
+		objCh := s.minioClient.ListObjects(ctx, bucket, listOpts)
+		for obj := range objCh {
+			if obj.Err != nil {
+				return obj.Err
+			}
+			if strings.HasSuffix(obj.Key, "/") {
+				// Skip directory objects created by AWS S3 console
+				continue
+			}
+
+			relKeyPath := strings.TrimPrefix(obj.Key, keyPrefix)
+			localPath := filepath.Join(path, relKeyPath)
+
+			// Create directory if needed
+			dirPath := filepath.Dir(localPath)
+			if err := os.MkdirAll(dirPath, 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+			}
+
+			task := pool.Task{
+				SourcePath: obj.Key,
+				DestKey:    localPath,
+				IsUpload:   false,
+			}
+
+			// Stream the task to workers
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+			}
+		}
+		return nil
 	}
 
-	// Run parallel downloads
-	return pool.RunPool(s.ctx, s.getParallelTransfers(), tasks, func(t pool.Task) error {
+	// Run parallel downloads using streaming approach
+	return pool.RunPoolStreaming(s.ctx, s.getParallelTransfers(), producer, func(t pool.Task) error {
 		// Get encryption options for this specific file
 		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.SourcePath)
 		if err != nil {
@@ -884,8 +915,7 @@ func parseKMSEncCntx(kmsEncCntx string) (*string, error) {
 }
 
 const (
-	defaultParallel = -1 // means auto = runtime.NumCPU()*2 (cap 32)
-	maxParallel     = 32
+	maxParallel = 32
 )
 
 // getParallelTransfers returns the number of parallel transfers to use
@@ -895,8 +925,8 @@ func (s *s3client) getParallelTransfers() int {
 		return s.ParallelTransfers
 	}
 
-	// Auto-detect based on CPU count if ParallelTransfers is 0 or defaultParallel
-	if s.ParallelTransfers == defaultParallel || s.ParallelTransfers == 0 {
+	// Auto-detect based on CPU count if ParallelTransfers is 0
+	if s.ParallelTransfers == 0 {
 		parallel := runtime.NumCPU() * 2
 		if parallel > maxParallel {
 			parallel = maxParallel
@@ -904,6 +934,6 @@ func (s *s3client) getParallelTransfers() int {
 		return parallel
 	}
 
-	// This case should never be reached since we handle all possible values above
+	// Fallback for negative values
 	return 1
 }
