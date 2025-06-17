@@ -118,11 +118,11 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		case terminateContainers:
 			pod, err := c.GetPod(namespace, podName)
 			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
-				c.queuePodForCleanup(namespace, podName, deletePod)
+				c.queuePodForCleanup(ctx, namespace, podName, deletePod)
 			} else if terminationGracePeriod, err := c.signalContainers(ctx, namespace, podName, syscall.SIGTERM); err != nil {
 				return err
 			} else if terminationGracePeriod > 0 {
-				c.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
+				c.queuePodForCleanupAfter(ctx, namespace, podName, killContainers, terminationGracePeriod)
 			}
 		case killContainers:
 			if _, err := c.signalContainers(ctx, namespace, podName, syscall.SIGKILL); err != nil {
@@ -155,7 +155,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		return nil
 	}()
 	if err != nil {
-		logCtx.WithError(err).Warn("failed to clean-up pod")
+		logCtx.WithError(ctx, err).Warn(ctx, "failed to clean-up pod")
 		if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) {
 			c.workqueue.AddRateLimited(key)
 		}
