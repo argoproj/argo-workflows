@@ -1427,7 +1427,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			new.Phase = wfv1.NodeRunning
 		}
 		if tmpl != nil {
-			woc.cleanUpPod(pod, *tmpl)
+			woc.cleanUpPod(ctx, pod, *tmpl)
 		}
 	default:
 		new.Phase = wfv1.NodeError
@@ -1570,9 +1570,9 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 	return true
 }
 
-func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
+func (woc *wfOperationCtx) cleanUpPod(ctx context.Context, pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.PodController.TerminateContainers(woc.wf.Namespace, pod.Name)
+		woc.controller.PodController.TerminateContainers(ctx, woc.wf.Namespace, pod.Name)
 	}
 }
 
@@ -2499,7 +2499,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		woc.updated = true
 		if woc.hasTaskSetNodes() {
-			woc.controller.PodController.DeletePod(woc.wf.Namespace, woc.getAgentPodName())
+			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getAgentPodName())
 		}
 	}
 }

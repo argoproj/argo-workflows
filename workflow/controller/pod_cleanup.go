@@ -43,6 +43,6 @@ func (woc *wfOperationCtx) queuePodsForCleanup(ctx context.Context) {
 		if !nodePhase.Fulfilled() {
 			continue
 		}
-		woc.controller.PodController.EnactAnyPodCleanup(selector, pod, strategy, workflowPhase, delay)
+		woc.controller.PodController.EnactAnyPodCleanup(ctx, selector, pod, strategy, workflowPhase, delay)
 	}
 }

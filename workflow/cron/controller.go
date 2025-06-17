@@ -62,9 +62,7 @@ const (
 	cronWorkflowResyncPeriod = 20 * time.Minute
 )
 
-var (
-	cronSyncPeriod = env.LookupEnvDurationOr("CRON_SYNC_PERIOD", 10*time.Second)
-)
+var cronSyncPeriod = env.LookupEnvDurationOr("CRON_SYNC_PERIOD", 10*time.Second)
 
 func init() {
 	slog := log.NewSlogLogger()
@@ -79,7 +77,10 @@ func init() {
 
 // NewCronController creates a new cron controller
 func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceID string, metrics *metrics.Metrics,
-	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow) *Controller {
+	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
+) *Controller {
+	logger := log.NewSlogLogger()
+	logger = logger.WithField(ctx, "component", "cron")
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -95,7 +96,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 		wftmplInformer:       wftmplInformer,
 		cwftmplInformer:      cwftmplInformer,
 		cronWorkflowWorkers:  cronWorkflowWorkers,
-		logger:               log.NewSlogLogger(),
+		logger:               logger,
 	}
 }
 
@@ -111,7 +112,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceID)
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
-	err := cc.addCronWorkflowInformerHandler()
+	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
 		cc.logger.Fatal(ctx, err.Error())
 	}
@@ -218,15 +219,13 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	return true
 }
 
-func (cc *Controller) addCronWorkflowInformerHandler() error {
-	ctx := context.Background()
-	log := log.NewSlogLogger()
+func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error {
 	_, err := cc.cronWfInformer.Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
-					log.Warnf(ctx, "Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
+					cc.logger.Warnf(ctx, "Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
 					return false
 				}
 				return !isCompleted(un)

@@ -948,7 +948,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					for _, p := range podList.Items {
 						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(p.Namespace, p.Name)
+							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
 						}
 					}
 
@@ -1237,10 +1237,10 @@ func (wfc *WorkflowController) getWorkflowConditionMetrics() map[wfv1.Condition]
 	return result
 }
 
-func (wfc *WorkflowController) getPodPhaseMetrics() map[string]int64 {
+func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[string]int64 {
 	// During startup we need this callback to exist, but it won't function until the PodController is started
 	if wfc.PodController != nil {
-		return wfc.PodController.GetPodPhaseMetrics()
+		return wfc.PodController.GetPodPhaseMetrics(ctx)
 	}
 	return make(map[string]int64)
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // PodPhaseCallback is the function prototype to provide this gauge with the phase of the pods
-type PodPhaseCallback func() map[string]int64
+type PodPhaseCallback func(ctx context.Context) map[string]int64
 
 type podPhaseGauge struct {
 	callback PodPhaseCallback

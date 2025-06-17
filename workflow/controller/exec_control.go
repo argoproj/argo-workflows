@@ -46,7 +46,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				woc.log.WithField(ctx, "podName", pod.Name).
 					WithField(ctx, "shutdownStrategy", woc.GetShutdownStrategy()).
 					Info(ctx, "Terminating pod as part of workflow shutdown")
-				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
+				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
 				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
 				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, msg)
 				return
@@ -61,7 +61,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				woc.log.WithField(ctx, "podName", pod.Name).
 					WithField(ctx, "workflowDeadline", woc.workflowDeadline).
 					Info(ctx, "Terminating pod which has exceeded workflow deadline")
-				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
+				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
 				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, "Step exceeded its deadline")
 				return
 			}
@@ -71,7 +71,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 			woc.log.WithField(ctx, "podName", pod.Name).
 				Info(ctx, "Terminating on-exit pod")
-			woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
+			woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID stri
 			continue
 		}
 		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, util.GetTemplateFromNode(childNode), childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
-		woc.controller.PodController.TerminateContainers(woc.wf.Namespace, podName)
+		woc.controller.PodController.TerminateContainers(ctx, woc.wf.Namespace, podName)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes.Set(childNode.ID, childNode)
