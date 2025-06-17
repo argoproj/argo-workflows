@@ -11729,7 +11729,7 @@ func TestSetGlobalParametersOverriding(t *testing.T) {
 		cancel, controller := newController(wf)
 		defer cancel()
 		ctx := context.Background()
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
 	})

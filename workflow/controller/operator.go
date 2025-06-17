@@ -158,8 +158,8 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		execWf:  wfCopy,
 		updated: false,
 		log: slogger.WithFields(ctx, logging.Fields{
-			"workflow":  wf.ObjectMeta.Name,
-			"namespace": wf.ObjectMeta.Namespace,
+			"workflow":  wf.Name,
+			"namespace": wf.Namespace,
 		}),
 		controller:             wfc,
 		globalParams:           make(map[string]string),
@@ -445,7 +445,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.HasExitHook() {
 		woc.log.Infof(ctx, "Running OnExit handler: %s", woc.execWf.Spec.OnExit)
-		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
+		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.Name)
 		onExitNode, _ = woc.execWf.GetNodeByName(onExitNodeName)
 		if onExitNode != nil || woc.GetShutdownStrategy().ShouldExecute(true) {
 			exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
