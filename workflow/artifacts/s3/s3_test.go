@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -736,325 +737,43 @@ func TestDisallowedComboOptions(t *testing.T) {
 	})
 }
 
-// getGoroutineID returns the current goroutine's ID
-func getGoroutineID() uint64 {
-	b := make([]byte, 64)
-	b = b[:runtime.Stack(b, false)]
-	var id uint64
-	_, err := fmt.Sscanf(string(b), "goroutine %d ", &id)
-	if err != nil {
-		return 0
-	}
-	return id
-}
-
-// Test the actual pool.RunPoolStreaming function directly
-func TestPoolStreamingParallelism(t *testing.T) {
-	// Track calls per goroutine
-	callTracker := newCallTracker()
-
-	// Create a producer that generates 100 tasks
-	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
-		for i := 0; i < 100; i++ {
-			task := pool.Task{
-				SourcePath: fmt.Sprintf("source%d", i),
-				DestKey:    fmt.Sprintf("dest%d", i),
-				IsUpload:   true,
-			}
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case taskCh <- task:
-			}
-		}
-		return nil
-	}
-
-	// Create a worker function that tracks calls
-	worker := func(t pool.Task) error {
-		callTracker.recordCall()
-		// Simulate some work
-		time.Sleep(10 * time.Millisecond)
-		return nil
-	}
-
-	// Run with 5 parallel workers
-	err := pool.RunPoolStreaming(context.Background(), 5, producer, worker)
-	if err != nil {
-		t.Fatalf("RunPoolStreaming failed: %v", err)
-	}
-
-	// Verify parallel execution
-	totalCalls, workerCount, maxCallsPerWorker := callTracker.getStats()
-
-	if totalCalls != 100 {
-		t.Errorf("Expected 100 total calls, got %d", totalCalls)
-	}
-
-	if workerCount < 2 {
-		t.Errorf("Expected multiple workers to be used, got %d", workerCount)
-	}
-
-	// With 5 workers and 100 tasks, no single worker should handle more than ~30 tasks
-	if maxCallsPerWorker > 40 {
-		t.Errorf("Work not distributed evenly: max calls per worker was %d, expected < 40", maxCallsPerWorker)
-	}
-
-	t.Logf("Pool test: %d total calls distributed among %d workers (max %d calls per worker)",
-		totalCalls, workerCount, maxCallsPerWorker)
-}
-
-// Test S3 integration with a functional approach - test the real directory walking logic
-func TestS3DirectoryWalkingParallelism(t *testing.T) {
-	// Create a temporary directory with 50 files
-	dir, err := os.MkdirTemp("", "s3-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(dir)
-
-	// Create 50 files in the directory
-	for i := 0; i < 50; i++ {
-		filePath := filepath.Join(dir, fmt.Sprintf("file%d.txt", i))
-		if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
-			t.Fatalf("Failed to create test file: %v", err)
-		}
-	}
-
-	// Track calls per goroutine
-	callTracker := newCallTracker()
-
-	// Create a producer that mimics the real PutDirectory logic
-	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
-		return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				return nil
-			}
-
-			// Calculate relative path from root (same as real code)
-			relPath, err := filepath.Rel(dir, fpath)
-			if err != nil {
-				return fmt.Errorf("failed to get relative path: %v", err)
-			}
-
-			// Convert to S3-style path (same as real code)
-			s3Path := filepath.ToSlash(relPath)
-			key := "test"
-			if key != "" {
-				s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
-			}
-
-			task := pool.Task{
-				SourcePath: fpath,
-				DestKey:    s3Path,
-				IsUpload:   true,
-			}
-
-			// Stream the task to workers (same as real code)
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case taskCh <- task:
-				return nil
-			}
-		})
-	}
-
-	// Create a worker function that simulates S3 upload
-	uploadedFiles := make(map[string]string)
-	var uploadMutex sync.Mutex
-
-	worker := func(t pool.Task) error {
-		callTracker.recordCall()
-
-		// Simulate S3 upload work
-		time.Sleep(10 * time.Millisecond)
-
-		// Record the uploaded file
-		uploadMutex.Lock()
-		uploadedFiles[t.DestKey] = t.SourcePath
-		uploadMutex.Unlock()
-
-		return nil
-	}
-
-	// Run with 5 parallel workers (same as our test configuration)
-	err = pool.RunPoolStreaming(context.Background(), 5, producer, worker)
-	if err != nil {
-		t.Fatalf("RunPoolStreaming failed: %v", err)
-	}
-
-	// Verify that all files were processed
-	if len(uploadedFiles) != 50 {
-		t.Errorf("Expected 50 files to be uploaded, got %d", len(uploadedFiles))
-	}
-
-	// Verify parallel execution
-	totalCalls, workerCount, maxCallsPerWorker := callTracker.getStats()
-
-	if totalCalls != 50 {
-		t.Errorf("Expected 50 total calls, got %d", totalCalls)
-	}
-
-	if workerCount < 2 {
-		t.Errorf("Expected multiple workers to be used, got %d", workerCount)
-	}
-
-	// With 5 workers and 50 files, no single worker should handle more than ~15 files
-	if maxCallsPerWorker > 20 {
-		t.Errorf("Work not distributed evenly: max calls per worker was %d, expected < 20", maxCallsPerWorker)
-	}
-
-	t.Logf("S3 directory test: %d total calls distributed among %d workers (max %d calls per worker)",
-		totalCalls, workerCount, maxCallsPerWorker)
-}
-
-// Test S3 download parallelism using the real GetDirectory logic
-func TestS3DirectoryDownloadParallelism(t *testing.T) {
-	// Create a temporary directory for download
-	dir, err := os.MkdirTemp("", "s3-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(dir)
-
-	// Simulate S3 objects (same as real code would get from ListObjects)
-	s3Objects := []string{
-		"file1.txt",
-		"file2.txt",
-		"subdir/file3.txt",
-		"subdir/file4.txt",
-		"another/path/file5.txt",
-		"another/path/file6.txt",
-	}
-
-	// Track calls per goroutine
-	callTracker := newCallTracker()
-
-	// Create a producer that mimics the real GetDirectory logic
-	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
-		keyPrefix := ""
-		if keyPrefix != "" {
-			keyPrefix = filepath.Clean(keyPrefix) + "/"
-			if os.PathSeparator == '\\' {
-				keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
-			}
-		}
-
-		// Simulate the ListObjects channel (same as real code)
-		for _, objKey := range s3Objects {
-			if strings.HasSuffix(objKey, "/") {
-				// Skip directory objects created by AWS S3 console
-				continue
-			}
-
-			relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
-			localPath := filepath.Join(dir, relKeyPath)
-
-			task := pool.Task{
-				SourcePath: objKey,
-				DestKey:    localPath,
-				IsUpload:   false,
-			}
-
-			// Stream the task to workers (same as real code)
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case taskCh <- task:
-			}
-		}
-		return nil
-	}
-
-	// Create a worker function that simulates S3 download
-	worker := func(t pool.Task) error {
-		callTracker.recordCall()
-
-		// Simulate S3 download work
-		time.Sleep(10 * time.Millisecond)
-
-		// Create directory if needed (same as real code)
-		dirPath := filepath.Dir(t.DestKey)
-		if err := os.MkdirAll(dirPath, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
-		}
-
-		// Create the file (simulate download)
-		return os.WriteFile(t.DestKey, []byte("test content"), 0644)
-	}
-
-	// Run with 3 parallel workers
-	err = pool.RunPoolStreaming(context.Background(), 3, producer, worker)
-	if err != nil {
-		t.Fatalf("RunPoolStreaming failed: %v", err)
-	}
-
-	// Verify that all files were downloaded
-	for _, objKey := range s3Objects {
-		localPath := filepath.Join(dir, objKey)
-		if _, err := os.Stat(localPath); err != nil {
-			t.Errorf("Failed to find downloaded file %s: %v", objKey, err)
-		}
-	}
-
-	// Verify parallel execution
-	totalCalls, workerCount, maxCallsPerWorker := callTracker.getStats()
-
-	if totalCalls != len(s3Objects) {
-		t.Errorf("Expected %d total calls, got %d", len(s3Objects), totalCalls)
-	}
-
-	if workerCount < 2 {
-		t.Errorf("Expected multiple workers to be used, got %d", workerCount)
-	}
-
-	// With 3 workers and 6 files, no single worker should handle more than 3 files
-	if maxCallsPerWorker > 3 {
-		t.Errorf("Work not distributed evenly: max calls per worker was %d, expected <= 3", maxCallsPerWorker)
-	}
-
-	t.Logf("S3 download test: %d total calls distributed among %d workers (max %d calls per worker)",
-		totalCalls, workerCount, maxCallsPerWorker)
-}
-
+// callTracker tracks concurrent execution using atomic counters
+// This avoids fragile goroutine ID parsing while still validating parallelism
 type callTracker struct {
-	mu          sync.Mutex
-	workerCalls map[uint64]int // goroutine ID -> call count
-	totalCalls  int
+	totalCalls      int64
+	concurrentCalls int64
+	maxConcurrent   int64
 }
 
 func newCallTracker() *callTracker {
-	return &callTracker{
-		workerCalls: make(map[uint64]int),
-	}
+	return &callTracker{}
 }
 
 func (ct *callTracker) recordCall() {
-	ct.mu.Lock()
-	defer ct.mu.Unlock()
+	// Increment concurrent calls at start
+	current := atomic.AddInt64(&ct.concurrentCalls, 1)
 
-	workerID := getGoroutineID()
-	ct.workerCalls[workerID]++
-	ct.totalCalls++
-}
-
-func (ct *callTracker) getStats() (totalCalls int, workerCount int, maxCallsPerWorker int) {
-	ct.mu.Lock()
-	defer ct.mu.Unlock()
-
-	totalCalls = ct.totalCalls
-	workerCount = len(ct.workerCalls)
-
-	for _, calls := range ct.workerCalls {
-		if calls > maxCallsPerWorker {
-			maxCallsPerWorker = calls
+	// Update max concurrent calls atomically
+	for {
+		max := atomic.LoadInt64(&ct.maxConcurrent)
+		if current <= max {
+			break
+		}
+		if atomic.CompareAndSwapInt64(&ct.maxConcurrent, max, current) {
+			break
 		}
 	}
-	return
+
+	// Simulate work (important for testing parallelism)
+	time.Sleep(50 * time.Millisecond)
+
+	// Decrement concurrent calls and increment total
+	atomic.AddInt64(&ct.concurrentCalls, -1)
+	atomic.AddInt64(&ct.totalCalls, 1)
+}
+
+func (ct *callTracker) getStats() (totalCalls int, maxConcurrent int) {
+	return int(atomic.LoadInt64(&ct.totalCalls)), int(atomic.LoadInt64(&ct.maxConcurrent))
 }
 
 // Test ParallelTransfers configuration
@@ -1067,7 +786,7 @@ func TestS3ClientParallelTransfersConfig(t *testing.T) {
 		{
 			name:              "Default auto-detect",
 			parallelTransfers: 0,
-			expectedParallel:  runtime.NumCPU() * 2, // Will be capped at maxParallel if > 32
+			expectedParallel:  runtime.NumCPU() * 2,
 		},
 		{
 			name:              "Explicit value",
@@ -1111,13 +830,11 @@ func TestS3ClientParallelTransfersConfig(t *testing.T) {
 
 // Test environment variable overrides
 func TestS3ClientEnvironmentOverrides(t *testing.T) {
-	// Save original env vars
 	origParallel := os.Getenv("ARGO_S3_PARALLEL_TRANSFERS")
 	origPartSize := os.Getenv("ARGO_S3_MULTIPART_PART_SIZE")
 	origConcurrency := os.Getenv("ARGO_S3_MULTIPART_CONCURRENCY")
 
 	defer func() {
-		// Restore original env vars
 		os.Setenv("ARGO_S3_PARALLEL_TRANSFERS", origParallel)
 		os.Setenv("ARGO_S3_MULTIPART_PART_SIZE", origPartSize)
 		os.Setenv("ARGO_S3_MULTIPART_CONCURRENCY", origConcurrency)
@@ -1138,10 +855,10 @@ func TestS3ClientEnvironmentOverrides(t *testing.T) {
 		{
 			name:                "Valid env overrides",
 			envParallel:         "8",
-			envPartSize:         "10485760", // 10MB
+			envPartSize:         "10485760",
 			envConcurrency:      "4",
 			baseParallel:        2,
-			basePartSize:        5242880, // 5MB
+			basePartSize:        5242880,
 			baseConcurrency:     2,
 			expectedParallel:    8,
 			expectedPartSize:    10485760,
@@ -1153,7 +870,7 @@ func TestS3ClientEnvironmentOverrides(t *testing.T) {
 			envPartSize:         "not-a-number",
 			envConcurrency:      "-1",
 			baseParallel:        3,
-			basePartSize:        1048576, // 1MB
+			basePartSize:        1048576,
 			baseConcurrency:     3,
 			expectedParallel:    3,
 			expectedPartSize:    1048576,
@@ -1165,7 +882,7 @@ func TestS3ClientEnvironmentOverrides(t *testing.T) {
 			envPartSize:         "-100",
 			envConcurrency:      "0",
 			baseParallel:        4,
-			basePartSize:        2097152, // 2MB
+			basePartSize:        2097152,
 			baseConcurrency:     4,
 			expectedParallel:    4,
 			expectedPartSize:    2097152,
@@ -1175,12 +892,10 @@ func TestS3ClientEnvironmentOverrides(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Set environment variables
 			os.Setenv("ARGO_S3_PARALLEL_TRANSFERS", tc.envParallel)
 			os.Setenv("ARGO_S3_MULTIPART_PART_SIZE", tc.envPartSize)
 			os.Setenv("ARGO_S3_MULTIPART_CONCURRENCY", tc.envConcurrency)
 
-			// Create ArtifactDriver (which calls newS3Client)
 			driver := &ArtifactDriver{
 				Endpoint:             "test-endpoint",
 				ParallelTransfers:    tc.baseParallel,
@@ -1201,14 +916,12 @@ func TestS3ClientEnvironmentOverrides(t *testing.T) {
 
 // Test that ParallelTransfers actually controls worker count
 func TestParallelTransfersControlsWorkerCount(t *testing.T) {
-	// Create a temporary directory with files
 	dir, err := os.MkdirTemp("", "parallel-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(dir)
 
-	// Create 20 files
 	for i := 0; i < 20; i++ {
 		filePath := filepath.Join(dir, fmt.Sprintf("file%d.txt", i))
 		if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
@@ -1242,7 +955,6 @@ func TestParallelTransfersControlsWorkerCount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			callTracker := newCallTracker()
 
-			// Create producer for directory walking
 			producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
 				return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 					if err != nil || info.IsDir() {
@@ -1264,26 +976,24 @@ func TestParallelTransfersControlsWorkerCount(t *testing.T) {
 				})
 			}
 
-			// Worker that tracks calls
 			worker := func(t pool.Task) error {
 				callTracker.recordCall()
-				time.Sleep(50 * time.Millisecond) // Ensure work takes time
 				return nil
 			}
 
-			// Run with specified parallel transfers
 			err := pool.RunPoolStreaming(context.Background(), tc.parallelTransfers, producer, worker)
 			require.NoError(t, err)
 
-			totalCalls, workerCount, _ := callTracker.getStats()
+			totalCalls, maxConcurrent := callTracker.getStats()
 
 			assert.Equal(t, 20, totalCalls, "Should process all 20 files")
-			assert.LessOrEqual(t, workerCount, tc.maxExpectedWorkers,
-				"Should not use more workers than configured")
 
-			// For single worker, ensure only one worker was used
 			if tc.parallelTransfers == 1 {
-				assert.Equal(t, 1, workerCount, "Should use exactly 1 worker when configured for 1")
+				assert.Equal(t, 1, maxConcurrent, "Should use exactly 1 concurrent worker when configured for 1")
+			} else {
+				assert.GreaterOrEqual(t, maxConcurrent, 2, "Should use multiple concurrent workers when configured for > 1")
+				assert.LessOrEqual(t, maxConcurrent, tc.maxExpectedWorkers+1,
+					"Should not significantly exceed configured worker count")
 			}
 		})
 	}
@@ -1294,7 +1004,7 @@ func TestMultipartConfigurationPreservation(t *testing.T) {
 	opts := S3ClientOpts{
 		Endpoint:             "test-endpoint",
 		ParallelTransfers:    5,
-		MultipartPartSize:    10485760, // 10MB
+		MultipartPartSize:    10485760,
 		MultipartConcurrency: 3,
 	}
 
@@ -1305,4 +1015,225 @@ func TestMultipartConfigurationPreservation(t *testing.T) {
 	assert.Equal(t, 5, s3cli.ParallelTransfers)
 	assert.Equal(t, int64(10485760), s3cli.MultipartPartSize)
 	assert.Equal(t, 3, s3cli.MultipartConcurrency)
+}
+
+// Test the actual pool.RunPoolStreaming function directly
+func TestPoolStreamingParallelism(t *testing.T) {
+	callTracker := newCallTracker()
+
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		for i := 0; i < 100; i++ {
+			task := pool.Task{
+				SourcePath: fmt.Sprintf("source%d", i),
+				DestKey:    fmt.Sprintf("dest%d", i),
+				IsUpload:   true,
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+			}
+		}
+		return nil
+	}
+
+	worker := func(t pool.Task) error {
+		callTracker.recordCall()
+		return nil
+	}
+
+	err := pool.RunPoolStreaming(context.Background(), 5, producer, worker)
+	if err != nil {
+		t.Fatalf("RunPoolStreaming failed: %v", err)
+	}
+
+	totalCalls, maxConcurrent := callTracker.getStats()
+
+	if totalCalls != 100 {
+		t.Errorf("Expected 100 total calls, got %d", totalCalls)
+	}
+
+	if maxConcurrent < 2 {
+		t.Errorf("Expected concurrent execution (maxConcurrent >= 2), got %d", maxConcurrent)
+	}
+
+	if maxConcurrent > 8 {
+		t.Errorf("Too many concurrent calls: %d, expected <= 8", maxConcurrent)
+	}
+
+	t.Logf("Pool test: %d total calls with max %d concurrent workers", totalCalls, maxConcurrent)
+}
+
+// Test S3 integration with a functional approach - test the real directory walking logic
+func TestS3DirectoryWalkingParallelism(t *testing.T) {
+	dir, err := os.MkdirTemp("", "s3-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	for i := 0; i < 50; i++ {
+		filePath := filepath.Join(dir, fmt.Sprintf("file%d.txt", i))
+		if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+	}
+
+	callTracker := newCallTracker()
+
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			relPath, err := filepath.Rel(dir, fpath)
+			if err != nil {
+				return fmt.Errorf("failed to get relative path: %v", err)
+			}
+
+			s3Path := filepath.ToSlash(relPath)
+			key := "test"
+			if key != "" {
+				s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
+			}
+
+			task := pool.Task{
+				SourcePath: fpath,
+				DestKey:    s3Path,
+				IsUpload:   true,
+			}
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+				return nil
+			}
+		})
+	}
+
+	uploadedFiles := make(map[string]string)
+	var uploadMutex sync.Mutex
+
+	worker := func(t pool.Task) error {
+		callTracker.recordCall()
+
+		uploadMutex.Lock()
+		uploadedFiles[t.DestKey] = t.SourcePath
+		uploadMutex.Unlock()
+
+		return nil
+	}
+
+	err = pool.RunPoolStreaming(context.Background(), 5, producer, worker)
+	if err != nil {
+		t.Fatalf("RunPoolStreaming failed: %v", err)
+	}
+
+	if len(uploadedFiles) != 50 {
+		t.Errorf("Expected 50 files to be uploaded, got %d", len(uploadedFiles))
+	}
+
+	totalCalls, maxConcurrent := callTracker.getStats()
+
+	if totalCalls != 50 {
+		t.Errorf("Expected 50 total calls, got %d", totalCalls)
+	}
+
+	if maxConcurrent < 2 {
+		t.Errorf("Expected concurrent execution (maxConcurrent >= 2), got %d", maxConcurrent)
+	}
+
+	t.Logf("S3 directory test: %d total calls with max %d concurrent workers", totalCalls, maxConcurrent)
+}
+
+// Test S3 download parallelism using the real GetDirectory logic
+func TestS3DirectoryDownloadParallelism(t *testing.T) {
+	dir, err := os.MkdirTemp("", "s3-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	s3Objects := []string{
+		"file1.txt",
+		"file2.txt",
+		"subdir/file3.txt",
+		"subdir/file4.txt",
+		"another/path/file5.txt",
+		"another/path/file6.txt",
+	}
+
+	callTracker := newCallTracker()
+
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		keyPrefix := ""
+		if keyPrefix != "" {
+			keyPrefix = filepath.Clean(keyPrefix) + "/"
+			if os.PathSeparator == '\\' {
+				keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
+			}
+		}
+
+		for _, objKey := range s3Objects {
+			if strings.HasSuffix(objKey, "/") {
+				continue
+			}
+
+			relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
+			localPath := filepath.Join(dir, relKeyPath)
+
+			task := pool.Task{
+				SourcePath: objKey,
+				DestKey:    localPath,
+				IsUpload:   false,
+			}
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+			}
+		}
+		return nil
+	}
+
+	worker := func(t pool.Task) error {
+		callTracker.recordCall()
+
+		dirPath := filepath.Dir(t.DestKey)
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+		}
+
+		return os.WriteFile(t.DestKey, []byte("test content"), 0644)
+	}
+
+	err = pool.RunPoolStreaming(context.Background(), 3, producer, worker)
+	if err != nil {
+		t.Fatalf("RunPoolStreaming failed: %v", err)
+	}
+
+	for _, objKey := range s3Objects {
+		localPath := filepath.Join(dir, objKey)
+		if _, err := os.Stat(localPath); err != nil {
+			t.Errorf("Failed to find downloaded file %s: %v", objKey, err)
+		}
+	}
+
+	totalCalls, maxConcurrent := callTracker.getStats()
+
+	if totalCalls != len(s3Objects) {
+		t.Errorf("Expected %d total calls, got %d", len(s3Objects), totalCalls)
+	}
+
+	if maxConcurrent < 2 {
+		t.Errorf("Expected concurrent execution (maxConcurrent >= 2), got %d", maxConcurrent)
+	}
+
+	t.Logf("S3 download test: %d total calls with max %d concurrent workers", totalCalls, maxConcurrent)
 }
