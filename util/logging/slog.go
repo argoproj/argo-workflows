@@ -5,11 +5,25 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 )
 
 type slogLogger struct {
 	fields Fields
 	logger *slog.Logger
+	hooks  map[Level][]Hook
+}
+
+var (
+	defaultLogger = NewSlogLogger()
+	lock          = &sync.Mutex{}
+)
+
+// DefaultSlogLogger returns the default logger
+func DefaultSlogLogger() Logger {
+	lock.Lock()
+	defer lock.Unlock()
+	return defaultLogger
 }
 
 func (s *slogLogger) WithFields(_ context.Context, fields Fields) Logger {
@@ -53,79 +67,139 @@ func (s *slogLogger) WithError(ctx context.Context, err error) Logger {
 }
 
 func (s *slogLogger) Info(ctx context.Context, msg string) {
+	hooks := s.hooks[Info]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.InfoContext(ctx, msg)
 }
 
 func (s *slogLogger) Infof(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.InfoContext(ctx, msg)
+	s.Info(ctx, msg)
 }
 
 func (s *slogLogger) Warn(ctx context.Context, msg string) {
+	hooks := s.hooks[Warn]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.WarnContext(ctx, msg)
 }
 
 func (s *slogLogger) Warnf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.WarnContext(ctx, msg)
+	s.Warn(ctx, msg)
 }
 
 func (s *slogLogger) Fatal(ctx context.Context, msg string) {
+	hooks := s.hooks[Fatal]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.ErrorContext(ctx, msg)
 	os.Exit(1)
 }
 
 func (s *slogLogger) Fatalf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.ErrorContext(ctx, msg)
-	os.Exit(1)
+	s.Fatal(ctx, msg)
 }
 
 func (s *slogLogger) Error(ctx context.Context, msg string) {
+	hooks := s.hooks[Error]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.ErrorContext(ctx, msg)
 }
 
 func (s *slogLogger) Errorf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.ErrorContext(ctx, msg)
+	s.Error(ctx, msg)
 }
 
 func (s *slogLogger) Debug(ctx context.Context, msg string) {
+	hooks := s.hooks[Debug]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.DebugContext(ctx, msg)
 }
 
 func (s *slogLogger) Debugf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.DebugContext(ctx, msg)
+	s.Debug(ctx, msg)
 }
 
 func (s *slogLogger) Warning(ctx context.Context, msg string) {
+	hooks := s.hooks[Warn]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.WarnContext(ctx, msg)
 }
 
 func (s *slogLogger) Warningf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.WarnContext(ctx, msg)
+	s.Warning(ctx, msg)
 }
 
 func (s *slogLogger) Println(ctx context.Context, msg string) {
+	hooks := s.hooks[Print]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.InfoContext(ctx, msg)
 }
 
 func (s *slogLogger) Printf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.InfoContext(ctx, msg)
+	s.Println(ctx, msg)
 }
 
 func (s *slogLogger) Panic(ctx context.Context, msg string) {
+	hooks := s.hooks[Panic]
+	if hooks == nil {
+		hooks = []Hook{}
+	}
+	for _, hook := range hooks {
+		hook.Fire(msg)
+	}
 	s.logger.ErrorContext(ctx, msg)
 	panic(msg)
 }
 
 func (s *slogLogger) Panicf(ctx context.Context, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	s.logger.ErrorContext(ctx, msg)
-	panic(msg)
+	s.Panic(ctx, msg)
+}
+
+func (s *slogLogger) AddHook(hook Hook) {
+	for _, level := range hook.Levels() {
+		s.hooks[level] = append(s.hooks[level], hook)
+	}
 }
 
 // NewSlogLogger returns a slog based logger

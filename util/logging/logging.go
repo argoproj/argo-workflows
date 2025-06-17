@@ -3,10 +3,39 @@ package logging
 import "context"
 
 const (
+	// ErrorField is the default name for a WithError call
 	ErrorField string = "error"
 )
 
+// Fields are used to carry the values of each field
 type Fields map[string]interface{}
+
+type Level string
+
+const (
+	// Trace level events
+	Trace Level = "trace"
+	// Debug level events
+	Debug Level = "debug"
+	// Info level events
+	Info Level = "info"
+	// Warn level events
+	Warn Level = "warn"
+	// Error level events
+	Error Level = "error"
+	// Fatal level events
+	Fatal Level = "fatal"
+	// Print level events
+	Print Level = "print"
+	// Panic level events
+	Panic Level = "panic"
+)
+
+// Hook is used to tap into the log
+type Hook interface {
+	Levels() []Level
+	Fire(msg string)
+}
 
 // Logger exports a logging interface
 type Logger interface {
@@ -37,4 +66,6 @@ type Logger interface {
 
 	Panic(ctx context.Context, msg string)
 	Panicf(ctx context.Context, format string, args ...interface{})
+
+	AddHook(hook Hook)
 }
