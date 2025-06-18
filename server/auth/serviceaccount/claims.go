@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -81,7 +80,7 @@ func ClaimSetWithX509(restConfig *rest.Config) (*types.Claims, error) {
 		cert, _ = x509.ParseCertificate(block.Bytes)
 	} else if restConfig.TLSClientConfig.CertFile != "" {
 		// Load certificate from file
-		data, err := ioutil.ReadFile(restConfig.TLSClientConfig.CertFile)
+		data, err := os.ReadFile(restConfig.TLSClientConfig.CertFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read certificate file: %w", err)
 		}
