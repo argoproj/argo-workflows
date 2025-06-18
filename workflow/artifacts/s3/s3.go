@@ -166,9 +166,20 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 		MultipartConcurrency: s3Driver.MultipartConcurrency,
 	}
 
+	log.WithFields(log.Fields{
+		"endpoint":             s3Driver.Endpoint,
+		"parallelTransfers":    s3Driver.ParallelTransfers,
+		"multipartPartSize":    s3Driver.MultipartPartSize,
+		"multipartConcurrency": s3Driver.MultipartConcurrency,
+	}).Info("Creating S3 client with configuration")
+
 	// Check for environment variable overrides
 	if envVal := os.Getenv("ARGO_S3_PARALLEL_TRANSFERS"); envVal != "" {
 		if val, err := strconv.Atoi(envVal); err == nil && val > 0 {
+			log.WithFields(log.Fields{
+				"original": opts.ParallelTransfers,
+				"override": val,
+			}).Info("Overriding ParallelTransfers with environment variable")
 			opts.ParallelTransfers = val
 		}
 	}
@@ -540,7 +551,12 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 		return err
 	}
 
-	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts})
+	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, minio.PutObjectOptions{
+		SendContentMd5:       s.SendContentMd5,
+		ServerSideEncryption: encOpts,
+		PartSize:             uint64(s.MultipartPartSize),
+		NumThreads:           uint(s.MultipartConcurrency),
+	})
 	if err != nil {
 		return err
 	}
@@ -616,7 +632,15 @@ func (s *s3client) PutDirectory(bucket, key, path string) error {
 	}
 
 	// Run parallel uploads using streaming approach
-	return pool.RunPoolStreaming(s.ctx, s.getParallelTransfers(), producer, func(t pool.Task) error {
+	parallelWorkers := s.getParallelTransfers()
+	log.WithFields(log.Fields{
+		"parallelWorkers": parallelWorkers,
+		"bucket":          bucket,
+		"key":             key,
+		"path":            path,
+	}).Info("Starting parallel upload with workers")
+
+	return pool.RunPoolStreaming(s.ctx, parallelWorkers, producer, func(t pool.Task) error {
 		// Get encryption options for this specific file
 		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.DestKey)
 		if err != nil {
@@ -627,7 +651,17 @@ func (s *s3client) PutDirectory(bucket, key, path string) error {
 		opts := minio.PutObjectOptions{
 			SendContentMd5:       s.SendContentMd5,
 			ServerSideEncryption: encOpts,
+			PartSize:             uint64(s.MultipartPartSize),
+			NumThreads:           uint(s.MultipartConcurrency),
 		}
+
+		log.WithFields(log.Fields{
+			"endpoint":    s.Endpoint,
+			"bucket":      bucket,
+			"key":         t.DestKey,
+			"path":        t.SourcePath,
+			"goroutineID": fmt.Sprintf("goroutine-%d", runtime.NumGoroutine()),
+		}).Info("Saving file to s3")
 
 		_, err = s.minioClient.FPutObject(s.ctx, bucket, t.DestKey, t.SourcePath, opts)
 		return err
@@ -922,6 +956,10 @@ const (
 func (s *s3client) getParallelTransfers() int {
 	// Use configured value if set
 	if s.ParallelTransfers > 0 {
+		log.WithFields(log.Fields{
+			"parallelTransfers": s.ParallelTransfers,
+			"source":            "configured",
+		}).Info("Using configured ParallelTransfers")
 		return s.ParallelTransfers
 	}
 
@@ -931,9 +969,19 @@ func (s *s3client) getParallelTransfers() int {
 		if parallel > maxParallel {
 			parallel = maxParallel
 		}
+		log.WithFields(log.Fields{
+			"parallelTransfers": parallel,
+			"source":            "auto-detected",
+			"cpuCount":          runtime.NumCPU(),
+		}).Info("Using auto-detected ParallelTransfers")
 		return parallel
 	}
 
 	// Fallback for negative values
+	log.WithFields(log.Fields{
+		"parallelTransfers": 1,
+		"source":            "fallback",
+		"originalValue":     s.ParallelTransfers,
+	}).Info("Using fallback ParallelTransfers")
 	return 1
 }

@@ -3830,7 +3830,7 @@ S3Artifact is the location of an S3 artifact
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`key`|`string`|Key is the key in the bucket where the artifact resides|
 |`multipartConcurrency`|`integer`|MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.|
-|`multipartPartSize`|`integer`|MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.|
+|`multipartPartSize`|`integer`|MultipartPartSize is the size of each part in a multipart upload (in bytes). If not set, defaults to 5MB (5242880 bytes). Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes). Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.|
 |`parallelTransfers`|`integer`|ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
@@ -4592,7 +4592,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |~~`keyPrefix`~~|~~`string`~~|~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead|
 |`multipartConcurrency`|`integer`|MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.|
-|`multipartPartSize`|`integer`|MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.|
+|`multipartPartSize`|`integer`|MultipartPartSize is the size of each part in a multipart upload (in bytes). If not set, defaults to 5MB (5242880 bytes). Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes). Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.|
 |`parallelTransfers`|`integer`|ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|

@@ -5288,7 +5288,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					},
 					"multipartPartSize": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
+							Description: "MultipartPartSize is the size of each part in a multipart upload (in bytes). If not set, defaults to 5MB (5242880 bytes). Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes). Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -5408,7 +5408,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					},
 					"multipartPartSize": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
+							Description: "MultipartPartSize is the size of each part in a multipart upload (in bytes). If not set, defaults to 5MB (5242880 bytes). Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes). Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -5535,7 +5535,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					},
 					"multipartPartSize": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MultipartPartSize is the size of each part in a multipart upload. If not set, defaults to 5MB. Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
+							Description: "MultipartPartSize is the size of each part in a multipart upload (in bytes). If not set, defaults to 5MB (5242880 bytes). Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes). Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},

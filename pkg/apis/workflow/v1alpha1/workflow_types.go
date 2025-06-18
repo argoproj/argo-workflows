@@ -1278,6 +1278,20 @@ func (a *ArtifactLocation) AppendToKey(x string) error {
 // But only if it does not have a location already.
 func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 	if a.HasLocation() {
+		// Even if the artifact already has a location, we should merge performance-related
+		// configurations from the template's ArchiveLocation
+		if l != nil && l.S3 != nil && a.S3 != nil {
+			// Merge S3 performance settings if they're not already set
+			if a.S3.ParallelTransfers == nil && l.S3.ParallelTransfers != nil {
+				a.S3.ParallelTransfers = l.S3.ParallelTransfers
+			}
+			if a.S3.MultipartPartSize == nil && l.S3.MultipartPartSize != nil {
+				a.S3.MultipartPartSize = l.S3.MultipartPartSize
+			}
+			if a.S3.MultipartConcurrency == nil && l.S3.MultipartConcurrency != nil {
+				a.S3.MultipartConcurrency = l.S3.MultipartConcurrency
+			}
+		}
 		return nil
 	}
 	if l == nil {
@@ -2590,8 +2604,9 @@ type S3Bucket struct {
 	// Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.
 	ParallelTransfers *int32 `json:"parallelTransfers,omitempty" protobuf:"varint,13,opt,name=parallelTransfers"`
 
-	// MultipartPartSize is the size of each part in a multipart upload.
-	// If not set, defaults to 5MB.
+	// MultipartPartSize is the size of each part in a multipart upload (in bytes).
+	// If not set, defaults to 5MB (5242880 bytes).
+	// Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes).
 	// Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.
 	MultipartPartSize *int64 `json:"multipartPartSize,omitempty" protobuf:"varint,14,opt,name=multipartPartSize"`
 
