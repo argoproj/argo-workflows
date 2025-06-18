@@ -71,16 +71,16 @@ func ClaimSetWithBearerToken(restConfig *rest.Config) (*types.Claims, error) {
 func ClaimSetWithX509(restConfig *rest.Config) (*types.Claims, error) {
 	var cert *x509.Certificate
 
-	if len(restConfig.TLSClientConfig.CertData) > 0 {
+	if len(restConfig.CertData) > 0 {
 		// Decode certificate from memory data
-		block, _ := pem.Decode(restConfig.TLSClientConfig.CertData)
+		block, _ := pem.Decode(restConfig.CertData)
 		if block == nil || block.Type != "CERTIFICATE" {
 			return nil, fmt.Errorf("failed to parse certificate PEM")
 		}
 		cert, _ = x509.ParseCertificate(block.Bytes)
-	} else if restConfig.TLSClientConfig.CertFile != "" {
+	} else if restConfig.CertFile != "" {
 		// Load certificate from file
-		data, err := os.ReadFile(restConfig.TLSClientConfig.CertFile)
+		data, err := os.ReadFile(restConfig.CertFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read certificate file: %w", err)
 		}
