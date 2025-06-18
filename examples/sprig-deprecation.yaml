@@ -1,0 +1,115 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sprig-to-expr-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow demonstrates the deprecation of Sprig functions and their replacements.
+    workflows.argoproj.io/version: ">= 3.7.0"
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: message
+      value: "Hello World"
+    - name: count
+      value: "42"
+    - name: ratio
+      value: "3.14"
+    - name: text
+      value: "foo bar baz"
+    - name: items
+      value: "[\"apple\", \"banana\", \"cherry\"]"
+    - name: numbers
+      value: "[1, 2, 3, 4, 5]"
+    - name: data
+      value: '{"name": "John", "age": 30}'
+    - name: raw_data
+      value: "hello world"
+    - name: json_string
+      value: "{\"name\":\"test\",\"count\":42}"
+    - name: csv_data
+      value: "apple,banana,cherry"
+    - name: myArray
+      value: "[\"first\", \"second\", \"third\"]"
+    - name: environment
+      value: "production"
+    - name: enabled
+      value: "true"
+    - name: stage
+      value: "production"
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        - name: message
+        - name: count
+        - name: ratio
+        - name: text
+        - name: items
+        - name: numbers
+        - name: data
+        - name: raw_data
+        - name: json_string
+        - name: csv_data
+        - name: myArray
+        - name: environment
+        - name: enabled
+        - name: stage
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args:
+        - |
+          # sprig.toString(inputs.parameters.count)
+          test "{{=string(inputs.parameters.count)}}" = "42" || exit 1
+          echo "✓ string() conversion test passed"
+          
+          # sprig.trim("__hello__", "_")
+          test "{{=trim(\"__hello__\", \"_\")}}" = "hello" || exit 1
+          echo "✓ trim() with character test passed"
+          
+          # sprig.trimSpace("  hello  ")
+          test "{{=trim(\"  hello  \")}}" = "hello" || exit 1
+          echo "✓ trim() test passed"
+          
+          # sprig.trimSpace("  hello world  ")
+          trimmed_text="{{=trim(\"  hello world  \")}}"
+          test "${trimmed_text}" = "hello world" || exit 1
+          echo "✓ trim() whitespace test passed"
+          
+          # sprig.trunc(10, "this is a long string")
+          test "{{=trunc(10, \"this is a long string\")}}" = "this is a " || exit 1
+          echo "✓ trunc() test passed"
+          
+          # sprig.typeOf(inputs.parameters.message)
+          test "{{=type(inputs.parameters.message)}}" = "string" || exit 1
+          echo "✓ type() string test passed"
+          
+          # sprig.typeOf(42)
+          test "{{=type(42)}}" = "int" || exit 1
+          echo "✓ type() int test passed"
+          
+          # sprig.unixEpoch(sprig.now())
+          unix_time="{{=now().Unix()}}"
+          test "${unix_time}" -gt "1600000000" || exit 1
+          echo "✓ Unix timestamp test passed"
+          
+          # sprig.upper(inputs.parameters.message)  
+          test "{{=upper(inputs.parameters.message)}}" = "HELLO WORLD" || exit 1
+          echo "✓ upper() test passed"
+          
+          # sprig.upper(inputs.parameters.raw_data)
+          upper_text="{{=upper(inputs.parameters.raw_data)}}"
+          test "${upper_text}" = "HELLO WORLD" || exit 1
+          echo "✓ upper() text test passed"
+          
+          # Workflow creation timestamp access
+          creation_time="{{=workflow.creationTimestamp}}"
+          test -n "${creation_time}" || exit 1
+          echo "✓ workflow.creationTimestamp test passed"
+          
+          echo ""
+          echo "🎉 All expression language tests passed successfully!" 

@@ -146,6 +146,240 @@ Available Sprig functions include:
 
 For complete documentation on these functions, refer to the [Sprig documentation](http://masterminds.github.io/sprig/).
 
+### Migration from Deprecated Sprig Functions
+
+Several Sprig functions that were previously available have been deprecated in favor of Expr standard library alternatives.
+While these functions continue to work in v3.7, they will be removed in a future version.
+Here's a migration guide for the most commonly used deprecated functions:
+
+| Deprecated Sprig Function | Expr Equivalent | Notes |
+|---------------------------|-----------------|-------|
+| **String Functions** | | |
+| `sprig.toString(value)` | `string(value)` | Direct replacement |
+| `sprig.lower(str)` | `lower(str)` | Direct replacement |
+| `sprig.upper(str)` | `upper(str)` | Direct replacement |
+| `sprig.repeat(str, count)` | `repeat(str, count)` | Direct replacement |
+| `sprig.split(delimiter, str)` | `split(str, delimiter)` | Note: parameter order is reversed |
+| `sprig.join(delimiter, list)` | `join(list, delimiter)` | Note: parameter order is reversed |
+| `sprig.contains(substr, str)` | `indexOf(str, substr) >= 0` | Use indexOf for substring detection |
+| `sprig.hasPrefix(prefix, str)` | `hasPrefix(str, prefix)` | Note: parameter order is reversed |
+| `sprig.hasSuffix(suffix, str)` | `hasSuffix(str, suffix)` | Note: parameter order is reversed |
+| `sprig.replace(old, new, str)` | `replace(str, old, new)` | Note: parameter order is different |
+| `sprig.trimSpace(str)` | `trim(str)` | Direct replacement, trims whitespace |
+| `sprig.trimLeft(cutset, str)` | No direct equivalent | Use custom logic with substring operations |
+| `sprig.trimRight(cutset, str)` | No direct equivalent | Use custom logic with substring operations |
+| **Math Functions** | | |
+| `sprig.add(a, b)` | `a + b` | Use arithmetic operators |
+| `sprig.sub(a, b)` | `a - b` | Use arithmetic operators |
+| `sprig.mul(a, b)` | `a * b` | Use arithmetic operators |
+| `sprig.div(a, b)` | `a / b` | Use arithmetic operators |
+| `sprig.mod(a, b)` | `a % b` | Use arithmetic operators |
+| `sprig.max(a, b)` | `max(a, b)` | Direct replacement |
+| `sprig.min(a, b)` | `min(a, b)` | Direct replacement |
+| `sprig.int(value)` | `int(value)` | Direct replacement |
+| `sprig.float64(value)` | `float(value)` | Direct replacement |
+| **List Functions** | | |
+| `sprig.list(items...)` | `[item1, item2, ...]` | Use array literal syntax |
+| `sprig.first(list)` | `list[0]` | Use array indexing |
+| `sprig.last(list)` | `list[len(list)-1]` | Use array indexing with length |
+| `sprig.rest(list)` | `list[1:]` | Use array slicing |
+| `sprig.initial(list)` | `list[:len(list)-1]` | Use array slicing |
+| `sprig.reverse(list)` | `reverse(list)` | Direct replacement |
+| `sprig.uniq(list)` | No direct equivalent | Use custom filtering logic |
+| `sprig.compact(list)` | `filter(list, {# != ""})` | Filter out empty values |
+| `sprig.slice(list, start, end)` | `list[start:end]` | Use array slicing |
+| **Date/Time Functions** | | |
+| `sprig.now()` | `now()` | Direct replacement |
+| `sprig.date(layout, time)` | `date(time).Format(layout)` | Use date function with Format method |
+| `sprig.dateInZone(layout, time, zone)` | `date(time, zone).Format(layout)` | Use date function with timezone |
+| `sprig.unixEpoch(time)` | `date(time).Unix()` | Get Unix timestamp |
+| `sprig.dateModify(modifier, time)` | `date(time).Add(duration)` | Use duration arithmetic |
+| `sprig.durationRound(duration)` | `duration(duration).Round(precision)` | Use duration methods |
+| **Type Conversion** | | |
+| `sprig.atoi(str)` | `int(str)` | Direct replacement |
+| `sprig.quote(str)` | `"\"" + str + "\""` | Use string concatenation |
+| `sprig.squote(str)` | `"'" + str + "'"` | Use string concatenation |
+| `sprig.float64(value)` | `float(value)` | Direct replacement |
+| `sprig.toString(value)` | `string(value)` | Direct replacement |
+| `sprig.toStrings(list)` | `map(list, {string(#)})` | Use map with string conversion |
+| **Logic/Flow Control** | | |
+| `sprig.and(a, b)` | `a && b` | Use logical operators |
+| `sprig.or(a, b)` | `a \|\| b` | Use logical operators |
+| `sprig.not(value)` | `!value` | Use logical operator |
+| `sprig.eq(a, b)` | `a == b` | Use comparison operators |
+| `sprig.ne(a, b)` | `a != b` | Use comparison operators |
+| `sprig.lt(a, b)` | `a < b` | Use comparison operators |
+| `sprig.le(a, b)` | `a <= b` | Use comparison operators |
+| `sprig.gt(a, b)` | `a > b` | Use comparison operators |
+| `sprig.ge(a, b)` | `a >= b` | Use comparison operators |
+| **Conditionals** | | |
+| `sprig.default(default, value)` | `value != "" ? value : default` | Use ternary operator |
+| `sprig.empty(value)` | `value == ""` | Use comparison |
+| `sprig.ternary(true_val, false_val, condition)` | `condition ? true_val : false_val` | Use ternary operator |
+| `sprig.coalesce(vals...)` | `val1 != "" ? val1 : (val2 != "" ? val2 : val3)` | Chain ternary operators |
+| **Encoding** | | |
+| `sprig.b64enc(str)` | `toBase64(str)` | Direct replacement |
+| `sprig.b64dec(str)` | `fromBase64(str)` | Direct replacement |
+| **Network** | | |
+| `sprig.getHostByName(domain)` | No direct equivalent | Function removed for security |
+| **OS/Environment** | | |
+| `sprig.env(var)` | No direct equivalent | Function removed for security |
+| `sprig.expandenv(str)` | No direct equivalent | Function removed for security |
+| **File Path** | | |
+| `sprig.base(path)` | No direct equivalent | Use curated sprig function |
+| `sprig.dir(path)` | No direct equivalent | Use curated sprig function |
+| `sprig.ext(path)` | No direct equivalent | Use curated sprig function |
+| `sprig.clean(path)` | No direct equivalent | Use curated sprig function |
+| `sprig.isAbs(path)` | No direct equivalent | Limited use in templates |
+| **Reflection** | | |
+| `sprig.typeOf(value)` | `type(value)` | Direct replacement |
+| `sprig.kindOf(value)` | `type(value)` | Similar functionality |
+| `sprig.kindIs(kind, value)` | `type(value) == kind` | Use type function with comparison |
+| `sprig.typeIs(type, value)` | `type(value) == type` | Use type function with comparison |
+| `sprig.typeIsLike(type, value)` | `type(value) == type` | Use type function with comparison |
+| `sprig.deepEqual(a, b)` | `a == b` | Use comparison for simple values |
+| **JSON Functions** | | |
+| `sprig.toJson(value)` | `toJSON(value)` | Direct replacement |
+| `sprig.fromJson(str)` | `fromJSON(str)` | Direct replacement |
+| **Additional Functions** | | |
+| `sprig.get(map, key)` | `get(map, key)` | Direct replacement for safe access |
+
+#### Migration Examples
+
+**String operations:**
+```yaml
+# Before (deprecated)
+args: ["{{=sprig.toString(inputs.parameters.count)}}"]
+args: ["{{=sprig.lower(inputs.parameters.name)}}"]
+args: ["{{=sprig.replace("foo", "bar", inputs.parameters.text)}}"]
+
+# After (recommended)
+args: ["{{=string(inputs.parameters.count)}}"]  
+args: ["{{=lower(inputs.parameters.name)}}"]
+args: ["{{=replace(inputs.parameters.text, "foo", "bar")}}"]
+```
+
+**Math operations:**
+```yaml
+# Before (deprecated)
+args: ["{{=sprig.add(inputs.parameters.a, inputs.parameters.b)}}"]
+args: ["{{=sprig.int(inputs.parameters.str_num)}}"]
+
+# After (recommended)  
+args: ["{{=int(inputs.parameters.a) + int(inputs.parameters.b)}}"]
+args: ["{{=int(inputs.parameters.str_num)}}"]
+```
+
+**List operations:**
+```yaml
+# Before (deprecated)
+args: ["{{=sprig.first(myArray)}}"]
+args: ["{{=sprig.last(myArray)}}"]
+args: ["{{=sprig.join(",", myArray)}}"]
+args: ["{{=sprig.reverse(myArray)}}"]
+args: ["{{=sprig.compact(myArray)}}"]
+
+# After (recommended)
+args: ["{{=myArray[0]}}"]
+args: ["{{=myArray[len(myArray)-1]}}"]
+# For join, use string concatenation (no direct join function)
+args: ["{{=myArray[0] + "," + myArray[1] + "," + myArray[2]}}"]  
+# For reverse, access elements in reverse order
+args: ["{{=[myArray[2], myArray[1], myArray[0]]}}"]  
+# For compact, filter out empty values manually
+args: ["{{=myArray[0] != "" ? myArray[0] : (myArray[1] != "" ? myArray[1] : myArray[2])}}"]
+```
+
+**Logic and comparison operations:**
+```yaml
+# Before (deprecated)
+condition: "{{=sprig.and(sprig.eq(inputs.parameters.status, "ready"), sprig.gt(inputs.parameters.count, 0))}}"
+condition: "{{=sprig.or(sprig.empty(inputs.parameters.value), sprig.eq(inputs.parameters.force, "true"))}}"
+
+# After (recommended)
+condition: "{{=inputs.parameters.status == "ready" && int(inputs.parameters.count) > 0}}"
+condition: "{{=inputs.parameters.value == "" || inputs.parameters.force == "true"}}"
+```
+
+**Conditional logic:**
+```yaml
+# Before (deprecated)
+args: ["{{=sprig.default("unknown", inputs.parameters.name)}}"]
+args: ["{{=sprig.ternary("enabled", "disabled", sprig.eq(inputs.parameters.active, "true"))}}"]
+
+# After (recommended)
+args: ["{{=inputs.parameters.name != "" ? inputs.parameters.name : "unknown"}}"]
+args: ["{{=inputs.parameters.active == "true" ? "enabled" : "disabled"}}"]
+```
+
+**Type conversions:**
+```yaml
+# Before (deprecated)
+args: ["{{=sprig.toString(inputs.parameters.count)}}"]
+args: ["{{=sprig.float64(inputs.parameters.ratio)}}"]
+
+# After (recommended)
+args: ["{{=string(inputs.parameters.count)}}"]
+args: ["{{=float(inputs.parameters.ratio)}}"]
+```
+
+**Date/time operations:**
+```yaml
+# Before (deprecated)
+args: ["{{=sprig.date("2006-01-02", sprig.now())}}"]
+args: ["{{=sprig.dateInZone("15:04:05", sprig.now(), "UTC")}}"]
+args: ["{{=sprig.unixEpoch(sprig.now())}}"]
+args: ["{{=sprig.dateModify("+24h", sprig.now())}}"]
+
+# After (recommended)
+args: ["{{=now().Format("2006-01-02")}}"]
+args: ["{{=now().Format("15:04:05")}}"]  # Note: timezone functions not available in expr
+args: ["{{=now().Unix()}}"]
+args: ["{{=now().Format("2006-01-02")}}"]  # Note: date arithmetic not available, use current time
+```
+
+**Common time formatting patterns:**
+```yaml
+# ISO 8601 date
+args: ["{{=now().Format("2006-01-02T15:04:05Z07:00")}}"]
+
+# Human readable date
+args: ["{{=now().Format("January 2, 2006")}}"]
+
+# Log timestamp
+args: ["{{=now().Format("2006-01-02 15:04:05")}}"]
+
+# File-safe timestamp
+args: ["{{=now().Format("20060102-150405")}}"]
+
+# Unix timestamp as string
+args: ["{{=string(now().Unix())}}"]
+
+# Workflow creation time access (string format)
+args: ["{{=workflow.creationTimestamp}}"]
+
+# Current time basic formats
+args: ["{{=now().Format("15:04:05")}}"]
+```
+
+!!! Note "Parameter Order Changes"
+    Many Expr built-in functions have different parameter orders compared to their Sprig equivalents.
+    Always check the parameter order when migrating.
+    For example: `sprig.contains(substr, str)` becomes `indexOf(str, substr) >= 0`.
+
+!!! Note "Go Time Formatting"
+    Expr uses Go's time formatting, which uses a reference time: `Mon Jan 2 15:04:05 MST 2006` (Unix time `1136239445`).
+    This corresponds to `01/02 03:04:05PM '06 -0700`.
+    Common format patterns:
+    
+    - `2006-01-02` = YYYY-MM-DD
+    - `15:04:05` = HH:MM:SS (24-hour)
+    - `3:04:05 PM` = H:MM:SS AM/PM (12-hour)
+    - `January 2, 2006` = Month D, YYYY
+    - `02/01/06` = MM/DD/YY
+    
+    See the [Go time package documentation](https://golang.org/pkg/time/#Time.Format) for more formatting options.
+
 ## Reference
 
 ### All Templates
