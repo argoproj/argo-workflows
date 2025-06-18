@@ -1779,6 +1779,10 @@ func (in Nodes) FindByName(name string) *NodeStatus {
 	return in.Find(NodeWithName(name))
 }
 
+func (n Nodes) FindByChild(childId string) *NodeStatus {
+	return n.Find(NodeWithChild(childId))
+}
+
 func (in Nodes) Any(f func(NodeStatus) bool) bool {
 	return in.Find(f) != nil
 }
@@ -1856,6 +1860,12 @@ func NodeWithName(name string) func(n NodeStatus) bool {
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
+}
+
+func NodeWithChild(childID string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool {
+		return n.HasChild(childID)
+	}
 }
 
 func FailedPodNode(n NodeStatus) bool {
