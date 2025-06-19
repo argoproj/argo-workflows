@@ -3306,7 +3306,7 @@ cause implementors to also use a fixed point implementation.
 | key | string| `string` |  | | Key is the key in the bucket where the artifact resides |  |
 | multipartConcurrency | int32 (formatted integer)| `int32` |  | | MultipartConcurrency is the number of concurrent multipart uploads.</br>If not set, defaults to 4.</br>Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable. |  |
 | multipartPartSize | int64 (formatted integer)| `int64` |  | | MultipartPartSize is the size of each part in a multipart upload (in bytes).</br>If not set, defaults to 5MB (5242880 bytes).</br>Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes).</br>Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable. |  |
-| parallelTransfers | int32 (formatted integer)| `int32` |  | | ParallelTransfers is the number of parallel transfers to use for S3 operations.</br>If not set, defaults to runtime.NumCPU()*2 (capped at 32).</br>Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable. |  |
+| parallelTransfers | int32 (formatted integer)| `int32` |  | | ParallelTransfers is the number of parallel transfers to use for S3 operations.</br>If not set, defaults to 1.</br>Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable. |  |
 | region | string| `string` |  | | Region contains the optional bucket region |  |
 | roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -784,9 +783,9 @@ func TestS3ClientParallelTransfersConfig(t *testing.T) {
 		expectedParallel  int
 	}{
 		{
-			name:              "Default auto-detect",
+			name:              "Default value",
 			parallelTransfers: 0,
-			expectedParallel:  runtime.NumCPU() * 2,
+			expectedParallel:  1,
 		},
 		{
 			name:              "Explicit value",
@@ -818,12 +817,7 @@ func TestS3ClientParallelTransfersConfig(t *testing.T) {
 			s3cli := client.(*s3client)
 			actualParallel := s3cli.getParallelTransfers()
 
-			expectedParallel := tc.expectedParallel
-			if tc.parallelTransfers == 0 && expectedParallel > maxParallel {
-				expectedParallel = maxParallel
-			}
-
-			assert.Equal(t, expectedParallel, actualParallel)
+			assert.Equal(t, tc.expectedParallel, actualParallel)
 		})
 	}
 }

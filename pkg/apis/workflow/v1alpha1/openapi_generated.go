@@ -5281,7 +5281,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					},
 					"parallelTransfers": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
+							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to 1. Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -5401,7 +5401,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					},
 					"parallelTransfers": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
+							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to 1. Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -5528,7 +5528,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					},
 					"parallelTransfers": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
+							Description: "ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to 1. Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

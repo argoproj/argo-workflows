@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 **keyPrefix** | **String** | KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead |  [optional]
 **multipartConcurrency** | **Integer** | MultipartConcurrency is the number of concurrent multipart uploads. If not set, defaults to 4. Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable. |  [optional]
 **multipartPartSize** | **Integer** | MultipartPartSize is the size of each part in a multipart upload (in bytes). If not set, defaults to 5MB (5242880 bytes). Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes). Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable. |  [optional]
-**parallelTransfers** | **Integer** | ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to runtime.NumCPU()*2 (capped at 32). Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable. |  [optional]
+**parallelTransfers** | **Integer** | ParallelTransfers is the number of parallel transfers to use for S3 operations. If not set, defaults to 1. Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable. |  [optional]
 **region** | **String** | Region contains the optional bucket region |  [optional]
 **roleARN** | **String** | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  [optional]
 **secretKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]

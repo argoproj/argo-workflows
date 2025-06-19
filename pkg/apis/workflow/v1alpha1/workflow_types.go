@@ -2600,7 +2600,7 @@ type S3Bucket struct {
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
 
 	// ParallelTransfers is the number of parallel transfers to use for S3 operations.
-	// If not set, defaults to runtime.NumCPU()*2 (capped at 32).
+	// If not set, defaults to 1.
 	// Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.
 	ParallelTransfers *int32 `json:"parallelTransfers,omitempty" protobuf:"varint,13,opt,name=parallelTransfers"`
 

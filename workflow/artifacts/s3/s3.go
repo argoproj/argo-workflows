@@ -948,10 +948,6 @@ func parseKMSEncCntx(kmsEncCntx string) (*string, error) {
 	return &parsedKMSEncryptionContext, nil
 }
 
-const (
-	maxParallel = 32
-)
-
 // getParallelTransfers returns the number of parallel transfers to use
 func (s *s3client) getParallelTransfers() int {
 	// Use configured value if set
@@ -963,25 +959,10 @@ func (s *s3client) getParallelTransfers() int {
 		return s.ParallelTransfers
 	}
 
-	// Auto-detect based on CPU count if ParallelTransfers is 0
-	if s.ParallelTransfers == 0 {
-		parallel := runtime.NumCPU() * 2
-		if parallel > maxParallel {
-			parallel = maxParallel
-		}
-		log.WithFields(log.Fields{
-			"parallelTransfers": parallel,
-			"source":            "auto-detected",
-			"cpuCount":          runtime.NumCPU(),
-		}).Info("Using auto-detected ParallelTransfers")
-		return parallel
-	}
-
-	// Fallback for negative values
+	// Default to 1 to match existing behavior
 	log.WithFields(log.Fields{
 		"parallelTransfers": 1,
-		"source":            "fallback",
-		"originalValue":     s.ParallelTransfers,
-	}).Info("Using fallback ParallelTransfers")
+		"source":            "default",
+	}).Info("Using default ParallelTransfers")
 	return 1
 }
