@@ -10,82 +10,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/expand"
 )
 
-// sprigFuncMap is a subset of Masterminds/sprig helpers.
-// It keeps only those functions that do **not** have a direct equivalent
-// in the Expr standard library and that we still consider safe to expose.
-var sprigFuncMap map[string]interface{}
+var sprigFuncMap = sprig.GenericFuncMap() // a singleton for better performance
 
 func init() {
-	full := sprig.GenericFuncMap()
-
-	allowed := map[string]struct{}{
-		// Random / crypto
-		"randAlpha":    {},
-		"randAlphaNum": {},
-		"randAscii":    {},
-		"randNumeric":  {},
-		"randBytes":    {},
-		"randInt":      {},
-		"uuidv4":       {},
-		// Regex helpers
-		"regexFindAll":           {},
-		"regexSplit":             {},
-		"regexReplaceAll":        {},
-		"regexReplaceAllLiteral": {},
-		"regexQuoteMeta":         {},
-		// Text layout / case helpers
-		"wrap":      {},
-		"wrapWith":  {},
-		"nospace":   {},
-		"title":     {},
-		"untitle":   {},
-		"plural":    {},
-		"initials":  {},
-		"snakecase": {},
-		"camelcase": {},
-		"kebabcase": {},
-		"swapcase":  {},
-		"shuffle":   {},
-		"trunc":     {},
-		// Dict & reflection helpers
-		"dict":           {},
-		"set":            {},
-		"deepCopy":       {},
-		"merge":          {},
-		"mergeOverwrite": {},
-		"mergeRecursive": {},
-		"dig":            {},
-		"pluck":          {},
-		"typeIsLike":     {},
-		"kindIs":         {},
-		"typeOf":         {},
-		// Path / URL helpers
-		"base":     {},
-		"dir":      {},
-		"ext":      {},
-		"clean":    {},
-		"urlParse": {},
-		"urlJoin":  {},
-		// SemVer helpers
-		"semver":        {},
-		"semverCompare": {},
-		// Flow‑control helpers
-		"fail":     {},
-		"required": {},
-		// Encoding / YAML helpers
-		"b32enc":   {},
-		"b32dec":   {},
-		"toYaml":   {},
-		"fromYaml": {},
-	}
-
-	// Build the curated func‑map
-	sprigFuncMap = make(map[string]interface{}, len(allowed))
-	for name, fn := range full {
-		if _, ok := allowed[name]; ok {
-			sprigFuncMap[name] = fn
-		}
-	}
+	delete(sprigFuncMap, "env")
+	delete(sprigFuncMap, "expandenv")
 }
 
 func GetFuncMap(m map[string]interface{}) map[string]interface{} {

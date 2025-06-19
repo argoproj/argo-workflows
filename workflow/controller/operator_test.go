@@ -1412,7 +1412,7 @@ spec:
         - name: main
           resources:
             limits:
-              memory: "{{=(int(retries) + 1) * 64}}Mi"
+              memory: "{{=(sprig.int(retries) + 1) * 64}}Mi"
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
@@ -1471,7 +1471,7 @@ spec:
         - name: main
           resources:
             limits:
-              memory: "{{= (int(retries)+1)* int(workflow.parameters.memreqnum)}}Mi"
+              memory: "{{= (sprig.int(retries)+1)* sprig.int(workflow.parameters.memreqnum)}}Mi"
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
@@ -1524,7 +1524,7 @@ spec:
         - name: main
           resources:
             limits:
-              memory: "{{= (int(lastRetry.exitCode)==1 ? (int(retries)+1) : 1)* 100}}Mi"
+              memory: "{{= (sprig.int(lastRetry.exitCode)==1 ? (sprig.int(retries)+1) : 1)* 100}}Mi"
     container:
       image: python:alpine3.6
       command: ["python", -c]
