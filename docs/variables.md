@@ -156,6 +156,7 @@ For complete documentation on these functions, refer to the [Sprig documentation
 | `inputs.parameters`| All input parameters to a template as a JSON string |
 | `inputs.artifacts.<NAME>` | Input artifact to a template |
 | `node.name` | Full name of the node |
+| `node.type` | Type of the node |
 
 ### Steps Templates
 
