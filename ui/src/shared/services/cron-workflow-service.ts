@@ -13,14 +13,14 @@ function normalizeSchedules(cronWorkflow: any): CronWorkflow {
         cronWorkflow.spec.schedules.push(cronWorkflow.spec.schedule);
         delete cronWorkflow.spec.schedule;
     }
-    
+
     // Ensure when property is properly handled
     cronWorkflow.spec.when ??= [];
     // If when is a string in the API response, convert it to an array
     if (typeof cronWorkflow.spec.when === 'string') {
         cronWorkflow.spec.when = [cronWorkflow.spec.when];
     }
-    
+
     return cronWorkflow as CronWorkflow;
 }
 
