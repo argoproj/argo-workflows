@@ -2601,18 +2601,15 @@ type S3Bucket struct {
 
 	// ParallelTransfers is the number of parallel transfers to use for S3 operations.
 	// If not set, defaults to 1.
-	// Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable.
 	ParallelTransfers *int32 `json:"parallelTransfers,omitempty" protobuf:"varint,13,opt,name=parallelTransfers"`
 
 	// MultipartPartSize is the size of each part in a multipart upload (in bytes).
 	// If not set, defaults to 5MB (5242880 bytes).
 	// Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes).
-	// Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable.
 	MultipartPartSize *int64 `json:"multipartPartSize,omitempty" protobuf:"varint,14,opt,name=multipartPartSize"`
 
 	// MultipartConcurrency is the number of concurrent multipart uploads.
 	// If not set, defaults to 4.
-	// Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable.
 	MultipartConcurrency *int32 `json:"multipartConcurrency,omitempty" protobuf:"varint,15,opt,name=multipartConcurrency"`
 }
 

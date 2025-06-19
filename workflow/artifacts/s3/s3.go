@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -172,27 +171,6 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 		"multipartPartSize":    s3Driver.MultipartPartSize,
 		"multipartConcurrency": s3Driver.MultipartConcurrency,
 	}).Info("Creating S3 client with configuration")
-
-	// Check for environment variable overrides
-	if envVal := os.Getenv("ARGO_S3_PARALLEL_TRANSFERS"); envVal != "" {
-		if val, err := strconv.Atoi(envVal); err == nil && val > 0 {
-			log.WithFields(log.Fields{
-				"original": opts.ParallelTransfers,
-				"override": val,
-			}).Info("Overriding ParallelTransfers with environment variable")
-			opts.ParallelTransfers = val
-		}
-	}
-	if envVal := os.Getenv("ARGO_S3_MULTIPART_PART_SIZE"); envVal != "" {
-		if val, err := strconv.ParseInt(envVal, 10, 64); err == nil && val > 0 {
-			opts.MultipartPartSize = val
-		}
-	}
-	if envVal := os.Getenv("ARGO_S3_MULTIPART_CONCURRENCY"); envVal != "" {
-		if val, err := strconv.Atoi(envVal); err == nil && val > 0 {
-			opts.MultipartConcurrency = val
-		}
-	}
 
 	if tr, err := GetDefaultTransport(opts); err == nil {
 		if s3Driver.Secure && s3Driver.TrustedCA != "" {

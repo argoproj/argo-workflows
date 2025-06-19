@@ -665,15 +665,12 @@ data:
       useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
       # Optional: Number of parallel transfers for S3 operations
       # If not set, defaults to 1
-      # Can be overridden by ARGO_S3_PARALLEL_TRANSFERS environment variable
       parallelTransfers: 8
       # Optional: Size of each part in a multipart upload (in bytes)
       # If not set, defaults to 5MB
-      # Can be overridden by ARGO_S3_MULTIPART_PART_SIZE environment variable
       multipartPartSize: 5242880
       # Optional: Number of concurrent multipart uploads
       # If not set, defaults to 4
-      # Can be overridden by ARGO_S3_MULTIPART_CONCURRENCY environment variable
       multipartConcurrency: 4
 ```
 
