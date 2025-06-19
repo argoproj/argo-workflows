@@ -17,7 +17,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"github.com/soheilhy/cmux"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -198,6 +199,27 @@ var backoff = wait.Backoff{
 	Jitter:   0.1,
 }
 
+// grpcHTTPMux returns an HTTP handler that allows serving both gRPC and
+// HTTP requests over the same port, both with and without TLS enabled.
+// From: https://pkg.go.dev/golang.org/x/net@v0.41.0/http2/h2c#NewHandler
+// "If a request is an h2c connection, it's hijacked and redirected to
+// s.ServeConn. Otherwise the returned Handler just forwards requests to h. This
+// works because h2c is designed to be parseable as valid HTTP/1, but ignored by
+// any HTTP server that does not handle h2c. Therefore we leverage the HTTP/1
+// compatible parts of the Go http library to parse and recognize h2c requests.
+// Once a request is recognized as h2c, we hijack the connection and convert it
+// to an HTTP/2 connection which is understandable to s.ServeConn. (s.ServeConn
+// understands HTTP/2 except for the h2c part of it.)"
+func grpcHTTPMux(grpcServer *grpc.Server, httpServerHandler http.Handler) http.Handler {
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
+			grpcServer.ServeHTTP(w, r)
+		} else {
+			httpServerHandler.ServeHTTP(w, r)
+		}
+	}), &http2.Server{})
+}
+
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	config, err := as.configController.Get(ctx)
 	if err != nil {
@@ -274,18 +296,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		conn = tls.NewListener(conn, as.tlsConfig)
 	}
 
-	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
-	tcpm := cmux.New(conn)
-	httpL := tcpm.Match(cmux.HTTP1Fast())
-	grpcL := tcpm.Match(cmux.Any())
+	handler := grpcHTTPMux(grpcServer, httpServer.Handler)
 
 	wftmplStore.Run(as.stopCh)
 	cwftmplInformer.Run(as.stopCh)
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
-	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
-	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
+	go func() { as.checkServeErr("httpServer", http.Serve(conn, handler)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
