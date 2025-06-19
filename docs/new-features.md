@@ -1,80 +1,47 @@
-# New features
+# New Features
 
 This is a concise list of new features.
-For a more detailed list, see the [3.6 blog post](https://blog.argoproj.io/argo-workflows-3-6-aa037cd782be).
 
-See [the upgrade notes](upgrading.md#upgrading-to-v36) for information on breaking changes and deprecations.
+## Retry Improvements
 
-## UI
+* [#13738](https://github.com/argoproj/argo-workflows/pull/13738) : Support retry strategy on daemon containers
+* [#13782](https://github.com/argoproj/argo-workflows/pull/13782) : Support cap on retryStrategy backoff
+* [#14450](https://github.com/argoproj/argo-workflows/pull/14450) : Allow last retry variables in expressions
 
-* [#13519](https://github.com/argoproj/argo-workflows/pull/13519): The full name of the workflow is now visible in the list details of a workflow.
-* [#13284](https://github.com/argoproj/argo-workflows/pull/13284): Various time displays can be switched between relative and absolute ISO time.
-* [#10553](https://github.com/argoproj/argo-workflows/pull/10553): You can now use markdown in workflow titles and descriptions and it will be displayed in the UI.
-* [#12350](https://github.com/argoproj/argo-workflows/pull/12350): The UI will now show the directory used for input artifacts.
-* [#12873](https://github.com/argoproj/argo-workflows/pull/12873): You can also now see line numbers in the object view.
-* [#13452](https://github.com/argoproj/argo-workflows/pull/13452): WorkflowTemplate and ClusterWorkflowTemplate will show you their execution history like you can see for CronWorkflows.
-* [#12024](https://github.com/argoproj/argo-workflows/pull/12024): You will be able to see live logs from pods if retrieval of logs from archived workflows fails and the pod logs are available.
-* [#12674](https://github.com/argoproj/argo-workflows/pull/12674): CronWorkflows and WorkflowTemplates now display their title and descriptions in the list view.
-* [#12199](https://github.com/argoproj/argo-workflows/pull/12199): You can specify HTTP headers to use to detect IP addresses using the `IP_KEY_FUNC_HEADERS` environment variable. This is used in the rate limiter.
-* [#13695](https://github.com/argoproj/argo-workflows/pull/13695): You can now retry a single node from a workflow, even if the workflow succeeded.
-* [#13610](https://github.com/argoproj/argo-workflows/pull/13610): You can now filter with prefixes and patterns in the workflow list.
-* [#13494](https://github.com/argoproj/argo-workflows/pull/13494): URLs are now clickable links in workflow node info
-* [#13511](https://github.com/argoproj/argo-workflows/pull/13511): You can now group nodes based on `templateRef` and see invoking template name instead of the execution order DAG.
+## Enhanced Caching
 
-## Metrics
+* [#14304](https://github.com/argoproj/argo-workflows/pull/14304) : More granular caching options for the argo kubernetes informer
+* [#14205](https://github.com/argoproj/argo-workflows/pull/14205) : Cache semaphore limit lookup
 
-* [#13265](https://github.com/argoproj/argo-workflows/pull/13265): The workflow controller can now emit metrics over OpenTelemetry GRPC protocol
-    * [#13267](https://github.com/argoproj/argo-workflows/pull/13267): with selectable temporality
-    * [#13268](https://github.com/argoproj/argo-workflows/pull/13268): configuration of what is emitted
-* Many of the metrics have been updated which will require you [to change how you use them](upgrading.md#metrics-changes) and there are some new ones:
-    * [#13269](https://github.com/argoproj/argo-workflows/pull/13269): Version information in the controller
-    * [#13270](https://github.com/argoproj/argo-workflows/pull/13270): Is this controller the leader
-    * [#13271](https://github.com/argoproj/argo-workflows/pull/13271): Kubernetes API calls duration
-    * [#13272](https://github.com/argoproj/argo-workflows/pull/13272): Pod phase monitoring
-    * [#13274](https://github.com/argoproj/argo-workflows/pull/13274): CronWorkflows counters
-    * [#13497](https://github.com/argoproj/argo-workflows/pull/13497): CronWorkflows policy counters
-    * [#13275](https://github.com/argoproj/argo-workflows/pull/13275): Workflow Template counters
-    * [#13735](https://github.com/argoproj/argo-workflows/pull/13735): Counters to check if you're using deprecated features
-* [#11927](https://github.com/argoproj/argo-workflows/pull/11927): There is a new `retries` variable available in metrics describing the number of retries.
-* [#11857](https://github.com/argoproj/argo-workflows/pull/11857): Pod missing metrics will be emitted before pods are created
+## Security Improvements
+
+* [#14477](https://github.com/argoproj/argo-workflows/pull/14477) : Non-root argoexec image
+
+## UI Enhancements
+
+* [#13962](https://github.com/argoproj/argo-workflows/pull/13962) : Filter workflows by "Finished before" and "Created since" via API
+* [#13935](https://github.com/argoproj/argo-workflows/pull/13935) : Allow markdown titles and descriptions in KeyValueEditor
+* [#12644](https://github.com/argoproj/argo-workflows/pull/12644) : Allow markdown titles and descriptions in WorkflowTemplates & ClusterWorkflowTemplates
+* [#13883](https://github.com/argoproj/argo-workflows/pull/13883) : Mark memoized nodes as cached
+* [#13922](https://github.com/argoproj/argo-workflows/pull/13922) : Pre-fill parameters for workflow submit form
+* [#14077](https://github.com/argoproj/argo-workflows/pull/14077) : Set template display name in YAML
+* [#14034](https://github.com/argoproj/argo-workflows/pull/14034) : Visualize workflows before submitting
+
+## Developer Experience
+
+* [#14412](https://github.com/argoproj/argo-workflows/pull/14412) : Add React Testing Library and initial component coverage
+* [#13920](https://github.com/argoproj/argo-workflows/pull/13920) : Move contextless log messages to debug level
+* [#14151](https://github.com/argoproj/argo-workflows/pull/14151) : Enable cherry-pick bot
+
+## CLI Enhancements
+
+* [#13999](https://github.com/argoproj/argo-workflows/pull/13999) : Support backfill for cron workflows
 
 ## General
 
-* [#13358](https://github.com/argoproj/argo-workflows/pull/13358): You can use multiple mutexes and semaphores in the same workflow or template, and use both type of lock at the same time
-* [#13419](https://github.com/argoproj/argo-workflows/pull/13419): The controller uses a queue when archiving workflows to improve memory management when archiving a large number of workflows at once
-* [#12441](https://github.com/argoproj/argo-workflows/pull/12441): Plugins can now be stopped, so that a stopped workflow will shutdown its plugin nodes
-* The OSS artifact driver:
-    * [#12188](https://github.com/argoproj/argo-workflows/pull/12188): Can now work with directories,
-    * [#12907](https://github.com/argoproj/argo-workflows/pull/12907): Supports deletion,
-    * [#12908](https://github.com/argoproj/argo-workflows/pull/12908): Supports streaming.
-* [#12419](https://github.com/argoproj/argo-workflows/pull/12419): Pod deletion will now happen in parallel to speed it up.
-* [#13360](https://github.com/argoproj/argo-workflows/pull/13360): You can use Shared Access Signatures to access artifacts stored in Azure.
-* [#12413](https://github.com/argoproj/argo-workflows/pull/12413): Workflow pods now have a kubernetes finalizer to try to prevent them being deleted prematurely
-* [#12325](https://github.com/argoproj/argo-workflows/pull/12325): Large environment variables will be offloaded to Config Maps
-* [#12328](https://github.com/argoproj/argo-workflows/pull/12328): Large and flat workflows where there are many steps that need resolving at the same time could time out during template referencing. This is now much faster.
-* [#12568](https://github.com/argoproj/argo-workflows/pull/12568): Kubernetes scheduling constraints such as node selectors and tolerations will now be honored where they are specified in a WorkflowTemplate. These will be applied to the task and step pods.
-* [#12984](https://github.com/argoproj/argo-workflows/pull/12984): The pods created by workflows will have a `seccompProfile` of `RuntimeDefault` by default.
-* [#12842](https://github.com/argoproj/argo-workflows/pull/12842): You can now template the `name` and `template` in a `templateRef`. This allows for fully data driven workflow DAGs.
-* [#13194](https://github.com/argoproj/argo-workflows/pull/13194): The expr library has been upgraded providing some new functions in expressions.
-* [#13746](https://github.com/argoproj/argo-workflows/pull/13746): Configuration option to avoid sending kubernetes Events for workflows.
-* [#13745](https://github.com/argoproj/argo-workflows/pull/13745): Added an option to skip workflow duration estimation because it can be expensive.
-
-## CronWorkflows
-
-* [#12616](https://github.com/argoproj/argo-workflows/pull/12616): You can now specify multiple cron schedules on a single CronWorkflow.
-* [#12305](https://github.com/argoproj/argo-workflows/pull/12305): You can also use a stop strategy on CronWorkflows to stop them running any more workflows after a set of conditions occur such as too many errors.
-* [#13474](https://github.com/argoproj/argo-workflows/pull/13474): CronWorkflows also now have a when expression to further tune which occurrences of the workflow will run and which may be skipped
-
-## CLI
-
-* [#12803](https://github.com/argoproj/argo-workflows/pull/12803): You can now update Cron Workflows, Workflow Templates and Cluster Workflow Templates with the `update` command via the CLI
-* [#13364](https://github.com/argoproj/argo-workflows/pull/13364): You can selectively list workflow templates using a `-l` label selector
-* [#13128](https://github.com/argoproj/argo-workflows/pull/13128): The CLI will now generate shell completions for the [fish shell](https://fishshell.com/)
-* [#12977](https://github.com/argoproj/argo-workflows/pull/12977): We also build and ship the CLI complied for [Risc-V](https://riscv.org/)
-* [#12953](https://github.com/argoproj/argo-workflows/pull/12953): The lint command supports a `--no-color` flag
-* [#13695](https://github.com/argoproj/argo-workflows/pull/13695): The `--output` flag is now validated
-
-## Build and Development
-
-* [#13000](https://github.com/argoproj/argo-workflows/pull/13000): There is now a `/retest` command for retesting PRs in Github that occasionally fail in a flakey test
-* [#12867](https://github.com/argoproj/argo-workflows/pull/12867): You can supply your own HTTP client when using the go API client, allowing for adding a proxy
+* [#14188](https://github.com/argoproj/argo-workflows/pull/14188) : Dynamic namespace parallelism
+* [#14103](https://github.com/argoproj/argo-workflows/pull/14103) : Add support for databases enforcing strict data integrity through primary keys
+* [#14104](https://github.com/argoproj/argo-workflows/pull/14104) : Label actor action when making changes to workflows/templates
+* [#13933](https://github.com/argoproj/argo-workflows/pull/13933) : Support archive logs in resource templates
+* [#13790](https://github.com/argoproj/argo-workflows/pull/13790) : Include container name in error messages
+* [#14309](https://github.com/argoproj/argo-workflows/pull/14309) : Multi-controller locks (semaphores and mutexes)

@@ -79,6 +79,7 @@ Kaniko
 Katacoda
 Katib
 Kerberos
+KeyValueEditor
 Killercoda
 KubectlExec
 Kubeflow
@@ -109,6 +110,7 @@ PersistentVolumeClaims
 Ploomber
 PostgreSQL
 Postgres
+Pre-fill
 PriorityClass
 RCs
 Risc-V
@@ -138,11 +140,13 @@ anded
 apis
 architecting
 argo
+argoexec
 argoproj
 args
 async
 auth
 backend
+backoff
 backported
 boolean
 booleans
@@ -216,6 +220,7 @@ qps
 ray
 rc2
 repo
+retryStrategy
 roadmap
 runtime
 runtimes
