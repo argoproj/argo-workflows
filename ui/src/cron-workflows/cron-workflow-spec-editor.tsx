@@ -23,6 +23,20 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
+                    <div className='columns small-3'>WhenConditions</div>
+                    <div className='columns small-9'>
+                        {Array.isArray(spec.when) && spec.when.length > 0 ? (
+                            spec.when.map((condition, index) => (
+                                <React.Fragment key={index}>
+                                    <TextInput value={condition} onChange={newCondition => onChange({...spec, when: updateWhenAtIndex(spec.when || [], index, newCondition)})} />
+                                </React.Fragment>
+                            ))
+                        ) : (
+                            <i>No conditions defined</i>
+                        )}
+                    </div>
+                </div>
+                <div className='row white-box__details-row'>
                     <div className='columns small-3'>Timezone</div>
                     <div className='columns small-9'>
                         <TextInput value={spec.timezone} onChange={timezone => onChange({...spec, timezone})} />
@@ -102,4 +116,11 @@ function updateScheduleAtIndex(schedules: string[], index: number, newSchedule: 
     newSchedules[index] = newSchedule;
 
     return newSchedules;
+}
+
+function updateWhenAtIndex(when: string[], index: number, newCondition: string): string[] {
+    const newWhen = [...when];
+    newWhen[index] = newCondition;
+
+    return newWhen;
 }
