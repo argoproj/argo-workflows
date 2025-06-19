@@ -1001,6 +1001,15 @@ spec:
                               type: boolean
                             key:
                               type: string
+                            multipartConcurrency:
+                              format: int32
+                              type: integer
+                            multipartPartSize:
+                              format: int64
+                              type: integer
+                            parallelTransfers:
+                              format: int32
+                              type: integer
                             region:
                               type: string
                             roleARN:
@@ -1696,6 +1705,15 @@ spec:
                                     type: boolean
                                   key:
                                     type: string
+                                  multipartConcurrency:
+                                    format: int32
+                                    type: integer
+                                  multipartPartSize:
+                                    format: int64
+                                    type: integer
+                                  parallelTransfers:
+                                    format: int32
+                                    type: integer
                                   region:
                                     type: string
                                   roleARN:
@@ -3108,6 +3126,15 @@ spec:
                             type: boolean
                           key:
                             type: string
+                          multipartConcurrency:
+                            format: int32
+                            type: integer
+                          multipartPartSize:
+                            format: int64
+                            type: integer
+                          parallelTransfers:
+                            format: int32
+                            type: integer
                           region:
                             type: string
                           roleARN:
@@ -5089,6 +5116,15 @@ spec:
                                             type: boolean
                                           key:
                                             type: string
+                                          multipartConcurrency:
+                                            format: int32
+                                            type: integer
+                                          multipartPartSize:
+                                            format: int64
+                                            type: integer
+                                          parallelTransfers:
+                                            format: int32
+                                            type: integer
                                           region:
                                             type: string
                                           roleARN:
@@ -5729,6 +5765,15 @@ spec:
                                                   type: boolean
                                                 key:
                                                   type: string
+                                                multipartConcurrency:
+                                                  format: int32
+                                                  type: integer
+                                                multipartPartSize:
+                                                  format: int64
+                                                  type: integer
+                                                parallelTransfers:
+                                                  format: int32
+                                                  type: integer
                                                 region:
                                                   type: string
                                                 roleARN:
@@ -6419,6 +6464,15 @@ spec:
                                     type: boolean
                                   key:
                                     type: string
+                                  multipartConcurrency:
+                                    format: int32
+                                    type: integer
+                                  multipartPartSize:
+                                    format: int64
+                                    type: integer
+                                  parallelTransfers:
+                                    format: int32
+                                    type: integer
                                   region:
                                     type: string
                                   roleARN:
@@ -7758,6 +7812,15 @@ spec:
                                   type: boolean
                                 key:
                                   type: string
+                                multipartConcurrency:
+                                  format: int32
+                                  type: integer
+                                multipartPartSize:
+                                  format: int64
+                                  type: integer
+                                parallelTransfers:
+                                  format: int32
+                                  type: integer
                                 region:
                                   type: string
                                 roleARN:
@@ -8490,6 +8553,15 @@ spec:
                                   type: boolean
                                 key:
                                   type: string
+                                multipartConcurrency:
+                                  format: int32
+                                  type: integer
+                                multipartPartSize:
+                                  format: int64
+                                  type: integer
+                                parallelTransfers:
+                                  format: int32
+                                  type: integer
                                 region:
                                   type: string
                                 roleARN:
@@ -9139,6 +9211,15 @@ spec:
                                     type: boolean
                                   key:
                                     type: string
+                                  multipartConcurrency:
+                                    format: int32
+                                    type: integer
+                                  multipartPartSize:
+                                    format: int64
+                                    type: integer
+                                  parallelTransfers:
+                                    format: int32
+                                    type: integer
                                   region:
                                     type: string
                                   roleARN:
@@ -11202,6 +11283,15 @@ spec:
                                           type: boolean
                                         key:
                                           type: string
+                                        multipartConcurrency:
+                                          format: int32
+                                          type: integer
+                                        multipartPartSize:
+                                          format: int64
+                                          type: integer
+                                        parallelTransfers:
+                                          format: int32
+                                          type: integer
                                         region:
                                           type: string
                                         roleARN:
@@ -11836,6 +11926,15 @@ spec:
                                                 type: boolean
                                               key:
                                                 type: string
+                                              multipartConcurrency:
+                                                format: int32
+                                                type: integer
+                                              multipartPartSize:
+                                                format: int64
+                                                type: integer
+                                              parallelTransfers:
+                                                format: int32
+                                                type: integer
                                               region:
                                                 type: string
                                               roleARN:
@@ -13813,6 +13912,15 @@ spec:
                               type: boolean
                             key:
                               type: string
+                            multipartConcurrency:
+                              format: int32
+                              type: integer
+                            multipartPartSize:
+                              format: int64
+                              type: integer
+                            parallelTransfers:
+                              format: int32
+                              type: integer
                             region:
                               type: string
                             roleARN:
@@ -15794,6 +15902,15 @@ spec:
                                               type: boolean
                                             key:
                                               type: string
+                                            multipartConcurrency:
+                                              format: int32
+                                              type: integer
+                                            multipartPartSize:
+                                              format: int64
+                                              type: integer
+                                            parallelTransfers:
+                                              format: int32
+                                              type: integer
                                             region:
                                               type: string
                                             roleARN:
@@ -16434,6 +16551,15 @@ spec:
                                                     type: boolean
                                                   key:
                                                     type: string
+                                                  multipartConcurrency:
+                                                    format: int32
+                                                    type: integer
+                                                  multipartPartSize:
+                                                    format: int64
+                                                    type: integer
+                                                  parallelTransfers:
+                                                    format: int32
+                                                    type: integer
                                                   region:
                                                     type: string
                                                   roleARN:
@@ -17124,6 +17250,15 @@ spec:
                                       type: boolean
                                     key:
                                       type: string
+                                    multipartConcurrency:
+                                      format: int32
+                                      type: integer
+                                    multipartPartSize:
+                                      format: int64
+                                      type: integer
+                                    parallelTransfers:
+                                      format: int32
+                                      type: integer
                                     region:
                                       type: string
                                     roleARN:
@@ -18463,6 +18598,15 @@ spec:
                                     type: boolean
                                   key:
                                     type: string
+                                  multipartConcurrency:
+                                    format: int32
+                                    type: integer
+                                  multipartPartSize:
+                                    format: int64
+                                    type: integer
+                                  parallelTransfers:
+                                    format: int32
+                                    type: integer
                                   region:
                                     type: string
                                   roleARN:
@@ -19195,6 +19339,15 @@ spec:
                                     type: boolean
                                   key:
                                     type: string
+                                  multipartConcurrency:
+                                    format: int32
+                                    type: integer
+                                  multipartPartSize:
+                                    format: int64
+                                    type: integer
+                                  parallelTransfers:
+                                    format: int32
+                                    type: integer
                                   region:
                                     type: string
                                   roleARN:
@@ -19844,6 +19997,15 @@ spec:
                                       type: boolean
                                     key:
                                       type: string
+                                    multipartConcurrency:
+                                      format: int32
+                                      type: integer
+                                    multipartPartSize:
+                                      format: int64
+                                      type: integer
+                                    parallelTransfers:
+                                      format: int32
+                                      type: integer
                                     region:
                                       type: string
                                     roleARN:
@@ -21907,6 +22069,15 @@ spec:
                                             type: boolean
                                           key:
                                             type: string
+                                          multipartConcurrency:
+                                            format: int32
+                                            type: integer
+                                          multipartPartSize:
+                                            format: int64
+                                            type: integer
+                                          parallelTransfers:
+                                            format: int32
+                                            type: integer
                                           region:
                                             type: string
                                           roleARN:
@@ -22541,6 +22712,15 @@ spec:
                                                   type: boolean
                                                 key:
                                                   type: string
+                                                multipartConcurrency:
+                                                  format: int32
+                                                  type: integer
+                                                multipartPartSize:
+                                                  format: int64
+                                                  type: integer
+                                                parallelTransfers:
+                                                  format: int32
+                                                  type: integer
                                                 region:
                                                   type: string
                                                 roleARN:

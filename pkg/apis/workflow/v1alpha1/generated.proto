@@ -1450,6 +1450,19 @@ message S3Bucket {
 
   // CASecret specifies the secret that contains the CA, used to verify the TLS connection
   optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
+
+  // ParallelTransfers is the number of parallel transfers to use for S3 operations.
+  // If not set, defaults to 1.
+  optional int32 parallelTransfers = 13;
+
+  // MultipartPartSize is the size of each part in a multipart upload (in bytes).
+  // If not set, defaults to 5MB (5242880 bytes).
+  // Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes).
+  optional int64 multipartPartSize = 14;
+
+  // MultipartConcurrency is the number of concurrent multipart uploads.
+  // If not set, defaults to 4.
+  optional int32 multipartConcurrency = 15;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations

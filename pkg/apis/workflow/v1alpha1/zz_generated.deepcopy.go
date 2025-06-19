@@ -2786,6 +2786,21 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ParallelTransfers != nil {
+		in, out := &in.ParallelTransfers, &out.ParallelTransfers
+		*out = new(int32)
+		**out = **in
+	}
+	if in.MultipartPartSize != nil {
+		in, out := &in.MultipartPartSize, &out.MultipartPartSize
+		*out = new(int64)
+		**out = **in
+	}
+	if in.MultipartConcurrency != nil {
+		in, out := &in.MultipartConcurrency, &out.MultipartConcurrency
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 
