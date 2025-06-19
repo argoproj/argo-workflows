@@ -552,7 +552,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 					// Update phase
 					if values.Phase != "" {
 						node.Phase = values.Phase
-						if values.Phase.Fulfilled() {
+						if values.Phase.Fulfilled(node.TaskResultSynced) {
 							node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 						}
 						nodeUpdated = true

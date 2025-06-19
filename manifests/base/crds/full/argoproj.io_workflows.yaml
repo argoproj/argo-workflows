@@ -26316,6 +26316,8 @@ spec:
                         waiting:
                           type: string
                       type: object
+                    taskResultSynced:
+                      type: boolean
                     templateName:
                       type: string
                     templateRef:

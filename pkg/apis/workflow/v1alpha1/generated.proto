@@ -1136,6 +1136,9 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
+
+  // TaskResultSynced is used to determine if the node's output has been received
+  optional bool taskResultSynced = 28;
 }
 
 // NodeSynchronizationStatus stores the status of a node
