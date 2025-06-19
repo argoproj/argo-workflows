@@ -1,8 +1,10 @@
 package serviceaccount
 
 import (
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"strings"
@@ -18,10 +20,15 @@ func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {
 	if username != "" {
 		return &types.Claims{Claims: jwt.Claims{Subject: username}}, nil
 	}
-	if restConfig.BearerToken == "" && restConfig.BearerTokenFile == "" {
-		return nil, nil
+
+	if restConfig.BearerToken != "" || restConfig.BearerTokenFile != "" {
+		return ClaimSetWithBearerToken(restConfig)
 	}
 
+	return ClaimSetWithX509(restConfig)
+}
+
+func ClaimSetWithBearerToken(restConfig *rest.Config) (*types.Claims, error) {
 	bearerToken := restConfig.BearerToken
 	if bearerToken == "" {
 		// should only ever be used for service accounts
@@ -57,6 +64,58 @@ func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {
 	}
 	claims.ServiceAccountNamespace = parts[2]
 	claims.ServiceAccountName = parts[3]
+
+	return claims, nil
+}
+
+func ClaimSetWithX509(restConfig *rest.Config) (*types.Claims, error) {
+	var cert *x509.Certificate
+
+	if len(restConfig.CertData) > 0 {
+		// Decode certificate from memory data
+		block, _ := pem.Decode(restConfig.CertData)
+		if block == nil || block.Type != "CERTIFICATE" {
+			return nil, fmt.Errorf("failed to parse certificate PEM")
+		}
+		cert, _ = x509.ParseCertificate(block.Bytes)
+	} else if restConfig.CertFile != "" {
+		// Load certificate from file
+		data, err := os.ReadFile(restConfig.CertFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read certificate file: %w", err)
+		}
+		block, _ := pem.Decode(data)
+		if block == nil || block.Type != "CERTIFICATE" {
+			return nil, fmt.Errorf("failed to parse certificate PEM")
+		}
+		cert, _ = x509.ParseCertificate(block.Bytes)
+	} else {
+		return nil, nil // No certificate info available
+	}
+
+	if cert == nil {
+		return nil, fmt.Errorf("failed to parse certificate")
+	}
+
+	// Extract username from CommonName (CN)
+	username := cert.Subject.CommonName
+
+	// Extract group information from Organization (O) fields
+	var groups []string
+	for _, org := range cert.Subject.Organization {
+		if strings.HasPrefix(org, "system:") {
+			groups = append(groups, org)
+		}
+	}
+
+	// Construct claims object
+	claims := &types.Claims{
+		Claims: jwt.Claims{
+			Subject: username,
+			Issuer:  "kubernetes/cert",
+		},
+		Groups: groups,
+	}
 
 	return claims, nil
 }
