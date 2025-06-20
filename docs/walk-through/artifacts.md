@@ -155,6 +155,36 @@ spec:
 
 Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec. This would be to avoid a scenario in which the artifact from one Workflow is being deleted while the same S3 key is being generated for a different Workflow.
 
+In the case of having a whole directory as S3 key, it is important that it ends with a "/". Otherwise, the GC pod won't be able to remove it.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-dir-key-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion  # default Strategy set here applies to all Artifacts by default
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "can throw this away" > /tmp/tmp-directory/delete-this.txt
+            echo "and this too" > /tmp/tmp-directory/delete-this-too.txt
+      outputs:
+        artifacts:
+          - name: temporary-artifact
+            path: /tmp/tmp-directory
+            s3:
+              key: "{{workflow.name}}/directory/" # IMPORTANT! ends with "/"
+```
+
 ### Service Accounts and Annotations
 
 Does your S3 bucket require you to run with a special Service Account or IAM Role Annotation? You can either use the same ones you use for creating artifacts or generate new ones that are specific for deletion permission. Generally users will probably just have a single Service Account or IAM Role to apply to all artifacts for the Workflow, but you can also customize on the artifact level if you need that:
