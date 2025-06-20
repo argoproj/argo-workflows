@@ -89,7 +89,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 
 			// Add an item to the queue from the other controller
 			semaphoreRecord := &stateRecord{
-				Name:       s.longDbKey(),
+				Name:       s.longDBKey(),
 				Key:        "foo/other-wf-01",
 				Controller: otherController,
 				Held:       false,
@@ -310,7 +310,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				_, err := info.session.SQL().
 					Update(info.config.limitTable).
 					Set(limitSizeField, 10).
-					Where(db.Cond{limitNameField: s.shortDbKey}).
+					Where(db.Cond{limitNameField: s.shortDBKey}).
 					Exec()
 				require.NoError(t, err)
 
@@ -351,7 +351,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				_, err := info.session.SQL().
 					Update(info.config.limitTable).
 					Set(limitSizeField, 7).
-					Where(db.Cond{limitNameField: s.shortDbKey}).
+					Where(db.Cond{limitNameField: s.shortDBKey}).
 					Exec()
 				require.NoError(t, err)
 

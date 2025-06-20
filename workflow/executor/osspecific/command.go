@@ -1,4 +1,4 @@
-package os_specific
+package osspecific
 
 import (
 	"io"

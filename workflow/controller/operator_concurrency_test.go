@@ -188,18 +188,18 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		}
 
 		// Try to Acquire the lock, But lock is not available
-		wf_Two := wf.DeepCopy()
-		wf_Two.Name = "two"
-		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wfTwo := wf.DeepCopy()
+		wfTwo.Name = "two"
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
-		woc_two.operate(ctx)
+		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = woc_two.podReconciliation(ctx)
+		err, _ = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
-		for _, node := range woc_two.wf.Status.Nodes {
+		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
@@ -212,11 +212,11 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
-		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
+		wocTwo.operate(ctx)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
+		assert.Len(t, wocTwo.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -249,18 +249,18 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		}
 
 		// Try to Acquire the lock, But lock is not available
-		wf_Two := wf.DeepCopy()
-		wf_Two.Name = "two"
-		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wfTwo := wf.DeepCopy()
+		wfTwo.Name = "two"
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
-		woc_two.operate(ctx)
+		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = woc_two.podReconciliation(ctx)
+		err, _ = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
-		for _, node := range woc_two.wf.Status.Nodes {
+		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
@@ -272,11 +272,11 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
-		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
+		wocTwo.operate(ctx)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
+		assert.Len(t, wocTwo.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -310,19 +310,19 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		}
 
 		// Try to Acquire the lock, But lock is not available
-		wf_Two := wf.DeepCopy()
-		wf_Two.Name = "two"
-		wf_Two.Namespace = "namespace-two"
-		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf_Two.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wfTwo := wf.DeepCopy()
+		wfTwo.Name = "two"
+		wfTwo.Namespace = "namespace-two"
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wfTwo.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
-		woc_two.operate(ctx)
+		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = woc_two.podReconciliation(ctx)
+		err, _ = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
-		for _, node := range woc_two.wf.Status.Nodes {
+		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
@@ -334,11 +334,11 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
-		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
+		wocTwo.operate(ctx)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
+		assert.Len(t, wocTwo.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -371,18 +371,18 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		}
 
 		// Try to Acquire the lock, But lock is not available
-		wf_Two := wf.DeepCopy()
-		wf_Two.Name = "two"
-		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wfTwo := wf.DeepCopy()
+		wfTwo.Name = "two"
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
-		woc_two.operate(ctx)
+		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = woc_two.podReconciliation(ctx)
+		err, _ = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
-		for _, node := range woc_two.wf.Status.Nodes {
+		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
@@ -395,11 +395,11 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
-		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
+		wocTwo.operate(ctx)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
+		assert.Len(t, wocTwo.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -521,7 +521,7 @@ spec:
  - name: mutex
    synchronization:
      mutexes:
-       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
+       - name: '{{=replace("/", "-", inputs.parameters.message)}}'
    inputs:
      parameters:
      - name: message

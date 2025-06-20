@@ -43,7 +43,7 @@ This is not the default executor for backwards compatibility, but using it is be
 Use this image when your security policies restrict pulling images that run as root.
 You can run this image as root by specifying `runAsUser: 0`.
 
-The image is available at `quay.io/argoproj/argoexec-nonroot:<version>`.
+The image is available at `quay.io/argoproj/argoexec:<version>-nonroot`.
 
 You can configure this as the default executor image in the [workflow-controller-configmap](workflow-controller-configmap.yaml):
 
@@ -54,5 +54,5 @@ metadata:
   name: workflow-controller-configmap
 data:
   executor: |
-    image: quay.io/argoproj/argoexec-nonroot:<version>
+    image: quay.io/argoproj/argoexec:<version>-nonroot
 ```

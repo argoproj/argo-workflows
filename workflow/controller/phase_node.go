@@ -9,14 +9,14 @@ import (
 // A phaseNode is a node in a BFS of all nodes for the purposes of determining overall DAG phase. nodeId is the corresponding
 // nodeId and phase is the current branchPhase associated with the node
 type phaseNode struct {
-	nodeId string
+	nodeID string
 	phase  wfv1.NodePhase
 }
 
 func generatePhaseNodes(children []string, branchPhase wfv1.NodePhase) []phaseNode {
 	out := make([]phaseNode, len(children))
 	for i, child := range children {
-		out[i] = phaseNode{nodeId: child, phase: branchPhase}
+		out[i] = phaseNode{nodeID: child, phase: branchPhase}
 	}
 	return out
 }
@@ -46,7 +46,7 @@ func newUniquePhaseNodeQueue(nodes ...phaseNode) *uniquePhaseNodeQueue {
 // If a phaseNode has already existed, it will not be added silently
 func (uq *uniquePhaseNodeQueue) add(nodes ...phaseNode) {
 	for _, node := range nodes {
-		key := fmt.Sprintf("%s-%s", node.nodeId, node.phase)
+		key := fmt.Sprintf("%s-%s", node.nodeID, node.phase)
 		if _, ok := uq.seen[key]; !ok {
 			uq.seen[key] = true
 			uq.queue = append(uq.queue, node)
