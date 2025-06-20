@@ -464,15 +464,15 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		key = getHolderKey(wf2, "")
 		assert.Equal(t, key, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 
 		sema := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"].(*prioritySemaphore)
 		require.NotNil(t, sema)
 		assert.Len(t, sema.pending.items, 2)
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		assert.Len(t, sema.pending.items, 1)
-		syncManager.ReleaseAll(wf3)
+		syncManager.ReleaseAll(ctx, wf3)
 		assert.Empty(t, sema.pending.items)
 	})
 
@@ -536,7 +536,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Len(t, wf1.Status.Synchronization.Semaphore.Holding, 3)
 
 		// Release all semaphores from first workflow
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 
 		// Second workflow should now be able to acquire all semaphores
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
@@ -551,7 +551,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Len(t, wf2.Status.Synchronization.Semaphore.Holding, 3)
 
 		// Clean up
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 	})
 }
 
@@ -979,9 +979,9 @@ func TestMutexWfLevel(t *testing.T) {
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		require.NotNil(t, mutex)
 		assert.Len(t, mutex.pending.items, 2)
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		assert.Len(t, mutex.pending.items, 1)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Empty(t, mutex.pending.items)
 	})
 
@@ -1007,7 +1007,7 @@ func TestMutexWfLevel(t *testing.T) {
 		require.NotNil(t, wf.Status.Synchronization)
 		require.NotNil(t, wf.Status.Synchronization.Mutex)
 		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
-		syncManager.ReleaseAll(wf)
+		syncManager.ReleaseAll(ctx, wf)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
@@ -1018,7 +1018,7 @@ func TestMutexWfLevel(t *testing.T) {
 		require.NotNil(t, wf1.Status.Synchronization)
 		require.NotNil(t, wf1.Status.Synchronization.Mutex)
 		require.NotNil(t, wf1.Status.Synchronization.Mutex.Holding)
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 	})
 }
 

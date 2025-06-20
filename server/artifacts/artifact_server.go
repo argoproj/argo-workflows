@@ -131,7 +131,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		uid := id
 		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeID": nodeID, "artifactName": artifactName}).Info("Get artifact file")
 
-		wf, err = a.wfArchive.GetWorkflow(uid, "", "")
+		wf, err = a.wfArchive.GetWorkflow(ctx, uid, "", "")
 		if err != nil {
 			a.serverInternalError(err, w)
 			return
@@ -165,7 +165,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	isDir := strings.HasSuffix(r.URL.Path, "/")
 
 	if !isDir {
-		isDir, err := driver.IsDirectory(artifact)
+		isDir, err := driver.IsDirectory(ctx, artifact)
 		if err != nil {
 			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
 				a.serverInternalError(err, w)
@@ -181,7 +181,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if isDir {
 		// return an html page to the user
 
-		objects, err := driver.ListObjects(artifact)
+		objects, err := driver.ListObjects(ctx, artifact)
 		if err != nil {
 			a.httpFromError(err, w)
 			return
@@ -230,7 +230,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
 
-		err = a.returnArtifact(w, artifact, driver)
+		err = a.returnArtifact(ctx, w, artifact, driver)
 
 		if err != nil {
 			a.httpFromError(err, w)
@@ -269,7 +269,7 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 		return
 	}
 
-	err = a.returnArtifact(w, art, driver)
+	err = a.returnArtifact(ctx, w, art, driver)
 
 	if err != nil {
 		a.httpFromError(err, w)
@@ -296,7 +296,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
-	wf, err := a.wfArchive.GetWorkflow(uid, "", "")
+	wf, err := a.wfArchive.GetWorkflow(context.Background(), uid, "", "")
 	if err != nil {
 		a.httpFromError(err, w)
 		return
@@ -322,7 +322,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeID, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 
-	err = a.returnArtifact(w, art, driver)
+	err = a.returnArtifact(ctx, w, art, driver)
 
 	if err != nil {
 		a.httpFromError(err, w)
@@ -453,8 +453,8 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	return art, driver, nil
 }
 
-func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
-	stream, err := driver.OpenStream(art)
+func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
+	stream, err := driver.OpenStream(ctx, art)
 	if err != nil {
 		return err
 	}
@@ -493,7 +493,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = a.hydrator.Hydrate(wf)
+	err = a.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		return nil, err
 	}

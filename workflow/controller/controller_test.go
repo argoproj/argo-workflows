@@ -296,8 +296,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
 	}
 
@@ -898,18 +898,19 @@ func TestIsArchivable(t *testing.T) {
 }
 
 func TestReleaseAllWorkflowLocks(t *testing.T) {
+	ctx := context.Background()
 	cancel, controller := newController()
 	defer cancel()
 	t.Run("nilObject", func(t *testing.T) {
-		controller.releaseAllWorkflowLocks(nil)
+		controller.releaseAllWorkflowLocks(ctx, nil)
 	})
 	t.Run("unStructuredObject", func(t *testing.T) {
 		un := &unstructured.Unstructured{}
-		controller.releaseAllWorkflowLocks(un)
+		controller.releaseAllWorkflowLocks(ctx, un)
 	})
 	t.Run("otherObject", func(t *testing.T) {
 		un := &wfv1.Workflow{}
-		controller.releaseAllWorkflowLocks(un)
+		controller.releaseAllWorkflowLocks(ctx, un)
 	})
 }
 

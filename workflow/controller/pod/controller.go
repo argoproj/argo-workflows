@@ -58,8 +58,9 @@ type Controller struct {
 
 // NewController creates a pod controller
 func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
-	log := logging.NewSlogLogger()
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	log = log.WithField(ctx, "component", "pod_controller")
+	ctx = logging.WithLogger(ctx, log)
 	podController := &Controller{
 		config:        config,
 		kubeclientset: clientSet,
@@ -92,7 +93,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 				}
 				if !significantPodChange(oldPod, newPod) {
 					log.WithField(ctx, "key", key).Info(ctx, "insignificant pod change")
-					diff.LogChanges(oldPod, newPod)
+					diff.LogChanges(context.Background(), oldPod, newPod)
 					return
 				}
 				podController.updatePodEvent(ctx, oldPod, newPod)

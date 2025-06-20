@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,7 @@ import (
 
 func TestUpdater(t *testing.T) {
 	wf := &wfv1.Workflow{}
+	ctx := context.Background()
 	wfv1.MustUnmarshal(`
 status:
   nodes:
@@ -31,7 +33,7 @@ status:
       resourcesDuration: 
         x: 2
 `, wf)
-	UpdateResourceDurations(wf)
+	UpdateResourceDurations(ctx, wf)
 	assert.Equal(t, wfv1.ResourcesDuration{"x": 2}, wf.Status.Nodes["dag-pod"].ResourcesDuration)
 	assert.Equal(t, wfv1.ResourcesDuration{"x": 2}, wf.Status.Nodes["dag"].ResourcesDuration)
 	assert.Equal(t, wfv1.ResourcesDuration{"x": 1}, wf.Status.Nodes["pod"].ResourcesDuration)

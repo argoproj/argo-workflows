@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -22,7 +23,8 @@ func (s *ExamplesSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *ExamplesSuite) TestExampleWorkflows() {
-	err := fileutil.WalkManifests("../../examples", func(path string, data []byte) error {
+	ctx := context.Background()
+	err := fileutil.WalkManifests(ctx, "../../examples", func(path string, data []byte) error {
 		wfs, err := common.SplitWorkflowYAMLFile(data, true)
 		if err != nil {
 			s.T().Fatalf("Error parsing %s: %v", path, err)

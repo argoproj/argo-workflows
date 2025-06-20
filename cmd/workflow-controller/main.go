@@ -70,31 +70,32 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
-			defer runtimeutil.HandleCrashWithContext(context.Background(), runtimeutil.PanicHandlers...)
+			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
 
-			log := logging.NewSlogLogger()
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 
 			cmdutil.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
 			cmdutil.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init()
+			pprofutil.Init(c.Context())
 
 			config, err := clientConfig.ClientConfig()
 			if err != nil {
 				return err
 			}
 			// start a controller on instances of our custom resource
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(c.Context())
 			defer cancel()
+			ctx = logging.WithLogger(ctx, log)
 
 			version := argo.GetVersion()
 			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-controller", version.Version))
 			config.Burst = burst
 			config.QPS = qps
 
-			logs.AddK8SLogTransportWrapper(config)
+			logs.AddK8SLogTransportWrapper(c.Context(), config)
 			metrics.AddMetricsTransportWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
@@ -138,7 +139,7 @@ func NewRootCommand() *cobra.Command {
 
 				// for controlling the dummy metrics server
 				var wg sync.WaitGroup
-				dummyCtx, dummyCancel := context.WithCancel(context.Background())
+				dummyCtx, dummyCancel := context.WithCancel(c.Context())
 				defer dummyCancel()
 
 				wg.Add(1)
@@ -153,9 +154,9 @@ func NewRootCommand() *cobra.Command {
 						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManager(kubeclientset).Get(namespace)},
 					},
 					ReleaseOnCancel: false,
-					LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
-					RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
-					RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
+					LeaseDuration:   env.LookupEnvDurationOr(c.Context(), "LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+					RenewDeadline:   env.LookupEnvDurationOr(c.Context(), "LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+					RetryPeriod:     env.LookupEnvDurationOr(c.Context(), "LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()

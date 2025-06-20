@@ -29,7 +29,7 @@ func (ep *executorDataSourceProcessor) ProcessArtifactPaths(artifacts *wfv1.Arti
 	}
 
 	var files []string
-	files, err = artDriver.ListObjects(&artifacts.Artifact)
+	files, err = artDriver.ListObjects(ep.ctx, &artifacts.Artifact)
 	if err != nil {
 		return nil, err
 	}

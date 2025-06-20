@@ -60,7 +60,8 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *cronWfOperationCtx {
-	log := logging.NewSlogLogger()
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	return &cronWfOperationCtx{
 		name:            cronWorkflow.Name,
 		cronWf:          cronWorkflow,
@@ -184,7 +185,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 	err = waitutil.Backoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
-			return !errorsutil.IsTransientErr(err), err
+			return !errorsutil.IsTransientErr(context.Background(), err), err
 		}
 		woc.cronWf = cronWf
 		return true, nil

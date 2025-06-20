@@ -253,7 +253,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				return existing, nil
 			}
 		}
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(context.Background(), err) {
 			woc.requeue()
 			return created, nil
 		}

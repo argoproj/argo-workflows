@@ -12,10 +12,11 @@ type slogLogger struct {
 	fields Fields
 	logger *slog.Logger
 	hooks  map[Level][]Hook
+	mu     sync.RWMutex
 }
 
 var (
-	defaultLogger = NewSlogLogger()
+	defaultLogger = NewSlogLogger(Info, Text)
 	lock          = &sync.Mutex{}
 )
 
@@ -39,9 +40,20 @@ func (s *slogLogger) WithFields(_ context.Context, fields Fields) Logger {
 		logger = logger.With(k, v)
 	}
 
+	// Copy hooks map
+	s.mu.RLock()
+	newHooks := make(map[Level][]Hook)
+	for level, hooks := range s.hooks {
+		newHooks[level] = make([]Hook, len(hooks))
+		copy(newHooks[level], hooks)
+	}
+	s.mu.RUnlock()
+
 	return &slogLogger{
 		fields: newFields,
 		logger: logger,
+		hooks:  newHooks,
+		mu:     sync.RWMutex{},
 	}
 }
 
@@ -56,9 +68,21 @@ func (s *slogLogger) WithField(_ context.Context, name string, value interface{}
 
 	logger = logger.With(name, value)
 	newFields[name] = value
+
+	// Copy hooks map
+	s.mu.RLock()
+	newHooks := make(map[Level][]Hook)
+	for level, hooks := range s.hooks {
+		newHooks[level] = make([]Hook, len(hooks))
+		copy(newHooks[level], hooks)
+	}
+	s.mu.RUnlock()
+
 	return &slogLogger{
 		fields: newFields,
 		logger: logger,
+		hooks:  newHooks,
+		mu:     sync.RWMutex{},
 	}
 }
 
@@ -66,14 +90,29 @@ func (s *slogLogger) WithError(ctx context.Context, err error) Logger {
 	return s.WithField(ctx, ErrorField, err)
 }
 
+// executeHooks safely executes hooks with panic recovery
+func (s *slogLogger) executeHooks(ctx context.Context, hooks []Hook, level Level, msg string) {
+	for _, hook := range hooks {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					// Log the panic but don't crash the logger
+					s.logger.ErrorContext(ctx, "hook panic recovered", "panic", r, "hook", fmt.Sprintf("%T", hook))
+				}
+			}()
+			hook.Fire(level, msg)
+		}()
+	}
+}
+
 func (s *slogLogger) Info(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Info]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Info, msg)
 	s.logger.InfoContext(ctx, msg)
 }
 
@@ -83,13 +122,13 @@ func (s *slogLogger) Infof(ctx context.Context, format string, args ...interface
 }
 
 func (s *slogLogger) Warn(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Warn]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Warn, msg)
 	s.logger.WarnContext(ctx, msg)
 }
 
@@ -99,13 +138,13 @@ func (s *slogLogger) Warnf(ctx context.Context, format string, args ...interface
 }
 
 func (s *slogLogger) Fatal(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Fatal]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Fatal, msg)
 	s.logger.ErrorContext(ctx, msg)
 	os.Exit(1)
 }
@@ -116,13 +155,13 @@ func (s *slogLogger) Fatalf(ctx context.Context, format string, args ...interfac
 }
 
 func (s *slogLogger) Error(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Error]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Error, msg)
 	s.logger.ErrorContext(ctx, msg)
 }
 
@@ -131,14 +170,30 @@ func (s *slogLogger) Errorf(ctx context.Context, format string, args ...interfac
 	s.Error(ctx, msg)
 }
 
-func (s *slogLogger) Debug(ctx context.Context, msg string) {
-	hooks := s.hooks[Debug]
+func (s *slogLogger) Trace(ctx context.Context, msg string) {
+	s.mu.RLock()
+	hooks := s.hooks[Trace]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
+	s.executeHooks(ctx, hooks, Debug, msg)
+	s.logger.DebugContext(ctx, msg)
+}
+
+func (s *slogLogger) Tracef(ctx context.Context, format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	s.Trace(ctx, msg)
+}
+
+func (s *slogLogger) Debug(ctx context.Context, msg string) {
+	s.mu.RLock()
+	hooks := s.hooks[Debug]
+	s.mu.RUnlock()
+	if hooks == nil {
+		hooks = []Hook{}
 	}
+	s.executeHooks(ctx, hooks, Debug, msg)
 	s.logger.DebugContext(ctx, msg)
 }
 
@@ -148,13 +203,13 @@ func (s *slogLogger) Debugf(ctx context.Context, format string, args ...interfac
 }
 
 func (s *slogLogger) Warning(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Warn]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Warn, msg)
 	s.logger.WarnContext(ctx, msg)
 }
 
@@ -164,13 +219,13 @@ func (s *slogLogger) Warningf(ctx context.Context, format string, args ...interf
 }
 
 func (s *slogLogger) Println(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Print]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Print, msg)
 	s.logger.InfoContext(ctx, msg)
 }
 
@@ -180,13 +235,13 @@ func (s *slogLogger) Printf(ctx context.Context, format string, args ...interfac
 }
 
 func (s *slogLogger) Panic(ctx context.Context, msg string) {
+	s.mu.RLock()
 	hooks := s.hooks[Panic]
+	s.mu.RUnlock()
 	if hooks == nil {
 		hooks = []Hook{}
 	}
-	for _, hook := range hooks {
-		hook.Fire(msg)
-	}
+	s.executeHooks(ctx, hooks, Panic, msg)
 	s.logger.ErrorContext(ctx, msg)
 	panic(msg)
 }
@@ -197,19 +252,66 @@ func (s *slogLogger) Panicf(ctx context.Context, format string, args ...interfac
 }
 
 func (s *slogLogger) AddHook(hook Hook) {
+	if hook == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	for _, level := range hook.Levels() {
 		s.hooks[level] = append(s.hooks[level], hook)
 	}
 }
 
+type LogType string
+
+const (
+	JSON LogType = "json"
+	Text LogType = "text"
+)
+
+// convertLevel converts our Level type to slog.Level
+func convertLevel(level Level) slog.Level {
+	switch level {
+	case Trace:
+		return slog.LevelDebug
+	case Debug:
+		return slog.LevelDebug
+	case Info:
+		return slog.LevelInfo
+	case Warn:
+		return slog.LevelWarn
+	case Error:
+		return slog.LevelError
+	case Fatal:
+		return slog.LevelError
+	case Print:
+		return slog.LevelInfo
+	case Panic:
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
 // NewSlogLogger returns a slog based logger
-func NewSlogLogger() Logger {
+func NewSlogLogger(logLevel Level, format LogType) Logger {
+	var handler slog.Handler
+
+	switch format {
+	case JSON:
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+	case Text:
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+	default:
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+	}
+
 	f := make(Fields)
-	l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	// l := slog.Default()
+	l := slog.New(handler)
 	s := slogLogger{
 		fields: f,
 		logger: l,
+		hooks:  make(map[Level][]Hook),
 	}
 	return &s
 }

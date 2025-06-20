@@ -119,7 +119,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID stri
 		woc.controller.PodController.TerminateContainers(ctx, woc.wf.Namespace, podName)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
-		woc.wf.Status.Nodes.Set(childNode.ID, childNode)
+		woc.wf.Status.Nodes.Set(ctx, childNode.ID, childNode)
 		woc.updated = true
 	}
 }

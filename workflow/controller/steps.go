@@ -180,7 +180,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		}
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(ctx, node.Outputs)
-		woc.wf.Status.Nodes.Set(node.ID, *node)
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	}
 
 	if node.MemoizationStatus != nil {
@@ -223,7 +223,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(ctx context.Context, nodeName str
 	}
 	woc.log.Infof(ctx, "Outbound nodes of %s is %s", node.ID, outbound)
 	node.OutboundNodes = outbound
-	woc.wf.Status.Nodes.Set(node.ID, *node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	return nil
 }
 

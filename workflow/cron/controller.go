@@ -62,16 +62,17 @@ const (
 	cronWorkflowResyncPeriod = 20 * time.Minute
 )
 
-var cronSyncPeriod = env.LookupEnvDurationOr("CRON_SYNC_PERIOD", 10*time.Second)
+var cronSyncPeriod time.Duration
 
 func init() {
-	slog := log.NewSlogLogger()
-	ctx := context.Background()
+	slog := log.DefaultSlogLogger()
+	ctx := context.TODO()
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
 		slog.Fatal(ctx, err.Error())
 	}
+	cronSyncPeriod = env.LookupEnvDurationOr(ctx, "CRON_SYNC_PERIOD", 10*time.Second)
 	slog.WithField(ctx, "cronSyncPeriod", cronSyncPeriod).Info(ctx, "cron config")
 }
 
@@ -79,8 +80,9 @@ func init() {
 func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceID string, metrics *metrics.Metrics,
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *Controller {
-	logger := log.NewSlogLogger()
+	logger := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
 	logger = logger.WithField(ctx, "component", "cron")
+	ctx = log.WithLogger(ctx, logger)
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,

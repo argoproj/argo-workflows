@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,7 @@ import (
 )
 
 func TestUpdater(t *testing.T) {
+	ctx := context.Background()
 	ns := "my-ns"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},
@@ -24,7 +26,7 @@ func TestUpdater(t *testing.T) {
 		},
 	}
 
-	UpdateProgress(wf)
+	UpdateProgress(ctx, wf)
 
 	nodes := wf.Status.Nodes
 	assert.Equal(t, wfv1.Progress("50/50"), nodes["pod-1"].Progress, "succeeded pod is completed")

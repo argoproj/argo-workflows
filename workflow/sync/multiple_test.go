@@ -94,7 +94,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		// Fail to acquire because two locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -103,7 +103,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		// Fail to acquire because three locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf3)
+		syncManager.ReleaseAll(ctx, wf3)
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -171,8 +171,8 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(ctx, wf2)
 
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
@@ -278,7 +278,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release 1 and sem
-		syncManager.ReleaseAll(wfmands1)
+		syncManager.ReleaseAll(ctx, wfmands1)
 
 		// Succeed 1
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -304,8 +304,8 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
-		syncManager.ReleaseAll(wfsem)
+		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(ctx, wfsem)
 
 		// And reacquire in a sem+mutex wf
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfmands1copy, "", wfmands1copy.Spec.Synchronization)
@@ -374,7 +374,7 @@ func TestPriority(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release locks
-		syncManager.ReleaseAll(wflow)
+		syncManager.ReleaseAll(ctx, wflow)
 
 		// Attempt to acquire 2 again, but priority blocks
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)

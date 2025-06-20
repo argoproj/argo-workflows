@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 
 func TestGitArtifactDriver_Save(t *testing.T) {
 	driver := &ArtifactDriver{}
-	err := driver.Save("", nil)
+	err := driver.Save(context.Background(), "", nil)
 	require.Error(t, err)
 }
 
@@ -184,7 +185,7 @@ func assertOnlyFile(t *testing.T, dir string, file string) {
 
 func load(driver *ArtifactDriver, git *wfv1.GitArtifact) error {
 	_ = os.RemoveAll(path)
-	return driver.Load(&wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{Git: git}}, path)
+	return driver.Load(context.Background(), &wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{Git: git}}, path)
 }
 
 func TestGetUser(t *testing.T) {

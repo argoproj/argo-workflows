@@ -283,7 +283,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				woc.log.Panicf(ctx, "was unable to obtain node for %s", nodeID)
 			}
 			node.Progress = p
-			woc.wf.Status.Nodes.Set(nodeID, *node)
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 		}
 	}
 
@@ -544,7 +544,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				return existing, nil
 			}
 		}
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(context.Background(), err) {
 			return nil, err
 		}
 		woc.log.Infof(ctx, "Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
@@ -864,7 +864,7 @@ func (woc *wfOperationCtx) GetTemplateByBoundaryID(ctx context.Context, boundary
 	return boundaryTmpl, templateStored, nil
 }
 
-// addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
+// addVolumeReferences adds any volume mounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {

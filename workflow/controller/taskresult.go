@@ -62,7 +62,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr(context.Background(), "RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
@@ -123,7 +123,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 			woc.log.
 				WithField(ctx, "nodeID", nodeID).
 				Debug(ctx, "task-result changed")
-			woc.wf.Status.Nodes.Set(nodeID, *newNode)
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
 			woc.updated = true
 		}
 	}

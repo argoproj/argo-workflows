@@ -220,7 +220,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			stream, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
+			stream, err := streamS3Artifact(context.Background(), tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{
@@ -384,7 +384,7 @@ func TestLoadS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
+			success, err := loadS3Artifact(context.Background(), tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{
@@ -405,6 +405,7 @@ func TestLoadS3Artifact(t *testing.T) {
 }
 
 func TestSaveS3Artifact(t *testing.T) {
+	ctx := context.Background()
 	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
@@ -511,7 +512,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	for name, tc := range tests {
 		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
-			success, err := saveS3Artifact(
+			success, err := saveS3Artifact(ctx,
 				tc.s3client,
 				tc.localPath,
 				&wfv1.Artifact{
@@ -539,7 +540,7 @@ func TestSaveS3Artifact(t *testing.T) {
 }
 
 func TestListObjects(t *testing.T) {
-
+	ctx := context.Background()
 	tests := map[string]struct {
 		s3client         S3Client
 		bucket           string
@@ -592,7 +593,7 @@ func TestListObjects(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, files, err := listObjects(tc.s3client,
+			_, files, err := listObjects(ctx, tc.s3client,
 				&wfv1.Artifact{
 					ArtifactLocation: wfv1.ArtifactLocation{
 						S3: &wfv1.S3Artifact{

@@ -657,7 +657,7 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 			}
 
 			wfNode.Outputs.Artifacts[i].Deleted = artifactResult.Success
-			woc.wf.Status.Nodes.Set(nodeName, *wfNode)
+			woc.wf.Status.Nodes.Set(ctx, nodeName, *wfNode)
 
 			if artifactResult.Error != nil {
 				woc.addArtGCCondition(fmt.Sprintf("%s (artifactGCTask: %s)", *artifactResult.Error, artifactGCTask.Name))

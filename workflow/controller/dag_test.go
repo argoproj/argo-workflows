@@ -246,7 +246,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(),
+		log:          logging.DefaultSlogLogger(),
 	}
 
 	// Task A is running
@@ -348,7 +348,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(),
+		log:          logging.DefaultSlogLogger(),
 	}
 
 	// Task A is still running, A-1 succeeded but A-2 failed
@@ -436,7 +436,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(),
+		log:          logging.DefaultSlogLogger(),
 	}
 
 	// Task A is running
@@ -487,7 +487,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(),
+		log:          logging.DefaultSlogLogger(),
 	}
 
 	// Task A is running
@@ -536,7 +536,7 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 			dependencies: make(map[string][]string),
 			dependsLogic: make(map[string]string),
-			log:          logging.NewSlogLogger(),
+			log:          logging.DefaultSlogLogger(),
 		}
 
 		// Task A is running

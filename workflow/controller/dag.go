@@ -374,7 +374,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			return nil, err
 		}
 		node.Outputs = outputs
-		woc.wf.Status.Nodes.Set(node.ID, *node)
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	}
 	if node.MemoizationStatus != nil {
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
@@ -410,7 +410,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(ctx context.Context
 		return err
 	}
 	node.OutboundNodes = outbound
-	woc.wf.Status.Nodes.Set(node.ID, *node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	woc.log.Infof(ctx, "Outbound nodes of %s set to %s", node.ID, outbound)
 	return nil
 }

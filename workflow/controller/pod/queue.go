@@ -156,7 +156,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	}()
 	if err != nil {
 		logCtx.WithError(ctx, err).Warn(ctx, "failed to clean-up pod")
-		if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) {
+		if errorsutil.IsTransientErr(context.Background(), err) || apierr.IsConflict(err) {
 			c.workqueue.AddRateLimited(key)
 		}
 	}

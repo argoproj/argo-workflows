@@ -76,7 +76,7 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 		// fake the behaviour woc.operate()
-		require.NoError(t, controller.hydrator.Hydrate(wf))
+		require.NoError(t, controller.hydrator.Hydrate(ctx, wf))
 		nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
 
 		// now force a re-apply update

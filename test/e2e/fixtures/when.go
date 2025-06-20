@@ -470,7 +470,8 @@ func (w *When) waitForCronWorkflow(timeout time.Duration, labelSelector string, 
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
-	err := w.hydrator.Hydrate(wf)
+	ctx := context.Background()
+	err := w.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		w.t.Fatal(err)
 	}

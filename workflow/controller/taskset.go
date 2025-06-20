@@ -152,7 +152,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.Message = taskResult.Message
 			node.FinishedAt = metav1.Now()
 
-			woc.wf.Status.Nodes.Set(nodeID, *node)
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)

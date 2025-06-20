@@ -104,7 +104,7 @@ spec:
 func TestGetTemplateByName(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	c := context.Background()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
@@ -128,7 +128,7 @@ func TestGetTemplateFromRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	c := context.Background()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
@@ -161,7 +161,7 @@ func TestGetTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	c := context.Background()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
@@ -193,7 +193,7 @@ func TestGetTemplate(t *testing.T) {
 func TestGetCurrentTemplateBase(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	// Get the template base of existing template name.
@@ -214,7 +214,7 @@ func TestWithTemplateHolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	var tmplGetter wfv1.TemplateHolder
@@ -257,7 +257,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	c := context.Background()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
@@ -332,7 +332,7 @@ func TestResolveTemplate(t *testing.T) {
 func TestWithTemplateBase(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	anotherWftmpl := unmarshalWftmpl(anotherWorkflowTemplateYaml)
@@ -347,7 +347,7 @@ func TestWithTemplateBase(t *testing.T) {
 func TestOnWorkflowTemplate(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.NewSlogLogger()
+	log := logging.DefaultSlogLogger()
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
