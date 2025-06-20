@@ -155,7 +155,11 @@ spec:
 
 Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec. This would be to avoid a scenario in which the artifact from one Workflow is being deleted while the same S3 key is being generated for a different Workflow.
 
-In the case of having a whole directory as S3 key, it is important that it ends with a "/". Otherwise, the GC pod won't be able to remove it.
+In the case of having a whole directory as S3 key, please pay attention of the key value:
+- (A) and changing the default archive option to none (see example below), it is important that it ends with a "/". Otherwise, the directory will be created in S3 but the GC pod won't be able to remove it.
+- (B) and keeping the default archive option to tgz (see example below), the it is import that it does NOT end with "/". Otherwise Argo will fail to create the archive file.
+
+Example (A) without packaging as tgz
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -175,15 +179,54 @@ spec:
           - -c
         args:
           - |
+            mkdir /tmp/tmp-directory
             echo "can throw this away" > /tmp/tmp-directory/delete-this.txt
             echo "and this too" > /tmp/tmp-directory/delete-this-too.txt
       outputs:
         artifacts:
           - name: temporary-artifact
             path: /tmp/tmp-directory
+            archive:
+              # Avoid having tgz file.
+              none: {}
             s3:
               key: "{{workflow.name}}/directory/" # IMPORTANT! ends with "/"
 ```
+
+Example (B) with packaging as tgz
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-dir-key-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion  # default Strategy set here applies to all Artifacts by default
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            mkdir /tmp/tmp-directory
+            echo "can throw this away" > /tmp/tmp-directory/delete-this.txt
+            echo "and this too" > /tmp/tmp-directory/delete-this-too.txt
+      outputs:
+        artifacts:
+          - name: temporary-artifact
+            path: /tmp/tmp-directory
+            archive:
+              tar:
+                compressionLevel: 1
+            s3:
+              key: "{{workflow.name}}/archive.tgz" # IMPORTANT! must not ends with "/"
+```
+
 
 ### Service Accounts and Annotations
 
