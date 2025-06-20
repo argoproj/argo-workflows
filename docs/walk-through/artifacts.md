@@ -156,6 +156,7 @@ spec:
 Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec. This would be to avoid a scenario in which the artifact from one Workflow is being deleted while the same S3 key is being generated for a different Workflow.
 
 In the case of having a whole directory as S3 key, please pay attention to the key value. Here are two examples:
+
 - (A) When changing the default archive option to none, it is important that it ends with a "/". Otherwise, the directory will be created in S3 but the GC pod won't be able to remove it.
 - (B) When keeping the default archive option to `.tgz`, in this case, it is important that it does NOT end with "/". Otherwise, Argo will fail to create the archive file.
 
@@ -224,9 +225,8 @@ spec:
               tar:
                 compressionLevel: 1
             s3:
-              key: "{{workflow.name}}/archive.tgz" # IMPORTANT! must not ends with "/"
+              key: "{{workflow.name}}/archive.tgz" # IMPORTANT! must not end with "/"
 ```
-
 
 ### Service Accounts and Annotations
 
