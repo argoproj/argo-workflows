@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -11,14 +12,14 @@ import (
 func TestIsTransientOSSErr(t *testing.T) {
 	for _, errCode := range ossTransientErrorCodes {
 		err := oss.ServiceError{Code: errCode}
-		assert.True(t, isTransientOSSErr(err))
+		assert.True(t, isTransientOSSErr(context.Background(), err))
 	}
 
 	err := oss.ServiceError{Code: "NonTransientErrorCode"}
-	assert.False(t, isTransientOSSErr(err))
+	assert.False(t, isTransientOSSErr(context.Background(), err))
 
 	nonOSSErr := errors.New("Non-OSS error")
-	assert.False(t, isTransientOSSErr(nonOSSErr))
+	assert.False(t, isTransientOSSErr(context.Background(), nonOSSErr))
 
-	assert.False(t, isTransientOSSErr(nil))
+	assert.False(t, isTransientOSSErr(context.Background(), nil))
 }

@@ -64,7 +64,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	err = t.hydrator.Hydrate(wf)
+	err = t.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		t.t.Fatal(err)
 	}

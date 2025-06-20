@@ -126,7 +126,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	var glogLevel int
 	var verbose bool
 	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
-		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
+		cmdutil.PrintVersionMismatchWarning(cmd.Context(), argo.GetVersion(), grpcutil.LastSeenServerVersion)
 	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {

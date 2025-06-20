@@ -44,11 +44,11 @@ const (
 	Backfill  = workflow.WorkflowFullName + "/backfill" // clean backfill workflows
 )
 
-var timeoutBias = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
+var timeoutBias = env.LookupEnvDurationOr(context.Background(), "E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
 
-var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
+var defaultTimeout = env.LookupEnvDurationOr(context.Background(), "E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
 
-var EnvFactor = env.LookupEnvIntOr("E2E_ENV_FACTOR", 1)
+var EnvFactor = env.LookupEnvIntOr(context.Background(), "E2E_ENV_FACTOR", 1)
 
 type E2ESuite struct {
 	suite.Suite
@@ -179,24 +179,24 @@ func (s *E2ESuite) DeleteResources() {
 		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(utils.ListOptions{
+		workflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
 		s.CheckError(err)
 		for _, w := range workflows {
-			err := archive.DeleteWorkflow(string(w.UID))
+			err := archive.DeleteWorkflow(ctx, string(w.UID))
 			s.CheckError(err)
 		}
 		parse, err = labels.ParseToRequirements(Backfill)
 		s.CheckError(err)
-		backfillWorkflows, err := archive.ListWorkflows(utils.ListOptions{
+		backfillWorkflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
 		s.CheckError(err)
 		for _, w := range backfillWorkflows {
-			err := archive.DeleteWorkflow(string(w.UID))
+			err := archive.DeleteWorkflow(ctx, string(w.UID))
 			s.CheckError(err)
 		}
 	}

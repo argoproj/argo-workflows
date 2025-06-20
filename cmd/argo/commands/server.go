@@ -67,7 +67,7 @@ See %s`, help.ArgoServer()),
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init()
+			pprofutil.Init(context.Background())
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {

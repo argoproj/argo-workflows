@@ -73,7 +73,7 @@ func NewFakeDataCommand() *cobra.Command {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
 				wfArchive := sqldb.NewWorkflowArchive(session, cluster, "", instanceIDService)
-				if err := wfArchive.ArchiveWorkflow(wf); err != nil {
+				if err := wfArchive.ArchiveWorkflow(context.Background(), wf); err != nil {
 					return err
 				}
 			}

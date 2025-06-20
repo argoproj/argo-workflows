@@ -1,6 +1,7 @@
 package gcs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -38,7 +39,7 @@ func TestIsTransientGCSErr(t *testing.T) {
 		{fmt.Errorf("writer close: Post \"https://storage.googleapis.com/upload/storage/v1/b/bucket/o?alt=json&name=test.json&uploadType=multipart\": compute: Received 504 `Gateway Timeout\n`"), true},
 		{fmt.Errorf("http2: client connection lost"), true},
 	} {
-		got := isTransientGCSErr(test.err)
+		got := isTransientGCSErr(context.Background(), test.err)
 		if got != test.shouldretry {
 			t.Errorf("%+v: got %v, want %v", test, got, test.shouldretry)
 		}

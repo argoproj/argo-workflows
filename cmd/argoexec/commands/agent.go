@@ -77,7 +77,7 @@ func NewAgentMainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return initAgentExecutor().Agent(context.Background())
+			return initAgentExecutor().Agent(cmd.Context())
 		},
 	}
 }
@@ -90,7 +90,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, "agent Executor"))
 
-	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	logs.AddK8SLogTransportWrapper(context.TODO(), config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)

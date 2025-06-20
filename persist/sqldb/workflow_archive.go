@@ -2,12 +2,12 @@ package sqldb
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -69,17 +70,17 @@ type archivedWorkflowCount struct {
 //go:generate mockery --name=WorkflowArchive
 
 type WorkflowArchive interface {
-	ArchiveWorkflow(wf *wfv1.Workflow) error
+	ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
-	ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error)
-	CountWorkflows(options sutils.ListOptions) (int64, error)
-	GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error)
-	GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error)
-	DeleteWorkflow(uid string) error
-	DeleteExpiredWorkflows(ttl time.Duration) error
+	ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error)
+	CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error)
+	GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error)
+	GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error)
+	DeleteWorkflow(ctx context.Context, uid string) error
+	DeleteExpiredWorkflows(ctx context.Context, ttl time.Duration) error
 	IsEnabled() bool
-	ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error)
-	ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error)
+	ListWorkflowsLabelKeys(ctx context.Context) (*wfv1.LabelKeys, error)
+	ListWorkflowsLabelValues(ctx context.Context, key string) (*wfv1.LabelValues, error)
 }
 
 type workflowArchive struct {
@@ -99,9 +100,10 @@ func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string
 	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(session)}
 }
 
-func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
-	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
-	logCtx.Debug("Archiving workflow")
+func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
+	logger := logging.GetLoggerFromContext(ctx)
+	logCtx := logger.WithFields(ctx, logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
+	logCtx.Debug(ctx, "Archiving workflow")
 	wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	workflow, err := json.Marshal(wf)
 	if err != nil {
@@ -162,7 +164,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	})
 }
 
-func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 	var baseSelector = r.session.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat")
 
@@ -279,7 +281,7 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 	return wfs, nil
 }
 
-func (r *workflowArchive) CountWorkflows(options sutils.ListOptions) (int64, error) {
+func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error) {
 	total := &archivedWorkflowCount{}
 
 	selector := r.session.SQL().
@@ -349,7 +351,7 @@ func phaseEqual(phase string) db.Cond {
 	return db.Cond{}
 }
 
-func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {
+func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {
 	var err error
 	archivedWf := &archivedWorkflowRecord{}
 	if uid != "" {
@@ -406,7 +408,7 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	return wf, nil
 }
 
-func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
+func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
 	selector := r.session.SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
 		From(archiveTableName).
@@ -446,7 +448,8 @@ func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements
 
 }
 
-func (r *workflowArchive) DeleteWorkflow(uid string) error {
+func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {
+	logger := logging.GetLoggerFromContext(ctx)
 	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -459,11 +462,12 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug("Deleted archived workflow")
+	logger.WithFields(ctx, logging.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug(ctx, "Deleted archived workflow")
 	return nil
 }
 
-func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
+func (r *workflowArchive) DeleteExpiredWorkflows(ctx context.Context, ttl time.Duration) error {
+	logger := logging.GetLoggerFromContext(ctx)
 	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -476,6 +480,6 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
+	logger.WithFields(ctx, logging.Fields{"rowsAffected": rowsAffected}).Info(ctx, "Deleted archived workflows")
 	return nil
 }

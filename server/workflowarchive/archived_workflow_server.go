@@ -73,7 +73,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		options.Limit += 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(options)
+	items, err := w.wfArchive.ListWorkflows(ctx, options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -81,7 +81,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	meta := metav1.ListMeta{}
 
 	if options.ShowRemainingItemCount && !loadAll {
-		total, err := w.wfArchive.CountWorkflows(options)
+		total, err := w.wfArchive.CountWorkflows(ctx, options)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -105,7 +105,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.wfArchive.GetWorkflow(req.Uid, req.Namespace, req.Name)
+	wf, err := w.wfArchive.GetWorkflow(ctx, req.Uid, req.Namespace, req.Name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -136,7 +136,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 		// no need for ToStatusError since it is already the same time
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	err = w.wfArchive.DeleteWorkflow(req.Uid)
+	err = w.wfArchive.DeleteWorkflow(ctx, req.Uid)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -144,7 +144,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest) (*wfv1.LabelKeys, error) {
-	labelkeys, err := w.wfArchive.ListWorkflowsLabelKeys()
+	labelkeys, err := w.wfArchive.ListWorkflowsLabelKeys(ctx)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -183,7 +183,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		return &wfv1.LabelValues{Items: []string{}}, nil
 	}
 
-	labels, err := w.wfArchive.ListWorkflowsLabelValues(key)
+	labels, err := w.wfArchive.ListWorkflowsLabelValues(ctx, key)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -243,7 +243,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
 		// If the Workflow needs to be dehydrated in order to capture and retain all of the previous state for the subsequent workflow, then do so
-		err = w.hydrator.Dehydrate(wf)
+		err = w.hydrator.Dehydrate(ctx, wf)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -256,11 +256,11 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		}
 		// if the Workflow was dehydrated before, we need to capture and maintain its previous state for the new Workflow
 		if !w.hydrator.IsHydrated(wf) {
-			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUID), wf.GetOffloadNodeStatusVersion())
+			offloadedNodes, err := w.offloadNodeStatusRepo.Get(ctx, string(oriUID), wf.GetOffloadNodeStatusVersion())
 			if err != nil {
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}
-			_, err = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadedNodes)
+			_, err = w.offloadNodeStatusRepo.Save(ctx, string(result.UID), wf.Namespace, offloadedNodes)
 			if err != nil {
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}

@@ -57,6 +57,7 @@ spec:
 
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
 func TestResubmitWorkflowWithOnExit(t *testing.T) {
+	ctx := context.Background()
 	wfName := "test-wf"
 	onExitName := wfName + ".onExit"
 	wf := wfv1.Workflow{
@@ -73,7 +74,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	wf.Status.Nodes.Set(onExitID, onExitNode)
+	wf.Status.Nodes.Set(ctx, onExitID, onExitNode)
 	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	require.NoError(t, err)
 	newWFOnExitName := newWF.Name + ".onExit"
@@ -349,8 +350,8 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 			},
 		},
 	}
-
-	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+	ctx := context.Background()
+	p := AddParamToGlobalScope(ctx, &wf, nil, wfv1.Parameter{
 		Name:       "test",
 		Value:      nil,
 		GlobalName: "test",

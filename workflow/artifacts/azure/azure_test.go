@@ -130,7 +130,7 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 		},
 	}
 	dstDir := t.TempDir()
-	err = driver.DownloadDirectory(containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
+	err = driver.DownloadDirectory(context.Background(), containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
 	require.NoError(t, err)
 	assert.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
 }

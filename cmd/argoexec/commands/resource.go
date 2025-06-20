@@ -59,7 +59,7 @@ func execResource(ctx context.Context, action string) error {
 			}
 		}
 	}
-	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(
+	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(ctx,
 		action, manifestPath, wfExecutor.Template.Resource.Flags,
 	)
 	if err != nil {

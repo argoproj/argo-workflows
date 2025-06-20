@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -24,9 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	log "github.com/sirupsen/logrus"
-
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // TemplateType is the type of a template
@@ -1818,25 +1818,27 @@ func (in Nodes) GetPhase(key string) (*NodePhase, error) {
 }
 
 // Set the status of a node by key
-func (in Nodes) Set(key string, status NodeStatus) {
+func (in Nodes) Set(ctx context.Context, key string, status NodeStatus) {
+	log := logging.GetLoggerFromContext(ctx)
 	if status.Name == "" {
-		log.Warnf("Name was not set for key %s", key)
+		log.Warnf(ctx, "Name was not set for key %s", key)
 	}
 	if status.ID == "" {
-		log.Warnf("ID was not set for key %s", key)
+		log.Warnf(ctx, "ID was not set for key %s", key)
 	}
 	_, ok := in[key]
 	if ok {
-		log.Tracef("Changing NodeStatus for %s to %+v", key, status)
+		log.Tracef(ctx, "Changing NodeStatus for %s to %+v", key, status)
 	}
 	in[key] = status
 }
 
 // Delete a node from the Nodes by key
-func (in Nodes) Delete(key string) {
+func (in Nodes) Delete(ctx context.Context, key string) {
+	log := logging.GetLoggerFromContext(ctx)
 	has := in.Has(key)
 	if !has {
-		log.Warnf("Trying to delete non existent key %s", key)
+		log.Warnf(ctx, "Trying to delete non existent key %s", key)
 		return
 	}
 	delete(in, key)
@@ -2441,7 +2443,8 @@ func (n NodeStatus) IsDaemoned() bool {
 }
 
 // IsPartOfExitHandler returns whether node is part of exit handler.
-func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
+func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool {
+	log := logging.GetLoggerFromContext(ctx)
 	currentNode := n
 	for !currentNode.IsExitNode() {
 		if currentNode.BoundaryID == "" {
@@ -2449,7 +2452,7 @@ func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
-			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+			log.Panicf(ctx, "was unable to obtain node for %s", currentNode.BoundaryID)
 		}
 		currentNode = boundaryNode
 	}

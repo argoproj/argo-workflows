@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/gavv/httpexpect/v2"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -1275,6 +1275,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
+	ctx := context.Background()
+	log := logging.DefaultSlogLogger()
 	t := s.T()
 	req, err := http.NewRequest("GET", baseURL+url, nil)
 	s.Require().NoError(err)
@@ -1299,7 +1301,7 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		log.WithField("line", line).Debug()
+		log.WithField(ctx, "line", line).Debug(ctx, "")
 		// make sure we have this enabled
 		if line == "" {
 			continue

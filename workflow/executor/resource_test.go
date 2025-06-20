@@ -217,8 +217,8 @@ func TestResourceExecRetry(t *testing.T) {
 	}()
 	retry.DefaultBackoff.Duration = 0
 	t.Setenv("PATH", dirname+"/testdata")
-
-	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
+	ctx := context.Background()
+	_, _, _, err := we.ExecResource(ctx, "", "../../examples/hello-world.yaml", nil)
 	require.ErrorContains(t, err, "no more retries")
 }
 

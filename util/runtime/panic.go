@@ -1,12 +1,14 @@
 package runtime
 
 import (
+	"context"
 	"runtime"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func RecoverFromPanic(log *log.Entry) {
+// RecoverFromPanic recovers from a panic and logs the panic and call stack
+func RecoverFromPanic(ctx context.Context, log logging.Logger) {
 	if r := recover(); r != nil {
 		// Same as stdlib http server code. Manually allocate stack trace buffer size
 		// to prevent excessively large logs
@@ -15,7 +17,7 @@ func RecoverFromPanic(log *log.Entry) {
 		stackSize := runtime.Stack(stackTraceBuffer, false)
 		// Free up the unused spaces
 		stackTraceBuffer = stackTraceBuffer[:stackSize]
-		log.Errorf("recovered from panic %q. Call stack:\n%s",
+		log.Errorf(ctx, "recovered from panic %q. Call stack:\n%s",
 			r,
 			stackTraceBuffer)
 	}

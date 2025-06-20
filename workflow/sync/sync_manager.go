@@ -487,7 +487,7 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 	}
 }
 
-func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
+func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 	sm.lock.RLock()
 	defer sm.lock.RUnlock()
 
@@ -560,7 +560,7 @@ func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				}
 			}
 			node.SynchronizationStatus = nil
-			wf.Status.Nodes.Set(node.ID, node)
+			wf.Status.Nodes.Set(ctx, node.ID, node)
 		}
 	}
 
