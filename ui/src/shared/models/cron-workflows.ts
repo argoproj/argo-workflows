@@ -22,7 +22,7 @@ export interface CronWorkflowSpec {
     successfulJobsHistoryLimit?: number;
     failedJobsHistoryLimit?: number;
     timezone?: string;
-    when?: string[];
+    when?: string;
 }
 
 export interface CronWorkflowStatus {

@@ -25,14 +25,10 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>WhenConditions</div>
                     <div className='columns small-9'>
-                        {Array.isArray(spec.when) && spec.when.length > 0 ? (
-                            spec.when.map((condition, index) => (
-                                <React.Fragment key={index}>
-                                    <TextInput value={condition} onChange={newCondition => onChange({...spec, when: updateWhenAtIndex(spec.when || [], index, newCondition)})} />
-                                </React.Fragment>
-                            ))
+                        {spec.when ? (
+                            <TextInput value={spec.when} onChange={newCondition => onChange({...spec, when: newCondition})} />
                         ) : (
-                            <i>No conditions defined</i>
+                            <TextInput value="" placeholder="Enter condition" onChange={newCondition => onChange({...spec, when: newCondition})} />
                         )}
                     </div>
                 </div>
@@ -116,11 +112,4 @@ function updateScheduleAtIndex(schedules: string[], index: number, newSchedule: 
     newSchedules[index] = newSchedule;
 
     return newSchedules;
-}
-
-function updateWhenAtIndex(when: string[], index: number, newCondition: string): string[] {
-    const newWhen = [...when];
-    newWhen[index] = newCondition;
-
-    return newWhen;
 }
