@@ -15,6 +15,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -23,6 +24,7 @@ import (
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
@@ -400,12 +402,26 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec = *patchedPodSpec
 	}
 
+	var x *entrypoint.Image
+
 	for i, c := range pod.Spec.Containers {
 		if c.Name != common.WaitContainerName {
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
-				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
-					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
+				err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+					var lookupErr error
+					x, lookupErr = woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
+						Namespace:          woc.wf.Namespace,
+						ServiceAccountName: woc.execWf.Spec.ServiceAccountName,
+						ImagePullSecrets:   woc.execWf.Spec.ImagePullSecrets,
+					})
+					if lookupErr != nil {
+						if errorsutil.IsTransientErr(lookupErr) {
+							return false, nil
+						}
+						return true, lookupErr
+					}
+					return true, nil
 				})
 				if err != nil {
 					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", c.Image, err)
