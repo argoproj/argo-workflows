@@ -17,6 +17,6 @@ spec:
   workflowMetadata:
     labelsFrom:
       mutexName:
-        expression: "{{= trim(\"workflow.annotations.schedulerName\") }}"
+        expression: "{{= sprig.quote(sprig.trim( workflow.annotations.schedulerName )) }}"
     annotations:
       schedulerName: wfMetadataScheduler
