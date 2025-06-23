@@ -204,8 +204,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
-		progressPatchTickDuration:  env.LookupEnvDurationOr(context.Background(), common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:   env.LookupEnvDurationOr(context.Background(), common.EnvVarProgressFileTickDuration, 3*time.Second),
+		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 	}
 
 	if executorPlugins {
@@ -325,7 +325,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.updateEstimatorFactory(ctx)
 
-	wfc.configMapInformer = wfc.newConfigMapInformer()
+	wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
@@ -423,8 +423,8 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	isWFDeleted := func(key string) bool {
 		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
-			bgLogger := logging.GetLoggerFromContext(context.Background())
-			bgLogger.WithField(context.Background(), "key", key).WithError(context.Background(), err).Error(context.Background(), "Failed to get workflow from informer")
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.WithField(ctx, "key", key).WithError(ctx, err).Error(ctx, "Failed to get workflow from informer")
 			return false
 		}
 		return exists
@@ -482,7 +482,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 				logger.Infof(ctx, "Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
 				wfc.UpdateConfig(ctx)
 			}
-			wfc.notifySemaphoreConfigUpdate(cm)
+			wfc.notifySemaphoreConfigUpdate(ctx, cm)
 		case <-ctx.Done():
 			return
 		}
@@ -490,22 +490,22 @@ func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
-func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, cm *apiv1.ConfigMap) {
 	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
-		bgLogger := logging.GetLoggerFromContext(context.Background())
-		bgLogger.Errorf(context.Background(), "failed get the workflow from informer. %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Errorf(ctx, "failed get the workflow from informer. %v", err)
 	}
 
 	for _, obj := range wfs {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
-			bgLogger := logging.GetLoggerFromContext(context.Background())
-			bgLogger.Warnf(context.Background(), "received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Warnf(ctx, "received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
-		bgLogger := logging.GetLoggerFromContext(context.Background())
-		bgLogger.Infof(context.Background(), "Adding workflow %s/%s", un.GetNamespace(), un.GetName())
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Infof(ctx, "Adding workflow %s/%s", un.GetNamespace(), un.GetName())
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
@@ -513,11 +513,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	cwftGetAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(context.Background(), err)
+	errors.CheckError(ctx, err)
 	cwftListAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(context.Background(), err)
+	errors.CheckError(ctx, err)
 	cwftWatchAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(context.Background(), err)
+	errors.CheckError(ctx, err)
 
 	logger := logging.GetLoggerFromContext(ctx)
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -553,7 +553,7 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 func (wfc *WorkflowController) workflowGarbageCollector(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	periodicity := env.LookupEnvDurationOr(context.Background(), "WORKFLOW_GC_PERIOD", 5*time.Minute)
+	periodicity := env.LookupEnvDurationOr(ctx, "WORKFLOW_GC_PERIOD", 5*time.Minute)
 	logger := logging.GetLoggerFromContext(ctx)
 	logger = logger.WithField(ctx, "component", "wf_garbage_collector")
 	ctx = logging.WithLogger(ctx, logger)
@@ -603,7 +603,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(ctx context.Conte
 		wfc.workflowKeyLock.Lock(key)
 		defer wfc.workflowKeyLock.Unlock(key)
 
-		obj, ok := wfc.getWorkflowByKey(key)
+		obj, ok := wfc.getWorkflowByKey(ctx, key)
 		if !ok {
 			return fmt.Errorf("failed to get workflow by key after locking")
 		}
@@ -645,7 +645,7 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Cont
 	logger := logging.GetLoggerFromContext(ctx)
 	logger = logger.WithField(ctx, "component", "archived_wf_garbage_collector")
 	ctx = logging.WithLogger(ctx, logger)
-	periodicity := env.LookupEnvDurationOr(context.Background(), "ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
+	periodicity := env.LookupEnvDurationOr(ctx, "ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
 	if wfc.Config.Persistence == nil {
 		logger.Info(ctx, "Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
@@ -701,7 +701,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 
-	obj, ok := wfc.getWorkflowByKey(key)
+	obj, ok := wfc.getWorkflowByKey(ctx, key)
 	if !ok {
 		return true
 	}
@@ -798,11 +798,11 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	return true
 }
 
-func (wfc *WorkflowController) getWorkflowByKey(key string) (interface{}, bool) {
-	bgLogger := logging.GetLoggerFromContext(context.Background())
+func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string) (interface{}, bool) {
+	logger := logging.GetLoggerFromContext(ctx)
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
-		bgLogger.WithField(context.Background(), "key", key).WithError(context.Background(), err).Error(context.Background(), "Failed to get workflow from informer")
+		logger.WithField(ctx, "key", key).WithError(ctx, err).Error(ctx, "Failed to get workflow from informer")
 		return nil, false
 	}
 	if !exists {
@@ -1107,16 +1107,15 @@ func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
+func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
-	ctx := context.Background()
-	bgLogger := logging.GetLoggerFromContext(ctx)
-	bgLogger = bgLogger.WithField(ctx, "component", "config_map_informer")
-	bgLogger.WithField(context.Background(), "executorPlugins", wfc.executorPlugins != nil).Info(context.Background(), "Plugins")
+	logger := logging.GetLoggerFromContext(ctx)
+	logger = logger.WithField(ctx, "component", "config_map_informer")
+	logger.WithField(ctx, "executorPlugins", wfc.executorPlugins != nil).Info(ctx, "Plugins")
 	if wfc.executorPlugins != nil {
 		//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -1132,46 +1131,46 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 					cm := obj.(*apiv1.ConfigMap)
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
-						bgLogger.WithFields(context.Background(), logging.Fields{
+						logger.WithFields(ctx, logging.Fields{
 							"namespace": cm.GetNamespace(),
 							"name":      cm.GetName(),
-						}).WithError(context.Background(), err).Error(context.Background(), "failed to convert configmap to plugin")
+						}).WithError(ctx, err).Error(ctx, "failed to convert configmap to plugin")
 						return
 					}
 					if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
 						wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
 					}
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					bgLogger.WithFields(context.Background(), logging.Fields{
+					logger.WithFields(ctx, logging.Fields{
 						"namespace": cm.GetNamespace(),
 						"name":      cm.GetName(),
-					}).Info(context.Background(), "Executor plugin added")
+					}).Info(ctx, "Executor plugin added")
 				},
 				UpdateFunc: func(_, obj interface{}) {
 					cm := obj.(*apiv1.ConfigMap)
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
-						bgLogger.WithFields(context.Background(), logging.Fields{
+						logger.WithFields(ctx, logging.Fields{
 							"namespace": cm.GetNamespace(),
 							"name":      cm.GetName(),
-						}).WithError(context.Background(), err).Error(context.Background(), "failed to convert configmap to plugin")
+						}).WithError(ctx, err).Error(ctx, "failed to convert configmap to plugin")
 						return
 					}
 
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					bgLogger.WithFields(context.Background(), logging.Fields{
+					logger.WithFields(ctx, logging.Fields{
 						"namespace": cm.GetNamespace(),
 						"name":      cm.GetName(),
-					}).Info(context.Background(), "Executor plugin updated")
+					}).Info(ctx, "Executor plugin updated")
 				},
 				DeleteFunc: func(obj interface{}) {
 					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 					delete(wfc.executorPlugins[namespace], name)
-					bgLogger.WithFields(context.Background(), logging.Fields{
+					logger.WithFields(ctx, logging.Fields{
 						"namespace": namespace,
 						"name":      name,
-					}).Info(context.Background(), "Executor plugin removed")
+					}).Info(ctx, "Executor plugin removed")
 				},
 			},
 		})
@@ -1258,7 +1257,7 @@ func (wfc *WorkflowController) getWorkflowPhaseMetrics() map[string]int64 {
 	if wfc.wfInformer != nil {
 		for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-			errors.CheckError(context.Background(), err)
+			errors.CheckError(context.TODO(), err)
 			result[string(phase)] = int64(len(keys))
 		}
 	}
@@ -1273,7 +1272,7 @@ func (wfc *WorkflowController) getWorkflowConditionMetrics() map[wfv1.Condition]
 			{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 		} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
-			errors.CheckError(context.Background(), err)
+			errors.CheckError(context.TODO(), err)
 			result[x] = int64(len(keys))
 		}
 	}

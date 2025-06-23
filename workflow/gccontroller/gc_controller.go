@@ -166,7 +166,7 @@ func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 
 	for c.orderedQueue[phase].Len() > maxWorkflows {
 		key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
-		c.log.Infof(ctx, "Queueing %v workflow %s for delete due to max rention(%d workflows)", phase, key, maxWorkflows)
+		c.log.Infof(ctx, "Queueing %v workflow %s for delete due to max retention(%d workflows)", phase, key, maxWorkflows)
 		c.workqueue.Add(key)
 		<-ticker.C
 	}
