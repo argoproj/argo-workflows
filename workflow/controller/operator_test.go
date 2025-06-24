@@ -9103,7 +9103,7 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
-	assert.Len(t, localScope, 6)
+	assert.Len(t, localScope, 5)
 	assert.Equal(t, "1", localScope[common.LocalVarRetries])
 	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
@@ -9131,7 +9131,7 @@ metadata:
 spec:
   entrypoint: step-entrypoint
   retryStrategy:
-    expression: retry.nodeType == 'Pod'
+    expression: "{{node.type}} == Pod"
     limit: 5
   templates:
   - inputs: {}
@@ -9493,25 +9493,39 @@ status:
 
 func TestRetryExpressionFilterNodeType(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionFilterNodeType)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
 	retryNode, err := wf.GetNodeByName("test01-fail-5kk6k(0)[1].step-b(0).dag-b")
 	require.NoError(t, err)
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
-	assert.Equal(t, "Pod", localScope[common.LocalVarRetriesNodeType])
 	scope := env.GetFuncMap(localScope)
-	shouldContinue, err := argoexpr.EvalBool("retry.nodeType == 'Pod'", scope)
+	var shouldContinue bool
+	shouldContinue, err = argoexpr.EvalBool("{{node.type}} == Pod", scope)
 	require.NoError(t, err)
 	assert.True(t, shouldContinue)
 
 	retryNode, err = wf.GetNodeByName("test01-fail-5kk6k(0)[1].step-b")
 	require.NoError(t, err)
 	localScope = buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
-	assert.Equal(t, "DAG", localScope[common.LocalVarRetriesNodeType])
+	scope = env.GetFuncMap(localScope)
+	shouldContinue, err = argoexpr.EvalBool("{{node.type}} == Pod", scope)
+	require.NoError(t, err)
+	assert.False(t, shouldContinue)
 	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 
 	retryNode, err = wf.GetNodeByName("test01-fail-5kk6k")
 	require.NoError(t, err)
 	localScope = buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
-	assert.Equal(t, "Steps", localScope[common.LocalVarRetriesNodeType])
+	scope = env.GetFuncMap(localScope)
+	shouldContinue, err = argoexpr.EvalBool("{{node.type}} == Pod", scope)
+	assert.False(t, shouldContinue)
 	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 }
 
