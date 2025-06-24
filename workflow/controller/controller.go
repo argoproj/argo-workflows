@@ -316,7 +316,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
-	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		logger.Fatal(ctx, err.Error())

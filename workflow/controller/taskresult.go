@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
@@ -15,6 +14,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
@@ -23,13 +23,14 @@ var (
 	workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 )
 
-func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {
+func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context) cache.SharedIndexInformer {
+	log := logging.GetLoggerFromContext(ctx)
 	labelSelector := labels.NewSelector().
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
 		String()
-	log.WithField("labelSelector", labelSelector).
-		Info("Watching task results")
+	log.WithField(ctx, "labelSelector", labelSelector).
+		Info(ctx, "Watching task results")
 	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		wfc.wfclientset,
 		wfc.GetManagedNamespace(),
