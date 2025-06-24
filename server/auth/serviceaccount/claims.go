@@ -84,7 +84,7 @@ func ClaimSetWithX509(restConfig *rest.Config) (*types.Claims, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse certificate: %w", err)
 		}
-	} else if restConfig.CertFile != "" {
+	} else {
 		// Load certificate from file
 		data, err := os.ReadFile(restConfig.CertFile)
 		if err != nil {
@@ -98,8 +98,6 @@ func ClaimSetWithX509(restConfig *rest.Config) (*types.Claims, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse certificate: %w", err)
 		}
-	} else {
-		return nil, nil // No certificate info available
 	}
 
 	if cert == nil {
