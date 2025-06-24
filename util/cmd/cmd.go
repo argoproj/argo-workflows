@@ -49,7 +49,7 @@ func PrintVersion(cliName string, version wfv1.Version, short bool) {
 
 // PrintVersionMismatchWarning detects if there's a mismatch between the client and server versions and prints a warning if so
 func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version, serverVersion string) {
-	log := logging.DefaultSlogLogger()
+	log := logging.GetLoggerFromContext(ctx)
 	if serverVersion != "" && clientVersion.GitTag != "" && serverVersion != clientVersion.Version {
 		log.Warnf(ctx, "CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", clientVersion.Version, serverVersion)
 	}
