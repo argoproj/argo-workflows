@@ -48,9 +48,11 @@ export function processURL(urlExpression: string, jsonObject: any) {
     });
 }
 
-export function openLinkWithKey(url: string, type?: string) {
-    if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey || type === 'external') {
+export function openLinkWithKey(url: string, target?: string) {
+    if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
         window.open(url, '_blank');
+    } else if (target !== `''`) {
+        window.open(url, target);
     } else {
         document.location.href = url;
     }
@@ -71,16 +73,16 @@ export function Links({scope, object, button}: {scope: string; object: {metadata
         <>
             {error && error.message}
             {links &&
-                links.map(({url, name, type}) => {
+                links.map(({url, name, target}) => {
                     if (button) {
                         return (
-                            <Button onClick={() => openLinkWithKey(processURL(url, object), type)} key={name} icon='external-link-alt'>
+                            <Button onClick={() => openLinkWithKey(processURL(url, object), target)} key={name} icon='external-link-alt'>
                                 {name}
                             </Button>
                         );
                     }
                     return (
-                        <a key={name} href={processURL(url, object)} target={type === 'external' ? '_blank' : undefined} rel='noreferrer'>
+                        <a key={name} href={processURL(url, object)} target={target} rel='noreferrer'>
                             {name} <i className='fa fa-external-link-alt' />
                         </a>
                     );
