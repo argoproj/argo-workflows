@@ -25,7 +25,7 @@ func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {
 		return ClaimSetWithBearerToken(restConfig)
 	}
 
-        if restConfig.CertFile != "" || len(restConfig.CertData) > 0 {
+	if restConfig.CertFile != "" || len(restConfig.CertData) > 0 {
 		return ClaimSetWithX509(restConfig)
 	}
 	return nil, nil
