@@ -5444,7 +5444,7 @@ func TestPanicMetric(t *testing.T) {
 
 	// This should make the call to "operate" panic
 	ctx := context.Background()
-	woc.preExecutionNodePhases = nil
+	woc.preExecutionNodeStatuses = nil
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("cause", "OperationPanic"))
