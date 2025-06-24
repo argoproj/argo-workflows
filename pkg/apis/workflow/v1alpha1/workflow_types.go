@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/ptr"
 
 	log "github.com/sirupsen/logrus"
 
@@ -2014,8 +2015,7 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 		return
 	}
 	if node.TaskResultSynced != nil {
-		tmp := false
-		node.TaskResultSynced = &tmp
+		node.TaskResultSynced = ptr.To(bool(false))
 	}
 	in.Nodes.Set(name, *node)
 }
@@ -2030,8 +2030,7 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 		return
 	}
 	if node.TaskResultSynced != nil {
-		tmp := true
-		node.TaskResultSynced = &tmp
+		node.TaskResultSynced = ptr.To(bool(true))
 	}
 	in.Nodes.Set(name, *node)
 }
@@ -2402,11 +2401,8 @@ func (n *NodeStatus) IsWorkflowStep() bool {
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled(synced *bool) bool {
-	if synced == nil {
-		tmp := true
-		synced = &tmp
-	}
-	return phase.Completed() && *synced || phase == NodeSkipped || phase == NodeOmitted
+	isSynced := synced == nil || *synced
+	return (phase.Completed() && isSynced) || phase == NodeSkipped || phase == NodeOmitted
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed

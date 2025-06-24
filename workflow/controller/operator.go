@@ -99,9 +99,9 @@ type wfOperationCtx struct {
 	// terminate the workflow.
 	workflowDeadline *time.Time
 	eventRecorder    record.EventRecorder
-	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
+	// preExecutionNodeStatuses contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
-	preExecutionNodePhases map[string]wfv1.NodeStatus
+	preExecutionNodeStatuses map[string]wfv1.NodeStatus
 	// execWf holds the Workflow for use in execution.
 	// In Normal workflow scenario: It holds copy of workflow object
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
@@ -159,14 +159,14 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.Name,
 			"namespace": wf.Namespace,
 		}),
-		controller:             wfc,
-		globalParams:           make(map[string]string),
-		volumes:                wf.Spec.DeepCopy().Volumes,
-		deadline:               time.Now().UTC().Add(maxOperationTime),
-		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
-		preExecutionNodePhases: make(map[string]wfv1.NodeStatus),
-		taskSet:                make(map[string]wfv1.Template),
-		currentStackDepth:      0,
+		controller:               wfc,
+		globalParams:             make(map[string]string),
+		volumes:                  wf.Spec.DeepCopy().Volumes,
+		deadline:                 time.Now().UTC().Add(maxOperationTime),
+		eventRecorder:            wfc.eventRecorderManager.Get(wf.Namespace),
+		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
+		taskSet:                  make(map[string]wfv1.Template),
+		currentStackDepth:        0,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -272,7 +272,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
-		woc.preExecutionNodePhases[node.ID] = *node.DeepCopy()
+		woc.preExecutionNodeStatuses[node.ID] = *node.DeepCopy()
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
@@ -2179,7 +2179,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
 				// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
 				// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
-				if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
+				if prevNodeStatus, ok := woc.preExecutionNodeStatuses[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
 					localScope, realTimeScope := woc.prepareMetricScope(processedRetryParentNode)
 					woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
@@ -2339,7 +2339,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if processedTmpl.Metrics != nil {
 		// Check if the node was just created, if it was emit realtime metrics.
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
-		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok {
+		if _, ok := woc.preExecutionNodeStatuses[node.ID]; !ok {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
@@ -2353,7 +2353,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
 		// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
 		// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
-		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
+		if prevNodeStatus, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
@@ -2371,7 +2371,7 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName str
 	if processedTmpl.Metrics != nil {
 		// Check if this node completed between executions. If it did, emit metrics.
 		// We can infer that this node completed during the current operation, emit metrics
-		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
+		if prevNodeStatus, ok := woc.preExecutionNodeStatuses[node.ID]; ok && !prevNodeStatus.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
