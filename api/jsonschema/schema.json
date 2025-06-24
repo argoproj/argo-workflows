@@ -5782,8 +5782,8 @@
           "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
           "type": "string"
         },
-        "type": {
-          "description": "The type of the link. E.g. \"external\", \"internal\". If the link type is external, it will open in a new tab.",
+        "target": {
+          "description": "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
           "type": "string"
         },
         "url": {
@@ -5794,7 +5794,7 @@
       "required": [
         "name",
         "scope",
-        "type",
+        "target",
         "url"
       ],
       "type": "object",

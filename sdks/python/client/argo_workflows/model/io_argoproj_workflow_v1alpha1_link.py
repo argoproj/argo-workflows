@@ -83,7 +83,7 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
         return {
             'name': (str,),  # noqa: E501
             'scope': (str,),  # noqa: E501
-            'type': (str,),  # noqa: E501
+            'target': (str,),  # noqa: E501
             'url': (str,),  # noqa: E501
         }
 
@@ -95,7 +95,7 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
     attribute_map = {
         'name': 'name',  # noqa: E501
         'scope': 'scope',  # noqa: E501
-        'type': 'type',  # noqa: E501
+        'target': 'target',  # noqa: E501
         'url': 'url',  # noqa: E501
     }
 
@@ -106,13 +106,13 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, name, scope, type, url, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, name, scope, target, url, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Link - a model defined in OpenAPI
 
         Args:
             name (str): The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"
             scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"
-            type (str): The type of the link. E.g. \"external\", \"internal\". If the link type is external, it will open in a new tab.
+            target (str): Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.
             url (str): The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"
 
         Keyword Args:
@@ -175,7 +175,7 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
 
         self.name = name
         self.scope = scope
-        self.type = type
+        self.target = target
         self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -197,13 +197,13 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, name, scope, type, url, *args, **kwargs):  # noqa: E501
+    def __init__(self, name, scope, target, url, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Link - a model defined in OpenAPI
 
         Args:
             name (str): The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"
             scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"
-            type (str): The type of the link. E.g. \"external\", \"internal\". If the link type is external, it will open in a new tab.
+            target (str): Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.
             url (str): The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"
 
         Keyword Args:
@@ -264,7 +264,7 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
 
         self.name = name
         self.scope = scope
-        self.type = type
+        self.target = target
         self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \

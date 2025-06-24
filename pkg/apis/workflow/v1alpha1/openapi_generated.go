@@ -3762,9 +3762,9 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
-					"type": {
+					"target": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The type of the link. E.g. \"external\", \"internal\". If the link type is external, it will open in a new tab.",
+							Description: "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -3779,7 +3779,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"name", "scope", "type", "url"},
+				Required: []string{"name", "scope", "target", "url"},
 			},
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
