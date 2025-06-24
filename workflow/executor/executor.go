@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -308,7 +309,6 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
-
 		if err != nil {
 			aggregateError += err.Error() + "; "
 		}
@@ -321,7 +321,6 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	} else {
 		return artifacts, errors.New(aggregateError)
 	}
-
 }
 
 // save artifact
@@ -859,17 +858,21 @@ func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
+	var count uint64 // used to avoid spamming with these messages
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    5,
+		Factor:   2.0,
+		Jitter:   0.2,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && count%20 == 0 {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
+		count++
 		return err
 	})
 }
@@ -900,7 +903,6 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 	}
 	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
 	return err
-
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -1200,7 +1202,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
 func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
-
 	deadlineExceeded := make(chan bool, 1)
 	if !we.Deadline.IsZero() {
 		t := time.AfterFunc(time.Until(we.Deadline), func() {
