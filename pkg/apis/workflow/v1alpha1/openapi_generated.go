@@ -3762,14 +3762,6 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
-					"target": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"url": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${workflow.metadata.annotations.userDefinedKey}\"",
@@ -3778,8 +3770,16 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"target": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"name", "scope", "target", "url"},
+				Required: []string{"name", "scope", "url", "target"},
 			},
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{

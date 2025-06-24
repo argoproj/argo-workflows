@@ -5794,8 +5794,8 @@
       "required": [
         "name",
         "scope",
-        "target",
-        "url"
+        "url",
+        "target"
       ],
       "type": "object",
       "x-kubernetes-patch-merge-key": "name",

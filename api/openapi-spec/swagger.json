@@ -9871,8 +9871,8 @@
       "required": [
         "name",
         "scope",
-        "target",
-        "url"
+        "url",
+        "target"
       ],
       "properties": {
         "name": {

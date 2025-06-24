@@ -8,10 +8,10 @@ type Link struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// "workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"
 	Scope string `json:"scope" protobuf:"bytes,2,opt,name=scope"`
-	// Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.
-	Target string `json:"target" protobuf:"bytes,4,opt,name=target"`
 	// The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
 	URL string `json:"url" protobuf:"bytes,3,opt,name=url"`
+	// Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.
+	Target string `json:"target" protobuf:"bytes,4,opt,name=target"`
 }
 
 // Column is a custom column that will be exposed in the Workflow List View.
