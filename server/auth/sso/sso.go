@@ -48,6 +48,7 @@ type Interface interface {
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
+	IsAutoLoginEnabled() bool
 }
 
 var _ Interface = &sso{}
@@ -68,10 +69,15 @@ type sso struct {
 	customClaimName   string
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
+	autoLogin         bool
 }
 
 func (s *sso) IsRBACEnabled() bool {
 	return s.rbacConfig.IsEnabled()
+}
+
+func (s *sso) IsAutoLoginEnabled() bool {
+	return s.autoLogin
 }
 
 // Abstract methods of oidc.Provider that our code uses into an interface. That
@@ -220,6 +226,7 @@ func newSso(
 		userInfoPath:      c.UserInfoPath,
 		issuer:            c.Issuer,
 		filterGroupsRegex: filterGroupsRegex,
+		autoLogin:         c.AutoLogin,
 	}, nil
 }
 

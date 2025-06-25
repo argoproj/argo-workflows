@@ -55,6 +55,24 @@ func (_m *Interface) HandleRedirect(writer http.ResponseWriter, request *http.Re
 	_m.Called(writer, request)
 }
 
+// IsAutoLoginEnabled provides a mock function with no fields
+func (_m *Interface) IsAutoLoginEnabled() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsAutoLoginEnabled")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // IsRBACEnabled provides a mock function with no fields
 func (_m *Interface) IsRBACEnabled() bool {
 	ret := _m.Called()

@@ -437,7 +437,25 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// If SSO AutoLogin is enabled, redirect to OAuth2 login page automatically
+		if as.oAuth2Service != nil && as.oAuth2Service.IsAutoLoginEnabled() {
+			target := *r.URL
+			target.Scheme = "http"
+			if r.TLS != nil || as.tlsConfig != nil {
+				target.Scheme = "https"
+			}
+			target.Host = r.Host
+			target.Path = fmt.Sprintf("%s/oauth2/redirect", as.baseHRef)
+
+			http.Redirect(w, r, target.String(), http.StatusFound)
+			return
+		}
+		// Otherwise, serve static files normally
+		staticHandler := static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles
+		staticHandler(w, r)
+	}))
+
 	return &httpServer
 }
 
