@@ -801,6 +801,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
 // FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
+	var count uint64 // used to avoid spamming with these messages
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
@@ -812,8 +813,11 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
 		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && count%20 == 0 {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
+		count++
 		return err
 	})
 	if err != nil {
@@ -822,6 +826,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 }
 
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
+	var count uint64 // used to avoid spamming with these messages
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
@@ -831,8 +836,11 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && count%20 == 0 {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
+		count++
 		return err
 	})
 	if err != nil {
