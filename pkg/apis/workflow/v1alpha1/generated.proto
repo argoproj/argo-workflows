@@ -934,6 +934,9 @@ message Link {
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
   optional string url = 3;
+
+  // Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.
+  optional string target = 4;
 }
 
 message ManifestFrom {
