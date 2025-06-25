@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	age = env.LookupEnvDurationOr("HEALTHZ_AGE", 5*time.Minute)
+	age = env.LookupEnvDurationOr(context.Background(), "HEALTHZ_AGE", 5*time.Minute)
 )
 
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request

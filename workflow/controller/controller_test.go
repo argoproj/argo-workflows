@@ -296,8 +296,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
 	}
 
@@ -323,12 +323,12 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
-		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
-		wfc.configMapInformer = wfc.newConfigMapInformer()
+		wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -805,8 +805,9 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wfTmpl)
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
@@ -856,15 +857,16 @@ func TestInvalidWorkflowMetadata(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabelsFrom)
 	cancel, controller := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
 	cancel, controller = newController(wf)
 	defer cancel()
-	woc = newWorkflowOperationCtx(wf, controller)
-	err = woc.setExecWorkflow(context.Background())
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	err = woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
 }
 
@@ -896,18 +898,19 @@ func TestIsArchivable(t *testing.T) {
 }
 
 func TestReleaseAllWorkflowLocks(t *testing.T) {
+	ctx := context.Background()
 	cancel, controller := newController()
 	defer cancel()
 	t.Run("nilObject", func(t *testing.T) {
-		controller.releaseAllWorkflowLocks(nil)
+		controller.releaseAllWorkflowLocks(ctx, nil)
 	})
 	t.Run("unStructuredObject", func(t *testing.T) {
 		un := &unstructured.Unstructured{}
-		controller.releaseAllWorkflowLocks(un)
+		controller.releaseAllWorkflowLocks(ctx, un)
 	})
 	t.Run("otherObject", func(t *testing.T) {
 		un := &wfv1.Workflow{}
-		controller.releaseAllWorkflowLocks(un)
+		controller.releaseAllWorkflowLocks(ctx, un)
 	})
 }
 
@@ -960,7 +963,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	}
 	assert.Equal(0, controller.wfQueue.Len())
 
-	controller.notifySemaphoreConfigUpdate(&cm)
+	controller.notifySemaphoreConfigUpdate(context.Background(), &cm)
 	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }
@@ -1150,7 +1153,7 @@ spec:
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1180,7 +1183,7 @@ spec:
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodPending)
@@ -1206,7 +1209,7 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	for _, node := range woc.wf.Status.Nodes {
@@ -1222,7 +1225,7 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1240,7 +1243,7 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
@@ -1319,7 +1322,7 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 

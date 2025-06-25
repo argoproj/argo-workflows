@@ -115,6 +115,7 @@ spec:
 func TestSetTemplateDefault(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
 			TemplateDefaults: &wfv1.Template{
@@ -127,7 +128,7 @@ func TestSetTemplateDefault(t *testing.T) {
 	}
 	t.Run("tmplDefaultInConfig", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
@@ -154,7 +155,7 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
@@ -184,7 +185,7 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
@@ -225,7 +226,7 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]

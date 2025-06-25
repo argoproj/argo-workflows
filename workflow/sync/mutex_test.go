@@ -202,7 +202,7 @@ func TestMutexLock(t *testing.T) {
 		require.NotNil(t, wf2.Status.Synchronization)
 		require.NotNil(t, wf2.Status.Synchronization.Mutex)
 		assert.Equal(t, getHolderKey(wf2, ""), wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 
@@ -288,7 +288,7 @@ func TestMutexLock(t *testing.T) {
 		require.NotNil(t, wf2.Status.Synchronization.Mutex)
 		expected = getHolderKey(wf2, "")
 		assert.Equal(t, expected, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 }

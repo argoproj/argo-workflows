@@ -13,7 +13,7 @@ func NewInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Load artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			ctx := cmd.Context()
 			err := loadArtifacts(ctx)
 			if err != nil {
 				return fmt.Errorf("%+v", err)

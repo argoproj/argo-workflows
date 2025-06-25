@@ -154,7 +154,11 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 				pid := command.Process.Pid
-				ctx, cancel := context.WithCancel(context.Background())
+				cmdCtx := cmd.Context()
+				if cmdCtx == nil {
+					cmdCtx = context.Background()
+				}
+				ctx, cancel := context.WithCancel(cmdCtx)
 				defer cancel()
 				go func() {
 					for {

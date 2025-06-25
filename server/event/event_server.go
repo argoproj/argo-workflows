@@ -51,7 +51,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationQueue {
-				_ = operation.Dispatch(context.Background())
+				_ = operation.Dispatch(operation.Context())
 			}
 		}()
 		wg.Add(1)

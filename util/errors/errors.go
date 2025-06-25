@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -10,10 +11,10 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func IgnoreContainerNotFoundErr(err error) error {
@@ -24,19 +25,21 @@ func IgnoreContainerNotFoundErr(err error) error {
 }
 
 // IsTransientErr reports whether the error is transient and logs it.
-func IsTransientErr(err error) bool {
-	isTransient := IsTransientErrQuiet(err)
+func IsTransientErr(ctx context.Context, err error) bool {
+	isTransient := IsTransientErrQuiet(ctx, err)
 	if err != nil && !isTransient {
-		log.Warnf("Non-transient error: %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Warnf(ctx, "Non-transient error: %v", err)
 	}
 	return isTransient
 }
 
 // IsTransientErrQuiet reports whether the error is transient and logs only if it is.
-func IsTransientErrQuiet(err error) bool {
+func IsTransientErrQuiet(ctx context.Context, err error) bool {
 	isTransient := isTransientErr(err)
 	if isTransient {
-		log.Infof("Transient error: %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Infof(ctx, "Transient error: %v", err)
 	}
 	return isTransient
 }
@@ -146,8 +149,9 @@ func isTransientSqbErr(err error) bool {
 }
 
 // CheckError is a convenience function to fatally log an exit if the supplied error is non-nil
-func CheckError(err error) {
+func CheckError(ctx context.Context, err error) {
 	if err != nil {
-		log.Fatal(err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Fatal(ctx, err.Error())
 	}
 }

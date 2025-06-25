@@ -159,7 +159,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	}
 	cleaner := fields.NewCleaner(req.Fields)
 	if !cleaner.WillExclude("status.nodes") {
-		if err := s.hydrator.Hydrate(wf); err != nil {
+		if err := s.hydrator.Hydrate(ctx, wf); err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 	}
@@ -200,7 +200,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	archivedCount, err := s.wfArchive.CountWorkflows(options)
+	archivedCount, err := s.wfArchive.CountWorkflows(ctx, options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -225,7 +225,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 			archivedOffset = 0
 			archivedLimit = options.Limit - len(liveWfList.Items)
 		}
-		archivedWfList, err := s.wfArchive.ListWorkflows(options.WithLimit(archivedLimit).WithOffset(archivedOffset))
+		archivedWfList, err := s.wfArchive.ListWorkflows(ctx, options.WithLimit(archivedLimit).WithOffset(archivedOffset))
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -248,7 +248,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 
 	cleaner := fields.NewCleaner(req.Fields)
 	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
-		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
+		offloadedNodes, err := s.offloadNodeStatusRepo.List(ctx, req.Namespace)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -340,7 +340,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			if !cleaner.WillExclude("status.nodes") {
-				if err := s.hydrator.Hydrate(wf); err != nil {
+				if err := s.hydrator.Hydrate(ctx, wf); err != nil {
 					return sutils.ToStatusError(err, codes.Internal)
 				}
 			}
@@ -450,7 +450,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	err = s.hydrator.Hydrate(wf)
+	err = s.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -481,7 +481,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	err = s.hydrator.Dehydrate(wf)
+	err = s.hydrator.Dehydrate(ctx, wf)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -730,7 +730,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 			return nil, getWorkflowOrigErr(origErr, err)
 		}
 
-		wf, err = s.wfArchive.GetWorkflow("", namespace, name)
+		wf, err = s.wfArchive.GetWorkflow(ctx, "", namespace, name)
 		if wf == nil || err != nil {
 			return nil, getWorkflowOrigErr(origErr, err)
 		}

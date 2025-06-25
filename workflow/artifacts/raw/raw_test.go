@@ -1,6 +1,7 @@
 package raw_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -29,7 +30,7 @@ func TestLoad(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	err = driver.Load(art, lf.Name())
+	err = driver.Load(context.Background(), art, lf.Name())
 	require.NoError(t, err)
 
 	dat, err := os.ReadFile(lf.Name())
@@ -44,7 +45,7 @@ func TestOpenStream(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	rc, err := driver.OpenStream(art)
+	rc, err := driver.OpenStream(context.Background(), art)
 	require.NoError(t, err)
 	defer rc.Close()
 

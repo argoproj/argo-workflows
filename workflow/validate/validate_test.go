@@ -2986,7 +2986,7 @@ spec:
 		tasks:        nameToTask,
 		dependencies: make(map[string]map[string]common.DependencyType),
 	}
-	err := sortDAGTasks(&tmpl, dagValidationCtx)
+	err := sortDAGTasks(context.Background(), &tmpl, dagValidationCtx)
 	require.NoError(t, err)
 	var taskOrderAfterSort, expectedOrder []string
 	expectedOrder = []string{"8ea51cf2", "ba1f414f", "f7d273f8"}

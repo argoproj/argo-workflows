@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -14,6 +13,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Client interface {
@@ -63,7 +63,9 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 }
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	log.WithField("opts", opts).Debug("Client options")
+	ctx := opts.GetContext()
+	log := logging.GetLoggerFromContext(ctx)
+	log.WithField(ctx, "opts", opts).Debug(ctx, "Client options")
 	if opts.Offline {
 		return newOfflineClient(opts.OfflineFiles)
 	}

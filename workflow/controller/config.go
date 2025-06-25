@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3"
 	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -46,7 +47,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logging.DefaultSlogLogger(), wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
@@ -71,7 +72,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	}
 
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
-	wfc.updateEstimatorFactory()
+	wfc.updateEstimatorFactory(ctx)
 	wfc.rateLimiter = wfc.newRateLimiter()
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
 

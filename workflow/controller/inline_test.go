@@ -37,8 +37,9 @@ spec:
 `)
 	cancel, wfc := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, wfc)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
+	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
@@ -68,8 +69,9 @@ spec:
 `)
 	cancel, wfc := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, wfc)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
+	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("a")
@@ -165,7 +167,7 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
@@ -267,7 +269,7 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
