@@ -805,7 +805,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    5,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
@@ -826,7 +826,7 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    5,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
