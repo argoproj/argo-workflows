@@ -353,7 +353,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	err = woc.createPVCs(ctx)
 	if err != nil {
-		if errorsutil.IsTransientErr(context.Background(), err) {
+		if errorsutil.IsTransientErr(ctx, err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))

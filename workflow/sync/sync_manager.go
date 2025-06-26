@@ -51,7 +51,7 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
 	}
-	log := logging.DefaultSlogLogger()
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	log = log.WithField(ctx, "component", "lock_manager")
 	ctx = logging.WithLogger(ctx, log)
 

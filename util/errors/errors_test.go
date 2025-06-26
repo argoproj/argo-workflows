@@ -54,8 +54,7 @@ const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
 
 func TestIsTransientErr(t *testing.T) {
 	hook := logging.NewTestHook()
-	logger := logging.NewTestLogger(logging.Info, logging.Text)
-	logger.AddHook(hook)
+	logger := logging.NewTestLogger(logging.Info, logging.Text, hook)
 	ctx := logging.WithLogger(context.Background(), logger)
 	defer hook.Reset()
 
@@ -123,8 +122,7 @@ func TestIsTransientErr(t *testing.T) {
 
 func TestIsTransientUErr(t *testing.T) {
 	hook := logging.NewTestHook()
-	logger := logging.NewTestLogger(logging.Info, logging.Text)
-	logger.AddHook(hook)
+	logger := logging.NewTestLogger(logging.Info, logging.Text, hook)
 	ctx := logging.WithLogger(context.Background(), logger)
 	defer hook.Reset()
 

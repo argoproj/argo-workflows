@@ -35,7 +35,7 @@ var alwaysOffloadNodeStatus = os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
 
 func init() {
 	ctx := context.Background()
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	log.WithField(ctx, "alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(ctx, "Hydrator config")
 }
 

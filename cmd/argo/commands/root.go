@@ -140,7 +140,11 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 		}
 		cmdutil.SetLogLevel(logLevel)
 		cmdutil.SetGLogLevel(glogLevel)
-		log := logging.DefaultSlogLogger()
+		parsedLogLevel, err := logging.ParseLevel(logLevel)
+		if err != nil {
+			panic("")
+		}
+		log := logging.NewSlogLogger(parsedLogLevel, logging.GetGlobalFormat())
 		ctx = logging.WithLogger(ctx, log)
 		cmd.SetContext(ctx)
 		command.SetContext(ctx)

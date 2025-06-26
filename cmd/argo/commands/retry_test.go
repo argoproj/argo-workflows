@@ -13,6 +13,7 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func Test_retryWorkflows(t *testing.T) {
@@ -24,8 +25,10 @@ func Test_retryWorkflows(t *testing.T) {
 		cliSubmitOpts := common.CliSubmitOpts{}
 
 		c.On("RetryWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-
-		err := retryWorkflows(context.Background(), c, retryOpts, cliSubmitOpts, []string{"foo", "bar"})
+		ctx := context.Background()
+		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		ctx = logging.WithLogger(ctx, log)
+		err := retryWorkflows(ctx, c, retryOpts, cliSubmitOpts, []string{"foo", "bar"})
 		c.AssertNumberOfCalls(t, "RetryWorkflow", 2)
 
 		require.NoError(t, err)

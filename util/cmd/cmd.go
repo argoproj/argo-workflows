@@ -57,7 +57,7 @@ func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version
 
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
 func MustIsDir(ctx context.Context, filePath string) bool {
-	log := logging.DefaultSlogLogger()
+	log := logging.GetLoggerFromContext(ctx)
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		log.Fatal(ctx, err.Error())

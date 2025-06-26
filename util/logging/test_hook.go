@@ -67,7 +67,7 @@ func (h *TestHook) Reset() {
 }
 
 // NewTestLogger creates a logger that doesn't output to stdout for testing
-func NewTestLogger(logLevel Level, format LogType) Logger {
+func NewTestLogger(logLevel Level, format LogType, hook ...Hook) Logger {
 	var handler slog.Handler
 
 	switch format {

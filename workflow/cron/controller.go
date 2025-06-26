@@ -65,7 +65,7 @@ const (
 var cronSyncPeriod time.Duration
 
 func init() {
-	slog := log.DefaultSlogLogger()
+	slog := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
 	ctx := context.TODO()
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")

@@ -375,7 +375,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wait.UntilWithContext(ctx, wfc.runWorker, time.Second)
 	}
 
-	archiveLogger := logging.DefaultSlogLogger()
+	archiveLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	archiveLogger = archiveLogger.WithField(ctx, "component", "archive_worker")
 	archiveCtx := logging.WithLogger(ctx, archiveLogger)
 	for i := 0; i < wfArchiveWorkers; i++ {

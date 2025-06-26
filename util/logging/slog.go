@@ -20,11 +20,36 @@ var (
 	lock          = &sync.Mutex{}
 )
 
-// DefaultSlogLogger returns the default logger
-func DefaultSlogLogger() Logger {
-	lock.Lock()
-	defer lock.Unlock()
-	return defaultLogger
+// NewSlogLogger returns a slog based logger
+func NewSlogLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
+	var handler slog.Handler
+
+	mappedHoooks := make(map[Level][]Hook)
+
+	for _, hook := range hooks {
+		levels := hook.Levels()
+		for _, level := range levels {
+			mappedHoooks[level] = append(mappedHoooks[level], hook)
+		}
+	}
+
+	switch format {
+	case JSON:
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+	case Text:
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+	default:
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+	}
+
+	f := make(Fields)
+	l := slog.New(handler)
+	s := slogLogger{
+		fields: f,
+		logger: l,
+		hooks:  mappedHoooks,
+	}
+	return &s
 }
 
 func (s *slogLogger) WithFields(_ context.Context, fields Fields) Logger {
@@ -57,7 +82,7 @@ func (s *slogLogger) WithFields(_ context.Context, fields Fields) Logger {
 	}
 }
 
-func (s *slogLogger) WithField(_ context.Context, name string, value interface{}) Logger {
+func (s *slogLogger) WithField(_ context.Context, name string, value any) Logger {
 	newFields := make(Fields)
 
 	logger := s.logger
@@ -116,7 +141,7 @@ func (s *slogLogger) Info(ctx context.Context, msg string) {
 	s.logger.InfoContext(ctx, msg)
 }
 
-func (s *slogLogger) Infof(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Infof(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Info(ctx, msg)
 }
@@ -132,7 +157,7 @@ func (s *slogLogger) Warn(ctx context.Context, msg string) {
 	s.logger.WarnContext(ctx, msg)
 }
 
-func (s *slogLogger) Warnf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Warnf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Warn(ctx, msg)
 }
@@ -149,7 +174,7 @@ func (s *slogLogger) Fatal(ctx context.Context, msg string) {
 	os.Exit(1)
 }
 
-func (s *slogLogger) Fatalf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Fatalf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Fatal(ctx, msg)
 }
@@ -165,7 +190,7 @@ func (s *slogLogger) Error(ctx context.Context, msg string) {
 	s.logger.ErrorContext(ctx, msg)
 }
 
-func (s *slogLogger) Errorf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Errorf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Error(ctx, msg)
 }
@@ -181,7 +206,7 @@ func (s *slogLogger) Trace(ctx context.Context, msg string) {
 	s.logger.DebugContext(ctx, msg)
 }
 
-func (s *slogLogger) Tracef(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Tracef(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Trace(ctx, msg)
 }
@@ -197,7 +222,7 @@ func (s *slogLogger) Debug(ctx context.Context, msg string) {
 	s.logger.DebugContext(ctx, msg)
 }
 
-func (s *slogLogger) Debugf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Debugf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Debug(ctx, msg)
 }
@@ -213,7 +238,7 @@ func (s *slogLogger) Warning(ctx context.Context, msg string) {
 	s.logger.WarnContext(ctx, msg)
 }
 
-func (s *slogLogger) Warningf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Warningf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Warning(ctx, msg)
 }
@@ -229,7 +254,7 @@ func (s *slogLogger) Println(ctx context.Context, msg string) {
 	s.logger.InfoContext(ctx, msg)
 }
 
-func (s *slogLogger) Printf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Printf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Println(ctx, msg)
 }
@@ -246,28 +271,10 @@ func (s *slogLogger) Panic(ctx context.Context, msg string) {
 	panic(msg)
 }
 
-func (s *slogLogger) Panicf(ctx context.Context, format string, args ...interface{}) {
+func (s *slogLogger) Panicf(ctx context.Context, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	s.Panic(ctx, msg)
 }
-
-func (s *slogLogger) AddHook(hook Hook) {
-	if hook == nil {
-		return
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, level := range hook.Levels() {
-		s.hooks[level] = append(s.hooks[level], hook)
-	}
-}
-
-type LogType string
-
-const (
-	JSON LogType = "json"
-	Text LogType = "text"
-)
 
 // convertLevel converts our Level type to slog.Level
 func convertLevel(level Level) slog.Level {
@@ -291,27 +298,4 @@ func convertLevel(level Level) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
-}
-
-// NewSlogLogger returns a slog based logger
-func NewSlogLogger(logLevel Level, format LogType) Logger {
-	var handler slog.Handler
-
-	switch format {
-	case JSON:
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
-	case Text:
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
-	default:
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
-	}
-
-	f := make(Fields)
-	l := slog.New(handler)
-	s := slogLogger{
-		fields: f,
-		logger: l,
-		hooks:  make(map[Level][]Hook),
-	}
-	return &s
 }

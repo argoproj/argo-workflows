@@ -15,8 +15,15 @@ const (
 type CtxKey string
 
 const (
-	//LoggerKey is used to obtain/set the logger from a context
+	// LoggerKey is used to obtain/set the logger from a context
 	LoggerKey CtxKey = "logger"
+)
+
+type LogType string
+
+const (
+	JSON LogType = "json"
+	Text LogType = "text"
 )
 
 var (
@@ -55,7 +62,7 @@ func GetGlobalFormat() LogType {
 }
 
 // Fields are used to carry the values of each field
-type Fields map[string]interface{}
+type Fields map[string]any
 
 // Level is used to indicate log level
 type Level string
@@ -112,51 +119,44 @@ type Hook interface {
 // Logger exports a logging interface
 type Logger interface {
 	WithFields(ctx context.Context, fields Fields) Logger
-	WithField(ctx context.Context, name string, value interface{}) Logger
+	WithField(ctx context.Context, name string, value any) Logger
 	WithError(ctx context.Context, err error) Logger
 
 	Info(ctx context.Context, msg string)
-	Infof(ctx context.Context, format string, args ...interface{})
+	Infof(ctx context.Context, format string, args ...any)
 
 	Warn(ctx context.Context, msg string)
-	Warnf(ctx context.Context, format string, args ...interface{})
+	Warnf(ctx context.Context, format string, args ...any)
 
 	Fatal(ctx context.Context, msg string)
-	Fatalf(ctx context.Context, format string, args ...interface{})
+	Fatalf(ctx context.Context, format string, args ...any)
 
 	Error(ctx context.Context, msg string)
-	Errorf(ctx context.Context, format string, args ...interface{})
+	Errorf(ctx context.Context, format string, args ...any)
 
 	Trace(ctx context.Context, msg string)
-	Tracef(ctx context.Context, format string, args ...interface{})
+	Tracef(ctx context.Context, format string, args ...any)
 
 	Debug(ctx context.Context, msg string)
-	Debugf(ctx context.Context, format string, args ...interface{})
+	Debugf(ctx context.Context, format string, args ...any)
 
 	Warning(ctx context.Context, msg string)
-	Warningf(ctx context.Context, format string, args ...interface{})
+	Warningf(ctx context.Context, format string, args ...any)
 
 	Println(ctx context.Context, msg string)
-	Printf(ctx context.Context, format string, args ...interface{})
+	Printf(ctx context.Context, format string, args ...any)
 
 	Panic(ctx context.Context, msg string)
-	Panicf(ctx context.Context, format string, args ...interface{})
-
-	AddHook(hook Hook)
+	Panicf(ctx context.Context, format string, args ...any)
 }
 
-// GetLoggerFromContext returns a logger from context or the default logger if none is found
+// GetLoggerFromContext returns a logger from context, panics if nil
 func GetLoggerFromContext(ctx context.Context) Logger {
-	if ctx == nil {
-		return DefaultSlogLogger()
+	val := ctx.Value(LoggerKey)
+	if val == nil {
+		return nil
 	}
-
-	// Try to get logger from context
-	if logger, ok := ctx.Value(LoggerKey).(Logger); ok && logger != nil {
-		return logger
-	}
-
-	return DefaultSlogLogger()
+	return val.(Logger)
 }
 
 // WithLogger adds a logger to the context

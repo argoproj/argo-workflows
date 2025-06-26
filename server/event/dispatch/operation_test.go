@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -58,6 +59,8 @@ func TestNewOperation(t *testing.T) {
 		},
 	)
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	recorder := record.NewFakeRecorder(6)
 
 	// act
@@ -204,6 +207,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 		},
 	)
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	recorder := record.NewFakeRecorder(10)
 
 	// act

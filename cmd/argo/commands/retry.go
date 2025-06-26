@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type retryOps struct {
@@ -85,6 +86,10 @@ func NewRetryCommand() *cobra.Command {
 			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
 				return err
+			}
+			if log := logging.GetLoggerFromContext(ctx); log != nil {
+				log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+				ctx = logging.WithLogger(ctx, log)
 			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			retryOpts.namespace = client.Namespace()

@@ -64,7 +64,14 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	ctx := opts.GetContext()
+	if ctx == nil {
+		panic("ctx was nil mate")
+	}
 	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		ctx = logging.WithLogger(ctx, log)
+	}
 	log.WithField(ctx, "opts", opts).Debug(ctx, "Client options")
 	if opts.Offline {
 		return newOfflineClient(opts.OfflineFiles)

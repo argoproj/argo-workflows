@@ -149,10 +149,10 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 			hook := logging.NewTestHook()
 
 			// Add the hook to the default logger
-			defaultLogger := logging.DefaultSlogLogger()
-			defaultLogger.AddHook(hook)
+			defaultLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat(), hook)
 
 			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, defaultLogger)
 			PrintVersionMismatchWarning(ctx, *tt.clientVersion, tt.serverVersion)
 
 			if tt.expectedLog != "" {
