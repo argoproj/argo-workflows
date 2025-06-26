@@ -346,6 +346,23 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 	return grpcServer
 }
 
+// getRedirectParam retrieves the 'redirect' query parameter from the HTTP request URL.
+// If the parameter is not present, it returns a default value of "/workflows".
+func getRedirectParam(r *http.Request) string {
+	// Get the query parameters from the request URL
+	params := r.URL.Query()
+
+	// Retrieve the value of the "redirect" parameter
+	redirect := params.Get("redirect")
+
+	// If the redirect parameter is empty, use the default path
+	if redirect == "" {
+		redirect = "/workflows" // Default redirect path
+	}
+
+	return redirect
+}
+
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
@@ -439,15 +456,24 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// If SSO AutoLogin is enabled, redirect to OAuth2 login page automatically
-		if as.oAuth2Service != nil && as.oAuth2Service.IsAutoLoginEnabled() {
-			target := *r.URL
+		path := r.URL.Path
+		if path == "/login" && (as.oAuth2Service != nil && as.oAuth2Service.IsAutoLoginEnabled()) {
+			// Construct the target URL based on the incoming request
+			target := *r.URL // Copy the original request URL
 			target.Scheme = "http"
 			if r.TLS != nil || as.tlsConfig != nil {
 				target.Scheme = "https"
 			}
 			target.Host = r.Host
-			target.Path = fmt.Sprintf("%s/oauth2/redirect", as.baseHRef)
 
+			// Build the path using baseHRef
+			target.Path = "oauth2/redirect"
+			queryParams := target.Query()
+			redirect := getRedirectParam(r)
+			queryParams.Set("redirect", redirect)
+			target.RawQuery = queryParams.Encode()
+
+			// Perform HTTP redirect
 			http.Redirect(w, r, target.String(), http.StatusFound)
 			return
 		}
