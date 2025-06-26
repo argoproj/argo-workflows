@@ -27,6 +27,9 @@ func isTransientS3Err(ctx context.Context, err error) bool {
 		return false
 	}
 	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	}
 	for _, transientErrCode := range s3TransientErrorCodes {
 		if IsS3ErrCode(err, transientErrCode) {
 			log.Errorf(ctx, "Transient S3 error: %v", err)

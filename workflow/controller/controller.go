@@ -371,8 +371,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wait.UntilWithContext(ctx, wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod)
 
+	workerLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	workerLogger = workerLogger.WithField(ctx, "component", "workflow_worker")
+	workerCtx := logging.WithLogger(ctx, workerLogger)
 	for i := 0; i < wfWorkers; i++ {
-		go wait.UntilWithContext(ctx, wfc.runWorker, time.Second)
+		go wait.UntilWithContext(workerCtx, wfc.runWorker, time.Second)
 	}
 
 	archiveLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())

@@ -74,6 +74,9 @@ var writeRetry = wait.Backoff{Steps: 5, Duration: 1 * time.Second, Factor: 2}
 
 func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	}
 	err := packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
 		return err
@@ -99,6 +102,9 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 		return nil
 	}
 	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	}
 	var err error
 	log.WithField(ctx, "Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
 	if !alwaysOffloadNodeStatus {

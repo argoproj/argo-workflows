@@ -730,9 +730,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		return
 	}
 
-	diff.LogChanges(context.Background(), woc.orig, woc.wf)
+	diff.LogChanges(ctx, woc.orig, woc.wf)
 
-	resource.UpdateResourceDurations(context.Background(), woc.wf)
+	resource.UpdateResourceDurations(ctx, woc.wf)
 	progress.UpdateProgress(ctx, woc.wf)
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.

@@ -29,6 +29,9 @@ func IsTransientErr(ctx context.Context, err error) bool {
 	isTransient := IsTransientErrQuiet(ctx, err)
 	if err != nil && !isTransient {
 		logger := logging.GetLoggerFromContext(ctx)
+		if logger == nil {
+			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		}
 		logger.Warnf(ctx, "Non-transient error: %v", err)
 	}
 	return isTransient
@@ -39,6 +42,9 @@ func IsTransientErrQuiet(ctx context.Context, err error) bool {
 	isTransient := isTransientErr(err)
 	if isTransient {
 		logger := logging.GetLoggerFromContext(ctx)
+		if logger == nil {
+			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		}
 		logger.Infof(ctx, "Transient error: %v", err)
 	}
 	return isTransient
@@ -152,6 +158,9 @@ func isTransientSqbErr(err error) bool {
 func CheckError(ctx context.Context, err error) {
 	if err != nil {
 		logger := logging.GetLoggerFromContext(ctx)
+		if logger == nil {
+			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		}
 		logger.Fatal(ctx, err.Error())
 	}
 }

@@ -89,6 +89,7 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 // It fits the github.com/robfig/cron.Job interface
 func (woc *cronWfOperationCtx) Run() {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, woc.log)
 	woc.run(ctx, woc.scheduledTimeFunc())
 }
 
@@ -185,7 +186,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 	err = waitutil.Backoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
-			return !errorsutil.IsTransientErr(context.Background(), err), err
+			return !errorsutil.IsTransientErr(ctx, err), err
 		}
 		woc.cronWf = cronWf
 		return true, nil

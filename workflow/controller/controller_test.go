@@ -32,6 +32,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -266,7 +267,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
-	ctx, cancel := context.WithCancel(context.Background())
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+	ctx, cancel := context.WithCancel(ctx)
 	kube := fake.NewSimpleClientset(coreObjects...)
 	wfc := &WorkflowController{
 		Config: config.Config{
@@ -666,7 +669,11 @@ func TestNamespacedController(t *testing.T) {
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-	controller.createClusterWorkflowTemplateInformer(context.TODO())
+
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
+	controller.createClusterWorkflowTemplateInformer(ctx)
 	assert.Nil(t, controller.cwftmplInformer)
 }
 
@@ -683,7 +690,11 @@ func TestClusterController(t *testing.T) {
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-	controller.createClusterWorkflowTemplateInformer(context.TODO())
+
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
+	controller.createClusterWorkflowTemplateInformer(ctx)
 	assert.NotNil(t, controller.cwftmplInformer)
 }
 
@@ -732,7 +743,10 @@ spec:
 				f,
 			)
 			defer cancel()
-			ctx := context.Background()
+
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(context.Background(), log)
+
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
@@ -758,7 +772,10 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	controller.archivedWorkflowGarbageCollector(context.Background())
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
+	controller.archivedWorkflowGarbageCollector(ctx)
 }
 
 const wfWithTmplRef = `
@@ -805,7 +822,10 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wfTmpl)
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-	ctx := context.Background()
+
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -854,10 +874,12 @@ spec:
 `
 
 func TestInvalidWorkflowMetadata(t *testing.T) {
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
 	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabelsFrom)
 	cancel, controller := newController(wf)
 	defer cancel()
-	ctx := context.Background()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
@@ -898,7 +920,9 @@ func TestIsArchivable(t *testing.T) {
 }
 
 func TestReleaseAllWorkflowLocks(t *testing.T) {
-	ctx := context.Background()
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
 	cancel, controller := newController()
 	defer cancel()
 	t.Run("nilObject", func(t *testing.T) {
@@ -963,7 +987,10 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	}
 	assert.Equal(0, controller.wfQueue.Len())
 
-	controller.notifySemaphoreConfigUpdate(context.Background(), &cm)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+
+	controller.notifySemaphoreConfigUpdate(ctx, &cm)
 	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }
@@ -1013,7 +1040,9 @@ status:
 				f,
 			)
 			defer cancel()
-			ctx := context.Background()
+
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(context.Background(), log)
 
 			// process my-wf-0; update status to Pending
 			assert.True(t, controller.processNextItem(ctx))
@@ -1101,7 +1130,9 @@ status:
 				f,
 			)
 			defer cancel()
-			ctx := context.Background()
+
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(context.Background(), log)
 
 			ns0PendingWfTested := false
 			ns1PendingWfTested := false

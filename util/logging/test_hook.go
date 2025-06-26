@@ -67,8 +67,17 @@ func (h *TestHook) Reset() {
 }
 
 // NewTestLogger creates a logger that doesn't output to stdout for testing
-func NewTestLogger(logLevel Level, format LogType, hook ...Hook) Logger {
+func NewTestLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
 	var handler slog.Handler
+
+	mappedHooks := make(map[Level][]Hook)
+
+	for _, hook := range hooks {
+		levels := hook.Levels()
+		for _, level := range levels {
+			mappedHooks[level] = append(mappedHooks[level], hook)
+		}
+	}
 
 	switch format {
 	case JSON:
@@ -84,7 +93,8 @@ func NewTestLogger(logLevel Level, format LogType, hook ...Hook) Logger {
 	s := slogLogger{
 		fields: f,
 		logger: l,
-		hooks:  make(map[Level][]Hook),
+		hooks:  mappedHooks,
+		mu:     sync.RWMutex{},
 	}
 	return &s
 }

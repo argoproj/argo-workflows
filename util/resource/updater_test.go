@@ -7,11 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestUpdater(t *testing.T) {
 	wf := &wfv1.Workflow{}
-	ctx := context.Background()
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
 	wfv1.MustUnmarshal(`
 status:
   nodes:

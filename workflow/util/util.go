@@ -582,6 +582,9 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 									nodeUpdated = true
 									hit = true
 									log := logging.GetLoggerFromContext(ctx)
+									if log == nil {
+										log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+									}
 									AddParamToGlobalScope(ctx, wf, log, node.Outputs.Parameters[i])
 									break
 								}

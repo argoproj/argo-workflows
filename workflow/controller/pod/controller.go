@@ -93,7 +93,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 				}
 				if !significantPodChange(oldPod, newPod) {
 					log.WithField(ctx, "key", key).Info(ctx, "insignificant pod change")
-					diff.LogChanges(context.Background(), oldPod, newPod)
+					diff.LogChanges(ctx, oldPod, newPod)
 					return
 				}
 				podController.updatePodEvent(ctx, oldPod, newPod)

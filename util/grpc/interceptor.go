@@ -82,9 +82,10 @@ func SetVersionHeaderStreamServerInterceptor(version wfv1.Version) grpc.StreamSe
 		if origErr == nil {
 			// Don't set header if there was an error because attackers could use it to find vulnerable Argo servers
 			err := ss.SetHeader(metadata.Pairs(ArgoVersionHeader, version.Version))
-			ctx := context.Background()
-			log := logging.GetLoggerFromContext(ctx)
 			if err != nil {
+				ctx := context.Background()
+				log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+				ctx = logging.WithLogger(ctx, log)
 				log.Warnf(ctx, "Failed to set header '%s': %s", ArgoVersionHeader, err)
 			}
 		}

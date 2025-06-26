@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -384,7 +385,9 @@ func TestLoadS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			success, err := loadS3Artifact(context.Background(), tc.s3client, &wfv1.Artifact{
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(context.Background(), log)
+			success, err := loadS3Artifact(ctx, tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{

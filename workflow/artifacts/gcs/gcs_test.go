@@ -11,6 +11,7 @@ import (
 	"google.golang.org/api/googleapi"
 
 	argoErrors "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type tlsHandshakeTimeoutError struct{}
@@ -19,6 +20,9 @@ func (tlsHandshakeTimeoutError) Temporary() bool { return true }
 func (tlsHandshakeTimeoutError) Error() string   { return "net/http: TLS handshake timeout" }
 
 func TestIsTransientGCSErr(t *testing.T) {
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+
 	for _, test := range []struct {
 		err         error
 		shouldretry bool
@@ -39,7 +43,7 @@ func TestIsTransientGCSErr(t *testing.T) {
 		{fmt.Errorf("writer close: Post \"https://storage.googleapis.com/upload/storage/v1/b/bucket/o?alt=json&name=test.json&uploadType=multipart\": compute: Received 504 `Gateway Timeout\n`"), true},
 		{fmt.Errorf("http2: client connection lost"), true},
 	} {
-		got := isTransientGCSErr(context.Background(), test.err)
+		got := isTransientGCSErr(ctx, test.err)
 		if got != test.shouldretry {
 			t.Errorf("%+v: got %v, want %v", test, got, test.shouldretry)
 		}
