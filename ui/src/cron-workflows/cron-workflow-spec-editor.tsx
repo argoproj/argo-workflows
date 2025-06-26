@@ -28,7 +28,7 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                         {spec.when ? (
                             <TextInput value={spec.when} onChange={newCondition => onChange({...spec, when: newCondition})} />
                         ) : (
-                            <TextInput value='' placeholder='Enter condition' onChange={newCondition => onChange({...spec, when: newCondition})} />
+                            <TextInput value='' onChange={newCondition => onChange({...spec, when: newCondition})} />
                         )}
                     </div>
                 </div>
