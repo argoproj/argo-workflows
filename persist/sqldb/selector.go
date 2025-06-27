@@ -12,10 +12,25 @@ import (
 func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (db.Selector, error) {
 	selector = selector.
 		And(namespaceEqual(options.Namespace)).
-		And(nameEqual(options.Name)).
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt))
+
+	if options.Name != "" {
+		nameFilter := options.NameFilter
+		if nameFilter == "" {
+			nameFilter = "Exact"
+		}
+		if nameFilter == "Exact" {
+			selector = selector.And(nameEqual(options.Name))
+		}
+		if nameFilter == "Contains" {
+			selector = selector.And(nameContainsClause(options.Name))
+		}
+		if nameFilter == "Prefix" {
+			selector = selector.And(namePrefixClause(options.Name))
+		}
+	}
 
 	selector, err := labelsClause(selector, t, options.LabelRequirements, tableName, labelTableName, true)
 	if err != nil {
