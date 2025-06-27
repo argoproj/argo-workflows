@@ -179,6 +179,7 @@ func init() {
 	if cacheGCPeriod != 0 {
 		ctx := context.Background()
 		logger := logging.GetLoggerFromContext(ctx)
+		ctx = logging.WithLogger(ctx, logger)
 		logger.WithField(ctx, "cacheGCPeriod", cacheGCPeriod).Info(ctx, "GC for memoization caches will be performed every")
 	}
 }

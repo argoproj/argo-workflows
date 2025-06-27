@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var artgcWorkflow = `apiVersion: argoproj.io/v1alpha1
@@ -714,6 +715,8 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			cancel, controller := newController(wf)
 			defer cancel()
 			ctx := context.Background()
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx = logging.WithLogger(ctx, log)
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 			hasArtifact := woc.HasArtifactGC()
