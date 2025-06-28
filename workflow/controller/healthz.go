@@ -42,7 +42,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// establish a list of unreconciled workflows
-		unreconciledWorkflows := []*wfv1.Workflow{}
+		unreconciledWorkflows := make(map[string]*wfv1.Workflow)
 		err = cache.ListAllByNamespace(wfc.wfInformer.GetIndexer(), wfc.managedNamespace, selector, func(m interface{}) {
 			// Informer holds Workflows as type *Unstructured
 			un := m.(*unstructured.Unstructured)
@@ -53,17 +53,45 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			unreconciledWorkflows = append(unreconciledWorkflows, wf)
+			key := wf.Namespace + "/" + wf.Name
+			unreconciledWorkflows[key] = wf
 		})
 		if err != nil {
 			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
 		}
-		// go through the unreconciled workflows to determine if any of them exceed the max allowed age
+
+		unreconciledExceedAge := false
+		var firstExceededWorkflow *wfv1.Workflow
+
 		for _, wf := range unreconciledWorkflows {
 			if time.Since(wf.GetCreationTimestamp().Time) > age {
-				return fmt.Errorf("workflow never reconciled: %s", wf.Name)
+				unreconciledExceedAge = true
+				firstExceededWorkflow = wf
+				break
 			}
 		}
+
+		noProgress := true
+		if unreconciledExceedAge {
+			log.Info("healthz: workflows exceed max age")
+			// Check if there is progress by comparing with the last check:
+			// If all workflows from last time are still present, it means no progress
+			for key := range wfc.lastUnreconciled {
+				if _, exists := unreconciledWorkflows[key]; !exists {
+					// At least one workflow has been reconciled, so there is progress
+					noProgress = false
+					break
+				}
+			}
+
+			if noProgress && len(wfc.lastUnreconciled) > 0 {
+				return fmt.Errorf("workflow exceeds max age and no progress: %s/%s", firstExceededWorkflow.Namespace, firstExceededWorkflow.Name)
+			}
+		}
+
+		// Update the cache for the next health check
+		wfc.lastUnreconciled = unreconciledWorkflows
+
 		return nil
 	}()
 	if err != nil {
