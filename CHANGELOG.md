@@ -1,5 +1,48 @@
 # Changelog
 
+## v3.7.0-rc3 (2025-06-25)
+
+Full Changelog: [v3.7.0-rc2...v3.7.0-rc3](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc2...v3.7.0-rc3)
+
+### Selected Changes
+
+* [e0a0f2856](https://github.com/argoproj/argo-workflows/commit/e0a0f2856ba6e8a49b1ea28b15d50d39f3106125) fix: restore the CRDs to install.yaml (#14599)
+* [b81e8c9fc](https://github.com/argoproj/argo-workflows/commit/b81e8c9fc04667eb973e05a8f4aace7ee81e0f1a) fix: retry forevever on task result creation related transient errors. Fixes #14560 (#14555)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Isitha Subasinghe
+* isubasinghe
+
+</details>
+
+## v3.7.0-rc2 (2025-06-23)
+
+Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc1...v3.7.0-rc2)
+
+### Selected Changes
+
+* [edd20871d](https://github.com/argoproj/argo-workflows/commit/edd20871d0e96e2fedcc45a5b556130f1767586e) fix: try to stop .spelling from getting deleted (#14593)
+* [ce1b4471a](https://github.com/argoproj/argo-workflows/commit/ce1b4471a64b4f20305d44fbbe2f3a9f242c8dcb) fix: ignore ALPN by using the env variable hack (#14588)
+* [00c8e809f](https://github.com/argoproj/argo-workflows/commit/00c8e809ff47ff0b8c870ae30f9ab0970a922d1e) fix(server/auth/webhook): update GitHub webhook events list and library version (#14389)
+* [f7d2c099c](https://github.com/argoproj/argo-workflows/commit/f7d2c099cbb4672e1c80762619ed548a758d1612) fix: merge template defaults before processing. Fixes #13691 (#14298)
+* [75ff10dd6](https://github.com/argoproj/argo-workflows/commit/75ff10dd67102c8a1adfe73491fe6ce845258daf) fix!: Adjust parameter value overriding. Fixes #14426 (#14462)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Copilot
+* isubasinghe
+* Joibel
+* jswxstw
+* Malthe Poulsen
+* Nicola Dardanis
+* shuangkun tian
+* William Van Hevelingen
+
+</details>
+
 ## v3.7.0-rc1 (2025-06-04)
 
 Full Changelog: [v3.6.10...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.10...v3.7.0-rc1)

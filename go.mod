@@ -26,6 +26,7 @@ require (
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/go-openapi/jsonreference v0.21.0
+	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/go-sql-driver/mysql v1.9.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.4
@@ -125,7 +126,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
