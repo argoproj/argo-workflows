@@ -76,7 +76,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			log.Info("healthz: workflows exceed max age")
 			// Check if there is progress by comparing with the last check:
 			// If all workflows from last time are still present, it means no progress
-			for key := range wfc.lastUnreconciled {
+			for key := range wfc.lastUnreconciledWorkflows {
 				if _, exists := unreconciledWorkflows[key]; !exists {
 					// At least one workflow has been reconciled, so there is progress
 					noProgress = false
@@ -84,13 +84,13 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if noProgress && len(wfc.lastUnreconciled) > 0 {
+			if noProgress && len(wfc.lastUnreconciledWorkflows) > 0 {
 				return fmt.Errorf("workflow exceeds max age and no progress: %s/%s", firstExceededWorkflow.Namespace, firstExceededWorkflow.Name)
 			}
 		}
 
 		// Update the cache for the next health check
-		wfc.lastUnreconciled = unreconciledWorkflows
+		wfc.lastUnreconciledWorkflows = unreconciledWorkflows
 
 		return nil
 	}()

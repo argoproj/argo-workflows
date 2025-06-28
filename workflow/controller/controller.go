@@ -150,7 +150,8 @@ type WorkflowController struct {
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
 	recentCompletions recentCompletions
-	lastUnreconciled  map[string]*wfv1.Workflow
+	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
+	lastUnreconciledWorkflows map[string]*wfv1.Workflow
 }
 
 const (
