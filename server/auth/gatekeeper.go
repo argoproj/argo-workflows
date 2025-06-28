@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
@@ -291,7 +292,7 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *ty
 func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "no service account rule matches") {
 		return nil, err
 	}
 	delegatedAccount := loginAccount
@@ -304,6 +305,9 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 			delegatedAccount = namespaceAccount
 			ssoDelegated = true
 		}
+	}
+	if delegatedAccount == nil {
+		return nil, fmt.Errorf("no service account rule matches")
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
