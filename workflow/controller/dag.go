@@ -224,18 +224,12 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 }
 
 func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag)
 	}
 
 	defer func() {
-		node, err := woc.wf.Status.Nodes.Get(node.ID)
-		if err != nil {
-			// CRITICAL ERROR IF THIS BRANCH IS REACHED -> PANIC
-			panic(fmt.Sprintf("expected node for %s due to preceded initializeExecutableNode but couldn't find it", node.ID))
-		}
 		if node.Fulfilled() {
 			woc.killDaemonedChildren(node.ID)
 		}
@@ -288,13 +282,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			task := dagCtx.GetTask(taskName)
 			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 			if err != nil {
-				woc.markNodeError(node.Name, err)
+				node = woc.markNodeError(nodeName, err)
 				return node, err
 			}
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(taskNode.Phase))
 			_, err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 			if err != nil {
-				woc.markNodeError(node.Name, err)
+				node = woc.markNodeError(nodeName, err)
 				return node, err
 			}
 			if taskNode.Fulfilled() {
@@ -322,11 +316,8 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	case wfv1.NodeRunning:
 		return node, nil
 	case wfv1.NodeError, wfv1.NodeFailed:
-		err = woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
-		if err != nil {
-			return nil, err
-		}
-		_ = woc.markNodePhase(nodeName, dagPhase)
+		woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, node)
+		node = woc.markNodePhase(nodeName, dagPhase)
 		return node, nil
 	}
 
@@ -382,14 +373,12 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		}
 	}
 
-	err = woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
-	if err != nil {
-		return nil, err
-	}
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
+	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, node)
+	node = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	return node, nil
 }
 
-func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) error {
+func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, node *wfv1.NodeStatus) {
 	// set the outbound nodes from the target tasks
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
@@ -401,15 +390,9 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 		outbound = append(outbound, outboundNodeIDs...)
 	}
-	node, err := woc.wf.GetNodeByName(nodeName)
-	if err != nil {
-		woc.log.Warnf("was unable to obtain node by name for %s", nodeName)
-		return err
-	}
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes.Set(node.ID, *node)
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
-	return nil
 }
 
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
@@ -612,10 +595,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			case ErrParallelismReached:
 			case ErrMaxDepthExceeded:
 			case ErrTimeout:
-				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
+				woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				_ = woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
+				woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
 				return
 			}
 		}
