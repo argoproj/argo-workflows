@@ -177,9 +177,8 @@ var (
 
 func init() {
 	if cacheGCPeriod != 0 {
-		ctx := context.Background()
+		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		logger := logging.GetLoggerFromContext(ctx)
-		ctx = logging.WithLogger(ctx, logger)
 		logger.WithField(ctx, "cacheGCPeriod", cacheGCPeriod).Info(ctx, "GC for memoization caches will be performed every")
 	}
 }
@@ -1261,7 +1260,8 @@ func (wfc *WorkflowController) getWorkflowPhaseMetrics() map[string]int64 {
 	if wfc.wfInformer != nil {
 		for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-			errors.CheckError(context.TODO(), err)
+			ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			errors.CheckError(ctx, err)
 			result[string(phase)] = int64(len(keys))
 		}
 	}
@@ -1276,7 +1276,8 @@ func (wfc *WorkflowController) getWorkflowConditionMetrics() map[wfv1.Condition]
 			{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 		} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
-			errors.CheckError(context.TODO(), err)
+			ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			errors.CheckError(ctx, err)
 			result[x] = int64(len(keys))
 		}
 	}

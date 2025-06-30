@@ -446,11 +446,17 @@ func expectNamespacedWorkflow(ctx context.Context, controller *WorkflowControlle
 }
 
 func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), name, metav1.GetOptions{})
 }
 
 func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), metav1.ListOptions{})
 }
 
 type with func(pod *apiv1.Pod, woc *wfOperationCtx)
@@ -477,7 +483,10 @@ func withOutputs(outputs wfv1.Outputs) with {
 		}
 		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 			Create(
-				context.Background(),
+				func() context.Context {
+					ctx := context.Background()
+					return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+				}(),
 				taskResult,
 				metav1.CreateOptions{},
 			)
@@ -671,7 +680,10 @@ func TestNamespacedController(t *testing.T) {
 	controller.cwftmplInformer = nil
 
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	controller.createClusterWorkflowTemplateInformer(ctx)
 	assert.Nil(t, controller.cwftmplInformer)
@@ -692,7 +704,10 @@ func TestClusterController(t *testing.T) {
 	controller.cwftmplInformer = nil
 
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	controller.createClusterWorkflowTemplateInformer(ctx)
 	assert.NotNil(t, controller.cwftmplInformer)
@@ -745,7 +760,10 @@ spec:
 			defer cancel()
 
 			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-			ctx := logging.WithLogger(context.Background(), log)
+			ctx := logging.WithLogger(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), log)
 
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
@@ -773,7 +791,10 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	defer cancel()
 
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	controller.archivedWorkflowGarbageCollector(ctx)
 }
@@ -824,7 +845,10 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	defer cancel()
 
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
@@ -875,7 +899,10 @@ spec:
 
 func TestInvalidWorkflowMetadata(t *testing.T) {
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabelsFrom)
 	cancel, controller := newController(wf)
@@ -921,7 +948,10 @@ func TestIsArchivable(t *testing.T) {
 
 func TestReleaseAllWorkflowLocks(t *testing.T) {
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	cancel, controller := newController()
 	defer cancel()
@@ -988,7 +1018,10 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	assert.Equal(0, controller.wfQueue.Len())
 
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
 
 	controller.notifySemaphoreConfigUpdate(ctx, &cm)
 	time.Sleep(2 * time.Second)
@@ -1042,7 +1075,10 @@ status:
 			defer cancel()
 
 			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-			ctx := logging.WithLogger(context.Background(), log)
+			ctx := logging.WithLogger(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), log)
 
 			// process my-wf-0; update status to Pending
 			assert.True(t, controller.processNextItem(ctx))
@@ -1132,7 +1168,10 @@ status:
 			defer cancel()
 
 			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-			ctx := logging.WithLogger(context.Background(), log)
+			ctx := logging.WithLogger(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), log)
 
 			ns0PendingWfTested := false
 			ns1PendingWfTested := false
@@ -1181,7 +1220,7 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -1211,7 +1250,7 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -1237,7 +1276,7 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -1253,7 +1292,7 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -1271,7 +1310,7 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -1350,7 +1389,11 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)

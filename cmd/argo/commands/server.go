@@ -68,17 +68,14 @@ See %s`, help.ArgoServer()),
 			cmd.SetLogFormatter(logFormat)
 			ctx := c.Context()
 			if ctx == nil {
-				ctx = context.Background()
-				c.SetContext(ctx)
-			}
-			if log := logging.GetLoggerFromContext(ctx); log == nil {
-				log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-				ctx = logging.WithLogger(ctx, log)
+				ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 				c.SetContext(ctx)
 			}
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init(context.Background())
+			bgCtx := context.Background()
+			bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			pprofutil.Init(bgCtx)
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {

@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -23,6 +25,7 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 	//db.LC().SetLevel(db.LogLevelDebug)
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	b.Run("ListWorkflows", func(b *testing.B) {
 		for range b.N {

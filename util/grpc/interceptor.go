@@ -84,6 +84,7 @@ func SetVersionHeaderStreamServerInterceptor(version wfv1.Version) grpc.StreamSe
 			err := ss.SetHeader(metadata.Pairs(ArgoVersionHeader, version.Version))
 			if err != nil {
 				ctx := context.Background()
+				ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 				log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 				ctx = logging.WithLogger(ctx, log)
 				log.Warnf(ctx, "Failed to set header '%s': %s", ArgoVersionHeader, err)

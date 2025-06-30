@@ -152,6 +152,7 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 			defaultLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat(), hook)
 
 			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			ctx = logging.WithLogger(ctx, defaultLogger)
 			PrintVersionMismatchWarning(ctx, *tt.clientVersion, tt.serverVersion)
 

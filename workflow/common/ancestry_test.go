@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,6 +30,7 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 		testTasks: testTasks,
 	}
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3.Succeeded"}
 	deps, logic := GetTaskDependencies(ctx, task, dctx)
@@ -117,6 +120,7 @@ func TestGetTaskDependsLogic(t *testing.T) {
 		testTasks: testTasks,
 	}
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
 	depends := getTaskDependsLogic(ctx, task, dctx)
 	assert.Equal(t, "(task-1 || task-2.Succeeded) && !task-3", depends)
@@ -210,6 +214,7 @@ func TestGetTaskAncestryForValidation(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	for _, tt := range tests {
 		res := GetTaskAncestry(ctx, tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)
@@ -274,6 +279,7 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	for _, tt := range tests {
 		res := GetTaskAncestry(ctx, tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)

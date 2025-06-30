@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"context"
+"github.com/argoproj/argo-workflows/v3/util/logging"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -75,7 +76,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.CheckError(err)
 	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
-	ctx := context.Background()
+	ctx := context.Background(); ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	c, err := configController.Get(ctx)
 	s.CheckError(err)
 	s.Config = c
@@ -124,7 +125,7 @@ func (s *E2ESuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *E2ESuite) DeleteResources() {
-	ctx := context.Background()
+	ctx := context.Background(); ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	l := func(r schema.GroupVersionResource) string {
 		if r.Resource == "pods" {
@@ -232,7 +233,7 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 		return "", err
 	}
 
-	ctx := context.Background()
+	ctx := context.Background(); ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	sec, err := clientset.CoreV1().Secrets(Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
 	if err != nil {
 		return "", err

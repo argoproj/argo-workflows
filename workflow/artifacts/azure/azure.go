@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -184,7 +186,7 @@ func DownloadFile(containerClient *container.Client, blobName, path string) erro
 		}
 	}()
 
-	_, err = blobClient.DownloadFile(context.TODO(), outFile, nil)
+	_, err = blobClient.DownloadFile(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), outFile, nil)
 	return err
 }
 
@@ -236,7 +238,7 @@ func (azblobDriver *ArtifactDriver) OpenStream(ctx context.Context, artifact *wf
 	// Check if the blob represents a directory and return an error if so. If not, then
 	// return either the original BlobNotFound error or the empty file stream.
 	emptyFile := false
-	response, origErr := blobClient.DownloadStream(context.TODO(), nil)
+	response, origErr := blobClient.DownloadStream(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), nil)
 	if origErr == nil {
 		emptyFile = *response.ContentLength == 0
 		// We have a normal file blob, so just return the response body stream
@@ -306,7 +308,7 @@ func PutFile(containerClient *container.Client, blobName, path string) error {
 		}
 	}()
 
-	_, err = blobClient.UploadFile(context.TODO(), file, nil)
+	_, err = blobClient.UploadFile(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), file, nil)
 	return err
 }
 
@@ -363,7 +365,7 @@ func (azblobDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.A
 func DeleteBlob(containerClient *container.Client, blobName string, allowNonExistent bool) error {
 	blobClient := containerClient.NewBlobClient(blobName)
 
-	_, err := blobClient.Delete(context.TODO(), nil)
+	_, err := blobClient.Delete(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), nil)
 	if err != nil {
 		if allowNonExistent && bloberror.HasCode(err, bloberror.BlobNotFound) {
 			log.Debugf("blob to delete '%s' does not exist: %s", blobName, err)

@@ -16,8 +16,7 @@ type slogLogger struct {
 }
 
 var (
-	defaultLogger = NewSlogLogger(Info, Text)
-	lock          = &sync.Mutex{}
+	lock = &sync.Mutex{}
 )
 
 // NewSlogLogger returns a slog based logger

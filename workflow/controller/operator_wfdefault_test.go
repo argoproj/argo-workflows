@@ -9,6 +9,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var wfDefaults = `
@@ -204,6 +205,8 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.Config.WorkflowDefaults = wfDefault
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
@@ -227,6 +230,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(storedSpecResult), &resultSpec)
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
 		cancel, controller := newController(wft)
 		defer cancel()

@@ -11,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestCanI(t *testing.T) {
@@ -27,6 +29,8 @@ func TestCanI(t *testing.T) {
 	})
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	allowed, err := CanIArgo(ctx, kubeClient, "get", "workflow", "", "")
 	require.NoError(t, err)
 	assert.True(t, allowed)

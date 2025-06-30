@@ -346,6 +346,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
@@ -566,6 +567,8 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
@@ -715,6 +718,7 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			cancel, controller := newController(wf)
 			defer cancel()
 			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 			ctx = logging.WithLogger(ctx, log)
 			woc := newWorkflowOperationCtx(ctx, wf, controller)

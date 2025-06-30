@@ -9,12 +9,15 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	woc := newWorkflowOperationCtx(ctx, &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{
@@ -138,6 +141,8 @@ func TestHandleExecutionControlErrorMarksProvidedNode(t *testing.T) {
 
 	workflow := v1alpha1.MustUnmarshalWorkflow(workflowWithContainerSetPodInPending)
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
@@ -156,6 +161,8 @@ func TestHandleExecutionControlErrorMarksChildNodes(t *testing.T) {
 
 	workflow := v1alpha1.MustUnmarshalWorkflow(workflowWithContainerSetPodInPending)
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	woc := newWorkflowOperationCtx(ctx, workflow, controller)
 

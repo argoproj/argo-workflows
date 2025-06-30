@@ -14,6 +14,7 @@ import (
 func TestIsTransientS3Err(t *testing.T) {
 	ctx := context.Background()
 	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	err := minio.ErrorResponse{Code: "InternalError"}
 	assert.True(t, isTransientS3Err(ctx, err))
@@ -30,6 +31,7 @@ func TestIsTransientS3Err(t *testing.T) {
 
 func TestIsTransientOSSErr(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	for _, errCode := range s3TransientErrorCodes {

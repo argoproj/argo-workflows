@@ -25,7 +25,7 @@ func WrapWorkflowTemplateInterface(clientset typed.WorkflowTemplateInterface) Wo
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.WorkflowTemplate, error) {
-	ctx := context.TODO()
+	ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
@@ -59,7 +59,7 @@ func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkf
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	ctx := context.TODO()
+	ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 

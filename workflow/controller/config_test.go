@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestUpdateConfig(t *testing.T) {

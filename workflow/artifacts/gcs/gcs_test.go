@@ -22,6 +22,7 @@ func (tlsHandshakeTimeoutError) Error() string   { return "net/http: TLS handsha
 func TestIsTransientGCSErr(t *testing.T) {
 	ctx := context.Background()
 	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	for _, test := range []struct {
 		err         error

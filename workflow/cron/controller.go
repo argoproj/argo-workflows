@@ -66,7 +66,8 @@ var cronSyncPeriod time.Duration
 
 func init() {
 	slog := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
-	ctx := context.TODO()
+	ctx := log.WithLogger(context.TODO(), log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
+	ctx = log.WithLogger(ctx, slog)
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
@@ -142,7 +143,9 @@ func (cc *Controller) Run(ctx context.Context) {
 }
 
 func (cc *Controller) runCronWorker() {
-	ctx := context.TODO()
+	ctx := log.WithLogger(context.TODO(), log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
+	ctx = log.WithLogger(ctx, log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
+	ctx = log.WithLogger(ctx, cc.logger)
 	for cc.processNextCronItem(ctx) {
 	}
 }

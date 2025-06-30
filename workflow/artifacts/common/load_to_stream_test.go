@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -113,7 +115,10 @@ func TestLoadToStream(t *testing.T) {
 				panic(err)
 			}
 
-			stream, err := LoadToStream(context.Background(), &wfv1.Artifact{}, tc.artifactDriver)
+			stream, err := LoadToStream(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), &wfv1.Artifact{}, tc.artifactDriver)
 			if tc.errMsg == "" {
 				require.NoError(t, err)
 				assert.NotNil(t, stream)

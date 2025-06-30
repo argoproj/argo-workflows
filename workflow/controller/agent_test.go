@@ -92,6 +92,8 @@ status:
 		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
@@ -119,6 +121,7 @@ status:
 		defer cancel()
 		controller.Config.InstanceID = "testID"
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 		ctx = logging.WithLogger(ctx, log)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)

@@ -145,6 +145,7 @@ func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {
 // workqueue.
 func (c *Controller) runWorker() {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	for c.processNextWorkItem(ctx) {
 	}
 }
@@ -188,6 +189,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 // enqueueWF conditionally queues a workflow to the ttl queue if it is within the deletion period
 func (c *Controller) enqueueWF(obj interface{}) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		c.log.Warnf(ctx, "'%v' is not an unstructured", obj)

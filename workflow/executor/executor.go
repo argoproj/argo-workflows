@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/argoproj/argo-workflows/v3/util/file"
 
 	log "github.com/sirupsen/logrus"
@@ -123,7 +125,9 @@ func NewExecutor(
 	deadline time.Time,
 	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
 ) WorkflowExecutor {
-	log.WithFields(log.Fields{"Steps": executorretry.ExecutorRetry(context.Background()).Steps, "Duration": executorretry.ExecutorRetry(context.Background()).Duration, "Factor": executorretry.ExecutorRetry(context.Background()).Factor, "Jitter": executorretry.ExecutorRetry(context.Background()).Jitter}).Info("Using executor retry strategy")
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	retry := executorretry.ExecutorRetry(ctx)
+	log.WithFields(log.Fields{"Steps": retry.Steps, "Duration": retry.Duration, "Factor": retry.Factor, "Jitter": retry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
 		podUID:                       podUID,

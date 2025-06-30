@@ -131,7 +131,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 var (
-	maxOperationTime = envutil.LookupEnvDurationOr(context.Background(), "MAX_OPERATION_TIME", 30*time.Second)
+	maxOperationTime = envutil.LookupEnvDurationOr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), "MAX_OPERATION_TIME", 30*time.Second)
 )
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
@@ -379,7 +379,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 		case ErrParallelismReached:
 		default:
-			if !errorsutil.IsTransientErr(context.Background(), err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+			if !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 				woc.markWorkflowError(ctx, x)
 
 				// Garbage collect PVCs if Entrypoint template execution returns error
@@ -461,7 +461,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 				case ErrParallelismReached:
 				default:
-					if !errorsutil.IsTransientErr(context.Background(), err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+					if !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 						woc.markWorkflowError(ctx, x)
 
 						// Garbage collect PVCs if Onexit template execution returns error
@@ -1084,7 +1084,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		retryOnFailed = false
 		retryOnError = true
 	case wfv1.RetryPolicyOnTransientError:
-		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(context.Background(), errors.InternalError(lastChildNode.Message)) {
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), errors.InternalError(lastChildNode.Message)) {
 			retryOnFailed = true
 			retryOnError = true
 		}
@@ -1280,7 +1280,7 @@ func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr(context.Background(), "RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), "RECENTLY_STARTED_POD_DURATION", 10*time.Second)
 }
 
 // markAllContainersDeleted mark all its children(container) as deleted
@@ -2241,7 +2241,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[common.LocalVarRetriesLastStatus] = lastRetryStatus
 		localParams[common.LocalVarRetriesLastMessage] = lastRetryMessage
 		processedTmpl, err = common.SubstituteParams(processedTmpl, woc.globalParams, localParams)
-		if errorsutil.IsTransientErr(context.Background(), err) {
+		if errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) {
 			return node, err
 		}
 		if err != nil {
@@ -3218,7 +3218,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 }
 
 func (woc *wfOperationCtx) requeueIfTransientErr(ctx context.Context, err error, nodeName string) (*wfv1.NodeStatus, error) {
-	if errorsutil.IsTransientErr(context.Background(), err) || err == ErrResourceRateLimitReached {
+	if errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) || err == ErrResourceRateLimitReached {
 		// Our error was most likely caused by a lack of resources.
 		woc.requeue()
 		return woc.markNodePending(ctx, nodeName, err), nil
@@ -3995,7 +3995,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		if apierr.IsNotFound(err) {
 			return true, nil
 		}
-		return !errorsutil.IsTransientErr(context.Background(), err), err
+		return !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err), err
 	})
 	if err != nil {
 		woc.log.WithField(ctx, "err", err).Error(ctx, "Unable to delete PDB resource for workflow.")
@@ -4090,7 +4090,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			func() (bool, error) {
 				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
-					return !errorsutil.IsTransientErr(context.Background(), validationErr), validationErr
+					return !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), validationErr), validationErr
 				}
 				return true, nil
 			})

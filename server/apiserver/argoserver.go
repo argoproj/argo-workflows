@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
-	"github.com/argoproj/argo-workflows/v3"
+	argo "github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
 	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -126,6 +126,7 @@ func init() {
 	if err != nil {
 		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		log.WithError(ctx, err).Fatal(ctx, "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
 	}
 }
@@ -432,7 +433,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 					md.Append("cookie", c.Value)
 				}
 			}
-			ctx := metadata.NewIncomingContext(context.Background(), md)
+			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = metadata.NewIncomingContext(ctx, md)
 			if _, err := as.gatekeeper.Context(ctx); err != nil {
 				log.WithError(ctx, err).Error(ctx, "failed to authenticate /metrics endpoint")
 				w.WriteHeader(403)

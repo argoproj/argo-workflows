@@ -130,6 +130,7 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 
 func TestOpenStreamS3Artifact(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 
@@ -413,6 +414,7 @@ func TestLoadS3Artifact(t *testing.T) {
 
 func TestSaveS3Artifact(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 
@@ -551,6 +553,7 @@ func TestSaveS3Artifact(t *testing.T) {
 
 func TestListObjects(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 	tests := map[string]struct {
@@ -648,6 +651,7 @@ func TestNewS3Client(t *testing.T) {
 		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyID: "", KmsEncryptionContext: ""},
 	}
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 	s3If, err := NewS3Client(ctx, opts)
@@ -676,6 +680,7 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 		SessionToken: "sessionToken",
 	}
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 	s3If, err := NewS3Client(ctx, opts)
@@ -691,6 +696,7 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 // TestNewS3Client tests the s3 constructor
 func TestNewS3ClientWithDiff(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 	t.Run("IAMRole", func(t *testing.T) {
@@ -729,6 +735,7 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 
 func TestDisallowedComboOptions(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	ctx = logging.WithLogger(ctx, log)
 

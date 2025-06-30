@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -21,6 +23,7 @@ import (
 func Test_estimatorFactory(t *testing.T) {
 	informer := testutil.NewSharedIndexInformer()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfFailed := testutil.MustUnmarshalUnstructured(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

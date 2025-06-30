@@ -54,6 +54,8 @@ func (cred *ossCredentials) GetAccessKeyID() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		logger := logging.GetLoggerFromContext(ctx)
 		logger.Infof(ctx, "get access key id failed: %+v", err)
 		return ""
@@ -65,6 +67,8 @@ func (cred *ossCredentials) GetAccessKeySecret() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		logger := logging.GetLoggerFromContext(ctx)
 		logger.Infof(ctx, "get access key secret failed: %+v", err)
 		return ""
@@ -76,6 +80,8 @@ func (cred *ossCredentials) GetSecurityToken() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		logger := logging.GetLoggerFromContext(ctx)
 		logger.Infof(ctx, "get access security token failed: %+v", err)
 		return ""
@@ -105,6 +111,8 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	}
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	logger := logging.GetLoggerFromContext(ctx)
 	if ossDriver.UseSDKCreds {
 		// using default provider chains in sdk to get credential
@@ -424,6 +432,8 @@ func isTransientOSSErr(ctx context.Context, err error) bool {
 // OSS simple upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/simple-upload?spm=a2c63.p38356.0.0.2c072398fh5k3W#section-ym8-svm-rmu
 func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	logger := logging.GetLoggerFromContext(ctx)
 	logger.Info(ctx, "OSS Simple Uploading")
 	return bucket.PutObjectFromFile(objectName, path)
@@ -432,6 +442,8 @@ func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
 // OSS multipart upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/multipart-upload?spm=a2c63.p38356.0.0.4ebe423fzsaPiN#section-trz-mpy-tes
 func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int64) error {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	logger := logging.GetLoggerFromContext(ctx)
 	logger.Info(ctx, "OSS Multipart Uploading")
 	// Calculate the number of chunks
@@ -476,6 +488,8 @@ func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int
 
 func putFile(bucket *oss.Bucket, objectName, path string) error {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	logger := logging.GetLoggerFromContext(ctx)
 	logger.Debugf(ctx, "putFile from %s to %s", path, objectName)
 	fStat, err := os.Stat(path)
@@ -580,6 +594,8 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 		err = bucket.GetObjectToFile(f, fpath)
 		if err != nil {
 			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			logger := logging.GetLoggerFromContext(ctx)
 			logger.Warnf(ctx, "failed to load object %s to %s error: %v", f, fpath, err)
 			return err
@@ -602,6 +618,8 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 		lor, err := bucket.ListObjects(marker, pre)
 		if err != nil {
 			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			logger := logging.GetLoggerFromContext(ctx)
 			logger.Warnf(ctx, "oss list object(%s) error: %v", objectKey, err)
 			return files, err

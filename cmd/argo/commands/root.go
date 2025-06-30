@@ -131,7 +131,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		if ctx == nil {
-			ctx = context.Background()
+			ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		}
 
 		if verbose {
@@ -164,9 +164,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 	cctx := command.Context()
 	if cctx == nil {
-		log := logging.GetLoggerFromContext(cctx)
-		cctx = context.Background()
-		cctx = logging.WithLogger(cctx, log)
+		cctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		command.SetContext(cctx)
 	}
 	log := logging.GetLoggerFromContext(cctx)

@@ -27,8 +27,9 @@ const (
 )
 
 var (
-	globalLevel  = Info
-	globalFormat = Text
+	globalLevel   = Info
+	globalFormat  = Text
+	defaultLogger = NewSlogLogger(globalLevel, globalFormat)
 )
 
 // SetGlobalLevel sets the global log level
@@ -59,6 +60,13 @@ func GetGlobalFormat() LogType {
 	lock.Lock()
 	defer lock.Unlock()
 	return globalFormat
+}
+
+// GetDefaultLogger returns the default logger configured with global settings
+func GetDefaultLogger() Logger {
+	lock.Lock()
+	defer lock.Unlock()
+	return defaultLogger
 }
 
 // Fields are used to carry the values of each field
