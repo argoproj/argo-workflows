@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 
 	sqldb "github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -15,7 +17,7 @@ type OffloadNodeStatusRepo struct {
 }
 
 // Delete provides a mock function with given fields: uid, version
-func (_m *OffloadNodeStatusRepo) Delete(uid string, version string) error {
+func (_m *OffloadNodeStatusRepo) Delete(_ context.Context, uid string, version string) error {
 	ret := _m.Called(uid, version)
 
 	var r0 error
@@ -29,7 +31,7 @@ func (_m *OffloadNodeStatusRepo) Delete(uid string, version string) error {
 }
 
 // Get provides a mock function with given fields: uid, version
-func (_m *OffloadNodeStatusRepo) Get(uid string, version string) (v1alpha1.Nodes, error) {
+func (_m *OffloadNodeStatusRepo) Get(ctx context.Context, uid string, version string) (v1alpha1.Nodes, error) {
 	ret := _m.Called(uid, version)
 
 	var r0 v1alpha1.Nodes
@@ -66,7 +68,7 @@ func (_m *OffloadNodeStatusRepo) IsEnabled() bool {
 }
 
 // List provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.UUIDVersion]v1alpha1.Nodes, error) {
+func (_m *OffloadNodeStatusRepo) List(ctx context.Context, namespace string) (map[sqldb.UUIDVersion]v1alpha1.Nodes, error) {
 	ret := _m.Called(namespace)
 
 	var r0 map[sqldb.UUIDVersion]v1alpha1.Nodes
@@ -89,7 +91,7 @@ func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.UUIDVersion]v
 }
 
 // ListOldOffloads provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) ListOldOffloads(namespace string) (map[string][]string, error) {
+func (_m *OffloadNodeStatusRepo) ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error) {
 	ret := _m.Called(namespace)
 
 	var r0 map[string][]string
@@ -112,7 +114,7 @@ func (_m *OffloadNodeStatusRepo) ListOldOffloads(namespace string) (map[string][
 }
 
 // Save provides a mock function with given fields: uid, namespace, nodes
-func (_m *OffloadNodeStatusRepo) Save(uid string, namespace string, nodes v1alpha1.Nodes) (string, error) {
+func (_m *OffloadNodeStatusRepo) Save(ctx context.Context, uid string, namespace string, nodes v1alpha1.Nodes) (string, error) {
 	ret := _m.Called(uid, namespace, nodes)
 
 	var r0 string

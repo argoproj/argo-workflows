@@ -36,10 +36,10 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			if err == io.EOF {
 				log.Debug("Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
-				errors.CheckError(err)
+				errors.CheckError(ctx, err)
 				continue
 			}
-			errors.CheckError(err)
+			errors.CheckError(ctx, err)
 			if event == nil {
 				continue
 			}
@@ -64,7 +64,7 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			return nil
 		}
 
-		err := printWorkflowStatus(wf, getArgs)
+		err := printWorkflowStatus(ctx, wf, getArgs)
 		if err != nil {
 			return err
 		}
@@ -74,11 +74,11 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 }
 
-func printWorkflowStatus(wf *wfv1.Workflow, getArgs GetFlags) error {
+func printWorkflowStatus(ctx context.Context, wf *wfv1.Workflow, getArgs GetFlags) error {
 	if wf == nil {
 		return nil
 	}
-	if err := packer.DecompressWorkflow(wf); err != nil {
+	if err := packer.DecompressWorkflow(ctx, wf); err != nil {
 		return err
 	}
 	print("\033[H\033[2J")

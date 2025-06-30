@@ -16,9 +16,9 @@ const (
 	operationDurationDefaultBucketCount = 6
 )
 
-func addOperationDurationHistogram(_ context.Context, m *Metrics) error {
-	maxOperationTimeSeconds := envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second).Seconds()
-	operationDurationMetricBucketCount := envutil.LookupEnvIntOr("OPERATION_DURATION_METRIC_BUCKET_COUNT", operationDurationDefaultBucketCount)
+func addOperationDurationHistogram(ctx context.Context, m *Metrics) error {
+	maxOperationTimeSeconds := envutil.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second).Seconds()
+	operationDurationMetricBucketCount := envutil.LookupEnvIntOr(ctx, "OPERATION_DURATION_METRIC_BUCKET_COUNT", operationDurationDefaultBucketCount)
 	if operationDurationMetricBucketCount < 1 {
 		log.Errorf("Invalid OPERATION_DURATION_METRIC_BUCKET_COUNT value of %d, setting to default %d", operationDurationMetricBucketCount, operationDurationDefaultBucketCount)
 		operationDurationMetricBucketCount = operationDurationDefaultBucketCount

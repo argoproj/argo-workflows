@@ -2,16 +2,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -47,17 +48,19 @@ func PrintVersion(cliName string, version wfv1.Version, short bool) {
 }
 
 // PrintVersionMismatchWarning detects if there's a mismatch between the client and server versions and prints a warning if so
-func PrintVersionMismatchWarning(clientVersion wfv1.Version, serverVersion string) {
+func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version, serverVersion string) {
+	log := logging.GetLoggerFromContext(ctx)
 	if serverVersion != "" && clientVersion.GitTag != "" && serverVersion != clientVersion.Version {
-		log.Warnf("CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", clientVersion.Version, serverVersion)
+		log.Warnf(ctx, "CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", clientVersion.Version, serverVersion)
 	}
 }
 
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
-func MustIsDir(filePath string) bool {
+func MustIsDir(ctx context.Context, filePath string) bool {
+	log := logging.GetLoggerFromContext(ctx)
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(ctx, err.Error())
 	}
 	return fileInfo.IsDir()
 }
@@ -102,16 +105,12 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 
 // SetLogFormatter sets a log formatter for logrus
 func SetLogFormatter(logFormat string) {
-	timestampFormat := "2006-01-02T15:04:05.000Z"
 	switch strings.ToLower(logFormat) {
 	case "json":
-		log.SetFormatter(&log.JSONFormatter{TimestampFormat: timestampFormat})
+		logging.SetGlobalFormat(logging.JSON)
 	case "text":
-		log.SetFormatter(&log.TextFormatter{
-			TimestampFormat: timestampFormat,
-			FullTimestamp:   true,
-		})
+		logging.SetGlobalFormat(logging.Text)
 	default:
-		log.Fatalf("Unknown log format '%s'", logFormat)
+		os.Exit(1)
 	}
 }

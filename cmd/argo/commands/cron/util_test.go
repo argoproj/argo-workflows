@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var invalidCwf = `
@@ -58,13 +59,17 @@ Conditions:
 
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	out := getCronWorkflowGet(context.Background(), cronWf)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	out := getCronWorkflowGet(ctx, cronWf)
 	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	next, err := GetNextRuntime(context.Background(), cronWf)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	next, err := GetNextRuntime(ctx, cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())
@@ -96,7 +101,9 @@ spec:
 
 func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
-	next, err := GetNextRuntime(context.Background(), cronWf)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	next, err := GetNextRuntime(ctx, cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())

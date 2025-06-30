@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -65,9 +66,16 @@ func NewServerCommand() *cobra.Command {
 See %s`, help.ArgoServer()),
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.SetLogFormatter(logFormat)
+			ctx := c.Context()
+			if ctx == nil {
+				ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+				c.SetContext(ctx)
+			}
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init()
+			bgCtx := context.Background()
+			bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			pprofutil.Init(bgCtx)
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {
@@ -85,7 +93,7 @@ See %s`, help.ArgoServer()),
 				Kubernetes: kubernetes.NewForConfigOrDie(config),
 				Workflow:   wfclientset.NewForConfigOrDie(config),
 			}
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
 			if !namespaced && managedNamespace != "" {

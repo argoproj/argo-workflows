@@ -1,8 +1,11 @@
 package common
 
 import (
+	"context"
 	"testing"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,12 +26,14 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 		},
 	}
 
-	ctx := &testContext{
+	dctx := &testContext{
 		testTasks: testTasks,
 	}
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3.Succeeded"}
-	deps, logic := GetTaskDependencies(task, ctx)
+	deps, logic := GetTaskDependencies(ctx, task, dctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
@@ -36,7 +41,7 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.Succeeded) && !task-3.Succeeded", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1 || task-2.AnySucceeded) && !task-3.Succeeded"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
@@ -44,7 +49,7 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.AnySucceeded) && !task-3.Succeeded", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
@@ -52,30 +57,30 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned)||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1 || task-1.Succeeded) && !task-1.Failed"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-1.Succeeded) && !task-1.Failed", logic)
 
 	task = &wfv1.DAGTask{Depends: "task-1.Succeeded && task-1.AnySucceeded"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeItems}, deps)
 	assert.Equal(t, "task-1.Succeeded && task-1.AnySucceeded", logic)
 
-	ctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true}
+	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Failed)", logic)
 
-	ctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Error: true}
+	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Error: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored)", logic)
 
-	ctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true, Error: true}
+	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true, Error: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
-	deps, logic = GetTaskDependencies(task, ctx)
+	deps, logic = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored || task-1.Failed)", logic)
 }
@@ -111,15 +116,17 @@ func TestGetTaskDependsLogic(t *testing.T) {
 		},
 	}
 
-	ctx := &testContext{
+	dctx := &testContext{
 		testTasks: testTasks,
 	}
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
-	depends := getTaskDependsLogic(task, ctx)
+	depends := getTaskDependsLogic(ctx, task, dctx)
 	assert.Equal(t, "(task-1 || task-2.Succeeded) && !task-3", depends)
 
 	task = &wfv1.DAGTask{Dependencies: []string{"task-1", "task-2"}}
-	depends = getTaskDependsLogic(task, ctx)
+	depends = getTaskDependsLogic(ctx, task, dctx)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned) && (task-2.Succeeded || task-2.Skipped || task-2.Daemoned)", depends)
 }
 
@@ -128,7 +135,7 @@ type testContext struct {
 	testTasks []*wfv1.DAGTask
 }
 
-func (d *testContext) GetTask(taskName string) *wfv1.DAGTask {
+func (d *testContext) GetTask(ctx context.Context, taskName string) *wfv1.DAGTask {
 	for _, task := range d.testTasks {
 		if task.Name == taskName {
 			return task
@@ -137,11 +144,11 @@ func (d *testContext) GetTask(taskName string) *wfv1.DAGTask {
 	return nil
 }
 
-func (d *testContext) GetTaskDependencies(taskName string) []string {
-	return d.GetTask(taskName).Dependencies
+func (d *testContext) GetTaskDependencies(ctx context.Context, taskName string) []string {
+	return d.GetTask(ctx, taskName).Dependencies
 }
 
-func (d *testContext) GetTaskFinishedAtTime(taskName string) time.Time {
+func (d *testContext) GetTaskFinishedAtTime(ctx context.Context, taskName string) time.Time {
 	if finished, ok := d.status[taskName]; ok {
 		return finished
 	}
@@ -174,7 +181,7 @@ func TestGetTaskAncestryForValidation(t *testing.T) {
 	}
 
 	now := time.Now()
-	ctx := &testContext{
+	dctx := &testContext{
 		testTasks: testTasks,
 		status: map[string]time.Time{
 			"task1": now.Add(1 * time.Minute),
@@ -192,7 +199,7 @@ func TestGetTaskAncestryForValidation(t *testing.T) {
 		{
 			name: "one task",
 			args: args{
-				ctx:      ctx,
+				ctx:      dctx,
 				taskName: "task2",
 			},
 			want: []string{"task1"},
@@ -200,14 +207,16 @@ func TestGetTaskAncestryForValidation(t *testing.T) {
 		{
 			name: "multiple tasks",
 			args: args{
-				ctx:      ctx,
+				ctx:      dctx,
 				taskName: "task4",
 			},
 			want: []string{"task1", "task2", "task3"},
 		},
 	}
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	for _, tt := range tests {
-		res := GetTaskAncestry(tt.args.ctx, tt.args.taskName)
+		res := GetTaskAncestry(ctx, tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)
 	}
 }
@@ -237,7 +246,7 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		},
 	}
 
-	ctx := &testContext{
+	dctx := &testContext{
 		testTasks: testTasks,
 		status: map[string]time.Time{
 			"task1": time.Now().Add(1 * time.Minute),
@@ -255,7 +264,7 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		{
 			name: "one task",
 			args: args{
-				ctx:      ctx,
+				ctx:      dctx,
 				taskName: "task2",
 			},
 			want: []string{"task1"},
@@ -263,14 +272,16 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		{
 			name: "multiple tasks",
 			args: args{
-				ctx:      ctx,
+				ctx:      dctx,
 				taskName: "task4",
 			},
 			want: []string{"task1", "task3", "task2"},
 		},
 	}
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	for _, tt := range tests {
-		res := GetTaskAncestry(tt.args.ctx, tt.args.taskName)
+		res := GetTaskAncestry(ctx, tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)
 	}
 }

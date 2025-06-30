@@ -1,8 +1,11 @@
 package git
 
 import (
+	"context"
 	"os"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"k8s.io/client-go/util/homedir"
 
@@ -14,7 +17,10 @@ import (
 
 func TestGitArtifactDriver_Save(t *testing.T) {
 	driver := &ArtifactDriver{}
-	err := driver.Save("", nil)
+	err := driver.Save(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), "", nil)
 	require.Error(t, err)
 }
 
@@ -184,7 +190,10 @@ func assertOnlyFile(t *testing.T, dir string, file string) {
 
 func load(driver *ArtifactDriver, git *wfv1.GitArtifact) error {
 	_ = os.RemoveAll(path)
-	return driver.Load(&wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{Git: git}}, path)
+	return driver.Load(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), &wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{Git: git}}, path)
 }
 
 func TestGetUser(t *testing.T) {

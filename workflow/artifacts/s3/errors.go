@@ -1,9 +1,10 @@
 package s3
 
 import (
-	log "github.com/sirupsen/logrus"
+	"context"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // s3TransientErrorCodes is a list of S3 error codes that are transient (retryable)
@@ -21,15 +22,19 @@ var s3TransientErrorCodes = []string{
 }
 
 // isTransientS3Err checks if an minio.ErrorResponse error is transient (retryable)
-func isTransientS3Err(err error) bool {
+func isTransientS3Err(ctx context.Context, err error) bool {
 	if err == nil {
 		return false
 	}
+	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	}
 	for _, transientErrCode := range s3TransientErrorCodes {
 		if IsS3ErrCode(err, transientErrCode) {
-			log.Errorf("Transient S3 error: %v", err)
+			log.Errorf(ctx, "Transient S3 error: %v", err)
 			return true
 		}
 	}
-	return errors.IsTransientErr(err)
+	return errors.IsTransientErr(ctx, err)
 }

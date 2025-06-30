@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -31,6 +32,7 @@ func execResource(ctx context.Context, action string) error {
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := context.Background()
+	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)
@@ -59,7 +61,7 @@ func execResource(ctx context.Context, action string) error {
 			}
 		}
 	}
-	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(
+	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(ctx,
 		action, manifestPath, wfExecutor.Template.Resource.Flags,
 	)
 	if err != nil {

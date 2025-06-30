@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/require"
 	testcontainers "github.com/testcontainers/testcontainers-go"
 	testmysql "github.com/testcontainers/testcontainers-go/modules/mysql"
@@ -27,6 +29,7 @@ func createTestDBSession(t *testing.T, dbType sqldb.DBType) (dbInfo, func(), con
 	t.Helper()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	var cfg config.SyncConfig
 	var termContainerFn func()
 	var err error

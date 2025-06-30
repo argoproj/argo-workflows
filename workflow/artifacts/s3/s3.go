@@ -22,12 +22,12 @@ import (
 	"github.com/minio/minio-go/v7/pkg/sse"
 
 	"github.com/minio/minio-go/v7"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/retry"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -168,18 +168,18 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 }
 
 // Load downloads artifacts from S3 compliant storage
-func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s3Driver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	err := waitutil.Backoff(executorretry.ExecutorRetry,
+	log := logging.GetLoggerFromContext(ctx)
+	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
-			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
+			log.Infof(ctx, "S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
 			}
-			return loadS3Artifact(s3cli, inputArtifact, path)
+			return loadS3Artifact(ctx, s3cli, inputArtifact, path)
 		})
 
 	return err
@@ -188,18 +188,18 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 // loadS3Artifact downloads artifacts from an S3 compliant storage
 // returns true if the download is completed or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)
-func loadS3Artifact(s3cli S3Client, inputArtifact *wfv1.Artifact, path string) (bool, error) {
+func loadS3Artifact(ctx context.Context, s3cli S3Client, inputArtifact *wfv1.Artifact, path string) (bool, error) {
 	origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
 	if origErr == nil {
 		return true, nil
 	}
 	if !IsS3ErrCode(origErr, "NoSuchKey") {
-		return !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
+		return !isTransientS3Err(ctx, origErr), fmt.Errorf("failed to get file: %v", origErr)
 	}
 	// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
 	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 	if err != nil {
-		return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+		return !isTransientS3Err(ctx, err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
 	}
 	if !isDir {
 		// It's neither a file, nor a directory. Return the original NoSuchKey error
@@ -207,24 +207,26 @@ func loadS3Artifact(s3cli S3Client, inputArtifact *wfv1.Artifact, path string) (
 	}
 
 	if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
-		return !isTransientS3Err(err), fmt.Errorf("failed to get directory: %v", err)
+		return !isTransientS3Err(ctx, err), fmt.Errorf("failed to get directory: %v", err)
 	}
 	return true, nil
 }
 
 // OpenStream opens a stream reader for an artifact from S3 compliant storage
-func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	log.Infof("S3 OpenStream: key: %s", inputArtifact.S3.Key)
-	s3cli, err := s3Driver.newS3Client(context.TODO())
+func (s3Driver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	log := logging.GetLoggerFromContext(ctx)
+	log.Infof(ctx, "S3 OpenStream: key: %s", inputArtifact.S3.Key)
+	todoCtx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	todoCtx = logging.WithLogger(todoCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	s3cli, err := s3Driver.newS3Client(todoCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new S3 client: %v", err)
 	}
 
-	return streamS3Artifact(s3cli, inputArtifact)
-
+	return streamS3Artifact(ctx, s3cli, inputArtifact)
 }
 
-func streamS3Artifact(s3cli S3Client, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+func streamS3Artifact(_ context.Context, s3cli S3Client, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	stream, origErr := s3cli.OpenFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 	if origErr == nil {
 		return stream, nil
@@ -247,29 +249,31 @@ func streamS3Artifact(s3cli S3Client, inputArtifact *wfv1.Artifact) (io.ReadClos
 }
 
 // Save saves an artifact to S3 compliant storage
-func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	err := waitutil.Backoff(executorretry.ExecutorRetry,
+	log := logging.GetLoggerFromContext(ctx)
+	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
-			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
+			log.Infof(ctx, "S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
 			}
-			return saveS3Artifact(s3cli, path, outputArtifact)
+			return saveS3Artifact(ctx, s3cli, path, outputArtifact)
 		})
 	return err
 }
 
 // Delete deletes an artifact from an S3 compliant storage
-func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s3Driver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	err := retry.OnError(retry.DefaultBackoff, isTransientS3Err, func() error {
-		log.Infof("S3 Delete artifact: key: %s", artifact.S3.Key)
+	log := logging.GetLoggerFromContext(ctx)
+	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return isTransientS3Err(ctx, err)
+	}, func() error {
+		log.Infof(ctx, "S3 Delete artifact: key: %s", artifact.S3.Key)
 		s3cli, err := s3Driver.newS3Client(ctx)
 		if err != nil {
 			return err
@@ -299,36 +303,36 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 // saveS3Artifact uploads artifacts to an S3 compliant storage
 // returns true if the upload is completed or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)
-func saveS3Artifact(s3cli S3Client, path string, outputArtifact *wfv1.Artifact) (bool, error) {
+func saveS3Artifact(ctx context.Context, s3cli S3Client, path string, outputArtifact *wfv1.Artifact) (bool, error) {
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
 		return true, fmt.Errorf("failed to test if %s is a directory: %v", path, err)
 	}
-
+	log := logging.GetLoggerFromContext(ctx)
 	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
 	if createBucketIfNotPresent != nil {
-		log.WithField("bucket", outputArtifact.S3.Bucket).Info("creating bucket")
+		log.WithField(ctx, "bucket", outputArtifact.S3.Bucket).Info(ctx, "creating bucket")
 		err := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
 			Region:        outputArtifact.S3.Region,
 			ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
 		})
 		alreadyExists := bucketAlreadyExistsErr(err)
-		log.WithField("bucket", outputArtifact.S3.Bucket).
-			WithField("alreadyExists", alreadyExists).
-			WithError(err).
-			Info("create bucket failed")
+		log.WithField(ctx, "bucket", outputArtifact.S3.Bucket).
+			WithField(ctx, "alreadyExists", alreadyExists).
+			WithError(ctx, err).
+			Info(ctx, "create bucket failed")
 		if err != nil && !alreadyExists {
-			return !isTransientS3Err(err), fmt.Errorf("failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
+			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
 		}
 	}
 
 	if isDir {
 		if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
-			return !isTransientS3Err(err), fmt.Errorf("failed to put directory: %v", err)
+			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put directory: %v", err)
 		}
 	} else {
 		if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
-			return !isTransientS3Err(err), fmt.Errorf("failed to put file: %v", err)
+			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put file: %v", err)
 		}
 	}
 	return true, nil
@@ -342,19 +346,19 @@ func bucketAlreadyExistsErr(err error) bool {
 }
 
 // ListObjects returns the files inside the directory represented by the Artifact
-func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s3Driver *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var files []string
 	var done bool
-	err := waitutil.Backoff(executorretry.ExecutorRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
 			}
-			done, files, err = listObjects(s3cli, artifact)
+			done, files, err = listObjects(ctx, s3cli, artifact)
 			return done, err
 		})
 
@@ -364,18 +368,19 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 // listObjects returns the files inside the directory represented by the Artifact
 // returns true if success or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)
-func listObjects(s3cli S3Client, artifact *wfv1.Artifact) (bool, []string, error) {
+func listObjects(ctx context.Context, s3cli S3Client, artifact *wfv1.Artifact) (bool, []string, error) {
 	var files []string
 	files, err := s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
 	if err != nil {
-		return !isTransientS3Err(err), files, fmt.Errorf("failed to list directory: %v", err)
+		return !isTransientS3Err(ctx, err), files, fmt.Errorf("failed to list directory: %v", err)
 	}
-	log.Debugf("successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
+	log := logging.GetLoggerFromContext(ctx)
+	log.Debugf(ctx, "successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
 
 	if len(files) == 0 {
 		directoryExists, err := s3cli.KeyExists(artifact.S3.Bucket, artifact.S3.Key)
 		if err != nil {
-			return !isTransientS3Err(err), files, fmt.Errorf("failed to check if key %s exists from bucket %s: %v", artifact.S3.Key, artifact.S3.Bucket, err)
+			return !isTransientS3Err(ctx, err), files, fmt.Errorf("failed to check if key %s exists from bucket %s: %v", artifact.S3.Key, artifact.S3.Bucket, err)
 		}
 		if !directoryExists {
 			return true, files, argoerrs.New(argoerrs.CodeNotFound, fmt.Sprintf("no key found of name %s", artifact.S3.Key))
@@ -384,8 +389,8 @@ func listObjects(s3cli S3Client, artifact *wfv1.Artifact) (bool, []string, error
 	return true, files, nil
 }
 
-func (s3Driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	s3cli, err := s3Driver.newS3Client(context.TODO())
+func (s3Driver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
+	s3cli, err := s3Driver.newS3Client(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -395,6 +400,8 @@ func (s3Driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, erro
 // Get AWS credentials based on default order from aws SDK
 func GetAWSCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
 		return nil, err
@@ -410,6 +417,8 @@ func GetAWSCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
 // GetAssumeRoleCredentials gets Assumed role credentials
 func GetAssumeRoleCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -427,23 +436,24 @@ func GetAssumeRoleCredentials(opts S3ClientOpts) (*credentials.Credentials, erro
 	return credentials.NewStaticV4(value.AccessKeyID, value.SecretAccessKey, value.SessionToken), nil
 }
 
-func GetCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
+func GetCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
+	log := logging.GetLoggerFromContext(ctx)
 	if opts.AccessKey != "" && opts.SecretKey != "" {
 		if opts.SessionToken != "" {
-			log.WithField("endpoint", opts.Endpoint).Info("Creating minio client using ephemeral credentials")
+			log.WithField(ctx, "endpoint", opts.Endpoint).Info(ctx, "Creating minio client using ephemeral credentials")
 			return credentials.NewStaticV4(opts.AccessKey, opts.SecretKey, opts.SessionToken), nil
 		} else {
-			log.WithField("endpoint", opts.Endpoint).Info("Creating minio client using static credentials")
+			log.WithField(ctx, "endpoint", opts.Endpoint).Info(ctx, "Creating minio client using static credentials")
 			return credentials.NewStaticV4(opts.AccessKey, opts.SecretKey, ""), nil
 		}
 	} else if opts.RoleARN != "" {
-		log.WithField("roleArn", opts.RoleARN).Info("Creating minio client using assumed-role credentials")
+		log.WithField(ctx, "roleArn", opts.RoleARN).Info(ctx, "Creating minio client using assumed-role credentials")
 		return GetAssumeRoleCredentials(opts)
 	} else if opts.UseSDKCreds {
-		log.Info("Creating minio client using AWS SDK credentials")
+		log.Info(ctx, "Creating minio client using AWS SDK credentials")
 		return GetAWSCredentials(opts)
 	} else {
-		log.Info("Creating minio client using IAM role")
+		log.Info(ctx, "Creating minio client using IAM role")
 		return credentials.NewIAM(nullIAMEndpoint), nil
 	}
 }
@@ -455,6 +465,9 @@ func GetDefaultTransport(opts S3ClientOpts) (*http.Transport, error) {
 
 // NewS3Client instantiates a new S3 client object backed
 func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
+	log := logging.GetLoggerFromContext(ctx)
+	log = log.WithField(ctx, "component", "s3_client")
+	ctx = logging.WithLogger(ctx, log)
 	s3cli := s3client{
 		S3ClientOpts: opts,
 	}
@@ -463,7 +476,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	var minioClient *minio.Client
 	var err error
 
-	credentials, err := GetCredentials(opts)
+	credentials, err := GetCredentials(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +496,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 		return nil, err
 	}
 	if opts.Trace {
-		minioClient.TraceOn(log.StandardLogger().Out)
+		minioClient.TraceOn(os.Stderr)
 	}
 
 	if opts.EncryptOpts.KmsKeyID != "" && opts.EncryptOpts.ServerSideCustomerKey != "" {
@@ -502,11 +515,11 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 
 // PutFile puts a single file to a bucket at the specified key
 func (s *s3client) PutFile(bucket, key, path string) error {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info("Saving file to s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Saving file to s3")
 	// NOTE: minio will detect proper mime-type based on file extension
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
-
 	if err != nil {
 		return err
 	}
@@ -519,15 +532,16 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 }
 
 func (s *s3client) BucketExists(bucketName string) (bool, error) {
-	log.WithField("bucket", bucketName).Info("Checking if bucket exists")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithField(s.ctx, "bucket", bucketName).Info(s.ctx, "Checking if bucket exists")
 	result, err := s.minioClient.BucketExists(s.ctx, bucketName)
 	return result, err
 }
 
 func (s *s3client) MakeBucket(bucketName string, opts minio.MakeBucketOptions) error {
-	log.WithFields(log.Fields{"bucket": bucketName, "region": opts.Region, "objectLocking": opts.ObjectLocking}).Info("Creating bucket")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"bucket": bucketName, "region": opts.Region, "objectLocking": opts.ObjectLocking}).Info(s.ctx, "Creating bucket")
 	err := s.minioClient.MakeBucket(s.ctx, bucketName, opts)
-
 	if err != nil {
 		return err
 	}
@@ -541,13 +555,14 @@ type uploadTask struct {
 	path string
 }
 
-func generatePutTasks(keyPrefix, rootPath string) chan uploadTask {
+func generatePutTasks(ctx context.Context, keyPrefix, rootPath string) chan uploadTask {
 	rootPath = filepath.Clean(rootPath) + string(os.PathSeparator)
 	uploadTasks := make(chan uploadTask)
 	go func() {
+		log := logging.GetLoggerFromContext(ctx)
 		_ = filepath.Walk(rootPath, func(localPath string, fi os.FileInfo, err error) error {
 			if err != nil {
-				log.WithFields(log.Fields{"localPath": localPath}).Error("Failed to walk artifacts path", err)
+				log.WithFields(ctx, logging.Fields{"localPath": localPath}).Errorf(ctx, "Failed to walk artifacts path %s", err.Error())
 				return err
 			}
 			relPath := strings.TrimPrefix(localPath, rootPath)
@@ -572,7 +587,7 @@ func generatePutTasks(keyPrefix, rootPath string) chan uploadTask {
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
 func (s *s3client) PutDirectory(bucket, key, path string) error {
-	for putTask := range generatePutTasks(key, path) {
+	for putTask := range generatePutTasks(s.ctx, key, path) {
 		err := s.PutFile(bucket, putTask.key, putTask.path)
 		if err != nil {
 			return err
@@ -583,7 +598,8 @@ func (s *s3client) PutDirectory(bucket, key, path string) error {
 
 // GetFile downloads a file to a local file path
 func (s *s3client) GetFile(bucket, key, path string) error {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info("Getting file from s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Getting file from s3")
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
 	if err != nil {
@@ -599,7 +615,8 @@ func (s *s3client) GetFile(bucket, key, path string) error {
 
 // OpenFile opens a file for reading
 func (s *s3client) OpenFile(bucket, key string) (io.ReadCloser, error) {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info("Opening file from s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Opening file from s3")
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
 	if err != nil {
@@ -619,7 +636,8 @@ func (s *s3client) OpenFile(bucket, key string) (io.ReadCloser, error) {
 
 // checks if object exists (and if we have permission to access)
 func (s *s3client) KeyExists(bucket, key string) (bool, error) {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info("Checking key exists from s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Checking key exists from s3")
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
 	if err != nil {
@@ -638,13 +656,15 @@ func (s *s3client) KeyExists(bucket, key string) (bool, error) {
 }
 
 func (s *s3client) Delete(bucket, key string) error {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info("Deleting object from s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Deleting object from s3")
 	return s.minioClient.RemoveObject(s.ctx, bucket, key, minio.RemoveObjectOptions{})
 }
 
 // GetDirectory downloads a s3 directory to a local path
 func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info("Getting directory from s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info(s.ctx, "Getting directory from s3")
 	keys, err := s.ListDirectory(bucket, keyPrefix)
 	if err != nil {
 		return err
@@ -696,7 +716,8 @@ func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
 }
 
 func (s *s3client) ListDirectory(bucket, keyPrefix string) ([]string, error) {
-	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix}).Info("Listing directory from s3")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix}).Info(s.ctx, "Listing directory from s3")
 
 	if keyPrefix != "" {
 		keyPrefix = filepath.Clean(keyPrefix) + "/"
@@ -753,7 +774,8 @@ func (s *s3client) setBucketEnc(bucketName string) error {
 		config = sse.NewConfigurationSSES3()
 	}
 
-	log.WithFields(log.Fields{"KmsKeyID": s.EncryptOpts.KmsKeyID, "bucketName": bucketName}).Info("Setting Bucket Encryption")
+	log := logging.GetLoggerFromContext(s.ctx)
+	log.WithFields(s.ctx, logging.Fields{"KmsKeyID": s.EncryptOpts.KmsKeyID, "bucketName": bucketName}).Info(s.ctx, "Setting Bucket Encryption")
 	err := s.minioClient.SetBucketEncryption(s.ctx, bucketName, config)
 	return err
 }
@@ -772,7 +794,6 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 
 	if e.KmsKeyID != "" {
 		encryptionCtx, err := parseKMSEncCntx(e.KmsEncryptionContext)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse KMS encryption context: %w", err)
 		}
@@ -780,7 +801,6 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 		if encryptionCtx == nil {
 			// To overcome a limitation in Minio which checks interface{} == nil.
 			kms, err := encrypt.NewSSEKMS(e.KmsKeyID, nil)
-
 			if err != nil {
 				return nil, err
 			}
@@ -789,7 +809,6 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 		}
 
 		kms, err := encrypt.NewSSEKMS(e.KmsKeyID, encryptionCtx)
-
 		if err != nil {
 			return nil, err
 		}
