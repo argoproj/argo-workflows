@@ -2006,10 +2006,10 @@ type WorkflowStatus struct {
 }
 
 func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
-	if in.TaskResultsCompletionStatus == nil {
-		in.TaskResultsCompletionStatus = make(map[string]bool)
+	if in.TaskResultsCompletionStatus != nil {
+		in.TaskResultsCompletionStatus[name] = false
+		return
 	}
-	in.TaskResultsCompletionStatus[name] = false
 	node, err := in.Nodes.Get(name)
 	if err != nil {
 		return
@@ -2021,10 +2021,9 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 }
 
 func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
-	if in.TaskResultsCompletionStatus == nil {
-		in.TaskResultsCompletionStatus = make(map[string]bool)
+	if in.TaskResultsCompletionStatus != nil {
+		in.TaskResultsCompletionStatus[name] = true
 	}
-	in.TaskResultsCompletionStatus[name] = true
 	node, err := in.Nodes.Get(name)
 	if err != nil {
 		return
@@ -2036,6 +2035,12 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 }
 
 func (in *WorkflowStatus) TaskResultsInProgress() bool {
+	for _, node := range in.Nodes {
+		if node.TaskResultSynced != nil {
+			return *node.TaskResultSynced
+		}
+	}
+
 	for _, value := range in.TaskResultsCompletionStatus {
 		if !value {
 			return true
@@ -2045,11 +2050,23 @@ func (in *WorkflowStatus) TaskResultsInProgress() bool {
 }
 
 func (in *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
-	value, found := in.TaskResultsCompletionStatus[name]
-	if found {
-		return !value
+	if in.TaskResultsCompletionStatus != nil {
+		value, found := in.TaskResultsCompletionStatus[name]
+		if found {
+			return !value
+		}
+		return false // workflows from older versions do not have this status, so assume completed if this is missing
+	} else {
+		node, err := in.Nodes.Get(name)
+		if err != nil {
+			return true
+		}
+		if node.TaskResultSynced != nil {
+			return !*node.TaskResultSynced
+		} else {
+			return false
+		}
 	}
-	return false // workflows from older versions do not have this status, so assume completed if this is missing
 }
 
 func (in *WorkflowStatus) IsOffloadNodeStatus() bool {
