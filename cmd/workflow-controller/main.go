@@ -73,6 +73,11 @@ func NewRootCommand() *cobra.Command {
 			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
 
 			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			if c.Context() == nil {
+				ctx := context.Background()
+				ctx = logging.WithLogger(ctx, log)
+				c.SetContext(ctx)
+			}
 
 			cmdutil.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
