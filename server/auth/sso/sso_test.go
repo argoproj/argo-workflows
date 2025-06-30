@@ -12,6 +12,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const testNamespace = "argo"
@@ -131,6 +133,7 @@ func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := fakeClient.Create(ctx, &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{},

@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // testScopeName is the name that the metrics running under test will have
@@ -24,7 +26,12 @@ func TestDisablePrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	baseCtx := func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}()
+	baseCtx = logging.WithLogger(baseCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(baseCtx)
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
@@ -44,7 +51,12 @@ func TestPrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	baseCtx := func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}()
+	baseCtx = logging.WithLogger(baseCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(baseCtx)
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
@@ -78,7 +90,12 @@ func TestDummyPrometheusServer(t *testing.T) {
 		Port:    DefaultPrometheusServerPort,
 		Secure:  false,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	baseCtx := func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}()
+	baseCtx = logging.WithLogger(baseCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(baseCtx)
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)

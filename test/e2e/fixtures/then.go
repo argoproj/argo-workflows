@@ -20,6 +20,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -60,11 +61,12 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	_, _ = fmt.Println("Checking expectation", workflowName)
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf, err := t.client.Get(ctx, workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	err = t.hydrator.Hydrate(wf)
+	err = t.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -75,6 +77,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 
 func (t *Then) ExpectWorkflowDeleted() *Then {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := t.client.Get(ctx, t.wf.Name, metav1.GetOptions{})
 	if err == nil || !apierr.IsNotFound(err) {
 		t.t.Errorf("expected workflow to be deleted: %v", err)
@@ -100,6 +103,7 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 
 				var err error
 				ctx := context.Background()
+				ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
@@ -124,6 +128,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	_, _ = fmt.Println("Checking cron expectation")
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	cronWf, err := t.cronClient.Get(ctx, t.cronWf.Name, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -146,6 +151,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	_, _ = fmt.Println("Listing workflows")
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfList, err := t.client.List(ctx, listOptions)
 	if err != nil {
 		t.t.Fatal(err)
@@ -171,6 +177,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	t.t.Helper()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -203,7 +210,11 @@ func (t *Then) ExpectPVCDeleted() *Then {
 	t.t.Helper()
 	timeout := defaultTimeout
 	_, _ = fmt.Println("Checking", timeout.String(), "for expecting PVCs deletion")
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(func() context.Context {
+		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		return ctx
+	}(), timeout)
 	defer cancel()
 	for {
 		select {
@@ -259,14 +270,18 @@ func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *test
 		t.t.Error(err)
 	}
 
-	object, err := c.StatObject(context.Background(), bucketName, key, minio.StatObjectOptions{})
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	object, err := c.StatObject(ctx, bucketName, key, minio.StatObjectOptions{})
 	f(t.t, object, err)
 }
 
 func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
 	t.t.Helper()
 
-	list, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name})
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	list, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name})
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -279,7 +294,9 @@ func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
 func (t *Then) ExpectContainerLogs(container string, f func(t *testing.T, logs string)) *Then {
 	t.t.Helper()
 
-	stream, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).GetLogs(t.wf.Name, &apiv1.PodLogOptions{Container: container}).Stream(context.Background())
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	stream, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).GetLogs(t.wf.Name, &apiv1.PodLogOptions{Container: container}).Stream(ctx)
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -298,6 +315,7 @@ func (t *Then) ExpectContainerLogs(container string, f func(t *testing.T, logs s
 func (t *Then) ExpectWorkflowTaskSet(block func(t *testing.T, wfts *wfv1.WorkflowTaskSet)) *Then {
 	t.t.Helper()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfts, err := t.wftsClient.Get(ctx, t.wf.Name, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)

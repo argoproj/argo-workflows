@@ -10,11 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
@@ -53,10 +52,10 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]in
 	return
 }
 
-func (woc *wfOperationCtx) markTaskSetNodesError(err error) {
+func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error) {
 	for _, node := range woc.wf.Status.Nodes {
 		if node.IsTaskSetNode() && !node.Fulfilled() {
-			woc.markNodeError(node.Name, err)
+			woc.markNodeError(ctx, node.Name, err)
 		}
 	}
 }
@@ -98,17 +97,17 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 
 func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	if err := woc.reconcileTaskSet(ctx); err != nil {
-		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
+		woc.log.WithError(ctx, err).Error(ctx, "error in workflowtaskset reconciliation")
 		return
 	}
 	if err := woc.reconcileAgentPod(ctx); err != nil {
-		woc.log.WithError(err).Error("error in agent pod reconciliation")
-		woc.markTaskSetNodesError(fmt.Errorf(`create agent pod failed with reason:"%s"`, err))
+		woc.log.WithError(ctx, err).Error(ctx, "error in agent pod reconciliation")
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%s"`, err))
 		return
 	}
 }
 
-func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bool {
+func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(ctx context.Context, nodeName string) bool {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		return false
@@ -121,10 +120,10 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bo
 		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
 		childNodeName, err := woc.wf.Status.Nodes.GetName(child)
 		if err != nil {
-			woc.log.Fatalf("was unable to get child node name for %s", child)
+			woc.log.Fatalf(ctx, "was unable to get child node name for %s", child)
 			panic("unable to obtain child node name")
 		}
-		if woc.nodeRequiresTaskSetReconciliation(childNodeName) {
+		if woc.nodeRequiresTaskSetReconciliation(ctx, childNodeName) {
 			return true
 		}
 	}
@@ -138,13 +137,13 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 		return err
 	}
 
-	woc.log.Info("TaskSet Reconciliation")
+	woc.log.Info(ctx, "TaskSet Reconciliation")
 	if workflowTaskSet != nil && len(workflowTaskSet.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.Warnf("[SPECIAL][DEBUG] returning but assumed validity before")
-				woc.log.Errorf("[DEBUG] Was unable to obtain node for %s", nodeID)
+				woc.log.Warnf(ctx, "returning but assumed validity before")
+				woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
 				return err
 			}
 
@@ -153,12 +152,12 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.Message = taskResult.Message
 			node.FinishedAt = metav1.Now()
 
-			woc.wf.Status.Nodes.Set(nodeID, *node)
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 				if err != nil {
-					woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+					woc.log.WithFields(ctx, logging.Fields{"nodeID": node.ID}).WithError(ctx, err).Error(ctx, "Failed to save node outputs to cache")
 				}
 			}
 			woc.updated = true
@@ -172,7 +171,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		return nil
 	}
 
-	woc.log.Info("Creating TaskSet")
+	woc.log.Info(ctx, "Creating TaskSet")
 	taskSet := wfv1.WorkflowTaskSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowTaskSetKind,
@@ -194,12 +193,12 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 			Tasks: woc.taskSet,
 		},
 	}
-	woc.log.Debug("creating new taskset")
+	woc.log.Debug(ctx, "creating new taskset")
 
 	_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
-		woc.log.Debug("patching the exiting taskset")
+		woc.log.Debug(ctx, "patching the exiting taskset")
 		spec := map[string]interface{}{
 			"metadata": metav1.ObjectMeta{
 				Labels: map[string]string{
@@ -211,11 +210,11 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		// patch the new templates into taskset
 		err = woc.mergePatchTaskSet(ctx, spec)
 		if err != nil {
-			woc.log.WithError(err).Error("Failed to patch WorkflowTaskSet")
+			woc.log.WithError(ctx, err).Error(ctx, "Failed to patch WorkflowTaskSet")
 			return fmt.Errorf("failed to patch TaskSet. %v", err)
 		}
 	} else if err != nil {
-		woc.log.WithError(err).Error("Failed to create WorkflowTaskSet")
+		woc.log.WithError(ctx, err).Error(ctx, "Failed to create WorkflowTaskSet")
 		return err
 	}
 	return nil

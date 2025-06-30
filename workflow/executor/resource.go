@@ -34,14 +34,16 @@ import (
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, string, error) {
+func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	var out []byte
-	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
+	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err)
+	}, func() error {
 		out, err = runKubectl(args...)
 		if err != nil {
 			return err
@@ -211,7 +213,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		log.Infof("Failing for conditions: %s", failSelector)
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
 		true,
 		func(ctx context.Context) (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
@@ -219,7 +221,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
 				return true, nil
 			}
-			if isErrRetryable || argoerr.IsTransientErr(err) {
+			if isErrRetryable || argoerr.IsTransientErr(ctx, err) {
 				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
 				return false, nil
 			}

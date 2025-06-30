@@ -3,6 +3,8 @@ package telemetry
 import (
 	"context"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
@@ -14,7 +16,10 @@ func createDefaultTestMetrics() (*Metrics, *TestMetricsExporter, error) {
 }
 
 func createTestMetrics(config *Config) (*Metrics, *TestMetricsExporter, error) {
-	ctx /* with cancel*/ := context.Background()
+	ctx /* with cancel*/ := func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}()
 	te := NewTestMetricsExporter()
 
 	m, err := NewMetrics(ctx, TestScopeName, TestScopeName, config, metric.WithReader(te))

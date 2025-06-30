@@ -4,6 +4,7 @@ package v1alpha1
 
 import (
 	"context"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	time "time"
 
 	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -45,13 +46,13 @@ func NewFilteredClusterWorkflowTemplateInformer(client versioned.Interface, resy
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(context.TODO(), options)
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(context.TODO(), options)
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), options)
 			},
 		},
 		&workflowv1alpha1.ClusterWorkflowTemplate{},
