@@ -4,7 +4,6 @@ package v1alpha1
 
 import (
 	"context"
-"github.com/argoproj/argo-workflows/v3/util/logging"
 	time "time"
 
 	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -47,13 +46,13 @@ func NewFilteredWorkflowInformer(client versioned.Interface, namespace string, r
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().Workflows(namespace).List(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), options)
+				return client.ArgoprojV1alpha1().Workflows(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().Workflows(namespace).Watch(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), options)
+				return client.ArgoprojV1alpha1().Workflows(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&workflowv1alpha1.Workflow{},
