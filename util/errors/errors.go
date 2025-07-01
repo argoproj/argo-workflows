@@ -89,6 +89,8 @@ func isTransientEtcdErr(err error) bool {
 		return true
 	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
 		return true
+	} else if strings.Contains(err.Error(), "etcdserver: too many requests") {
+		return true
 	}
 	return false
 }
