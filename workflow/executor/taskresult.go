@@ -18,18 +18,15 @@ func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.No
 	if !we.taskResultCreated {
 		err := we.createTaskResult(ctx, result)
 		if apierr.IsAlreadyExists(err) {
-			we.taskResultCreated = true // Mark as already existed
 			return we.patchTaskResult(ctx, result)
 		}
 		if err != nil {
 			return err
 		}
-		we.taskResultCreated = true // Mark as created after successful creation
 	} else {
 		err := we.patchTaskResult(ctx, result)
 		if err != nil {
 			if apierr.IsNotFound(err) {
-				we.taskResultCreated = false // Reset flag since it's no longer available
 				return we.createTaskResult(ctx, result)
 			}
 			return err
@@ -99,5 +96,10 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		taskResult,
 		metav1.CreateOptions{},
 	)
+	if err != nil && !apierr.IsAlreadyExists(err) {
+		we.taskResultCreated = false
+	} else {
+		we.taskResultCreated = true
+	}
 	return err
 }
