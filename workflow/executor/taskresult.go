@@ -15,11 +15,27 @@ import (
 )
 
 func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	err := we.createTaskResult(ctx, result)
-	if apierr.IsAlreadyExists(err) {
-		return we.patchTaskResult(ctx, result)
+	if !we.taskResultCreated {
+		err := we.createTaskResult(ctx, result)
+		if apierr.IsAlreadyExists(err) {
+			we.taskResultCreated = true // Mark as already existed
+			return we.patchTaskResult(ctx, result)
+		}
+		if err != nil {
+			return err
+		}
+		we.taskResultCreated = true // Mark as created after successful creation
+	} else {
+		err := we.patchTaskResult(ctx, result)
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				we.taskResultCreated = false // Reset flag since it's no longer available
+				return we.createTaskResult(ctx, result)
+			}
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
