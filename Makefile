@@ -411,7 +411,8 @@ else
 endif
 endif
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
+# go-to-protobuf fails with mysterious errors on code that doesn't compile, hence lint-go as a dependency here
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf lint-go
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
@@ -505,8 +506,16 @@ manifests-validate:
 $(TOOL_GOLANGCI_LINT): Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.1.6
 
-.PHONY: lint
-lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
+.PHONY: lint lint-ui lint-go
+lint: lint-ui lint-go
+lint-ui: ui/dist/app/index.html
+	# Lint the UI
+	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
+	# Deduplicate Node modules
+	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
+
+# We depend on the UI static files to embed in go
+lint-go: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -516,10 +525,6 @@ lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 	go mod tidy
 	# Lint Go files
 	$(TOOL_GOLANGCI_LINT) run --fix --verbose
-	# Lint the UI
-	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
-	# Deduplicate Node modules
-	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
