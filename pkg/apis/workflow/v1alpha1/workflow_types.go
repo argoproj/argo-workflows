@@ -1937,6 +1937,10 @@ type UserContainer struct {
 	// dind daemon to partially see the same filesystem as the main container in
 	// order to use features such as docker volume binding
 	MirrorVolumeMounts *bool `json:"mirrorVolumeMounts,omitempty" protobuf:"varint,2,opt,name=mirrorVolumeMounts"`
+
+	// Source contains the source code of the script to execute
+	// +optional
+	Source string `json:"source" protobuf:"bytes,3,opt,name=source"`
 }
 
 // WorkflowStatus contains overall status information about a workflow

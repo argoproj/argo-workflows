@@ -3356,6 +3356,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     run_as_user_name="run_as_user_name_example",
                                 ),
                             ),
+                            source="source_example",
                             startup_probe=Probe(
                                 _exec=ExecAction(
                                     command=[
@@ -4881,6 +4882,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     run_as_user_name="run_as_user_name_example",
                                 ),
                             ),
+                            source="source_example",
                             startup_probe=Probe(
                                 _exec=ExecAction(
                                     command=[
@@ -8194,6 +8196,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -9719,6 +9722,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -15030,6 +15034,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -16555,6 +16560,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -20899,6 +20905,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -22424,6 +22431,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -25737,6 +25745,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             run_as_user_name="run_as_user_name_example",
                                         ),
                                     ),
+                                    source="source_example",
                                     startup_probe=Probe(
                                         _exec=ExecAction(
                                             command=[
@@ -27262,6 +27271,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             run_as_user_name="run_as_user_name_example",
                                         ),
                                     ),
+                                    source="source_example",
                                     startup_probe=Probe(
                                         _exec=ExecAction(
                                             command=[
@@ -32518,6 +32528,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     run_as_user_name="run_as_user_name_example",
                                 ),
                             ),
+                            source="source_example",
                             startup_probe=Probe(
                                 _exec=ExecAction(
                                     command=[
@@ -34043,6 +34054,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     run_as_user_name="run_as_user_name_example",
                                 ),
                             ),
+                            source="source_example",
                             startup_probe=Probe(
                                 _exec=ExecAction(
                                     command=[
@@ -37356,6 +37368,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -38881,6 +38894,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -44192,6 +44206,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -45717,6 +45732,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -50061,6 +50077,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -51586,6 +51603,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         run_as_user_name="run_as_user_name_example",
                                     ),
                                 ),
+                                source="source_example",
                                 startup_probe=Probe(
                                     _exec=ExecAction(
                                         command=[
@@ -54899,6 +54917,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             run_as_user_name="run_as_user_name_example",
                                         ),
                                     ),
+                                    source="source_example",
                                     startup_probe=Probe(
                                         _exec=ExecAction(
                                             command=[
@@ -56424,6 +56443,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             run_as_user_name="run_as_user_name_example",
                                         ),
                                     ),
+                                    source="source_example",
                                     startup_probe=Probe(
                                         _exec=ExecAction(
                                             command=[

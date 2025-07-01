@@ -4754,6 +4754,11 @@ definitions:
                 $ref: '#/definitions/ContainerRestartPolicy'
             securityContext:
                 $ref: '#/definitions/SecurityContext'
+            source:
+                description: |-
+                    Source contains the source code of the script to execute
+                    +optional
+                type: string
             startupProbe:
                 $ref: '#/definitions/Probe'
             stdin:

@@ -7091,6 +7091,8 @@ spec:
                                   type: string
                               type: object
                           type: object
+                        source:
+                          type: string
                         startupProbe:
                           properties:
                             exec:
@@ -10531,6 +10533,8 @@ spec:
                                   type: string
                               type: object
                           type: object
+                        source:
+                          type: string
                         startupProbe:
                           properties:
                             exec:
@@ -17796,6 +17800,8 @@ spec:
                                     type: string
                                 type: object
                             type: object
+                          source:
+                            type: string
                           startupProbe:
                             properties:
                               exec:
@@ -21236,6 +21242,8 @@ spec:
                                     type: string
                                 type: object
                             type: object
+                          source:
+                            type: string
                           startupProbe:
                             properties:
                               exec:

@@ -35,6 +35,18 @@ spec:
     inputs:
       parameters:
       - name: message
+    initContainers:
+    - name: print-message
+      image: alpine:latest
+      command: [sh, -c]
+      source: |
+       echo "{{inputs.parameters.message}}"
+    sidecars:
+    - name: sidecar-print-message
+      image: alpine:latest
+      command: [sh, -c]
+      source: |
+       echo "{{inputs.parameters.message}}"
     container:
       image: alpine:latest
       command: [sh, -c]

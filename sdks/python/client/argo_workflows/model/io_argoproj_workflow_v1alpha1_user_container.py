@@ -121,6 +121,7 @@ class IoArgoprojWorkflowV1alpha1UserContainer(ModelNormal):
             'resources': (ResourceRequirements,),  # noqa: E501
             'restart_policy': (str,),  # noqa: E501
             'security_context': (SecurityContext,),  # noqa: E501
+            'source': (str,),  # noqa: E501
             'startup_probe': (Probe,),  # noqa: E501
             'stdin': (bool,),  # noqa: E501
             'stdin_once': (bool,),  # noqa: E501
@@ -154,6 +155,7 @@ class IoArgoprojWorkflowV1alpha1UserContainer(ModelNormal):
         'resources': 'resources',  # noqa: E501
         'restart_policy': 'restartPolicy',  # noqa: E501
         'security_context': 'securityContext',  # noqa: E501
+        'source': 'source',  # noqa: E501
         'startup_probe': 'startupProbe',  # noqa: E501
         'stdin': 'stdin',  # noqa: E501
         'stdin_once': 'stdinOnce',  # noqa: E501
@@ -224,6 +226,7 @@ class IoArgoprojWorkflowV1alpha1UserContainer(ModelNormal):
             resources (ResourceRequirements): [optional]  # noqa: E501
             restart_policy (str): RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.. [optional]  # noqa: E501
             security_context (SecurityContext): [optional]  # noqa: E501
+            source (str): Source contains the source code of the script to execute. [optional]  # noqa: E501
             startup_probe (Probe): [optional]  # noqa: E501
             stdin (bool): Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.. [optional]  # noqa: E501
             stdin_once (bool): Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false. [optional]  # noqa: E501
@@ -333,6 +336,7 @@ class IoArgoprojWorkflowV1alpha1UserContainer(ModelNormal):
             resources (ResourceRequirements): [optional]  # noqa: E501
             restart_policy (str): RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.. [optional]  # noqa: E501
             security_context (SecurityContext): [optional]  # noqa: E501
+            source (str): Source contains the source code of the script to execute. [optional]  # noqa: E501
             startup_probe (Probe): [optional]  # noqa: E501
             stdin (bool): Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.. [optional]  # noqa: E501
             stdin_once (bool): Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false. [optional]  # noqa: E501
