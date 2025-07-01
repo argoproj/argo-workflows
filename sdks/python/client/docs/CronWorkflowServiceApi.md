@@ -1752,6 +1752,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         port="port_example",
                                     ),
                                 ),
+                                stop_signal="stop_signal_example",
                             ),
                             liveness_probe=Probe(
                                 _exec=ExecAction(
@@ -2051,6 +2052,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -3262,6 +3264,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -4450,6 +4453,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         port="port_example",
                                     ),
                                 ),
+                                stop_signal="stop_signal_example",
                             ),
                             liveness_probe=Probe(
                                 _exec=ExecAction(
@@ -4785,6 +4789,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -6585,6 +6590,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -6884,6 +6890,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     port="port_example",
                                                 ),
                                             ),
+                                            stop_signal="stop_signal_example",
                                         ),
                                         liveness_probe=Probe(
                                             _exec=ExecAction(
@@ -8095,6 +8102,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -9283,6 +9291,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -9618,6 +9627,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -13401,6 +13411,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         port="port_example",
                                     ),
                                 ),
+                                stop_signal="stop_signal_example",
                             ),
                             liveness_probe=Probe(
                                 _exec=ExecAction(
@@ -13700,6 +13711,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -14911,6 +14923,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -16099,6 +16112,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         port="port_example",
                                     ),
                                 ),
+                                stop_signal="stop_signal_example",
                             ),
                             liveness_probe=Probe(
                                 _exec=ExecAction(
@@ -16434,6 +16448,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -18234,6 +18249,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -18533,6 +18549,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     port="port_example",
                                                 ),
                                             ),
+                                            stop_signal="stop_signal_example",
                                         ),
                                         liveness_probe=Probe(
                                             _exec=ExecAction(
@@ -19744,6 +19761,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -20932,6 +20950,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -21267,6 +21286,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -25135,6 +25155,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         port="port_example",
                                     ),
                                 ),
+                                stop_signal="stop_signal_example",
                             ),
                             liveness_probe=Probe(
                                 _exec=ExecAction(
@@ -25434,6 +25455,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -26645,6 +26667,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -27833,6 +27856,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         port="port_example",
                                     ),
                                 ),
+                                stop_signal="stop_signal_example",
                             ),
                             liveness_probe=Probe(
                                 _exec=ExecAction(
@@ -28168,6 +28192,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -29968,6 +29993,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -30267,6 +30293,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     port="port_example",
                                                 ),
                                             ),
+                                            stop_signal="stop_signal_example",
                                         ),
                                         liveness_probe=Probe(
                                             _exec=ExecAction(
@@ -31478,6 +31505,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(
@@ -32666,6 +32694,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             port="port_example",
                                         ),
                                     ),
+                                    stop_signal="stop_signal_example",
                                 ),
                                 liveness_probe=Probe(
                                     _exec=ExecAction(
@@ -33001,6 +33030,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 port="port_example",
                                             ),
                                         ),
+                                        stop_signal="stop_signal_example",
                                     ),
                                     liveness_probe=Probe(
                                         _exec=ExecAction(

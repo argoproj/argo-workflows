@@ -1,0 +1,8 @@
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-unstable
+  argo-flake:
+    url: path:./dev/nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs 

@@ -89,6 +89,7 @@ class Lifecycle(ModelNormal):
         return {
             'post_start': (LifecycleHandler,),  # noqa: E501
             'pre_stop': (LifecycleHandler,),  # noqa: E501
+            'stop_signal': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -99,6 +100,7 @@ class Lifecycle(ModelNormal):
     attribute_map = {
         'post_start': 'postStart',  # noqa: E501
         'pre_stop': 'preStop',  # noqa: E501
+        'stop_signal': 'stopSignal',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class Lifecycle(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             post_start (LifecycleHandler): [optional]  # noqa: E501
             pre_stop (LifecycleHandler): [optional]  # noqa: E501
+            stop_signal (str): StopSignal defines which signal will be sent to a container when it is being stopped. If not specified, the default is defined by the container runtime in use. StopSignal can only be set for Pods with a non-empty .spec.os.name. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -227,6 +230,7 @@ class Lifecycle(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             post_start (LifecycleHandler): [optional]  # noqa: E501
             pre_stop (LifecycleHandler): [optional]  # noqa: E501
+            stop_signal (str): StopSignal defines which signal will be sent to a container when it is being stopped. If not specified, the default is defined by the container runtime in use. StopSignal can only be set for Pods with a non-empty .spec.os.name. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

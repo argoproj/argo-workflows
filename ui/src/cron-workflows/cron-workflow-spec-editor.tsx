@@ -23,6 +23,16 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
+                    <div className='columns small-3'>When</div>
+                    <div className='columns small-9'>
+                        {spec.when ? (
+                            <TextInput value={spec.when} onChange={newCondition => onChange({...spec, when: newCondition})} />
+                        ) : (
+                            <TextInput value='' onChange={newCondition => onChange({...spec, when: newCondition})} />
+                        )}
+                    </div>
+                </div>
+                <div className='row white-box__details-row'>
                     <div className='columns small-3'>Timezone</div>
                     <div className='columns small-9'>
                         <TextInput value={spec.timezone} onChange={timezone => onChange({...spec, timezone})} />

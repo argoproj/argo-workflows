@@ -1,7 +1,7 @@
 ---
 name: Feature
 about: Propose a feature for this project
-labels: 'type/feature'
+type: Feature
 ---
 # Summary
 

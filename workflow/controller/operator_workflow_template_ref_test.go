@@ -216,6 +216,130 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 	})
 }
 
+var wftWithValueFromParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: wf-template-echo
+  namespace: argo
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  templates:
+    - name: echo
+      container:
+        image: busybox
+        command: [echo]
+        args: ["{{workflow.parameters.message}}"]
+`
+
+var wfWithValueParamOverride = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-parameter-overwrite-
+  namespace: argo
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        value: "configmap argument overwrite with argument"
+  workflowTemplateRef:
+    name: wf-template-echo
+`
+
+// https://github.com/argoproj/argo-workflows/issues/14426
+func TestWorkflowTemplateRefValueFromParamOverwrite(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithValueParamOverride)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueFromParam)
+	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.execWf.Spec.Arguments.Parameters)
+		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
+	})
+}
+
+var wftWithValueParameter = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: wf-template-echo
+  namespace: default
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        value: "message from workflow template"
+  templates:
+    - name: echo
+      container:
+        image: busybox
+        command: [echo]
+        args: ["{{workflow.parameters.message}}"]
+`
+
+var wfWithValueFromParamOverride = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-parameter-overwrite-
+  namespace: default
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  workflowTemplateRef:
+    name: wf-template-echo
+`
+
+var configMapMessage = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-properties
+  namespace: default
+  labels:
+    workflows.argoproj.io/configmap-type: Parameter
+data:
+  message: "message from configmap"
+`
+
+func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithValueFromParamOverride)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueParameter)
+	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
+		ctx := context.Background()
+		var cm apiv1.ConfigMap
+		wfv1.MustUnmarshal([]byte(configMapMessage), &cm)
+		_, err := controller.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, &cm, metav1.CreateOptions{})
+		require.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.execWf.Spec.Arguments.Parameters)
+		assert.Equal(t, "config-properties", woc.execWf.Spec.Arguments.Parameters[0].ValueFrom.ConfigMapKeyRef.Name)
+		assert.Equal(t, "message", woc.execWf.Spec.Arguments.Parameters[0].ValueFrom.ConfigMapKeyRef.Key)
+	})
+}
+
 var wftWithArtifact = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate

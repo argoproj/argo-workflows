@@ -3,7 +3,7 @@ ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.24-alpine3.21 as builder
+FROM golang:1.24.4-alpine3.22 as builder
 
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
@@ -80,12 +80,26 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static as argoexec
+FROM gcr.io/distroless/static as argoexec-base
 
-COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
+
+####################################################################################################
+
+FROM argoexec-base as argoexec-nonroot
+
+USER 8737
+
+COPY --chown=8737 --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
+
+ENTRYPOINT [ "argoexec" ]
+
+####################################################################################################
+FROM argoexec-base as argoexec
+
+COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 
 ENTRYPOINT [ "argoexec" ]
 
@@ -109,6 +123,8 @@ USER 8737
 
 WORKDIR /home/argo
 
+# Temporary workaround for https://github.com/grpc/grpc-go/issues/434
+ENV GRPC_ENFORCE_ALPN_ENABLED=false
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/

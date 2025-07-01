@@ -247,6 +247,7 @@ If the user needs to delete the Workflow and its child CRD objects, they will ne
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
+metadata:
   finalizers:
   - workflows.argoproj.io/artifact-gc
 ```

@@ -340,6 +340,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+		go wfc.configMapInformer.Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
 			wfc.wfInformer,
@@ -349,6 +350,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
+			wfc.configMapInformer,
 		} {
 			for !c.HasSynced() {
 				time.Sleep(5 * time.Millisecond)
@@ -452,14 +454,14 @@ type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
 func withOutputs(outputs wfv1.Outputs) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
-		nodeId := woc.nodeID(pod)
+		nodeID := woc.nodeID(pod)
 		taskResult := &wfv1.WorkflowTaskResult{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: workflow.APIVersion,
 				Kind:       workflow.WorkflowTaskResultKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: nodeId,
+				Name: nodeID,
 				Labels: map[string]string{
 					common.LabelKeyWorkflow:               woc.wf.Name,
 					common.LabelKeyReportOutputsCompleted: "true",
@@ -1265,4 +1267,74 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	woc.operate(ctx)
 	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+const podSpecPatchTemplateLevelWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-
+spec:
+  entrypoint: wf
+  templates:
+  - name: wf
+    steps:
+
+    - - name: run-task1
+        template: run-task
+        arguments:
+          parameters:
+            - name: memreqnum
+              value: '25'
+            - name: memrequnit
+              value: Mi
+            - name: message
+              value: "hello from run-task1"
+  - name: run-task
+    inputs:
+      parameters:
+        - name: memreqnum
+        - name: memrequnit
+        - name: message
+    retryStrategy:
+      limit: "2"
+      retryPolicy: "Always"
+      expression: 'lastRetry.status == "Error" or (lastRetry.status == "Failed" and asInt(lastRetry.exitCode) not in [1,2,127])'
+    podSpecPatch: |
+      containers:
+      - name: main
+        resources:
+          requests:
+            memory: "{{=(sprig.int(retries)+1)*sprig.int(inputs.parameters.memreqnum)}}{{inputs.parameters.memrequnit}}"
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestPodSpecPatchTemplateLevel(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(podSpecPatchTemplateLevelWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	pod := pods.Items[0]
+	var mainContainer apiv1.Container
+	for _, container := range pod.Spec.Containers {
+		if container.Name == "main" {
+			mainContainer = container
+		}
+	}
+	require.NotNil(t, mainContainer)
+	assert.Equal(t, "25Mi", mainContainer.Resources.Requests.Memory().String())
 }

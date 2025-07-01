@@ -447,7 +447,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
+	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
 		},
@@ -497,11 +497,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -713,7 +713,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
-	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
+	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && woc.wf.Status.Phase != wfv1.WorkflowRunning {
 		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
 		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")

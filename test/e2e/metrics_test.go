@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const baseUrlMetrics = "https://localhost:9090/metrics"
+const baseURLMetrics = "https://localhost:9090/metrics"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -31,7 +31,7 @@ func (s *MetricsSuite) BeforeTest(suiteName, testName string) {
 func (s *MetricsSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
-			BaseURL:  baseUrlMetrics,
+			BaseURL:  baseURLMetrics,
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(s.T(), true),

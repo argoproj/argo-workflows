@@ -38,7 +38,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var secretKey string
 		var sessionToken string
 		var serverSideCustomerKey string
-		var kmsKeyId string
+		var kmsKeyID string
 		var kmsEncryptionContext string
 		var enableEncryption bool
 		var caKey string
@@ -78,7 +78,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			}
 
 			enableEncryption = art.S3.EncryptionOptions.EnableEncryption
-			kmsKeyId = art.S3.EncryptionOptions.KmsKeyId
+			kmsKeyID = art.S3.EncryptionOptions.KmsKeyId
 			kmsEncryptionContext = art.S3.EncryptionOptions.KmsEncryptionContext
 		}
 
@@ -100,7 +100,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			Region:                art.S3.Region,
 			RoleARN:               art.S3.RoleARN,
 			UseSDKCreds:           art.S3.UseSDKCreds,
-			KmsKeyId:              kmsKeyId,
+			KmsKeyID:              kmsKeyID,
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
@@ -126,7 +126,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			driver.Password = passwordBytes
 		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.OAuth2.ClientIDSecret != nil && art.HTTP.Auth.OAuth2.ClientSecretSecret != nil && art.HTTP.Auth.OAuth2.TokenURLSecret != nil {
-			clientId, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)
+			clientID, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -138,7 +138,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			client = http.CreateOauth2Client(clientId, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
+			client = http.CreateOauth2Client(clientID, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
 		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.ClientCert.ClientCertSecret != nil && art.HTTP.Auth.ClientCert.ClientKeySecret != nil {
 			clientCert, err := ri.GetSecret(ctx, art.HTTP.Auth.ClientCert.ClientCertSecret.Name, art.HTTP.Auth.ClientCert.ClientCertSecret.Key)

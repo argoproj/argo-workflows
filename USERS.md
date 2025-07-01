@@ -193,6 +193,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Styra](https://www.styra.com/)
 1. [Splunk](https://www.splunk.com/)
 1. [Sutpc](http://www.sutpc.com/)
+1. [Swissblock Technologies](https://swissblock.net/)
 1. [Tessell](https://www.tessell.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)

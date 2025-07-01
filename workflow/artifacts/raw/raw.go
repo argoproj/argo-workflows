@@ -38,7 +38,7 @@ func (a *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 }
 
 // Delete is unsupported for raw output artifacts
-func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+func (a *ArtifactDriver) Delete(s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 

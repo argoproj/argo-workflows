@@ -3,7 +3,7 @@
 This is a concise list of new features.
 For a more detailed list, see the [3.6 blog post](https://blog.argoproj.io/argo-workflows-3-6-aa037cd782be).
 
-See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on breaking changes and deprecations.
+See [the upgrade notes](upgrading.md#upgrading-to-v36) for information on breaking changes and deprecations.
 
 ## UI
 
@@ -26,7 +26,7 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#13265](https://github.com/argoproj/argo-workflows/pull/13265): The workflow controller can now emit metrics over OpenTelemetry GRPC protocol
     * [#13267](https://github.com/argoproj/argo-workflows/pull/13267): with selectable temporality
     * [#13268](https://github.com/argoproj/argo-workflows/pull/13268): configuration of what is emitted
-* Many of the metrics have been updated which will require you [to change how you use them](upgrading.md#metrics_changes) and there are some new ones:
+* Many of the metrics have been updated which will require you [to change how you use them](upgrading.md#metrics-changes) and there are some new ones:
     * [#13269](https://github.com/argoproj/argo-workflows/pull/13269): Version information in the controller
     * [#13270](https://github.com/argoproj/argo-workflows/pull/13270): Is this controller the leader
     * [#13271](https://github.com/argoproj/argo-workflows/pull/13271): Kubernetes API calls duration

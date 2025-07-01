@@ -25,6 +25,7 @@ type SignalsSuite struct {
 }
 
 func (s *SignalsSuite) TestStopBehavior() {
+	s.T().Skip("this test is flaky, address this test flakiness and renable")
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().

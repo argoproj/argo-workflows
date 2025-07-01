@@ -1341,13 +1341,13 @@ definitions:
         title: Represents an empty directory for a pod.
         type: object
     EnvFromSource:
-        description: EnvFromSource represents the source of a set of ConfigMaps
+        description: EnvFromSource represents the source of a set of ConfigMaps or Secrets
         properties:
             configMapRef:
                 $ref: '#/definitions/ConfigMapEnvSource'
             prefix:
                 description: |-
-                    An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.
+                    Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.
                     +optional
                 type: string
             secretRef:
@@ -2132,6 +2132,8 @@ definitions:
                 $ref: '#/definitions/LifecycleHandler'
             preStop:
                 $ref: '#/definitions/LifecycleHandler'
+            stopSignal:
+                $ref: '#/definitions/Signal'
         type: object
     LifecycleHandler:
         description: |-
@@ -2953,7 +2955,6 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                     Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
                     +listType=atomic
                     +optional
@@ -2970,7 +2971,6 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                     Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
                     +listType=atomic
                     +optional
@@ -4224,6 +4224,11 @@ definitions:
                     token into.
                 type: string
         type: object
+    Signal:
+        description: |-
+            Signal defines the stop signal of containers
+            +enum
+        type: string
     SleepAction:
         properties:
             seconds:
