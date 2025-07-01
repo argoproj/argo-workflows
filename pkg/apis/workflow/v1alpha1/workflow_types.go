@@ -2037,7 +2037,7 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 func (in *WorkflowStatus) TaskResultsInProgress() bool {
 	for _, node := range in.Nodes {
 		if node.TaskResultSynced != nil {
-			return *node.TaskResultSynced
+			return !*node.TaskResultSynced
 		}
 	}
 
