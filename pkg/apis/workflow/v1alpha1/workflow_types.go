@@ -2036,8 +2036,8 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 
 func (in *WorkflowStatus) TaskResultsInProgress() bool {
 	for _, node := range in.Nodes {
-		if node.TaskResultSynced != nil {
-			return !*node.TaskResultSynced
+		if node.TaskResultSynced != nil && !*node.TaskResultSynced {
+			return true
 		}
 	}
 
@@ -2059,7 +2059,7 @@ func (in *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
 	} else {
 		node, err := in.Nodes.Get(name)
 		if err != nil {
-			return true
+			return true // what can we even do here?
 		}
 		if node.TaskResultSynced != nil {
 			return !*node.TaskResultSynced
