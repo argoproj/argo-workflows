@@ -158,7 +158,7 @@ type Logger interface {
 	Panicf(ctx context.Context, format string, args ...any)
 }
 
-// GetLoggerFromContext returns a logger from context, panics if nil
+// GetLoggerFromContext returns a logger from context, returns nil if not found
 func GetLoggerFromContext(ctx context.Context) Logger {
 	val := ctx.Value(LoggerKey)
 	if val == nil {
