@@ -437,6 +437,12 @@ func normalizeComment(comment string) string {
 
 // getInlineTypeDoc returns inline documentation for type aliases from AST
 func getInlineTypeDoc(typeName string) string {
+	// Handle specific type aliases that need to be documented inline as they are not in the openapi-gen generated swagger.json
+	switch typeName {
+	case "ArtifactPluginName", "wfv1.ArtifactPluginName":
+		return "string (name of an artifact plugin)"
+	}
+
 	ts, exists := typeSpecs[typeName]
 	if !exists {
 		return ""

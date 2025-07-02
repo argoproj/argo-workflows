@@ -8,6 +8,7 @@ import (
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
@@ -28,7 +29,7 @@ func NewWaitCommand() *cobra.Command {
 
 // nolint: contextcheck
 func waitContainer(ctx context.Context) error {
-	wfExecutor := initExecutor(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	// nolint:contextcheck
@@ -36,6 +37,12 @@ func waitContainer(ctx context.Context) error {
 
 	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
+	defer func() {
+		err := wfExecutor.KillArtifactSidecars(bgCtx)
+		if err != nil {
+			wfExecutor.AddError(bgCtx, err)
+		}
+	}()
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
@@ -79,7 +86,6 @@ func waitContainer(ctx context.Context) error {
 	logArtifacts := wfExecutor.SaveLogs(bgCtx)
 	artifacts = append(artifacts, logArtifacts...)
 
-	// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
 	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
