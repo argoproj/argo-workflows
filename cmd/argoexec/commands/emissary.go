@@ -158,8 +158,17 @@ func NewEmissaryCommand() *cobra.Command {
 				pid := command.Process.Pid
 				cmdCtx := cmd.Context()
 				if cmdCtx == nil {
-					cmdCtx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+					cmdCtx = context.Background()
+					cmd.SetContext(cmdCtx)
 				}
+
+				log := logging.GetLoggerFromContext(cmdCtx)
+				if log == nil {
+					log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+					cmdCtx = logging.WithLogger(context.Background(), log)
+					cmd.SetContext(cmdCtx)
+				}
+
 				ctx, cancel := context.WithCancel(cmdCtx)
 				defer cancel()
 				go func() {

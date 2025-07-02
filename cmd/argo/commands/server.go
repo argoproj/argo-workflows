@@ -73,9 +73,7 @@ See %s`, help.ArgoServer()),
 			}
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			bgCtx := context.Background()
-			bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			pprofutil.Init(bgCtx)
+			pprofutil.Init(ctx)
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {

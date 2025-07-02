@@ -79,6 +79,16 @@ func NewAgentMainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Context() == nil {
+				ctx := context.Background()
+				cmd.SetContext(ctx)
+			}
+			log := logging.GetLoggerFromContext(cmd.Context())
+			if log == nil {
+				log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+				ctx := logging.WithLogger(cmd.Context(), log)
+				cmd.SetContext(ctx)
+			}
 			return initAgentExecutor().Agent(cmd.Context())
 		},
 	}
