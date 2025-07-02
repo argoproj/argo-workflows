@@ -139,6 +139,38 @@ func RatelimitStreamServerInterceptor(ratelimiter limiter.Store) grpc.StreamServ
 	}
 }
 
+// LoggerUnaryServerInterceptor adds a logger to the context
+func LoggerUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if logging.GetLoggerFromContext(ctx) == nil {
+			ctx = logging.WithLogger(ctx, logging.GetDefaultLogger())
+		}
+		return handler(ctx, req)
+	}
+}
+
+// LoggerStreamServerInterceptor adds a logger to the context for streaming requests
+func LoggerStreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := ss.Context()
+		if logging.GetLoggerFromContext(ctx) == nil {
+			ctx = logging.WithLogger(ctx, logging.GetDefaultLogger())
+			ss = &loggerServerStream{ServerStream: ss, ctx: ctx}
+		}
+		return handler(srv, ss)
+	}
+}
+
+// loggerServerStream wraps grpc.ServerStream to override Context()
+type loggerServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (l *loggerServerStream) Context() context.Context {
+	return l.ctx
+}
+
 // GetClientIP inspects the context to retrieve the ip address of the client
 func getClientIP(ctx context.Context) string {
 	p, ok := peer.FromContext(ctx)
