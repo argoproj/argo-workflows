@@ -52,8 +52,14 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 TEST_RETRIES          ?= 3
-GOTESTSUM             ?= $(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --format=testname --
-GOTEST                ?= $(GOTESTSUM) -- -v -p 20
+# gotest function: gotest(packages, name, parameters)
+# packages: passed to gotestsum via --packages parameter
+# name: not used currently
+# parameters: passed to go test after the --
+define gotest
+	mkdir -p test/reports/json
+	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=test/reports/json/$(2).json --format=testname --packages $(1) -- $(3)
+endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
 
@@ -537,7 +543,7 @@ lint-ui: ui/dist/app/index.html
 .PHONY: test
 test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM)
 	go build ./...
-	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-v -p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
@@ -660,24 +666,24 @@ mysql-dump:
 test-cli: ./dist/argo
 
 test-%: $(TOOL_GOTESTSUM)
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(GOTESTSUM) -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL))
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%: $(TOOL_GOTESTSUM)
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(GOTESTSUM) -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
 Benchmark%: $(TOOL_GOTESTSUM)
-	$(GOTESTSUM) --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .
+	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
 # clean
 
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
