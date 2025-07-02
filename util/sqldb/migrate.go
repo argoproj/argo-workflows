@@ -27,6 +27,7 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 	logger := logging.GetLoggerFromContext(ctx)
 	if logger == nil {
 		logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		ctx = logging.WithLogger(ctx, logger)
 	}
 	logger = logger.WithFields(logging.Fields{"dbType": dbType})
 	logger.Info(ctx, "Migrating database schema")
