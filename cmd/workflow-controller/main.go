@@ -215,6 +215,13 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
+	ctx := command.Context()
+	if ctx == nil {
+		ctx = context.Background()
+		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		ctx = logging.WithLogger(ctx, log)
+		command.SetContext(ctx)
+	}
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
