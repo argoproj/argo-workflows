@@ -126,9 +126,9 @@ type Hook interface {
 
 // Logger exports a logging interface
 type Logger interface {
-	WithFields(ctx context.Context, fields Fields) Logger
-	WithField(ctx context.Context, name string, value any) Logger
-	WithError(ctx context.Context, err error) Logger
+	WithFields(fields Fields) Logger
+	WithField(name string, value any) Logger
+	WithError(err error) Logger
 
 	Info(ctx context.Context, msg string)
 	Infof(ctx context.Context, format string, args ...any)
