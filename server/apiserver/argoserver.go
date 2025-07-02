@@ -320,6 +320,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_prometheus.UnaryServerInterceptor,
+			grpcutil.LoggerUnaryServerInterceptor(),
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
@@ -329,6 +330,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
+			grpcutil.LoggerStreamServerInterceptor(),
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
