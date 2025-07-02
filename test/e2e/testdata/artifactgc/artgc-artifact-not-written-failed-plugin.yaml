@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-artifact-not-written-failed-plugin-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "intentionally not writing anything to disk and intentional failure"
+            exit 1
+      outputs:
+        artifacts:
+          - name: on-completion
+            path: /tmp/on-completion.txt
+            archive:
+              none: {}
+            plugin:
+              name: test
+              configuration: |
+                bucket: plugin-bucket
+                endpoint: minio:9000
+                insecure: true
+                accessKeySecret:
+                  name: my-minio-cred
+                  key: accesskey
+                secretKeySecret:
+                  name: my-minio-cred
+                  key: secretkey
+              key: on-completion.txt
+            artifactGC:
+              strategy: OnWorkflowCompletion

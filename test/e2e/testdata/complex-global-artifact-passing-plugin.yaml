@@ -1,0 +1,209 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-artifact-passing-plugin-
+spec:
+  entrypoint: test-root
+  artifactRepositoryRef:
+    key: plugin-v1
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: test-root
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: create-global-artifacts
+        template: create-global-artifacts
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testInput}}'
+            name: testInput
+          - from: '{{workflow.outputs.artifacts.testUpdate}}'
+            name: testUpdate
+        name: nested-workflow-entrypoint
+        template: main
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testUpload}}'
+            name: testUpload
+        name: upload-testupload-step
+        template: upload-testupload
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testUpdate}}'
+            name: testUpdate
+        name: upload-testupdate-step
+        template: upload-testupdate
+
+  - inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+    steps:
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testInput}}'
+            name: input
+        name: cp
+        template: cp
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testUpdate}}'
+            name: input-parameters
+        name: generate-testupdate-update
+        template: generate-testupdate-update
+    - - arguments:
+          artifacts:
+          - from: '{{steps.cp.outputs.artifacts.upload}}'
+            name: testUpload
+        name: output-testupload
+        template: output-testupload
+    - - arguments:
+          artifacts:
+          - from: '{{steps.generate-testupdate-update.outputs.artifacts.updated-testupdate}}'
+            name: testUpdate
+        name: output-testupdate
+        template: output-testupdate
+
+
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1; echo -n 'test input' > /testInput.txt; echo -n 'test update' > /testUpdate.txt"]
+    name: create-global-artifacts
+    outputs:
+      artifacts:
+      - globalName: testInput
+        name: testInput
+        path: /testInput.txt
+        archive:
+          none: {}
+      - globalName: testUpdate
+        name: testUpdate
+        path: /testUpdate.txt
+        archive:
+          none: {}
+
+
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1; cp /input.txt /upload.txt"]
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: input
+        path: /input.txt
+    metadata: {}
+    name: cp
+    outputs:
+      artifacts:
+      - name: upload
+        path: /upload.txt
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1; echo -n 'Updated testUpdate' > /updated-testUpdate.txt"]
+    metadata: {}
+    name: generate-testupdate-update
+    outputs:
+      artifacts:
+      - name: updated-testupdate
+        path: /updated-testUpdate.txt
+        archive:
+          none: {}
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1"]
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpload
+        path: /testUpload.txt
+    metadata: {}
+    name: output-testupload
+    outputs:
+      artifacts:
+      - globalName: testUpload
+        name: testUpload
+        path: /testUpload.txt
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1"]
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpdate
+        path: /testUpdate.txt
+    metadata: {}
+    name: output-testupdate
+    outputs:
+      artifacts:
+      - globalName: testUpdate
+        name: testUpdate
+        path: /testUpdate.txt
+
+
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1; cat /upload/testInput.txt > /upload/testUpload.txt"]
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpload
+        path: /upload/testInput.txt
+    metadata: {}
+    name: upload-testupload
+    outputs:
+      artifacts:
+      - globalName: uploadresult
+        name: uploadresult
+        path: /upload/testUpload.txt
+
+  - container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["sleep 1; cat /upload/testUpdate.txt"]
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpdate
+        path: /upload/testUpdate.txt
+    metadata: {}
+    name: upload-testupdate
+    outputs:
+      artifacts:
+        - name: finalTestUpdate
+          path: /upload/testUpdate.txt
+          archive:
+            none: {}
+          plugin:
+            name: test
+            configuration: |
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            key: finalTestUpdatePlugin
+          artifactGC:
+            strategy: OnWorkflowDeletion

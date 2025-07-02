@@ -107,6 +107,7 @@ tasks:
       ARGO_SECURE: "false"
       ARGO_X_FRAME_OPTIONS: SAMEORIGIN
       UPPERIO_DB_DEBUG: "1"
+      CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS: "true"
     ports:
     - "2746"
   ui:
