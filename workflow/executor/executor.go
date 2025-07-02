@@ -80,6 +80,9 @@ type WorkflowExecutor struct {
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
+
+	// flag to indicate if the task result was created
+	taskResultCreated bool
 }
 
 type Initializer interface {
