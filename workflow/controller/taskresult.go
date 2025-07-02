@@ -29,7 +29,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
 		String()
-	log.WithField(ctx, "labelSelector", labelSelector).
+	log.WithField("labelSelector", labelSelector).
 		Info(ctx, "Watching task results")
 	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		wfc.wfclientset,
@@ -68,7 +68,7 @@ func recentlyDeleted(node *wfv1.NodeStatus) bool {
 
 func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
-	woc.log.WithField(ctx, "numObjs", len(objs)).Info(ctx, "Task-result reconciliation")
+	woc.log.WithField("numObjs", len(objs)).Info(ctx, "Task-result reconciliation")
 
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
@@ -97,14 +97,14 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		// Mark task result as completed if it has no chance to be completed.
 		if label == "false" && old.Completed() && !woc.nodePodExist(*old) {
 			if recentlyDeleted(old) {
-				woc.log.WithField(ctx, "nodeID", nodeID).Debug(ctx, "Wait for marking task result as completed because pod is recently deleted.")
+				woc.log.WithField("nodeID", nodeID).Debug(ctx, "Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
 				continue
 			}
-			woc.log.WithField(ctx, "nodeID", nodeID).Info(ctx, "Marking task result as completed because pod has been deleted for a while.")
+			woc.log.WithField("nodeID", nodeID).Info(ctx, "Marking task result as completed because pod has been deleted for a while.")
 			woc.wf.Status.MarkTaskResultComplete(nodeID)
 		}
 		newNode := old.DeepCopy()
@@ -122,7 +122,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		}
 		if !reflect.DeepEqual(old, newNode) {
 			woc.log.
-				WithField(ctx, "nodeID", nodeID).
+				WithField("nodeID", nodeID).
 				Debug(ctx, "task-result changed")
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
 			woc.updated = true

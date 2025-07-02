@@ -380,7 +380,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 		if err != nil {
-			woc.log.WithFields(ctx, logging.Fields{"nodeID": node.ID}).WithError(ctx, err).Errorf(ctx, "Failed to save node outputs to cache")
+			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Errorf(ctx, "Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -424,7 +424,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	node := dagCtx.getTaskNode(ctx, taskName)
 	task := dagCtx.GetTask(ctx, taskName)
-	log := woc.log.WithField(ctx, "taskName", taskName)
+	log := woc.log.WithField("taskName", taskName)
 	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
 		scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 		if err != nil {

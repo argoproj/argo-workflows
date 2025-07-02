@@ -97,11 +97,11 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 
 func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	if err := woc.reconcileTaskSet(ctx); err != nil {
-		woc.log.WithError(ctx, err).Error(ctx, "error in workflowtaskset reconciliation")
+		woc.log.WithError(err).Error(ctx, "error in workflowtaskset reconciliation")
 		return
 	}
 	if err := woc.reconcileAgentPod(ctx); err != nil {
-		woc.log.WithError(ctx, err).Error(ctx, "error in agent pod reconciliation")
+		woc.log.WithError(err).Error(ctx, "error in agent pod reconciliation")
 		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%s"`, err))
 		return
 	}
@@ -157,7 +157,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 				if err != nil {
-					woc.log.WithFields(ctx, logging.Fields{"nodeID": node.ID}).WithError(ctx, err).Error(ctx, "Failed to save node outputs to cache")
+					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 				}
 			}
 			woc.updated = true
@@ -210,11 +210,11 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		// patch the new templates into taskset
 		err = woc.mergePatchTaskSet(ctx, spec)
 		if err != nil {
-			woc.log.WithError(ctx, err).Error(ctx, "Failed to patch WorkflowTaskSet")
+			woc.log.WithError(err).Error(ctx, "Failed to patch WorkflowTaskSet")
 			return fmt.Errorf("failed to patch TaskSet. %v", err)
 		}
 	} else if err != nil {
-		woc.log.WithError(ctx, err).Error(ctx, "Failed to create WorkflowTaskSet")
+		woc.log.WithError(err).Error(ctx, "Failed to create WorkflowTaskSet")
 		return err
 	}
 	return nil

@@ -184,7 +184,7 @@ func (ctx *Context) ResolveTemplate(c context.Context, tmplHolder wfv1.TemplateR
 // resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
 func (ctx *Context) resolveTemplateImpl(c context.Context, tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
-	ctx.log = ctx.log.WithFields(c, logging.Fields{
+	ctx.log = ctx.log.WithFields(logging.Fields{
 		"base": common.GetTemplateGetterString(ctx.tmplBase),
 		"tmpl": common.GetTemplateHolderString(tmplHolder),
 	})

@@ -52,10 +52,10 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
 	}
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log = log.WithField(ctx, "component", "lock_manager")
+	log = log.WithField("component", "lock_manager")
 	ctx = logging.WithLogger(ctx, log)
 
-	log.WithField(ctx, "syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
+	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
 		lock:              &sync.RWMutex{},
@@ -69,7 +69,7 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 		},
 		log: log,
 	}
-	log.WithField(ctx, "dbConfigured", sm.dbInfo.session != nil).Info(ctx, "Sync manager initialized")
+	log.WithField("dbConfigured", sm.dbInfo.session != nil).Info(ctx, "Sync manager initialized")
 	sm.dbInfo.migrate(ctx)
 
 	if sm.dbInfo.session != nil {
@@ -100,12 +100,12 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	for _, lock := range sm.syncLockMap {
 		holders, err := lock.getCurrentHolders()
 		if err != nil {
-			sm.log.WithError(ctx, err).Error(ctx, "failed to get current lock holders")
+			sm.log.WithError(err).Error(ctx, "failed to get current lock holders")
 			continue
 		}
 		pending, err := lock.getCurrentPending()
 		if err != nil {
-			sm.log.WithError(ctx, err).Error(ctx, "failed to get current lock pending")
+			sm.log.WithError(err).Error(ctx, "failed to get current lock pending")
 			continue
 		}
 		keys := append(holders, pending...)
@@ -117,7 +117,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			if !sm.isWFDeleted(wfKey) {
 				lock.release(holderKeys)
 				if err := lock.removeFromQueue(holderKeys); err != nil {
-					sm.log.WithError(ctx, err).Warnf(ctx, "failed to remove %s from queue", holderKeys)
+					sm.log.WithError(err).Warnf(ctx, "failed to remove %s from queue", holderKeys)
 				}
 			}
 		}
@@ -312,14 +312,14 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var lastErr error
 		for retryCounter := range 5 {
 			err := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
-				sm.log.WithFields(ctx, logging.Fields{
+				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   retryCounter + 1,
 				}).Info(ctx, "TryAcquire - starting transaction")
 				var err error
 				tx := &transaction{db: &sess}
 				already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
-				sm.log.WithFields(ctx, logging.Fields{
+				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   retryCounter + 1,
 				}).Info(ctx, "TryAcquire - transaction completed")
@@ -337,14 +337,14 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 				strings.Contains(err.Error(), "dependencies") ||
 				strings.Contains(err.Error(), "deadlock") ||
 				strings.Contains(err.Error(), "rollback") {
-				sm.log.WithFields(ctx, logging.Fields{
+				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   retryCounter + 1,
 					"error":     err,
 				}).Info(ctx, "TryAcquire - serialization conflict, retrying")
 				continue
 			} else {
-				sm.log.WithFields(ctx, logging.Fields{
+				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   retryCounter + 1,
 					"error":     err,
@@ -641,7 +641,7 @@ func (sm *Manager) initializeMutex(mutexName string) (semaphore, error) {
 }
 
 func (sm *Manager) backgroundNotifier(ctx context.Context, period *int) {
-	sm.log.WithField(ctx, "pollInterval", secondsToDurationWithDefault(period, defaultDBPollSeconds)).
+	sm.log.WithField("pollInterval", secondsToDurationWithDefault(period, defaultDBPollSeconds)).
 		Info(ctx, "Starting background notification for sync locks")
 	go wait.UntilWithContext(ctx, func(_ context.Context) {
 		sm.lock.Lock()

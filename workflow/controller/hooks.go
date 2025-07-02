@@ -31,7 +31,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		}
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
-			woc.log.WithField(ctx, "lifeCycleHook", hookName).WithField(ctx, "node", hookNodeName).Info(ctx, "Running workflow level hooks")
+			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Info(ctx, "Running workflow level hooks")
 			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments,
 				&executeTemplateOpts{nodeFlag: &wfv1.NodeFlag{Hooked: true}},
 			)
@@ -78,7 +78,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
 				outputs = lastChildNode.Outputs
 			}
-			woc.log.WithField(ctx, "lifeCycleHook", hookName).WithField(ctx, "node", hookNodeName).WithField(ctx, "hookName", hookName).Info(ctx, "Running hooks")
+			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info(ctx, "Running hooks")
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {

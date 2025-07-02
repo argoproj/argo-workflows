@@ -15,7 +15,7 @@ func (woc *wfOperationCtx) getPodGCDelay(ctx context.Context, podGC *wfv1.PodGC)
 	delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
 	podGCDelay, err := podGC.GetDeleteDelayDuration()
 	if err != nil {
-		woc.log.WithError(ctx, err).Warn(ctx, "failed to parse podGC.deleteDelayDuration")
+		woc.log.WithError(err).Warn(ctx, "failed to parse podGC.deleteDelayDuration")
 	} else if podGCDelay >= 0 {
 		delay = podGCDelay
 	}

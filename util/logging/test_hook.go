@@ -2,7 +2,6 @@ package logging
 
 import (
 	"io"
-	"log/slog"
 	"sync"
 )
 
@@ -68,33 +67,5 @@ func (h *TestHook) Reset() {
 
 // NewTestLogger creates a logger that doesn't output to stdout for testing
 func NewTestLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
-	var handler slog.Handler
-
-	mappedHooks := make(map[Level][]Hook)
-
-	for _, hook := range hooks {
-		levels := hook.Levels()
-		for _, level := range levels {
-			mappedHooks[level] = append(mappedHooks[level], hook)
-		}
-	}
-
-	switch format {
-	case JSON:
-		handler = slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{Level: convertLevel(logLevel)})
-	case Text:
-		handler = slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: convertLevel(logLevel)})
-	default:
-		handler = slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{Level: convertLevel(logLevel)})
-	}
-
-	f := make(Fields)
-	l := slog.New(handler)
-	s := slogLogger{
-		fields: f,
-		logger: l,
-		hooks:  mappedHooks,
-		mu:     sync.RWMutex{},
-	}
-	return &s
+	return NewSlogLoggerCustom(logLevel, format, io.Discard, hooks...)
 }

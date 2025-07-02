@@ -25,10 +25,10 @@ func (d *driver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path st
 	t := time.Now()
 	key, _ := inputArtifact.GetKey()
 	err := d.ArtifactDriver.Load(ctx, inputArtifact, path)
-	log.WithField(ctx, "artifactName", inputArtifact.Name).
-		WithField(ctx, "key", key).
-		WithField(ctx, "duration", time.Since(t)).
-		WithError(ctx, err).
+	log.WithField("artifactName", inputArtifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
 		Info(ctx, "Load artifact")
 	return err
 }
@@ -39,10 +39,10 @@ func (d *driver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (
 	t := time.Now()
 	key, _ := inputArtifact.GetKey()
 	rc, err := d.ArtifactDriver.OpenStream(ctx, inputArtifact)
-	log.WithField(ctx, "artifactName", inputArtifact.Name).
-		WithField(ctx, "key", key).
-		WithField(ctx, "duration", time.Since(t)).
-		WithError(ctx, err).
+	log.WithField("artifactName", inputArtifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
 		Info(ctx, "Stream artifact")
 	return rc, err
 }
@@ -53,10 +53,10 @@ func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 	t := time.Now()
 	key, _ := outputArtifact.GetKey()
 	err := d.ArtifactDriver.Save(ctx, path, outputArtifact)
-	log.WithField(ctx, "artifactName", outputArtifact.Name).
-		WithField(ctx, "key", key).
-		WithField(ctx, "duration", time.Since(t)).
-		WithError(ctx, err).
+	log.WithField("artifactName", outputArtifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
 		Info(ctx, "Save artifact")
 	return err
 }
@@ -73,10 +73,10 @@ func (d *driver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]st
 	t := time.Now()
 	key, _ := artifact.GetKey()
 	list, err := d.ArtifactDriver.ListObjects(ctx, artifact)
-	log.WithField(ctx, "artifactName", artifact.Name).
-		WithField(ctx, "key", key).
-		WithField(ctx, "duration", time.Since(t)).
-		WithError(ctx, err).
+	log.WithField("artifactName", artifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
 		Info(ctx, "List objects")
 	return list, err
 }
@@ -87,10 +87,10 @@ func (d *driver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool
 	t := time.Now()
 	key, _ := artifact.GetKey()
 	isDir, err := d.ArtifactDriver.IsDirectory(ctx, artifact)
-	log.WithField(ctx, "artifactName", artifact.Name).
-		WithField(ctx, "key", key).
-		WithField(ctx, "duration", time.Since(t)).
-		WithError(ctx, err).
+	log.WithField("artifactName", artifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
 		Info(ctx, "Check if directory")
 	return isDir, err
 }

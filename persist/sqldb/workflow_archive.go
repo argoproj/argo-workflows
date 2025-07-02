@@ -102,7 +102,7 @@ func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 	logger := logging.GetLoggerFromContext(ctx)
-	logCtx := logger.WithFields(ctx, logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
+	logCtx := logger.WithFields(logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
 	logCtx.Debug(ctx, "Archiving workflow")
 	wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	workflow, err := json.Marshal(wf)
@@ -462,7 +462,7 @@ func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error 
 	if err != nil {
 		return err
 	}
-	logger.WithFields(ctx, logging.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug(ctx, "Deleted archived workflow")
+	logger.WithFields(logging.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug(ctx, "Deleted archived workflow")
 	return nil
 }
 
@@ -480,6 +480,6 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ctx context.Context, ttl time.D
 	if err != nil {
 		return err
 	}
-	logger.WithFields(ctx, logging.Fields{"rowsAffected": rowsAffected}).Info(ctx, "Deleted archived workflows")
+	logger.WithFields(logging.Fields{"rowsAffected": rowsAffected}).Info(ctx, "Deleted archived workflows")
 	return nil
 }

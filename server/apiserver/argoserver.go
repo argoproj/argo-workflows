@@ -127,7 +127,7 @@ func init() {
 		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 		ctx := context.Background()
 		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		log.WithError(ctx, err).Fatal(ctx, "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
+		log.WithError(err).Fatal(ctx, "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
 	}
 }
 
@@ -213,7 +213,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(ctx, err.Error())
 	}
-	log.WithFields(ctx, logging.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info(ctx, "Starting Argo Server")
+	log.WithFields(logging.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info(ctx, "Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
 	offloadRepo := persist.ExplosiveOffloadNodeStatusRepo
 	wfArchive := persist.NullWorkflowArchive
@@ -231,7 +231,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// like and the controller won't offload newly created workflows, but you can still read them
 		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
 		if err != nil {
-			log.WithError(ctx, err).Fatal(ctx, err.Error())
+			log.WithError(err).Fatal(ctx, err.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
@@ -266,7 +266,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
-			log.WithError(ctx, err).Warn(ctx, "failed to listen")
+			log.WithError(err).Warn(ctx, "failed to listen")
 			return false, nil
 		}
 		return true, nil
@@ -296,10 +296,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
 	}
-	log.WithFields(ctx, logging.Fields{
+	log.WithFields(logging.Fields{
 		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
 	}).Info(ctx, "GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
-	log.WithFields(ctx, logging.Fields{"url": url}).Infof(ctx, "Argo Server started successfully on %s", url)
+	log.WithFields(logging.Fields{"url": url}).Infof(ctx, "Argo Server started successfully on %s", url)
 	browserOpenFunc(url)
 
 	<-as.stopCh
@@ -439,7 +439,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			ctx = metadata.NewIncomingContext(ctx, md)
 			if _, err := as.gatekeeper.Context(ctx); err != nil {
-				log.WithError(ctx, err).Error(ctx, "failed to authenticate /metrics endpoint")
+				log.WithError(err).Error(ctx, "failed to authenticate /metrics endpoint")
 				w.WriteHeader(403)
 				return
 			}
@@ -468,11 +468,11 @@ func (as *argoServer) checkServeErr(ctx context.Context, name string, err error)
 	if err != nil {
 		if as.stopCh == nil {
 			// a nil stopCh indicates a graceful shutdown
-			log.WithFields(ctx, nameField).WithError(ctx, err).Info(ctx, "graceful shutdown with error")
+			log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
 		} else {
-			log.WithFields(ctx, nameField).WithError(ctx, err).Fatalf(ctx, "%s: %v", name, err)
+			log.WithFields(nameField).WithError(err).Fatalf(ctx, "%s: %v", name, err)
 		}
 	} else {
-		log.WithFields(ctx, nameField).Info(ctx, "graceful shutdown")
+		log.WithFields(nameField).Info(ctx, "graceful shutdown")
 	}
 }

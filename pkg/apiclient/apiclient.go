@@ -72,7 +72,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 		ctx = logging.WithLogger(ctx, log)
 	}
-	log.WithField(ctx, "opts", opts).Debug(ctx, "Client options")
+	log.WithField("opts", opts).Debug(ctx, "Client options")
 	if opts.Offline {
 		return newOfflineClient(opts.OfflineFiles)
 	}

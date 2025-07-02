@@ -33,7 +33,7 @@ type (
 
 func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubeclientset kubernetes.Interface) (cache.SharedIndexInformer, error) {
 	log := logging.GetLoggerFromContext(ctx)
-	log = log.WithField(ctx, "component", "ns_watcher")
+	log = log.WithField("component", "ns_watcher")
 	ctx = logging.WithLogger(ctx, log)
 	can, _ := authutil.CanI(ctx, wfc.kubeclientset, []string{"get", "watch", "list"}, "", metav1.NamespaceAll, "namespaces")
 	if !can {

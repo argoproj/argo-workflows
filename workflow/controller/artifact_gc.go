@@ -386,7 +386,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	podInfo podInfo, podName string, templatesToArtList templatesToArtifacts, templatesByName map[string]*wfv1.Template) (*corev1.Pod, error) {
 
 	woc.log.
-		WithField(ctx, "strategy", strategy).
+		WithField("strategy", strategy).
 		Infof(ctx, "creating pod to delete artifacts: %s", podName)
 
 	// Pod is owned by WorkflowArtifactGCTasks, so it will die automatically when all of them have died
@@ -524,9 +524,9 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 
 		// if Pod is done processing the results
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
-			woc.log.WithField(ctx, "pod", pod.Name).
-				WithField(ctx, "phase", phase).
-				WithField(ctx, "message", pod.Status.Message).
+			woc.log.WithField("pod", pod.Name).
+				WithField("phase", phase).
+				WithField("message", pod.Status.Message).
 				Infof(ctx, "reconciling artifact-gc pod")
 
 			err = woc.processCompletedArtifactGCPod(ctx, pod)
