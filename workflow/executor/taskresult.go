@@ -15,11 +15,24 @@ import (
 )
 
 func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	err := we.createTaskResult(ctx, result)
-	if apierr.IsAlreadyExists(err) {
-		return we.patchTaskResult(ctx, result)
+	if !we.taskResultCreated {
+		err := we.createTaskResult(ctx, result)
+		if apierr.IsAlreadyExists(err) {
+			return we.patchTaskResult(ctx, result)
+		}
+		if err != nil {
+			return err
+		}
+	} else {
+		err := we.patchTaskResult(ctx, result)
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				return we.createTaskResult(ctx, result)
+			}
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
@@ -83,5 +96,10 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		taskResult,
 		metav1.CreateOptions{},
 	)
+	if err != nil && !apierr.IsAlreadyExists(err) {
+		we.taskResultCreated = false
+	} else {
+		we.taskResultCreated = true
+	}
 	return err
 }
