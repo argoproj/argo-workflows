@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: generate-artifact
+            template: generate-message
+          - name: consume-artifact
+            template: print-message
+            dependencies:
+              - generate-artifact
+            arguments:
+              artifacts:
+                - name: in
+                  from: "{{tasks.generate-artifact.outputs.artifacts.out}}"
+
+    - name: generate-message
+      container:
+        image: argoproj/argosay:v2
+        args: [ "echo", "hello world", "/mnt/out/message" ]
+      outputs:
+        artifacts:
+          - name: out
+            path: /mnt/out
+
+    - name: print-message
+      inputs:
+        artifacts:
+          - name: in
+            path: /mnt/in
+      container:
+        image: argoproj/argosay:v2
+        args: [ "cat", "/mnt/in/message" ]

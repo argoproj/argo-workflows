@@ -35,12 +35,14 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_artifact_repository import IoArgoprojWorkflowV1alpha1GCSArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_artifact_repository import IoArgoprojWorkflowV1alpha1HDFSArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact_repository import IoArgoprojWorkflowV1alpha1OSSArtifactRepository
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_plugin_artifact_repository import IoArgoprojWorkflowV1alpha1PluginArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact_repository import IoArgoprojWorkflowV1alpha1S3ArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1AzureArtifactRepository'] = IoArgoprojWorkflowV1alpha1AzureArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1GCSArtifactRepository'] = IoArgoprojWorkflowV1alpha1GCSArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1HDFSArtifactRepository'] = IoArgoprojWorkflowV1alpha1HDFSArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1OSSArtifactRepository'] = IoArgoprojWorkflowV1alpha1OSSArtifactRepository
+    globals()['IoArgoprojWorkflowV1alpha1PluginArtifactRepository'] = IoArgoprojWorkflowV1alpha1PluginArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1S3ArtifactRepository'] = IoArgoprojWorkflowV1alpha1S3ArtifactRepository
 
 
@@ -103,6 +105,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
             'gcs': (IoArgoprojWorkflowV1alpha1GCSArtifactRepository,),  # noqa: E501
             'hdfs': (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository,),  # noqa: E501
             'oss': (IoArgoprojWorkflowV1alpha1OSSArtifactRepository,),  # noqa: E501
+            'plugin': (IoArgoprojWorkflowV1alpha1PluginArtifactRepository,),  # noqa: E501
             's3': (IoArgoprojWorkflowV1alpha1S3ArtifactRepository,),  # noqa: E501
         }
 
@@ -118,6 +121,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
         'gcs': 'gcs',  # noqa: E501
         'hdfs': 'hdfs',  # noqa: E501
         'oss': 'oss',  # noqa: E501
+        'plugin': 'plugin',  # noqa: E501
         's3': 's3',  # noqa: E501
     }
 
@@ -168,6 +172,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifactRepository): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository): [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifactRepository): [optional]  # noqa: E501
+            plugin (IoArgoprojWorkflowV1alpha1PluginArtifactRepository): [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3ArtifactRepository): [optional]  # noqa: E501
         """
 
@@ -256,6 +261,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifactRepository): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository): [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifactRepository): [optional]  # noqa: E501
+            plugin (IoArgoprojWorkflowV1alpha1PluginArtifactRepository): [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3ArtifactRepository): [optional]  # noqa: E501
         """
 

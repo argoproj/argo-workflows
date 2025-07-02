@@ -159,6 +159,9 @@ message ArtifactLocation {
 
   // Azure contains Azure Storage artifact location details
   optional AzureArtifact azure = 10;
+
+  // Plugin contains plugin artifact location details
+  optional PluginArtifact plugin = 11;
 }
 
 // ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
@@ -198,6 +201,9 @@ message ArtifactRepository {
 
   // Azure stores artifact in an Azure Storage account
   optional AzureArtifactRepository azure = 7;
+
+  // Plugin stores artifact in a plugin-specific artifact repository
+  optional PluginArtifactRepository plugin = 8;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -1291,6 +1297,30 @@ message Parameter {
 // Plugin is an Object with exactly one key
 message Plugin {
   optional Object object = 1;
+}
+
+// PluginArtifact is the location of a plugin artifact
+message PluginArtifact {
+  // Name is the name of the artifact driver plugin
+  optional string name = 1;
+
+  // Configuration is the plugin defined configuration for the artifact driver plugin
+  optional string configuration = 2;
+
+  // ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+  optional int32 connectionTimeoutSeconds = 3;
+
+  // Key is the path in the artifact repository where the artifact resides
+  optional string key = 4;
+}
+
+// PluginArtifactRepository defines the controller configuration for a plugin artifact repository
+message PluginArtifactRepository {
+  optional string name = 1;
+
+  optional string keyFormat = 2;
+
+  optional string configuration = 3;
 }
 
 // PodGC describes how to delete completed pods as they complete
