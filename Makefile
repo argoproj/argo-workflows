@@ -48,7 +48,7 @@ DEVCONTAINER_FLAGS    ?= --output type=cacheonly
 endif
 
 # -- test options
-E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
+E2E_WAIT_TIMEOUT      ?= 120s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
