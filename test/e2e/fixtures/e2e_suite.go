@@ -46,7 +46,7 @@ const (
 
 var timeoutBias = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
 
-var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 120*time.Second) + timeoutBias
+var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
 
 var EnvFactor = env.LookupEnvIntOr("E2E_ENV_FACTOR", 1)
 
