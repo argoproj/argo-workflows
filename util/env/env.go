@@ -15,7 +15,7 @@ func LookupEnvDurationOr(ctx context.Context, key string, o time.Duration) time.
 		d, err := time.ParseDuration(v)
 		if err != nil {
 			logger := logging.GetLoggerFromContext(ctx)
-			logger = logger.WithField(ctx, key, v).WithError(ctx, err)
+			logger = logger.WithField(key, v).WithError(err)
 			logger.Panic(ctx, "failed to parse")
 		} else {
 			return d
@@ -30,7 +30,7 @@ func LookupEnvIntOr(ctx context.Context, key string, o int) int {
 		d, err := strconv.Atoi(v)
 		if err != nil {
 			logger := logging.GetLoggerFromContext(ctx)
-			logger = logger.WithField(ctx, key, v).WithError(ctx, err)
+			logger = logger.WithField(key, v).WithError(err)
 			logger.Panic(ctx, "failed to convert to int")
 		} else {
 			return d
@@ -45,7 +45,7 @@ func LookupEnvFloatOr(ctx context.Context, key string, o float64) float64 {
 		d, err := strconv.ParseFloat(v, 64)
 		if err != nil {
 			logger := logging.GetLoggerFromContext(ctx)
-			logger = logger.WithField(ctx, key, v).WithError(ctx, err)
+			logger = logger.WithField(key, v).WithError(err)
 			logger.Panic(ctx, "failed to convert to float")
 		} else {
 			return d

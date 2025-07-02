@@ -3,6 +3,7 @@ package logging
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"sync"
@@ -21,6 +22,11 @@ var (
 
 // NewSlogLogger returns a slog based logger
 func NewSlogLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
+	return NewSlogLoggerCustom(logLevel, format, os.Stdout, hooks...)
+}
+
+// NewSlogLoggerCustom returns a slog based logger with custom output destination
+func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ...Hook) Logger {
 	var handler slog.Handler
 
 	mappedHoooks := make(map[Level][]Hook)
@@ -34,11 +40,11 @@ func NewSlogLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
 
 	switch format {
 	case JSON:
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+		handler = slog.NewJSONHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	case Text:
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+		handler = slog.NewTextHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	default:
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: convertLevel(logLevel)})
+		handler = slog.NewJSONHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	}
 
 	f := make(Fields)

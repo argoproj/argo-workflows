@@ -111,7 +111,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
-	log := woc.log.WithField(ctx, "podName", podName)
+	log := woc.log.WithField("podName", podName)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
@@ -247,7 +247,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		log.WithError(ctx, err).Info(ctx, "Failed to create Agent pod")
+		log.WithError(err).Info(ctx, "Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {

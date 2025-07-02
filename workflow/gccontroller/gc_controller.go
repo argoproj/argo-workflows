@@ -43,7 +43,7 @@ type Controller struct {
 // NewController returns a new workflow ttl controller
 func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
 	log := logging.GetLoggerFromContext(ctx)
-	log = log.WithField(ctx, "component", "gc_controller")
+	log = log.WithField("component", "gc_controller")
 	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),

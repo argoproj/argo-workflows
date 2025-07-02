@@ -37,7 +37,7 @@ func init() {
 	ctx := context.Background()
 	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log.WithField(ctx, "alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(ctx, "Hydrator config")
+	log.WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(ctx, "Hydrator config")
 }
 
 type hydrator struct {
@@ -92,7 +92,7 @@ func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
 			return err
 		}
 		h.HydrateWithNodes(wf, offloadedNodes)
-		log.WithField(ctx, "Workflow Size", wf.Size()).Info(ctx, "Workflow hydrated")
+		log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow hydrated")
 	}
 
 	return nil
@@ -107,7 +107,7 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	}
 	var err error
-	log.WithField(ctx, "Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
+	log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
 	if !alwaysOffloadNodeStatus {
 		err = packer.CompressWorkflowIfNeeded(ctx, wf)
 		if err == nil {

@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 		if err != nil {
-			woc.log.WithFields(ctx, logging.Fields{"nodeID": node.ID}).WithError(ctx, err).Error(ctx, "Failed to save node outputs to cache")
+			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -500,7 +500,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		go func(i int, step wfv1.WorkflowStep) {
 			defer wg.Done()
 			if err := resolveStepReferences(i, step, newStepGroup); err != nil {
-				woc.log.WithFields(ctx, logging.Fields{"stepName": step.Name}).WithError(ctx, err).Error(ctx, "Failed to resolve references")
+				woc.log.WithFields(logging.Fields{"stepName": step.Name}).WithError(err).Error(ctx, "Failed to resolve references")
 				errCh <- err
 			}
 			<-parallelStepNum

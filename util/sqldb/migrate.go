@@ -28,7 +28,7 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 	if logger == nil {
 		logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 	}
-	logger = logger.WithFields(ctx, logging.Fields{"dbType": dbType})
+	logger = logger.WithFields(logging.Fields{"dbType": dbType})
 	logger.Info(ctx, "Migrating database schema")
 
 	{
@@ -110,18 +110,18 @@ func applyChange(ctx context.Context, session db.Session, changeSchemaVersion in
 	err := session.Tx(func(tx db.Session) error {
 		rs, err := tx.SQL().Exec(fmt.Sprintf("update %s set schema_version = ? where schema_version = ?", versionTableName), changeSchemaVersion, changeSchemaVersion-1)
 		if err != nil {
-			logger = logger.WithFields(ctx, logging.Fields{"err": err, "change": c})
+			logger = logger.WithFields(logging.Fields{"err": err, "change": c})
 			logger.Error(ctx, "Error applying database change")
 			return err
 		}
 		rowsAffected, err := rs.RowsAffected()
 		if err != nil {
-			logger = logger.WithFields(ctx, logging.Fields{"err": err, "change": c})
+			logger = logger.WithFields(logging.Fields{"err": err, "change": c})
 			logger.Error(ctx, "Rows affected problem")
 			return err
 		}
 		if rowsAffected == 1 {
-			logger = logger.WithFields(ctx, logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c})
+			logger = logger.WithFields(logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c})
 			logger.Info(ctx, "applying database change")
 			if c != nil {
 				err := c.Apply(ctx, tx)
@@ -130,7 +130,7 @@ func applyChange(ctx context.Context, session db.Session, changeSchemaVersion in
 				}
 			}
 		}
-		logger = logger.WithFields(ctx, logging.Fields{"change": c, "rowsaffected": rowsAffected})
+		logger = logger.WithFields(logging.Fields{"change": c, "rowsaffected": rowsAffected})
 		logger.Info(ctx, "done")
 		return nil
 	})

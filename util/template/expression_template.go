@@ -41,7 +41,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	var unmarshalledExpression string
 	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
-		log.WithError(ctx, err).Debug(ctx, "unresolved is allowed ")
+		log.WithError(err).Debug(ctx, "unresolved is allowed ")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
@@ -51,7 +51,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if anyVarNotInEnv(unmarshalledExpression, []string{"retries"}, env) && allowUnresolved {
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
-		log.WithError(ctx, err).Debug(ctx, "Retries are present and unresolved is allowed")
+		log.WithError(err).Debug(ctx, "Retries are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
@@ -59,7 +59,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if anyVarNotInEnv(unmarshalledExpression, lastRetryVariables, env) && allowUnresolved {
 		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
 		// when they don't exist in the env.
-		log.WithError(ctx, err).Debug(ctx, "LastRetry variables are present and unresolved is allowed")
+		log.WithError(err).Debug(ctx, "LastRetry variables are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
@@ -69,7 +69,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
 	// when the exit handlers complete.
 	if anyVarNotInEnv(unmarshalledExpression, []string{"workflow.status", "workflow.failures"}, env) && allowUnresolved {
-		log.WithError(ctx, err).Debug(ctx, "workflow.status or workflow.failures are present and unresolved is allowed")
+		log.WithError(err).Debug(ctx, "workflow.status or workflow.failures are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
@@ -83,7 +83,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
-		log.WithError(ctx, err).Debug(ctx, "Result and error are unresolved")
+		log.WithError(err).Debug(ctx, "Result and error are unresolved")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
@@ -94,7 +94,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	}
 	resultMarshaled, err := json.Marshal(result)
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
-		log.WithError(ctx, err).Debug(ctx, "resultMarshaled is nil and unresolved is allowed ")
+		log.WithError(err).Debug(ctx, "resultMarshaled is nil and unresolved is allowed ")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {

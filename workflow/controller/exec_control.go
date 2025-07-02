@@ -43,8 +43,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-				woc.log.WithField(ctx, "podName", pod.Name).
-					WithField(ctx, "shutdownStrategy", woc.GetShutdownStrategy()).
+				woc.log.WithField("podName", pod.Name).
+					WithField("shutdownStrategy", woc.GetShutdownStrategy()).
 					Info(ctx, "Terminating pod as part of workflow shutdown")
 				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
 				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
@@ -58,8 +58,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			// pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
-				woc.log.WithField(ctx, "podName", pod.Name).
-					WithField(ctx, "workflowDeadline", woc.workflowDeadline).
+				woc.log.WithField("podName", pod.Name).
+					WithField("workflowDeadline", woc.workflowDeadline).
 					Info(ctx, "Terminating pod which has exceeded workflow deadline")
 				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
 				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, "Step exceeded its deadline")
@@ -69,7 +69,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	}
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-			woc.log.WithField(ctx, "podName", pod.Name).
+			woc.log.WithField("podName", pod.Name).
 				Info(ctx, "Terminating on-exit pod")
 			woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
 		}

@@ -111,7 +111,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	}()
 
 	namespace, podName, action := parsePodCleanupKey(podCleanupKey(key))
-	logCtx := c.log.WithFields(ctx, logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName})
+	logCtx := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName})
 	logCtx.Info(ctx, "cleaning up pod")
 	err := func() error {
 		switch action {
@@ -155,7 +155,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		return nil
 	}()
 	if err != nil {
-		logCtx.WithError(ctx, err).Warn(ctx, "failed to clean-up pod")
+		logCtx.WithError(err).Warn(ctx, "failed to clean-up pod")
 		bgCtx := context.Background()
 		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		if errorsutil.IsTransientErr(bgCtx, err) || apierr.IsConflict(err) {
@@ -166,12 +166,12 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 }
 
 func (c *Controller) queuePodForCleanup(ctx context.Context, namespace string, podName string, action podCleanupAction) {
-	c.log.WithFields(ctx, logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Info(ctx, "queueing pod for cleanup")
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Info(ctx, "queueing pod for cleanup")
 	c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
 func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace string, podName string, action podCleanupAction, duration time.Duration) {
-	logCtx := c.log.WithFields(ctx, logging.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
+	logCtx := c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
 	if duration > 0 {
 		logCtx.Info(ctx, "queueing pod for cleanup after")
 		c.workqueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)

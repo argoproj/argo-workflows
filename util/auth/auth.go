@@ -13,7 +13,7 @@ import (
 // CanIArgo attempts to determine if a verb is actionable by a certain resource, this resource must be an argo resource
 func CanIArgo(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
 	logger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	logger = logger.WithFields(ctx, logging.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
+	logger = logger.WithFields(logging.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
 	logger.Debug(ctx, "CanI")
 	return CanI(ctx, kubeclientset, []string{verb}, "argoproj.io", namespace, resource)
 }

@@ -119,7 +119,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if exists {
-		woc.log.WithField(ctx, "podPhase", existing.Status.Phase).Debugf(ctx, "Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+		woc.log.WithField("podPhase", existing.Status.Phase).Debugf(ctx, "Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 		return existing, nil
 	}
 
@@ -1104,7 +1104,7 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 			needLocation = true
 		}
 	}
-	woc.log.WithField(ctx, "needLocation", needLocation).Debug(ctx, "")
+	woc.log.WithField("needLocation", needLocation).Debug(ctx, "")
 	if !needLocation {
 		return
 	}

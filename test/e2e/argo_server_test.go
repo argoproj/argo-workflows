@@ -1304,7 +1304,7 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		log.WithField(ctx, "line", line).Debug(ctx, "")
+		log.WithField("line", line).Debug(ctx, "")
 		// make sure we have this enabled
 		if line == "" {
 			continue

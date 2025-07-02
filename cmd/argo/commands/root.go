@@ -149,7 +149,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 		cmd.SetContext(ctx)
 		command.SetContext(ctx)
 
-		log.WithField(ctx, "version", argo.GetVersion()).Debug(ctx, "CLI version")
+		log.WithField("version", argo.GetVersion()).Debug(ctx, "CLI version")
 
 		// Disable printing of usage string on errors, except for argument validation errors
 		// (i.e. when the "Args" function returns an error).

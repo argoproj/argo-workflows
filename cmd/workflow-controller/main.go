@@ -127,7 +127,7 @@ func NewRootCommand() *cobra.Command {
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {
 				log.Info(ctx, "Leader election is turned off. Running in single-instance mode")
-				log.WithField(ctx, "id", "single-instance").Info(ctx, "starting leading")
+				log.WithField("id", "single-instance").Info(ctx, "starting leading")
 
 				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
 				go wfController.RunPrometheusServer(ctx, false)
@@ -174,13 +174,13 @@ func NewRootCommand() *cobra.Command {
 							}()
 						},
 						OnStoppedLeading: func() {
-							log.WithField(ctx, "id", nodeID).Info(ctx, "stopped leading")
+							log.WithField("id", nodeID).Info(ctx, "stopped leading")
 							cancel()
 							wg.Wait()
 							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
-							log.WithField(ctx, "leader", identity).Info(ctx, "new leader")
+							log.WithField("leader", identity).Info(ctx, "new leader")
 						},
 					},
 				})

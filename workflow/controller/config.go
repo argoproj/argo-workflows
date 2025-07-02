@@ -77,9 +77,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.rateLimiter = wfc.newRateLimiter()
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
-	log.WithField(ctx, "executorImage", wfc.executorImage()).
-		WithField(ctx, "executorImagePullPolicy", wfc.executorImagePullPolicy()).
-		WithField(ctx, "managedNamespace", wfc.GetManagedNamespace()).
+	log.WithField("executorImage", wfc.executorImage()).
+		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
+		WithField("managedNamespace", wfc.GetManagedNamespace()).
 		Info(ctx, "")
 	return nil
 }

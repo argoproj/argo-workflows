@@ -60,8 +60,10 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *cronWfOperationCtx {
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	}
 	return &cronWfOperationCtx{
 		name:            cronWorkflow.Name,
 		cronWf:          cronWorkflow,
@@ -71,7 +73,7 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 		cronWfIf:        wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
-		log: log.WithFields(ctx, logging.Fields{
+		log: log.WithFields(logging.Fields{
 			"workflow":  cronWorkflow.Name,
 			"namespace": cronWorkflow.Namespace,
 		}),
@@ -181,7 +183,7 @@ func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context)
 func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
 	data, err := json.Marshal(patch)
 	if err != nil {
-		woc.log.WithError(ctx, err).Error(ctx, "failed to marshall cron workflow status.active data")
+		woc.log.WithError(err).Error(ctx, "failed to marshall cron workflow status.active data")
 		return
 	}
 	err = waitutil.Backoff(retry.DefaultBackoff, func() (bool, error) {
@@ -193,7 +195,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 		return true, nil
 	})
 	if err != nil {
-		woc.log.WithError(ctx, err).Error(ctx, "failed to update cron workflow")
+		woc.log.WithError(err).Error(ctx, "failed to update cron workflow")
 		return
 	}
 }
@@ -472,7 +474,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 }
 
 func (woc *cronWfOperationCtx) reportCronWorkflowError(ctx context.Context, conditionType v1alpha1.ConditionType, errString string) {
-	woc.log.WithField(ctx, "conditionType", conditionType).Error(ctx, errString)
+	woc.log.WithField("conditionType", conditionType).Error(ctx, errString)
 	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
 		Type:    conditionType,
 		Message: errString,
