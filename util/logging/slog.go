@@ -51,7 +51,7 @@ func NewSlogLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
 	return &s
 }
 
-func (s *slogLogger) WithFields(_ context.Context, fields Fields) Logger {
+func (s *slogLogger) WithFields(fields Fields) Logger {
 	logger := s.logger
 
 	newFields := make(Fields)
@@ -81,7 +81,7 @@ func (s *slogLogger) WithFields(_ context.Context, fields Fields) Logger {
 	}
 }
 
-func (s *slogLogger) WithField(_ context.Context, name string, value any) Logger {
+func (s *slogLogger) WithField(name string, value any) Logger {
 	newFields := make(Fields)
 
 	logger := s.logger
@@ -110,8 +110,8 @@ func (s *slogLogger) WithField(_ context.Context, name string, value any) Logger
 	}
 }
 
-func (s *slogLogger) WithError(ctx context.Context, err error) Logger {
-	return s.WithField(ctx, ErrorField, err)
+func (s *slogLogger) WithError(err error) Logger {
+	return s.WithField(ErrorField, err)
 }
 
 // executeHooks safely executes hooks with panic recovery
