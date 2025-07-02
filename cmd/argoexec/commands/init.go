@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func NewInitCommand() *cobra.Command {
