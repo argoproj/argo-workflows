@@ -1771,20 +1771,24 @@ var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
 
-func (in Nodes) FindByDisplayName(name string) *NodeStatus {
-	return in.Find(NodeWithDisplayName(name))
+func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	return n.Find(NodeWithDisplayName(name))
 }
 
-func (in Nodes) FindByName(name string) *NodeStatus {
-	return in.Find(NodeWithName(name))
+func (n Nodes) FindByName(name string) *NodeStatus {
+	return n.Find(NodeWithName(name))
 }
 
-func (in Nodes) Any(f func(NodeStatus) bool) bool {
-	return in.Find(f) != nil
+func (n Nodes) FindByChild(childID string) *NodeStatus {
+	return n.Find(NodeWithChild(childID))
 }
 
-func (in Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
-	for _, i := range in {
+func (n Nodes) Any(f func(NodeStatus) bool) bool {
+	return n.Find(f) != nil
+}
+
+func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
+	for _, i := range n {
 		if f(i) {
 			return &i
 		}
@@ -1794,8 +1798,8 @@ func (in Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 
 // Get a NodeStatus from the hashmap of Nodes.
 // Return a nil along with an error if non existent.
-func (in Nodes) Get(key string) (*NodeStatus, error) {
-	val, ok := in[key]
+func (n Nodes) Get(key string) (*NodeStatus, error) {
+	val, ok := n[key]
 	if !ok {
 		return nil, fmt.Errorf("key was not found for %s", key)
 	}
@@ -1803,14 +1807,14 @@ func (in Nodes) Get(key string) (*NodeStatus, error) {
 }
 
 // Check if the Nodes map has a key entry
-func (in Nodes) Has(key string) bool {
-	_, err := in.Get(key)
+func (n Nodes) Has(key string) bool {
+	_, err := n.Get(key)
 	return err == nil
 }
 
 // Get the Phase of a Node
-func (in Nodes) GetPhase(key string) (*NodePhase, error) {
-	val, err := in.Get(key)
+func (n Nodes) GetPhase(key string) (*NodePhase, error) {
+	val, err := n.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -1818,35 +1822,35 @@ func (in Nodes) GetPhase(key string) (*NodePhase, error) {
 }
 
 // Set the status of a node by key
-func (in Nodes) Set(ctx context.Context, key string, status NodeStatus) {
-	log := logging.GetLoggerFromContext(ctx)
+func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
+  log := logging.GetLoggerFromContext(ctx)
 	if status.Name == "" {
 		log.Warnf(ctx, "Name was not set for key %s", key)
 	}
 	if status.ID == "" {
 		log.Warnf(ctx, "ID was not set for key %s", key)
 	}
-	_, ok := in[key]
+	_, ok := n[key]
 	if ok {
 		log.Tracef(ctx, "Changing NodeStatus for %s to %+v", key, status)
 	}
-	in[key] = status
+	n[key] = status
 }
 
 // Delete a node from the Nodes by key
-func (in Nodes) Delete(ctx context.Context, key string) {
+func (n Nodes) Delete(ctx context.Context, key string) {
 	log := logging.GetLoggerFromContext(ctx)
-	has := in.Has(key)
+	has := n.Has(key)
 	if !has {
 		log.Warnf(ctx, "Trying to delete non existent key %s", key)
 		return
 	}
-	delete(in, key)
+	delete(n, key)
 }
 
 // Get the name of a node by key
-func (in Nodes) GetName(key string) (string, error) {
-	val, err := in.Get(key)
+func (n Nodes) GetName(key string) (string, error) {
+	val, err := n.Get(key)
 	if err != nil {
 		return "", err
 	}
@@ -1860,6 +1864,12 @@ func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
 
+func NodeWithChild(childID string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool {
+		return n.HasChild(childID)
+	}
+}
+
 func FailedPodNode(n NodeStatus) bool {
 	return n.Type == NodeTypePod && n.Phase == NodeFailed
 }
@@ -1869,14 +1879,14 @@ func SucceededPodNode(n NodeStatus) bool {
 }
 
 // Children returns the children of the parent.
-func (in Nodes) Children(parentNodeID string) Nodes {
+func (n Nodes) Children(parentNodeID string) Nodes {
 	childNodes := make(Nodes)
-	parentNode, ok := in[parentNodeID]
+	parentNode, ok := n[parentNodeID]
 	if !ok {
 		return childNodes
 	}
 	for _, childID := range parentNode.Children {
-		if childNode, ok := in[childID]; ok {
+		if childNode, ok := n[childID]; ok {
 			childNodes[childID] = childNode
 		}
 	}
@@ -1885,8 +1895,8 @@ func (in Nodes) Children(parentNodeID string) Nodes {
 
 // NestedChildrenStatus takes in a nodeID and returns all its children, this involves a tree search using DFS.
 // This is needed to mark all children nodes as failed for example.
-func (in Nodes) NestedChildrenStatus(parentNodeID string) ([]NodeStatus, error) {
-	parentNode, ok := in[parentNodeID]
+func (n Nodes) NestedChildrenStatus(parentNodeID string) ([]NodeStatus, error) {
+	parentNode, ok := n[parentNodeID]
 	if !ok {
 		return nil, fmt.Errorf("could not find %s in nodes when searching for nested children", parentNodeID)
 	}
@@ -1898,7 +1908,7 @@ func (in Nodes) NestedChildrenStatus(parentNodeID string) ([]NodeStatus, error) 
 		childNode := toexplore[0]
 		toexplore = toexplore[1:]
 		for _, nodeID := range childNode.Children {
-			toexplore = append(toexplore, in[nodeID])
+			toexplore = append(toexplore, n[nodeID])
 		}
 
 		if childNode.Name == parentNode.Name {
@@ -1911,9 +1921,9 @@ func (in Nodes) NestedChildrenStatus(parentNodeID string) ([]NodeStatus, error) 
 }
 
 // Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
-func (in Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
+func (n Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 	filteredNodes := make(Nodes)
-	for _, node := range in {
+	for _, node := range n {
 		if predicate(node) {
 			filteredNodes[node.ID] = node
 		}
@@ -1922,9 +1932,9 @@ func (in Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 }
 
 // Map maps the nodes to new values, e.g. `x.Hostname`
-func (in Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
+func (n Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 	values := make(map[string]interface{})
-	for _, node := range in {
+	for _, node := range n {
 		values[node.ID] = f(node)
 	}
 	return values
