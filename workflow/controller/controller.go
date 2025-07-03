@@ -149,7 +149,8 @@ type WorkflowController struct {
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
-	recentCompletions recentCompletions
+	recentCompletions      recentCompletions
+	workflowVersionChecker *workflowVersionChecker
 }
 
 const (
@@ -172,6 +173,10 @@ var (
 	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
 	// updates, and the next workflow will see the updated availability.
 	semaphoreNotifyDelay = env.LookupEnvDurationOr("SEMAPHORE_NOTIFY_DELAY", time.Second)
+
+	// processedWorfklowVersionsTTL is the ttl of the processed workflow versions cache. The controller
+	// will make sure versions in the cache won't be processed multiple times even with informer delay.
+	processedWorfklowVersionsTTL = env.LookupEnvDurationOr("PROCESSED_WORKFLOW_VERSIONS_TTL", 10*time.Second)
 )
 
 func init() {
@@ -300,6 +305,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		WithField("workflowArchive", wfArchiveWorkers).
 		Info("Current Worker Numbers")
 
+	wfc.workflowVersionChecker = NewWorkflowVersionChecker(processedWorfklowVersionsTTL)
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
@@ -686,6 +692,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		log.WithFields(log.Fields{"key": key}).Warn("Index is not an unstructured")
+		return true
+	}
+
+	if wfc.workflowVersionChecker.IsOutdated(un) {
+		log.WithFields(log.Fields{"key": key, "version": un.GetResourceVersion()}).Info("Won't process Workflow since current status is outdated")
 		return true
 	}
 
