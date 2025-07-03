@@ -115,6 +115,7 @@ Risc-V
 Roadmap
 RoleBinding
 SDKs
+SSO
 SageMaker
 ServiceAccount
 Sharding
@@ -263,6 +264,7 @@ v3.4.
 v3.4.4
 v3.5
 v3.6
+v3.6.5
 v3.7
 validator
 vendored
