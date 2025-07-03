@@ -1407,6 +1407,7 @@ A link to another app.
 |:----------:|:----------:|---------------|
 |`name`|`string`|The name of the link, E.g. "Workflow Logs" or "Pod Logs"|
 |`scope`|`string`|"workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"|
+|`target`|`string`|Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.|
 |`url`|`string`|The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}"|
 
 ## Arguments
