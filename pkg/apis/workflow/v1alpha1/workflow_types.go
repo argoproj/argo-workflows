@@ -1823,7 +1823,7 @@ func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 
 // Set the status of a node by key
 func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
-  log := logging.GetLoggerFromContext(ctx)
+	log := logging.GetLoggerFromContext(ctx)
 	if status.Name == "" {
 		log.Warnf(ctx, "Name was not set for key %s", key)
 	}
