@@ -43,8 +43,8 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-    const [namePattern, setNamePattern] = useState('');
-    const [labels, setLabels] = useState([]);
+    const [namePattern, setNamePattern] = useState(queryParams.get('namePattern') || '');
+    const [labels, setLabels] = useState(queryParams.get('labels') ? queryParams.get('labels').split(',') : []);
     const [pagination, setPagination] = useState<Pagination>({
         offset: queryParams.get('offset'),
         limit: parseLimit(queryParams.get('limit')) || savedOptions.paginationLimit || 500
@@ -53,6 +53,18 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     useEffect(
         useQueryParams(history, p => {
             setSidePanel(p.get('sidePanel') === 'true');
+            if (p.get('namePattern') !== null) {
+                setNamePattern(p.get('namePattern'));
+            }
+            if (p.get('labels') !== null) {
+                setLabels(p.get('labels').split(','));
+            }
+            if (p.get('offset') !== null || p.get('limit') !== null) {
+                setPagination({
+                    offset: p.get('offset') || '',
+                    limit: parseLimit(p.get('limit')) || savedOptions.paginationLimit || 500
+                });
+            }
         }),
         [history]
     );
@@ -65,10 +77,14 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
         history.push(
             historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
-                sidePanel
+                sidePanel,
+                namePattern: namePattern || undefined,
+                labels: labels.length > 0 ? labels.join(',') : undefined,
+                offset: pagination.offset || undefined,
+                limit: pagination.limit !== 500 ? pagination.limit : undefined
             })
         );
-    }, [namespace, sidePanel]);
+    }, [namespace, sidePanel, namePattern, labels.toString(), pagination.offset, pagination.limit]);
 
     // internal state
     const [error, setError] = useState<Error>();
