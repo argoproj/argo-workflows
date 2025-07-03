@@ -44,12 +44,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	}
 
 	defer func() {
-		nodePhase, err := woc.wf.Status.Nodes.GetPhase(node.ID)
-		if err != nil {
-			woc.log.Fatalf("was unable to obtain nodePhase for %s", node.ID)
-			panic(fmt.Sprintf("unable to obtain nodePhase for %s", node.ID))
-		}
-		if nodePhase.Fulfilled() {
+		if node.Phase.Fulfilled() {
 			woc.killDaemonedChildren(node.ID)
 		}
 	}()
@@ -70,9 +65,9 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		{
 			sgNode, err := woc.wf.GetNodeByName(sgNodeName)
 			if err != nil {
-				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{})
+				woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{})
 			} else if !sgNode.Fulfilled() {
-				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+				woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 			}
 		}
 		// The following will connect the step group node to its parents.
@@ -119,10 +114,9 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		if sgNode.FailedOrError() {
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
-			if err = woc.updateOutboundNodes(nodeName, tmpl); err != nil {
-				return nil, err
-			}
-			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message), nil
+			woc.updateOutboundNodes(node, tmpl)
+			node = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
+			return node, nil
 		}
 
 		// Add all outputs of each step in the group to the scope
@@ -163,10 +157,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		}
 	}
 
-	err = woc.updateOutboundNodes(nodeName, tmpl)
-	if err != nil {
-		return nil, err
-	}
+	woc.updateOutboundNodes(node, tmpl)
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
 	if err != nil {
@@ -191,40 +182,37 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			node.Phase = wfv1.NodeError
 		}
 	}
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
+	node = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	return node, nil
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
-func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) updateOutboundNodes(node *wfv1.NodeStatus, tmpl *wfv1.Template) {
 	outbound := make([]string, 0)
+
 	// Find the last, initialized stepgroup node
 	var lastSGNode *wfv1.NodeStatus
-	var err error
 	for i := len(tmpl.Steps) - 1; i >= 0; i-- {
-		var sgNode *wfv1.NodeStatus
-		sgNode, err = woc.wf.GetNodeByName(fmt.Sprintf("%s[%d]", nodeName, i))
+		sgNode, err := woc.wf.GetNodeByName(fmt.Sprintf("%s[%d]", node.Name, i))
 		if err == nil {
 			lastSGNode = sgNode
 			break
 		}
 	}
 	if lastSGNode == nil {
-		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", nodeName)
-		return err
+		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", node.Name)
+		return
 	}
+
 	for _, childID := range lastSGNode.Children {
 		outboundNodeIDs := woc.getOutboundNodes(childID)
 		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
 		outbound = append(outbound, outboundNodeIDs...)
 	}
-	node, err := woc.wf.GetNodeByName(nodeName)
-	if err != nil {
-		return err
-	}
+
 	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes.Set(node.ID, *node)
-	return nil
 }
 
 // executeStepGroup examines a list of parallel steps and executes them in parallel.
@@ -290,10 +278,10 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			case ErrParallelismReached:
 			case ErrMaxDepthExceeded:
 			case ErrTimeout:
-				return woc.markNodePhase(node.Name, wfv1.NodeFailed, err.Error()), nil
+				return woc.markNodePhase(sgNodeName, wfv1.NodeFailed, err.Error()), nil
 			default:
 				woc.addChildNode(sgNodeName, childNodeName)
-				return woc.markNodeError(node.Name, fmt.Errorf("step group deemed errored due to child %s error: %w", childNodeName, err)), nil
+				return woc.markNodeError(sgNodeName, fmt.Errorf("step group deemed errored due to child %s error: %w", childNodeName, err)), nil
 			}
 		}
 		if childNode != nil {
@@ -302,10 +290,6 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		}
 	}
 
-	node, err = woc.wf.GetNodeByName(sgNodeName)
-	if err != nil {
-		return nil, err
-	}
 	// Return if not all children completed
 	completed := true
 	for _, childNodeID := range node.Children {
@@ -319,7 +303,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
 		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
 		if err != nil {
-			woc.markNodeError(node.Name, err)
+			woc.markNodeError(sgNodeName, err)
 		}
 		// Check all hooks are completed
 		if !hookCompleted {
@@ -359,11 +343,11 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
 			woc.log.Infof("Step group node %s deemed failed: %s", node.ID, failMessage)
-			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage), nil
+			return woc.markNodePhase(sgNodeName, wfv1.NodeFailed, failMessage), nil
 		}
 	}
 	woc.log.Infof("Step group node %v successful", node.ID)
-	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), nil
+	return woc.markNodePhase(sgNodeName, wfv1.NodeSucceeded), nil
 }
 
 // shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
