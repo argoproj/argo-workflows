@@ -63,9 +63,9 @@ func Test_Replace(t *testing.T) {
 				require.NoError(t, err)
 			})
 			t.Run("AllowedRetries", func(t *testing.T) {
-				replaced, err := Replace(toJSONString("{{=int(retries)}}"), nil, true)
+				replaced, err := Replace(toJSONString("{{=sprig.int(retries)}}"), nil, true)
 				require.NoError(t, err)
-				assert.Equal(t, toJSONString("{{=int(retries)}}"), replaced)
+				assert.Equal(t, toJSONString("{{=sprig.int(retries)}}"), replaced)
 			})
 			t.Run("AllowedWorkflowStatus", func(t *testing.T) {
 				replaced, err := Replace(toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, true)

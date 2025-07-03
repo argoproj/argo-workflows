@@ -1304,7 +1304,7 @@ spec:
       - name: main
         resources:
           requests:
-            memory: "{{=(int(retries)+1)*int(inputs.parameters.memreqnum)}}{{inputs.parameters.memrequnit}}"
+            memory: "{{=(sprig.int(retries)+1)*sprig.int(inputs.parameters.memreqnum)}}{{inputs.parameters.memrequnit}}"
     container:
       image: docker/whalesay
       command: [cowsay]
