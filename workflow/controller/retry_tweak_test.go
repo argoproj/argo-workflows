@@ -15,23 +15,23 @@ func TestFindRetryNode(t *testing.T) {
 			Type:         wfv1.NodeTypeSteps,
 			Phase:        wfv1.NodeRunning,
 			BoundaryID:   "",
-			Children:     []string{"B1", "B2"},
+			Children:     []string{"B1", "B2", "B3"},
 			TemplateName: "tmpl1",
 		},
 		"B1": wfv1.NodeStatus{
 			ID:           "B1",
 			Type:         wfv1.NodeTypeSkipped,
 			Phase:        wfv1.NodeSkipped,
-			BoundaryID:   "",
+			BoundaryID:   "A1",
 			Children:     []string{},
 			TemplateName: "tmpl2",
 		},
-		// retry node
+		// retry node containing steps
 		"B2": wfv1.NodeStatus{
 			ID:           "B2",
 			Type:         wfv1.NodeTypeRetry,
 			Phase:        wfv1.NodeRunning,
-			BoundaryID:   "",
+			BoundaryID:   "A1",
 			Children:     []string{"C1"},
 			TemplateName: "tmpl1",
 		},
@@ -39,7 +39,7 @@ func TestFindRetryNode(t *testing.T) {
 			ID:           "C1",
 			Type:         wfv1.NodeTypeSteps,
 			Phase:        wfv1.NodeRunning,
-			BoundaryID:   "",
+			BoundaryID:   "A1",
 			Children:     []string{"D1", "D2"},
 			TemplateName: "tmpl2",
 		},
@@ -47,7 +47,7 @@ func TestFindRetryNode(t *testing.T) {
 			ID:           "D1",
 			Type:         wfv1.NodeTypeSkipped,
 			Phase:        wfv1.NodeSkipped,
-			BoundaryID:   "A1",
+			BoundaryID:   "C1",
 			Children:     []string{},
 			TemplateName: "tmpl2",
 		},
@@ -55,26 +55,27 @@ func TestFindRetryNode(t *testing.T) {
 			ID:           "D2",
 			Type:         wfv1.NodeTypePod,
 			Phase:        wfv1.NodeRunning,
-			BoundaryID:   "A1",
+			BoundaryID:   "C1",
 			Children:     []string{},
 			TemplateName: "tmpl2",
 		},
-		"E1": wfv1.NodeStatus{
-			ID:         "E1",
+		// retry node containing single step and templteRef
+		"B3": wfv1.NodeStatus{
+			ID:         "B3",
 			Type:       wfv1.NodeTypeRetry,
 			Phase:      wfv1.NodeRunning,
 			BoundaryID: "A1",
-			Children:   []string{},
+			Children:   []string{"C2"},
 			TemplateRef: &wfv1.TemplateRef{
 				Name:     "tmpl1",
 				Template: "tmpl3",
 			},
 		},
-		"E2": wfv1.NodeStatus{
-			ID:           "E2",
+		"C2": wfv1.NodeStatus{
+			ID:           "C2",
 			Type:         wfv1.NodeTypePod,
 			Phase:        wfv1.NodeRunning,
-			BoundaryID:   "E1",
+			BoundaryID:   "A1",
 			Children:     []string{},
 			TemplateName: "tmpl2",
 		},
@@ -88,7 +89,7 @@ func TestFindRetryNode(t *testing.T) {
 		assert.Nil(t, a)
 	})
 	t.Run("Expect to find retry node has TemplateRef", func(t *testing.T) {
-		node := allNodes["E1"]
-		assert.Equal(t, FindRetryNode(allNodes, "E2"), &node)
+		node := allNodes["B3"]
+		assert.Equal(t, FindRetryNode(allNodes, "C2"), &node)
 	})
 }
