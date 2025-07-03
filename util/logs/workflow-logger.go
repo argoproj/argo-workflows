@@ -109,6 +109,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		logOptions = &corev1.PodLogOptions{}
 	}
 	logCtx.WithField("options", logOptions).Debug("Log options")
+	// todo this should really check if the container name exists in the pod
+	if logOptions.Container == "" {
+		return fmt.Errorf("container name must be specified")
+	}
 
 	// make a copy of requested log options and set timestamps to true, so they can be parsed out later
 	podLogStreamOptions := *logOptions
