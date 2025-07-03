@@ -1,0 +1,54 @@
+# Force delete all pods in the argo namespace except the argo-server, workflow-controller, and the pod running this workflow.
+# This is useful when pods are stuck in a terminating state which prevents Argo from cleaning up after workflow completion / deletion. 
+# Motivated by this dicsussion: https://github.com/argoproj/argo-workflows/discussions/13146
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: delete-argo-pods-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: delete-pods
+        template: delete-pods
+
+  - name: delete-pods
+    nodeSelector:
+      kubernetes.io/os: linux
+    script:
+      image: bitnami/kubectl:latest
+      command: [sh]
+      source: |
+        # Create a temporary directory with appropriate permissions
+        TMP_DIR=$(mktemp -d -t delete-argo-pods-XXXXXXXXXX)
+        echo "Temporary directory created at $TMP_DIR"
+        # Get the list of all pods in the argo namespace
+        kubectl get pods -n argo -o jsonpath='{.items[*].metadata.name}' > $TMP_DIR/all_pods.txt
+        echo "List of all pods:"
+        cat $TMP_DIR/all_pods.txt
+        # Get the name of this workflow pod
+        THIS_POD="{{pod.name}}"
+        echo "This pod: $THIS_POD"
+        # Get the name of the argo-server pod
+        ARGO_SERVER_POD=$(kubectl get pods -n argo -l app=argo-server -o jsonpath='{.items[*].metadata.name}')
+        echo "Argo server pod: $ARGO_SERVER_POD"
+        # Get the name of the workflow-controller pod
+        WORKFLOW_CONTROLLER_POD=$(kubectl get pods -n argo -l app=workflow-controller -o jsonpath='{.items[*].metadata.name}')
+        echo "Workflow controller pod: $WORKFLOW_CONTROLLER_POD"
+        # Exclude argo-server, workflow-controller, and this pod from the list
+        PODS_TO_DELETE=$(cat $TMP_DIR/all_pods.txt | tr ' ' '\n' | grep -v -e "$THIS_POD" -e "$ARGO_SERVER_POD" -e "$WORKFLOW_CONTROLLER_POD")
+        echo "Pods to delete: $PODS_TO_DELETE"
+        # Output the pods to delete
+        echo $PODS_TO_DELETE > /tmp/pods_to_delete.txt
+        echo "Text file containing pods to delete:"
+        cat /tmp/pods_to_delete.txt
+
+        echo "Starting pod deletion..."
+        #cat "/tmp/pods_to_delete.txt"
+        for pod in $(cat /tmp/pods_to_delete.txt); do
+          echo "Deleting pod: $pod"
+          kubectl delete pod $pod -n argo --force --grace-period=0
+        done
+        echo "Pod deletion completed."
