@@ -3640,6 +3640,25 @@ definitions:
             key:
                 description: Key is the key in the bucket where the artifact resides
                 type: string
+            multipartConcurrency:
+                description: |-
+                    MultipartConcurrency is the number of concurrent multipart uploads.
+                    If not set, defaults to 4.
+                format: int32
+                type: integer
+            multipartPartSize:
+                description: |-
+                    MultipartPartSize is the size of each part in a multipart upload (in bytes).
+                    If not set, defaults to 5MB (5242880 bytes).
+                    Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes).
+                format: int64
+                type: integer
+            parallelTransfers:
+                description: |-
+                    ParallelTransfers is the number of parallel transfers to use for S3 operations.
+                    If not set, defaults to 1.
+                format: int32
+                type: integer
             region:
                 description: Region contains the optional bucket region
                 type: string

@@ -10,8 +10,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -30,6 +30,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/file"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common/pool"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	executorretry "github.com/argoproj/argo-workflows/v3/workflow/executor/retry"
 )
@@ -89,20 +90,23 @@ const (
 )
 
 type S3ClientOpts struct {
-	Endpoint        string
-	AddressingStyle AddressingStyle
-	Region          string
-	Secure          bool
-	Transport       http.RoundTripper
-	AccessKey       string
-	SecretKey       string
-	SessionToken    string
-	Trace           bool
-	RoleARN         string
-	RoleSessionName string
-	UseSDKCreds     bool
-	EncryptOpts     EncryptOpts
-	SendContentMd5  bool
+	Endpoint             string
+	AddressingStyle      AddressingStyle
+	Region               string
+	Secure               bool
+	Transport            http.RoundTripper
+	AccessKey            string
+	SecretKey            string
+	SessionToken         string
+	Trace                bool
+	RoleARN              string
+	RoleSessionName      string
+	UseSDKCreds          bool
+	EncryptOpts          EncryptOpts
+	SendContentMd5       bool
+	ParallelTransfers    int
+	MultipartPartSize    int64
+	MultipartConcurrency int
 }
 
 type s3client struct {
@@ -129,6 +133,10 @@ type ArtifactDriver struct {
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
+	// Worker pool configuration
+	ParallelTransfers    int
+	MultipartPartSize    int64
+	MultipartConcurrency int
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
@@ -151,8 +159,18 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
-		SendContentMd5: true,
+		SendContentMd5:       true,
+		ParallelTransfers:    s3Driver.ParallelTransfers,
+		MultipartPartSize:    s3Driver.MultipartPartSize,
+		MultipartConcurrency: s3Driver.MultipartConcurrency,
 	}
+
+	log.WithFields(log.Fields{
+		"endpoint":             s3Driver.Endpoint,
+		"parallelTransfers":    s3Driver.ParallelTransfers,
+		"multipartPartSize":    s3Driver.MultipartPartSize,
+		"multipartConcurrency": s3Driver.MultipartConcurrency,
+	}).Info("Creating S3 client with configuration")
 
 	if tr, err := GetDefaultTransport(opts); err == nil {
 		if s3Driver.Secure && s3Driver.TrustedCA != "" {
@@ -511,7 +529,12 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 		return err
 	}
 
-	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts})
+	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, minio.PutObjectOptions{
+		SendContentMd5:       s.SendContentMd5,
+		ServerSideEncryption: encOpts,
+		PartSize:             uint64(s.MultipartPartSize),
+		NumThreads:           uint(s.MultipartConcurrency),
+	})
 	if err != nil {
 		return err
 	}
@@ -536,49 +559,91 @@ func (s *s3client) MakeBucket(bucketName string, opts minio.MakeBucketOptions) e
 	return err
 }
 
-type uploadTask struct {
-	key  string
-	path string
-}
-
-func generatePutTasks(keyPrefix, rootPath string) chan uploadTask {
-	rootPath = filepath.Clean(rootPath) + string(os.PathSeparator)
-	uploadTasks := make(chan uploadTask)
-	go func() {
-		_ = filepath.Walk(rootPath, func(localPath string, fi os.FileInfo, err error) error {
-			if err != nil {
-				log.WithFields(log.Fields{"localPath": localPath}).Error("Failed to walk artifacts path", err)
-				return err
-			}
-			relPath := strings.TrimPrefix(localPath, rootPath)
-			if fi.IsDir() {
-				return nil
-			}
-			if fi.Mode()&os.ModeSymlink != 0 {
-				return nil
-			}
-			t := uploadTask{
-				key:  path.Join(keyPrefix, relPath),
-				path: localPath,
-			}
-			uploadTasks <- t
-			return nil
-		})
-		close(uploadTasks)
-	}()
-	return uploadTasks
-}
-
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
 func (s *s3client) PutDirectory(bucket, key, path string) error {
-	for putTask := range generatePutTasks(key, path) {
-		err := s.PutFile(bucket, putTask.key, putTask.path)
-		if err != nil {
-			return err
-		}
+	// Ensure the path exists and is a directory
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("failed to stat directory %s: %v", path, err)
 	}
-	return nil
+	if !info.IsDir() {
+		return fmt.Errorf("path %s is not a directory", path)
+	}
+
+	// Create a task producer that streams files as they're discovered
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		return filepath.Walk(path, func(fpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			// Calculate relative path from root
+			relPath, err := filepath.Rel(path, fpath)
+			if err != nil {
+				return fmt.Errorf("failed to get relative path: %v", err)
+			}
+
+			// Convert to S3-style path
+			s3Path := filepath.ToSlash(relPath)
+			if key != "" {
+				s3Path = filepath.ToSlash(filepath.Join(key, s3Path))
+			}
+
+			task := pool.Task{
+				SourcePath: fpath,
+				DestKey:    s3Path,
+				IsUpload:   true,
+			}
+
+			// Stream the task to workers
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+				return nil
+			}
+		})
+	}
+
+	// Run parallel uploads using streaming approach
+	parallelWorkers := s.getParallelTransfers()
+	log.WithFields(log.Fields{
+		"parallelWorkers": parallelWorkers,
+		"bucket":          bucket,
+		"key":             key,
+		"path":            path,
+	}).Info("Starting parallel upload with workers")
+
+	return pool.RunPoolStreaming(s.ctx, parallelWorkers, producer, func(t pool.Task) error {
+		// Get encryption options for this specific file
+		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.DestKey)
+		if err != nil {
+			return fmt.Errorf("failed to build encryption options: %v", err)
+		}
+
+		// Configure upload options
+		opts := minio.PutObjectOptions{
+			SendContentMd5:       s.SendContentMd5,
+			ServerSideEncryption: encOpts,
+			PartSize:             uint64(s.MultipartPartSize),
+			NumThreads:           uint(s.MultipartConcurrency),
+		}
+
+		log.WithFields(log.Fields{
+			"endpoint":    s.Endpoint,
+			"bucket":      bucket,
+			"key":         t.DestKey,
+			"path":        t.SourcePath,
+			"goroutineID": fmt.Sprintf("goroutine-%d", runtime.NumGoroutine()),
+		}).Info("Saving file to s3")
+
+		_, err = s.minioClient.FPutObject(s.ctx, bucket, t.DestKey, t.SourcePath, opts)
+		return err
+	})
 }
 
 // GetFile downloads a file to a local file path
@@ -645,26 +710,71 @@ func (s *s3client) Delete(bucket, key string) error {
 // GetDirectory downloads a s3 directory to a local path
 func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 	log.WithFields(log.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info("Getting directory from s3")
-	keys, err := s.ListDirectory(bucket, keyPrefix)
-	if err != nil {
-		return err
-	}
 
-	for _, objKey := range keys {
-		relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
-		localPath := filepath.Join(path, relKeyPath)
-
-		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, objKey)
-		if err != nil {
-			return err
+	// Create a task producer that streams S3 objects as they're discovered
+	producer := func(ctx context.Context, taskCh chan<- pool.Task) error {
+		// Use the streaming ListDirectory approach to avoid loading all keys into memory
+		if keyPrefix != "" {
+			keyPrefix = filepath.Clean(keyPrefix) + "/"
+			if os.PathSeparator == '\\' {
+				keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
+			}
 		}
 
-		err = s.minioClient.FGetObject(s.ctx, bucket, objKey, localPath, minio.GetObjectOptions{ServerSideEncryption: encOpts})
-		if err != nil {
-			return err
+		listOpts := minio.ListObjectsOptions{
+			Prefix:    keyPrefix,
+			Recursive: true,
 		}
+		objCh := s.minioClient.ListObjects(ctx, bucket, listOpts)
+		for obj := range objCh {
+			if obj.Err != nil {
+				return obj.Err
+			}
+			if strings.HasSuffix(obj.Key, "/") {
+				// Skip directory objects created by AWS S3 console
+				continue
+			}
+
+			relKeyPath := strings.TrimPrefix(obj.Key, keyPrefix)
+			localPath := filepath.Join(path, relKeyPath)
+
+			// Create directory if needed
+			dirPath := filepath.Dir(localPath)
+			if err := os.MkdirAll(dirPath, 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+			}
+
+			task := pool.Task{
+				SourcePath: obj.Key,
+				DestKey:    localPath,
+				IsUpload:   false,
+			}
+
+			// Stream the task to workers
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case taskCh <- task:
+			}
+		}
+		return nil
 	}
-	return nil
+
+	// Run parallel downloads using streaming approach
+	return pool.RunPoolStreaming(s.ctx, s.getParallelTransfers(), producer, func(t pool.Task) error {
+		// Get encryption options for this specific file
+		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, t.SourcePath)
+		if err != nil {
+			return fmt.Errorf("failed to build encryption options: %v", err)
+		}
+
+		// Configure download options
+		opts := minio.GetObjectOptions{
+			ServerSideEncryption: encOpts,
+		}
+
+		return s.minioClient.FGetObject(s.ctx, bucket, t.SourcePath, t.DestKey, opts)
+	})
 }
 
 // IsDirectory tests if the key is acting like a s3 directory. This just means it has at least one
@@ -814,4 +924,23 @@ func parseKMSEncCntx(kmsEncCntx string) (*string, error) {
 	parsedKMSEncryptionContext := base64.StdEncoding.EncodeToString(jsonKMSEncryptionContext)
 
 	return &parsedKMSEncryptionContext, nil
+}
+
+// getParallelTransfers returns the number of parallel transfers to use
+func (s *s3client) getParallelTransfers() int {
+	// Use configured value if set
+	if s.ParallelTransfers > 0 {
+		log.WithFields(log.Fields{
+			"parallelTransfers": s.ParallelTransfers,
+			"source":            "configured",
+		}).Info("Using configured ParallelTransfers")
+		return s.ParallelTransfers
+	}
+
+	// Default to 1 to match existing behavior
+	log.WithFields(log.Fields{
+		"parallelTransfers": 1,
+		"source":            "default",
+	}).Info("Using default ParallelTransfers")
+	return 1
 }
