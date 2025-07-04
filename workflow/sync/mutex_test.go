@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,6 +113,7 @@ status:
 
 func TestMutexLock(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
@@ -120,6 +123,7 @@ func TestMutexLock(t *testing.T) {
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
 		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
 		syncManager.Initialize(ctx, wfList.Items)
@@ -202,7 +206,7 @@ func TestMutexLock(t *testing.T) {
 		require.NotNil(t, wf2.Status.Synchronization)
 		require.NotNil(t, wf2.Status.Synchronization.Mutex)
 		assert.Equal(t, getHolderKey(wf2, ""), wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 
@@ -288,7 +292,7 @@ func TestMutexLock(t *testing.T) {
 		require.NotNil(t, wf2.Status.Synchronization.Mutex)
 		expected = getHolderKey(wf2, "")
 		assert.Equal(t, expected, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 }
@@ -394,6 +398,7 @@ status:
 
 func TestMutexTmplLevel(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	kube := fake.NewSimpleClientset()
 
 	syncLimitFunc := GetSyncLimitFunc(kube)

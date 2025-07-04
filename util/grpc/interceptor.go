@@ -5,9 +5,11 @@ import (
 	"runtime/debug"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/sirupsen/logrus"
 
-	log "github.com/sirupsen/logrus"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -18,7 +20,7 @@ import (
 )
 
 // PanicLoggerUnaryServerInterceptor returns a new unary server interceptor for recovering from panics and returning error
-func PanicLoggerUnaryServerInterceptor(log *log.Entry) grpc.UnaryServerInterceptor {
+func PanicLoggerUnaryServerInterceptor(log *logrus.Entry) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -31,7 +33,7 @@ func PanicLoggerUnaryServerInterceptor(log *log.Entry) grpc.UnaryServerIntercept
 }
 
 // PanicLoggerStreamServerInterceptor returns a new streaming server interceptor for recovering from panics and returning error
-func PanicLoggerStreamServerInterceptor(log *log.Entry) grpc.StreamServerInterceptor {
+func PanicLoggerStreamServerInterceptor(log *logrus.Entry) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -66,7 +68,7 @@ func SetVersionHeaderUnaryServerInterceptor(version wfv1.Version) grpc.UnaryServ
 			// Don't set header if there was an error because attackers could use it to find vulnerable Argo servers
 			err := grpc.SetHeader(ctx, metadata.Pairs(ArgoVersionHeader, version.Version))
 			if err != nil {
-				log.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
+				logrus.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
 			}
 		}
 		return m, origErr
@@ -81,7 +83,11 @@ func SetVersionHeaderStreamServerInterceptor(version wfv1.Version) grpc.StreamSe
 			// Don't set header if there was an error because attackers could use it to find vulnerable Argo servers
 			err := ss.SetHeader(metadata.Pairs(ArgoVersionHeader, version.Version))
 			if err != nil {
-				log.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
+				ctx := context.Background()
+				ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+				log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+				ctx = logging.WithLogger(ctx, log)
+				log.Warnf(ctx, "Failed to set header '%s': %s", ArgoVersionHeader, err)
 			}
 		}
 		return origErr
@@ -103,8 +109,9 @@ func RatelimitUnaryServerInterceptor(ratelimiter limiter.Store) grpc.UnaryServer
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ip := getClientIP(ctx)
 		_, _, _, ok, err := ratelimiter.Take(ctx, ip)
+		log := logging.GetLoggerFromContext(ctx)
 		if err != nil {
-			log.Warnf("Internal Server Error: %s", err)
+			log.Warnf(ctx, "Internal Server Error: %s", err)
 			return nil, status.Errorf(codes.Internal, "%s: grpc_ratelimit middleware internal error", info.FullMethod)
 		}
 		if !ok {
@@ -119,9 +126,10 @@ func RatelimitStreamServerInterceptor(ratelimiter limiter.Store) grpc.StreamServ
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := stream.Context()
 		ip := getClientIP(ctx)
+		log := logging.GetLoggerFromContext(ctx)
 		_, _, _, ok, err := ratelimiter.Take(ctx, ip)
 		if err != nil {
-			log.Warnf("Internal Server Error: %s", err)
+			log.Warnf(ctx, "Internal Server Error: %s", err)
 			return status.Errorf(codes.Internal, "%s: grpc_ratelimit middleware internal error", info.FullMethod)
 		}
 		if !ok {
@@ -131,11 +139,44 @@ func RatelimitStreamServerInterceptor(ratelimiter limiter.Store) grpc.StreamServ
 	}
 }
 
+// LoggerUnaryServerInterceptor adds a logger to the context
+func LoggerUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if logging.GetLoggerFromContext(ctx) == nil {
+			ctx = logging.WithLogger(ctx, logging.GetDefaultLogger())
+		}
+		return handler(ctx, req)
+	}
+}
+
+// LoggerStreamServerInterceptor adds a logger to the context for streaming requests
+func LoggerStreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := ss.Context()
+		if logging.GetLoggerFromContext(ctx) == nil {
+			ctx = logging.WithLogger(ctx, logging.GetDefaultLogger())
+			ss = &loggerServerStream{ServerStream: ss, ctx: ctx}
+		}
+		return handler(srv, ss)
+	}
+}
+
+// loggerServerStream wraps grpc.ServerStream to override Context()
+type loggerServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (l *loggerServerStream) Context() context.Context {
+	return l.ctx
+}
+
 // GetClientIP inspects the context to retrieve the ip address of the client
 func getClientIP(ctx context.Context) string {
 	p, ok := peer.FromContext(ctx)
+	log := logging.GetLoggerFromContext(ctx)
 	if !ok {
-		log.Warnf("couldn't parse client IP address")
+		log.Warnf(ctx, "couldn't parse client IP address")
 		return ""
 	}
 	address := p.Addr.String()

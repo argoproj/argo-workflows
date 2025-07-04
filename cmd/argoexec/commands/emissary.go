@@ -20,6 +20,8 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -154,7 +156,20 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 				pid := command.Process.Pid
-				ctx, cancel := context.WithCancel(context.Background())
+				cmdCtx := cmd.Context()
+				if cmdCtx == nil {
+					cmdCtx = context.Background()
+					cmd.SetContext(cmdCtx)
+				}
+
+				log := logging.GetLoggerFromContext(cmdCtx)
+				if log == nil {
+					log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+					cmdCtx = logging.WithLogger(context.Background(), log)
+					cmd.SetContext(cmdCtx)
+				}
+
+				ctx, cancel := context.WithCancel(cmdCtx)
 				defer cancel()
 				go func() {
 					for {

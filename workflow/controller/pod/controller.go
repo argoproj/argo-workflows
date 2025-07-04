@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -25,6 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -52,13 +52,15 @@ type Controller struct {
 	workqueue     workqueue.TypedRateLimitingInterface[string]
 	podInformer   cache.SharedIndexInformer
 	callBack      podEventCallback
-	log           *logrus.Logger
+	log           logging.Logger
 	restConfig    *rest.Config
 }
 
 // NewController creates a pod controller
 func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
-	log := logrus.New()
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	log = log.WithField("component", "pod_controller")
+	ctx = logging.WithLogger(ctx, log)
 	podController := &Controller{
 		config:        config,
 		kubeclientset: clientSet,
@@ -75,10 +77,10 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 			AddFunc: func(obj interface{}) {
 				pod, err := podFromObj(obj)
 				if err != nil {
-					log.WithError(err).Error("object from informer wasn't a pod")
+					log.WithError(err).Error(ctx, "object from informer wasn't a pod")
 					return
 				}
-				podController.addPodEvent(pod)
+				podController.addPodEvent(ctx, pod)
 			},
 			UpdateFunc: func(old, newVal interface{}) {
 				key, err := keyFunc(newVal)
@@ -90,14 +92,14 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 					return
 				}
 				if !significantPodChange(oldPod, newPod) {
-					log.WithField("key", key).Info("insignificant pod change")
-					diff.LogChanges(oldPod, newPod)
+					log.WithField("key", key).Info(ctx, "insignificant pod change")
+					diff.LogChanges(ctx, oldPod, newPod)
 					return
 				}
-				podController.updatePodEvent(oldPod, newPod)
+				podController.updatePodEvent(ctx, oldPod, newPod)
 			},
 			DeleteFunc: func(obj interface{}) {
-				podController.deletePodEvent(obj)
+				podController.deletePodEvent(ctx, obj)
 			},
 		},
 	)
@@ -125,13 +127,13 @@ func (c *Controller) Run(ctx context.Context, workers int) {
 }
 
 // GetPodPhaseMetrics obtains pod metrics
-func (c *Controller) GetPodPhaseMetrics() map[string]int64 {
+func (c *Controller) GetPodPhaseMetrics(ctx context.Context) map[string]int64 {
 	result := make(map[string]int64, 0)
 	if c.podInformer != nil {
 		for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
 			objs, err := c.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 			if err != nil {
-				c.log.WithError(err).Errorf("failed to  list pods in phase %s", phase)
+				c.log.WithError(err).Errorf(ctx, "failed to  list pods in phase %s", phase)
 			} else {
 				result[string(phase)] = int64(len(objs))
 			}
@@ -141,7 +143,7 @@ func (c *Controller) GetPodPhaseMetrics() map[string]int64 {
 }
 
 // Check if owned pod's workflow no longer exists or workflow is in deletion
-func (c *Controller) podOrphaned(pod *apiv1.Pod) bool {
+func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 	controllerRef := metav1.GetControllerOf(pod)
 	// Pod had no owner
 	if controllerRef == nil ||
@@ -149,22 +151,22 @@ func (c *Controller) podOrphaned(pod *apiv1.Pod) bool {
 		return false
 	}
 	wfOwnerKey := fmt.Sprintf("%s/%s", pod.Namespace, controllerRef.Name)
-	logCtx := c.log.WithFields(logrus.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "podName": pod.Name})
+	logCtx := c.log.WithFields(logging.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "podName": pod.Name})
 	obj, wfExists, err := c.wfInformer.GetIndexer().GetByKey(wfOwnerKey)
 	if err != nil {
-		logCtx.Warn("failed to get workflow from informer")
+		logCtx.Warn(ctx, "failed to get workflow from informer")
 	}
 	if !wfExists {
 		return true
 	}
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		c.log.WithField("pod", pod.Name).Warn("workflow is not an unstructured")
+		c.log.WithField("pod", pod.Name).Warn(ctx, "workflow is not an unstructured")
 		return true
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		c.log.WithField("pod", pod.Name).Warn("workflow unstructured can't be converted to a workflow")
+		c.log.WithField("pod", pod.Name).Warn(ctx, "workflow unstructured can't be converted to a workflow")
 		return true
 	}
 	return wf.DeletionTimestamp != nil
@@ -190,7 +192,7 @@ func podLastTransition(pod *apiv1.Pod) time.Time {
 }
 
 // A common handler for
-func (c *Controller) commonPodEvent(pod *apiv1.Pod, deleting bool) {
+func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deleting bool) {
 	// All pods here are not marked completed
 	action := noAction
 	minimumDelay := time.Duration(0)
@@ -198,11 +200,11 @@ func (c *Controller) commonPodEvent(pod *apiv1.Pod, deleting bool) {
 	switch {
 	case deleting:
 		if hasOurFinalizer(pod.Finalizers) {
-			c.log.WithFields(logrus.Fields{"pod.Finalizers": pod.Finalizers}).Info("Removing finalizers during a delete")
+			c.log.WithFields(logging.Fields{"pod.Finalizers": pod.Finalizers}).Info(ctx, "Removing finalizers during a delete")
 			action = removeFinalizer
 			minimumDelay = time.Duration(2 * time.Minute)
 		}
-	case c.podOrphaned(pod):
+	case c.podOrphaned(ctx, pod):
 		if hasOurFinalizer(pod.Finalizers) {
 			action = removeFinalizer
 		}
@@ -226,57 +228,57 @@ func (c *Controller) commonPodEvent(pod *apiv1.Pod, deleting bool) {
 		if !lastTransition.IsZero() && delayDuration > 0 {
 			delay = time.Until(lastTransition.Add(delayDuration))
 		}
-		c.log.WithFields(logrus.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC}).Info("queuing pod", "delay", delay)
+		c.log.WithFields(logging.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC}).Infof(ctx, "queuing pod delay: %s", delay)
 		switch {
 		case delay > 0:
-			c.queuePodForCleanupAfter(pod.Namespace, pod.Name, action, delay)
+			c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
 		default:
-			c.queuePodForCleanup(pod.Namespace, pod.Name, action)
+			c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action)
 		}
 	}
 }
 
-func (c *Controller) addPodEvent(pod *apiv1.Pod) {
-	c.log.WithField("pod", pod.Name).Info("add pod event")
+func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
+	c.log.WithField("pod", pod.Name).Info(ctx, "add pod event")
 	err := c.callBack(pod)
 	if err != nil {
-		c.log.WithField("pod", pod.Name).Warn("callback for pod add failed")
+		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod add failed")
 	}
-	c.commonPodEvent(pod, false)
+	c.commonPodEvent(ctx, pod, false)
 }
 
-func (c *Controller) updatePodEvent(old *apiv1.Pod, new *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, new *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
-	c.log.WithField("pod", old.Name).Info("update pod event")
+	c.log.WithField("pod", old.Name).Info(ctx, "update pod event")
 	err := c.callBack(new)
 	if err != nil {
-		c.log.WithField("pod", new.Name).Warn("callback for pod update failed")
+		c.log.WithField("pod", new.Name).Warn(ctx, "callback for pod update failed")
 	}
-	c.commonPodEvent(new, false)
+	c.commonPodEvent(ctx, new, false)
 }
 
-func (c *Controller) deletePodEvent(obj interface{}) {
+func (c *Controller) deletePodEvent(ctx context.Context, obj interface{}) {
 	pod, err := podFromObj(obj)
 	if err != nil {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			c.log.Info("error obtaining pod object from tombstone")
+			c.log.Info(ctx, "error obtaining pod object from tombstone")
 			return
 		}
 		pod, ok = tombstone.Obj.(*apiv1.Pod)
 		if !ok {
-			c.log.Warn("deleted pod last known state not a pod")
+			c.log.Warn(ctx, "deleted pod last known state not a pod")
 			return
 		}
 	}
-	c.log.WithField("pod", pod.Name).Info("delete pod event")
+	c.log.WithField("pod", pod.Name).Info(ctx, "delete pod event")
 	// enqueue the workflow for the deleted pod
 	err = c.callBack(pod)
 	if err != nil {
-		c.log.WithField("pod", pod.Name).Warn("callback for pod delete failed")
+		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod delete failed")
 	}
 	// Backstop to remove finalizer if it hasn't already happened, our last chance
-	c.commonPodEvent(pod, true)
+	c.commonPodEvent(ctx, pod, true)
 }
 
 func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) *cache.ListWatch {

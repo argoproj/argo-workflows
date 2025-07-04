@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/event/dispatch"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -51,7 +52,10 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationQueue {
-				_ = operation.Dispatch(context.Background())
+				ctx := operation.Context()
+				log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+				ctx = logging.WithLogger(ctx, log)
+				_ = operation.Dispatch(ctx)
 			}
 		}()
 		wg.Add(1)

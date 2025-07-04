@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -77,7 +79,17 @@ func NewAgentMainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return initAgentExecutor().Agent(context.Background())
+			if cmd.Context() == nil {
+				ctx := context.Background()
+				cmd.SetContext(ctx)
+			}
+			log := logging.GetLoggerFromContext(cmd.Context())
+			if log == nil {
+				log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+				ctx := logging.WithLogger(cmd.Context(), log)
+				cmd.SetContext(ctx)
+			}
+			return initAgentExecutor().Agent(cmd.Context())
 		},
 	}
 }
@@ -90,7 +102,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, "agent Executor"))
 
-	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	logs.AddK8SLogTransportWrapper(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)

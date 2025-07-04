@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +16,7 @@ import (
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 )
@@ -111,18 +111,18 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	}()
 
 	namespace, podName, action := parsePodCleanupKey(podCleanupKey(key))
-	logCtx := c.log.WithFields(logrus.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName})
-	logCtx.Info("cleaning up pod")
+	logCtx := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName})
+	logCtx.Info(ctx, "cleaning up pod")
 	err := func() error {
 		switch action {
 		case terminateContainers:
 			pod, err := c.GetPod(namespace, podName)
 			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
-				c.queuePodForCleanup(namespace, podName, deletePod)
+				c.queuePodForCleanup(ctx, namespace, podName, deletePod)
 			} else if terminationGracePeriod, err := c.signalContainers(ctx, namespace, podName, syscall.SIGTERM); err != nil {
 				return err
 			} else if terminationGracePeriod > 0 {
-				c.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
+				c.queuePodForCleanupAfter(ctx, namespace, podName, killContainers, terminationGracePeriod)
 			}
 		case killContainers:
 			if _, err := c.signalContainers(ctx, namespace, podName, syscall.SIGKILL); err != nil {
@@ -155,26 +155,28 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		return nil
 	}()
 	if err != nil {
-		logCtx.WithError(err).Warn("failed to clean-up pod")
-		if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) {
+		logCtx.WithError(err).Warn(ctx, "failed to clean-up pod")
+		bgCtx := context.Background()
+		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		if errorsutil.IsTransientErr(bgCtx, err) || apierr.IsConflict(err) {
 			c.workqueue.AddRateLimited(key)
 		}
 	}
 	return true
 }
 
-func (c *Controller) queuePodForCleanup(namespace string, podName string, action podCleanupAction) {
-	c.log.WithFields(logrus.Fields{"namespace": namespace, "podName": podName, "action": action}).Info("queueing pod for cleanup")
+func (c *Controller) queuePodForCleanup(ctx context.Context, namespace string, podName string, action podCleanupAction) {
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Info(ctx, "queueing pod for cleanup")
 	c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
-func (c *Controller) queuePodForCleanupAfter(namespace string, podName string, action podCleanupAction, duration time.Duration) {
-	logCtx := c.log.WithFields(logrus.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
+func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace string, podName string, action podCleanupAction, duration time.Duration) {
+	logCtx := c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
 	if duration > 0 {
-		logCtx.Info("queueing pod for cleanup after")
+		logCtx.Info(ctx, "queueing pod for cleanup after")
 		c.workqueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
 	} else {
-		logCtx.Warn("queueing pod for cleanup now, rather than delayed")
+		logCtx.Warn(ctx, "queueing pod for cleanup now, rather than delayed")
 		c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 	}
 }

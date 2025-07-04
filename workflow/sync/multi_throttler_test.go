@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,6 +76,7 @@ func TestMultiInitWithWorkflows(t *testing.T) {
 	queuedKey := ""
 	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	wfclientset := fakewfclientset.NewSimpleClientset(
 		wfv1.MustUnmarshalWorkflow(`

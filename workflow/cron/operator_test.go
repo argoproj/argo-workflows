@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/util/humanize"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -58,14 +58,16 @@ var scheduledWf = `
 func TestRunOutstandingWorkflows(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	var toWait time.Duration
 	if sec <= 30 {
 		toWait = time.Duration(30-sec) * time.Second
 	} else {
 		toWait = time.Duration(90-sec) * time.Second
 	}
-	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	logger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, logger)
+	logger.Infof(ctx, "Waiting %s to start", humanize.Duration(toWait))
 	time.Sleep(toWait)
 
 	var cronWf v1alpha1.CronWorkflow
@@ -78,7 +80,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(35))
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
@@ -90,7 +92,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(25))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
 	require.NoError(t, err)
@@ -116,7 +118,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(35))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
@@ -129,7 +131,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(25))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
 	require.NoError(t, err)
@@ -175,14 +177,16 @@ status:
 func TestRunOutstandingWorkflowsAcrossTimezones(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	var toWait time.Duration
 	if sec <= 30 {
 		toWait = time.Duration(30-sec) * time.Second
 	} else {
 		toWait = time.Duration(90-sec) * time.Second
 	}
-	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	logger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, logger)
+	logger.Infof(ctx, "Waiting %s to start", humanize.Duration(toWait))
 	time.Sleep(toWait)
 
 	const testLocation = "Pacific/Auckland"
@@ -194,7 +198,7 @@ func TestRunOutstandingWorkflowsAcrossTimezones(t *testing.T) {
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(-24*time.Hour + -1*time.Minute)}
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
@@ -211,7 +215,7 @@ func TestRunOutstandingWorkflowsAcrossTimezones(t *testing.T) {
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(-24*time.Hour + -1*time.Minute)}
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
@@ -260,14 +264,17 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(invalidWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, err := metrics.New(context.Background(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:            &cronWf,
-		log:               logrus.WithFields(logrus.Fields{}),
+		log:               logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 	}
@@ -316,15 +323,17 @@ func TestSpecError(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(specError), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:      &cronWf,
-		log:         logrus.WithFields(logrus.Fields{}),
+		log:         log,
 		metrics:     testMetrics,
 	}
 
@@ -342,18 +351,24 @@ func TestScheduleTimeParam(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, _ := metrics.New(context.Background(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, _ := metrics.New(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:            &cronWf,
-		log:               logrus.WithFields(logrus.Fields{}),
+		log:               logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 	}
 	woc.Run()
-	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
+	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), v1.ListOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, wsl.Items.Len())
 	wf := wsl.Items[0]
@@ -390,18 +405,23 @@ spec:
 
 func TestLastUsedSchedule(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	v1alpha1.MustUnmarshal([]byte(lastUsedSchedule), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, err := metrics.New(context.Background(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:            &cronWf,
-		log:               logrus.WithFields(logrus.Fields{}),
+		log:               log,
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 	}
@@ -465,7 +485,9 @@ status:
 `
 
 func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	var cronWf v1alpha1.CronWorkflow
 	v1alpha1.MustUnmarshal([]byte(forbidMissedSchedule), &cronWf)
 	// StartingDeadlineSeconds is after the current second, so cron should be run
@@ -475,7 +497,7 @@ func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 		cronWf.Spec.StartingDeadlineSeconds = nil
 		woc := &cronWfOperationCtx{
 			cronWf: &cronWf,
-			log:    logrus.WithFields(logrus.Fields{}),
+			log:    log,
 		}
 		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
@@ -524,19 +546,25 @@ func TestMultipleSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(multipleSchedulesWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, err := metrics.New(context.Background(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:            &cronWf,
-		log:               logrus.WithFields(logrus.Fields{}),
+		log:               logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 	}
 	woc.Run()
-	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
+	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), v1.ListOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, wsl.Items.Len())
 	wf := wsl.Items[0]
@@ -586,15 +614,17 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(specErrWithScheduleAndSchedules), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:      &cronWf,
-		log:         logrus.WithFields(logrus.Fields{}),
+		log:         log,
 		metrics:     testMetrics,
 	}
 
@@ -647,15 +677,17 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(specErrWithValidAndInvalidSchedules), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, log)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
 		cronWf:      &cronWf,
-		log:         logrus.WithFields(logrus.Fields{}),
+		log:         log,
 		metrics:     testMetrics,
 	}
 
@@ -672,14 +704,16 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	var toWait time.Duration
 	if sec <= 30 {
 		toWait = time.Duration(30-sec) * time.Second
 	} else {
 		toWait = time.Duration(90-sec) * time.Second
 	}
-	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	logger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx = logging.WithLogger(ctx, logger)
+	logger.Infof(ctx, "Waiting %s to start", humanize.Duration(toWait))
 	time.Sleep(toWait)
 
 	var cronWf v1alpha1.CronWorkflow
@@ -693,7 +727,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
@@ -706,7 +740,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
 	require.NoError(t, err)
@@ -733,7 +767,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
@@ -747,7 +781,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
-		log:    logrus.WithFields(logrus.Fields{}),
+		log:    logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun(ctx)
 	require.NoError(t, err)

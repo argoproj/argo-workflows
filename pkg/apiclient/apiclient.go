@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -14,6 +13,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Client interface {
@@ -44,7 +44,7 @@ func (o Opts) String() string {
 
 func (o *Opts) GetContext() context.Context {
 	if o.Context == nil {
-		o.Context = context.Background()
+		o.Context = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	}
 
 	return o.Context
@@ -58,12 +58,21 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 		ClientConfigSupplier: func() clientcmd.ClientConfig {
 			return clientConfig
 		},
-		Context: context.Background(),
+		Context: logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())),
 	})
 }
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	log.WithField("opts", opts).Debug("Client options")
+	ctx := opts.GetContext()
+	if ctx == nil {
+		panic("ctx was nil mate")
+	}
+	log := logging.GetLoggerFromContext(ctx)
+	if log == nil {
+		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		ctx = logging.WithLogger(ctx, log)
+	}
+	log.WithField("opts", opts).Debug(ctx, "Client options")
 	if opts.Offline {
 		return newOfflineClient(opts.OfflineFiles)
 	}
