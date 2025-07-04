@@ -17,7 +17,7 @@ Check the [upgrading guide](https://argo-workflows.readthedocs.io/en/latest/upgr
 Available via `curl`
 
 ```bash
-ARGO_OS=$(uname -s | tr '[:upper:]' '[:lower:]')  # Possible values of `uname -s` are Darwin or Linux, so we lowercase them.
+ARGO_OS=$(uname -s | tr '[:upper:]' '[:lower:]') # Possible values of `uname -s` are Darwin or Linux, so we lowercase them.
 ARGO_ARCH=$(uname -m)
 
 # Download the binary
