@@ -20,6 +20,14 @@ var (
 	lock = &sync.Mutex{}
 )
 
+func fieldsToAttrs(fields Fields) []slog.Attr {
+	attrs := make([]slog.Attr, 0, len(fields))
+	for k, v := range fields {
+		attrs = append(attrs, slog.Any(k, v))
+	}
+	return attrs
+}
+
 // NewSlogLogger returns a slog based logger
 func NewSlogLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
 	return NewSlogLoggerCustom(logLevel, format, os.Stdout, hooks...)
@@ -58,16 +66,14 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 }
 
 func (s *slogLogger) WithFields(fields Fields) Logger {
-	logger := s.logger
-
 	newFields := make(Fields)
+
 	for k, v := range s.fields {
 		newFields[k] = v
-		logger = logger.With(k, v)
 	}
+
 	for k, v := range fields {
 		newFields[k] = v
-		logger = logger.With(k, v)
 	}
 
 	// Copy hooks map
@@ -81,7 +87,7 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 
 	return &slogLogger{
 		fields: newFields,
-		logger: logger,
+		logger: s.logger,
 		hooks:  newHooks,
 		mu:     sync.RWMutex{},
 	}
@@ -90,13 +96,10 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 func (s *slogLogger) WithField(name string, value any) Logger {
 	newFields := make(Fields)
 
-	logger := s.logger
 	for k, v := range s.fields {
 		newFields[k] = v
-		logger = s.logger.With(k, v)
 	}
 
-	logger = logger.With(name, value)
 	newFields[name] = value
 
 	// Copy hooks map
@@ -110,7 +113,7 @@ func (s *slogLogger) WithField(name string, value any) Logger {
 
 	return &slogLogger{
 		fields: newFields,
-		logger: logger,
+		logger: s.logger,
 		hooks:  newHooks,
 		mu:     sync.RWMutex{},
 	}
@@ -143,7 +146,7 @@ func (s *slogLogger) Info(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Info, msg)
-	s.logger.InfoContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelInfo, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Infof(ctx context.Context, format string, args ...any) {
@@ -159,7 +162,7 @@ func (s *slogLogger) Warn(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Warn, msg)
-	s.logger.WarnContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelWarn, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Warnf(ctx context.Context, format string, args ...any) {
@@ -175,7 +178,7 @@ func (s *slogLogger) Fatal(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Fatal, msg)
-	s.logger.ErrorContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelError, msg, fieldsToAttrs(s.fields)...)
 	os.Exit(1)
 }
 
@@ -192,7 +195,7 @@ func (s *slogLogger) Error(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Error, msg)
-	s.logger.ErrorContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelError, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Errorf(ctx context.Context, format string, args ...any) {
@@ -208,7 +211,7 @@ func (s *slogLogger) Trace(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Debug, msg)
-	s.logger.DebugContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelDebug, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Tracef(ctx context.Context, format string, args ...any) {
@@ -224,7 +227,7 @@ func (s *slogLogger) Debug(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Debug, msg)
-	s.logger.DebugContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelDebug, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Debugf(ctx context.Context, format string, args ...any) {
@@ -240,7 +243,7 @@ func (s *slogLogger) Warning(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Warn, msg)
-	s.logger.WarnContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelWarn, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Warningf(ctx context.Context, format string, args ...any) {
@@ -256,7 +259,7 @@ func (s *slogLogger) Println(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Print, msg)
-	s.logger.InfoContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelInfo, msg, fieldsToAttrs(s.fields)...)
 }
 
 func (s *slogLogger) Printf(ctx context.Context, format string, args ...any) {
@@ -272,7 +275,7 @@ func (s *slogLogger) Panic(ctx context.Context, msg string) {
 		hooks = []Hook{}
 	}
 	s.executeHooks(ctx, hooks, Panic, msg)
-	s.logger.ErrorContext(ctx, msg)
+	s.logger.LogAttrs(ctx, slog.LevelError, msg, fieldsToAttrs(s.fields)...)
 	panic(msg)
 }
 

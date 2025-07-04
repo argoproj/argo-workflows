@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -105,11 +106,17 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 
 // SetLogFormatter sets a log formatter for logrus
 func SetLogFormatter(logFormat string) {
+	timestampFormat := "2006-01-02T15:04:05.000Z"
 	switch strings.ToLower(logFormat) {
 	case "json":
 		logging.SetGlobalFormat(logging.JSON)
+		logrus.SetFormatter(&logrus.JSONFormatter{TimestampFormat: timestampFormat})
 	case "text":
 		logging.SetGlobalFormat(logging.Text)
+		logrus.SetFormatter(&logrus.TextFormatter{
+			TimestampFormat: timestampFormat,
+			FullTimestamp:   true,
+		})
 	default:
 		os.Exit(1)
 	}
