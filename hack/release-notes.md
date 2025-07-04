@@ -17,23 +17,20 @@ Check the [upgrading guide](https://argo-workflows.readthedocs.io/en/latest/upgr
 Available via `curl`
 
 ```bash
-# Detect OS
-ARGO_OS="darwin"
-if [[ "$(uname -s)" != "Darwin" ]]; then
-  ARGO_OS="linux"
-fi
+ARGO_OS=$(uname -s | tr '[:upper:]' '[:lower:]') # Possible values of `uname -s` are Darwin or Linux, so we lowercase them.
+ARGO_ARCH=$(uname -m)
 
 # Download the binary
-curl -sLO "https://github.com/argoproj/argo-workflows/releases/download/$version/argo-$ARGO_OS-amd64.gz"
+curl -sLO "https://github.com/argoproj/argo-workflows/releases/download/$version/argo-$ARGO_OS-$ARGO_ARCH.gz"
 
 # Unzip
-gunzip "argo-$ARGO_OS-amd64.gz"
+gunzip "argo-$ARGO_OS-$ARGO_ARCH.gz"
 
 # Make binary executable
-chmod +x "argo-$ARGO_OS-amd64"
+chmod +x "argo-$ARGO_OS-$ARGO_ARCH"
 
 # Move binary to path
-mv "./argo-$ARGO_OS-amd64" /usr/local/bin/argo
+mv "./argo-$ARGO_OS-$ARGO_ARCH" /usr/local/bin/argo
 
 # Test installation
 argo version
