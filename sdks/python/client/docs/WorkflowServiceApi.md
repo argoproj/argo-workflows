@@ -12128,6 +12128,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization_status=IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus(
                             waiting="waiting_example",
                         ),
+                        task_result_synced=True,
                         template_name="template_name_example",
                         template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                             cluster_scope=True,
@@ -41290,6 +41291,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization_status=IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus(
                             waiting="waiting_example",
                         ),
+                        task_result_synced=True,
                         template_name="template_name_example",
                         template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                             cluster_scope=True,

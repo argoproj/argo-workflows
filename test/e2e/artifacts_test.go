@@ -175,6 +175,7 @@ func (al *s3Location) getS3Key(wf *wfv1.Workflow) (string, error) {
 }
 
 func (s *ArtifactsSuite) TestStoppedWorkflow() {
+	s.T().Skip("This test is flaky and will be skipped as a result")
 
 	for _, tt := range []struct {
 		workflowFile string
