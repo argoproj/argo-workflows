@@ -1,6 +1,9 @@
 package common
 
 import (
+	"fmt"
+	"path"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -284,4 +287,10 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
 	return false
+}
+
+// GenSourceFilePath generates the source file path for a given container runtime type and container name
+// for example, sidecar container name "s1" will generate /argo/staging/sidecar-s1-script
+func GenSourceFilePath(crtType string, containerName string) string {
+	return path.Join(ExecutorStagingEmptyDir, fmt.Sprintf("%s-%s-script", crtType, containerName))
 }

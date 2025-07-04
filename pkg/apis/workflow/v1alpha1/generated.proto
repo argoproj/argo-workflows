@@ -1814,6 +1814,10 @@ message UserContainer {
   // dind daemon to partially see the same filesystem as the main container in
   // order to use features such as docker volume binding
   optional bool mirrorVolumeMounts = 2;
+
+  // Source contains the source code of the script to execute
+  // +optional
+  optional string source = 3;
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter

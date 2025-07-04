@@ -126,6 +126,189 @@ script:
     ls -al
 `
 
+var initContainerWithSource = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: init-container-with-source
+spec:
+  entrypoint: init-container-example
+  templates:
+  - name: init-container-example
+    container:
+      image: alpine:latest
+      command: ["echo", "randomint"]
+    initContainers:
+    - name: python-init
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import random
+        randomint = random.randint(1, 100)
+        print(randomint)
+`
+
+var sidecarWithSource = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sidecar-with-source
+spec:
+  entrypoint: sidecar-example
+  templates:
+  - name: sidecar-example
+    container:
+      image: alpine:latest
+      command: ["echo", "randomint"]
+    sidecars:
+    - name: python-sidecar
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import time
+        time.sleep(3600)
+`
+
+var scriptWithInitContainerUseSource = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: script-with-input-artifact
+    inputs:
+      artifacts:
+      - name: kubectl
+        path: /bin/kubectl
+        http:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+    initContainers:
+    - name: python-init
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import random
+        randomint = random.randint(1, 100)
+        print(randomint)
+    script:
+      image: alpine:latest
+      command: [sh]
+      source: |
+        ls /bin/kubectl
+`
+
+// TestInitContainerWithSource ensure we insert argo staging volume mounts into init containers
+func TestInitContainerWithSource(t *testing.T) {
+	ctx := context.Background()
+	mainCtrSpec := &apiv1.Container{
+		Name:            common.MainContainerName,
+		SecurityContext: &apiv1.SecurityContext{},
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.200"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+		},
+	}
+	stagingVolumeMountForInit := apiv1.VolumeMount{
+		Name:             volName,
+		ReadOnly:         false,
+		MountPath:        common.ExecutorStagingEmptyDir,
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+	stagingVol := apiv1.Volume{
+		Name: volName,
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(initContainerWithSource)
+	woc := newWoc(*wf)
+	woc.controller.Config.MainContainer = mainCtrSpec
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, stagingVolumeMountForInit)
+	assert.Contains(t, pod.Spec.InitContainers[1].VolumeMounts, stagingVolumeMountForInit)
+	assert.Equal(t, "/argo/staging/init-python-init-script", pod.Spec.InitContainers[1].Args[0])
+	assert.Contains(t, pod.Spec.Volumes, stagingVol)
+}
+
+// TestSidecarWithSource ensure we insert argo staging volume mounts into sidecars
+func TestSidecarWithSource(t *testing.T) {
+	ctx := context.Background()
+	mainCtrSpec := &apiv1.Container{
+		Name:            common.MainContainerName,
+		SecurityContext: &apiv1.SecurityContext{},
+	}
+	stagingVolumeMount := apiv1.VolumeMount{
+		Name:             volName,
+		ReadOnly:         false,
+		MountPath:        common.ExecutorStagingEmptyDir,
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+	stagingVol := apiv1.Volume{
+		Name: volName,
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(sidecarWithSource)
+	woc := newWoc(*wf)
+	woc.controller.Config.MainContainer = mainCtrSpec
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Contains(t, pod.Spec.Containers[2].VolumeMounts, stagingVolumeMount)
+	assert.Equal(t, "/argo/staging/sidecar-python-sidecar-script", pod.Spec.Containers[2].Args[0])
+	assert.Contains(t, pod.Spec.Volumes, stagingVol)
+}
+
+// TestScriptWithInitContainerUseSource ensure we insert argo staging volume mounts into init containers and script main container
+func TestScriptWithInitContainerUseSource(t *testing.T) {
+	ctx := context.Background()
+	mainCtrSpec := &apiv1.Container{
+		Name:            common.MainContainerName,
+		SecurityContext: &apiv1.SecurityContext{},
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.200"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+		},
+	}
+	stagingVolumeMount := apiv1.VolumeMount{
+		Name:             volName,
+		ReadOnly:         false,
+		MountPath:        common.ExecutorStagingEmptyDir,
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+	stagingVol := apiv1.Volume{
+		Name: volName,
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(scriptWithInitContainerUseSource)
+	woc := newWoc(*wf)
+	woc.controller.Config.MainContainer = mainCtrSpec
+	mainCtr := woc.execWf.Spec.Templates[0].Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, stagingVolumeMount)
+	assert.Contains(t, pod.Spec.InitContainers[1].VolumeMounts, stagingVolumeMount)
+	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, stagingVolumeMount)
+	assert.Equal(t, "/argo/staging/init-python-init-script", pod.Spec.InitContainers[1].Args[0])
+	assert.Equal(t, "/argo/staging/script", pod.Spec.Containers[1].Args[0])
+	assert.Contains(t, pod.Spec.Volumes, stagingVol)
+}
+
 // TestScriptTemplateWithoutVolumeOptionalArtifact ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	volumeMount := apiv1.VolumeMount{

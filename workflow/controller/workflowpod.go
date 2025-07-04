@@ -49,6 +49,7 @@ var (
 		},
 	}
 	maxEnvVarLen = 131072
+	volName      = "argo-staging"
 )
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
@@ -295,6 +296,42 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	err = woc.addInputArtifactsVolumes(pod, tmpl)
 	if err != nil {
 		return nil, err
+	}
+
+	var foundScript bool
+	for _, c := range tmpl.InitContainers {
+		if len(c.Source) > 0 {
+			foundScript = true
+			break
+		}
+	}
+	for _, c := range tmpl.Sidecars {
+		if len(c.Source) > 0 {
+			foundScript = true
+			break
+		}
+	}
+	foundScript = foundScript || tmpl.GetType() == wfv1.TemplateTypeScript
+
+	if foundScript {
+		stagingVol := apiv1.Volume{
+			Name: volName,
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, stagingVol)
+		for i, initCtr := range pod.Spec.InitContainers {
+			if initCtr.Name == common.InitContainerName {
+				volMount := apiv1.VolumeMount{
+					Name:      volName,
+					MountPath: common.ExecutorStagingEmptyDir,
+				}
+				initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
+				pod.Spec.InitContainers[i] = initCtr
+				break
+			}
+		}
 	}
 
 	if tmpl.GetType() == wfv1.TemplateTypeScript {
@@ -1170,26 +1207,6 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 // addScriptStagingVolume sets up a shared staging volume between the init container
 // and main container for the purpose of holding the script source code for script templates
 func addScriptStagingVolume(pod *apiv1.Pod) {
-	volName := "argo-staging"
-	stagingVol := apiv1.Volume{
-		Name: volName,
-		VolumeSource: apiv1.VolumeSource{
-			EmptyDir: &apiv1.EmptyDirVolumeSource{},
-		},
-	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, stagingVol)
-
-	for i, initCtr := range pod.Spec.InitContainers {
-		if initCtr.Name == common.InitContainerName {
-			volMount := apiv1.VolumeMount{
-				Name:      volName,
-				MountPath: common.ExecutorStagingEmptyDir,
-			}
-			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
-			pod.Spec.InitContainers[i] = initCtr
-			break
-		}
-	}
 	found := false
 	for i, ctr := range pod.Spec.Containers {
 		if ctr.Name == common.MainContainerName {
@@ -1217,6 +1234,13 @@ func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		if mainCtr != nil && ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
 			mirrorVolumeMounts(mainCtr, &ctr.Container)
 		}
+		if len(ctr.Source) > 0 && ctr.Name != common.InitContainerName {
+			ctr.Args = append(ctr.Args, common.GenSourceFilePath("init", ctr.Name))
+			ctr.VolumeMounts = append(ctr.VolumeMounts, apiv1.VolumeMount{
+				Name:      volName,
+				MountPath: common.ExecutorStagingEmptyDir,
+			})
+		}
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
 	}
 }
@@ -1229,6 +1253,13 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		log.Debugf("Adding sidecar container %s", sidecar.Name)
 		if mainCtr != nil && sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
 			mirrorVolumeMounts(mainCtr, &sidecar.Container)
+		}
+		if len(sidecar.Source) > 0 {
+			sidecar.Args = append(sidecar.Args, common.GenSourceFilePath("sidecar", sidecar.Name))
+			sidecar.VolumeMounts = append(sidecar.VolumeMounts, apiv1.VolumeMount{
+				Name:      volName,
+				MountPath: common.ExecutorStagingEmptyDir,
+			})
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}

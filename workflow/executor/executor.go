@@ -266,31 +266,49 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	return nil
 }
 
+type script struct {
+	filePath string
+	body     []byte
+	mode     os.FileMode
+}
+
 // StageFiles will create any files required by script/resource templates
 func (we *WorkflowExecutor) StageFiles() error {
-	var filePath string
-	var body []byte
-	mode := os.FileMode(0o644)
+	var scripts []script
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
 		log.Infof("Loading script source to %s", common.ExecutorScriptSourcePath)
-		filePath = common.ExecutorScriptSourcePath
-		body = []byte(we.Template.Script.Source)
-		mode = os.FileMode(0o755)
+		filePath := common.ExecutorScriptSourcePath
+		scripts = append(scripts, script{filePath, []byte(we.Template.Script.Source), os.FileMode(0o755)})
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
 			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
-			return nil
+			break
 		}
 		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
-		filePath = common.ExecutorResourceManifestPath
-		body = []byte(we.Template.Resource.Manifest)
+		filePath := common.ExecutorResourceManifestPath
+		scripts = append(scripts, script{filePath, []byte(we.Template.Resource.Manifest), os.FileMode(0o644)})
 	default:
-		return nil
 	}
-	err := os.WriteFile(filePath, body, mode)
-	if err != nil {
-		return argoerrs.InternalWrapError(err)
+	for _, ctr := range we.Template.InitContainers {
+		if len(ctr.Source) > 0 {
+			filePath := common.GenSourceFilePath("init", ctr.Name)
+			log.Infof("Loading init container source to %s", filePath)
+			scripts = append(scripts, script{filePath, []byte(ctr.Source), os.FileMode(0o755)})
+		}
+	}
+	for _, ctr := range we.Template.Sidecars {
+		if len(ctr.Source) > 0 {
+			filePath := common.GenSourceFilePath("sidecar", ctr.Name)
+			log.Infof("Loading sidecar source to %s", filePath)
+			scripts = append(scripts, script{filePath, []byte(ctr.Source), os.FileMode(0o755)})
+		}
+	}
+	for _, script := range scripts {
+		err := os.WriteFile(script.filePath, script.body, script.mode)
+		if err != nil {
+			return argoerrs.InternalWrapError(err)
+		}
 	}
 	return nil
 }
