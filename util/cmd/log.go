@@ -3,8 +3,9 @@ package cmd
 import (
 	"log"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/sirupsen/logrus"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // SetLogLevel parses and sets a logrus log level
