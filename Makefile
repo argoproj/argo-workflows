@@ -51,7 +51,15 @@ endif
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
-GOTEST                ?= go test -v -p 20
+TEST_RETRIES          ?= 3
+# gotest function: gotest(packages, name, parameters)
+# packages: passed to gotestsum via --packages parameter
+# name: not used currently
+# parameters: passed to go test after the --
+define gotest
+	mkdir -p test/reports/json
+	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=test/reports/json/$(2).json --format=testname --packages $(1) -- $(3)
+endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
 
@@ -123,6 +131,7 @@ TOOL_OPENAPI_GEN            := $(GOPATH)/bin/openapi-gen
 TOOL_SWAGGER                := $(GOPATH)/bin/swagger
 TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
 TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
+TOOL_GOTESTSUM              := $(GOPATH)/bin/gotestsum
 
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
@@ -400,6 +409,11 @@ $(TOOL_GOIMPORTS): Makefile
 ifneq ($(USE_NIX), true)
 	go install golang.org/x/tools/cmd/goimports@v0.1.7
 endif
+$(TOOL_GOTESTSUM): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install gotest.tools/gotestsum@v1.12.3
+endif
 
 $(TOOL_CLANG_FORMAT):
 ifeq (, $(shell which clang-format))
@@ -523,9 +537,9 @@ lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go
+test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM)
 	go build ./...
-	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-v -p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
@@ -647,25 +661,25 @@ mysql-dump:
 
 test-cli: ./dist/argo
 
-test-%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
+test-%: $(TOOL_GOTESTSUM)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL))
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
-Test%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+Test%: $(TOOL_GOTESTSUM)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
-Benchmark%:
-	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .
+Benchmark%: $(TOOL_GOTESTSUM)
+	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
 # clean
 
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
