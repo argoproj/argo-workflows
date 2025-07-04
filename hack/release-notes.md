@@ -17,8 +17,7 @@ Check the [upgrading guide](https://argo-workflows.readthedocs.io/en/latest/upgr
 Available via `curl`
 
 ```bash
-IS_MAC=$([[ $(uname -s) == "Darwin" ]] && echo "darwin")  # if it's a mac, sets the variable as darwin
-ARGO_OS=${IS_MAC:-"linux"}  # if IS_MAC is not set, defaults to linux
+ARGO_OS=$(uname -s | tr '[:upper:]' '[:lower:]') # Possible values of `uname -s` are Darwin or Linux, so we lowercase them.
 ARGO_ARCH=$(uname -m)
 
 # Download the binary
