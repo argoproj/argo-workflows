@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -23,6 +24,14 @@ func (s *ExamplesSuite) BeforeTest(suiteName, testName string) {
 
 func (s *ExamplesSuite) TestExampleWorkflows() {
 	err := fileutil.WalkManifests("../../examples", func(path string, data []byte) error {
+		// Skip non-workflow files like ConfigMaps, JSON files, PVCs, and ResourceQuotas
+		if strings.Contains(path, "configmaps/") ||
+			strings.HasSuffix(path, ".json") ||
+			strings.HasSuffix(path, "testvolume.yaml") ||
+			strings.HasSuffix(path, "workflow-count-resourcequota.yaml") {
+			return nil
+		}
+
 		wfs, err := common.SplitWorkflowYAMLFile(data, true)
 		if err != nil {
 			s.T().Fatalf("Error parsing %s: %v", path, err)
