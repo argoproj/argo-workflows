@@ -663,6 +663,15 @@ data:
         name: my-minio-cred
         key: secretKey
       useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
+      # Optional: Number of parallel transfers for S3 operations
+      # If not set, defaults to 1
+      parallelTransfers: 8
+      # Optional: Size of each part in a multipart upload (in bytes)
+      # If not set, defaults to 5MB
+      multipartPartSize: 5242880
+      # Optional: Number of concurrent multipart uploads
+      # If not set, defaults to 4
+      multipartConcurrency: 4
 ```
 
 The secrets are retrieved from the namespace you use to run your workflows. Note
@@ -764,9 +773,9 @@ configuring the default artifact repository described previously.
 
 ## Artifact Streaming
 
-With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming is only supported in the following
+With artifact streaming, artifacts don't need to be saved to disk first. Artifact streaming is only supported in the following
 artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), Artifactory (v3.5+), and OSS (v3.6+).
 
 Previously, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the
-Argo Server’s disk first before downloading. If many users tried to download simultaneously, they would take up
+Argo Server's disk first before downloading. If many users tried to download simultaneously, they would take up
 disk space and fail the download.

@@ -1278,6 +1278,20 @@ func (a *ArtifactLocation) AppendToKey(x string) error {
 // But only if it does not have a location already.
 func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 	if a.HasLocation() {
+		// Even if the artifact already has a location, we should merge performance-related
+		// configurations from the template's ArchiveLocation
+		if l != nil && l.S3 != nil && a.S3 != nil {
+			// Merge S3 performance settings if they're not already set
+			if a.S3.ParallelTransfers == nil && l.S3.ParallelTransfers != nil {
+				a.S3.ParallelTransfers = l.S3.ParallelTransfers
+			}
+			if a.S3.MultipartPartSize == nil && l.S3.MultipartPartSize != nil {
+				a.S3.MultipartPartSize = l.S3.MultipartPartSize
+			}
+			if a.S3.MultipartConcurrency == nil && l.S3.MultipartConcurrency != nil {
+				a.S3.MultipartConcurrency = l.S3.MultipartConcurrency
+			}
+		}
 		return nil
 	}
 	if l == nil {
@@ -2594,6 +2608,19 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// ParallelTransfers is the number of parallel transfers to use for S3 operations.
+	// If not set, defaults to 1.
+	ParallelTransfers *int32 `json:"parallelTransfers,omitempty" protobuf:"varint,13,opt,name=parallelTransfers"`
+
+	// MultipartPartSize is the size of each part in a multipart upload (in bytes).
+	// If not set, defaults to 5MB (5242880 bytes).
+	// Minimum: 5MB (5242880 bytes), Maximum: 5GB (5368709120 bytes).
+	MultipartPartSize *int64 `json:"multipartPartSize,omitempty" protobuf:"varint,14,opt,name=multipartPartSize"`
+
+	// MultipartConcurrency is the number of concurrent multipart uploads.
+	// If not set, defaults to 4.
+	MultipartConcurrency *int32 `json:"multipartConcurrency,omitempty" protobuf:"varint,15,opt,name=multipartConcurrency"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
