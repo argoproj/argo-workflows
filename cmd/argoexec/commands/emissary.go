@@ -15,12 +15,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/archive"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
+
+	"github.com/argoproj/argo-workflows/v3/util/archive"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
