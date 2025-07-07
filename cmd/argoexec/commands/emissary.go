@@ -15,6 +15,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/archive"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -23,7 +26,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/archive"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -172,6 +174,28 @@ func NewEmissaryCommand() *cobra.Command {
 						}
 					}
 				}()
+
+				if containerName != common.MainContainerName {
+					em, err := emissary.New()
+					if err != nil {
+						return fmt.Errorf("failed to create emissary: %w", err)
+					}
+
+					go func() {
+						mainContainerNames := template.GetMainContainerNames()
+						err = em.Wait(ctx, mainContainerNames)
+						if err != nil {
+							logger.WithError(err).Errorf("failed to wait for main container(s) %v", mainContainerNames)
+						}
+
+						logger.Infof("main container(s) %v exited, terminating container %s", mainContainerNames, containerName)
+						err = em.Kill(ctx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
+						if err != nil {
+							logger.WithError(err).Errorf("failed to terminate/kill container %s", containerName)
+						}
+					}()
+				}
+
 				return osspecific.Wait(command.Process)
 
 			})
