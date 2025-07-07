@@ -244,12 +244,33 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 
 		if isTar {
 			err = untar(tempArtPath, artPath)
+			if err != nil && errors.Is(err, os.ErrExist) {
+				log.Warnf("Initial rename attempt failed because target exists: %v will remove it and retry", err)
+				err = os.RemoveAll(artPath)
+				if err == nil {
+					err = untar(tempArtPath, artPath)
+				}
+			}
 			_ = os.Remove(tempArtPath)
 		} else if isZip {
 			err = unzip(tempArtPath, artPath)
+			if err != nil && errors.Is(err, os.ErrExist) {
+				log.Warnf("Initial rename attempt failed because target exists: %v will remove it and retry", err)
+				err = os.RemoveAll(artPath)
+				if err == nil {
+					err = unzip(tempArtPath, artPath)
+				}
+			}
 			_ = os.Remove(tempArtPath)
 		} else {
 			err = os.Rename(tempArtPath, artPath)
+			if err != nil && errors.Is(err, os.ErrExist) {
+				log.Warnf("Initial rename attempt failed because target exists: %v will remove it and retry", err)
+				err = os.RemoveAll(artPath)
+				if err == nil {
+					err = os.Rename(tempArtPath, artPath)
+				}
+			}
 		}
 		if err != nil {
 			return err
