@@ -2005,6 +2005,8 @@ type WorkflowStatus struct {
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 }
 
+// MarkTaskResultIncomplete sets either the task results completion field
+// or the node.TaskResultSynced field if the workflow does not have a `TaskResultsCompletionStatus`
 func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 	if in.TaskResultsCompletionStatus != nil {
 		in.TaskResultsCompletionStatus[name] = false
@@ -2020,6 +2022,8 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 	in.Nodes.Set(name, *node)
 }
 
+// MarkTaskResultComplete sets either the task results completion field
+// or the node.TaskResultSynced field if the workflow does not have a `TaskResultsCompletionStatus`
 func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 	if in.TaskResultsCompletionStatus != nil {
 		in.TaskResultsCompletionStatus[name] = true

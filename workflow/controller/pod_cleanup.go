@@ -34,12 +34,12 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 			continue
 		}
 		nodeID := woc.nodeID(pod)
-		nodePhase, err := woc.wf.Status.Nodes.GetPhase(nodeID)
-		node, _ := woc.wf.Status.Nodes.Get(nodeID)
+		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
 			woc.log.Errorf("was unable to obtain node for %s", nodeID)
 			continue
 		}
+		nodePhase := node.Phase
 		if !nodePhase.Fulfilled(node.TaskResultSynced) {
 			continue
 		}
