@@ -155,7 +155,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 	for !uniqueQueue.empty() {
 		curr := uniqueQueue.pop()
 
-		node, err := nodes.Get(curr.nodeId)
+		node, err := nodes.Get(curr.nodeID)
 		if err != nil {
 			// this is okay, this means that
 			// we are still running
@@ -745,9 +745,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return &newTask, nil
 	}
 
+	artifacts := wfv1.Artifacts{}
 	// replace all artifact references
-	for j, art := range newTask.Arguments.Artifacts {
-		if art.From == "" {
+	for _, art := range newTask.Arguments.Artifacts {
+		if art.From == "" && art.FromExpression == "" {
+			artifacts = append(artifacts, art)
 			continue
 		}
 		resolvedArt, err := scope.resolveArtifact(&art)
@@ -759,8 +761,9 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 			return nil, err
 		}
 		resolvedArt.Name = art.Name
-		newTask.Arguments.Artifacts[j] = *resolvedArt
+		artifacts = append(artifacts, *resolvedArt)
 	}
+	newTask.Arguments.Artifacts = artifacts
 	return &newTask, nil
 }
 

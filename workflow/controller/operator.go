@@ -643,7 +643,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParametersJSON] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+		if param.Value != nil {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				if param.ValueFrom.Default != nil {
@@ -655,8 +657,6 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			} else {
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
-		} else if param.Value != nil {
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else {
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
@@ -1486,14 +1486,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 	}
 
-	for _, c := range pod.Status.InitContainerStatuses {
-		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
-			new.Phase = wfv1.NodeFailed
-			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
-			break
-		}
-	}
-
 	waitContainerCleanedUp := true
 	// We cannot fail the node if the wait container is still running because it may be busy saving outputs, and these
 	// would not get captured successfully.
@@ -1963,6 +1955,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		woc.updated = true
 	}
 
+	// Merge Template defaults to template
+	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+	}
+
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
@@ -1977,12 +1975,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	localParams["node.name"] = nodeName
-
-	// Merge Template defaults to template
-	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
-	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
-	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
@@ -3379,20 +3371,20 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	// Adding per-output aggregated value placeholders
 	for outputName, valueList := range outputParamValueLists {
 		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
-		valueListJson, err := aggregatedJsonValueList(valueList)
+		valueListJSON, err := aggregatedJSONValueList(valueList)
 		if err != nil {
 			return err
 		}
-		scope.addParamToScope(key, valueListJson)
+		scope.addParamToScope(key, valueListJSON)
 	}
 	return nil
 }
 
-// tryJsonUnmarshal unmarshals each item in the list assuming it is
+// tryJSONUnmarshal unmarshals each item in the list assuming it is
 // JSON and NOT a plain JSON value.
 // If returns success only if all items can be unmarshalled and are either
 // maps or lists
-func tryJsonUnmarshal(valueList []string) ([]interface{}, bool) {
+func tryJSONUnmarshal(valueList []string) ([]interface{}, bool) {
 	success := true
 	var list []interface{}
 	for _, value := range valueList {
@@ -3418,11 +3410,11 @@ func tryJsonUnmarshal(valueList []string) ([]interface{}, bool) {
 	return list, success
 }
 
-// aggregatedJsonValueList returns a string containing a JSON list, holding
+// aggregatedJSONValueList returns a string containing a JSON list, holding
 // all of the values from the valueList.
-// It tries to understand what's wanted from  inner JSON using tryJsonUnmarshall
-func aggregatedJsonValueList(valueList []string) (string, error) {
-	unmarshalledList, success := tryJsonUnmarshal(valueList)
+// It tries to understand what's wanted from  inner JSON using tryJSONUnmarshal
+func aggregatedJSONValueList(valueList []string) (string, error) {
+	unmarshalledList, success := tryJSONUnmarshal(valueList)
 	var valueListJSON []byte
 	var err error
 	if success {
@@ -3901,26 +3893,26 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 			// Finally substitute value parameters
 			metricValueString := metricSpec.GetValueString()
 
-			metricValueStringJson, err := json.Marshal(metricValueString)
+			metricValueStringJSON, err := json.Marshal(metricValueString)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
 				continue
 			}
 
-			replacedValueJson, err := template.Replace(string(metricValueStringJson), localScope, false)
+			replacedValueJSON, err := template.Replace(string(metricValueStringJSON), localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
 
-			var replacedStringJson string
-			err = json.Unmarshal([]byte(replacedValueJson), &replacedStringJson)
+			var replacedStringJSON string
+			err = json.Unmarshal([]byte(replacedValueJSON), &replacedStringJSON)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
 				continue
 			}
 
-			metricSpec.SetValueString(replacedStringJson)
+			metricSpec.SetValueString(replacedStringJSON)
 
 			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricSpec, string(woc.wf.UID), nil)
 			if err != nil {
@@ -4191,17 +4183,17 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 	if woc.execWf.Spec.TemplateDefaults != nil {
 		originalTmplType := originalTmpl.GetType()
 
-		tmplDefaultsJson, err := json.Marshal(woc.execWf.Spec.TemplateDefaults)
+		tmplDefaultsJSON, err := json.Marshal(woc.execWf.Spec.TemplateDefaults)
 		if err != nil {
 			return err
 		}
 
-		targetTmplJson, err := json.Marshal(originalTmpl)
+		targetTmplJSON, err := json.Marshal(originalTmpl)
 		if err != nil {
 			return err
 		}
 
-		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJson, targetTmplJson, wfv1.Template{})
+		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJSON, targetTmplJSON, wfv1.Template{})
 		if err != nil {
 			return err
 		}

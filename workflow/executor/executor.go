@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -56,7 +57,7 @@ type WorkflowExecutor struct {
 	podUID              types.UID
 	workflow            string
 	workflowUID         types.UID
-	nodeId              string
+	nodeID              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
@@ -79,6 +80,9 @@ type WorkflowExecutor struct {
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
+
+	// flag to indicate if the task result was created
+	taskResultCreated bool
 }
 
 type Initializer interface {
@@ -115,7 +119,7 @@ func NewExecutor(
 	podUID types.UID,
 	workflow string,
 	workflowUID types.UID,
-	nodeId, namespace string,
+	nodeID, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -128,7 +132,7 @@ func NewExecutor(
 		podUID:                       podUID,
 		workflow:                     workflow,
 		workflowUID:                  workflowUID,
-		nodeId:                       nodeId,
+		nodeID:                       nodeID,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
@@ -308,7 +312,6 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
-
 		if err != nil {
 			aggregateError += err.Error() + "; "
 		}
@@ -321,7 +324,6 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	} else {
 		return artifacts, errors.New(aggregateError)
 	}
-
 }
 
 // save artifact
@@ -359,11 +361,11 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		if err != nil {
 			return err
 		}
-		art_location, err := we.Template.ArchiveLocation.Get()
+		artLocation, err := we.Template.ArchiveLocation.Get()
 		if err != nil {
 			return err
 		}
-		if err = art.SetType(art_location); err != nil {
+		if err = art.SetType(artLocation); err != nil {
 			return err
 		}
 		if err := art.SetKey(path.Join(key, fileName)); err != nil {
@@ -802,19 +804,23 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
 // FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
+	var count uint64
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    5,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
 		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && count%20 == 0 {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
+		count++
 		return err
 	})
 	if err != nil {
@@ -823,17 +829,21 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 }
 
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
+	var count uint64
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    5,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && count%20 == 0 {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
+		count++
 		return err
 	})
 	if err != nil {
@@ -859,17 +869,21 @@ func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
+	var count uint64 // used to avoid spamming with these messages
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    5,
+		Factor:   2.0,
+		Jitter:   0.2,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
+		} else if err != nil && count%20 == 0 {
+			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
 		}
+		count++
 		return err
 	})
 }
@@ -900,7 +914,6 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 	}
 	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
 	return err
-
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -1200,7 +1213,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
 func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
-
 	deadlineExceeded := make(chan bool, 1)
 	if !we.Deadline.IsZero() {
 		t := time.AfterFunc(time.Until(we.Deadline), func() {

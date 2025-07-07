@@ -29,7 +29,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-const baseUrl = "http://localhost:2746"
+const baseURL = "http://localhost:2746"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -49,7 +49,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 func (s *ArgoServerSuite) e() *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
-			BaseURL:  baseUrl,
+			BaseURL:  baseURL,
 			Reporter: httpexpect.NewRequireReporter(s.T()),
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(s.T(), true),
@@ -67,7 +67,7 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
-			BaseURL:  baseUrl,
+			BaseURL:  baseURL,
 			Reporter: httpexpect.NewFatalReporter(b),
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(b, true),
@@ -182,7 +182,7 @@ spec:
 			s.e().
 				POST("/api/v1/events/argo/").
 				WithHeader("X-Github-Event", "push").
-				WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
+				WithHeader("X-Hub-Signature-256", "sha256=dd6f6b41f6d0cb9523d6459032e164e220853b683a5e87892145b0eb0b84e0cd").
 				WithBytes(data).
 				Expect().
 				Status(200)
@@ -1276,7 +1276,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
 	t := s.T()
-	req, err := http.NewRequest("GET", baseUrl+url, nil)
+	req, err := http.NewRequest("GET", baseURL+url, nil)
 	s.Require().NoError(err)
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
@@ -1386,7 +1386,7 @@ spec:
 			uid = metadata.UID
 			name = metadata.Name
 		})
-	var failedUid types.UID
+	var failedUID types.UID
 	var failedName string
 	s.Given().
 		Workflow(`
@@ -1407,7 +1407,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			failedUid = metadata.UID
+			failedUID = metadata.UID
 			failedName = metadata.Name
 		})
 	s.Given().
@@ -1551,14 +1551,14 @@ spec:
 	})
 
 	s.Run("Retry", func() {
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUID).
 			WithBytes([]byte(`{"namespace": "argo"}`)).
 			Expect().
 			Status(200).
 			JSON().
 			Path("$.metadata.name").
 			NotNull()
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUID).
 			WithBytes([]byte(`{"namespace": "argo"}`)).
 			Expect().
 			Status(409)

@@ -2574,7 +2574,7 @@ func TestSequence(t *testing.T) {
 	assert.True(t, found101)
 }
 
-var inputParametersAsJson = `
+var inputParametersAsJSON = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -2615,7 +2615,7 @@ func TestInputParametersAsJson(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(inputParametersAsJson)
+	wf := wfv1.MustUnmarshalWorkflow(inputParametersAsJSON)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -3932,7 +3932,7 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	}
 }
 
-var withParamAsJsonList = `
+var withParamAsJSONList = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -3970,7 +3970,7 @@ func TestWithParamAsJsonList(t *testing.T) {
 
 	// Test list expansion
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(withParamAsJsonList)
+	wf := wfv1.MustUnmarshalWorkflow(withParamAsJSONList)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -11214,13 +11214,13 @@ status:
 	delete(wf.Labels, common.LabelKeyCompleted)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
-	nodeId := "wf-retry-stopped-pn6mm-1672493720"
+	nodeID := "wf-retry-stopped-pn6mm-1672493720"
 
-	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
-	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 
@@ -11228,11 +11228,11 @@ status:
 	woc = newWorkflowOperationCtx(wf, controller)
 	n := woc.markNodePhase(wf.Name, wfv1.NodeError)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
-	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
-	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 
@@ -11240,11 +11240,11 @@ status:
 	woc = newWorkflowOperationCtx(wf, controller)
 	n = woc.markNodePhase(wf.Name, wfv1.NodeSucceeded)
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
-	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
-	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
@@ -11559,4 +11559,160 @@ func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
+}
+
+const withItemsOptionalArtStepsWF = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: fail-optional-artifact-with-items
+spec:
+  entrypoint: artifact-example
+  templates:
+    - name: artifact-example
+      steps:
+        - - name: generate-artifact
+            template: whalesay
+        - - name: consume-artifact
+            template: print-message
+            arguments:
+              artifacts:
+                - name: message
+                  optional: true
+                  from: "{{steps.generate-artifact.outputs.artifacts.message}}"
+            withItems:
+              - hello world
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["sleep 1;"]
+      outputs:
+        artifacts:
+          - name: message
+            optional: true
+            path: /tmp/hello_world
+          
+
+    - name: print-message
+      inputs:
+        artifacts:
+          - name: message
+            optional: true
+            path: /tmp/message
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
+
+func TestWithItemsOptionalArtStepsWF(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtStepsWF)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("consume-artifact(0:hello world)")
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+}
+
+const withItemsOptionalArtDAGWF = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: fail-optional-artifact-with-items-dag
+spec:
+  entrypoint: artifact-example
+  templates:
+    - name: artifact-example
+      dag:
+        tasks:
+          - name: generate-artifact
+            template: whalesay
+          - name: consume-artifact
+            template: print-message
+            dependencies: [generate-artifact]
+            arguments:
+              artifacts:
+                - name: message
+                  optional: true
+                  from: "{{tasks.generate-artifact.outputs.artifacts.message}}"
+            withItems:
+              - hello world
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["sleep 1;"]
+      outputs:
+        artifacts:
+          - name: message
+            optional: true
+            path: /tmp/hello_world
+           
+
+    - name: print-message
+      inputs:
+        artifacts:
+          - name: message
+            optional: true
+            path: /tmp/message
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
+
+func TestWithItemsOptionalArtDAGWF(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtDAGWF)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("consume-artifact(0:hello world)")
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+}
+
+var wfWithValueOverriding = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-valuefrom-value-
+spec:
+  entrypoint: echo
+  arguments: &args
+    parameters:
+      - name: message
+        value: "configmap argument overwrite with argument"
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  templates:
+    - name: echo
+      inputs: *args
+      container:
+        image: busybox
+        args: ["printf", "WORKFLOW: %s\nINPUT: %s", "{{workflow.parameters.message}}", "{{inputs.parameters.message}}"]
+`
+
+// https://github.com/argoproj/argo-workflows/issues/14426#issuecomment-2870224091
+func TestSetGlobalParametersOverriding(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithValueOverriding)
+	t.Run("CheckArgumentFromWF", func(t *testing.T) {
+		cancel, controller := newController(wf)
+		defer cancel()
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
+	})
 }

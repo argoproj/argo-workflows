@@ -10,8 +10,8 @@ import (
 
 	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
+	"github.com/pkg/browser"
 	log "github.com/sirupsen/logrus"
-	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -171,7 +171,7 @@ See %s`, help.ArgoServer()),
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
 					log.Infof("Argo UI is available at %s", url)
-					err := open.Run(url)
+					err := browser.OpenURL(url)
 					if err != nil {
 						log.Warnf("Unable to open the browser. %v", err)
 					}
