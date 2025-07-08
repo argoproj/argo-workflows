@@ -10,7 +10,7 @@ import (
 func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	}
 	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
 	if err != nil {
@@ -32,7 +32,7 @@ func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName str
 		ctxNodeName := fmt.Sprintf("%s.%s", nodeName, c.Name)
 		_, err := woc.wf.GetNodeByName(ctxNodeName)
 		if err != nil {
-			_ = woc.initializeNode(ctxNodeName, wfv1.NodeTypeContainer, templateScope, orgTmpl, node.ID, wfv1.NodePending, opts.nodeFlag)
+			_ = woc.initializeNode(ctxNodeName, wfv1.NodeTypeContainer, templateScope, orgTmpl, node.ID, wfv1.NodePending, opts.nodeFlag, true)
 		}
 	}
 	for _, c := range tmpl.ContainerSet.GetGraph() {

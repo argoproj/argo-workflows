@@ -2172,6 +2172,11 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(NodeSynchronizationStatus)
 		**out = **in
 	}
+	if in.TaskResultSynced != nil {
+		in, out := &in.TaskResultSynced, &out.TaskResultSynced
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
