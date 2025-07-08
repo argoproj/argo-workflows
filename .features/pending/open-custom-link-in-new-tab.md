@@ -1,5 +1,5 @@
-Component: Argo Server
-Issues: 13114 
+Component: UI
+Issues: 13114
 Description: Support open custom links in new tab automatically.
 Author: [Shuangkun Tian](https://github.com/shuangkun)
 
