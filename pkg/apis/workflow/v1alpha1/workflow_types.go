@@ -263,6 +263,8 @@ type TTLStrategy struct {
 	SecondsAfterSuccess *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
 	// SecondsAfterFailure is the number of seconds to live after failure
 	SecondsAfterFailure *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
+	// SecondsAfterError is the number of seconds to live after error
+	SecondsAfterError *int32 `json:"secondsAfterError,omitempty" protobuf:"bytes,4,opt,name=secondsAfterError"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -2406,6 +2408,11 @@ func (in WorkflowStatus) Successful() bool {
 // Failed return whether or not the workflow has failed
 func (in WorkflowStatus) Failed() bool {
 	return in.Phase == WorkflowFailed
+}
+
+// Errored return whether or not the workflow has an Error
+func (in WorkflowStatus) Errored() bool {
+	return in.Phase == WorkflowError
 }
 
 func (in WorkflowStatus) StartTime() *metav1.Time {

@@ -276,6 +276,7 @@ Workflow retention by number of workflows
 | `Completed` | `int`      | Completed is the number of completed Workflows to retain |
 | `Failed`    | `int`      | Failed is the number of failed Workflows to retain       |
 | `Errored`   | `int`      | Errored is the number of errored Workflows to retain     |
+| `Succeeded` | `int`      | Succeeded is the number of succeeded Workflows to retain |
 
 ## SSOConfig
 

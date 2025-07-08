@@ -1627,6 +1627,9 @@ message TTLStrategy {
 
   // SecondsAfterFailure is the number of seconds to live after failure
   optional int32 secondsAfterFailure = 3;
+
+  // SecondsAfterError is the number of seconds to live after error
+  optional int32 secondsAfterError = 4;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
