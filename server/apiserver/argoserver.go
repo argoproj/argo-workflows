@@ -17,7 +17,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -274,18 +273,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		conn = tls.NewListener(conn, as.tlsConfig)
 	}
 
-	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
-	tcpm := cmux.New(conn)
-	httpL := tcpm.Match(cmux.HTTP1Fast())
-	grpcL := tcpm.Match(cmux.Any())
+	handler := grpcutil.NewMuxHandler(grpcServer, httpServer.Handler)
 
 	wftmplStore.Run(as.stopCh)
 	cwftmplInformer.Run(as.stopCh)
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
-	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
-	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
+	go func() { as.checkServeErr("httpServer", http.Serve(conn, handler)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
@@ -389,7 +383,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts,
-		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }),
+		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
 		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
 	)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
