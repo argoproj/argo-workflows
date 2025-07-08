@@ -14,8 +14,55 @@ permissions:
 jobs:
   title-check:
     runs-on: ubuntu-24.04
+    outputs:
+      type: ${{ steps.semantic-pr-check.outputs.type }}
     steps:
       - name: Check PR Title's semantic conformance
+        id: semantic-pr-check
         uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5.5.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  feature-pr-handling:
+    needs: title-check
+    runs-on: ubuntu-24.04
+    if: needs.title-check.outputs.type == 'feat'
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: "1.24"
+          cache: true
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 50
+
+      - name: Ensure ./.features/*.md addition(s)
+        run: |
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/${{ github.base_ref }} $PR_HEAD) $PR_HEAD ./.features | grep -c \\.md) ]]
+          then
+            echo "No feature description was added to the ./.features/ directory for this feature PR."
+            echo "Please add a .md file to the ./.features/ directory."
+            echo "See docs/running-locally.md for more details."
+            false
+          else
+            echo "A feature description was added to the ./.features/ directory."
+          fi
+
+      - name: Validate ./.features/*.md changes
+        run: |
+          make features-validate \
+            || { echo "New ./.features/*.md file failed validation."; exit 1; }
+
+      # In order to validate any links in the yaml file, render the config to markdown
+      - name: Render .features/*.md feature descriptions
+        run: make features-preview > features_preview.md
+
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        with:
+          args: "--verbose --no-progress ./features_preview.md"
+          failIfEmpty: false
