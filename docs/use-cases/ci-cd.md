@@ -12,3 +12,7 @@
 * [CI/CD for Machine Learning at MLB using Argo Workflows - Eric Meadows](https://youtu.be/fccWoYlwZKc?t=184&utm_source=argo-docs)
 * [How LitmusChaos uses Argo Workflows](https://youtu.be/QETfzfVV-GY?t=1954&utm_source=argo-docs)
 * [Tekton vs. Argo Workflows - Kubernetes-Native CI/CD Pipelines](https://www.youtube.com/watch?v=dAUpAq7hfeA?utm_source=argo-docs)
+
+## Examples
+
+* [CI/CD workflow using Argo Workflows to build, test, and deploy Argo Workflows triggered by a GitHub webhook](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-cd-workflow.yaml)
