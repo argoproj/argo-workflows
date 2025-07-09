@@ -43,7 +43,6 @@ jobs:
         run: |
           if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/${{ github.base_ref }} $PR_HEAD) $PR_HEAD ./.features | grep -c \\.md) ]]
           then
-            echo $PR_HEAD
             echo "No feature description was added to the ./.features/ directory for this feature PR."
             echo "Please add a .md file to the ./.features/ directory."
             echo "See docs/running-locally.md for more details."
