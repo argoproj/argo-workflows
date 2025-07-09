@@ -1,4 +1,4 @@
-//go:build api
+//go:build metrics
 
 package e2e
 
