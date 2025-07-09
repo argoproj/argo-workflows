@@ -1833,7 +1833,10 @@ func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
 	}
 	_, ok := n[key]
 	if ok {
-		log.Tracef(ctx, "Changing NodeStatus for %s to %+v", key, status)
+		log.WithFields(logging.Fields{
+			"key":    key,
+			"status": status,
+		}).Debug(ctx, "Changing NodeStatus")
 	}
 	n[key] = status
 }

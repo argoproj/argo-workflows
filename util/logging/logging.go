@@ -76,8 +76,6 @@ type Fields map[string]any
 type Level string
 
 const (
-	// Trace level events
-	Trace Level = "trace"
 	// Debug level events
 	Debug Level = "debug"
 	// Info level events
@@ -97,8 +95,9 @@ const (
 // ParseLevel parses a string into a Level enum
 func ParseLevel(s string) (Level, error) {
 	switch strings.ToLower(s) {
+	// legacy removed level
 	case "trace":
-		return Trace, nil
+		return Debug, nil
 	case "debug":
 		return Debug, nil
 	case "info":
@@ -141,9 +140,6 @@ type Logger interface {
 
 	Error(ctx context.Context, msg string)
 	Errorf(ctx context.Context, format string, args ...any)
-
-	Trace(ctx context.Context, msg string)
-	Tracef(ctx context.Context, format string, args ...any)
 
 	Debug(ctx context.Context, msg string)
 	Debugf(ctx context.Context, format string, args ...any)
