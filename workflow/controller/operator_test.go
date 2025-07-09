@@ -530,7 +530,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -544,7 +544,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -577,7 +577,7 @@ func TestProcessNodeRetries(t *testing.T) {
 
 	// Add a hook node that has Succeeded
 	childHookedNode := "child-node.hooks.running"
-	woc.initializeNode(childHookedNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeSucceeded, &wfv1.NodeFlag{Hooked: true})
+	woc.initializeNode(childHookedNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeSucceeded, &wfv1.NodeFlag{Hooked: true}, true)
 	woc.addChildNode(nodeName, childHookedNode)
 
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -588,7 +588,7 @@ func TestProcessNodeRetries(t *testing.T) {
 
 	// Add a third node that has failed.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(t, err)
@@ -612,7 +612,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -627,7 +627,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -660,7 +660,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(t, err)
@@ -684,7 +684,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnTransientError
@@ -699,7 +699,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -736,7 +736,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(t, err)
@@ -760,7 +760,7 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
@@ -777,7 +777,7 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
-	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, nodeName+"(0)")
 
 	n, err := woc.wf.GetNodeByName(nodeName)
@@ -816,7 +816,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("3")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -833,7 +833,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	require.Nil(lastChild)
 
-	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, nodeName+"(0)")
 
 	n, err := woc.wf.GetNodeByName(nodeName)
@@ -850,7 +850,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.LessOrEqual(backoff, 300)
 	require.Less(295, backoff)
 
-	woc.initializeNode(nodeName+"(1)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(nodeName+"(1)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, nodeName+"(1)")
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(err)
@@ -865,7 +865,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.LessOrEqual(backoff, 600)
 	require.Less(595, backoff)
 
-	woc.initializeNode(nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, nodeName+"(2)")
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(err)
@@ -905,7 +905,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Expression = "false"
 	retries.Limit = intstrutil.ParsePtr("2")
@@ -921,7 +921,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -963,7 +963,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	// Add a third node that has failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(t, err)
@@ -987,7 +987,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Expression = "false"
 	retries.Limit = intstrutil.ParsePtr("1")
@@ -1003,7 +1003,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 1; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -1075,7 +1075,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	// Node status aligns with retrypolicy but reach max retry limit, shouldn't evaluate expression
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 1)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	require.NoError(t, err)
@@ -1121,7 +1121,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
@@ -1136,7 +1136,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -1412,7 +1412,7 @@ spec:
         - name: main
           resources:
             limits:
-              memory: "{{=(int(retries) + 1) * 64}}Mi"
+              memory: "{{=(sprig.int(retries) + 1) * 64}}Mi"
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
@@ -1471,7 +1471,7 @@ spec:
         - name: main
           resources:
             limits:
-              memory: "{{= (int(retries)+1)* int(workflow.parameters.memreqnum)}}Mi"
+              memory: "{{= (sprig.int(retries)+1)* sprig.int(workflow.parameters.memreqnum)}}Mi"
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
@@ -1524,7 +1524,7 @@ spec:
         - name: main
           resources:
             limits:
-              memory: "{{= (int(lastRetry.exitCode)==1 ? (int(retries)+1) : 1)* 100}}Mi"
+              memory: "{{= (sprig.int(lastRetry.exitCode)==1 ? (sprig.int(retries)+1) : 1)* 100}}Mi"
     container:
       image: python:alpine3.6
       command: ["python", -c]
@@ -5444,7 +5444,7 @@ func TestPanicMetric(t *testing.T) {
 
 	// This should make the call to "operate" panic
 	ctx := context.Background()
-	woc.preExecutionNodePhases = nil
+	woc.preExecutionNodeStatuses = nil
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("cause", "OperationPanic"))
@@ -6427,7 +6427,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	retries := wfv1.RetryStrategy{
 		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
@@ -6439,7 +6439,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
 
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 0)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(nodeName, childNode)
 
 	var opts executeTemplateOpts
@@ -7699,7 +7699,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 
 	hostSelector := "kubernetes.io/hostname"
 	retries := wfv1.RetryStrategy{}
@@ -7717,7 +7717,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	// Add child node.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 0)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 	woc.addChildNode(nodeName, childNode)
 
 	n, err := woc.wf.GetNodeByName(nodeName)
@@ -10691,7 +10691,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 
 		// Add the parent node for retries.
 		nodeID := woc.wf.NodeID(nodeName)
-		node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+		node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 		woc.wf.Status.Nodes[nodeID] = *node
 
 		// Ensure there are no child nodes yet.
@@ -10705,7 +10705,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		// Add child nodes.
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}))
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true))
 			woc.addChildNode(nodeName, childNode)
 		}
 		node, err := woc.wf.GetNodeByName(nodeName)
@@ -10722,13 +10722,13 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		// Add child nodes.
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}))
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true))
 			woc.addChildNode(nodeName, childNode)
 		}
 
 		// Add child hooked nodes
 		childNode := fmt.Sprintf("%s.hook.running", nodeName)
-		childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Hooked: true}))
+		childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Hooked: true}, true))
 		woc.addChildNode(nodeName, childNode)
 
 		node, err := woc.wf.GetNodeByName(nodeName)
@@ -10746,7 +10746,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		// Add child hooked noes
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true, Hooked: true}))
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true, Hooked: true}, true))
 			woc.addChildNode(nodeName, childNode)
 		}
 
@@ -11715,4 +11715,417 @@ func TestSetGlobalParametersOverriding(t *testing.T) {
 		woc.operate(ctx)
 		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
 	})
+}
+
+const marksWFSucceeded = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-06-05T02:55:32Z"
+  generateName: archive-strategies-
+  generation: 12
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+  name: archive-strategies-4br4g
+  namespace: argo
+  resourceVersion: "1185"
+  uid: 18f952fc-65ad-4415-908f-4e23b22633f0
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: main
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - dag:
+      tasks:
+      - arguments: {}
+        name: generate-default
+        template: generate-default
+      - arguments:
+          artifacts:
+          - from: '{{tasks.generate-default.outputs.artifacts.file-default}}'
+            name: file-default
+        dependencies:
+        - generate-default
+        name: consume-default
+        template: consume-default
+      - arguments: {}
+        name: generate-tar
+        template: generate-tar
+      - arguments:
+          artifacts:
+          - from: '{{tasks.generate-tar.outputs.artifacts.file-tar}}'
+            name: file-tar
+        dependencies:
+        - generate-tar
+        name: consume-tar
+        template: consume-tar
+      - arguments: {}
+        name: generate-none
+        template: generate-none
+      - arguments:
+          artifacts:
+          - from: '{{tasks.generate-none.outputs.artifacts.file-none}}'
+            name: file-none
+        dependencies:
+        - generate-none
+        name: consume-none
+        template: consume-none
+    inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+  - container:
+      args:
+      - echo
+      - hello
+      - /tmp/file-default
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: generate-default
+    outputs:
+      artifacts:
+      - name: file-default
+        path: /tmp/file-default
+  - container:
+      args:
+      - assert_contains
+      - /tmp/file-default
+      - hello
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: file-default
+        path: /tmp/file-default
+    metadata: {}
+    name: consume-default
+    outputs: {}
+  - container:
+      args:
+      - echo
+      - hello
+      - /tmp/file-tar
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: generate-tar
+    outputs:
+      artifacts:
+      - archive:
+          tar: {}
+        name: file-tar
+        path: /tmp/file-tar
+  - container:
+      args:
+      - assert_contains
+      - /tmp/file-tar
+      - hello
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - archive:
+          tar: {}
+        name: file-tar
+        path: /tmp/file-tar
+    metadata: {}
+    name: consume-tar
+    outputs: {}
+  - container:
+      args:
+      - echo
+      - hello
+      - /tmp/file-none
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: generate-none
+    outputs:
+      artifacts:
+      - archive:
+          none: {}
+        name: file-none
+        path: /tmp/file-none
+  - container:
+      args:
+      - assert_contains
+      - /tmp/file-none
+      - hello
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - archive:
+          none: {}
+        name: file-none
+        path: /tmp/file-none
+    metadata: {}
+    name: consume-none
+    outputs: {}
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  nodes:
+    archive-strategies-4br4g:
+      children:
+      - archive-strategies-4br4g-281020786
+      - archive-strategies-4br4g-867259351
+      - archive-strategies-4br4g-2183706504
+      displayName: archive-strategies-4br4g
+      id: archive-strategies-4br4g
+      name: archive-strategies-4br4g
+      outboundNodes:
+      - archive-strategies-4br4g-375797365
+      - archive-strategies-4br4g-1330961402
+      - archive-strategies-4br4g-491290487
+      phase: Succeeded
+      progress: 6/6
+      startedAt: "2025-06-05T02:55:32Z"
+      taskResultSynced: true
+      templateName: main
+      templateScope: local/archive-strategies-4br4g
+      type: DAG
+    archive-strategies-4br4g-281020786:
+      boundaryID: archive-strategies-4br4g
+      children:
+      - archive-strategies-4br4g-375797365
+      displayName: generate-default
+      finishedAt: "2025-06-05T02:56:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-281020786
+      name: archive-strategies-4br4g.generate-default
+      outputs:
+        artifacts:
+        - name: file-default
+          path: /tmp/file-default
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/file-default.tgz
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 17
+      startedAt: "2025-06-05T02:55:32Z"
+      taskResultSynced: true
+      templateName: generate-default
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-375797365:
+      boundaryID: archive-strategies-4br4g
+      displayName: consume-default
+      finishedAt: "2025-06-05T02:56:45Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-375797365
+      inputs:
+        artifacts:
+        - name: file-default
+          path: /tmp/file-default
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/file-default.tgz
+      name: archive-strategies-4br4g.consume-default
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-default-375797365/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2025-06-05T02:56:41Z"
+      taskResultSynced: true
+      templateName: consume-default
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-491290487:
+      boundaryID: archive-strategies-4br4g
+      displayName: consume-tar
+      finishedAt: "2025-06-05T02:56:45Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-491290487
+      inputs:
+        artifacts:
+        - archive:
+            tar: {}
+          name: file-tar
+          path: /tmp/file-tar
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/file-tar.tgz
+      name: archive-strategies-4br4g.consume-tar
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-tar-491290487/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2025-06-05T02:56:41Z"
+      taskResultSynced: true
+      templateName: consume-tar
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-867259351:
+      boundaryID: archive-strategies-4br4g
+      children:
+      - archive-strategies-4br4g-1330961402
+      displayName: generate-none
+      finishedAt: "2025-06-05T02:56:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-867259351
+      name: archive-strategies-4br4g.generate-none
+      outputs:
+        artifacts:
+        - archive:
+            none: {}
+          name: file-none
+          path: /tmp/file-none
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/file-none
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 17
+      startedAt: "2025-06-05T02:55:35Z"
+      taskResultSynced: true
+      templateName: generate-none
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-1330961402:
+      boundaryID: archive-strategies-4br4g
+      displayName: consume-none
+      finishedAt: "2025-06-05T02:56:45Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-1330961402
+      inputs:
+        artifacts:
+        - archive:
+            none: {}
+          name: file-none
+          path: /tmp/file-none
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/file-none
+      name: archive-strategies-4br4g.consume-none
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-none-1330961402/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2025-06-05T02:56:41Z"
+      taskResultSynced: true
+      templateName: consume-none
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-2183706504:
+      boundaryID: archive-strategies-4br4g
+      children:
+      - archive-strategies-4br4g-491290487
+      displayName: generate-tar
+      finishedAt: "2025-06-05T02:56:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-2183706504
+      name: archive-strategies-4br4g.generate-tar
+      outputs:
+        artifacts:
+        - archive:
+            tar: {}
+          name: file-tar
+          path: /tmp/file-tar
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/file-tar.tgz
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 17
+      startedAt: "2025-06-05T02:55:35Z"
+      taskResultSynced: true
+      templateName: generate-tar
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+  phase: Running
+  progress: 6/6
+  resourcesDuration:
+    cpu: 6
+    memory: 57
+  startedAt: "2025-06-05T02:55:32Z"
+  taskResultsCompletionStatus:
+    archive-strategies-4br4g-281020786: true
+    archive-strategies-4br4g-375797365: true
+    archive-strategies-4br4g-491290487: true
+    archive-strategies-4br4g-867259351: true
+    archive-strategies-4br4g-1330961402: true
+    archive-strategies-4br4g-2183706504: true`
+
+func TestMarksWFSucceeded(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(marksWFSucceeded)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

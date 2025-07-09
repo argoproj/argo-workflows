@@ -90,6 +90,8 @@ func isTransientEtcdErr(err error) bool {
 		return true
 	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
 		return true
+	} else if strings.Contains(err.Error(), "etcdserver: too many requests") {
+		return true
 	}
 	return false
 }
@@ -138,6 +140,8 @@ func isTransientNetworkErr(err error) bool {
 		return true
 	} else if strings.Contains(errorString, "http2: client connection lost") {
 		// If err is http2 transport ping timeout, retry.
+		return true
+	} else if strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection") {
 		return true
 	} else if strings.Contains(errorString, "connect: connection refused") {
 		// If err is connection refused, retry.

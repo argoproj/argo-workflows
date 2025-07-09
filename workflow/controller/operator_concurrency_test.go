@@ -521,7 +521,7 @@ spec:
  - name: mutex
    synchronization:
      mutexes:
-       - name: '{{=replace("/", "-", inputs.parameters.message)}}'
+       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
    inputs:
      parameters:
      - name: message

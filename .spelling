@@ -152,7 +152,6 @@ codebase
 config
 cpu
 cron
-crypto
 daemoned
 dependabot
 dev
@@ -173,6 +172,7 @@ gitops
 goroutine
 goroutines
 govaluate
+grpc
 gzipped
 i.e.
 idempotence
@@ -213,6 +213,7 @@ pprof
 pre-commit
 pytorch
 qps
+ray
 rc2
 repo
 roadmap
@@ -220,7 +221,6 @@ runtime
 runtimes
 s3
 sandboxed
-semver
 shortcodes
 stateful
 stderr
@@ -263,7 +263,11 @@ v3.4.
 v3.4.4
 v3.5
 v3.6
+v3.6.0
+v3.6.1
+v3.6.5
 v3.7
+v3.7.0
 validator
 vendored
 versioned

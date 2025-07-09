@@ -552,7 +552,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 					// Update phase
 					if values.Phase != "" {
 						node.Phase = values.Phase
-						if values.Phase.Fulfilled() {
+						if values.Phase.Fulfilled(node.TaskResultSynced) {
 							node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 						}
 						nodeUpdated = true
@@ -1169,9 +1169,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if node.FailedOrError() && isExecutionNodeType(node.Type) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
-				node = *wf.Status.Nodes.Find(func(nodeStatus wfv1.NodeStatus) bool {
-					return nodeStatus.HasChild(node.ID)
-				})
+				node = *wf.Status.Nodes.FindByChild(nodeID)
 			}
 			if !isDescendantNodeSucceeded(wf, node, deleteNodesMap) {
 				failed[nodeID] = true
