@@ -1521,6 +1521,15 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 	}
 
+	// If the node template has outputs Parameters/Artifacts/Result, we should not change the phase to Succeeded until the outputs are set.
+	if tmpl != nil && tmpl.Outputs.HasOutputs() && new.Outputs != nil && new.Phase == wfv1.NodeSucceeded &&
+		((tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil) ||
+			(tmpl.Outputs.Artifacts != nil && new.Outputs.Artifacts == nil) ||
+			(tmpl.Outputs.Result != nil && new.Outputs.Result == nil)) {
+		woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: outputs are not yet set")
+		new.Phase = old.Phase
+	}
+
 	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
 	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && new.Phase != wfv1.NodeFailed && new.Phase != wfv1.NodeError && old.Message == new.Message {
 		new.Message = ""
