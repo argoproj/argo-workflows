@@ -51,14 +51,15 @@ endif
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
-TEST_RETRIES          ?= 3
+TEST_RETRIES          ?= 2
+JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
 # name: not used currently
 # parameters: passed to go test after the --
 define gotest
-	mkdir -p test/reports/json
-	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=test/reports/json/$(2).json --format=testname --packages $(1) -- $(3)
+	mkdir -p $(JSON_TEST_OUTPUT)
+	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
 endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
