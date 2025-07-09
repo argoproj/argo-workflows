@@ -1,14 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestMakeParseLabels(t *testing.T) {
@@ -142,17 +142,31 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 			expectedLog:   "CLI version (v3.1.0) does not match server version (v3.1.1). This can lead to unexpected behavior.",
 		},
 	}
-	hook := &logtest.Hook{}
-	log.AddHook(hook)
-	defer log.StandardLogger().ReplaceHooks(nil)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			PrintVersionMismatchWarning(*tt.clientVersion, tt.serverVersion)
+			// Create a test hook to capture log messages
+			hook := logging.NewTestHook()
+
+			// Add the hook to the default logger
+			defaultLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat(), hook)
+
+			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = logging.WithLogger(ctx, defaultLogger)
+			PrintVersionMismatchWarning(ctx, *tt.clientVersion, tt.serverVersion)
+
 			if tt.expectedLog != "" {
-				assert.Equal(t, tt.expectedLog, hook.LastEntry().Message)
+				lastEntry := hook.LastEntry()
+				assert.NotNil(t, lastEntry)
+				assert.Equal(t, tt.expectedLog, lastEntry.Msg)
+				assert.Equal(t, logging.Warn, lastEntry.Level)
 			} else {
 				assert.Nil(t, hook.LastEntry())
 			}
+
+			// Reset hook for next test
+			hook.Reset()
 		})
 	}
 }

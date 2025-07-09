@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -138,7 +140,10 @@ func TestCounters(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	woc.controller = controller
-	syncPodsInformer(context.Background(), woc, pod, *pod1)
+	syncPodsInformer(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), woc, pod, *pod1)
 	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
 	assert.Equal(t, int64(4), woc.getActivePods(""))

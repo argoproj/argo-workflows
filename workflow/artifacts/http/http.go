@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -64,7 +65,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 }
 
 // Load reads the artifact from the HTTP URL
-func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	lf, err := os.Create(path)
 	if err != nil {
 		return err
@@ -83,7 +84,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
-func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	res, err := h.retrieveContent(inputArtifact)
 	if err != nil {
 		return nil, err
@@ -92,7 +93,7 @@ func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser
 }
 
 // Save writes the artifact to the URL
-func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	cleanPath := filepath.Clean(path)
 	f, err := os.Open(cleanPath)
 	if err != nil {
@@ -139,14 +140,14 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 }
 
 // Delete is unsupported for the http artifacts
-func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+func (h *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 
-func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (h *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (h *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (h *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }

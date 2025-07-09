@@ -54,7 +54,7 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 				return true
 			}
 		}
-		return strings.Contains(err.Error(), "connection refused") || errors.IsTransientErr(err)
+		return strings.Contains(err.Error(), "connection refused") || errors.IsTransientErr(ctx, err)
 	}, func() error {
 		log.Debug("Calling plugin")
 		req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/api/v1/%s", p.address, method), bytes.NewBuffer(body))

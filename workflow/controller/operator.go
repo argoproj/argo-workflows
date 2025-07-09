@@ -46,6 +46,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	argokubeerr "github.com/argoproj/argo-workflows/v3/util/kube/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v3/util/runtime"
@@ -73,8 +74,8 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
-	// log is an logrus logging context to correlate logs with a workflow
-	log *log.Entry
+	// log is a logging interfacg to correlate logs with a workflow
+	log logging.Logger
 	// controller reference to workflow controller
 	controller *WorkflowController
 	// estimate duration
@@ -130,7 +131,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 var (
-	maxOperationTime = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
+	maxOperationTime = envutil.LookupEnvDurationOr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), "MAX_OPERATION_TIME", 30*time.Second)
 )
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
@@ -144,18 +145,23 @@ type failedNodeStatus struct {
 }
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
-func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
+func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
+
+	slogger := logging.GetLoggerFromContext(ctx)
+	if slogger == nil {
+		slogger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	}
 
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
 		execWf:  wfCopy,
 		updated: false,
-		log: log.WithFields(log.Fields{
+		log: slogger.WithFields(logging.Fields{
 			"workflow":  wf.Name,
 			"namespace": wf.Namespace,
 		}),
@@ -185,14 +191,14 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // later time
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate(ctx context.Context) {
-	defer argoruntime.RecoverFromPanic(woc.log)
+	defer argoruntime.RecoverFromPanic(ctx, woc.log)
 
 	defer func() {
 		woc.persistUpdates(ctx)
 	}()
 	defer func() {
 		if r := recover(); r != nil {
-			woc.log.WithFields(log.Fields{"stack": string(debug.Stack()), "r": r}).Errorf("Recovered from panic")
+			woc.log.WithFields(logging.Fields{"stack": string(debug.Stack()), "r": r}).Error(ctx, "Recovered from panic")
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(ctx, rerr)
 			} else {
@@ -202,13 +208,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}()
 
-	woc.log.WithFields(log.Fields{"Phase": woc.wf.Status.Phase, "ResourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info("Processing workflow")
+	woc.log.WithFields(logging.Fields{"Phase": woc.wf.Status.Phase, "ResourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info(ctx, "Processing workflow")
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	err := woc.setExecWorkflow(ctx)
 	if err != nil {
-		woc.log.WithError(err).Errorf("Unable to set ExecWorkflow")
+		woc.log.WithError(err).Errorf(ctx, "Unable to set ExecWorkflow")
 		return
 	}
 
@@ -229,19 +235,19 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 	woc.artifactRepository = repo
 
-	woc.addArtifactGCFinalizer()
+	woc.addArtifactGCFinalizer(ctx)
 
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
-	woc.taskResultReconciliation()
+	woc.taskResultReconciliation(ctx)
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
 		if err := woc.garbageCollectArtifacts(ctx); err != nil {
-			woc.log.WithError(err).Error("failed to GC artifacts")
+			woc.log.WithError(err).Error(ctx, "failed to GC artifacts")
 			return
 		}
 	} else {
-		woc.log.Debug("Skipping artifact GC")
+		woc.log.Debug(ctx, "Skipping artifact GC")
 	}
 
 	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
@@ -252,14 +258,14 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.execWf.Spec.Synchronization != nil {
 		acquired, wfUpdate, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(ctx, woc.wf, "", woc.execWf.Spec.Synchronization)
 		if err != nil {
-			woc.log.Warnf("Failed to acquire the lock %s", failedLockName)
+			woc.log.Warnf(ctx, "Failed to acquire the lock %s", failedLockName)
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			return
 		}
 		woc.updated = woc.updated || wfUpdate
 		if !acquired {
 			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
-				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
+				woc.log.Warn(ctx, "Workflow processing has been postponed due to concurrency limit")
 				phase := woc.wf.Status.Phase
 				if phase == wfv1.WorkflowUnknown {
 					phase = wfv1.WorkflowPending
@@ -283,7 +289,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		err := woc.createPDBResource(ctx)
 		if err != nil {
-			woc.log.WithError(err).WithField("workflow", woc.wf.Name).Error("PDB creation failed")
+			woc.log.WithError(err).WithField("workflow", woc.wf.Name).Error(ctx, "PDB creation failed")
 			woc.requeue()
 			return
 		}
@@ -299,7 +305,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.requeueAfter(time.Until(*woc.workflowDeadline))
 		}
 
-		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration(ctx)
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err, podReconciliationCompleted := woc.podReconciliation(ctx)
@@ -307,25 +313,25 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// Execution control has been applied to the nodes with created pods after pod reconciliation.
 			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
 			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
-			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown()
+			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx)
 		}
 
 		if err != nil {
-			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
+			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error(ctx, "workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
 		}
 
 		if !podReconciliationCompleted {
-			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("pod reconciliation didn't complete, will retry")
+			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info(ctx, "pod reconciliation didn't complete, will retry")
 			woc.requeue()
 			return
 		}
 	}
 
 	if woc.ShouldSuspend() {
-		woc.log.Info("workflow suspended")
+		woc.log.Info(ctx, "workflow suspended")
 		return
 	}
 	if woc.execWf.Spec.Parallelism != nil {
@@ -335,21 +341,21 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// Create a starting template context.
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	if err != nil {
-		woc.log.WithError(err).Error("Failed to create a template context")
+		woc.log.WithError(err).Error(ctx, "Failed to create a template context")
 		woc.markWorkflowError(ctx, err)
 		return
 	}
 
 	err = woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
-		woc.log.WithError(err).Error("volumes global param substitution error")
+		woc.log.WithError(err).Error(ctx, "volumes global param substitution error")
 		woc.markWorkflowError(ctx, err)
 		return
 	}
 
 	err = woc.createPVCs(ctx)
 	if err != nil {
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(ctx, err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
@@ -357,7 +363,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			return
 		}
 		err = fmt.Errorf("pvc create error: %w", err)
-		woc.log.WithError(err).Error("pvc create error")
+		woc.log.WithError(err).Error(ctx, "pvc create error")
 		woc.markWorkflowError(ctx, err)
 		return
 	} else if woc.wf.Status.Phase == wfv1.WorkflowPending {
@@ -367,7 +373,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	node, err := woc.executeTemplate(ctx, woc.wf.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
-		woc.log.WithError(err).Error("error in entry template execution")
+		woc.log.WithError(err).Error(ctx, "error in entry template execution")
 		// we wrap this error up to report a clear message
 		x := fmt.Errorf("error in entry template execution: %w", err)
 		switch err {
@@ -375,12 +381,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 		case ErrParallelismReached:
 		default:
-			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+			if !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 				woc.markWorkflowError(ctx, x)
 
 				// Garbage collect PVCs if Entrypoint template execution returns error
 				if err := woc.deletePVCs(ctx); err != nil {
-					woc.log.WithError(err).Warn("failed to delete PVCs")
+					woc.log.WithError(err).Warn(ctx, "failed to delete PVCs")
 				}
 			}
 		}
@@ -415,7 +421,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 	failedNodeBytes, err := json.Marshal(failures)
 	if err != nil {
-		woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
+		woc.log.Errorf(ctx, "Error marshalling failed nodes list: %+v", err)
 		// No need to return here
 	}
 	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
@@ -423,7 +429,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
-		woc.markNodeError(node.Name, err)
+		woc.markNodeError(ctx, node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP/Plugin templates when is not shutdown
 	if !woc.execWf.Spec.Shutdown.Enabled() {
@@ -442,7 +448,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.HasExitHook() {
-		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
+		woc.log.Infof(ctx, "Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.Name)
 		onExitNode, _ = woc.execWf.GetNodeByName(onExitNodeName)
 		if onExitNode != nil || woc.GetShutdownStrategy().ShouldExecute(true) {
@@ -457,12 +463,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 				case ErrParallelismReached:
 				default:
-					if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+					if !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 						woc.markWorkflowError(ctx, x)
 
 						// Garbage collect PVCs if Onexit template execution returns error
 						if err := woc.deletePVCs(ctx); err != nil {
-							woc.log.WithError(err).Warn("failed to delete PVCs")
+							woc.log.WithError(err).Warn(ctx, "failed to delete PVCs")
 						}
 					}
 				}
@@ -470,7 +476,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			}
 
 			// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
-			if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(onExitNode.Name) {
+			if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(ctx, onExitNode.Name) {
 				woc.taskSetReconciliation(ctx)
 			}
 
@@ -526,14 +532,14 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if err := woc.deletePVCs(ctx); err != nil {
-		woc.log.WithError(err).Warn("failed to delete PVCs")
+		woc.log.WithError(err).Warn(ctx, "failed to delete PVCs")
 	}
 }
 
 func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
-		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
-			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
+		if woc.controller.syncManager.ReleaseAll(ctx, woc.execWf) {
+			woc.log.WithFields(logging.Fields{"key": woc.execWf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
 			woc.markWorkflowSuccess(ctx)
 			return true
 		}
@@ -726,41 +732,41 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		return
 	}
 
-	diff.LogChanges(woc.orig, woc.wf)
+	diff.LogChanges(ctx, woc.orig, woc.wf)
 
-	resource.UpdateResourceDurations(woc.wf)
-	progress.UpdateProgress(woc.wf)
+	resource.UpdateResourceDurations(ctx, woc.wf)
+	progress.UpdateProgress(ctx, woc.wf)
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
-		woc.log.Panic("cannot persist updates with mismatched resource versions")
+		woc.log.Panic(ctx, "cannot persist updates with mismatched resource versions")
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
-	err := woc.controller.hydrator.Dehydrate(woc.wf)
+	err := woc.controller.hydrator.Dehydrate(ctx, woc.wf)
 	if err != nil {
-		woc.log.Warnf("Failed to dehydrate: %v", err)
+		woc.log.Warnf(ctx, "Failed to dehydrate: %v", err)
 		woc.markWorkflowError(ctx, err)
 	}
 
 	// Release all acquired lock for completed workflow
 	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Fulfilled() {
-		if woc.controller.syncManager.ReleaseAll(woc.wf) {
-			woc.log.WithFields(log.Fields{"key": woc.wf.Name}).Info("Released all acquired locks")
+		if woc.controller.syncManager.ReleaseAll(ctx, woc.wf) {
+			woc.log.WithFields(logging.Fields{"key": woc.wf.Name}).Info(ctx, "Released all acquired locks")
 		}
 	}
 
 	// Remove completed taskset status before update workflow.
 	err = woc.removeCompletedTaskSetStatus(ctx)
 	if err != nil {
-		woc.log.WithError(err).Warn("error updating taskset")
+		woc.log.WithError(err).Warn(ctx, "error updating taskset")
 	}
 
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
-		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
+		woc.log.Warnf(ctx, "Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
 			return
@@ -768,10 +774,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		if !apierr.IsConflict(err) {
 			return
 		}
-		woc.log.Info("Re-applying updates on latest version and retrying update")
+		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
 		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
-			woc.log.WithError(err).Info("Failed to re-apply update")
+			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
 			return
 		}
 		woc.wf = wf
@@ -785,13 +791,13 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	woc.wf.TypeMeta = woc.orig.TypeMeta
 
 	// Create WorkflowNode* events for nodes that have changed phase
-	woc.recordNodePhaseChangeEvents(woc.orig.Status.Nodes, woc.wf.Status.Nodes)
+	woc.recordNodePhaseChangeEvents(ctx, woc.orig.Status.Nodes, woc.wf.Status.Nodes)
 
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
 	}
 
-	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
+	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
 	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
@@ -809,7 +815,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if woc.wf.Status.Fulfilled() {
 		woc.controller.metrics.StopRealtimeMetricsForWfUID(string(woc.wf.GetUID()))
 		if err := woc.deleteTaskResults(ctx); err != nil {
-			woc.log.WithError(err).Warn("failed to delete task-results")
+			woc.log.WithError(err).Warn(ctx, "failed to delete task-results")
 		}
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
@@ -820,11 +826,11 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be labeled multiple times.
-	woc.queuePodsForCleanup()
+	woc.queuePodsForCleanup(ctx)
 }
 
-func (woc *wfOperationCtx) checkTaskResultsInProgress() bool {
-	woc.log.Debugf("Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
+func (woc *wfOperationCtx) checkTaskResultsInProgress(ctx context.Context) bool {
+	woc.log.Debugf(ctx, "Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
 	return woc.wf.Status.TaskResultsInProgress()
 }
 
@@ -857,7 +863,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 	woc.markWorkflowError(ctx, err)
 	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
-		woc.log.Warnf("Error updating workflow with size error: %v", err)
+		woc.log.Warnf(ctx, "Error updating workflow with size error: %v", err)
 	}
 }
 
@@ -867,9 +873,9 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
 	// if this condition is true, then this func will always error
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
-		woc.log.Panic("cannot re-apply update with mismatched resource versions")
+		woc.log.Panic(ctx, "cannot re-apply update with mismatched resource versions")
 	}
-	err := woc.controller.hydrator.Hydrate(woc.orig)
+	err := woc.controller.hydrator.Hydrate(ctx, woc.orig)
 	if err != nil {
 		return nil, err
 	}
@@ -901,7 +907,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if currWf.Status.Fulfilled() {
 			return nil, fmt.Errorf("must never update completed workflows")
 		}
-		err = woc.controller.hydrator.Hydrate(currWf)
+		err = woc.controller.hydrator.Hydrate(ctx, currWf)
 		if err != nil {
 			return nil, err
 		}
@@ -924,18 +930,18 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if err != nil {
 			return nil, err
 		}
-		err = woc.controller.hydrator.Dehydrate(&newWf)
+		err = woc.controller.hydrator.Dehydrate(ctx, &newWf)
 		if err != nil {
 			return nil, err
 		}
 		wf, err := wfClient.Update(ctx, &newWf, metav1.UpdateOptions{})
 		if err == nil {
-			woc.log.Infof("Update retry attempt %d successful", attempt)
+			woc.log.Infof(ctx, "Update retry attempt %d successful", attempt)
 			woc.controller.hydrator.HydrateWithNodes(wf, nodes)
 			return wf, nil
 		}
 		attempt++
-		woc.log.Warnf("Update retry attempt %d failed: %v", attempt, err)
+		woc.log.Warnf(ctx, "Update retry attempt %d failed: %v", attempt, err)
 		if attempt > 5 {
 			return nil, err
 		}
@@ -954,7 +960,7 @@ func (woc *wfOperationCtx) requeue() {
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
-func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
+func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
 	if node.Phase.Fulfilled(node.TaskResultSynced) {
 		return node, true, nil
 	}
@@ -977,7 +983,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			return node, true, nil
 		}
 		// last child node is still running.
-		node = woc.markNodePhase(node.Name, lastChildNode.Phase)
+		node = woc.markNodePhase(ctx, node.Name, lastChildNode.Phase)
 		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
 			node.Daemoned = ptr.To(true)
 		}
@@ -986,8 +992,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	if !lastChildNode.FailedOrError() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
-		woc.wf.Status.Nodes.Set(node.ID, *node)
-		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
 	if woc.GetShutdownStrategy().Enabled() || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
@@ -997,8 +1003,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		} else {
 			message = fmt.Sprintf("retry exceeded workflow deadline %s", *woc.workflowDeadline)
 		}
-		woc.log.Infoln(message)
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, message), true, nil
+		woc.log.Info(ctx, message)
+		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, message), true, nil
 	}
 
 	if retryStrategy.Backoff != nil {
@@ -1015,8 +1021,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			}
 			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
-				woc.log.Infoln("Max duration limit exceeded. Failing...")
-				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
+				woc.log.Info(ctx, "Max duration limit exceeded. Failing...")
+				return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
 			}
 		}
 
@@ -1053,21 +1059,21 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
 		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
-			woc.log.Infoln("Backoff would exceed max duration limit. Failing...")
-			return woc.markNodePhase(node.Name, lastChildNode.Phase, "Backoff would exceed max duration limit"), true, nil
+			woc.log.Info(ctx, "Backoff would exceed max duration limit. Failing...")
+			return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Backoff would exceed max duration limit"), true, nil
 		}
 
 		// See if we have waited past the deadline
 		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(childNodeIds)) <= int32(retryStrategy.Limit.IntValue()) {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
-			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
+			return woc.markNodePhase(ctx, node.Name, node.Phase, retryMessage), false, nil
 		}
 
-		woc.log.WithField("node", node.Name).Infof("node has maxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
+		woc.log.WithField("node", node.Name).Infof(ctx, "node has maxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
 		opts.executionDeadline = maxDurationDeadline
 
-		node = woc.markNodePhase(node.Name, node.Phase, "")
+		node = woc.markNodePhase(ctx, node.Name, node.Phase, "")
 	}
 
 	var retryOnFailed bool
@@ -1080,7 +1086,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		retryOnFailed = false
 		retryOnError = true
 	case wfv1.RetryPolicyOnTransientError:
-		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.InternalError(lastChildNode.Message)) {
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), errors.InternalError(lastChildNode.Message)) {
 			retryOnFailed = true
 			retryOnError = true
 		}
@@ -1090,16 +1096,16 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	default:
 		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
 	}
-	woc.log.Infof("Retry Policy: %s (onFailed: %v, onError %v)", retryStrategy.RetryPolicyActual(), retryOnFailed, retryOnError)
+	woc.log.Infof(ctx, "Retry Policy: %s (onFailed: %v, onError %v)", retryStrategy.RetryPolicyActual(), retryOnFailed, retryOnError)
 
 	if ((lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.IsDaemoned() && (lastChildNode.Phase == wfv1.NodeSucceeded)) && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
-		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
+		woc.log.Infof(ctx, "Node not set to be retried after status: %s", lastChildNode.Phase)
+		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	if !lastChildNode.CanRetry() {
-		woc.log.Infof("Node cannot be retried. Marking it failed")
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
+		woc.log.Infof(ctx, "Node cannot be retried. Marking it failed")
+		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	limit, err := intstr.Int32(retryStrategy.Limit)
@@ -1107,8 +1113,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return nil, false, err
 	}
 	if retryStrategy.Limit != nil && limit != nil && int32(len(childNodeIds)) > *limit {
-		woc.log.Infoln("No more retries left. Failing...")
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
+		woc.log.Info(ctx, "No more retries left. Failing...")
+		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
 
 	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
@@ -1119,11 +1125,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			return nil, false, err
 		}
 		if !shouldContinue && lastChildNode.Fulfilled() {
-			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
+			return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
 		}
 	}
 
-	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(childNodeIds), node.Name)
+	woc.log.Infof(ctx, "%d child nodes of %s failed. Trying again...", len(childNodeIds), node.Name)
 	return node, true, nil
 }
 
@@ -1135,7 +1141,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) {
 	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
-		woc.log.Error("was unable to retrieve workflow pods")
+		woc.log.Error(ctx, "was unable to retrieve workflow pods")
 		return err, false
 	}
 	seenPods := make(map[string]*apiv1.Pod)
@@ -1148,7 +1154,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			return
 		}
 		if woc.isAgentPod(pod) {
-			woc.updateAgentPodStatus(pod)
+			woc.updateAgentPodStatus(ctx, pod)
 			return
 		}
 		nodeID := woc.nodeID(pod)
@@ -1168,17 +1174,17 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				}
 				// Check whether its taskresult is in an incompleted state.
 				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
-					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
+					woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).Debug(ctx, "Taskresult of the node not yet completed")
 					taskResultIncomplete = true
 					return
 				}
-				woc.addOutputsToGlobalScope(newState.Outputs)
+				woc.addOutputsToGlobalScope(ctx, newState.Outputs)
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
 						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, newState.MemoizationStatus.CacheName)
 						err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs)
 						if err != nil {
-							woc.log.WithFields(log.Fields{"nodeID": newState.ID}).WithError(err).Error("Failed to save node outputs to cache")
+							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 							newState.Phase = wfv1.NodeError
 							newState.Message = err.Error()
 						}
@@ -1187,12 +1193,12 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				if newState.Phase == wfv1.NodeRunning {
 					podRunningCondition.Status = metav1.ConditionTrue
 				}
-				woc.wf.Status.Nodes.Set(nodeID, *newState)
+				woc.wf.Status.Nodes.Set(ctx, nodeID, *newState)
 				woc.updated = true
 				// warning!  when the node completes, the daemoned flag will be unset, so we must check the old node
 				if !node.IsDaemoned() && !node.Completed() && newState.Completed() {
 					if woc.shouldPrintPodSpec(newState) {
-						printPodSpecLog(pod, woc.wf.Name)
+						woc.printPodSpecLog(ctx, pod, woc.wf.Name)
 					}
 				}
 			}
@@ -1208,7 +1214,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		go func(pod *apiv1.Pod) {
 			defer wg.Done()
 			performAssessment(pod)
-			woc.applyExecutionControl(pod, wfNodesLock)
+			woc.applyExecutionControl(ctx, pod, wfNodesLock)
 			<-parallelPodNum
 		}(pod)
 	}
@@ -1238,7 +1244,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		if _, ok := seenPods[nodeID]; !ok {
 
 			// grace-period to allow informer sync
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+			woc.log.WithFields(logging.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info(ctx, "Workflow pod is missing")
 			woc.controller.metrics.PodMissingInc(ctx, recentlyStarted, string(node.Phase))
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
@@ -1259,9 +1265,9 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				node.Daemoned = nil
 				woc.updated = true
 			}
-			woc.markNodeError(node.Name, errors.New("", "pod deleted"))
+			woc.markNodeError(ctx, node.Name, errors.New("", "pod deleted"))
 			// Mark all its children(container) as deleted if pod deleted
-			woc.markAllContainersDeleted(node.ID)
+			woc.markAllContainersDeleted(ctx, node.ID)
 		}
 	}
 	return nil, !taskResultIncomplete
@@ -1276,27 +1282,27 @@ func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), "RECENTLY_STARTED_POD_DURATION", 10*time.Second)
 }
 
 // markAllContainersDeleted mark all its children(container) as deleted
-func (woc *wfOperationCtx) markAllContainersDeleted(nodeID string) {
+func (woc *wfOperationCtx) markAllContainersDeleted(ctx context.Context, nodeID string) {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
 		return
 	}
 
 	for _, childNodeID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", childNodeID)
+			woc.log.Errorf(ctx, "was unable to obtain node for %s", childNodeID)
 			continue
 		}
 		if childNode.Type == wfv1.NodeTypeContainer {
-			woc.markNodeError(childNode.Name, errors.New("", "container deleted"))
+			woc.markNodeError(ctx, childNode.Name, errors.New("", "container deleted"))
 			// Recursively mark successor node(container) as deleted
-			woc.markAllContainersDeleted(childNodeID)
+			woc.markAllContainersDeleted(ctx, childNodeID)
 		}
 	}
 }
@@ -1308,27 +1314,27 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 }
 
 // failNodesWithoutCreatedPodsAfterDeadlineOrShutdown mark the nodes without created pods failed when shutting down or exceeding deadline.
-func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown() {
+func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx context.Context) {
 	nodes := woc.wf.Status.Nodes
 	for _, node := range nodes {
 		if node.Fulfilled() {
 			continue
 		}
 		// Only fail nodes that are not part of exit handler if we are "Stopping" or all pods if we are "Terminating"
-		if woc.GetShutdownStrategy().Enabled() && !woc.GetShutdownStrategy().ShouldExecute(node.IsPartOfExitHandler(nodes)) {
+		if woc.GetShutdownStrategy().Enabled() && !woc.GetShutdownStrategy().ShouldExecute(node.IsPartOfExitHandler(ctx, nodes)) {
 			// fail suspended nodes or taskset nodes when shutting down
 			if node.IsActiveSuspendNode() || node.IsTaskSetNode() {
 				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 				continue
 			}
 		}
 
 		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
 		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-		if deadlineExceeded && !node.IsPartOfExitHandler(nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
+		if deadlineExceeded && !node.IsPartOfExitHandler(ctx, nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			message := "Step exceeded its deadline"
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 			continue
 		}
 	}
@@ -1351,20 +1357,20 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	return pods, nil
 }
 
-func printPodSpecLog(pod *apiv1.Pod, wfName string) {
+func (woc *wfOperationCtx) printPodSpecLog(ctx context.Context, pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
-	log := log.WithField("workflow", wfName).
+	log := woc.log.WithField("workflow", wfName).
 		WithField("podName", pod.Name).
 		WithField("nodeID", pod.Annotations[common.AnnotationKeyNodeID]).
 		WithField("namespace", pod.Namespace)
 	if err != nil {
 		log.
 			WithError(err).
-			Warn("Unable to marshal pod spec.")
+			Warn(ctx, "Unable to marshal pod spec.")
 	} else {
 		log.
 			WithField("spec", string(podSpecByte)).
-			Info("Pod Spec")
+			Info(ctx, "Pod Spec")
 	}
 }
 
@@ -1372,9 +1378,9 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
-	tmpl, err := woc.GetNodeTemplate(old)
+	tmpl, err := woc.GetNodeTemplate(ctx, old)
 	if err != nil {
-		woc.log.Error(err)
+		woc.log.Error(ctx, err.Error())
 		return nil
 	}
 	switch pod.Status.Phase {
@@ -1389,7 +1395,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
 		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
 		if tmpl.IsDaemon() {
-			woc.log.Debugf("Daemoned pod %s succeeded. Marking it as failed", pod.Name)
+			woc.log.Debugf(ctx, "Daemoned pod %s succeeded. Marking it as failed", pod.Name)
 			new.Phase = wfv1.NodeFailed
 		} else {
 			new.Phase = wfv1.NodeSucceeded
@@ -1400,7 +1406,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		// ignore pod failure for daemoned steps
 		new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
 		woc.log.WithField("displayName", old.DisplayName).WithField("templateName", wfutil.GetTemplateFromNode(*old)).
-			WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
+			WithField("pod", pod.Name).Infof(ctx, "Pod failed: %s", new.Message)
 		new.Daemoned = nil
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
@@ -1418,14 +1424,14 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				new.Phase = wfv1.NodeRunning
 				new.Daemoned = ptr.To(true)
 				if !old.IsDaemoned() {
-					woc.log.WithField("nodeId", old.ID).Info("Node became daemoned")
+					woc.log.WithField("nodeId", old.ID).Info(ctx, "Node became daemoned")
 				}
 			}
 		} else {
 			new.Phase = wfv1.NodeRunning
 		}
 		if tmpl != nil {
-			woc.cleanUpPod(pod, *tmpl)
+			woc.cleanUpPod(ctx, pod, *tmpl)
 		}
 	default:
 		new.Phase = wfv1.NodeError
@@ -1448,20 +1454,20 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			message := fmt.Sprintf("%s: %s (exit code %d): %s", c.Name, c.State.Terminated.Reason, exitCode, c.State.Terminated.Message)
 			switch exitCode {
 			case 0:
-				woc.markNodePhase(ctrNodeName, wfv1.NodeSucceeded)
+				woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeSucceeded)
 			case 64:
 				// special emissary exit code indicating the emissary errors, rather than the sub-process failure,
 				// (unless the sub-process coincidentally exits with code 64 of course)
-				woc.markNodePhase(ctrNodeName, wfv1.NodeError, message)
+				woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeError, message)
 			default:
-				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message)
+				woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeFailed, message)
 			}
 		case pod.Status.Phase == apiv1.PodFailed:
-			woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, `Pod Failed whilst container running`)
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeFailed, `Pod Failed whilst container running`)
 		case c.State.Waiting != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodePending)
 		case c.State.Running != nil:
-			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeRunning)
 		}
 	}
 
@@ -1494,15 +1500,15 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			waitContainerCleanedUp = false
 			switch {
 			case c.State.Running != nil && new.Phase.Completed() && pod.Status.Phase != apiv1.PodFailed:
-				woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
+				woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: wait container is not yet terminated ")
 				new.Phase = old.Phase
 			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
 				// Mark its taskResult as completed directly since wait container did not exit normally,
 				// and it will never have a chance to report taskResult correctly.
 				nodeID := woc.nodeID(pod)
-				woc.log.WithFields(log.Fields{"nodeID": nodeID, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
-					Warn("marking its taskResult as completed since wait container did not exit normally")
-				woc.wf.Status.MarkTaskResultComplete(nodeID)
+				woc.log.WithFields(logging.Fields{"nodeID": nodeID, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
+					Warn(ctx, "marking its taskResult as completed since wait container did not exit normally")
+				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 			}
 		}
 	}
@@ -1510,9 +1516,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		// Mark its taskResult as completed directly since wait container has been cleaned up because of pod evicted,
 		// and it will never have a chance to report taskResult correctly.
 		nodeID := woc.nodeID(pod)
-		woc.log.WithFields(log.Fields{"nodeID": nodeID}).
-			Warn("marking its taskResult as completed since wait container has been cleaned up.")
-		woc.wf.Status.MarkTaskResultComplete(nodeID)
+		woc.log.WithFields(logging.Fields{"nodeID": nodeID}).
+			Warn(ctx, "marking its taskResult as completed since wait container has been cleaned up.")
+		woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 	}
 
 	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
@@ -1533,11 +1539,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			WithField("new.message", new.Message).
 			WithField("old.progress", old.Progress).
 			WithField("new.progress", new.Progress).
-			Debug("node changed")
+			Debug(ctx, "node changed")
 		return new
 	}
 	woc.log.WithField("nodeID", old.ID).
-		Debug("node unchanged")
+		Debug(ctx, "node unchanged")
 	return nil
 }
 
@@ -1568,9 +1574,9 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 	return true
 }
 
-func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
+func (woc *wfOperationCtx) cleanUpPod(ctx context.Context, pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.PodController.TerminateContainers(woc.wf.Namespace, pod.Name)
+		woc.controller.PodController.TerminateContainers(ctx, woc.wf.Namespace, pod.Name)
 	}
 }
 
@@ -1714,7 +1720,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		// PVC name will be <workflowname>-<volumeclaimtemplatename>
 		refName := pvcTmpl.Name
 		pvcName := fmt.Sprintf("%s-%s", woc.wf.Name, pvcTmpl.Name)
-		woc.log.Infof("Creating pvc %s", pvcName)
+		woc.log.Infof(ctx, "Creating pvc %s", pvcName)
 		pvcTmpl.Name = pvcName
 		if pvcTmpl.Labels == nil {
 			pvcTmpl.Labels = make(map[string]string)
@@ -1725,7 +1731,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		}
 		pvc, err := pvcClient.Create(ctx, &pvcTmpl, metav1.CreateOptions{})
 		if err != nil && apierr.IsAlreadyExists(err) {
-			woc.log.WithField("pvc", pvcTmpl.Name).Info("pvc already exists. Workflow is re-using it")
+			woc.log.WithField("pvc", pvcTmpl.Name).Info(ctx, "pvc already exists. Workflow is re-using it")
 			pvc, err = pvcClient.Get(ctx, pvcTmpl.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -1787,11 +1793,11 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
 	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
-		woc.log.Infof("Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
+		woc.log.Infof(ctx, "Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
 		err := pvcClient.Delete(ctx, pvc.PersistentVolumeClaim.ClaimName, metav1.DeleteOptions{})
 		if err != nil {
 			if !apierr.IsNotFound(err) {
-				woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
+				woc.log.Errorf(ctx, "Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
 				newPVClist = append(newPVClist, pvc)
 				if firstErr == nil {
 					firstErr = err
@@ -1802,7 +1808,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") != "false" {
 		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
 			woc.log.WithField("claimName", pvc.PersistentVolumeClaim.ClaimName).
-				Info("Removing PVC \"kubernetes.io/pvc-protection\" finalizer")
+				Info(ctx, "Removing PVC \"kubernetes.io/pvc-protection\" finalizer")
 			x, err := pvcClient.Get(ctx, pvc.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -1817,7 +1823,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 	}
 	if len(newPVClist) != totalPVCs {
 		// we were successful in deleting one ore more PVCs
-		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
+		woc.log.Infof(ctx, "Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
 		woc.wf.Status.PersistentVolumeClaims = newPVClist
 		woc.updated = true
 	}
@@ -1931,7 +1937,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 	}()
 
-	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
+	woc.log.Debugf(ctx, "Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
@@ -1939,12 +1945,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	node, err = woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		// Will be initialized via woc.initializeNodeOrMarkError
-		woc.log.Warnf("Node was nil, will be initialized as type Skipped")
+		woc.log.Warnf(ctx, "Node was nil, will be initialized as type Skipped")
 	}
 
 	if node != nil {
 		if node.DisplayName == "dependencyTesting" {
-			woc.log.Debugf("Node %s already exists, will be updated", nodeName)
+			woc.log.Debugf(ctx, "Node %s already exists, will be updated", nodeName)
 		}
 	}
 
@@ -1952,12 +1958,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	defer func() { woc.currentStackDepth-- }()
 
 	if woc.currentStackDepth >= woc.controller.maxStackDepth && os.Getenv("DISABLE_MAX_RECURSION") != "true" {
-		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, ErrMaxDepthExceeded), ErrMaxDepthExceeded
+		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, ErrMaxDepthExceeded), ErrMaxDepthExceeded
 	}
 
-	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(orgTmpl)
+	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(ctx, orgTmpl)
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
 	// A new template was stored during resolution, persist it
 	if templateStored {
@@ -1967,7 +1973,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
 
 	localParams := make(map[string]string)
@@ -1988,18 +1994,18 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
 
 	// Update displayName from processedTmpl
 	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
 		if !displayNameRegex.MatchString(displayName) {
 			err = fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())
-			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+			return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 
-		woc.log.Debugf("Updating node %s display name to %s", node.DisplayName, displayName)
-		woc.setNodeDisplayName(node, displayName)
+		woc.log.Debugf(ctx, "Updating node %s display name to %s", node.DisplayName, displayName)
+		woc.setNodeDisplayName(ctx, node, displayName)
 	}
 
 	// Check if this is a fulfilled node for synchronization.
@@ -2010,12 +2016,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
 		}
-		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
+		woc.log.Debugf(ctx, "Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
 	}
 
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
-		woc.log.Warnf("Deadline exceeded")
+		woc.log.Warnf(ctx, "Deadline exceeded")
 		woc.requeue()
 		return node, ErrDeadlineExceeded
 	}
@@ -2025,12 +2031,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// In above scenario, only Node will be created in pending state
 	_, err = woc.checkTemplateTimeout(processedTmpl, node)
 	if err != nil {
-		woc.log.Warnf("Template %s exceeded its deadline", processedTmpl.Name)
-		return woc.markNodePhase(nodeName, wfv1.NodeFailed, err.Error()), err
+		woc.log.Warnf(ctx, "Template %s exceeded its deadline", processedTmpl.Name)
+		return woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error()), err
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	if err := woc.checkParallelism(processedTmpl, node, opts.boundaryID); err != nil {
+	if err := woc.checkParallelism(ctx, processedTmpl, node, opts.boundaryID); err != nil {
 		return node, err
 	}
 
@@ -2039,20 +2045,20 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if processedTmpl.Synchronization != nil {
 		lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(ctx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
-			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+			return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 		if !lockAcquired {
 			if node == nil {
-				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, msg)
+				node = woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, msg)
 			}
-			woc.log.Infof("Could not acquire lock named: %s", failedLockName)
-			return woc.markNodeWaitingForLock(node.Name, failedLockName, msg)
+			woc.log.Infof(ctx, "Could not acquire lock named: %s", failedLockName)
+			return woc.markNodeWaitingForLock(ctx, node.Name, failedLockName, msg)
 		} else {
-			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
+			woc.log.Infof(ctx, "Node %s acquired synchronization lock", nodeName)
 			if node != nil {
-				node, err = woc.markNodeWaitingForLock(node.Name, "", "")
+				node, err = woc.markNodeWaitingForLock(ctx, node.Name, "", "")
 				if err != nil {
-					woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error("markNodeWaitingForLock returned err")
+					woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error(ctx, "markNodeWaitingForLock returned err")
 					return nil, err
 				}
 			}
@@ -2069,13 +2075,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
 			if memoizationCache == nil {
 				err := fmt.Errorf("cache could not be found or created")
-				woc.log.WithFields(log.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
-				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+				woc.log.WithFields(logging.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
+				return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 			}
 
 			entry, err := memoizationCache.Load(ctx, processedTmpl.Memoize.Key)
 			if err != nil {
-				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+				return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 			}
 
 			hit := entry.Hit()
@@ -2084,7 +2090,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				maxAge, err := time.ParseDuration(processedTmpl.Memoize.MaxAge)
 				if err != nil {
 					err := fmt.Errorf("invalid maxAge: %s", err)
-					return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+					return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 				}
 				maxAgeOutputs, ok := entry.GetOutputsWithMaxAge(maxAge)
 				if !ok {
@@ -2103,20 +2109,20 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 			if hit {
 				if node == nil {
-					node = woc.initializeCacheHitNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memoizationStatus, opts.nodeFlag)
+					node = woc.initializeCacheHitNode(ctx, nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memoizationStatus, opts.nodeFlag)
 				} else {
-					woc.log.Infof("Node %s is using mutex with memoize. Cache is hit.", nodeName)
-					woc.updateAsCacheHitNode(node, outputs, memoizationStatus)
+					woc.log.Infof(ctx, "Node %s is using mutex with memoize. Cache is hit.", nodeName)
+					woc.updateAsCacheHitNode(ctx, node, outputs, memoizationStatus)
 				}
 			} else {
 				if node == nil {
-					node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, memoizationStatus, opts.nodeFlag)
+					node = woc.initializeCacheNode(ctx, nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, memoizationStatus, opts.nodeFlag)
 				} else {
-					woc.log.Infof("Node %s is using mutex with memoize. Cache is NOT hit", nodeName)
-					woc.updateAsCacheNode(node, memoizationStatus)
+					woc.log.Infof(ctx, "Node %s is using mutex with memoize. Cache is NOT hit", nodeName)
+					woc.updateAsCacheNode(ctx, node, memoizationStatus)
 				}
 			}
-			woc.wf.Status.Nodes.Set(node.ID, *node)
+			woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 			woc.updated = true
 		}
 	}
@@ -2132,8 +2138,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
-			woc.wf.Status.Nodes.Set(node.ID, *node)
+			node.EstimatedDuration = woc.estimateNodeDuration(ctx, node.Name)
+			woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 			woc.updated = true
 		}
 	}
@@ -2149,16 +2155,16 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
-			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
-			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+			woc.log.Debugf(ctx, "Inject a retry node for node %s", retryNodeName)
+			retryParentNode = woc.initializeExecutableNode(ctx, retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
 		}
 		if opts.nodeFlag == nil {
 			opts.nodeFlag = &wfv1.NodeFlag{}
 		}
 		opts.nodeFlag.Retried = true
-		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *woc.retryStrategy(processedTmpl), opts)
+		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 		if err != nil {
-			return woc.markNodeError(retryNodeName, err), err
+			return woc.markNodeError(ctx, retryNodeName, err), err
 		} else if !continueExecution {
 			// We are still waiting for a retry delay to finish
 			return retryParentNode, nil
@@ -2172,7 +2178,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
 				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
-				woc.wf.Status.Nodes.Set(node.ID, *retryParentNode)
+				woc.wf.Status.Nodes.Set(ctx, node.ID, *retryParentNode)
 			}
 			if processedTmpl.Metrics != nil {
 				// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
@@ -2190,7 +2196,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			_, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 			if lastChildNode != nil {
 				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
-				woc.wf.Status.Nodes.Set(node.ID, *retryParentNode)
+				woc.wf.Status.Nodes.Set(ctx, node.ID, *retryParentNode)
 			}
 			return retryParentNode, nil
 		} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
@@ -2210,7 +2216,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// Create a new child node and append it to the retry node.
 			retryNum = len(childNodeIDs)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
-			woc.addChildNode(retryNodeName, nodeName)
+			woc.addChildNode(ctx, retryNodeName, nodeName)
 			node = nil
 		}
 
@@ -2240,11 +2246,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[common.LocalVarRetriesLastStatus] = lastRetryStatus
 		localParams[common.LocalVarRetriesLastMessage] = lastRetryMessage
 		processedTmpl, err = common.SubstituteParams(processedTmpl, woc.globalParams, localParams)
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) {
 			return node, err
 		}
 		if err != nil {
-			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+			return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 	}
 
@@ -2262,20 +2268,20 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	case wfv1.TemplateTypeDAG:
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
-		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		node, err = woc.executeSuspend(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeData:
 		node, err = woc.executeData(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeHTTP:
-		node = woc.executeHTTPTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		node = woc.executeHTTPTemplate(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypePlugin:
-		node = woc.executePluginTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		node = woc.executePluginTemplate(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, opts.nodeFlag, true, err.Error()), err
+		return woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, opts.nodeFlag, true, err.Error()), err
 	}
 
 	if err != nil {
-		node = woc.markNodeError(nodeName, err)
+		node = woc.markNodeError(ctx, nodeName, err)
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
@@ -2304,7 +2310,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	retrieveNode, err := woc.wf.GetNodeByName(node.Name)
 	if err != nil {
 		err := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
-		woc.log.Error(err)
+		woc.log.Error(ctx, err.Error())
 		woc.markWorkflowError(ctx, err)
 		return node, err
 	}
@@ -2315,7 +2321,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryNode, err := woc.wf.GetNodeByName(retryNodeName)
 		if err != nil {
 			err := fmt.Errorf("no Retry Node found by the name of %s;  wf.Status.Nodes=%+v", retryNodeName, woc.wf.Status.Nodes)
-			woc.log.Error(err)
+			woc.log.Error(ctx, err.Error())
 			woc.markWorkflowError(ctx, err)
 			return node, err
 		}
@@ -2323,12 +2329,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if !retryNode.Phase.Fulfilled(retryNode.TaskResultSynced) && node.Phase.Fulfilled(node.TaskResultSynced) { // if the retry child has completed we need to update the parent's status
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
-				return woc.markNodeError(node.Name, err), err
+				return woc.markNodeError(ctx, node.Name, err), err
 			}
 		}
 
 		if !node.Phase.Fulfilled(node.TaskResultSynced) && node.IsDaemoned() {
-			retryNode = woc.markNodePhase(retryNodeName, node.Phase)
+			retryNode = woc.markNodePhase(ctx, retryNodeName, node.Phase)
 			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
 				retryNode.Daemoned = ptr.To(true)
 			}
@@ -2366,7 +2372,7 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName str
 		return nil
 	}
 
-	woc.log.Debugf("Node %s already completed", nodeName)
+	woc.log.Debugf(ctx, "Node %s already completed", nodeName)
 
 	if processedTmpl.Metrics != nil {
 		// Check if this node completed between executions. If it did, emit metrics.
@@ -2421,19 +2427,19 @@ func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
 	// Check whether or not the workflow needs to continue processing when it is completed
-	if phase.Completed() && (woc.checkTaskResultsInProgress() || woc.hasDaemonNodes()) {
-		woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
-			Debug("taskresults of workflow are incomplete or still have daemon nodes, so can't mark workflow completed")
-		woc.killDaemonedChildren("")
+	if phase.Completed() && (woc.checkTaskResultsInProgress(ctx) || woc.hasDaemonNodes()) {
+		woc.log.WithFields(logging.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
+			Debug(ctx, "taskresults of workflow are incomplete or still have daemon nodes, so can't mark workflow completed")
+		woc.killDaemonedChildren(ctx, "")
 		return
 	}
 
 	if woc.wf.Status.Phase != phase {
 		if woc.wf.Status.Fulfilled() {
-			woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
-				Panic("workflow is already fulfilled")
+			woc.log.WithFields(logging.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
+				Panic(ctx, "workflow is already fulfilled")
 		}
-		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
+		woc.log.Infof(ctx, "Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
 		woc.wf.Status.Phase = phase
 		woc.recordWorkflowPhaseChange(ctx)
@@ -2458,10 +2464,10 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration(ctx)
 	}
 	if woc.wf.Status.Message != message {
-		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message)
+		woc.log.Infof(ctx, "Updated message %s -> %s", woc.wf.Status.Message, message)
 		woc.updated = true
 		woc.wf.Status.Message = message
 	}
@@ -2469,19 +2475,19 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	if phase == wfv1.WorkflowError {
 		entryNode, err := woc.wf.Status.Nodes.Get(woc.wf.Name)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", woc.wf.Name)
+			woc.log.Errorf(ctx, "was unable to obtain node for %s", woc.wf.Name)
 		}
 		if (err == nil) && entryNode.Phase == wfv1.NodeRunning {
 			entryNode.Phase = wfv1.NodeError
 			entryNode.Message = "Workflow operation error"
-			woc.wf.Status.Nodes.Set(woc.wf.Name, *entryNode)
+			woc.wf.Status.Nodes.Set(ctx, woc.wf.Name, *entryNode)
 			woc.updated = true
 		}
 	}
 
 	switch phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
-		woc.log.Info("Marking workflow completed")
+		woc.log.Info(ctx, "Marking workflow completed")
 		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
 		if woc.wf.Labels == nil {
@@ -2498,33 +2504,33 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		if woc.controller.wfArchive.IsEnabled() {
 			if woc.controller.isArchivable(woc.wf) {
-				woc.log.Info("Marking workflow as pending archiving")
+				woc.log.Info(ctx, "Marking workflow as pending archiving")
 				woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Pending"
 			} else {
-				woc.log.Info("Doesn't match with archive label selector. Skipping Archive")
+				woc.log.Info(ctx, "Doesn't match with archive label selector. Skipping Archive")
 			}
 		}
 		woc.updated = true
 		if woc.hasTaskSetNodes() {
-			woc.controller.PodController.DeletePod(woc.wf.Namespace, woc.getAgentPodName())
+			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getAgentPodName())
 		}
 	}
 }
 
 // get a predictor, this maybe null implementation in the case of rare error
-func (woc *wfOperationCtx) getEstimator() estimation.Estimator {
+func (woc *wfOperationCtx) getEstimator(ctx context.Context) estimation.Estimator {
 	if woc.estimator == nil {
-		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(woc.wf)
+		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(ctx, woc.wf)
 	}
 	return woc.estimator
 }
 
-func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
-	return woc.getEstimator().EstimateWorkflowDuration()
+func (woc *wfOperationCtx) estimateWorkflowDuration(ctx context.Context) wfv1.EstimatedDuration {
+	return woc.getEstimator(ctx).EstimateWorkflowDuration()
 }
 
-func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
-	return woc.getEstimator().EstimateNodeDuration(nodeName)
+func (woc *wfOperationCtx) estimateNodeDuration(ctx context.Context, nodeName string) wfv1.EstimatedDuration {
+	return woc.getEstimator(ctx).EstimateNodeDuration(nodeName)
 }
 
 func (woc *wfOperationCtx) hasDaemonNodes() bool {
@@ -2553,16 +2559,16 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Template, error) {
+func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
-			woc.markNodeError(node.Name, err)
+			woc.markNodeError(ctx, node.Name, err)
 			return nil, err
 		}
-		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
+		tmpl, err := tmplCtx.GetTemplateFromRef(ctx, node.TemplateRef)
 		if err != nil {
-			woc.markNodeError(node.Name, err)
+			woc.markNodeError(ctx, node.Name, err)
 			return tmpl, err
 		}
 		return tmpl, nil
@@ -2594,8 +2600,8 @@ var (
 )
 
 // initializeExecutableNode initializes a node and stores the template.
-func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSynced bool, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase, nodeFlag, omitTaskResultSynced)
+func (woc *wfOperationCtx) initializeExecutableNode(ctx context.Context, nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSycned bool, messages ...string) *wfv1.NodeStatus {
+	node := woc.initializeNode(ctx, nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase, nodeFlag, omitTaskResultSycned)
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
@@ -2621,38 +2627,43 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	}
 
 	// Update the node
-	woc.wf.Status.Nodes.Set(node.ID, *node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	woc.updated = true
 
 	return node
 }
 
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
-func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, nodeName string, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, nodeFlag *wfv1.NodeFlag, err error) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNodeOrMarkError(ctx context.Context, node *wfv1.NodeStatus, nodeName string, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, nodeFlag *wfv1.NodeFlag, err error) *wfv1.NodeStatus {
 	if node != nil {
-		return woc.markNodeError(nodeName, err)
+		return woc.markNodeError(ctx, nodeName, err)
 	}
 
-	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, nodeFlag, true, err.Error())
+	return woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, nodeFlag, true, err.Error())
 }
 
 // Creates a node status that is or will be cached
-func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeCacheNode(ctx context.Context, nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
 		err := fmt.Errorf("cannot initialize a cached node from a non-memoized template")
-		woc.log.WithFields(log.Fields{"namespace": woc.wf.Namespace, "wfName": woc.wf.Name}).WithError(err)
+		woc.log.WithFields(logging.Fields{"namespace": woc.wf.Namespace, "wfName": woc.wf.Name}).WithError(err)
 		panic(err)
 	}
-	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
+	woc.log.WithFields(logging.Fields{
+		"nodeName":       nodeName,
+		"templateHolder": common.GetTemplateHolderString(orgTmpl),
+		"boundaryID":     boundaryID,
+	},
+	).Debugf(ctx, "Initializing cached node")
 
-	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, nodeFlag, false, messages...)
+	node := woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, nodeFlag, false, messages...)
 	node.MemoizationStatus = memStat
 	return node
 }
 
 // Creates a node status that has been cached, completely initialized, and marked as finished
-func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeCacheNode(nodeName, resolvedTmpl, templateScope, orgTmpl, boundaryID, memStat, nodeFlag, messages...)
+func (woc *wfOperationCtx) initializeCacheHitNode(ctx context.Context, nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
+	node := woc.initializeCacheNode(ctx, nodeName, resolvedTmpl, templateScope, orgTmpl, boundaryID, memStat, nodeFlag, messages...)
 	node.Phase = wfv1.NodeSucceeded
 	node.Outputs = outputs
 	node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
@@ -2670,8 +2681,8 @@ func executable(nodeType wfv1.NodeType) bool {
 	}
 }
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSynced bool, messages ...string) *wfv1.NodeStatus {
-	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
+func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSynced bool, messages ...string) *wfv1.NodeStatus {
+	woc.log.Debugf(ctx, "Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	nodeID := woc.wf.NodeID(nodeName)
 	ok := woc.wf.Status.Nodes.Has(nodeID)
@@ -2690,7 +2701,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		Phase:             phase,
 		NodeFlag:          nodeFlag,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
-		EstimatedDuration: woc.estimateNodeDuration(nodeName),
+		EstimatedDuration: woc.estimateNodeDuration(ctx, nodeName),
 	}
 
 	if executable(nodeType) && !omitTaskResultSynced {
@@ -2704,7 +2715,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 			node.DisplayName = stepsOrDagSeparator.ReplaceAllString(node.DisplayName, "")
 		}
 	} else {
-		woc.log.Infof("was unable to obtain node for %s, letting display name to be nodeName", boundaryID)
+		woc.log.Infof(ctx, "was unable to obtain node for %s, letting display name to be nodeName", boundaryID)
 		node.DisplayName = nodeName
 	}
 
@@ -2716,35 +2727,35 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		message = fmt.Sprintf(" (message: %s)", messages[0])
 		node.Message = messages[0]
 	}
-	woc.wf.Status.Nodes.Set(nodeID, node)
-	woc.log.Infof("%s node %v initialized %s%s", node.Type, node.ID, node.Phase, message)
+	woc.wf.Status.Nodes.Set(ctx, nodeID, node)
+	woc.log.Infof(ctx, "%s node %v initialized %s%s", node.Type, node.ID, node.Phase, message)
 	woc.updated = true
 	return &node
 }
 
 // Update a node status with cache status
-func (woc *wfOperationCtx) updateAsCacheNode(node *wfv1.NodeStatus, memStat *wfv1.MemoizationStatus) {
+func (woc *wfOperationCtx) updateAsCacheNode(ctx context.Context, node *wfv1.NodeStatus, memStat *wfv1.MemoizationStatus) {
 	node.MemoizationStatus = memStat
 
-	woc.wf.Status.Nodes.Set(node.ID, *node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	woc.updated = true
 }
 
 // Update a node status that has been cached and marked as finished
-func (woc *wfOperationCtx) updateAsCacheHitNode(node *wfv1.NodeStatus, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, message ...string) {
+func (woc *wfOperationCtx) updateAsCacheHitNode(ctx context.Context, node *wfv1.NodeStatus, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, message ...string) {
 	node.Phase = wfv1.NodeSucceeded
 	node.Outputs = outputs
 	node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 
-	woc.updateAsCacheNode(node, memStat)
-	woc.log.Infof("%s node %v updated %s%s", node.Type, node.ID, node.Phase, message)
+	woc.updateAsCacheNode(ctx, node, memStat)
+	woc.log.Infof(ctx, "%s node %v updated %s%s", node.Type, node.ID, node.Phase, message)
 }
 
 // markNodePhase marks a node with the given phase, creating the node if necessary and handles timestamps
-func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warningf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message)
+		woc.log.Warningf(ctx, "workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message)
 		node = &wfv1.NodeStatus{}
 	}
 	// if we not in a running state (not expecting task results)
@@ -2755,26 +2766,26 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled(node.TaskResultSynced) {
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
-				Error("node is already fulfilled")
+			woc.log.WithFields(logging.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
+				Error(ctx, "node is already fulfilled")
 		}
-		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
+		woc.log.Infof(ctx, "node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true
 	}
 	if len(message) > 0 {
 		if message[0] != node.Message {
-			woc.log.Infof("node %s message: %s", node.ID, message[0])
+			woc.log.Infof(ctx, "node %s message: %s", node.ID, message[0])
 			node.Message = message[0]
 			woc.updated = true
 		}
 	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
+		woc.log.Infof(ctx, "node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
 	}
-	woc.wf.Status.Nodes.Set(node.ID, *node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	return node
 }
 
@@ -2787,7 +2798,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	return woc.controller.PodController.GetPod(woc.wf.GetNamespace(), podName)
 }
 
-func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) recordNodePhaseEvent(ctx context.Context, node *wfv1.NodeStatus) {
 	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
 	if node.Message != "" {
 		message = message + ": " + node.Message
@@ -2810,7 +2821,7 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	if eventConfig.SendAsPod {
 		pod, err := woc.getPodByNode(node)
 		if err != nil {
-			woc.log.WithError(err).Info("Error getting pod from workflow node")
+			woc.log.WithError(err).Info(ctx, "Error getting pod from workflow node")
 		}
 		if pod != nil {
 			involvedObject = pod
@@ -2829,7 +2840,7 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 
 // recordNodePhaseChangeEvents creates WorkflowNode Kubernetes events for each node
 // that has changes logged during this execution of the operator loop.
-func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old wfv1.Nodes, new wfv1.Nodes) {
+func (woc *wfOperationCtx) recordNodePhaseChangeEvents(ctx context.Context, old wfv1.Nodes, new wfv1.Nodes) {
 	if !woc.controller.Config.NodeEvents.IsEnabled() {
 		return
 	}
@@ -2844,36 +2855,36 @@ func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old wfv1.Nodes, new wfv1.
 			if oldNode.Phase == wfv1.NodePending && newNode.Completed() {
 				ephemeralNode := newNode.DeepCopy()
 				ephemeralNode.Phase = wfv1.NodeRunning
-				woc.recordNodePhaseEvent(ephemeralNode)
+				woc.recordNodePhaseEvent(ctx, ephemeralNode)
 			}
-			woc.recordNodePhaseEvent(&newNode)
+			woc.recordNodePhaseEvent(ctx, &newNode)
 		} else {
 			if newNode.Phase == wfv1.NodeRunning {
-				woc.recordNodePhaseEvent(&newNode)
+				woc.recordNodePhaseEvent(ctx, &newNode)
 			} else if newNode.Completed() {
 				ephemeralNode := newNode.DeepCopy()
 				ephemeralNode.Phase = wfv1.NodeRunning
-				woc.recordNodePhaseEvent(ephemeralNode)
-				woc.recordNodePhaseEvent(&newNode)
+				woc.recordNodePhaseEvent(ctx, ephemeralNode)
+				woc.recordNodePhaseEvent(ctx, &newNode)
 			}
 		}
 	}
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
-func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
-	woc.log.WithError(err).WithField("nodeName", nodeName).Error("Mark error node")
-	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
+func (woc *wfOperationCtx) markNodeError(ctx context.Context, nodeName string, err error) *wfv1.NodeStatus {
+	woc.log.WithError(err).WithField("nodeName", nodeName).Error(ctx, "Mark error node")
+	return woc.markNodePhase(ctx, nodeName, wfv1.NodeError, err.Error())
 }
 
 // markNodePending is a convenience method to mark a node and set the message from the error
-func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
-	woc.log.Infof("Mark node %s as Pending, due to: %v", nodeName, err)
-	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error()) // this error message will not change often
+func (woc *wfOperationCtx) markNodePending(ctx context.Context, nodeName string, err error) *wfv1.NodeStatus {
+	woc.log.Infof(ctx, "Mark node %s as Pending, due to: %v", nodeName, err)
+	return woc.markNodePhase(ctx, nodeName, wfv1.NodePending, err.Error()) // this error message will not change often
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
-func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string, message string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) markNodeWaitingForLock(ctx context.Context, nodeName string, lockName string, message string) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		return node, err
@@ -2895,18 +2906,18 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 		node.Message = message
 	}
 
-	woc.wf.Status.Nodes.Set(node.ID, *node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	woc.updated = true
 	return node, nil
 }
 
-func (woc *wfOperationCtx) findLeafNodeWithType(boundaryID string, nodeType wfv1.NodeType) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID string, nodeType wfv1.NodeType) *wfv1.NodeStatus {
 	var leafNode *wfv1.NodeStatus
 	var dfs func(nodeID string)
 	dfs = func(nodeID string) {
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", nodeID)
+			woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
 			return
 		}
 		if node.Type == nodeType {
@@ -2921,9 +2932,9 @@ func (woc *wfOperationCtx) findLeafNodeWithType(boundaryID string, nodeType wfv1
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
-func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
+func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
-		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
+		woc.log.Infof(ctx, "workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
 		return ErrParallelismReached
 	}
 
@@ -2933,18 +2944,18 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
 			if woc.getActivePods(node.ID) == 0 {
 				if tmpl.GetType() == wfv1.TemplateTypeSteps {
-					if leafStepGroupNode := woc.findLeafNodeWithType(node.ID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
-						woc.markNodePhase(leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, node.ID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
+						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 					}
 				}
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 			}
 			return ErrParallelismReached
 		}
 
 		// Check parallelism
 		if tmpl.HasParallelism() && woc.getActivePods(node.ID) >= *tmpl.Parallelism {
-			woc.log.Infof("template (node %s) active children parallelism exceeded %d", node.ID, *tmpl.Parallelism)
+			woc.log.Infof(ctx, "template (node %s) active children parallelism exceeded %d", node.ID, *tmpl.Parallelism)
 			return ErrParallelismReached
 		}
 	}
@@ -2956,7 +2967,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			return err
 		}
 
-		boundaryTemplate, templateStored, err := woc.GetTemplateByBoundaryID(boundaryID)
+		boundaryTemplate, templateStored, err := woc.GetTemplateByBoundaryID(ctx, boundaryID)
 		if err != nil {
 			return err
 		}
@@ -2969,18 +2980,18 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			if woc.getActivePods(boundaryID) == 0 {
 				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
-					if leafStepGroupNode := woc.findLeafNodeWithType(boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
-						woc.markNodePhase(leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
+						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 					}
 				}
-				woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				woc.markNodePhase(ctx, boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 			}
 			return ErrParallelismReached
 		}
 
 		// Check parallelism
 		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
-			woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
+			woc.log.Infof(ctx, "template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
 			return ErrParallelismReached
 		}
 	}
@@ -2990,33 +3001,33 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
+		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
 	}
 
 	// Check if the output of this container is referenced elsewhere in the Workflow. If so, make sure to include it during
 	// execution.
-	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
+	includeScriptOutput, err := woc.includeScriptOutput(ctx, nodeName, opts.boundaryID)
 	if err != nil {
 		return node, err
 	}
 
-	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl.Name)
+	woc.log.Debugf(ctx, "Executing node %s with container template: %v\n", nodeName, tmpl.Name)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
 	})
 	if err != nil {
-		return woc.requeueIfTransientErr(err, node.Name)
+		return woc.requeueIfTransientErr(ctx, err, node.Name)
 	}
 
 	return node, err
 }
 
-func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
+func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) []string {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Panicf("was unable to obtain node for %s", nodeID)
+		woc.log.Panicf(ctx, "was unable to obtain node for %s", nodeID)
 	}
 	switch node.Type {
 	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
@@ -3028,7 +3039,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		if err != nil {
 			return []string{node.ID}
 		}
-		_, parentTemplate, _, err := tmplCtx.ResolveTemplate(node)
+		_, parentTemplate, _, err := tmplCtx.ResolveTemplate(ctx, node)
 		if err != nil {
 			return []string{node.ID}
 		}
@@ -3048,13 +3059,13 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		for _, child := range node.Children {
 			childNode, err := woc.wf.Status.Nodes.Get(child)
 			if err != nil {
-				woc.log.Panicf("was unable to obtain child node for %s", child)
+				woc.log.Panicf(ctx, "was unable to obtain child node for %s", child)
 			}
 			// child node has different boundaryID meaning current node is the deepest outbound node
 			if node.Type == wfv1.NodeTypeContainer && node.BoundaryID != childNode.BoundaryID {
 				outboundNodes = append(outboundNodes, node.ID)
 			} else {
-				outboundNodes = append(outboundNodes, woc.getOutboundNodes(child)...)
+				outboundNodes = append(outboundNodes, woc.getOutboundNodes(ctx, child)...)
 			}
 		}
 		return outboundNodes
@@ -3070,7 +3081,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	}
 	outbound := make([]string, 0)
 	for _, outboundNodeID := range node.OutboundNodes {
-		outbound = append(outbound, woc.getOutboundNodes(outboundNodeID)...)
+		outbound = append(outbound, woc.getOutboundNodes(ctx, outboundNodeID)...)
 	}
 	return outbound
 }
@@ -3205,21 +3216,21 @@ loop:
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	} else if !node.Pending() {
 		return node, nil
 	}
 
 	// Check if the output of this script is referenced elsewhere in the Workflow. If so, make sure to include it during
 	// execution.
-	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
+	includeScriptOutput, err := woc.includeScriptOutput(ctx, nodeName, opts.boundaryID)
 	if err != nil {
 		return node, err
 	}
 
 	mainCtr := tmpl.Script.Container
 	if len(tmpl.Script.Source) == 0 {
-		woc.log.Warn("'script.source' is empty, suggest change template into 'container'")
+		woc.log.Warn(ctx, "'script.source' is empty, suggest change template into 'container'")
 	} else {
 		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	}
@@ -3229,16 +3240,16 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		executionDeadline:   opts.executionDeadline,
 	})
 	if err != nil {
-		return woc.requeueIfTransientErr(err, node.Name)
+		return woc.requeueIfTransientErr(ctx, err, node.Name)
 	}
 	return node, err
 }
 
-func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
-	if errorsutil.IsTransientErr(err) || err == ErrResourceRateLimitReached {
+func (woc *wfOperationCtx) requeueIfTransientErr(ctx context.Context, err error, nodeName string) (*wfv1.NodeStatus, error) {
+	if errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err) || err == ErrResourceRateLimitReached {
 		// Our error was most likely caused by a lack of resources.
 		woc.requeue()
-		return woc.markNodePending(nodeName, err), nil
+		return woc.markNodePending(ctx, nodeName, err), nil
 	}
 	return nil, err
 }
@@ -3302,15 +3313,15 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 	}
 }
 
-func (woc *wfOperationCtx) addOutputsToGlobalScope(outputs *wfv1.Outputs) {
+func (woc *wfOperationCtx) addOutputsToGlobalScope(ctx context.Context, outputs *wfv1.Outputs) {
 	if outputs == nil {
 		return
 	}
 	for _, param := range outputs.Parameters {
-		woc.addParamToGlobalScope(param)
+		woc.addParamToGlobalScope(ctx, param)
 	}
 	for _, art := range outputs.Artifacts {
-		woc.addArtifactToGlobalScope(art)
+		woc.addArtifactToGlobalScope(ctx, art)
 	}
 }
 
@@ -3464,7 +3475,7 @@ func aggregatedJSONValueList(valueList []string) (string, error) {
 }
 
 // addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
-func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
+func (woc *wfOperationCtx) addParamToGlobalScope(ctx context.Context, param wfv1.Parameter) {
 	if param.GlobalName == "" {
 		return
 	}
@@ -3472,7 +3483,7 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 	if param.HasValue() {
 		woc.globalParams[paramName] = param.GetValue()
 	}
-	wfUpdated := wfutil.AddParamToGlobalScope(woc.wf, woc.log, param)
+	wfUpdated := wfutil.AddParamToGlobalScope(ctx, woc.wf, woc.log, param)
 	if wfUpdated {
 		woc.updated = true
 	}
@@ -3480,7 +3491,7 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 
 // addArtifactToGlobalScope exports any desired node outputs to the global scope
 // Optionally adds to a local scope if supplied
-func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
+func (woc *wfOperationCtx) addArtifactToGlobalScope(ctx context.Context, art wfv1.Artifact) {
 	if art.GlobalName == "" {
 		return
 	}
@@ -3494,7 +3505,7 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 				art.Path = ""
 				if !reflect.DeepEqual(woc.wf.Status.Outputs.Artifacts[i], art) {
 					woc.wf.Status.Outputs.Artifacts[i] = art
-					woc.log.Infof("overwriting %s: %v", globalArtName, art)
+					woc.log.Infof(ctx, "overwriting %s: %v", globalArtName, art)
 					woc.updated = true
 				}
 				return
@@ -3507,19 +3518,19 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	art.Name = art.GlobalName
 	art.GlobalName = ""
 	art.Path = ""
-	woc.log.Infof("setting %s: %v", globalArtName, art)
+	woc.log.Infof(ctx, "setting %s: %v", globalArtName, art)
 	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
 	woc.updated = true
 }
 
 // addChildNode adds a nodeID as a child to a parent
 // parent and child are both node names
-func (woc *wfOperationCtx) addChildNode(parent string, child string) {
+func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, child string) {
 	parentID := woc.wf.NodeID(parent)
 	childID := woc.wf.NodeID(child)
 	node, err := woc.wf.Status.Nodes.Get(parentID)
 	if err != nil {
-		woc.log.Panicf("was unable to obtain node for %s", parentID)
+		woc.log.Panicf(ctx, "was unable to obtain node for %s", parentID)
 	}
 	for _, nodeID := range node.Children {
 		if childID == nodeID {
@@ -3528,7 +3539,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 		}
 	}
 	node.Children = append(node.Children, childID)
-	woc.wf.Status.Nodes.Set(parentID, *node)
+	woc.wf.Status.Nodes.Set(ctx, parentID, *node)
 	woc.updated = true
 }
 
@@ -3537,7 +3548,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	node, err := woc.wf.GetNodeByName(nodeName)
 
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	} else if !node.Pending() {
 		return node, nil
 	}
@@ -3564,7 +3575,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts()...)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
-		return woc.requeueIfTransientErr(err, node.Name)
+		return woc.requeueIfTransientErr(ctx, err, node.Name)
 	}
 
 	return node, err
@@ -3573,7 +3584,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	} else if !node.Pending() {
 		return node, nil
 	}
@@ -3587,19 +3598,19 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 	mainCtr.Command = append([]string{"argoexec", "data", string(dataTemplate)}, woc.getExecutorLogOpts()...)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
 	if err != nil {
-		return woc.requeueIfTransientErr(err, node.Name)
+		return woc.requeueIfTransientErr(ctx, err, node.Name)
 	}
 
 	return node, nil
 }
 
-func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSuspend(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, true)
-		woc.resolveInputFieldsForSuspendNode(node)
+		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, true)
+		woc.resolveInputFieldsForSuspendNode(ctx, node)
 	}
-	woc.log.Infof("node %s suspended", nodeName)
+	woc.log.Infof(ctx, "node %s suspended", nodeName)
 
 	// If there is either an active workflow deadline, or if this node is suspended with a duration, then the workflow
 	// will need to be requeued after a certain amount of time
@@ -3618,11 +3629,11 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		requeueTime = &suspendDeadline
 		if time.Now().UTC().After(suspendDeadline) {
 			// Suspension is expired, node can be resumed
-			woc.log.Infof("auto resuming node %s", nodeName)
+			woc.log.Infof(ctx, "auto resuming node %s", nodeName)
 			if err := wfutil.OverrideOutputParametersWithDefault(node.Outputs); err != nil {
 				return node, err
 			}
-			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+			_ = woc.markNodePhase(ctx, nodeName, wfv1.NodeSucceeded)
 			return node, nil
 		}
 	}
@@ -3640,11 +3651,11 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		woc.requeueAfter(time.Until(*requeueTime))
 	}
 
-	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	_ = woc.markNodePhase(ctx, nodeName, wfv1.NodeRunning)
 	return node, nil
 }
 
-func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(ctx context.Context, node *wfv1.NodeStatus) {
 	if node.Inputs == nil {
 		return
 	}
@@ -3656,7 +3667,7 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatu
 			tempParameter := wfv1.Parameter{}
 
 			if err := json.Unmarshal([]byte(value), &tempParameter); err != nil {
-				woc.log.Debugf("Unable to parse input string %s to Parameter %s, %v", value, parameter.Name, err)
+				woc.log.Debugf(ctx, "Unable to parse input string %s to Parameter %s, %v", value, parameter.Name, err)
 				continue
 			}
 
@@ -3840,7 +3851,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	} else {
 		clusterWorkflowTemplateGetter = &templateresolution.NullClusterWorkflowTemplateGetter{}
 	}
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.execWf, woc.wf)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.execWf, woc.wf, woc.log)
 
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:
@@ -3861,7 +3872,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 		}
 
 		if metricTmpl.Help == "" {
-			woc.reportMetricEmissionError(fmt.Sprintf("metric '%s' must contain a help string under 'help: ' field", metricTmpl.Name))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("metric '%s' must contain a help string under 'help: ' field", metricTmpl.Name))
 			continue
 		}
 
@@ -3870,19 +3881,19 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
 		metricTmplBytes, err := json.Marshal(metricTmpl)
 		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
 			continue
 		}
 		replacedValue, err := template.Replace(string(metricTmplBytes), localScope, false)
 		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
 			continue
 		}
 
 		var metricTmplSubstituted wfv1.Prometheus
 		err = json.Unmarshal([]byte(replacedValue), &metricTmplSubstituted)
 		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err))
 			continue
 		}
 		// Only substitute non-value fields here. Value field substitution happens below
@@ -3893,7 +3904,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 
 		proceed, err := shouldExecute(metricTmpl.When)
 		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to compute 'when' clause for metric '%s': %s", woc.wf.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to compute 'when' clause for metric '%s': %s", woc.wf.Name, err))
 			continue
 		}
 		if !proceed {
@@ -3904,18 +3915,18 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 			// Finally substitute value parameters
 			value := metricTmpl.Gauge.Value
 			if !strings.HasPrefix(value, "{{") || !strings.HasSuffix(value, "}}") {
-				woc.reportMetricEmissionError("real time metrics can only be used with metric variables")
+				woc.reportMetricEmissionError(ctx, "real time metrics can only be used with metric variables")
 				continue
 			}
 			value = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}"))
 			valueFunc, ok := realTimeScope[value]
 			if !ok {
-				woc.reportMetricEmissionError(fmt.Sprintf("'%s' is not available as a real time metric", value))
+				woc.reportMetricEmissionError(ctx, fmt.Sprintf("'%s' is not available as a real time metric", value))
 				continue
 			}
 			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricTmpl, string(woc.wf.UID), valueFunc)
 			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
+				woc.reportMetricEmissionError(ctx, fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
 				continue
 			}
 			continue
@@ -3927,20 +3938,20 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 
 			metricValueStringJSON, err := json.Marshal(metricValueString)
 			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
+				woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
 				continue
 			}
 
 			replacedValueJSON, err := template.Replace(string(metricValueStringJSON), localScope, false)
 			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
+				woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
 
 			var replacedStringJSON string
 			err = json.Unmarshal([]byte(replacedValueJSON), &replacedStringJSON)
 			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
+				woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
 				continue
 			}
 
@@ -3948,7 +3959,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 
 			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricSpec, string(woc.wf.UID), nil)
 			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
+				woc.reportMetricEmissionError(ctx, fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
 			continue
@@ -3956,7 +3967,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 	}
 }
 
-func (woc *wfOperationCtx) reportMetricEmissionError(errorString string) {
+func (woc *wfOperationCtx) reportMetricEmissionError(ctx context.Context, errorString string) {
 	woc.wf.Status.Conditions.UpsertConditionMessage(
 		wfv1.Condition{
 			Status:  metav1.ConditionTrue,
@@ -3964,7 +3975,7 @@ func (woc *wfOperationCtx) reportMetricEmissionError(errorString string) {
 			Message: errorString,
 		})
 	woc.updated = true
-	woc.log.Error(errorString)
+	woc.log.Error(ctx, errorString)
 }
 
 func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
@@ -3993,12 +4004,12 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 	_, err := woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
-			woc.log.Info("PDB resource already exists for workflow.")
+			woc.log.Info(ctx, "PDB resource already exists for workflow.")
 			return nil
 		}
 		return err
 	}
-	woc.log.Info("Created PDB resource for workflow.")
+	woc.log.Info(ctx, "Created PDB resource for workflow.")
 	woc.updated = true
 	return nil
 }
@@ -4007,29 +4018,29 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		err := woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 		if apierr.IsNotFound(err) {
 			return true, nil
 		}
-		return !errorsutil.IsTransientErr(err), err
+		return !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), err), err
 	})
 	if err != nil {
-		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
+		woc.log.WithField("err", err).Error(ctx, "Unable to delete PDB resource for workflow.")
 		return err
 	}
-	woc.log.Info("Deleted PDB resource for workflow.")
+	woc.log.Info(ctx, "Deleted PDB resource for workflow.")
 	return nil
 }
 
 // Check if the output of this node is referenced elsewhere in the Workflow. If so, make sure to include it during
 // execution.
-func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (bool, error) {
+func (woc *wfOperationCtx) includeScriptOutput(ctx context.Context, nodeName, boundaryID string) (bool, error) {
 	if boundaryID == "" {
 		return false, nil
 	}
 
-	parentTemplate, templateStored, err := woc.GetTemplateByBoundaryID(boundaryID)
+	parentTemplate, templateStored, err := woc.GetTemplateByBoundaryID(ctx, boundaryID)
 	if err != nil {
 		return false, err
 	}
@@ -4052,7 +4063,7 @@ func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.Workflow
 	// Logic for workflow refers Workflow template
 	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { // not-woc-misuse
 		if woc.controller.cwftmplInformer == nil {
-			woc.log.WithError(err).Error("clusterWorkflowTemplate RBAC is missing")
+			woc.log.WithError(err).Error(ctx, "clusterWorkflowTemplate RBAC is missing")
 			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
 		}
 		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, true) // not-woc-misuse
@@ -4103,11 +4114,11 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
-		err := waitutil.Backoff(retry.DefaultRetry,
+		err := waitutil.Backoff(retry.DefaultRetry(ctx),
 			func() (bool, error) {
 				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
-					return !errorsutil.IsTransientErr(validationErr), validationErr
+					return !errorsutil.IsTransientErr(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), validationErr), validationErr
 				}
 				return true, nil
 			})
@@ -4323,9 +4334,9 @@ func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
-func (woc *wfOperationCtx) setNodeDisplayName(node *wfv1.NodeStatus, displayName string) {
+func (woc *wfOperationCtx) setNodeDisplayName(ctx context.Context, node *wfv1.NodeStatus, displayName string) {
 	nodeID := node.ID
 	newNode := node.DeepCopy()
 	newNode.DisplayName = displayName
-	woc.wf.Status.Nodes.Set(nodeID, *newNode)
+	woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
 }

@@ -1,7 +1,10 @@
 package hydrator
 
 import (
+	"context"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,26 +19,27 @@ import (
 
 func TestHydrator(t *testing.T) {
 	defer packer.SetMaxWorkflowSize(260)()
-
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	t.Run("Dehydrate", func(t *testing.T) {
 		t.Run("Packed", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{CompressedNodes: "foo"}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.NotEmpty(t, wf.Status.CompressedNodes)
 		})
 		t.Run("Offloaded", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "foo"}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.True(t, wf.Status.IsOffloadNodeStatus())
 		})
 		t.Run("Noop", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}}}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.NotEmpty(t, wf.Status.Nodes)
 			assert.Empty(t, wf.Status.CompressedNodes)
@@ -44,7 +48,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Pack", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}}}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.Empty(t, wf.Status.Nodes)
 			assert.NotEmpty(t, wf.Status.CompressedNodes)
@@ -59,7 +63,7 @@ func TestHydrator(t *testing.T) {
 				Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
 				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}},
 			}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.Empty(t, wf.Status.Nodes)
 			assert.Empty(t, wf.Status.CompressedNodes)
@@ -75,7 +79,7 @@ func TestHydrator(t *testing.T) {
 				Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
 				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}},
 			}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate(ctx, wf)
 			require.Error(t, err)
 		})
 	})
@@ -88,7 +92,7 @@ func TestHydrator(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status:     wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
 			}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.NotEmpty(t, wf.Status.Nodes)
 			assert.Empty(t, wf.Status.CompressedNodes)
@@ -102,7 +106,7 @@ func TestHydrator(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status:     wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
 			}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate(ctx, wf)
 			require.Error(t, err)
 		})
 		t.Run("Packed", func(t *testing.T) {
@@ -111,7 +115,7 @@ func TestHydrator(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status:     wfv1.WorkflowStatus{CompressedNodes: "H4sIAAAAAAAA/6pWSkosUrKqVspMUbJSUtJRykvMTYWwUjKLC3ISK/3gAiWVBVBWcUliUUlqimOJklVeaU6OjlJaZl5mcQZCpFZHKS0/nwbm1gICAAD//8SSRamxAAAA"},
 			}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate(ctx, wf)
 			require.NoError(t, err)
 			assert.NotEmpty(t, wf.Status.Nodes)
 			assert.Empty(t, wf.Status.CompressedNodes)
@@ -120,7 +124,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Hydrated", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{}}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate(ctx, wf)
 			require.NoError(t, err)
 		})
 	})
