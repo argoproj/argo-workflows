@@ -219,22 +219,6 @@ func (s *slogLogger) Debugf(ctx context.Context, format string, args ...any) {
 	s.Debug(ctx, msg)
 }
 
-func (s *slogLogger) Warning(ctx context.Context, msg string) {
-	s.mu.RLock()
-	hooks := s.hooks[Warn]
-	s.mu.RUnlock()
-	if hooks == nil {
-		hooks = []Hook{}
-	}
-	s.executeHooks(ctx, hooks, Warn, msg)
-	s.logger.LogAttrs(ctx, slog.LevelWarn, msg, fieldsToAttrs(s.fields)...)
-}
-
-func (s *slogLogger) Warningf(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Warning(ctx, msg)
-}
-
 func (s *slogLogger) Panic(ctx context.Context, msg string) {
 	s.mu.RLock()
 	hooks := s.hooks[Panic]

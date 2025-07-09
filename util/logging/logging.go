@@ -142,9 +142,6 @@ type Logger interface {
 	Debug(ctx context.Context, msg string)
 	Debugf(ctx context.Context, format string, args ...any)
 
-	Warning(ctx context.Context, msg string)
-	Warningf(ctx context.Context, format string, args ...any)
-
 	Panic(ctx context.Context, msg string)
 	Panicf(ctx context.Context, format string, args ...any)
 }
