@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -33,9 +34,11 @@ spec:
 `)
 	cancel, controller := newController(wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
@@ -101,9 +104,11 @@ spec:
 `)
 	cancel, controller := newController(wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
@@ -180,9 +185,11 @@ spec:
 `)
 	cancel, controller := newController(wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func NewDataCommand() *cobra.Command {
@@ -28,6 +30,7 @@ func execData(ctx context.Context) error {
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := context.Background()
+	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)

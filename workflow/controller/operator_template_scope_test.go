@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var testTemplateScopeWorkflowYaml = `
@@ -80,8 +81,10 @@ func TestTemplateScope(t *testing.T) {
 	cancel, controller := newController(wf, wftmpl1, wftmpl2)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(wf, controller)
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf = woc.wf
@@ -170,7 +173,9 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -259,7 +264,9 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -361,7 +368,9 @@ func TestTemplateScopeDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -458,7 +467,9 @@ func TestTemplateClusterScope(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)

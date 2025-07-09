@@ -1,12 +1,15 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +32,7 @@ func (a *fakeArtifactDriver) getMockedErr(funcName string) error {
 	return err
 }
 
-func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
+func (a *fakeArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path string) error {
 	err := a.getMockedErr("Load")
 	if err == nil {
 		// actually write a file to disk
@@ -41,19 +44,26 @@ func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	} else {
 		return err
 	}
-
 }
 
-func (a *fakeArtifactDriver) OpenStream(_ *wfv1.Artifact) (io.ReadCloser, error) {
+func (a *fakeArtifactDriver) OpenStream(ctx context.Context, _ *wfv1.Artifact) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
+func (a *fakeArtifactDriver) Save(ctx context.Context, path string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (a *fakeArtifactDriver) Delete(ctx context.Context, _ *wfv1.Artifact) error {
+	return nil
+}
+
+func (a *fakeArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (a *fakeArtifactDriver) IsDirectory(ctx context.Context, _ *wfv1.Artifact) (bool, error) {
+	return false, nil
 }
 
 func filteredFiles(t *testing.T) ([]os.DirEntry, error) {
@@ -105,7 +115,10 @@ func TestLoadToStream(t *testing.T) {
 				panic(err)
 			}
 
-			stream, err := LoadToStream(&wfv1.Artifact{}, tc.artifactDriver)
+			stream, err := LoadToStream(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), &wfv1.Artifact{}, tc.artifactDriver)
 			if tc.errMsg == "" {
 				require.NoError(t, err)
 				assert.NotNil(t, stream)
@@ -123,5 +136,4 @@ func TestLoadToStream(t *testing.T) {
 			}
 		})
 	}
-
 }

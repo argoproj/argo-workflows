@@ -39,20 +39,25 @@ jobs:
         with:
           fetch-depth: 50
 
-      - name: Ensure ./.features/*.md addition(s)
+      - name: Ensure ./.features/pending/*.md addition(s)
+        id: changed-files
+        uses: tj-actions/changed-files@cbda684547adc8c052d50711417fa61b428a9f88 # v41.1.2
+        with:
+          files: |
+            .features/pending/*.md
+
+      - name: No ./.features/*.md addition
+        if: steps.changed-files.outputs.added_files_count == 0
         run: |
-          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/${{ github.base_ref }} $PR_HEAD) $PR_HEAD ./.features | grep -c \\.md) ]]
-          then
-            echo "No feature description was added to the ./.features/ directory for this feature PR."
-            echo "Please add a .md file to the ./.features/ directory."
-            echo "See docs/running-locally.md for more details."
-            false
-          else
-            echo "A feature description was added to the ./.features/ directory."
-          fi
+          echo "No feature description was added to the ./.features/ directory for this feature PR."
+          echo "Please add a .md file to the ./.features/ directory."
+          echo "See docs/running-locally.md for more details."
+          false
 
       - name: Validate ./.features/*.md changes
+        if: steps.changed-files.outputs.added_files_count > 0
         run: |
+          echo "A feature description was added to the ./.features/ directory."
           make features-validate \
             || { echo "New ./.features/*.md file failed validation."; exit 1; }
 

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -25,9 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 
-	log "github.com/sirupsen/logrus"
-
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // TemplateType is the type of a template
@@ -1823,25 +1823,27 @@ func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 }
 
 // Set the status of a node by key
-func (n Nodes) Set(key string, status NodeStatus) {
+func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
+	log := logging.GetLoggerFromContext(ctx)
 	if status.Name == "" {
-		log.Warnf("Name was not set for key %s", key)
+		log.Warnf(ctx, "Name was not set for key %s", key)
 	}
 	if status.ID == "" {
-		log.Warnf("ID was not set for key %s", key)
+		log.Warnf(ctx, "ID was not set for key %s", key)
 	}
 	_, ok := n[key]
 	if ok {
-		log.Tracef("Changing NodeStatus for %s to %+v", key, status)
+		log.Tracef(ctx, "Changing NodeStatus for %s to %+v", key, status)
 	}
 	n[key] = status
 }
 
 // Delete a node from the Nodes by key
-func (n Nodes) Delete(key string) {
+func (n Nodes) Delete(ctx context.Context, key string) {
+	log := logging.GetLoggerFromContext(ctx)
 	has := n.Has(key)
 	if !has {
-		log.Warnf("Trying to delete non existent key %s", key)
+		log.Warnf(ctx, "Trying to delete non existent key %s", key)
 		return
 	}
 	delete(n, key)
@@ -2017,7 +2019,7 @@ type WorkflowStatus struct {
 
 // MarkTaskResultIncomplete sets either the task results completion field
 // or the node.TaskResultSynced field if the workflow does not have a `TaskResultsCompletionStatus`
-func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
+func (in *WorkflowStatus) MarkTaskResultIncomplete(ctx context.Context, name string) {
 	if in.TaskResultsCompletionStatus != nil {
 		in.TaskResultsCompletionStatus[name] = false
 		return
@@ -2029,12 +2031,12 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
 	if node.TaskResultSynced != nil {
 		node.TaskResultSynced = ptr.To(bool(false))
 	}
-	in.Nodes.Set(name, *node)
+	in.Nodes.Set(ctx, name, *node)
 }
 
 // MarkTaskResultComplete sets either the task results completion field
 // or the node.TaskResultSynced field if the workflow does not have a `TaskResultsCompletionStatus`
-func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
+func (in *WorkflowStatus) MarkTaskResultComplete(ctx context.Context, name string) {
 	if in.TaskResultsCompletionStatus != nil {
 		in.TaskResultsCompletionStatus[name] = true
 	}
@@ -2045,7 +2047,7 @@ func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
 	if node.TaskResultSynced != nil {
 		node.TaskResultSynced = ptr.To(bool(true))
 	}
-	in.Nodes.Set(name, *node)
+	in.Nodes.Set(ctx, name, *node)
 }
 
 func (in *WorkflowStatus) TaskResultsInProgress() bool {
@@ -2502,7 +2504,8 @@ func (n NodeStatus) IsDaemoned() bool {
 }
 
 // IsPartOfExitHandler returns whether node is part of exit handler.
-func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
+func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool {
+	log := logging.GetLoggerFromContext(ctx)
 	currentNode := n
 	for !currentNode.IsExitNode() {
 		if currentNode.BoundaryID == "" {
@@ -2510,7 +2513,7 @@ func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
-			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+			log.Panicf(ctx, "was unable to obtain node for %s", currentNode.BoundaryID)
 		}
 		currentNode = boundaryNode
 	}
