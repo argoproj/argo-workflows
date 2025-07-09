@@ -18,6 +18,8 @@ func SetLogLevel(logLevel string) {
 	switch logLevel {
 	case "trace":
 		logLevel = "debug"
+	case "print":
+		logLevel = "info"
 	}
 	logrusLevel, err := logrus.ParseLevel(logLevel)
 	if err != nil {

@@ -235,22 +235,6 @@ func (s *slogLogger) Warningf(ctx context.Context, format string, args ...any) {
 	s.Warning(ctx, msg)
 }
 
-func (s *slogLogger) Println(ctx context.Context, msg string) {
-	s.mu.RLock()
-	hooks := s.hooks[Print]
-	s.mu.RUnlock()
-	if hooks == nil {
-		hooks = []Hook{}
-	}
-	s.executeHooks(ctx, hooks, Print, msg)
-	s.logger.LogAttrs(ctx, slog.LevelInfo, msg, fieldsToAttrs(s.fields)...)
-}
-
-func (s *slogLogger) Printf(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Println(ctx, msg)
-}
-
 func (s *slogLogger) Panic(ctx context.Context, msg string) {
 	s.mu.RLock()
 	hooks := s.hooks[Panic]
@@ -281,8 +265,6 @@ func convertLevel(level Level) slog.Level {
 		return slog.LevelError
 	case Fatal:
 		return slog.LevelError
-	case Print:
-		return slog.LevelInfo
 	case Panic:
 		return slog.LevelError
 	default:

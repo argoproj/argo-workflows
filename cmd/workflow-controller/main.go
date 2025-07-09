@@ -189,7 +189,7 @@ func NewRootCommand() *cobra.Command {
 			http.HandleFunc("/healthz", wfController.Healthz)
 
 			go func() {
-				log.Println(ctx, http.ListenAndServe(":6060", nil).Error())
+				log.Error(ctx, http.ListenAndServe(":6060", nil).Error())
 			}()
 
 			<-ctx.Done()

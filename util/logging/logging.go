@@ -86,8 +86,6 @@ const (
 	Error Level = "error"
 	// Fatal level events
 	Fatal Level = "fatal"
-	// Print level events
-	Print Level = "print"
 	// Panic level events
 	Panic Level = "panic"
 )
@@ -102,14 +100,14 @@ func ParseLevel(s string) (Level, error) {
 		return Debug, nil
 	case "info":
 		return Info, nil
+	case "print":
+		return Info, nil
 	case "warn":
 		return Warn, nil
 	case "error":
 		return Error, nil
 	case "fatal":
 		return Fatal, nil
-	case "print":
-		return Print, nil
 	case "panic":
 		return Panic, nil
 	default:
@@ -146,9 +144,6 @@ type Logger interface {
 
 	Warning(ctx context.Context, msg string)
 	Warningf(ctx context.Context, format string, args ...any)
-
-	Println(ctx context.Context, msg string)
-	Printf(ctx context.Context, format string, args ...any)
 
 	Panic(ctx context.Context, msg string)
 	Panicf(ctx context.Context, format string, args ...any)
