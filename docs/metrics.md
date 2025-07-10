@@ -1,10 +1,5 @@
 # Metrics
 
-> v2.7 and after
-
-!!! Warning "Metrics changes in 3.6"
-    Please read [this short guide](upgrading.md#metrics-changes) on what you must consider when upgrading to 3.6.
-
 ## Introduction
 
 Argo emits a certain number of controller metrics that inform on the state of the controller at any given time.
