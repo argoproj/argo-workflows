@@ -20,6 +20,10 @@ func SetLogLevel(logLevel string) {
 		logLevel = "debug"
 	case "print":
 		logLevel = "info"
+	case "fatal":
+		logLevel = "error"
+	case "panic":
+		logLevel = "error"
 	}
 	logrusLevel, err := logrus.ParseLevel(logLevel)
 	if err != nil {

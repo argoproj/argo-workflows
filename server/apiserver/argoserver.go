@@ -127,7 +127,7 @@ func init() {
 		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 		ctx := context.Background()
 		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		log.WithError(err).Fatal(ctx, "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
+		log.WithError(err).WithFatal().Error(ctx, "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
 	}
 }
 
@@ -170,7 +170,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		Interval: time.Second,
 	})
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 
 	return &argoServer{
@@ -207,11 +207,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	log := logging.GetLoggerFromContext(ctx)
 	config, err := as.configController.Get(ctx)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	log.WithFields(logging.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info(ctx, "Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
@@ -221,17 +221,17 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if persistence != nil {
 		session, err := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
 		if err != nil {
-			log.Fatal(ctx, err.Error())
+			log.WithFatal().Error(ctx, err.Error())
 		}
 		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
-			log.Fatal(ctx, err.Error())
+			log.WithFatal().Error(ctx, err.Error())
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
 		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
 		if err != nil {
-			log.WithError(err).Fatal(ctx, err.Error())
+			log.WithError(err).WithFatal().Error(ctx, err.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
@@ -240,11 +240,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	cwftmplInformer, err := clusterworkflowtemplate.NewInformer(as.restConfig)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
@@ -253,7 +253,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
 	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
@@ -367,7 +367,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	rateLimitMiddleware, err := httplimit.NewMiddleware(as.apiRateLimiter, ipKeyFunc)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 
 	mux := http.NewServeMux()
@@ -470,7 +470,7 @@ func (as *argoServer) checkServeErr(ctx context.Context, name string, err error)
 			// a nil stopCh indicates a graceful shutdown
 			log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
 		} else {
-			log.WithFields(nameField).WithError(err).Fatalf(ctx, "%s: %v", name, err)
+			log.WithFields(nameField).WithError(err).WithFatal().Errorf(ctx, "%s: %v", name, err)
 		}
 	} else {
 		log.WithFields(nameField).Info(ctx, "graceful shutdown")

@@ -740,7 +740,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
-		woc.log.Panic(ctx, "cannot persist updates with mismatched resource versions")
+		woc.log.WithPanic().Error(ctx, "cannot persist updates with mismatched resource versions")
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace)
 	// try and compress nodes if needed
@@ -873,7 +873,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
 	// if this condition is true, then this func will always error
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
-		woc.log.Panic(ctx, "cannot re-apply update with mismatched resource versions")
+		woc.log.WithPanic().Error(ctx, "cannot re-apply update with mismatched resource versions")
 	}
 	err := woc.controller.hydrator.Hydrate(ctx, woc.orig)
 	if err != nil {
@@ -2446,7 +2446,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	if woc.wf.Status.Phase != phase {
 		if woc.wf.Status.Fulfilled() {
 			woc.log.WithFields(logging.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
-				Panic(ctx, "workflow is already fulfilled")
+				WithPanic().Error(ctx, "workflow is already fulfilled")
 		}
 		woc.log.Infof(ctx, "Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
@@ -3036,7 +3036,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) []string {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Panicf(ctx, "was unable to obtain node for %s", nodeID)
+		woc.log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", nodeID)
 	}
 	switch node.Type {
 	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
@@ -3068,7 +3068,7 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		for _, child := range node.Children {
 			childNode, err := woc.wf.Status.Nodes.Get(child)
 			if err != nil {
-				woc.log.Panicf(ctx, "was unable to obtain child node for %s", child)
+				woc.log.WithPanic().Errorf(ctx, "was unable to obtain child node for %s", child)
 			}
 			// child node has different boundaryID meaning current node is the deepest outbound node
 			if node.Type == wfv1.NodeTypeContainer && node.BoundaryID != childNode.BoundaryID {
@@ -3539,7 +3539,7 @@ func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, chil
 	childID := woc.wf.NodeID(child)
 	node, err := woc.wf.Status.Nodes.Get(parentID)
 	if err != nil {
-		woc.log.Panicf(ctx, "was unable to obtain node for %s", parentID)
+		woc.log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", parentID)
 	}
 	for _, nodeID := range node.Children {
 		if childID == nodeID {

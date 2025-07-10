@@ -134,7 +134,7 @@ func NewRootCommand() *cobra.Command {
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
-					log.Fatal(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+					log.WithFatal().Error(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
 				}
 
 				leaderName := "workflow-controller"

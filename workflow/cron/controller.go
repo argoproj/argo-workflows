@@ -71,7 +71,7 @@ func init() {
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
-		slog.Fatal(ctx, err.Error())
+		slog.WithFatal().Error(ctx, err.Error())
 	}
 	cronSyncPeriod = env.LookupEnvDurationOr(ctx, "CRON_SYNC_PERIOD", 10*time.Second)
 	slog.WithField("cronSyncPeriod", cronSyncPeriod).Info(ctx, "cron config")
@@ -117,7 +117,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
-		cc.logger.Fatal(ctx, err.Error())
+		cc.logger.WithFatal().Error(ctx, err.Error())
 	}
 
 	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,

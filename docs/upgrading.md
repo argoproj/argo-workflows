@@ -28,3 +28,10 @@ Argo Workflows exclusively uses quay.io now.
 Pull Request [#14462](https://github.com/argoproj/argo-workflows/pull/14462) made parameter value overriding consistent.
 This fix changes the priority in which the values are processed, meaning that a Workflow argument will now take priority.
 For more details see the example provided [here](https://github.com/argoproj/argo-workflows/issues/14426)
+
+## Upgrading to 4.0
+
+### Logging levels
+
+The logging levels available have been reduced to `debug`, `info`, `warn` and `error`.
+Other levels will be mapped to their equivalent if you use them, although they were previously undocumented.

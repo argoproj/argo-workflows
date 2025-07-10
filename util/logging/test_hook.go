@@ -26,7 +26,7 @@ func NewTestHook() *TestHook {
 
 // Levels returns the levels this hook should fire on
 func (h *TestHook) Levels() []Level {
-	return []Level{Debug, Info, Warn, Error, Fatal, Panic}
+	return []Level{Debug, Info, Warn, Error}
 }
 
 // Fire is called when a log event is fired

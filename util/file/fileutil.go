@@ -150,7 +150,7 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 			defer func() {
 				if err := f.Close(); err != nil {
 					logger := logging.GetLoggerFromContext(ctx)
-					logger.Fatalf(ctx, "Error closing file[%s]: %v", path, err)
+					logger.WithFatal().Errorf(ctx, "Error closing file[%s]: %v", path, err)
 				}
 			}()
 			r = f

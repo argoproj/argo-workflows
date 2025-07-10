@@ -287,7 +287,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
 		logger := logging.GetLoggerFromContext(ctx)
-		logger.Fatalf(ctx, "Failed to init db: %v", err)
+		logger.WithFatal().Errorf(ctx, "Failed to init db: %v", err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -311,7 +311,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
-		logger.Fatal(ctx, err.Error())
+		logger.WithFatal().Error(ctx, err.Error())
 	}
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -321,7 +321,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
-		logger.Fatal(ctx, err.Error())
+		logger.WithFatal().Error(ctx, err.Error())
 	}
 	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
@@ -333,7 +333,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
-		logger.Fatal(ctx, err.Error())
+		logger.WithFatal().Error(ctx, err.Error())
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
@@ -362,7 +362,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
 	) {
-		logger.Fatal(ctx, "Timed out waiting for caches to sync")
+		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
 	}
 
 	go wfc.workflowGarbageCollector(ctx)
@@ -534,7 +534,7 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 			ctx.Done(),
 			wfc.cwftmplInformer.Informer().HasSynced,
 		) {
-			logger.Fatal(ctx, "Timed out waiting for ClusterWorkflowTemplate cache to sync")
+			logger.WithFatal().Error(ctx, "Timed out waiting for ClusterWorkflowTemplate cache to sync")
 		}
 	} else {
 		logger.Warn(ctx, "Controller doesn't have RBAC access for ClusterWorkflowTemplates")
@@ -545,13 +545,13 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	c, err := wfc.configController.Get(ctx)
 	if err != nil {
 		logger := logging.GetLoggerFromContext(ctx)
-		logger.Fatalf(ctx, "Failed to register watch for controller config map: %v", err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to register watch for controller config map")
 	}
 	wfc.Config = *c
 	err = wfc.updateConfig(ctx)
 	if err != nil {
 		logger := logging.GetLoggerFromContext(ctx)
-		logger.Fatalf(ctx, "Failed to update config: %v", err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to update config")
 	}
 }
 

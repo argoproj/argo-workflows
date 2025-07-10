@@ -175,14 +175,14 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
-		log.Fatal(cctx, err.Error())
+		log.WithError(err).WithFatal().Error(cctx, "Failed to bind flags to env vars")
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.PersistentFlags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(cctx, err.Error())
+				log.WithError(err).WithFatal().Error(cctx, "Failed to set flag")
 			}
 		}
 	})
