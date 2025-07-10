@@ -9,9 +9,9 @@ import (
 )
 
 type slogLogger struct {
-	fields   Fields
-	logger   *slog.Logger
-	hooks    map[Level][]Hook
+	fields    Fields
+	logger    *slog.Logger
+	hooks     map[Level][]Hook
 	withPanic bool
 	withFatal bool
 }
@@ -73,9 +73,11 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 	}
 
 	return &slogLogger{
-		fields: newFields,
-		logger: s.logger,
-		hooks:  s.hooks,
+		fields:    newFields,
+		logger:    s.logger,
+		hooks:     s.hooks,
+		withFatal: s.withFatal,
+		withPanic: s.withPanic,
 	}
 }
 
@@ -89,29 +91,33 @@ func (s *slogLogger) WithField(name string, value any) Logger {
 	newFields[name] = value
 
 	return &slogLogger{
-		fields: newFields,
-		logger: s.logger,
-		hooks:  s.hooks,
+		fields:    newFields,
+		logger:    s.logger,
+		hooks:     s.hooks,
+		withFatal: s.withFatal,
+		withPanic: s.withPanic,
 	}
 }
 
 // Only works with Error()
 func (s *slogLogger) WithPanic() Logger {
 	return &slogLogger{
-		fields:   s.fields,
-		logger:   s.logger,
-		hooks:    s.hooks,
+		fields:    s.fields,
+		logger:    s.logger,
+		hooks:     s.hooks,
 		withPanic: true,
+		withFatal: s.withFatal,
 	}
 }
 
 // Only works with Error()
 func (s *slogLogger) WithFatal() Logger {
 	return &slogLogger{
-		fields:   s.fields,
-		logger:   s.logger,
-		hooks:    s.hooks,
+		fields:    s.fields,
+		logger:    s.logger,
+		hooks:     s.hooks,
 		withFatal: true,
+		withPanic: s.withPanic,
 	}
 }
 

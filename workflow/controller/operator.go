@@ -3068,7 +3068,7 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		for _, child := range node.Children {
 			childNode, err := woc.wf.Status.Nodes.Get(child)
 			if err != nil {
-				woc.log.WithPanic().Errorf(ctx, "was unable to obtain child node for %s", child)
+				woc.log.WithError(err).WithPanic().Errorf(ctx, "was unable to obtain child node for %s", child)
 			}
 			// child node has different boundaryID meaning current node is the deepest outbound node
 			if node.Type == wfv1.NodeTypeContainer && node.BoundaryID != childNode.BoundaryID {

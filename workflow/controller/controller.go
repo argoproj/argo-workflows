@@ -287,7 +287,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
 		logger := logging.GetLoggerFromContext(ctx)
-		logger.WithFatal().Errorf(ctx, "Failed to init db: %v", err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to init db")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -311,7 +311,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
-		logger.WithFatal().Error(ctx, err.Error())
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to create namespace informer")
 	}
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -321,7 +321,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
-		logger.WithFatal().Error(ctx, err.Error())
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to add workflow informer handlers")
 	}
 	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
@@ -333,7 +333,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
-		logger.WithFatal().Error(ctx, err.Error())
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to init managers")
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
