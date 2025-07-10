@@ -243,12 +243,23 @@ jobs:
           - test: test-api
             profile: postgres
             use-api: true
+          # As written the workflow controller would need a restart to retry the tests
+          - test: test-metrics
+            profile: mysql
+            use-api: true
+            retries: 0
+          - test: test-metrics
+            profile: postgres
+            use-api: true
+            retries: 0
           - test: test-cli
             profile: mysql
             use-api: true
+          # Cron tests are not retryable withou a controller restart
           - test: test-cron
             profile: minimal
             use-api: false
+            retries: 0
           - test: test-examples
             profile: minimal
             use-api: false
@@ -317,6 +328,7 @@ jobs:
       - name: Install and start K3S
         env:
           K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
+          TEST_RETRIES: ${{ matrix.retries || '2' }}
         run: |
           . hack/k8s-versions.sh
           export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
