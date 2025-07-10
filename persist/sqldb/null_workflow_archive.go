@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -18,38 +19,38 @@ func (r *nullWorkflowArchive) IsEnabled() bool {
 	return false
 }
 
-func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
+func (r *nullWorkflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 	return nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error) {
+func (r *nullWorkflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
 	return wfv1.Workflows{}, nil
 }
 
-func (r *nullWorkflowArchive) CountWorkflows(options sutils.ListOptions) (int64, error) {
+func (r *nullWorkflowArchive) CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error) {
 	return 0, nil
 }
 
-func (r *nullWorkflowArchive) GetWorkflow(string, string, string) (*wfv1.Workflow, error) {
+func (r *nullWorkflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
 }
 
-func (r *nullWorkflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
+func (r *nullWorkflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflow for estimator not supported")
 }
 
-func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
+func (r *nullWorkflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {
 	return fmt.Errorf("deleting archived workflows not supported")
 }
 
-func (r *nullWorkflowArchive) DeleteExpiredWorkflows(time.Duration) error {
+func (r *nullWorkflowArchive) DeleteExpiredWorkflows(ctx context.Context, ttl time.Duration) error {
 	return nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
+func (r *nullWorkflowArchive) ListWorkflowsLabelKeys(ctx context.Context) (*wfv1.LabelKeys, error) {
 	return &wfv1.LabelKeys{}, nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflowsLabelValues(string) (*wfv1.LabelValues, error) {
+func (r *nullWorkflowArchive) ListWorkflowsLabelValues(ctx context.Context, key string) (*wfv1.LabelValues, error) {
 	return &wfv1.LabelValues{}, nil
 }

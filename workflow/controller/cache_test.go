@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
@@ -50,6 +51,8 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	require.NoError(t, err)
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
@@ -73,6 +76,8 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapEmptyCacheEntry, metav1.CreateOptions{})
 	require.NoError(t, err)
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
@@ -92,6 +97,8 @@ func TestConfigMapCacheSave(t *testing.T) {
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
 	err := c.Save(ctx, "hi-there-world", "", &outputs)

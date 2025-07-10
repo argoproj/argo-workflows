@@ -1407,6 +1407,7 @@ A link to another app.
 |:----------:|:----------:|---------------|
 |`name`|`string`|The name of the link, E.g. "Workflow Logs" or "Pod Logs"|
 |`scope`|`string`|"workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"|
+|`target`|`string`|Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.|
 |`url`|`string`|The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}"|
 
 ## Arguments
@@ -2019,6 +2020,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |`synchronizationStatus`|[`NodeSynchronizationStatus`](#nodesynchronizationstatus)|SynchronizationStatus is the synchronization status of the node|
+|`taskResultSynced`|`boolean`|TaskResultSynced is used to determine if the node's output has been received|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
