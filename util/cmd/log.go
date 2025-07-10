@@ -15,6 +15,10 @@ func SetLogLevel(logLevel string) {
 		log.Fatal(err)
 	}
 	logging.SetGlobalLevel(level)
+	switch logLevel {
+	case "trace":
+		logLevel = "debug"
+	}
 	logrusLevel, err := logrus.ParseLevel(logLevel)
 	if err != nil {
 		log.Fatal(err)

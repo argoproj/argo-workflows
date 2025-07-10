@@ -203,22 +203,6 @@ func (s *slogLogger) Errorf(ctx context.Context, format string, args ...any) {
 	s.Error(ctx, msg)
 }
 
-func (s *slogLogger) Trace(ctx context.Context, msg string) {
-	s.mu.RLock()
-	hooks := s.hooks[Trace]
-	s.mu.RUnlock()
-	if hooks == nil {
-		hooks = []Hook{}
-	}
-	s.executeHooks(ctx, hooks, Debug, msg)
-	s.logger.LogAttrs(ctx, slog.LevelDebug, msg, fieldsToAttrs(s.fields)...)
-}
-
-func (s *slogLogger) Tracef(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Trace(ctx, msg)
-}
-
 func (s *slogLogger) Debug(ctx context.Context, msg string) {
 	s.mu.RLock()
 	hooks := s.hooks[Debug]
@@ -287,8 +271,6 @@ func (s *slogLogger) Panicf(ctx context.Context, format string, args ...any) {
 // convertLevel converts our Level type to slog.Level
 func convertLevel(level Level) slog.Level {
 	switch level {
-	case Trace:
-		return slog.LevelDebug
 	case Debug:
 		return slog.LevelDebug
 	case Info:
