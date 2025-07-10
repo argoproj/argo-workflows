@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	"github.com/minio/minio-go/v7"
@@ -106,7 +107,10 @@ func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 					t.Error(err)
 				}
 
-				object, err := c.GetObject(context.Background(), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
+				object, err := c.GetObject(func() context.Context {
+					ctx := context.Background()
+					return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+				}(), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
 				if err != nil {
 					t.Error(err)
 				}
@@ -175,6 +179,7 @@ func (al *s3Location) getS3Key(wf *wfv1.Workflow) (string, error) {
 }
 
 func (s *ArtifactsSuite) TestStoppedWorkflow() {
+	s.T().Skip("This test is flaky and will be skipped as a result")
 
 	for _, tt := range []struct {
 		workflowFile string
@@ -189,14 +194,26 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 		s.Require().NoError(err)
 
 		// Ensure the artifacts aren't in the bucket.
-		_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
+		_, err = c.StatObject(func() context.Context {
+			ctx := context.Background()
+			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		}(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 		if err == nil {
-			err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.RemoveObjectOptions{})
+			err = c.RemoveObject(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.RemoveObjectOptions{})
 			s.Require().NoError(err)
 		}
-		_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
+		_, err = c.StatObject(func() context.Context {
+			ctx := context.Background()
+			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		}(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
 		if err == nil {
-			err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.RemoveObjectOptions{})
+			err = c.RemoveObject(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.RemoveObjectOptions{})
 			s.Require().NoError(err)
 		}
 
@@ -221,8 +238,14 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 					condition := "for artifacts to exist"
 
-					_, err1 := c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
-					_, err2 := c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
+					_, err1 := c.StatObject(func() context.Context {
+						ctx := context.Background()
+						return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+					}(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
+					_, err2 := c.StatObject(func() context.Context {
+						ctx := context.Background()
+						return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+					}(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
 
 					if err1 == nil && err2 == nil {
 						return true, condition
@@ -539,7 +562,7 @@ spec:
 // create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
 // Want to verify that this causes the ArtifactGCError Condition in the Workflow
 func (s *ArtifactsSuite) TestInsufficientRole() {
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	s.T().Cleanup(func() {

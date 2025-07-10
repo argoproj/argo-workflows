@@ -411,7 +411,8 @@ else
 endif
 endif
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
+# go-to-protobuf fails with mysterious errors on code that doesn't compile, hence lint-go as a dependency here
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf lint-go
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
@@ -505,8 +506,9 @@ manifests-validate:
 $(TOOL_GOLANGCI_LINT): Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.1.6
 
-.PHONY: lint
-lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
+.PHONY: lint lint-go lint-ui
+lint: lint-go lint-ui features-validate
+lint-go: $(TOOL_GOLANGCI_LINT) ui/dist/app/index.html
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -516,6 +518,8 @@ lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 	go mod tidy
 	# Lint Go files
 	$(TOOL_GOLANGCI_LINT) run --fix --verbose
+
+lint-ui: ui/dist/app/index.html
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
@@ -772,7 +776,7 @@ docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md
 	# check docs for spelling mistakes
 	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
-	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
+	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
 
 $(TOOL_MARKDOWN_LINK_CHECK): Makefile
 # update this in Nix when upgrading it here
@@ -847,6 +851,41 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
+
+# feature notes
+FEATURE_FILENAME?=$(shell git branch --show-current)
+.PHONY: feature-new
+feature-new: hack/featuregen/featuregen
+	# Create a new feature documentation file in .features/pending/ ready for editing
+	# Uses the current branch name as the filename by default, or specify with FEATURE_FILENAME=name
+	$< new --filename $(FEATURE_FILENAME)
+
+.PHONY: features-validate
+features-validate: hack/featuregen/featuregen
+	# Validate all pending feature documentation files
+	$< validate
+
+.PHONY: features-preview
+features-preview: hack/featuregen/featuregen
+	# Preview how the features will appear in the documentation (dry run)
+	# Output to stdout
+	$< update --dry
+
+.PHONY: features-update
+features-update: hack/featuregen/featuregen
+	# Update the features documentation, but keep the feature files in the pending directory
+	# Updates docs/new-features.md for release-candidates
+	$< update --version $(VERSION)
+
+.PHONY: features-release
+features-release: hack/featuregen/featuregen
+	# Update the features documentation AND move the feature files to the released directory
+	# Use this for the final update when releasing a version
+	$< update --version $(VERSION) --final
+
+hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
+	go test ./hack/featuregen
+	go build -o $@ ./hack/featuregen
 
 # dev container
 

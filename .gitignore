@@ -8,6 +8,7 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+hack/featuregen/featuregen
 /argo
 /argoexec
 release-notes
@@ -41,12 +42,13 @@ sdks/python/client/dist/*
 /v3/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
+.spelling.tmp
 
 # Do not commit rendered installation manifests since they are misleading to users.
 manifests/install.yaml
 manifests/namespace-install.yaml
 /logs
-node_modules 
+node_modules
 result
 .devenv
 .devenv.flake.nix

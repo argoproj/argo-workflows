@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -39,6 +41,7 @@ func templatedWorkflow(name string, syncBlock string) *wfv1.Workflow {
 
 func TestMultipleMutexLock(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MultipleMutex", func(t *testing.T) {
@@ -94,7 +97,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		// Fail to acquire because two locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -103,7 +106,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		// Fail to acquire because three locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -112,7 +115,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf3)
+		syncManager.ReleaseAll(ctx, wf3)
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -171,8 +174,8 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(ctx, wf2)
 
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
@@ -199,6 +202,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(multipleConfigMap), &cm)
 
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -278,7 +282,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release 1 and sem
-		syncManager.ReleaseAll(wfmands1)
+		syncManager.ReleaseAll(ctx, wfmands1)
 
 		// Succeed 1
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -304,8 +308,8 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
-		syncManager.ReleaseAll(wfsem)
+		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(ctx, wfsem)
 
 		// And reacquire in a sem+mutex wf
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfmands1copy, "", wfmands1copy.Spec.Synchronization)
@@ -319,6 +323,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 }
 func TestPriority(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Priority", func(t *testing.T) {
@@ -374,7 +379,7 @@ func TestPriority(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release locks
-		syncManager.ReleaseAll(wflow)
+		syncManager.ReleaseAll(ctx, wflow)
 
 		// Attempt to acquire 2 again, but priority blocks
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -396,6 +401,7 @@ func TestPriority(t *testing.T) {
 
 func TestDuplicates(t *testing.T) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Mutex", func(t *testing.T) {

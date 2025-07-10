@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -64,7 +66,10 @@ func TestArtifactDriver_WithServiceKey_DownloadDirectory_Subdir(t *testing.T) {
 	// ensure container exists
 	containerClient, err := driver.newAzureContainerClient()
 	require.NoError(t, err)
-	_, err = containerClient.Create(context.Background(), nil)
+	_, err = containerClient.Create(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), nil)
 	var responseError *azcore.ResponseError
 	if err != nil && (!errors.As(err, &responseError) || responseError.ErrorCode != "ContainerAlreadyExists") {
 		require.NoError(t, err)
@@ -118,7 +123,10 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 	// put a file in a subdir on the azurite blob storage
 	// download the dir, containing a subdir
 	blobClient := containerClient.NewBlockBlobClient("dir/subdir/file-in-subdir.txt")
-	_, err := blobClient.UploadBuffer(context.Background(), []byte("foo"), nil)
+	_, err := blobClient.UploadBuffer(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), []byte("foo"), nil)
 	require.NoError(t, err)
 
 	azureArtifact := wfv1.AzureArtifact{
@@ -130,7 +138,10 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 		},
 	}
 	dstDir := t.TempDir()
-	err = driver.DownloadDirectory(containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
+	err = driver.DownloadDirectory(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
 	require.NoError(t, err)
 	assert.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
 }

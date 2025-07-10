@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var basicMetric = `
@@ -50,18 +51,20 @@ func TestBasicMetric(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(basicMetric)
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	// Schedule first pod and mark completed
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	// Process first metrics
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	metricName := wf.Spec.Templates[0].Metrics.Prometheus[0].Name
@@ -126,12 +129,14 @@ func TestGaugeMetric(t *testing.T) {
 
 	// Schedule first pod and mark completed
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 	// Process first metrics
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("name", "random-int"))
@@ -192,12 +197,14 @@ func TestCounterMetric(t *testing.T) {
 
 	// Schedule first pod and mark completed
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 	// Process first metrics
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("name", "flakey"))
@@ -268,11 +275,13 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testMetricEmissionSameOperationCreationAndFailure)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
@@ -336,8 +345,10 @@ func TestRetryStrategyMetric(t *testing.T) {
 	wf := v1alpha1.MustUnmarshalWorkflow(testRetryStrategyMetric)
 	cancel, controller := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	// Ensure no metrics have been emitted yet
@@ -350,7 +361,7 @@ func TestRetryStrategyMetric(t *testing.T) {
 	podNode := woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"]
 	podNode.Phase = v1alpha1.NodeSucceeded
 	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet()
@@ -448,11 +459,13 @@ func TestDAGTmplMetrics(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(dagTmplMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -508,11 +521,12 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetric)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
@@ -571,11 +585,12 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetricWithGlobalParameters)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
@@ -672,11 +687,12 @@ func TestProcessedRetryNode(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testProcessedRetryNode)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
@@ -818,11 +834,12 @@ func TestControllerRestartWithRunningWorkflow(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(suspendWfWithMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	attribs := attribute.NewSet(attribute.String("name", "model_a"))
@@ -866,13 +883,14 @@ func TestRuntimeMetrics(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(runtimeWfMetrics)
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx) // create step node
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded) // pod is successful - manually workflow is succeeded
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx) // node status of previous context
 
 	attribs := attribute.NewSet(attribute.String("playground_id_workflow_counter", "test"), attribute.String("status", "Succeeded"))

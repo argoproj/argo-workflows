@@ -1,10 +1,10 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -92,7 +93,6 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 			return cmd.Help()
 		},
 	}
-
 	command.AddCommand(NewCompletionCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
@@ -126,16 +126,30 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	var glogLevel int
 	var verbose bool
 	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
-		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
+		cmdutil.PrintVersionMismatchWarning(cmd.Context(), argo.GetVersion(), grpcutil.LastSeenServerVersion)
 	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
+		if ctx == nil {
+			ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		}
+
 		if verbose {
 			logLevel = "debug"
 			glogLevel = 6
 		}
 		cmdutil.SetLogLevel(logLevel)
 		cmdutil.SetGLogLevel(glogLevel)
-		log.WithField("version", argo.GetVersion()).Debug("CLI version")
+		parsedLogLevel, err := logging.ParseLevel(logLevel)
+		if err != nil {
+			panic("")
+		}
+		log := logging.NewSlogLogger(parsedLogLevel, logging.GetGlobalFormat())
+		ctx = logging.WithLogger(ctx, log)
+		cmd.SetContext(ctx)
+		command.SetContext(ctx)
+
+		log.WithField("version", argo.GetVersion()).Debug(ctx, "CLI version")
 
 		// Disable printing of usage string on errors, except for argument validation errors
 		// (i.e. when the "Args" function returns an error).
@@ -148,6 +162,12 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
+	cctx := command.Context()
+	if cctx == nil {
+		cctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		command.SetContext(cctx)
+	}
+	log := logging.GetLoggerFromContext(cctx)
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
@@ -155,14 +175,14 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
-		log.Fatal(err)
+		log.Fatal(cctx, err.Error())
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.PersistentFlags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(err)
+				log.Fatal(cctx, err.Error())
 			}
 		}
 	})

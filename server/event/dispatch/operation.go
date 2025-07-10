@@ -36,6 +36,11 @@ type Operation struct {
 	env               map[string]interface{}
 }
 
+// Context returns the context associated with this operation
+func (o *Operation) Context() context.Context {
+	return o.ctx
+}
+
 func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eventRecorder record.EventRecorder, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
 	env, err := expressionEnvironment(ctx, namespace, discriminator, payload)
 	if err != nil {
@@ -62,7 +67,7 @@ func (o *Operation) Dispatch(ctx context.Context) error {
 	for _, event := range o.events {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			_, err := o.dispatch(ctx, event)
-			return !errorsutil.IsTransientErr(err), err
+			return !errorsutil.IsTransientErr(ctx, err), err
 		})
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")

@@ -10,13 +10,14 @@ See [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Community Meetings (monthly)
 
-A monthly opportunity for users and maintainers of Workflows and Events to share their current work and
-hear about what’s coming on the roadmap. Please join us! For Community Meeting information, minutes and recordings
-please [see here](http://bit.ly/argo-wf-cmty-mtng).
+A monthly opportunity for users and maintainers of Workflows and Events to share their current work and hear about what's coming on the roadmap.
+Please join us!
+For Community Meeting information, minutes and recordings please [see here](http://bit.ly/argo-wf-cmty-mtng).
 
 ## Contributor Meetings (twice monthly)
 
-An opportunity for contributors and maintainers of Workflows and Events to discuss their current work and talk about what’s next. Feel free to join us!
+An opportunity for contributors and maintainers of Workflows and Events to discuss their current work and talk about what's next.
+Feel free to join us!
 See the [Contributor Meeting doc](https://bit.ly/argo-data-weekly) for minutes, recordings, and more information.
 
 ## Slack
@@ -78,8 +79,7 @@ The dependency must pass these test:
 * It is actively maintained.
 * It has no security issues.
 
-Example, should we add `fasttemplate`
-, [view the Snyk report](https://snyk.io/advisor/golang/github.com/valyala/fasttemplate):
+Example, should we add `fasttemplate`, [view the Snyk report](https://snyk.io/advisor/golang/github.com/valyala/fasttemplate):
 
 | Test                                    | Outcome                             |
 |-----------------------------------------|-------------------------------------|
@@ -108,6 +108,19 @@ Anybody can review a PR.
 If you are in a [designated role](#roles), add yourself as an "Assignee" to a PR if you plan to lead the review.
 If you are a Reviewer or below, then once you have approved a PR, request a review from one or more Approvers and above.
 
+#### Timeliness
+
+We encourage PR authors and reviewers to respond to change requests in a reasonable time frame.
+If you're on vacation or will be unavailable, please let others know on the PR.
+
+##### PR Author Timeliness
+
+If a PR hasn't seen activity from the author for 10 business days, someone else may ask to take it over.
+We suggest commenting on the original PR and tagging the author to check on their plans.
+Maintainers can reassign PRs to new contributors if the original author doesn't respond with a plan.
+For PRs that have been inactive for 3 months, the takeover process can happen immediately.
+**IMPORTANT:** If a PR is taken over and uses any code from the previous PR, the original author *must* be credited using `Co-authored-by` on the commits.
+
 #### Triaging Bugs
 
 New bugs need to be triaged to identify the highest priority ones.
@@ -122,8 +135,6 @@ Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues
 
 If the issue is determined to be a user error and not a bug, remove the `type/bug` label (and the `type/regression` label, if applicable) and replace it with the `type/support` label.
 If more information is needed from the author to diagnose the issue, then apply the `problem/more information needed` label.
-
-Please only assign issues to members. New contributors are encouraged to work on a PR directly without being assigned.
 
 ##### Staleness
 

@@ -32,6 +32,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -266,7 +267,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
-	ctx, cancel := context.WithCancel(context.Background())
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(context.Background(), log)
+	ctx, cancel := context.WithCancel(ctx)
 	kube := fake.NewSimpleClientset(coreObjects...)
 	wfc := &WorkflowController{
 		Config: config.Config{
@@ -296,8 +299,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
 	}
 
@@ -323,12 +326,12 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
-		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
-		wfc.configMapInformer = wfc.newConfigMapInformer()
+		wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -340,6 +343,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+		go wfc.configMapInformer.Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
 			wfc.wfInformer,
@@ -349,6 +353,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
+			wfc.configMapInformer,
 		} {
 			for !c.HasSynced() {
 				time.Sleep(5 * time.Millisecond)
@@ -441,11 +446,17 @@ func expectNamespacedWorkflow(ctx context.Context, controller *WorkflowControlle
 }
 
 func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), name, metav1.GetOptions{})
 }
 
 func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), metav1.ListOptions{})
 }
 
 type with func(pod *apiv1.Pod, woc *wfOperationCtx)
@@ -472,7 +483,10 @@ func withOutputs(outputs wfv1.Outputs) with {
 		}
 		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 			Create(
-				context.Background(),
+				func() context.Context {
+					ctx := context.Background()
+					return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+				}(),
 				taskResult,
 				metav1.CreateOptions{},
 			)
@@ -563,7 +577,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			}
 			if phase == apiv1.PodSucceeded {
 				nodeID := woc.nodeID(&pod)
-				woc.wf.Status.MarkTaskResultComplete(nodeID)
+				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 			}
 		}
 	}
@@ -664,7 +678,14 @@ func TestNamespacedController(t *testing.T) {
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-	controller.createClusterWorkflowTemplateInformer(context.TODO())
+
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
+	controller.createClusterWorkflowTemplateInformer(ctx)
 	assert.Nil(t, controller.cwftmplInformer)
 }
 
@@ -681,7 +702,14 @@ func TestClusterController(t *testing.T) {
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-	controller.createClusterWorkflowTemplateInformer(context.TODO())
+
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
+	controller.createClusterWorkflowTemplateInformer(ctx)
 	assert.NotNil(t, controller.cwftmplInformer)
 }
 
@@ -730,7 +758,13 @@ spec:
 				f,
 			)
 			defer cancel()
-			ctx := context.Background()
+
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), log)
+
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
@@ -756,7 +790,13 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	controller.archivedWorkflowGarbageCollector(context.Background())
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
+	controller.archivedWorkflowGarbageCollector(ctx)
 }
 
 const wfWithTmplRef = `
@@ -803,8 +843,15 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wfTmpl)
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow(context.Background())
+
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
@@ -851,18 +898,24 @@ spec:
 `
 
 func TestInvalidWorkflowMetadata(t *testing.T) {
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
 	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabelsFrom)
 	cancel, controller := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
 	cancel, controller = newController(wf)
 	defer cancel()
-	woc = newWorkflowOperationCtx(wf, controller)
-	err = woc.setExecWorkflow(context.Background())
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	err = woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
 }
 
@@ -894,18 +947,24 @@ func TestIsArchivable(t *testing.T) {
 }
 
 func TestReleaseAllWorkflowLocks(t *testing.T) {
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
 	cancel, controller := newController()
 	defer cancel()
 	t.Run("nilObject", func(t *testing.T) {
-		controller.releaseAllWorkflowLocks(nil)
+		controller.releaseAllWorkflowLocks(ctx, nil)
 	})
 	t.Run("unStructuredObject", func(t *testing.T) {
 		un := &unstructured.Unstructured{}
-		controller.releaseAllWorkflowLocks(un)
+		controller.releaseAllWorkflowLocks(ctx, un)
 	})
 	t.Run("otherObject", func(t *testing.T) {
 		un := &wfv1.Workflow{}
-		controller.releaseAllWorkflowLocks(un)
+		controller.releaseAllWorkflowLocks(ctx, un)
 	})
 }
 
@@ -958,7 +1017,13 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	}
 	assert.Equal(0, controller.wfQueue.Len())
 
-	controller.notifySemaphoreConfigUpdate(&cm)
+	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	ctx := logging.WithLogger(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), log)
+
+	controller.notifySemaphoreConfigUpdate(ctx, &cm)
 	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }
@@ -1008,7 +1073,12 @@ status:
 				f,
 			)
 			defer cancel()
-			ctx := context.Background()
+
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), log)
 
 			// process my-wf-0; update status to Pending
 			assert.True(t, controller.processNextItem(ctx))
@@ -1096,7 +1166,12 @@ status:
 				f,
 			)
 			defer cancel()
-			ctx := context.Background()
+
+			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+			ctx := logging.WithLogger(func() context.Context {
+				ctx := context.Background()
+				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			}(), log)
 
 			ns0PendingWfTested := false
 			ns1PendingWfTested := false
@@ -1145,10 +1220,10 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1175,10 +1250,10 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodPending)
@@ -1201,10 +1276,10 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	for _, node := range woc.wf.Status.Nodes {
@@ -1217,10 +1292,10 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1235,10 +1310,10 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
@@ -1302,7 +1377,7 @@ spec:
       - name: main
         resources:
           requests:
-            memory: "{{=(int(retries)+1)*int(inputs.parameters.memreqnum)}}{{inputs.parameters.memrequnit}}"
+            memory: "{{=(sprig.int(retries)+1)*sprig.int(inputs.parameters.memreqnum)}}{{inputs.parameters.memrequnit}}"
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -1314,10 +1389,14 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 

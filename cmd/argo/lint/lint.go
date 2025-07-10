@@ -119,7 +119,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	}
 
 	for _, file := range opts.Files {
-		err := fileutil.WalkManifests(file, func(path string, data []byte) error {
+		err := fileutil.WalkManifests(ctx, file, func(path string, data []byte) error {
 			res := lintData(ctx, path, data, opts)
 			results.Results = append(results.Results, res)
 

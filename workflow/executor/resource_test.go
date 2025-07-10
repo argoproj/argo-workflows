@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
 )
 
@@ -217,8 +218,10 @@ func TestResourceExecRetry(t *testing.T) {
 	}()
 	retry.DefaultBackoff.Duration = 0
 	t.Setenv("PATH", dirname+"/testdata")
-
-	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	_, _, _, err := we.ExecResource(ctx, "", "../../examples/hello-world.yaml", nil)
 	require.ErrorContains(t, err, "no more retries")
 }
 
@@ -233,6 +236,8 @@ func Test_jqFilter(t *testing.T) {
 	} {
 		t.Run(string(testCase.input), func(t *testing.T) {
 			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			got, err := jqFilter(ctx, testCase.input, testCase.filter)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.want, got)
