@@ -16,12 +16,13 @@ The following features are deprecated and will be removed in a future verison of
 
 For more information on how to migrate these see [deprecations](deprecations.md)
 
+### Removed Docker Hub Image Publishing
 
-### Removed Docker Hub Image Publishing 
 Pull Request [#14457](https://github.com/argoproj/argo-workflows/pull/14457) removed pushing to docker hub.
 Argo Workflows exclusively uses quay.io now.
 
 ### Made Parameter Value Overriding Consistent
+
 Pull Request [#14462](https://github.com/argoproj/argo-workflows/pull/14462) made parameter value overriding consistent.
 This fix changes the priority in which the values are processed, meaning that a Workflow argument will now take priority.
 For more details see the example provided [here](https://github.com/argoproj/argo-workflows/issues/14426)
