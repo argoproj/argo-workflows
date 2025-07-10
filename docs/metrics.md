@@ -1,7 +1,5 @@
 # Metrics
 
-> v2.7 and after
-
 ## Introduction
 
 Argo emits a certain number of controller metrics that inform on the state of the controller at any given time.

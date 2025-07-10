@@ -7,6 +7,8 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 See also the list of [new features in 3.7](new-features.md).
 
+For upgrades to older versions of Argo Workflows, please change to the documentation for the version of interest.
+
 ### Deprecations
 
 The following features are deprecated and will be removed in a future verison of Argo Workflows:
