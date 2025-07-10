@@ -1526,7 +1526,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		((tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil) ||
 			(tmpl.Outputs.Artifacts != nil && new.Outputs.Artifacts == nil) ||
 			(tmpl.Outputs.Result != nil && new.Outputs.Result == nil)) {
-		woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: outputs are not yet set")
+		woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: outputs are not yet set")
 		new.Phase = old.Phase
 	}
 
