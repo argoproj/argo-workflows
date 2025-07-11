@@ -278,7 +278,7 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 		// check suffix instead of s3cli.IsDirectory as it requires another request for file delete (most scenarios)
 		if !strings.HasSuffix(artifact.S3.Key, "/") {
 			err := s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
-			if !argos3.IsS3ErrCode(err, "NoSuchKey") {
+			if !IsS3ErrCode(err, "NoSuchKey") {
 				return err
 			}
 			// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
