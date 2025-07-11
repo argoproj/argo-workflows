@@ -3341,13 +3341,19 @@ func (n loopNodes) Len() int {
 	return len(n)
 }
 
+var loopIndexRe = regexp.MustCompile(`\((\d+)`)
+
+// parseLoopIndex extracts the integer after the last '(' in a string like "item(42)" or "foo(7:bar)".
+// Panics on any error or malformed input.
 func parseLoopIndex(s string) int {
-	splits := strings.Split(s, "(")
-	s = splits[len(splits)-1]
-	s = strings.SplitN(s, ":", 2)[0]
-	val, err := strconv.Atoi(s)
+	s = strings.TrimSpace(s)
+	m := loopIndexRe.FindStringSubmatch(s)
+	if m == nil {
+		panic(fmt.Sprintf("parseLoopIndex: no integer index found in %q", s))
+	}
+	val, err := strconv.Atoi(m[1])
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse '%s' as int: %v", s, err))
+		panic(fmt.Sprintf("parseLoopIndex: failed to parse %q as int: %v", m[1], err))
 	}
 	return val
 }

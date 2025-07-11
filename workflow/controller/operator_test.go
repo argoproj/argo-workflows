@@ -44,6 +44,63 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
+// TestParseLoopIndex tests the parsing of loop indicies
+func TestParseLoopIndex(t *testing.T) {
+	type testCase struct {
+		input  string
+		want   int
+		panics bool
+	}
+
+	cases := []testCase{
+		{"item(0)", 0, false},
+		{"item(1)", 1, false},
+		{"item(123)", 123, false},
+		{"item(007)", 7, false},
+		{"foo(42:bar)", 42, false},
+		{"foo(7:abc))", 7, false},
+		{"process-single-item(0)", 0, false},
+		{"step(5:thing)", 5, false},
+		{"x(999:other):extra)", 999, false},
+		{"something(2:three)", 2, false},
+		{"abc(123:def)", 123, false},
+		{"a(4)b(5)", 4, false},
+		{"some(11:val)", 11, false},
+		{"item(12345:stuff))", 12345, false},
+		{"  item(6: foo)", 6, false},
+		{"item(42:foo) ", 42, false},
+		{"item((7))", 7, false},
+		{"item(123foo)", 123, false},
+
+		// invalid cases (should panic)
+		{"item()", 0, true},
+		{"item(foo)", 0, true},
+		{"item(:bar)", 0, true},
+		{"item", 0, true},
+		{"", 0, true},
+		{"item(bar:foo)", 0, true},
+		{"123", 0, true},
+	}
+
+	for _, c := range cases {
+		func() {
+			defer func() {
+				r := recover()
+				if c.panics && r == nil {
+					t.Errorf("expected panic for input %q", c.input)
+				}
+				if !c.panics && r != nil {
+					t.Errorf("did not expect panic for input %q, but got %v", c.input, r)
+				}
+			}()
+			got := parseLoopIndex(c.input)
+			if !c.panics && got != c.want {
+				t.Errorf("parseLoopIndex(%q) == %d, want %d", c.input, got, c.want)
+			}
+		}()
+	}
+}
+
 // TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics
 func TestOperateWorkflowPanicRecover(t *testing.T) {
 	defer func() {
