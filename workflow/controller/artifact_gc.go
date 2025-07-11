@@ -492,7 +492,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
-			woc.log.Warningf(ctx, "Artifact GC Pod %s already exists?", pod.Name)
+			woc.log.Warnf(ctx, "Artifact GC Pod %s already exists?", pod.Name)
 		} else {
 			return nil, fmt.Errorf("failed to create pod: %w", err)
 		}

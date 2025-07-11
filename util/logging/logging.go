@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const (
@@ -27,6 +28,8 @@ const (
 )
 
 var (
+	lock = sync.RWMutex{}
+
 	globalLevel   = Info
 	globalFormat  = Text
 	defaultLogger = NewSlogLogger(globalLevel, globalFormat)
@@ -42,8 +45,8 @@ func SetGlobalLevel(level Level) {
 
 // GetGlobalLevel returns the current global log level
 func GetGlobalLevel() Level {
-	lock.Lock()
-	defer lock.Unlock()
+	lock.RLock()
+	defer lock.RUnlock()
 	return globalLevel
 }
 
@@ -57,15 +60,15 @@ func SetGlobalFormat(format LogType) {
 
 // GetGlobalFormat returns the current global log format
 func GetGlobalFormat() LogType {
-	lock.Lock()
-	defer lock.Unlock()
+	lock.RLock()
+	defer lock.RUnlock()
 	return globalFormat
 }
 
 // GetDefaultLogger returns the default logger configured with global settings
 func GetDefaultLogger() Logger {
-	lock.Lock()
-	defer lock.Unlock()
+	lock.RLock()
+	defer lock.RUnlock()
 	return defaultLogger
 }
 
@@ -84,12 +87,6 @@ const (
 	Warn Level = "warn"
 	// Error level events
 	Error Level = "error"
-	// Fatal level events
-	Fatal Level = "fatal"
-	// Print level events
-	Print Level = "print"
-	// Panic level events
-	Panic Level = "panic"
 )
 
 // ParseLevel parses a string into a Level enum
@@ -102,16 +99,19 @@ func ParseLevel(s string) (Level, error) {
 		return Debug, nil
 	case "info":
 		return Info, nil
+	// legacy removed level
+	case "print":
+		return Info, nil
 	case "warn":
 		return Warn, nil
 	case "error":
 		return Error, nil
+	// legacy removed level
 	case "fatal":
-		return Fatal, nil
-	case "print":
-		return Print, nil
+		return Error, nil
+	// legacy removed level
 	case "panic":
-		return Panic, nil
+		return Error, nil
 	default:
 		return "", fmt.Errorf("invalid log level: %s", s)
 	}
@@ -129,29 +129,22 @@ type Logger interface {
 	WithField(name string, value any) Logger
 	WithError(err error) Logger
 
+	// When issuing Error, adding this will Panic
+	WithPanic() Logger
+	// When issuing Error, adding this will exit 1
+	WithFatal() Logger
+
+	Debug(ctx context.Context, msg string)
+	Debugf(ctx context.Context, format string, args ...any)
+
 	Info(ctx context.Context, msg string)
 	Infof(ctx context.Context, format string, args ...any)
 
 	Warn(ctx context.Context, msg string)
 	Warnf(ctx context.Context, format string, args ...any)
 
-	Fatal(ctx context.Context, msg string)
-	Fatalf(ctx context.Context, format string, args ...any)
-
 	Error(ctx context.Context, msg string)
 	Errorf(ctx context.Context, format string, args ...any)
-
-	Debug(ctx context.Context, msg string)
-	Debugf(ctx context.Context, format string, args ...any)
-
-	Warning(ctx context.Context, msg string)
-	Warningf(ctx context.Context, format string, args ...any)
-
-	Println(ctx context.Context, msg string)
-	Printf(ctx context.Context, format string, args ...any)
-
-	Panic(ctx context.Context, msg string)
-	Panicf(ctx context.Context, format string, args ...any)
 }
 
 // GetLoggerFromContext returns a logger from context, returns nil if not found

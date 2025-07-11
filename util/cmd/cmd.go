@@ -61,7 +61,7 @@ func MustIsDir(ctx context.Context, filePath string) bool {
 	log := logging.GetLoggerFromContext(ctx)
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.Fatal(ctx, err.Error())
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	return fileInfo.IsDir()
 }

@@ -281,7 +281,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.Panicf(ctx, "was unable to obtain node for %s", nodeID)
+				woc.log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", nodeID)
 			}
 			node.Progress = p
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)

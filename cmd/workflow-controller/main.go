@@ -134,7 +134,7 @@ func NewRootCommand() *cobra.Command {
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
-					log.Fatal(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+					log.WithFatal().Error(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
 				}
 
 				leaderName := "workflow-controller"
@@ -189,7 +189,7 @@ func NewRootCommand() *cobra.Command {
 			http.HandleFunc("/healthz", wfController.Healthz)
 
 			go func() {
-				log.Println(ctx, http.ListenAndServe(":6060", nil).Error())
+				log.Error(ctx, http.ListenAndServe(":6060", nil).Error())
 			}()
 
 			<-ctx.Done()

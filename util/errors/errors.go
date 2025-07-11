@@ -165,6 +165,6 @@ func CheckError(ctx context.Context, err error) {
 		if logger == nil {
 			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
 		}
-		logger.Fatal(ctx, err.Error())
+		logger.WithError(err).WithFatal().Error(ctx, "An error occurred during execution")
 	}
 }

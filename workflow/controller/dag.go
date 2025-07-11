@@ -398,7 +398,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(ctx context.Context
 	for _, depName := range targetTasks {
 		depNode := dagCtx.getTaskNode(ctx, depName)
 		if depNode == nil {
-			woc.log.Println(ctx, depName)
+			woc.log.Info(ctx, depName)
 			continue
 		}
 		outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)

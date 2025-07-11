@@ -46,7 +46,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	defer func() {
 		nodePhase, err := woc.wf.Status.Nodes.GetPhase(node.ID)
 		if err != nil {
-			woc.log.Fatalf(ctx, "was unable to obtain nodePhase for %s", node.ID)
+			woc.log.WithFatal().Errorf(ctx, "was unable to obtain nodePhase for %s", node.ID)
 			panic(fmt.Sprintf("unable to obtain nodePhase for %s", node.ID))
 		}
 		if nodePhase.Fulfilled(node.TaskResultSynced) {
@@ -98,7 +98,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 					for _, outNodeID := range outboundNodeIDs {
 						outNodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 						if err != nil {
-							woc.log.Fatalf(ctx, "was not able to obtain node name for %s", outNodeID)
+							woc.log.WithFatal().Errorf(ctx, "was not able to obtain node name for %s", outNodeID)
 							panic(fmt.Sprintf("could not obtain the out noden name for %s", outNodeID))
 						}
 						woc.addChildNode(ctx, outNodeName, sgNodeName)
@@ -353,7 +353,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	for _, childNodeID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			woc.log.Panicf(ctx, "Coudn't obtain child for %s, panicking", childNodeID)
+			woc.log.WithPanic().Errorf(ctx, "Couldn't obtain child for %s, panicking", childNodeID)
 		}
 		step := nodeSteps[childNode.Name]
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
