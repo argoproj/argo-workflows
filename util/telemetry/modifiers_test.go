@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,8 +38,14 @@ func TestViewDisabledAttributes(t *testing.T) {
 	})
 	require.NoError(t, err)
 	// Submit a couple of errors
-	m.TestingErrorA(context.Background())
-	m.TestingErrorB(context.Background())
+	m.TestingErrorA(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}())
+	m.TestingErrorB(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}())
 	// See if we can find this with the attributes, we should not be able to
 	attribsFail := attribute.NewSet(attribute.String(AttribErrorCause, string(errorCauseTestingA)))
 	_, err = te.GetInt64CounterValue(nameTestingCounter, &attribsFail)

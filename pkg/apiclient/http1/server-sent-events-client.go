@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // serverSentEventsClient provides a RecvEvent func to make getting Server-Sent Events (SSE)
@@ -44,12 +45,13 @@ func (c serverSentEventsClient) RecvMsg(interface{}) error {
 const prefixLength = len("data: ")
 
 func (c serverSentEventsClient) RecvEvent(v interface{}) error {
+	log := logging.GetLoggerFromContext(c.ctx)
 	for {
 		line, err := c.reader.ReadBytes('\n')
 		if err != nil {
 			return err
 		}
-		log.Debugln(string(line))
+		log.Debug(c.ctx, string(line))
 		// each line must be prefixed with `data: `, if not we just ignore it
 		// maybe empty line for example
 		if len(line) <= prefixLength {

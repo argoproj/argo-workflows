@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -81,21 +82,25 @@ func Test_listWorkflows(t *testing.T) {
 func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
 	c := &workflowmocks.WorkflowServiceClient{}
 	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions, Fields: flags.displayFields()}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
-		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
-		{ObjectMeta: metav1.ObjectMeta{
+		wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
+		wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
+		wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{
 			Name:              "baz-",
 			CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)},
 			Labels:            map[string]string{common.LabelKeyPreviousWorkflowName: "foo-"},
 		}},
 	}}, nil)
-	workflows, err := listWorkflows(context.Background(), c, flags)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	workflows, err := listWorkflows(ctx, c, flags)
 	return workflows, err
 }
 
 func listEmpty(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
 	c := &workflowmocks.WorkflowServiceClient{}
 	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions, Fields: defaultFields}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{}}, nil)
-	workflows, err := listWorkflows(context.Background(), c, flags)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	workflows, err := listWorkflows(ctx, c, flags)
 	return workflows, err
 }

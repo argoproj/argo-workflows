@@ -1,6 +1,8 @@
 package fake
 
 import (
+	"context"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
@@ -12,7 +14,7 @@ func (i always) IsHydrated(wf *wfv1.Workflow) bool {
 	return wf.Status.OffloadNodeStatusVersion == ""
 }
 
-func (i always) Hydrate(wf *wfv1.Workflow) error {
+func (i always) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	if !i.IsHydrated(wf) {
 		wfv1.MustUnmarshal(wf.Status.OffloadNodeStatusVersion, &wf.Status.Nodes)
 		wf.Status.OffloadNodeStatusVersion = ""
@@ -20,7 +22,7 @@ func (i always) Hydrate(wf *wfv1.Workflow) error {
 	return nil
 }
 
-func (i always) Dehydrate(wf *wfv1.Workflow) error {
+func (i always) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	if i.IsHydrated(wf) {
 		wf.Status.OffloadNodeStatusVersion = wfv1.MustMarshallJSON(&wf.Status.Nodes)
 		wf.Status.Nodes = nil

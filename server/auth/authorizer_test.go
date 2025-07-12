@@ -10,6 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestAuthorizer_CanI(t *testing.T) {
@@ -20,7 +22,10 @@ func TestAuthorizer_CanI(t *testing.T) {
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
 	})
-	ctx := context.WithValue(context.Background(), KubeKey, kubeClient)
+	ctx := context.WithValue(func() context.Context {
+		ctx := context.Background()
+		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	}(), KubeKey, kubeClient)
 	t.Run("CanI", func(t *testing.T) {
 		allowed, err := CanI(ctx, "", "", "", "")
 		require.NoError(t, err)
