@@ -95,6 +95,12 @@
             "type": "string",
             "name": "namespace",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.",
+            "name": "nameFilter",
+            "in": "query"
           }
         ],
         "responses": {
