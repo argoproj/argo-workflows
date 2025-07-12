@@ -974,8 +974,6 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 		NotNull().String().Raw()
 	var nameBobWf = bobWf.Path("$.metadata.name").
 		NotNull().String().Raw()
-	s.Given().When().
-		WaitForWorkflow(fixtures.ToBeArchived)
 
 	var aliceWf *httpexpect.Value
 	s.Run("CreateAlice", func() {
@@ -1008,147 +1006,114 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 		NotNull().String().Raw()
 	var nameAliceWf = aliceWf.Path("$.metadata.name").
 		NotNull().String().Raw()
+
 	s.Given().When().
-		WaitForWorkflow(fixtures.ToBeArchived)
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
 
 	s.Run("ListAll", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
-			Array().Length().IsEqual(2)
-
-		var archivingStatusPath = `$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`
-		for _, archivingStatus := range j.Path(archivingStatusPath).Array().Iter() {
-			archivingStatus.String().IsEqual("Persisted")
-		}
+			JSON().
+			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+			Array().
+			IsEqual([]interface{}{"Persisted", "Persisted"})
 	})
 
 	s.Run("ListNameContainsAlice", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name=alice").
 			WithQuery("nameFilter", "Contains").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
-			Array().Length().IsEqual(1)
-
-		j.Path("$.items[0].metadata.uid").
-			String().IsEqual(uidAliceWf)
-
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf})
 	})
 
 	s.Run("ListNameContainsNoMatch", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name=void").
 			WithQuery("nameFilter", "Contains").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
+			JSON().
+			Path("$.items").
 			IsNull()
 	})
 
 	s.Run("ListNamePrefixBob", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name=test-bob").
 			WithQuery("nameFilter", "Prefix").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
-			Array().Length().IsEqual(1)
-
-		j.Path("$.items[0].metadata.uid").
-			String().IsEqual(uidBobWf)
-
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
 	})
 
 	s.Run("ListNamePrefixBobNoMatch", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			// contains bob, but bob not a prefix, `test-bob`
 			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
 			WithQuery("nameFilter", "Prefix").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
+			JSON().
+			Path("$.items").
 			IsNull()
 	})
 
 	s.Run("ListNameExactAlice", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name="+nameAliceWf).
 			WithQuery("nameFilter", "Exact").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
-			Array().Length().IsEqual(1)
-
-		j.Path("$.items[0].metadata.uid").
-			String().IsEqual(uidAliceWf)
-
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf})
 	})
 
 	s.Run("ListNameExactAliceNoMatch", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			// test-alice is both contained and valid prefix but no exact match
 			WithQuery("listOptions.fieldSelector", "metadata.name=test-alice").
 			WithQuery("nameFilter", "Exact").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
+			JSON().
+			Path("$.items").
 			IsNull()
 	})
 
 	s.Run("ListNameDefaultExactBob", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name="+nameBobWf).
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
-			Array().Length().IsEqual(1)
-
-		j.Path("$.items[0].metadata.uid").
-			String().IsEqual(uidBobWf)
-
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
 	})
 
 	s.Run("ListNameContainsTest", func() {
-		j := s.e().GET("/api/v1/workflows/argo").
+		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name=test").
 			WithQuery("nameFilter", "Contains").
 			Expect().
 			Status(200).
-			JSON()
-
-		j.Path("$.items").
-			Array().Length().IsEqual(2)
-
-		j.Path("$.items[0].metadata.uid").
-			String().IsEqual(uidAliceWf)
-
-		j.Path("$.items[1].metadata.uid").
-			String().IsEqual(uidBobWf)
-	})
-
-	s.Run("Cleanup", func() {
-		s.e().DELETE("/api/v1/archived-workflows/{uid}", uidBobWf)
-		s.e().DELETE("/api/v1/archived-workflows/{uid}", uidAliceWf)
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
 	})
 }
 
