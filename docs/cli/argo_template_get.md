@@ -6,6 +6,16 @@ display details about a workflow template
 argo template get WORKFLOW_TEMPLATE... [flags]
 ```
 
+### Examples
+
+```
+# Get information about a workflow template by its name:
+  argo template get my-template
+
+# Get information about a workflow template in YAML format:
+  argo template get my-template -o yaml
+```
+
 ### Options
 
 ```
