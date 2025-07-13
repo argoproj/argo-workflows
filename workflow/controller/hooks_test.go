@@ -1187,7 +1187,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-func TestWfTemplHookWfWaitForTriggeredHook(t *testing.T) {
+func TestWfTmplHookWfWaitForTriggeredHook(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1276,5 +1276,140 @@ spec:
 	node = woc.wf.Status.Nodes.FindByDisplayName("job")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 	assert.Nil(t, node.NodeFlag)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// TestWfTmplHookReferToOutputsOfEarlierTask
+// Used to test whether the running hook of the dag task can depend on the output of the earlier task
+// in this case, task-a is completed and make some output, task-b is running and the running hook of task-b
+// refer to the output of task-a
+func TestWfTmplHookReferToOutputsOfEarlierTask(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hooks-test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: task-a
+            template: make-outputs
+            arguments:
+              parameters:
+                - name: message
+                  value: "A message from task A"
+          - name: task-b
+            dependencies: [task-a]
+            template: echo
+            arguments:
+              parameters:
+                - name: message
+                  value: "A message from task B"
+            hooks:
+              running:
+                expression: tasks["task-b"].status == "Running"
+                template: echo
+                arguments:
+                  parameters:
+                    - name: message
+                      value: "A running hook in a DAG task refer to earlier task(A): {{tasks.task-a.outputs.parameters.result}}"
+    
+    - name: make-outputs
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              path: /tmp/value
+      script:
+        image: alpine:latest
+        command: [sh, -c]
+        source: |
+          echo "Some output" > /tmp/value
+
+    - name: echo
+      inputs:
+        parameters:
+          - name: message
+      script:
+        image: bash
+        command: [bash]
+        source: |
+          echo "{{inputs.parameters.message}}"
+`)
+	// Setup
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+
+	// Make task-a pod completed and add outputs
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{
+		Parameters: []wfv1.Parameter{{Name: "result", Value: wfv1.AnyStringPtr("Some output")}},
+	}))
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
+
+	// Make task-b running and trigger running hook
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, _ := podcs.List(ctx, metav1.ListOptions{})
+	for _, pod := range pods.Items {
+		if pod.Annotations["workflows.argoproj.io/node-name"] == "hooks-test.task-b" {
+			pod.Status.Phase = apiv1.PodRunning
+			updatedPod, _ := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+			_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+		}
+	}
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("task-b.hooks.running")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	// Check running hook arg refer to earlier task outputs has been resolved
+	podcs = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, _ = podcs.List(ctx, metav1.ListOptions{})
+	for _, pod := range pods.Items {
+		if pod.Annotations["workflows.argoproj.io/node-name"] == "hooks-test.task-b.hooks.running" {
+			pod.Status.Phase = apiv1.PodRunning
+			updatedPod, _ := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+			_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+		}
+	}
+	woc.operate(ctx)
+	node = woc.wf.Status.Nodes.FindByDisplayName("task-b.hooks.running")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.Equal(t, "A running hook in a DAG task refer to earlier task(A): Some output", node.Inputs.Parameters[0].Value.String())
+	podcs = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, _ = podcs.List(ctx, metav1.ListOptions{})
+	var runningHookPod *apiv1.Pod
+	for _, pod := range pods.Items {
+		if pod.Annotations["workflows.argoproj.io/node-name"] == "hooks-test.task-b.hooks.running" {
+			runningHookPod = &pod
+		}
+	}
+	assert.NotNil(t, runningHookPod)
+
+	// Check running hook pod template(output ref) has been resolved
+	var tmpl wfv1.Template
+	var tmplEnv string
+	for _, env := range runningHookPod.Spec.Containers[0].Env {
+		if env.Name == common.EnvVarTemplate {
+			tmplEnv = env.Value
+		}
+	}
+	wfv1.MustUnmarshal(tmplEnv, &tmpl)
+	assert.Equal(t, "echo \"A running hook in a DAG task refer to earlier task(A): Some output\"\n", tmpl.Script.Source)
+
+	// Make task-b and running hook pod completed
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
