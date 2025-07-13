@@ -9,6 +9,7 @@ argo template get WORKFLOW_TEMPLATE... [flags]
 ### Examples
 
 ```
+
 # Get information about a workflow template by its name:
   argo template get my-template
 
