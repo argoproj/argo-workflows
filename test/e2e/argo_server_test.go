@@ -944,6 +944,414 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 }
 
+func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
+	var bobWf *httpexpect.Value
+	s.Run("CreateArchivedBobWf", func() {
+		bobWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-bob-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidBobWf = bobWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameBobWf = bobWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	var aliceWf *httpexpect.Value
+	s.Run("CreateAlice", func() {
+		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-alice-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidAliceWf = aliceWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameAliceWf = aliceWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	s.Given().When().
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
+
+	s.Run("ListAll", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+			Expect().
+			Status(200).
+			JSON().
+			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+			Array().
+			IsEqual([]interface{}{"Persisted", "Persisted"})
+	})
+
+	s.Run("ListNameContainsAlice", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=alice").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf})
+	})
+
+	s.Run("ListNameContainsNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=void").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ListNamePrefixBob", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ListNamePrefixBobNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			// contains bob, but bob not a prefix, `test-bob`
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ListNameExactAlice", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameAliceWf).
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf})
+	})
+
+	s.Run("ListNameExactAliceNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			// test-alice is both contained and valid prefix but no exact match
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-alice").
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ListNameDefaultExactBob", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ListNameContainsTest", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+	})
+}
+
+func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
+	var bobWf *httpexpect.Value
+	s.Run("CreateArchivedBobWf", func() {
+		bobWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-bob-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidBobWf = bobWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameBobWf = bobWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	var aliceWf *httpexpect.Value
+	s.Run("CreateAlice", func() {
+		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-alice-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidAliceWf = aliceWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameAliceWf = aliceWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	s.Given().When().
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
+
+	s.Run("ListAll", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+			Expect().
+			Status(200).
+			JSON().
+			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+			Array().
+			IsEqual([]interface{}{"Persisted", "Persisted"})
+	})
+
+	s.Run("ArchiveNameContainsAlice", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=alice").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf})
+	})
+
+	s.Run("ArchiveNameContainsNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=void").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNamePrefixBob", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ArchiveNamePrefixBobNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			// contains bob, but bob not a prefix, `test-bob`
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNameExactAlice", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameAliceWf).
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf})
+	})
+
+	s.Run("ArchiveNameExactAliceNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			// test-alice is both contained and valid prefix but no exact match
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-alice").
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNameDefaultExactBob", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ArchiveNameContainsTest", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterContainsBobTest", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("namePrefix", "test").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterEmptyTest", func() {
+		// test-* is valid prefix but bob is not the exact name of
+		// any of the archived workflows
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("namePrefix", "test").
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterEmptyTest2", func() {
+		// test-* is valid prefix but bob is not a prefix
+		// both the nameFilter and the namePrefix test for name
+		// prefix now
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("namePrefix", "bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterContainsAll", func() {
+		// test-* is valid prefix but bob is not a prefix
+		// both the nameFilter and the namePrefix test for name
+		// prefix now
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("namePrefix", "test").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+	})
+}
+
 func (s *ArgoServerSuite) TestCronWorkflowService() {
 	s.Run("Create", func() {
 		s.e().POST("/api/v1/cron-workflows/argo").

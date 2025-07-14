@@ -344,6 +344,13 @@ func namePrefixClause(namePrefix string) db.Cond {
 	return db.Cond{}
 }
 
+func nameContainsClause(nameSubstring string) db.Cond {
+	if nameSubstring != "" {
+		return db.Cond{"name LIKE": "%" + nameSubstring + "%"}
+	}
+	return db.Cond{}
+}
+
 func phaseEqual(phase string) db.Cond {
 	if phase != "" {
 		return db.Cond{"phase": phase}
