@@ -10,7 +10,7 @@ import (
 )
 
 func LogChanges(ctx context.Context, old, new interface{}) {
-	logger := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	// Note: We don't have a direct equivalent to log.IsLevelEnabled(log.DebugLevel)
 	// The logger will handle level filtering internally
 	a, _ := json.Marshal(old)

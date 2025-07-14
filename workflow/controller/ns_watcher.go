@@ -32,7 +32,7 @@ type (
 )
 
 func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubeclientset kubernetes.Interface) (cache.SharedIndexInformer, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log = log.WithField("component", "ns_watcher")
 	ctx = logging.WithLogger(ctx, log)
 	can, _ := authutil.CanI(ctx, wfc.kubeclientset, []string{"get", "watch", "list"}, "", metav1.NamespaceAll, "namespaces")
@@ -96,20 +96,19 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 }
 
 func deleteNS(ctx context.Context, ns *apiv1.Namespace, resetFn resetFunc) {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "reseting the namespace parallelism limits for %s due to deletion event", ns.Name)
+	logging.RequireLoggerFromContext(ctx).WithField("namespace", ns.Name).Info(ctx, "reseting the namespace parallelism limits due to deletion event")
 	resetFn(ns.Name)
 }
 
 func updateNS(ctx context.Context, ns *apiv1.Namespace, updateFn updateFunc, resetFn resetFunc) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	limit, err := extractLimit(ns)
 	if errors.Is(err, errUnableToExtract) {
 		resetFn(ns.Name)
-		log.Infof(ctx, "removing per-namespace parallelism for %s, reverting to default", ns.Name)
+		log.WithField("namespace", ns.Name).Info(ctx, "removing per-namespace parallelism, reverting to default")
 		return
 	} else if err != nil {
-		log.Errorf(ctx, "was unable to extract the limit due to: %s", err)
+		log.WithField("namespace", ns.Name).WithError(err).Error(ctx, "was unable to extract the limit")
 		return
 	}
 	log.Infof(ctx, "changing namespace parallelism in %s to %d", ns.Name, limit)

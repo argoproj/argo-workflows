@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -36,11 +35,9 @@ spec:
                   - name: foo
                     value: bar
 `)
-	cancel, wfc := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, wfc := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, wfc)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -70,11 +67,9 @@ spec:
                 args:
                   - '{{inputs.parameters.message}}'
 `)
-	cancel, wfc := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, wfc := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, wfc)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -168,15 +163,13 @@ spec:
 func TestCallTemplateWithInlineSteps(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowTemplateWithInlineSteps)
 	wf := wfv1.MustUnmarshalWorkflow(workflowCallTemplateWithInline)
-	cancel, controller := newController(wf, wftmpl)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wftmpl)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 	count := 0
@@ -272,15 +265,13 @@ spec:
 func TestCallTemplateWithInlineDAG(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowTemplateWithInlineDAG)
 	wf := wfv1.MustUnmarshalWorkflow(workflowCallTemplateWithInline)
-	cancel, controller := newController(wf, wftmpl)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wftmpl)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 	count := 0

@@ -30,7 +30,7 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			for _, name := range args {
 				wftmpl, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
 					Name:      name,

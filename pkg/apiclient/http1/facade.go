@@ -50,7 +50,7 @@ func (h Facade) Delete(ctx context.Context, in, out interface{}, path string) er
 }
 
 func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path string) (*bufio.Reader, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	method := "GET"
 	u, err := h.url(method, path, in)
 	if err != nil {
@@ -91,7 +91,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 }
 
 func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	var data []byte
 	if method != "GET" {
 		var err error

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Client struct {
@@ -41,13 +41,16 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 	if p.invalid[method] {
 		return nil
 	}
-	log := log.WithField("address", p.address).WithField("method", method)
+	log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
+		"address": p.address,
+		"method":  method,
+	})
 	body, err := json.Marshal(args)
 	if err != nil {
 		return err
 	}
 	return retry.OnError(p.backoff, func(err error) bool {
-		log.WithError(err).Debug("Plugin returned error")
+		log.WithError(err).Debug(ctx, "Plugin returned error")
 		switch e := err.(type) {
 		case interface{ Temporary() bool }:
 			if e.Temporary() {
@@ -56,7 +59,7 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 		}
 		return strings.Contains(err.Error(), "connection refused") || errors.IsTransientErr(ctx, err)
 	}, func() error {
-		log.Debug("Calling plugin")
+		log.Debug(ctx, "Calling plugin")
 		req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/api/v1/%s", p.address, method), bytes.NewBuffer(body))
 		if err != nil {
 			return err
@@ -68,12 +71,12 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 			return err
 		}
 		defer resp.Body.Close()
-		log.WithField("statusCode", resp.StatusCode).Debug("Called plugin")
+		log.WithField("statusCode", resp.StatusCode).Debug(ctx, "Called plugin")
 		switch resp.StatusCode {
 		case 200:
 			return json.NewDecoder(resp.Body).Decode(reply)
 		case 404:
-			log.Info("method not found, not calling again")
+			log.Info(ctx, "method not found, not calling again")
 			p.invalid[method] = true
 			_, err := io.Copy(io.Discard, resp.Body)
 			return err

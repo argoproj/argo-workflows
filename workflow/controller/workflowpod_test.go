@@ -40,7 +40,7 @@ func newWoc(ctx context.Context, wfs ...wfv1.Workflow) *wfOperationCtx {
 	} else {
 		wf = &wfs[0]
 	}
-	cancel, controller := newController(wf, defaultServiceAccount)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	return woc
@@ -85,7 +85,7 @@ script:
 
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithVolume(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
 	woc := newWoc(ctx)
 	_, err := woc.executeScript(ctx, tmpl.Name, "", tmpl, &wfv1.WorkflowStep{}, &executeTemplateOpts{})
@@ -158,7 +158,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 
 	// Ensure that volume mount is added when artifact is provided
 	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvided)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
@@ -187,15 +187,15 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 // TestWFLevelServiceAccount verifies the ability to carry forward the service account name
 // for the pod from workflow.spec.serviceAccountName.
 func TestWFLevelServiceAccount(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.ServiceAccountName = "foo"
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -205,17 +205,17 @@ func TestWFLevelServiceAccount(t *testing.T) {
 // TestTmplServiceAccount verifies the ability to carry forward the Template level service account name
 // for the pod from workflow.spec.serviceAccountName.
 func TestTmplServiceAccount(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.ServiceAccountName = "foo"
 	woc.execWf.Spec.Templates[0].ServiceAccountName = "tmpl"
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -224,7 +224,7 @@ func TestTmplServiceAccount(t *testing.T) {
 
 // TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	require.NoError(t, err)
@@ -232,12 +232,12 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	falseValue := false
 	woc.execWf.Spec.AutomountServiceAccountToken = &falseValue
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -246,7 +246,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	require.NoError(t, err)
@@ -256,12 +256,12 @@ func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc.execWf.Spec.AutomountServiceAccountToken = &trueValue
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.execWf.Spec.Templates[0].AutomountServiceAccountToken = &falseValue
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -280,18 +280,18 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 
 // TestWFLevelExecutorServiceAccountName verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	require.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -303,7 +303,7 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 
 // TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	require.NoError(t, err)
@@ -312,7 +312,7 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.execWf.Spec.Templates[0].Executor = &wfv1.ExecutorConfig{ServiceAccountName: "tmpl"}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
@@ -330,7 +330,7 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 // TestCtrlLevelExecutorSecurityContext verifies the ability to carry forward Controller level SecurityContext to Podspec.
 func TestCtrlLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	require.NoError(t, err)
@@ -339,7 +339,7 @@ func TestCtrlLevelExecutorSecurityContext(t *testing.T) {
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
 	woc.execWf.Spec.Templates[0].Executor = &wfv1.ExecutorConfig{ServiceAccountName: "tmpl"}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
@@ -360,14 +360,14 @@ func TestCtrlLevelExecutorSecurityContext(t *testing.T) {
 
 // TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec
 func TestImagePullSecrets(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.ImagePullSecrets = []apiv1.LocalObjectReference{
 		{
 			Name: "secret-name",
 		},
 	}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
@@ -381,7 +381,7 @@ func TestImagePullSecrets(t *testing.T) {
 
 // TestAffinity verifies the ability to carry forward affinity rules
 func TestAffinity(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.Affinity = &apiv1.Affinity{
 		NodeAffinity: &apiv1.NodeAffinity{
@@ -403,12 +403,12 @@ func TestAffinity(t *testing.T) {
 			},
 		},
 	}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -417,19 +417,19 @@ func TestAffinity(t *testing.T) {
 
 // TestTolerations verifies the ability to carry forward tolerations.
 func TestTolerations(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.Templates[0].Tolerations = []apiv1.Toleration{{
 		Key:      "nvidia.com/gpu",
 		Operator: "Exists",
 		Effect:   "NoSchedule",
 	}}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -439,14 +439,14 @@ func TestTolerations(t *testing.T) {
 
 // TestMetadata verifies ability to carry forward annotations and labels
 func TestMetadata(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -463,7 +463,7 @@ func TestMetadata(t *testing.T) {
 
 // TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
 func TestWorkflowControllerArchiveConfig(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
@@ -472,7 +472,7 @@ func TestWorkflowControllerArchiveConfig(t *testing.T) {
 		KeyFormat: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
 	}})
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
@@ -483,7 +483,7 @@ func setArtifactRepository(controller *WorkflowController, repo *wfv1.ArtifactRe
 
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
@@ -492,7 +492,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 		KeyFormat: "path/in/bucket",
 	}})
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -503,7 +503,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 
 // TestConditionalAddArchiveLocationArchiveLogs verifies we do  add archive location if it is needed for logs
 func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
 		S3: &wfv1.S3ArtifactRepository{
@@ -516,7 +516,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -527,7 +527,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 
 // TestConditionalArchiveLocation verifies we add archive location when it is needed
 func TestConditionalArchiveLocation(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
 		Artifacts: []wfv1.Artifact{
@@ -545,7 +545,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 		KeyFormat: "path/in/bucket",
 	}})
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -592,9 +592,9 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 					ArchiveLogs: ptr.To(templateArchiveLog),
 				}
 			}
-			cancel, controller := newController(wf)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
 			defer cancel()
-			ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
 				ArchiveLogs: ptr.To(tt.controllerArchiveLog),
@@ -605,11 +605,8 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 					KeyFormat: "path/in/bucket",
 				},
 			})
-			woc.operate(func() context.Context {
-				ctx := context.Background()
-				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			}())
-			pods, err := listPods(woc)
+			woc.operate(ctx)
+			pods, err := listPods(ctx, woc)
 			require.NoError(t, err)
 			assert.Len(t, pods.Items, 1)
 			pod := pods.Items[0]
@@ -629,11 +626,11 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("%v", limit), func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-			cancel, controller := newController(wf, func(c *WorkflowController) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf, func(c *WorkflowController) {
 				c.Config.ResourceRateLimit = &limit
 			})
 			defer cancel()
-			ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			woc.operate(ctx)
 			x := woc.wf.Status.Nodes[woc.wf.Name]
@@ -648,8 +645,7 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 }
 
 func Test_createWorkflowPod_containerName(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Name: "invalid", Command: []string{""}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 	require.NoError(t, err)
@@ -661,46 +657,39 @@ var emissaryCmd = []string{"/var/run/argo/argoexec", "emissary"}
 func Test_createWorkflowPod_emissary(t *testing.T) {
 
 	t.Run("NoCommand", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
 		_, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Image: "docker/whalesay:nope"}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
 		require.EqualError(t, err, "failed to look-up entrypoint/cmd for image \"docker/whalesay:nope\", you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: GET https://index.docker.io/v2/docker/whalesay/manifests/nope: MANIFEST_UNKNOWN: manifest unknown; unknown tag=nope")
 	})
 	t.Run("CommandNoArgs", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
-		pod, err := woc.createWorkflowPod(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		require.NoError(t, err)
-		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts()...), "--", "foo")
+		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts(ctx)...), "--", "foo")
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
 	})
 	t.Run("NoCommandWithImageIndex", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
 		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		require.NoError(t, err)
-		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts()...), "--", "my-entrypoint")
+		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts(ctx)...), "--", "my-entrypoint")
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
 		assert.Equal(t, []string{"my-cmd"}, pod.Spec.Containers[1].Args)
 	})
 	t.Run("NoCommandWithArgsWithImageIndex", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
-		pod, err := woc.createWorkflowPod(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		require.NoError(t, err)
-		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts()...), "--", "my-entrypoint")
+		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts(ctx)...), "--", "my-entrypoint")
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
 		assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 	})
 	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
 		podSpec := &apiv1.PodSpec{}
 		podSpec.Containers = []apiv1.Container{{
@@ -709,12 +698,9 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		}}
 		podSpecPatch, err := json.Marshal(podSpec)
 		require.NoError(t, err)
-		pod, err := woc.createWorkflowPod(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
+		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
 		require.NoError(t, err)
-		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts()...), "--", "bar")
+		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts(ctx)...), "--", "bar")
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
 	})
 }
@@ -738,16 +724,16 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 
 	// For emissary executor
 	t.Run("Emissary", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
 		woc.volumes = volumes
 		woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 
-		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 		require.NoError(t, err)
 		_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 		require.NoError(t, err)
-		pods, err := listPods(woc)
+		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
@@ -769,7 +755,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.Equal(t, "tmp-dir-argo", wait.VolumeMounts[1].Name)
 		assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
 		main := containers[1]
-		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts()...), "--", "cowsay")
+		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts(ctx)...), "--", "cowsay")
 		assert.Equal(t, cmd, main.Command)
 		require.Len(t, main.VolumeMounts, 2)
 		assert.Equal(t, "volume-name", main.VolumeMounts[0].Name)
@@ -801,17 +787,17 @@ func TestVolumesPodSubstitution(t *testing.T) {
 		},
 	}
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.volumes = volumes
 	woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.execWf.Spec.Templates[0].Inputs.Parameters = inputParameters
 
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -838,18 +824,18 @@ func TestOutOfCluster(t *testing.T) {
 
 	// default mount path & volume name
 	{
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
 		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 		}
 
-		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 		require.NoError(t, err)
 		_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 		require.NoError(t, err)
-		pods, err := listPods(woc)
+		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
@@ -862,7 +848,7 @@ func TestOutOfCluster(t *testing.T) {
 
 	// custom mount path & volume name, in case name collision
 	{
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
 		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
@@ -871,11 +857,11 @@ func TestOutOfCluster(t *testing.T) {
 			VolumeName: "kube-config-secret",
 		}
 
-		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 		require.NoError(t, err)
 		_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 		require.NoError(t, err)
-		pods, err := listPods(woc)
+		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
@@ -890,14 +876,14 @@ func TestOutOfCluster(t *testing.T) {
 
 // TestPriorityClass verifies the ability to carry forward priorityClassName
 func TestPriorityClass(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.Templates[0].PriorityClassName = "foo"
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -906,14 +892,14 @@ func TestPriorityClass(t *testing.T) {
 
 // TestSchedulerName verifies the ability to carry forward schedulerName.
 func TestSchedulerName(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.Templates[0].SchedulerName = "foo"
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -950,7 +936,7 @@ func TestInitContainers(t *testing.T) {
 	}
 	mirrorVolumeMounts := true
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.volumes = volumes
 	woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
@@ -964,11 +950,11 @@ func TestInitContainers(t *testing.T) {
 		},
 	}
 
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1014,7 +1000,7 @@ func TestSidecars(t *testing.T) {
 	}
 	mirrorVolumeMounts := true
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.volumes = volumes
 	woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
@@ -1029,11 +1015,11 @@ func TestSidecars(t *testing.T) {
 		},
 	}
 
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1077,17 +1063,17 @@ func TestTemplateLocalVolumes(t *testing.T) {
 		},
 	}
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.volumes = volumes
 	woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.execWf.Spec.Templates[0].Volumes = localVolumes
 
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1101,17 +1087,17 @@ func TestTemplateLocalVolumes(t *testing.T) {
 
 // TestWFLevelHostAliases verifies the ability to carry forward workflow level HostAliases to Podspec
 func TestWFLevelHostAliases(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.HostAliases = []apiv1.HostAlias{
 		{IP: "127.0.0.1"},
 		{IP: "127.0.0.1"},
 	}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1120,17 +1106,17 @@ func TestWFLevelHostAliases(t *testing.T) {
 
 // TestTmplLevelHostAliases verifies the ability to carry forward template level HostAliases to Podspec
 func TestTmplLevelHostAliases(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.execWf.Spec.Templates[0].HostAliases = []apiv1.HostAlias{
 		{IP: "127.0.0.1"},
 		{IP: "127.0.0.1"},
 	}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1139,17 +1125,17 @@ func TestTmplLevelHostAliases(t *testing.T) {
 
 // TestWFLevelSecurityContext verifies the ability to carry forward workflow level SecurityContext to Podspec
 func TestWFLevelSecurityContext(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	runAsUser := int64(1234)
 	woc.execWf.Spec.SecurityContext = &apiv1.PodSecurityContext{
 		RunAsUser: &runAsUser,
 	}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1159,17 +1145,17 @@ func TestWFLevelSecurityContext(t *testing.T) {
 
 // TestTmplLevelSecurityContext verifies the ability to carry forward template level SecurityContext to Podspec
 func TestTmplLevelSecurityContext(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	runAsUser := int64(1234)
 	woc.execWf.Spec.Templates[0].SecurityContext = &apiv1.PodSecurityContext{
 		RunAsUser: &runAsUser,
 	}
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -1178,9 +1164,9 @@ func TestTmplLevelSecurityContext(t *testing.T) {
 }
 
 func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
-	cancel, controller := newControllerWithComplexDefaults()
+	cancel, controller := newControllerWithComplexDefaults(ctx)
 	defer cancel()
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -1269,9 +1255,9 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 }
 
 func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
-	cancel, controller := newControllerWithComplexDefaults()
+	cancel, controller := newControllerWithComplexDefaults(ctx)
 	defer cancel()
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -1456,7 +1442,7 @@ spec:
 
 func TestPodSpecPatch(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1528,12 +1514,12 @@ func TestPodSpecPatchPodName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Setenv("POD_NAMES", tt.podNameVersion)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		wf := wfv1.MustUnmarshalWorkflow(tt.workflowYaml)
 		woc := newWoc(ctx, *wf)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-		pods, err := listPods(woc)
+		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 		template, err := getPodTemplate(&pods.Items[0])
@@ -1545,7 +1531,7 @@ func TestPodSpecPatchPodName(t *testing.T) {
 }
 
 func TestMainContainerCustomization(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	mainCtrSpec := &apiv1.Container{
 		Name:            common.MainContainerName,
 		SecurityContext: &apiv1.SecurityContext{},
@@ -1619,7 +1605,7 @@ func TestMainContainerCustomization(t *testing.T) {
 }
 
 func TestExecutorContainerCustomization(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.controller.Config.Executor = &apiv1.Container{
 		Args: []string{"foo"},
@@ -1658,7 +1644,7 @@ spec:
 
 func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	uncVolume := apiv1.Volume{
 		Name: "unc",
 		VolumeSource: apiv1.VolumeSource{
@@ -1720,7 +1706,7 @@ container:
 `
 
 func TestPropagateMaxDuration(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	// Ensure that volume mount is added when artifact is provided
 	tmpl := unmarshalTemplate(propagateMaxDuration)
 	woc := newWoc(ctx)
@@ -1781,7 +1767,7 @@ spec:
 
 func TestPodMetadata(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1820,7 +1806,7 @@ spec:
 `
 
 func TestPodDefaultContainer(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
 	// change first container name to main
 	wf.Spec.Templates[0].ContainerSet.Containers[0].Name = common.MainContainerName
@@ -1838,7 +1824,7 @@ func TestPodDefaultContainer(t *testing.T) {
 
 func TestGetDeadline(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1847,10 +1833,6 @@ func TestGetDeadline(t *testing.T) {
 
 	executionDeadline := time.Now().Add(5 * time.Minute)
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx = func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
@@ -1859,7 +1841,8 @@ func TestGetDeadline(t *testing.T) {
 }
 
 func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	wfDefaultAnnotations := make(map[string]string)
@@ -1878,7 +1861,6 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	}
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -1890,7 +1872,7 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	assert.Equal(t, "set-by-controller", pod.Labels["workflow-level-pod-label"])
 	cancel() // need to cancel to spin up pods with the same name
 
-	cancel, controller = newController()
+	cancel, controller = newController(ctx)
 	defer cancel()
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
@@ -1901,10 +1883,6 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 		},
 	}
 	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
-	ctx = func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	err = woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -1918,11 +1896,11 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 }
 
 func TestPodExists(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -1931,7 +1909,7 @@ func TestPodExists(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, pod)
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
@@ -1946,11 +1924,11 @@ func TestPodExists(t *testing.T) {
 
 func TestPodFinalizerExits(t *testing.T) {
 	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -1964,11 +1942,11 @@ func TestPodFinalizerExits(t *testing.T) {
 
 func TestPodFinalizerDoesNotExist(t *testing.T) {
 	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -1982,10 +1960,10 @@ func TestPodFinalizerDoesNotExist(t *testing.T) {
 
 func TestProgressEnvVars(t *testing.T) {
 	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
-		cancel, controller := newController(options...)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, options...)
 
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
@@ -2106,10 +2084,10 @@ spec:
 
 func TestMergeEnvVars(t *testing.T) {
 	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
-		cancel, controller := newController(options...)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, options...)
 
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithEnvReferSecret)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)

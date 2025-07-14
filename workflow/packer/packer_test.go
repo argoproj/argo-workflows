@@ -1,15 +1,13 @@
 package packer
 
 import (
-	"context"
 	"testing"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestDefault(t *testing.T) {
@@ -18,8 +16,7 @@ func TestDefault(t *testing.T) {
 
 func TestDecompressWorkflow(t *testing.T) {
 	defer SetMaxWorkflowSize(260)()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{

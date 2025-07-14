@@ -37,7 +37,7 @@ func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time,
 	return nextRunTime, nil
 }
 
-func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkflow {
+func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool) []v1alpha1.CronWorkflow {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -45,7 +45,7 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 
 	var cronWorkflows []v1alpha1.CronWorkflow
 	for _, body := range fileContents {
-		cronWfs := unmarshalCronWorkflows(body, strict)
+		cronWfs := unmarshalCronWorkflows(ctx, body, strict)
 		cronWorkflows = append(cronWorkflows, cronWfs...)
 	}
 
@@ -57,7 +57,7 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 }
 
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalCronWorkflows(wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
+func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
 	var cronWf v1alpha1.CronWorkflow
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -67,7 +67,7 @@ func unmarshalCronWorkflows(wfBytes []byte, strict bool) []v1alpha1.CronWorkflow
 	if err == nil {
 		return []v1alpha1.CronWorkflow{cronWf}
 	}
-	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitCronWorkflowYAMLFile(ctx, wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}

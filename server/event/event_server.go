@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,8 +30,9 @@ type Controller struct {
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int, asyncDispatch bool) *Controller {
-	log.WithFields(log.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize, "asyncDispatch": asyncDispatch}).Info("Creating event controller")
+func NewController(ctx context.Context, instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int, asyncDispatch bool) *Controller {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize, "asyncDispatch": asyncDispatch}).Info(ctx, "Creating event controller")
 
 	return &Controller{
 		instanceIDService:    instanceIDService,
@@ -44,17 +44,17 @@ func NewController(instanceIDService instanceid.Service, eventRecorderManager ev
 	}
 }
 
-func (s *Controller) Run(stopCh <-chan struct{}) {
+// nolint: contextcheck
+func (s *Controller) Run(ctx context.Context, stopCh <-chan struct{}) {
 	// this `WaitGroup` allows us to wait for all events to dispatch before exiting
 	wg := sync.WaitGroup{}
+	logger := logging.RequireLoggerFromContext(ctx)
 
 	for w := 0; w < s.workerCount; w++ {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationQueue {
 				ctx := operation.Context()
-				log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-				ctx = logging.WithLogger(ctx, log)
 				_ = operation.Dispatch(ctx)
 			}
 		}()
@@ -66,7 +66,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 	// stop accepting new events
 	close(s.operationQueue)
 
-	log.WithFields(log.Fields{"operations": len(s.operationQueue)}).Info("Waiting until all remaining events are processed")
+	logger.WithFields(logging.Fields{"operations": len(s.operationQueue)}).Info(ctx, "Waiting until all remaining events are processed")
 
 	// no more new events, process the existing events
 	wg.Wait()
@@ -81,7 +81,7 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

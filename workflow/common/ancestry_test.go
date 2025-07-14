@@ -29,8 +29,7 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	dctx := &testContext{
 		testTasks: testTasks,
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3.Succeeded"}
 	deps, logic := GetTaskDependencies(ctx, task, dctx)
@@ -119,8 +118,7 @@ func TestGetTaskDependsLogic(t *testing.T) {
 	dctx := &testContext{
 		testTasks: testTasks,
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
 	depends := getTaskDependsLogic(ctx, task, dctx)
 	assert.Equal(t, "(task-1 || task-2.Succeeded) && !task-3", depends)
@@ -213,8 +211,7 @@ func TestGetTaskAncestryForValidation(t *testing.T) {
 			want: []string{"task1", "task2", "task3"},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	for _, tt := range tests {
 		res := GetTaskAncestry(ctx, tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)
@@ -278,8 +275,7 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 			want: []string{"task1", "task3", "task2"},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	for _, tt := range tests {
 		res := GetTaskAncestry(ctx, tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)

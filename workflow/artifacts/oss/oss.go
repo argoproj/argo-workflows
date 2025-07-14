@@ -48,16 +48,13 @@ var (
 
 type ossCredentials struct {
 	teaCred credentials.Credential
+	logger  logging.Logger
 }
 
 func (cred *ossCredentials) GetAccessKeyID() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Infof(ctx, "get access key id failed: %+v", err)
+		cred.logger.WithField("err", err).Info(context.Background(), "get access key id failed")
 		return ""
 	}
 	return tea.StringValue(credential.AccessKeyId)
@@ -66,11 +63,7 @@ func (cred *ossCredentials) GetAccessKeyID() string {
 func (cred *ossCredentials) GetAccessKeySecret() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Infof(ctx, "get access key secret failed: %+v", err)
+		cred.logger.WithField("err", err).Info(context.Background(), "get access key secret failed")
 		return ""
 	}
 	return tea.StringValue(credential.AccessKeySecret)
@@ -79,25 +72,22 @@ func (cred *ossCredentials) GetAccessKeySecret() string {
 func (cred *ossCredentials) GetSecurityToken() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Infof(ctx, "get access security token failed: %+v", err)
+		cred.logger.WithField("err", err).Info(context.Background(), "get access security token failed")
 		return ""
 	}
 	return tea.StringValue(credential.SecurityToken)
 }
 
 type ossCredentialsProvider struct {
-	cred credentials.Credential
+	cred   credentials.Credential
+	logger logging.Logger
 }
 
 func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
-	return &ossCredentials{teaCred: p.cred}
+	return &ossCredentials{teaCred: p.cred, logger: p.logger}
 }
 
-func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
+func (ossDriver *ArtifactDriver) newOSSClient(ctx context.Context) (*oss.Client, error) {
 	var options []oss.ClientOption
 
 	// for oss driver, the proxy cannot be configured through environment variables
@@ -110,13 +100,10 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 		options = append(options, oss.SecurityToken(token))
 	}
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	logger := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	if ossDriver.UseSDKCreds {
 		// using default provider chains in sdk to get credential
-		logger.Infof(ctx, "Using default sdk provider chains for OSS driver")
+		logger.Info(ctx, "Using default sdk provider chains for OSS driver")
 		// need install ack-pod-identity-webhook in your cluster when using oidc provider for OSS drirver
 		// the mutating webhook will help to inject the required OIDC env variables and toke volume mount configuration
 		// please refer to https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook
@@ -124,10 +111,10 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create new OSS client: %w", err)
 		}
-		provider := &ossCredentialsProvider{cred: cred}
+		provider := &ossCredentialsProvider{cred: cred, logger: logger}
 		return oss.New(ossDriver.Endpoint, "", "", oss.SetCredentialsProvider(provider))
 	}
-	logger.Infof(ctx, "Using AK provider")
+	logger.Info(ctx, "Using AK provider")
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
@@ -139,9 +126,8 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 func (ossDriver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Infof(ctx, "OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
-			osscli, err := ossDriver.newOSSClient()
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": inputArtifact.OSS.Key}).Info(ctx, "OSS Load")
+			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}
@@ -177,7 +163,7 @@ func (ossDriver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.A
 				return false, origErr
 			}
 
-			if err = GetOssDirectory(bucket, objectName, path); err != nil {
+			if err = GetOssDirectory(ctx, bucket, objectName, path); err != nil {
 				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed get directory: %v", err)
 			}
 			return true, nil
@@ -190,9 +176,8 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 	var stream io.ReadCloser
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Infof(ctx, "OSS OpenStream, key: %s", inputArtifact.OSS.Key)
-			osscli, err := ossDriver.newOSSClient()
+			logging.RequireLoggerFromContext(ctx).WithField("key", inputArtifact.OSS.Key).Info(ctx, "OSS OpenStream")
+			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}
@@ -231,15 +216,15 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Infof(ctx, "OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
-			osscli, err := ossDriver.newOSSClient()
+			logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key})
+			logger.Info(ctx, "OSS Save")
+			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}
 			isDir, err := file.IsDirectory(path)
 			if err != nil {
-				logger.Warnf(ctx, "Failed to test if %s is a directory: %v", path, err)
+				logger.WithError(err).Warn(ctx, "Failed to test if path is a directory")
 				return false, nil
 			}
 			bucketName := outputArtifact.OSS.Bucket
@@ -271,12 +256,12 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 				}
 			}
 			if isDir {
-				if err = putDirectory(bucket, objectName, path); err != nil {
+				if err = putDirectory(ctx, bucket, objectName, path); err != nil {
 					logger.Warnf(ctx, "failed to put directory: %v", err)
 					return !isTransientOSSErr(ctx, err), err
 				}
 			} else {
-				if err = putFile(bucket, objectName, path); err != nil {
+				if err = putFile(ctx, bucket, objectName, path); err != nil {
 					logger.Warnf(ctx, "failed to put file: %v", err)
 					return !isTransientOSSErr(ctx, err), err
 				}
@@ -291,9 +276,8 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 func (ossDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Infof(ctx, "OSS Delete artifact: key: %s", artifact.OSS.Key)
-			osscli, err := ossDriver.newOSSClient()
+			logging.RequireLoggerFromContext(ctx).WithField("key", artifact.OSS.Key).Info(ctx, "OSS Delete")
+			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}
@@ -320,7 +304,7 @@ func (ossDriver *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			osscli, err := ossDriver.newOSSClient()
+			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}
@@ -430,21 +414,14 @@ func isTransientOSSErr(ctx context.Context, err error) bool {
 }
 
 // OSS simple upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/simple-upload?spm=a2c63.p38356.0.0.2c072398fh5k3W#section-ym8-svm-rmu
-func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	logger := logging.GetLoggerFromContext(ctx)
-	logger.Info(ctx, "OSS Simple Uploading")
+func simpleUpload(ctx context.Context, bucket *oss.Bucket, objectName, path string) error {
+	logging.RequireLoggerFromContext(ctx).Info(ctx, "OSS Simple Uploading")
 	return bucket.PutObjectFromFile(objectName, path)
 }
 
 // OSS multipart upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/multipart-upload?spm=a2c63.p38356.0.0.4ebe423fzsaPiN#section-trz-mpy-tes
-func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int64) error {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	logger := logging.GetLoggerFromContext(ctx)
+func multipartUpload(ctx context.Context, bucket *oss.Bucket, objectName, path string, objectSize int64) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "OSS Multipart Uploading")
 	// Calculate the number of chunks
 	chunkNum := int(math.Ceil(float64(objectSize)/float64(maxObjectSize))) + 1
@@ -486,24 +463,20 @@ func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int
 	return nil
 }
 
-func putFile(bucket *oss.Bucket, objectName, path string) error {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	logger := logging.GetLoggerFromContext(ctx)
-	logger.Debugf(ctx, "putFile from %s to %s", path, objectName)
+func putFile(ctx context.Context, bucket *oss.Bucket, objectName, path string) error {
+	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": objectName}).Debug(ctx, "putFile")
 	fStat, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
 	// Determine upload method based on file size.
 	if fStat.Size() <= maxObjectSize {
-		return simpleUpload(bucket, objectName, path)
+		return simpleUpload(ctx, bucket, objectName, path)
 	}
-	return multipartUpload(bucket, objectName, path, fStat.Size())
+	return multipartUpload(ctx, bucket, objectName, path, fStat.Size())
 }
 
-func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
+func putDirectory(ctx context.Context, bucket *oss.Bucket, objectName, dir string) error {
 	return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.InternalWrapError(err)
@@ -529,7 +502,7 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 			return nil
 		}
 
-		err = putFile(bucket, fObjectName, fpath)
+		err = putFile(ctx, bucket, fObjectName, fpath)
 		if err != nil {
 			return err
 		}
@@ -567,8 +540,8 @@ func IsOssDirectory(bucket *oss.Bucket, objectName string) (bool, error) {
 }
 
 // GetOssDirectory download an OSS "directory" to local path
-func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
-	files, err := ListOssDirectory(bucket, objectName)
+func GetOssDirectory(ctx context.Context, bucket *oss.Bucket, objectName, path string) error {
+	files, err := ListOssDirectory(ctx, bucket, objectName)
 	if err != nil {
 		return err
 	}
@@ -593,11 +566,7 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 
 		err = bucket.GetObjectToFile(f, fpath)
 		if err != nil {
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Warnf(ctx, "failed to load object %s to %s error: %v", f, fpath, err)
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"key": f, "path": fpath}).WithError(err).Warn(ctx, "failed to load object")
 			return err
 		}
 	}
@@ -605,7 +574,7 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 }
 
 // ListOssDirectory lists all the files which are the descendants of the specified objectKey, if a file has suffix '/', then it is an OSS directory
-func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err error) {
+func ListOssDirectory(ctx context.Context, bucket *oss.Bucket, objectKey string) (files []string, err error) {
 	if objectKey != "" {
 		if !strings.HasSuffix(objectKey, "/") {
 			objectKey += "/"
@@ -617,11 +586,7 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	for {
 		lor, err := bucket.ListObjects(marker, pre)
 		if err != nil {
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Warnf(ctx, "oss list object(%s) error: %v", objectKey, err)
+			logging.RequireLoggerFromContext(ctx).WithField("key", objectKey).WithError(err).Warn(ctx, "oss list object")
 			return files, err
 		}
 		for _, obj := range lor.Objects {
@@ -638,7 +603,7 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 
 // IsDirectory tests if the key is acting like a OSS directory
 func (ossDriver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
-	osscli, err := ossDriver.newOSSClient()
+	osscli, err := ossDriver.newOSSClient(ctx)
 	if err != nil {
 		return !isTransientOSSErr(ctx, err), err
 	}

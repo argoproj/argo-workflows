@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,18 +31,16 @@ spec:
           - name: ctr-0
             image: argoproj/argosay:v2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
+	pod, err := getPod(ctx, woc, "pod")
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
@@ -102,18 +99,16 @@ spec:
           - name: main
             image: argoproj/argosay:v2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
+	pod, err := getPod(ctx, woc, "pod")
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
@@ -183,18 +178,16 @@ spec:
            raw:
              data: hi
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
+	pod, err := getPod(ctx, woc, "pod")
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{

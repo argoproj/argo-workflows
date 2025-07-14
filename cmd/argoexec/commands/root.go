@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -20,7 +19,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/cmd"
+	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
@@ -42,9 +41,7 @@ var (
 )
 
 func initConfig() {
-	cmd.SetLogFormatter(logFormat)
-	cmd.SetLogLevel(logLevel)
-	cmd.SetGLogLevel(glogLevel)
+	cmdutil.SetGLogLevel(glogLevel)
 }
 
 func NewRootCommand() *cobra.Command {
@@ -56,6 +53,16 @@ func NewRootCommand() *cobra.Command {
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initConfig()
+			ctx, logger, err := cmdutil.CmdContextWithLogger(cmd, logLevel, logFormat)
+			if err != nil {
+				logging.InitLogger().WithError(err).WithFatal().Error(cmd.Context(), "Failed to create argoexec pre-run logger")
+				os.Exit(1)
+			}
+
+			// Required: argo=true field for test filtering compatibility
+			logger = logger.WithField("argo", true)
+			ctx = logging.WithLogger(ctx, logger)
+			cmd.SetContext(ctx)
 
 			// Disable printing of usage string on errors, except for argument validation errors
 			// (i.e. when the "Args" function returns an error).
@@ -66,7 +73,6 @@ func NewRootCommand() *cobra.Command {
 			cmd.SilenceUsage = true
 		},
 	}
-
 	command.AddCommand(NewAgentCommand())
 	command.AddCommand(NewEmissaryCommand())
 	command.AddCommand(NewInitCommand())
@@ -74,7 +80,7 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(NewResourceCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewDataCommand())
-	command.AddCommand(cmd.NewVersionCmd(CLIName))
+	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.AddCommand(artifact.NewArtifactCommand())
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
@@ -82,18 +88,31 @@ func NewRootCommand() *cobra.Command {
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 
+	ctx, logger, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	if err != nil {
+		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create argoexec logger")
+		os.Exit(1)
+	}
+
+	// Required: argo=true field for test filtering compatibility
+	logger = logger.WithField("argo", true)
+	ctx = logging.WithLogger(ctx, logger)
+	command.SetContext(ctx)
+
 	return &command
 }
 
-func initExecutor() *executor.WorkflowExecutor {
+// nolint: contextcheck
+func initExecutor(ctx context.Context) *executor.WorkflowExecutor {
 	version := argo.GetVersion()
-	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(version.Fields()).Info(ctx, "Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor", version.Version))
 
-	bgCtx := context.Background()
-	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	// nolint:contextcheck
+	bgCtx := logger.NewBackgroundContext()
 	logs.AddK8SLogTransportWrapper(bgCtx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
@@ -106,7 +125,8 @@ func initExecutor() *executor.WorkflowExecutor {
 
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
 	if !ok {
-		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
+		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine pod name from environment variable %s", common.EnvVarPodName))
+		os.Exit(1)
 	}
 
 	tmpl := &wfv1.Template{}
@@ -135,6 +155,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	checkErr(err)
 
 	wfExecutor := executor.NewExecutor(
+		ctx,
 		clientset,
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
@@ -152,14 +173,14 @@ func initExecutor() *executor.WorkflowExecutor {
 		progressFileTickDuration,
 	)
 
-	log.
-		WithField("version", version.String()).
+	logger.
+		WithFields(version.Fields()).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
 		WithField("templateName", wfExecutor.Template.Name).
 		WithField("includeScriptOutput", includeScriptOutput).
 		WithField("deadline", deadline).
-		Info("Executor initialized")
+		Info(ctx, "Executor initialized")
 	return &wfExecutor
 }
 

@@ -24,12 +24,7 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 
 func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
 	dbType := DBTypeFor(session)
-	logger := logging.GetLoggerFromContext(ctx)
-	if logger == nil {
-		logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		ctx = logging.WithLogger(ctx, logger)
-	}
-	logger = logger.WithFields(logging.Fields{"dbType": dbType})
+	logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType)
 	logger.Info(ctx, "Migrating database schema")
 
 	{
@@ -103,10 +98,7 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 
 func applyChange(ctx context.Context, session db.Session, changeSchemaVersion int, versionTableName string, c Change) error {
 	// https://upper.io/blog/2020/08/29/whats-new-on-upper-v4/#transactions-enclosed-by-functions
-	logger := logging.GetLoggerFromContext(ctx)
-	if logger == nil {
-		logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	}
+	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Infof(ctx, "apply change %s", c)
 	err := session.Tx(func(tx db.Session) error {
 		rs, err := tx.SQL().Exec(fmt.Sprintf("update %s set schema_version = ? where schema_version = ?", versionTableName), changeSchemaVersion, changeSchemaVersion-1)

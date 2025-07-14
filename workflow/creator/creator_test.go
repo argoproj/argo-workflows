@@ -20,17 +20,17 @@ import (
 func TestLabelCreator(t *testing.T) {
 	t.Run("EmptyCreator", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		LabelCreator(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), wf)
+		LabelCreator(logging.TestContext(t.Context()), wf)
 		assert.Empty(t, wf.Labels)
 	})
 	t.Run("EmptyActor", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		LabelActor(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), wf, ActionResume)
+		LabelActor(logging.TestContext(t.Context()), wf, ActionResume)
 		assert.Empty(t, wf.Labels)
 	})
 	t.Run("NotEmptyCreator", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		LabelCreator(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf)
+		LabelCreator(context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator], "creator is truncated")
 		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
@@ -39,7 +39,7 @@ func TestLabelCreator(t *testing.T) {
 	})
 	t.Run("NotEmptyActor", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		LabelActor(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf, ActionResume)
+		LabelActor(context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}), wf, ActionResume)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyActor], "creator is truncated")
 		assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyActorEmail], "'@' is replaced by '.at.'")
@@ -48,13 +48,13 @@ func TestLabelCreator(t *testing.T) {
 	})
 	t.Run("TooLongHyphen", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		LabelCreator(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("-", 63) + "y"}}), wf)
+		LabelCreator(context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("-", 63) + "y"}}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, "y", wf.Labels[common.LabelKeyCreator])
 	})
 	t.Run("InvalidDNSNames", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		LabelCreator(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}, PreferredUsername: "us#er@name#"}), wf)
+		LabelCreator(context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}, PreferredUsername: "us#er@name#"}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("y", 35), wf.Labels[common.LabelKeyCreator])
 		assert.Equal(t, "us-er-name", wf.Labels[common.LabelKeyCreatorPreferredUsername], "username is truncated")
@@ -62,7 +62,7 @@ func TestLabelCreator(t *testing.T) {
 	t.Run("InvalidDNSNamesWithMidDashes", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		sub := strings.Repeat("x", 20) + strings.Repeat("-", 70) + strings.Repeat("x", 20)
-		LabelCreator(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: sub}}), wf)
+		LabelCreator(context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: sub}}), wf)
 		require.NotEmpty(t, wf.Labels)
 		assert.Equal(t, strings.Repeat("x", 20), wf.Labels[common.LabelKeyCreator])
 	})
@@ -129,7 +129,7 @@ func TestLabelCreator(t *testing.T) {
 			},
 		} {
 			t.Run(testCase.name, func(t *testing.T) {
-				LabelCreator(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey, testCase.input.claims), testCase.input.wf)
+				LabelCreator(context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, testCase.input.claims), testCase.input.wf)
 				labels := testCase.input.wf.GetLabels()
 				for k, expectedValue := range testCase.output.creatorLabelsToHave {
 					assert.Equal(t, expectedValue, labels[k])
@@ -146,8 +146,7 @@ func TestLabelCreator(t *testing.T) {
 
 func TestUserInfoMap(t *testing.T) {
 	t.Run("NotEmpty", func(t *testing.T) {
-		ctx := context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey,
-			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
+		ctx := context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
 		uim := UserInfoMap(ctx)
 		assert.Equal(t, map[string]string{
 			"User":              strings.Repeat("x", 63) + "y",
@@ -156,7 +155,7 @@ func TestUserInfoMap(t *testing.T) {
 		}, uim)
 	})
 	t.Run("Empty", func(t *testing.T) {
-		uim := UserInfoMap(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())))
+		uim := UserInfoMap(logging.TestContext(t.Context()))
 		assert.Nil(t, uim)
 	})
 }

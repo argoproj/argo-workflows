@@ -42,14 +42,14 @@ type Controller struct {
 
 // NewController returns a new workflow ttl controller
 func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log = log.WithField("component", "gc_controller")
+	ctx = logging.WithLogger(ctx, log)
 	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
 		wfv1.WorkflowSucceeded: NewHeap(),
 	}
-	ctx = logging.WithLogger(ctx, log)
 
 	controller := &Controller{
 		wfclientset:     wfClientset,
@@ -68,9 +68,11 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 			return ok && common.IsDone(un)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: controller.enqueueWF,
+			AddFunc: func(obj interface{}) {
+				controller.enqueueWF(ctx, obj)
+			},
 			UpdateFunc: func(old, new interface{}) {
-				controller.enqueueWF(new)
+				controller.enqueueWF(ctx, new)
 			},
 		},
 	})
@@ -132,7 +134,7 @@ func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {
 	}
 
 	for i := 0; i < workflowGCWorkers; i++ {
-		go wait.Until(c.runWorker, time.Second, stopCh)
+		go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 	}
 	c.log.Info(ctx, "Started workflow garbage collection")
 	<-stopCh
@@ -143,9 +145,7 @@ func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {
 // runWorker is a long-running function that will continually call the
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
-func (c *Controller) runWorker() {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+func (c *Controller) runWorker(ctx context.Context) {
 	for c.processNextWorkItem(ctx) {
 	}
 }
@@ -187,9 +187,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 // enqueueWF conditionally queues a workflow to the ttl queue if it is within the deletion period
-func (c *Controller) enqueueWF(obj interface{}) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+func (c *Controller) enqueueWF(ctx context.Context, obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		c.log.Warnf(ctx, "'%v' is not an unstructured", obj)

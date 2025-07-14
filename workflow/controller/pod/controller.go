@@ -58,8 +58,7 @@ type Controller struct {
 
 // NewController creates a pod controller
 func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log = log.WithField("component", "pod_controller")
+	log := logging.RequireLoggerFromContext(ctx).WithField("component", "pod_controller")
 	ctx = logging.WithLogger(ctx, log)
 	podController := &Controller{
 		config:        config,

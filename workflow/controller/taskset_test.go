@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -28,7 +27,7 @@ spec:
     - name: main
       steps:
         - - name: good
-            template: http
+            template: http 
             arguments:
               parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
         - - name: bad
@@ -46,8 +45,7 @@ spec:
        url: "{{inputs.parameters.url}}"
 
 `)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -67,7 +65,7 @@ spec:
     `, &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
@@ -91,7 +89,7 @@ spec:
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -247,8 +245,7 @@ status:
   progress: 0/0
   startedAt: "2021-07-20T16:05:13Z"
 `)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -294,7 +291,7 @@ status:
 
     `, &ts)
 	t.Run("RemoveCompletedTaskSetStatus", func(t *testing.T) {
-		cancel, controller := newController(wf, ts)
+		cancel, controller := newController(ctx, wf, ts)
 		defer cancel()
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
 		require.NoError(t, err)
@@ -318,11 +315,10 @@ status:
 }
 
 func TestNonHTTPTemplateScenario(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	t.Run("reconcileTaskSet", func(t *testing.T) {
 		woc.operate(ctx)
@@ -375,8 +371,7 @@ status:
       type: HTTP
   phase: Running
 `)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -400,7 +395,7 @@ status:
       phase: Succeeded
     `, &ts)
 	t.Run("MemoizeOnTaskSetSucceeded", func(t *testing.T) {
-		cancel, controller := newController(wf, ts)
+		cancel, controller := newController(ctx, wf, ts)
 		defer cancel()
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
 		require.NoError(t, err)

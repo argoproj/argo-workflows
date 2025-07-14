@@ -32,11 +32,8 @@ func anyVarNotInEnv(expression string, variables []string, env map[string]interf
 	return false
 }
 
-func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+func expressionReplace(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
 	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)

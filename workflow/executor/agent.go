@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,11 +31,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type AgentExecutor struct {
-	log               *log.Entry
 	WorkflowName      string
 	workflowUID       string
 	ClientSet         kubernetes.Interface
@@ -51,7 +50,6 @@ type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wf
 
 func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
-		log:               log.WithField("workflow", workflowName),
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
 		Namespace:         namespace,
@@ -78,7 +76,10 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
 	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
-	ae.log.WithFields(log.Fields{"taskWorkers": taskWorkers, "requeueTime": requeueTime}).Info("Starting Agent")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("taskWorkers", taskWorkers).
+		WithField("requeueTime", requeueTime).
+		Info(ctx, "Starting Agent")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
@@ -96,7 +97,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 		}
 
 		for event := range wfWatch.ResultChan() {
-			ae.log.WithField("event_type", event.Type).Info("TaskSet Event")
+			logger.WithField("event_type", event.Type).Info(ctx, "TaskSet Event")
 
 			if event.Type == watch.Deleted {
 				// We're done if the task set is deleted
@@ -108,7 +109,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				return apierr.FromObject(event.Object)
 			}
 			if IsWorkflowCompleted(taskSet) {
-				ae.log.Info("Workflow completed... stopping agent")
+				logger.Info(ctx, "Workflow completed... stopping agent")
 				return nil
 			}
 
@@ -126,19 +127,19 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			break
 		}
 		nodeID, tmpl := task.NodeID, task.Template
-		log := log.WithField("nodeID", nodeID)
+		logger := logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID)
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
 		if _, ok := ae.consideredTasks.LoadOrStore(nodeID, true); ok {
-			log.Info("Task is already considered")
+			logger.Info(ctx, "Task is already considered")
 			continue
 		}
 
-		log.Info("Processing task")
+		logger.Info(ctx, "Processing task")
 		result, requeue, err := ae.processTask(ctx, tmpl)
 		if err != nil {
-			log.WithError(err).Error("Error in agent task")
+			logger.WithError(err).Error(ctx, "Error in agent task")
 			result = &wfv1.NodeResult{
 				Phase:   wfv1.NodeError,
 				Message: fmt.Sprintf("error processing task: %s", err),
@@ -146,11 +147,11 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			// Do not return or continue here, the "errored" result still needs to be propagated to the responseQueue below
 		}
 
-		log.
+		logger.
 			WithField("phase", result.Phase).
 			WithField("message", result.Message).
 			WithField("requeue", requeue).
-			Info("Sending result")
+			Info(ctx, "Sending result")
 
 		if result.Phase != "" {
 			responseQueue <- response{NodeID: nodeID, Result: result}
@@ -169,6 +170,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 	ticker := time.NewTicker(requeueTime)
 	defer ticker.Stop()
 	nodeResults := map[string]wfv1.NodeResult{}
+	logger := logging.RequireLoggerFromContext(ctx)
 	for {
 		select {
 		case res := <-responseQueue:
@@ -180,11 +182,11 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 
 			patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
 			if err != nil {
-				ae.log.WithError(err).Error("Generating Patch Failed")
+				logger.WithError(err).Error(ctx, "Generating Patch Failed")
 				continue
 			}
 
-			ae.log.Info("Processing Patch")
+			logger.Info(ctx, "Processing Patch")
 
 			err = retry.OnError(wait.Backoff{
 				Duration: time.Second,
@@ -200,8 +202,8 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 			})
 
 			if err != nil && !errors.IsTransientErr(ctx, err) {
-				ae.log.WithError(err).
-					Error("TaskSet Patch Failed")
+				logger.WithError(err).
+					Error(ctx, "TaskSet Patch Failed")
 
 				// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
 				// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
@@ -219,7 +221,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 			// Patch was successful, clear nodeResults for next iteration
 			nodeResults = map[string]wfv1.NodeResult{}
 
-			log.Info("Patched TaskSet")
+			logger.Info(ctx, "Patched TaskSet")
 		}
 	}
 }

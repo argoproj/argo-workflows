@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -424,8 +423,7 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 }
 
 func (s *ArgoServerSuite) createServiceAccount(name string) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(s.T().Context())
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
@@ -437,8 +435,7 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(s.T().Context())
 	nsName := fixtures.Namespace
 	goodSaName := "argotestgood"
 	s.createServiceAccount(goodSaName)
@@ -1708,9 +1705,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.GetLoggerFromContext(ctx)
+	ctx := logging.TestContext(s.T().Context())
+	log := logging.RequireLoggerFromContext(ctx)
 	t := s.T()
 	req, err := http.NewRequest("GET", baseURL+url, nil)
 	s.Require().NoError(err)
@@ -1801,6 +1797,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
 	var name string
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
 	s.Given().
 		Workflow(`
 metadata:

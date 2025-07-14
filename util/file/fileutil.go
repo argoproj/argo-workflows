@@ -78,8 +78,7 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 func close(ctx context.Context, f io.Closer) {
 	err := f.Close()
 	if err != nil {
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Warnf(ctx, "Failed to close the file/writer/reader. %v", err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Failed to close the file/writer/reader")
 	}
 }
 
@@ -114,8 +113,7 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 
 	_, err := gzipWriter.Write(content)
 	if err != nil {
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Warnf(ctx, "Error in compressing: %v", err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Error in compressing")
 	}
 	close(ctx, gzipWriter)
 	return buf.Bytes()
@@ -149,16 +147,14 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 			}
 			defer func() {
 				if err := f.Close(); err != nil {
-					logger := logging.GetLoggerFromContext(ctx)
-					logger.WithFatal().Errorf(ctx, "Error closing file[%s]: %v", path, err)
+					logging.RequireLoggerFromContext(ctx).WithError(err).WithField("path", path).WithFatal().Error(ctx, "Error closing file")
 				}
 			}()
 			r = f
 		case info.IsDir():
 			return nil // skip
 		default:
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Debugf(ctx, "ignoring file with unknown extension: %s", path)
+			logging.RequireLoggerFromContext(ctx).WithField("path", path).Debug(ctx, "ignoring file with unknown extension")
 			return nil
 		}
 

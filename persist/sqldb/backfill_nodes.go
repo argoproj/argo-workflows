@@ -20,7 +20,7 @@ func (s backfillNodes) String() string {
 }
 
 func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error) {
-	logger := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Backfill node status")
 	rs, err := session.SQL().SelectFrom(s.tableName).
 		Columns("workflow").

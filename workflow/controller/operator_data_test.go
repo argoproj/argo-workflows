@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -230,11 +229,9 @@ status:
 // Test that a pod is created when necessary
 func TestDataTemplateCreatesPod(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(inMemoryDataNode, `artifactPaths: {s3: {bucket: "test"}}`))
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 

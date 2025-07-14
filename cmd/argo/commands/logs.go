@@ -84,12 +84,13 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			// set-up
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 
 			return common.LogWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
 		},

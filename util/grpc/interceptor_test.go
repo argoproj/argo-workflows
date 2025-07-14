@@ -39,7 +39,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return mockReturn, nil }
 		msts := &mockServerTransportStream{}
-		baseCtx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
 		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
@@ -53,7 +53,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	t.Run("upstream error handling", func(t *testing.T) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
 		msts := &mockServerTransportStream{}
-		baseCtx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
 		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
@@ -68,7 +68,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 			return mockReturn, nil
 		}
 		msts := &mockServerTransportStream{isError: true}
-		baseCtx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
 		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
@@ -95,8 +95,8 @@ func (msts mockServerStream) SetHeader(md metadata.MD) error {
 func (mockServerStream) SendHeader(md metadata.MD) error { return nil }
 func (mockServerStream) SetTrailer(md metadata.MD)       {}
 func (mockServerStream) Context() context.Context {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	return ctx
+	// nolint:contextcheck
+	return logging.TestContext(context.Background())
 }
 func (mockServerStream) SendMsg(m any) error { return nil }
 func (mockServerStream) RecvMsg(m any) error { return nil }

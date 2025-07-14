@@ -17,30 +17,32 @@ import (
 )
 
 func TestMetrics(t *testing.T) {
-	m, te, err := CreateDefaultTestMetrics()
+	ctx := logging.TestContext(t.Context())
+	m, te, err := CreateDefaultTestMetrics(ctx)
 	require.NoError(t, err)
 	// Default buckets: {5, 10, 15, 20, 25, 30}
-	m.OperationCompleted(m.Ctx, 5)
+	m.OperationCompleted(ctx, 5)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetFloat64HistogramData(telemetry.InstrumentOperationDurationSeconds.Name(), &attribs)
+	val, err := te.GetFloat64HistogramData(ctx, telemetry.InstrumentOperationDurationSeconds.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, []float64{5, 10, 15, 20, 25, 30}, val.Bounds)
 	assert.Equal(t, []uint64{1, 0, 0, 0, 0, 0, 0}, val.BucketCounts)
 }
 
 func TestErrors(t *testing.T) {
-	m, _, err := CreateDefaultTestMetrics()
+	ctx := logging.TestContext(t.Context())
+	m, _, err := CreateDefaultTestMetrics(ctx)
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
 	require.NoError(t, err)
-	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(ctx, &wfv1.Prometheus{
 		Name: "invalid.name",
 	}, "owner", func() float64 { return 0.0 })
 	require.Error(t, err)
 
-	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(ctx, &wfv1.Prometheus{
 		Name: "name",
 		Labels: []*wfv1.MetricLabel{{
 			Key:   "invalid-key",
@@ -58,14 +60,15 @@ func TestMetricGC(t *testing.T) {
 		TTL:     1 * time.Second,
 	}
 
-	m, _, err := createTestMetrics(&config, Callbacks{})
+	ctx := logging.TestContext(t.Context())
+	m, _, err := createTestMetrics(ctx, &config, Callbacks{})
 	require.NoError(t, err)
 	const key string = `metric`
 
 	labels := []*wfv1.MetricLabel{
 		{Key: "foo", Value: "bar"},
 	}
-	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(ctx, &wfv1.Prometheus{
 		Name:    key,
 		Labels:  labels,
 		Help:    "none",
@@ -100,11 +103,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)
@@ -114,7 +113,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 	}
 	name := "realtime_metric"
 	wfKey := "workflow-uid"
-	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(ctx, &wfv1.Prometheus{
 		Name:   name,
 		Labels: labels,
 		Help:   "None",
@@ -152,10 +151,11 @@ func TestRealtimeMetricGC(t *testing.T) {
 }
 
 func TestWorkflowQueueMetrics(t *testing.T) {
-	m, te, err := getSharedMetrics()
+	ctx := logging.TestContext(t.Context())
+	m, te, err := getSharedMetrics(ctx)
 	require.NoError(t, err)
 	attribs := attribute.NewSet(attribute.String(telemetry.AttribQueueName, "workflow_queue"))
-	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_queue")
+	wfQueue := m.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_queue")
 	defer wfQueue.ShutDown()
 
 	assert.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueDepthGauge.Name()))
@@ -164,7 +164,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	wfQueue.Add("hello")
 
 	require.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueAddsCount.Name()))
-	val, err := te.GetInt64CounterValue(telemetry.InstrumentQueueAddsCount.Name(), &attribs)
+	val, err := te.GetInt64CounterValue(ctx, telemetry.InstrumentQueueAddsCount.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
@@ -176,11 +176,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)

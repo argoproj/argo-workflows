@@ -11,6 +11,7 @@ import (
 type slogLogger struct {
 	fields    Fields
 	logger    *slog.Logger
+	level     Level
 	hooks     map[Level][]Hook
 	withPanic bool
 	withFatal bool
@@ -26,16 +27,24 @@ func fieldsToAttrs(fields Fields) []slog.Attr {
 
 // NewSlogLogger returns a slog based logger
 func NewSlogLogger(logLevel Level, format LogType, hooks ...Hook) Logger {
-	return NewSlogLoggerCustom(logLevel, format, os.Stdout, hooks...)
+	return NewSlogLoggerCustom(logLevel, format, os.Stderr, hooks...)
 }
 
 // NewSlogLoggerCustom returns a slog based logger with custom output destination
 func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ...Hook) Logger {
 	var handler slog.Handler
+	if logLevel == "" {
+		panic("logLevel is required")
+	}
+	if format == "" {
+		panic("format is required")
+	}
 
 	mappedHooks := make(map[Level][]Hook)
 
-	for _, hook := range hooks {
+	// Include global hooks with any additional hooks
+	allHooks := append(GetGlobalHooks(), hooks...)
+	for _, hook := range allHooks {
 		levels := hook.Levels()
 		for _, level := range levels {
 			mappedHooks[level] = append(mappedHooks[level], hook)
@@ -56,9 +65,16 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 	s := slogLogger{
 		fields: f,
 		logger: l,
+		level:  logLevel,
 		hooks:  mappedHooks,
 	}
+	// nolint:contextcheck
+	emitInitLogs(context.Background(), &s)
 	return &s
+}
+
+func (s *slogLogger) Level() Level {
+	return s.level
 }
 
 func (s *slogLogger) WithFields(fields Fields) Logger {
@@ -75,6 +91,7 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 	return &slogLogger{
 		fields:    newFields,
 		logger:    s.logger,
+		level:     s.level,
 		hooks:     s.hooks,
 		withFatal: s.withFatal,
 		withPanic: s.withPanic,
@@ -93,6 +110,7 @@ func (s *slogLogger) WithField(name string, value any) Logger {
 	return &slogLogger{
 		fields:    newFields,
 		logger:    s.logger,
+		level:     s.level,
 		hooks:     s.hooks,
 		withFatal: s.withFatal,
 		withPanic: s.withPanic,
@@ -104,6 +122,7 @@ func (s *slogLogger) WithPanic() Logger {
 	return &slogLogger{
 		fields:    s.fields,
 		logger:    s.logger,
+		level:     s.level,
 		hooks:     s.hooks,
 		withPanic: true,
 		withFatal: s.withFatal,
@@ -115,6 +134,7 @@ func (s *slogLogger) WithFatal() Logger {
 	return &slogLogger{
 		fields:    s.fields,
 		logger:    s.logger,
+		level:     s.level,
 		hooks:     s.hooks,
 		withFatal: true,
 		withPanic: s.withPanic,
@@ -139,7 +159,7 @@ func (s *slogLogger) executeHooks(ctx context.Context, level Level, msg string) 
 						s.logger.ErrorContext(ctx, "hook panic recovered", "panic", r, "hook", fmt.Sprintf("%T", hook))
 					}
 				}()
-				hook.Fire(level, msg)
+				hook.Fire(ctx, level, msg, s.fields)
 			}()
 		}
 	}
@@ -170,7 +190,11 @@ func (s *slogLogger) Error(ctx context.Context, msg string) {
 	s.logger.LogAttrs(ctx, slog.LevelError, msg, fieldsToAttrs(s.fields)...)
 	switch {
 	case s.withFatal:
-		os.Exit(1)
+		if exitFunc := GetExitFunc(); exitFunc != nil {
+			exitFunc(1)
+		} else {
+			os.Exit(1)
+		}
 	case s.withPanic:
 		panic(msg)
 	}
@@ -205,4 +229,9 @@ func convertLevel(level Level) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+// NewBackgroundContext returns a new context with this logger in it
+func (s *slogLogger) NewBackgroundContext() context.Context {
+	return WithLogger(context.Background(), s)
 }

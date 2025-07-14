@@ -138,7 +138,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			client = http.CreateOauth2Client(clientID, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
+			client = http.CreateOauth2Client(ctx, clientID, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
 		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.ClientCert.ClientCertSecret != nil && art.HTTP.Auth.ClientCert.ClientKeySecret != nil {
 			clientCert, err := ri.GetSecret(ctx, art.HTTP.Auth.ClientCert.ClientCertSecret.Name, art.HTTP.Auth.ClientCert.ClientCertSecret.Key)

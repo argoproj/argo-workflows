@@ -138,8 +138,8 @@ var workflowExistenceFunc = func(key string) bool {
 	return true
 }
 
-func getSyncLimitFunc(ctx context.Context, kube kubernetes.Interface) func(string) (int, error) {
-	syncLimitConfig := func(lockName string) (int, error) {
+func getSyncLimitFunc(_ context.Context, kube kubernetes.Interface) sync.GetSyncLimit {
+	syncLimitConfig := func(ctx context.Context, lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
 		if len(items) < 4 {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
@@ -161,10 +161,9 @@ func getSyncLimitFunc(ctx context.Context, kube kubernetes.Interface) func(strin
 }
 
 func TestSemaphoreTmplLevel(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -223,10 +222,9 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreScriptTmplLevel(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -284,10 +282,9 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -347,10 +344,9 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 }
 
 func TestSemaphoreResourceTmplLevel(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -409,11 +405,10 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
@@ -467,10 +462,9 @@ spec:
 func TestMutexInDAG(t *testing.T) {
 	assert := assert.New(t)
 
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("MutexWithDAG", func(t *testing.T) {
@@ -540,10 +534,9 @@ spec:
 func TestMutexInDAGWithInterpolation(t *testing.T) {
 	assert := assert.New(t)
 
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("InterpolatedMutexWithDAG", func(t *testing.T) {
@@ -605,10 +598,9 @@ spec:
 
 func TestSynchronizationWithRetry(t *testing.T) {
 	assert := assert.New(t)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -814,10 +806,9 @@ status:
 
 func TestSynchronizationWithStep(t *testing.T) {
 	assert := assert.New(t)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -892,10 +883,9 @@ spec:
 
 func TestSynchronizationWithStepRetry(t *testing.T) {
 	assert := assert.New(t)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -957,10 +947,9 @@ spec:
         args: ["sleep 99999"]`
 
 func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
@@ -1104,11 +1093,10 @@ spec:
             name: cache-example-steps-simple
     `)
 	wf.Name = "example-steps-simple-gas12"
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 

@@ -56,8 +56,7 @@ func main() {
 	wfClient := wfclientset.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
 
 	// submit the hello world workflow
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(context.Background())
 	createdWf, err := wfClient.Create(ctx, &helloWorldWorkflow, metav1.CreateOptions{})
 	checkErr(err)
 	fmt.Printf("Workflow %s submitted\n", createdWf.Name)

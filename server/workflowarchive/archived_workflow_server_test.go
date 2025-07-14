@@ -130,7 +130,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		},
 	}, nil)
 
-	ctx := context.WithValue(context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
 		allowed = false
 		_, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})

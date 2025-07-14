@@ -28,11 +28,7 @@ func IgnoreContainerNotFoundErr(err error) error {
 func IsTransientErr(ctx context.Context, err error) bool {
 	isTransient := IsTransientErrQuiet(ctx, err)
 	if err != nil && !isTransient {
-		logger := logging.GetLoggerFromContext(ctx)
-		if logger == nil {
-			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		}
-		logger.Warnf(ctx, "Non-transient error: %v", err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Non-transient error")
 	}
 	return isTransient
 }
@@ -41,11 +37,7 @@ func IsTransientErr(ctx context.Context, err error) bool {
 func IsTransientErrQuiet(ctx context.Context, err error) bool {
 	isTransient := isTransientErr(err)
 	if isTransient {
-		logger := logging.GetLoggerFromContext(ctx)
-		if logger == nil {
-			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		}
-		logger.Infof(ctx, "Transient error: %v", err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).Infof(ctx, "Transient error")
 	}
 	return isTransient
 }
@@ -161,10 +153,7 @@ func isTransientSqbErr(err error) bool {
 // CheckError is a convenience function to fatally log an exit if the supplied error is non-nil
 func CheckError(ctx context.Context, err error) {
 	if err != nil {
-		logger := logging.GetLoggerFromContext(ctx)
-		if logger == nil {
-			logger = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		}
+		logger := logging.RequireLoggerFromContext(ctx)
 		logger.WithError(err).WithFatal().Error(ctx, "An error occurred during execution")
 	}
 }
