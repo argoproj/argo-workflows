@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -74,16 +75,16 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 }
 
 // Save is unsupported for git output artifacts
-func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
-	return errors.New("git output artifacts unsupported")
+func (g *ArtifactDriver) Save(ctx context.Context, path string, artifact *wfv1.Artifact) error {
+	return argoerrors.New(argoerrors.CodeBadRequest, "git output artifacts unsupported")
 }
 
 // Delete is unsupported for git artifacts
-func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+func (g *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 
-func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
 	sshUser := GetUser(a.Repo)
 	closer, auth, err := g.auth(sshUser)
@@ -188,15 +189,15 @@ func isFetchErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
 }
 
-func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+func (g *ArtifactDriver) OpenStream(ctx context.Context, a *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, g)
+	return common.LoadToStream(ctx, a, g)
 }
 
-func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (g *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (g *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	return false, argoerrors.New(argoerrors.CodeNotImplemented, "IsDirectory currently unimplemented for Git")
 }

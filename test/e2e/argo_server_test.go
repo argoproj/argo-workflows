@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/gavv/httpexpect/v2"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -425,6 +425,7 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 
 func (s *ArgoServerSuite) createServiceAccount(name string) {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
@@ -437,6 +438,7 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 
 func (s *ArgoServerSuite) TestPermission() {
 	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	nsName := fixtures.Namespace
 	goodSaName := "argotestgood"
 	s.createServiceAccount(goodSaName)
@@ -1298,6 +1300,9 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	log := logging.GetLoggerFromContext(ctx)
 	t := s.T()
 	req, err := http.NewRequest("GET", baseURL+url, nil)
 	s.Require().NoError(err)
@@ -1322,7 +1327,7 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		log.WithField("line", line).Debug()
+		log.WithField("line", line).Debug(ctx, "")
 		// make sure we have this enabled
 		if line == "" {
 			continue

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	fakekube "k8s.io/client-go/kubernetes/fake"
@@ -19,7 +21,7 @@ import (
 
 func TestController(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
-	ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
+	ctx := context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.WfKey, clientset)
 	instanceIDService := instanceid.NewService("my-instanceid")
 	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewSimpleClientset())
 	newController := func(asyncDispatch bool) *Controller {

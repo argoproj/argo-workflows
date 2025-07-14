@@ -13,7 +13,6 @@ import (
 	"github.com/upper/db/v4"
 
 	syncpkg "github.com/argoproj/pkg/sync"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +32,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -164,7 +165,7 @@ const (
 )
 
 var (
-	cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+	cacheGCPeriod = env.LookupEnvDurationOr(context.Background(), "CACHE_GC_PERIOD", 0)
 
 	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
 	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
@@ -173,12 +174,14 @@ var (
 	// as well as incrementing the semaphore counter availability, and so the next workflow will
 	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
 	// updates, and the next workflow will see the updated availability.
-	semaphoreNotifyDelay = env.LookupEnvDurationOr("SEMAPHORE_NOTIFY_DELAY", time.Second)
+	semaphoreNotifyDelay = env.LookupEnvDurationOr(context.Background(), "SEMAPHORE_NOTIFY_DELAY", time.Second)
 )
 
 func init() {
 	if cacheGCPeriod != 0 {
-		log.WithField("cacheGCPeriod", cacheGCPeriod).Info("GC for memoization caches will be performed every")
+		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.WithField("cacheGCPeriod", cacheGCPeriod).Info(ctx, "GC for memoization caches will be performed every")
 	}
 }
 
@@ -203,8 +206,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
-		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 	}
 
 	if executorPlugins {
@@ -246,9 +249,8 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 // runGCcontroller runs the workflow garbage collector controller
 func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
-
 	gcCtrl := gccontroller.NewController(ctx, wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
-	err := gcCtrl.Run(ctx.Done(), workflowTTLWorkers)
+	err := gcCtrl.Run(ctx, workflowTTLWorkers)
 	if err != nil {
 		panic(err)
 	}
@@ -284,7 +286,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
-		log.Fatalf("Failed to init db: %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to init db")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -292,42 +295,45 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	defer wfc.wfQueue.ShutDown()
 
-	log.WithField("version", argo.GetVersion().Version).
-		WithField("defaultRequeueTime", GetRequeueTime()).
-		Info("Starting Workflow Controller")
-	log.WithField("workflowWorkers", wfWorkers).
-		WithField("workflowTtlWorkers", workflowTTLWorkers).
-		WithField("podCleanup", podCleanupWorkers).
-		WithField("cronWorkflowWorkers", cronWorkflowWorkers).
-		WithField("workflowArchive", wfArchiveWorkers).
-		Info("Current Worker Numbers")
+	logger := logging.GetLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{
+		"version":            argo.GetVersion().Version,
+		"defaultRequeueTime": GetRequeueTime(),
+	}).Info(ctx, "Starting Workflow Controller")
+	logger.WithFields(logging.Fields{
+		"workflowWorkers":     wfWorkers,
+		"workflowTtlWorkers":  workflowTTLWorkers,
+		"podCleanup":          podCleanupWorkers,
+		"cronWorkflowWorkers": cronWorkflowWorkers,
+		"workflowArchive":     wfArchiveWorkers,
+	}).Info(ctx, "Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to create namespace informer")
 	}
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
-	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to add workflow informer handlers")
 	}
 	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
-	wfc.updateEstimatorFactory()
+	wfc.updateEstimatorFactory(ctx)
 
-	wfc.configMapInformer = wfc.newConfigMapInformer()
+	wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
-		log.Fatal(err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to init managers")
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
@@ -356,7 +362,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
 	) {
-		log.Fatal("Timed out waiting for caches to sync")
+		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
 	}
 
 	go wfc.workflowGarbageCollector(ctx)
@@ -367,11 +373,18 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wait.UntilWithContext(ctx, wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod)
 
+	workerLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	workerLogger = workerLogger.WithField("component", "workflow_worker")
+	workerCtx := logging.WithLogger(ctx, workerLogger)
 	for i := 0; i < wfWorkers; i++ {
-		go wait.UntilWithContext(ctx, wfc.runWorker, time.Second)
+		go wait.UntilWithContext(workerCtx, wfc.runWorker, time.Second)
 	}
+
+	archiveLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	archiveLogger = archiveLogger.WithField("component", "archive_worker")
+	archiveCtx := logging.WithLogger(ctx, archiveLogger)
 	for i := 0; i < wfArchiveWorkers; i++ {
-		go wait.UntilWithContext(ctx, wfc.runArchiveWorker, time.Second)
+		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
@@ -392,10 +405,10 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		}
 		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace)
 		var configMap *apiv1.ConfigMap
-		err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 			var err error
 			configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
-			return !errors.IsTransientErr(err), err
+			return !errors.IsTransientErr(ctx, err), err
 		})
 		if err != nil {
 			return 0, err
@@ -415,7 +428,8 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	isWFDeleted := func(key string) bool {
 		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
-			log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
 			return false
 		}
 		return exists
@@ -448,7 +462,8 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
-
+	logger := logging.GetLoggerFromContext(ctx).WithField("component", "configmap_watcher")
+	ctx = logging.WithLogger(ctx, logger)
 	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
@@ -464,15 +479,15 @@ func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 		case event := <-retryWatcher.ResultChan():
 			cm, ok := event.Object.(*apiv1.ConfigMap)
 			if !ok {
-				log.Errorf("invalid config map object received in config watcher. Ignored processing")
+				logger.Error(ctx, "invalid config map object received in config watcher. Ignored processing")
 				continue
 			}
-			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			logger.Debugf(ctx, "received config map %s/%s update", cm.Namespace, cm.Name)
 			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+				logger.Infof(ctx, "Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
 				wfc.UpdateConfig(ctx)
 			}
-			wfc.notifySemaphoreConfigUpdate(cm)
+			wfc.notifySemaphoreConfigUpdate(ctx, cm)
 		case <-ctx.Done():
 			return
 		}
@@ -480,19 +495,22 @@ func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
-func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, cm *apiv1.ConfigMap) {
 	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
-		log.Errorf("failed get the workflow from informer. %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Errorf(ctx, "failed get the workflow from informer. %v", err)
 	}
 
 	for _, obj := range wfs {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
-			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Warnf(ctx, "received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
-		log.Infof("Adding workflow %s/%s", un.GetNamespace(), un.GetName())
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Infof(ctx, "Adding workflow %s/%s", un.GetNamespace(), un.GetName())
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
@@ -500,12 +518,13 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	cwftGetAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	errors.CheckError(ctx, err)
 	cwftListAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	errors.CheckError(ctx, err)
 	cwftWatchAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	errors.CheckError(ctx, err)
 
+	logger := logging.GetLoggerFromContext(ctx)
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
@@ -515,30 +534,35 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 			ctx.Done(),
 			wfc.cwftmplInformer.Informer().HasSynced,
 		) {
-			log.Fatal("Timed out waiting for ClusterWorkflowTemplate cache to sync")
+			logger.WithFatal().Error(ctx, "Timed out waiting for ClusterWorkflowTemplate cache to sync")
 		}
 	} else {
-		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
+		logger.Warn(ctx, "Controller doesn't have RBAC access for ClusterWorkflowTemplates")
 	}
 }
 
 func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	c, err := wfc.configController.Get(ctx)
 	if err != nil {
-		log.Fatalf("Failed to register watch for controller config map: %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to register watch for controller config map")
 	}
 	wfc.Config = *c
 	err = wfc.updateConfig(ctx)
 	if err != nil {
-		log.Fatalf("Failed to update config: %v", err)
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to update config")
 	}
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
-	log.WithField("periodicity", periodicity).Info("Performing periodic GC")
+	periodicity := env.LookupEnvDurationOr(ctx, "WORKFLOW_GC_PERIOD", 5*time.Minute)
+	logger := logging.GetLoggerFromContext(ctx)
+	logger = logger.WithField("component", "wf_garbage_collector")
+	ctx = logging.WithLogger(ctx, logger)
+	logger.WithField("periodicity", periodicity).Info(ctx, "Performing periodic GC")
 	ticker := time.NewTicker(periodicity)
 	for {
 		select {
@@ -547,33 +571,34 @@ func (wfc *WorkflowController) workflowGarbageCollector(ctx context.Context) {
 			return
 		case <-ticker.C:
 			if wfc.offloadNodeStatusRepo.IsEnabled() {
-				log.Info("Performing periodic workflow GC")
-				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
+				logger.Info(ctx, "Performing periodic workflow GC")
+				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(ctx, wfc.GetManagedNamespace())
 				if err != nil {
-					log.WithField("err", err).Error("Failed to list old offloaded nodes")
+					logger.WithField("err", err).Error(ctx, "Failed to list old offloaded nodes")
 					continue
 				}
-				log.WithField("len_wfs", len(oldRecords)).Info("Deleting old offloads that are not live")
+				logger.WithField("len_wfs", len(oldRecords)).Info(ctx, "Deleting old offloads that are not live")
 				for uid, versions := range oldRecords {
-					if err := wfc.deleteOffloadedNodesForWorkflow(uid, versions); err != nil {
-						log.WithError(err).WithField("uid", uid).Error("Failed to delete old offloaded nodes")
+					if err := wfc.deleteOffloadedNodesForWorkflow(ctx, uid, versions); err != nil {
+						logger.WithError(err).WithField("uid", uid).Error(ctx, "Failed to delete old offloaded nodes")
 					}
 				}
-				log.Info("Workflow GC finished")
+				logger.Info(ctx, "Workflow GC finished")
 			}
 		}
 	}
 }
 
-func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versions []string) error {
+func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(ctx context.Context, uid string, versions []string) error {
 	workflows, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.UIDIndex, uid)
 	if err != nil {
 		return err
 	}
 	var wf *wfv1.Workflow
+	logger := logging.GetLoggerFromContext(ctx)
 	switch l := len(workflows); l {
 	case 0:
-		log.WithField("uid", uid).Info("Workflow missing, probably deleted")
+		logger.WithField("uid", uid).Info(ctx, "Workflow missing, probably deleted")
 	case 1:
 		un, ok := workflows[0].(*unstructured.Unstructured)
 		if !ok {
@@ -583,7 +608,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		wfc.workflowKeyLock.Lock(key)
 		defer wfc.workflowKeyLock.Unlock(key)
 
-		obj, ok := wfc.getWorkflowByKey(key)
+		obj, ok := wfc.getWorkflowByKey(ctx, key)
 		if !ok {
 			return fmt.Errorf("failed to get workflow by key after locking")
 		}
@@ -598,8 +623,8 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 
 		// workflow might still be hydrated
 		if wfc.hydrator.IsHydrated(wf) {
-			log.WithField("uid", wf.UID).Info("Hydrated workflow encountered")
-			err = wfc.hydrator.Dehydrate(wf)
+			logger.WithField("uid", wf.UID).Info(ctx, "Hydrated workflow encountered")
+			err = wfc.hydrator.Dehydrate(ctx, wf)
 			if err != nil {
 				return err
 			}
@@ -612,7 +637,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		if wf != nil && wf.Status.OffloadNodeStatusVersion == version {
 			continue
 		}
-		if err := wfc.offloadNodeStatusRepo.Delete(uid, version); err != nil {
+		if err := wfc.offloadNodeStatusRepo.Delete(ctx, uid, version); err != nil {
 			return err
 		}
 	}
@@ -622,21 +647,24 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	periodicity := env.LookupEnvDurationOr("ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
+	logger := logging.GetLoggerFromContext(ctx)
+	logger = logger.WithField("component", "archived_wf_garbage_collector")
+	ctx = logging.WithLogger(ctx, logger)
+	periodicity := env.LookupEnvDurationOr(ctx, "ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
 	if wfc.Config.Persistence == nil {
-		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		logger.Info(ctx, "Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
 	}
 	if !wfc.Config.Persistence.Archive {
-		log.Info("Archive disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		logger.Info(ctx, "Archive disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
 	}
 	ttl := wfc.Config.Persistence.ArchiveTTL
 	if ttl == config.TTL(0) {
-		log.Info("Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")
+		logger.Info(ctx, "Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
 	}
-	log.WithFields(log.Fields{"ttl": ttl, "periodicity": periodicity}).Info("Performing archived workflow GC")
+	logger.WithFields(logging.Fields{"ttl": ttl, "periodicity": periodicity}).Info(ctx, "Performing archived workflow GC")
 	ticker := time.NewTicker(periodicity)
 	defer ticker.Stop()
 	for {
@@ -644,10 +672,10 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Cont
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			log.Info("Performing archived workflow GC")
-			err := wfc.wfArchive.DeleteExpiredWorkflows(time.Duration(ttl))
+			logger.Info(ctx, "Performing archived workflow GC")
+			err := wfc.wfArchive.DeleteExpiredWorkflows(ctx, time.Duration(ttl))
 			if err != nil {
-				log.WithField("err", err).Error("Failed to delete archived workflows")
+				logger.WithField("err", err).Error(ctx, "Failed to delete archived workflows")
 			}
 		}
 	}
@@ -678,45 +706,48 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 
-	obj, ok := wfc.getWorkflowByKey(key)
+	obj, ok := wfc.getWorkflowByKey(ctx, key)
 	if !ok {
 		return true
 	}
 
+	logger := logging.GetLoggerFromContext(ctx)
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithFields(log.Fields{"key": key}).Warn("Index is not an unstructured")
+		logger.WithField("key", key).Warn(ctx, "Index is not an unstructured")
 		return true
 	}
 
 	if !reconciliationNeeded(un) {
-		log.WithFields(log.Fields{"key": key}).Debug("Won't process Workflow since it's completed")
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.WithField("key", key).Debug(ctx, "Won't process Workflow since it's completed")
 		return true
 	}
 
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
-		woc := newWorkflowOperationCtx(wf, wfc)
+		logger.WithField("key", key).WithError(err).Warn(ctx, "Failed to unmarshal key to workflow object")
+		woc := newWorkflowOperationCtx(ctx, wf, wfc)
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
 		return true
 	}
 
 	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.Name) {
-		log.WithFields(log.Fields{"name": wf.ObjectMeta.Name}).Warn("Cache: Rejecting recently deleted")
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.WithField("name", wf.ObjectMeta.Name).Warn(ctx, "Cache: Rejecting recently deleted")
 		return true
 	}
 
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
-	woc := newWorkflowOperationCtx(wf, wfc)
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
 
-	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && woc.wf.Status.Phase != wfv1.WorkflowRunning {
-		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
+	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
+		logger.WithField("key", key).Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
 		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
 			woc.persistUpdates(ctx)
@@ -732,9 +763,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		}
 	}()
 
-	err = wfc.hydrator.Hydrate(woc.wf)
+	err = wfc.hydrator.Hydrate(ctx, woc.wf)
 	if err != nil {
-		woc.log.Errorf("hydration failed: %v", err)
+		woc.log.Errorf(ctx, "hydration failed: %v", err)
 		woc.markWorkflowError(ctx, err)
 		woc.persistUpdates(ctx)
 		return true
@@ -756,11 +787,12 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	if quit {
 		return false
 	}
+	logger := logging.GetLoggerFromContext(ctx)
 	defer wfc.wfArchiveQueue.Done(key)
 
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+		logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
 		return true
 	}
 	if !exists {
@@ -771,10 +803,11 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	return true
 }
 
-func (wfc *WorkflowController) getWorkflowByKey(key string) (interface{}, bool) {
+func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string) (interface{}, bool) {
+	logger := logging.GetLoggerFromContext(ctx)
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+		logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
 		return nil, false
 	}
 	if !exists {
@@ -888,6 +921,7 @@ func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) error {
+	logger := logging.GetLoggerFromContext(ctx)
 	_, err := wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			// FilterFunc is called for every operation affecting the
@@ -897,7 +931,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
-					log.Warnf("Workflow FilterFunc: '%v' is not an unstructured", obj)
+					logger.Warnf(ctx, "Workflow FilterFunc: '%v' is not an unstructured", obj)
 					return false
 				}
 				needed := reconciliationNeeded(un)
@@ -946,17 +980,17 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
 					})
 					if err != nil {
-						log.WithError(err).Error("Failed to list pods")
+						logger.WithError(err).Error(ctx, "Failed to list pods")
 					}
 					for _, p := range podList.Items {
 						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(p.Namespace, p.Name)
+							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
 						}
 					}
 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.releaseAllWorkflowLocks(obj)
+						wfc.releaseAllWorkflowLocks(ctx, obj)
 						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
@@ -1007,21 +1041,23 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 }
 
 func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {
+	logger := logging.GetLoggerFromContext(ctx)
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		log.Error("failed to get key for object")
+		logger.Error(ctx, "failed to get key for object")
 		return
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 	key, err = cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		log.Error("failed to get key for object after locking")
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Error(ctx, "failed to get key for object after locking")
 		return
 	}
 	err = wfc.archiveWorkflowAux(ctx, obj)
 	if err != nil {
-		log.WithField("key", key).WithError(err).Error("failed to archive workflow")
+		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
 	}
 }
 
@@ -1034,12 +1070,13 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	if err != nil {
 		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
 	}
-	err = wfc.hydrator.Hydrate(wf)
+	err = wfc.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		return fmt.Errorf("failed to hydrate workflow: %w", err)
 	}
-	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info("archiving workflow")
-	err = wfc.wfArchive.ArchiveWorkflow(wf)
+	logger := logging.GetLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info(ctx, "archiving workflow")
+	err = wfc.wfArchive.ArchiveWorkflow(ctx, wf)
 	if err != nil {
 		return fmt.Errorf("failed to archive workflow: %w", err)
 	}
@@ -1075,13 +1112,15 @@ func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
+func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
-	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
+	logger := logging.GetLoggerFromContext(ctx)
+	logger = logger.WithField("component", "config_map_informer")
+	logger.WithField("executorPlugins", wfc.executorPlugins != nil).Info(ctx, "Plugins")
 	if wfc.executorPlugins != nil {
 		//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -1097,41 +1136,46 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 					cm := obj.(*apiv1.ConfigMap)
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
+						logger.WithFields(logging.Fields{
+							"namespace": cm.GetNamespace(),
+							"name":      cm.GetName(),
+						}).WithError(err).Error(ctx, "failed to convert configmap to plugin")
 						return
 					}
 					if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
 						wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
 					}
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					log.WithField("namespace", cm.GetNamespace()).
-						WithField("name", cm.GetName()).
-						Info("Executor plugin added")
+					logger.WithFields(logging.Fields{
+						"namespace": cm.GetNamespace(),
+						"name":      cm.GetName(),
+					}).Info(ctx, "Executor plugin added")
 				},
 				UpdateFunc: func(_, obj interface{}) {
 					cm := obj.(*apiv1.ConfigMap)
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
+						logger.WithFields(logging.Fields{
+							"namespace": cm.GetNamespace(),
+							"name":      cm.GetName(),
+						}).WithError(err).Error(ctx, "failed to convert configmap to plugin")
 						return
 					}
 
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					log.WithField("namespace", cm.GetNamespace()).
-						WithField("name", cm.GetName()).
-						Info("Executor plugin updated")
+					logger.WithFields(logging.Fields{
+						"namespace": cm.GetNamespace(),
+						"name":      cm.GetName(),
+					}).Info(ctx, "Executor plugin updated")
 				},
 				DeleteFunc: func(obj interface{}) {
 					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 					delete(wfc.executorPlugins[namespace], name)
-					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
+					logger.WithFields(logging.Fields{
+						"namespace": namespace,
+						"name":      name,
+					}).Info(ctx, "Executor plugin removed")
 				},
 			},
 		})
@@ -1140,8 +1184,8 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
-func (wfc *WorkflowController) updateEstimatorFactory() {
-	wfc.estimatorFactory = estimation.NewEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
+func (wfc *WorkflowController) updateEstimatorFactory(ctx context.Context) {
+	wfc.estimatorFactory = estimation.NewEstimatorFactory(ctx, wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
 // setWorkflowDefaults sets values in the workflow.Spec with defaults from the
@@ -1192,19 +1236,20 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
 	return &metricsConfig
 }
 
-func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
+func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
+	logger := logging.GetLoggerFromContext(ctx)
 	if !ok {
-		log.WithFields(log.Fields{"key": obj}).Warn("Key in index is not an unstructured")
+		logger.WithField("key", obj).Warn(ctx, "Key in index is not an unstructured")
 		return
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.WithFields(log.Fields{"key": obj}).Warn("Invalid workflow object")
+		logger.WithField("key", obj).Warn(ctx, "Invalid workflow object")
 		return
 	}
 	if wf.Status.Synchronization != nil {
-		wfc.syncManager.ReleaseAll(wf)
+		wfc.syncManager.ReleaseAll(ctx, wf)
 	}
 }
 
@@ -1217,7 +1262,8 @@ func (wfc *WorkflowController) getWorkflowPhaseMetrics() map[string]int64 {
 	if wfc.wfInformer != nil {
 		for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-			errors.CheckError(err)
+			ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			errors.CheckError(ctx, err)
 			result[string(phase)] = int64(len(keys))
 		}
 	}
@@ -1232,17 +1278,18 @@ func (wfc *WorkflowController) getWorkflowConditionMetrics() map[wfv1.Condition]
 			{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 		} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
-			errors.CheckError(err)
+			ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			errors.CheckError(ctx, err)
 			result[x] = int64(len(keys))
 		}
 	}
 	return result
 }
 
-func (wfc *WorkflowController) getPodPhaseMetrics() map[string]int64 {
+func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[string]int64 {
 	// During startup we need this callback to exist, but it won't function until the PodController is started
 	if wfc.PodController != nil {
-		return wfc.PodController.GetPodPhaseMetrics()
+		return wfc.PodController.GetPodPhaseMetrics(ctx)
 	}
 	return make(map[string]int64)
 }

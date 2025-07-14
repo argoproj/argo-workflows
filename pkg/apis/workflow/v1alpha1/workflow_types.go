@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -23,10 +24,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/ptr"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // TemplateType is the type of a template
@@ -1371,7 +1372,6 @@ type ArtifactSearchQuery struct {
 
 // ArtGCStatus maintains state related to ArtifactGC
 type ArtGCStatus struct {
-
 	// have Pods been started to perform this strategy? (enables us not to re-process what we've already done)
 	StrategiesProcessed map[ArtifactGCStrategy]bool `json:"strategiesProcessed,omitempty" protobuf:"bytes,1,opt,name=strategiesProcessed"`
 
@@ -1412,6 +1412,7 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	}
 	return false
 }
+
 func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 	if gcStatus.PodsRecouped == nil {
 		return false
@@ -1455,7 +1456,6 @@ func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 }
 
 func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
-
 	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
@@ -1578,6 +1578,7 @@ func (s *WorkflowStep) GetName() string {
 func (s *WorkflowStep) IsDAGTask() bool {
 	return false
 }
+
 func (s *WorkflowStep) IsWorkflowStep() bool {
 	return true
 }
@@ -1822,25 +1823,30 @@ func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 }
 
 // Set the status of a node by key
-func (n Nodes) Set(key string, status NodeStatus) {
+func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
+	log := logging.GetLoggerFromContext(ctx)
 	if status.Name == "" {
-		log.Warnf("Name was not set for key %s", key)
+		log.Warnf(ctx, "Name was not set for key %s", key)
 	}
 	if status.ID == "" {
-		log.Warnf("ID was not set for key %s", key)
+		log.Warnf(ctx, "ID was not set for key %s", key)
 	}
 	_, ok := n[key]
 	if ok {
-		log.Tracef("Changing NodeStatus for %s to %+v", key, status)
+		log.WithFields(logging.Fields{
+			"key":    key,
+			"status": status,
+		}).Debug(ctx, "Changing NodeStatus")
 	}
 	n[key] = status
 }
 
 // Delete a node from the Nodes by key
-func (n Nodes) Delete(key string) {
+func (n Nodes) Delete(ctx context.Context, key string) {
+	log := logging.GetLoggerFromContext(ctx)
 	has := n.Has(key)
 	if !has {
-		log.Warnf("Trying to delete non existent key %s", key)
+		log.Warnf(ctx, "Trying to delete non existent key %s", key)
 		return
 	}
 	delete(n, key)
@@ -1854,6 +1860,7 @@ func (n Nodes) GetName(key string) (string, error) {
 	}
 	return val.Name, nil
 }
+
 func NodeWithName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.Name == name }
 }
@@ -2013,21 +2020,46 @@ type WorkflowStatus struct {
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 }
 
-func (in *WorkflowStatus) MarkTaskResultIncomplete(name string) {
-	if in.TaskResultsCompletionStatus == nil {
-		in.TaskResultsCompletionStatus = make(map[string]bool)
+// MarkTaskResultIncomplete sets either the task results completion field
+// or the node.TaskResultSynced field if the workflow does not have a `TaskResultsCompletionStatus`
+func (in *WorkflowStatus) MarkTaskResultIncomplete(ctx context.Context, name string) {
+	if in.TaskResultsCompletionStatus != nil {
+		in.TaskResultsCompletionStatus[name] = false
+		return
 	}
-	in.TaskResultsCompletionStatus[name] = false
+	node, err := in.Nodes.Get(name)
+	if err != nil {
+		return
+	}
+	if node.TaskResultSynced != nil {
+		node.TaskResultSynced = ptr.To(bool(false))
+	}
+	in.Nodes.Set(ctx, name, *node)
 }
 
-func (in *WorkflowStatus) MarkTaskResultComplete(name string) {
-	if in.TaskResultsCompletionStatus == nil {
-		in.TaskResultsCompletionStatus = make(map[string]bool)
+// MarkTaskResultComplete sets either the task results completion field
+// or the node.TaskResultSynced field if the workflow does not have a `TaskResultsCompletionStatus`
+func (in *WorkflowStatus) MarkTaskResultComplete(ctx context.Context, name string) {
+	if in.TaskResultsCompletionStatus != nil {
+		in.TaskResultsCompletionStatus[name] = true
 	}
-	in.TaskResultsCompletionStatus[name] = true
+	node, err := in.Nodes.Get(name)
+	if err != nil {
+		return
+	}
+	if node.TaskResultSynced != nil {
+		node.TaskResultSynced = ptr.To(bool(true))
+	}
+	in.Nodes.Set(ctx, name, *node)
 }
 
 func (in *WorkflowStatus) TaskResultsInProgress() bool {
+	for _, node := range in.Nodes {
+		if node.TaskResultSynced != nil && !*node.TaskResultSynced {
+			return true
+		}
+	}
+
 	for _, value := range in.TaskResultsCompletionStatus {
 		if !value {
 			return true
@@ -2037,11 +2069,23 @@ func (in *WorkflowStatus) TaskResultsInProgress() bool {
 }
 
 func (in *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
-	value, found := in.TaskResultsCompletionStatus[name]
-	if found {
-		return !value
+	if in.TaskResultsCompletionStatus != nil {
+		value, found := in.TaskResultsCompletionStatus[name]
+		if found {
+			return !value
+		}
+		return false // workflows from older versions do not have this status, so assume completed if this is missing
+	} else {
+		node, err := in.Nodes.Get(name)
+		if err != nil {
+			return true // what can we even do here?
+		}
+		if node.TaskResultSynced != nil {
+			return !*node.TaskResultSynced
+		} else {
+			return false
+		}
 	}
-	return false // workflows from older versions do not have this status, so assume completed if this is missing
 }
 
 func (in *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2257,7 +2301,7 @@ const (
 	ConditionTypeSpecError ConditionType = "SpecError"
 	// ConditionTypeMetricsError is an error during metric emission
 	ConditionTypeMetricsError ConditionType = "MetricsError"
-	//ConditionTypeArtifactGCError is an error on artifact garbage collection
+	// ConditionTypeArtifactGCError is an error on artifact garbage collection
 	ConditionTypeArtifactGCError ConditionType = "ArtifactGCError"
 )
 
@@ -2365,6 +2409,18 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
+
+	// TaskResultSynced is used to determine if the node's output has been received
+	TaskResultSynced *bool `json:"taskResultSynced,omitempty" protobuf:"bytes,28,opt,name=taskResultSynced"`
+}
+
+// Completed is used to determine if this node can proceed
+func (n *NodeStatus) Completed() bool {
+	synced := true
+	if n.TaskResultSynced != nil {
+		synced = *n.TaskResultSynced
+	}
+	return n.Phase.Completed() && synced
 }
 
 func (n *NodeStatus) GetName() string {
@@ -2380,8 +2436,9 @@ func (n *NodeStatus) IsWorkflowStep() bool {
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
-func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
+func (phase NodePhase) Fulfilled(synced *bool) bool {
+	isSynced := synced == nil || *synced
+	return (phase.Completed() && isSynced) || phase == NodeSkipped || phase == NodeOmitted
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
@@ -2418,12 +2475,11 @@ func (in WorkflowStatus) FinishTime() *metav1.Time {
 
 // Fulfilled returns whether a node is fulfilled, i.e. it finished execution, was skipped, or was dameoned successfully
 func (n NodeStatus) Fulfilled() bool {
-	return n.Phase.Fulfilled() || n.IsDaemoned() && n.Phase != NodePending
-}
-
-// Completed returns whether a node completed. Notably, a skipped node is not considered as having completed
-func (n NodeStatus) Completed() bool {
-	return n.Phase.Completed()
+	synced := true
+	if n.TaskResultSynced != nil {
+		synced = *n.TaskResultSynced
+	}
+	return n.Phase.Fulfilled(n.TaskResultSynced) && synced || n.IsDaemoned() && n.Phase != NodePending
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
@@ -2451,7 +2507,8 @@ func (n NodeStatus) IsDaemoned() bool {
 }
 
 // IsPartOfExitHandler returns whether node is part of exit handler.
-func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
+func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool {
+	log := logging.GetLoggerFromContext(ctx)
 	currentNode := n
 	for !currentNode.IsExitNode() {
 		if currentNode.BoundaryID == "" {
@@ -2459,7 +2516,7 @@ func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
-			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+			log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", currentNode.BoundaryID)
 		}
 		currentNode = boundaryNode
 	}

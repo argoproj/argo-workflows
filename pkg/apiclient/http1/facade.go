@@ -12,11 +12,11 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/argoproj/argo-workflows/v3/util/flatten"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
@@ -50,6 +50,7 @@ func (h Facade) Delete(ctx context.Context, in, out interface{}, path string) er
 }
 
 func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path string) (*bufio.Reader, error) {
+	log := logging.GetLoggerFromContext(ctx)
 	method := "GET"
 	u, err := h.url(method, path, in)
 	if err != nil {
@@ -66,7 +67,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	req.Header = headers
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
+	log.Debugf(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
@@ -90,6 +91,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 }
 
 func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
+	log := logging.GetLoggerFromContext(ctx)
 	var data []byte
 	if method != "GET" {
 		var err error
@@ -112,7 +114,7 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	}
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
+	log.Debugf(ctx, "curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{

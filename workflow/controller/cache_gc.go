@@ -17,7 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-var gcAfterNotHitDuration = env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
+var gcAfterNotHitDuration = env.LookupEnvDurationOr(context.Background(), "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
 
 func init() {
 	log.WithField("gcAfterNotHitDuration", gcAfterNotHitDuration).Info("Memoization caches will be garbage-collected if they have not been hit after")
