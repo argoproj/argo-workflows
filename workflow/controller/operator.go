@@ -3232,10 +3232,10 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	if len(childNodes) == 0 {
 		return nil
 	}
-	// Some of the children may be hooks, only keep those that aren't
+	// Some of the children may be hooks and some of the children may be retried nodes, only keep those that aren't
 	nodeIdx := 0
 	for i := range childNodes {
-		if childNodes[i].NodeFlag == nil || !childNodes[i].NodeFlag.Hooked {
+		if childNodes[i].NodeFlag == nil || (!childNodes[i].NodeFlag.Hooked && !childNodes[i].NodeFlag.Retried) {
 			childNodes[nodeIdx] = childNodes[i]
 			nodeIdx++
 		}
