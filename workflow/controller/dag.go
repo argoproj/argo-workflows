@@ -673,10 +673,6 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			var ancestorNodes []wfv1.NodeStatus
 			for _, node := range woc.wf.Status.Nodes {
 				if node.BoundaryID == dagCtx.boundaryID && strings.HasPrefix(node.Name, ancestorNode.Name+"(") {
-					// Filter retried nodes and only aggregate outputs of their parent nodes.
-					if node.NodeFlag != nil && node.NodeFlag.Retried {
-						continue
-					}
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
