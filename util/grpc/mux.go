@@ -17,6 +17,7 @@ func IncomingHeaderMatcher(key string) (string, bool) {
 		// Reference: https://github.com/grpc-ecosystem/grpc-gateway/issues/2682#issuecomment-1125470811
 		"Content-Length",
 
+		// Don't forward connection-specific headers.
 		// "An endpoint MUST NOT generate an HTTP/2 message containing
 		// connection-specific header fields. This includes the Connection
 		// header field and those listed as having connection-specific semantics
@@ -48,6 +49,8 @@ func IncomingHeaderMatcher(key string) (string, bool) {
 // understands HTTP/2 except for the h2c part of it.)"
 func NewMuxHandler(grpcServerHandler http.Handler, httpServerHandler http.Handler) http.Handler {
 	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Match against "Content-Type", which is guaranteed to start with "application/grpc" for gRPC requests.
+		// Spec: https://chromium.googlesource.com/external/github.com/grpc/grpc/+/HEAD/doc/PROTOCOL-HTTP2.md
 		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
 			grpcServerHandler.ServeHTTP(w, r)
 		} else {
