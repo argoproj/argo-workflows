@@ -9,11 +9,13 @@ argo template delete WORKFLOW_TEMPLATE [flags]
 ### Examples
 
 ```
+
 # Delete a workflow template by its name:
     argo template delete <my-template>
 
 # Delete all workflow templates:
     argo template delete --all
+
 ```
 
 ### Options
