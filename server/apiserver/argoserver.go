@@ -279,7 +279,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		conn = tls.NewListener(conn, as.tlsConfig)
 	}
 
-	handler := grpcutil.NewMuxHandler(grpcServer, httpServer.Handler)
+	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
 	wftmplStore.Run(as.stopCh)
 	cwftmplInformer.Run(as.stopCh)
@@ -348,9 +348,9 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 	return grpcServer
 }
 
-// newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
+// newHTTPServer returns the HTTP handler to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) http.Handler {
 	log := logging.GetLoggerFromContext(ctx)
 	endpoint := fmt.Sprintf("localhost:%d", port)
 	ipKeyFunc := httplimit.IPKeyFunc()
@@ -365,11 +365,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 
 	mux := http.NewServeMux()
-	httpServer := http.Server{
-		Addr:      endpoint,
-		Handler:   rateLimitMiddleware.Handle(accesslog.Interceptor(mux)),
-		TLSConfig: as.tlsConfig,
-	}
+	handler := rateLimitMiddleware.Handle(accesslog.Interceptor(mux))
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
@@ -442,7 +438,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
-	return &httpServer
+	return handler
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
