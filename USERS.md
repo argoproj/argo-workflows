@@ -105,6 +105,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Hemisphere Digital](https://hemisphere.digital)
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
+1. [Hydrogrid](https://hydrogrid.ai)
 1. [IBM](https://ibm.com)
 1. [Iflytek](https://www.iflytek.com/)
 1. [Inceptio Technology](https://www.inceptio.ai/)
