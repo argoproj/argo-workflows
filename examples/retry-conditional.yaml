@@ -1,5 +1,6 @@
-# Only retry if the retryStrategy.expression condition is satisfied. In this example, retries will be made until a pod has
-# exit code 2 or the limit of 10 is reached, whichever happens first.
+# Only retry if the retryStrategy.expression condition is satisfied. In this
+# example, retries will be made until a pod matches the condition or the limit
+# of 10 is reached, whichever happens first.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -31,8 +32,15 @@ spec:
             - name: safe-to-retry
       retryStrategy:
         limit: "10"
-        # Only continue retrying if the last exit code is greater than 1 and the input parameter is true
-        expression: "asInt(lastRetry.exitCode) > 1 && {{inputs.parameters.safe-to-retry}} == true"
+        # Only continue retrying if the last exit code is greater than 1, the
+        # phase of the last status wasn't "Error", the duration was less than 2
+        # minutes, and either the input parameter is true or the message matches
+        # the regex 'imminent node shutdown|pod deleted'
+        expression: >-
+          asInt(lastRetry.exitCode) > 1 &&
+          lastRetry.status != "Error" &&
+          asInt(lastRetry.duration) < 120 &&
+          ({{inputs.parameters.safe-to-retry}} == true || lastRetry.message matches 'imminent node shutdown|pod deleted')
       script:
         image: python:alpine3.6
         command: ["python"]
