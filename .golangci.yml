@@ -8,6 +8,7 @@ run:
     - examples
     - corefunctional
     - functional
+    - metrics
     - plugins
 linters:
   enable:
