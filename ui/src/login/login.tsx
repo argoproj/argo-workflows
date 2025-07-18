@@ -24,7 +24,7 @@ export function Login() {
     return (
         <div className='login'>
             <div className='login__content show-for-large'>
-                <div className='login__text'>Let's get workflows running!</div>
+                <div className='login__text'>Let&#39;s get workflows running!</div>
                 <div className='argo__logo' />
             </div>
             <div className='login__box'>
@@ -81,7 +81,7 @@ export function Login() {
                     </div>
                 </div>
                 <div className='login__footer'>
-                    <a href='https://argoproj.io' target='_blank'>
+                    <a href='https://argoproj.io' target='_blank' rel='noreferrer'>
                         <img className='logo-image' src='assets/images/argologo.svg' alt='argo' />
                     </a>
                 </div>
