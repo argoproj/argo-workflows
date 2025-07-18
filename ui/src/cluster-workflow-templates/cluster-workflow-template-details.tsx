@@ -155,6 +155,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                     <SubmitWorkflowPanel
                         kind='ClusterWorkflowTemplate'
                         namespace={namespace}
+                        onNamespaceChange={setNamespace}
                         name={template.metadata.name}
                         entrypoint={template.spec.entrypoint}
                         templates={template.spec.templates || []}
