@@ -23,7 +23,7 @@ function getRedirect(): URLSearchParams {
 export function Login() {
     useCollectEvent('openedLogin');
     return (
-        <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
+        <Page title='Login'>
             <div className='argo-container'>
                 <div className='white-box'>
                     <h3>
