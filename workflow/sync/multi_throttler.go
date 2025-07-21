@@ -139,6 +139,10 @@ func (m *multiThrottler) Remove(key Key) {
 
 	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
 	delete(m.running, key)
+	_, ok := m.pending[namespace]
+	if !ok {
+		return
+	}
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
 }
