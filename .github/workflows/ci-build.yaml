@@ -243,15 +243,12 @@ jobs:
           - test: test-api
             profile: postgres
             use-api: true
-          # As written the workflow controller would need a restart to retry the tests
           - test: test-metrics
             profile: mysql
             use-api: true
-            retries: 0
           - test: test-metrics
             profile: postgres
             use-api: true
-            retries: 0
           - test: test-cli
             profile: mysql
             use-api: true

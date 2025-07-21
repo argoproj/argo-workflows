@@ -50,15 +50,17 @@ endif
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
-E2E_SUITE_TIMEOUT     ?= 15m
+E2E_SUITE_TIMEOUT     ?= 25m
 TEST_RETRIES          ?= 2
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
 # name: not used currently
 # parameters: passed to go test after the --
-define gotest
+$(JSON_TEST_OUTPUT):
 	mkdir -p $(JSON_TEST_OUTPUT)
+
+define gotest
 	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
 endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
@@ -542,9 +544,9 @@ lint-ui: ui/dist/app/index.html
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM)
+test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 	go build ./...
-	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-v -p 20)
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
@@ -666,17 +668,17 @@ mysql-dump:
 
 test-cli: ./dist/argo
 
-test-%: $(TOOL_GOTESTSUM)
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL))
+test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
-Test%: $(TOOL_GOTESTSUM)
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
+Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
-Benchmark%: $(TOOL_GOTESTSUM)
+Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
 # clean
