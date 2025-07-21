@@ -141,7 +141,7 @@ func (m *multiThrottler) Remove(key Key) {
 	delete(m.running, key)
 	_, ok := m.pending[namespace]
 	if !ok {
-		m.pending[namespace] = &priorityQueue{itemByKey: make(map[string]*item)}
+		return
 	}
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
