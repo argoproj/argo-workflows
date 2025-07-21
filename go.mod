@@ -89,7 +89,22 @@ require (
 	zombiezen.com/go/sqlite v1.4.2
 )
 
-require github.com/pkg/errors v0.9.1 // indirect
+require (
+	github.com/brunoga/deep v1.2.4 // indirect
+	github.com/jedib0t/go-pretty/v6 v6.6.7 // indirect
+	github.com/knadh/koanf/maps v0.1.2 // indirect
+	github.com/knadh/koanf/parsers/yaml v0.1.0 // indirect
+	github.com/knadh/koanf/providers/env v1.0.0 // indirect
+	github.com/knadh/koanf/providers/file v1.1.2 // indirect
+	github.com/knadh/koanf/providers/posflag v0.1.0 // indirect
+	github.com/knadh/koanf/providers/structs v0.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.2.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
+	github.com/vektra/mockery/v3 v3.5.1 // indirect
+	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
+)
 
 require (
 	cel.dev/expr v0.24.0 // indirect
