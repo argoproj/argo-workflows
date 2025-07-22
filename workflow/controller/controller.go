@@ -445,8 +445,8 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	if req != nil {
 		labelSelector = labelSelector.Add(*req)
 	}
-	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
-	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(ctx, listOpts)
+
+	wfList, err := wfc.listWorkflowsPaginated(ctx, labelSelector)
 	if err != nil {
 		return err
 	}
@@ -458,6 +458,38 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (wfc *WorkflowController) listWorkflowsPaginated(ctx context.Context, labelSelector labels.Selector) (*wfv1.WorkflowList, error) {
+	const pageSize = 1000
+	listOpts := metav1.ListOptions{
+		LabelSelector: labelSelector.String(),
+		Limit:         pageSize,
+	}
+	var continueToken string
+	var wfList *wfv1.WorkflowList
+
+	for {
+		listOpts.Continue = continueToken
+		pageList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(ctx, listOpts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list workflows: %w", err)
+		}
+
+		if wfList == nil {
+			wfList = pageList
+		} else {
+			wfList.Items = append(wfList.Items, pageList.Items...)
+		}
+
+		continueToken = pageList.Continue
+		if continueToken == "" {
+			break
+		}
+	}
+
+	log.Infof("Successfully listed %d workflows", len(wfList.Items))
+	return wfList, nil
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
