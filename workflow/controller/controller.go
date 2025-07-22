@@ -468,6 +468,7 @@ func (wfc *WorkflowController) listWorkflowsPaginated(ctx context.Context, label
 	}
 	var continueToken string
 	var wfList *wfv1.WorkflowList
+	logger := logging.GetLoggerFromContext(ctx)
 
 	for {
 		listOpts.Continue = continueToken
@@ -488,6 +489,7 @@ func (wfc *WorkflowController) listWorkflowsPaginated(ctx context.Context, label
 		}
 	}
 
+	logger.Infof(ctx, "Successfully listed %d workflows", len(wfList.Items))
 	return wfList, nil
 }
 
