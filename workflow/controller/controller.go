@@ -488,7 +488,6 @@ func (wfc *WorkflowController) listWorkflowsPaginated(ctx context.Context, label
 		}
 	}
 
-	log.Infof("Successfully listed %d workflows", len(wfList.Items))
 	return wfList, nil
 }
 
