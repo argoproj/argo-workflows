@@ -1986,6 +1986,8 @@ spec:
                       type: string
                     type: object
                 type: object
+              podMetadataPatch:
+                type: string
               podPriorityClassName:
                 type: string
               podSpecPatch:
@@ -8594,6 +8596,8 @@ spec:
                   plugin:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
+                  podMetadataPatch:
+                    type: string
                   podSpecPatch:
                     type: string
                   priorityClassName:
@@ -19299,6 +19303,8 @@ spec:
                     plugin:
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                    podMetadataPatch:
+                      type: string
                     podSpecPatch:
                       type: string
                     priorityClassName:

@@ -23,6 +23,11 @@ metadata:
 spec:
   podSpecPatch: |
     nodeName: virtual-node
+  podMetadataPatch: |
+    annotations:
+      test-annotation: "annotation-value"
+    labels:
+      test-label: "label-value"
   entrypoint: main
   templates:
     - name: main
@@ -111,6 +116,8 @@ status:
 			assert.NotNil(t, pod)
 			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
 			assert.Equal(t, "virtual-node", pod.Spec.NodeName)
+			assert.Equal(t, "annotation-value", pod.GetAnnotations()["test-annotation"])
+			assert.Equal(t, "label-value", pod.GetLabels()["test-label"])
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {

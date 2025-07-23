@@ -157,6 +157,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'parallelism': (int,),  # noqa: E501
             'plugin': (bool, date, datetime, dict, float, int, list, str, none_type,),  # noqa: E501
+            'pod_metadata_patch': (str,),  # noqa: E501
             'pod_spec_patch': (str,),  # noqa: E501
             'priority_class_name': (str,),  # noqa: E501
             'resource': (IoArgoprojWorkflowV1alpha1ResourceTemplate,),  # noqa: E501
@@ -204,6 +205,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'outputs': 'outputs',  # noqa: E501
         'parallelism': 'parallelism',  # noqa: E501
         'plugin': 'plugin',  # noqa: E501
+        'pod_metadata_patch': 'podMetadataPatch',  # noqa: E501
         'pod_spec_patch': 'podSpecPatch',  # noqa: E501
         'priority_class_name': 'priorityClassName',  # noqa: E501
         'resource': 'resource',  # noqa: E501
@@ -286,6 +288,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
             plugin (bool, date, datetime, dict, float, int, list, str, none_type): Plugin is an Object with exactly one key. [optional]  # noqa: E501
+            pod_metadata_patch (str): PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             resource (IoArgoprojWorkflowV1alpha1ResourceTemplate): [optional]  # noqa: E501
@@ -406,6 +409,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
             plugin (bool, date, datetime, dict, float, int, list, str, none_type): Plugin is an Object with exactly one key. [optional]  # noqa: E501
+            pod_metadata_patch (str): PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             resource (IoArgoprojWorkflowV1alpha1ResourceTemplate): [optional]  # noqa: E501
