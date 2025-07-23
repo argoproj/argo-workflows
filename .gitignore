@@ -22,6 +22,7 @@ git-ask-pass.sh
 /workflow-controller
 /.scannerwork/
 /test-results/
+/test/reports/
 /package-lock.json
 /pkg/apiclient/_.secondary.swagger.json
 /pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json
