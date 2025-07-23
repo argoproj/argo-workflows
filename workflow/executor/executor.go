@@ -753,7 +753,7 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 }
 
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
-func getTerminationGracePeriodDuration() time.Duration {
+func GetTerminationGracePeriodDuration() time.Duration {
 	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
 	if x > 0 {
 		return time.Duration(x) * time.Second
@@ -1226,7 +1226,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {
 	log.Infof("Killing containers")
-	terminationGracePeriodDuration := getTerminationGracePeriodDuration()
+	terminationGracePeriodDuration := GetTerminationGracePeriodDuration()
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
 		log.Warnf("Failed to kill %q: %v", containerNames, err)
 	}
