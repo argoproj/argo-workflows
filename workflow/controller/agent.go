@@ -239,6 +239,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		pod.Spec = *patchedPodSpec
 	}
 
+	if woc.execWf.Spec.HasPodMetadataPatch() {
+		patchedPodMetadata, err := util.ApplyPodMetadataPatch(pod.ObjectMeta, woc.execWf.Spec.PodMetadataPatch)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error applying PodMetadataPatch")
+		}
+		pod.ObjectMeta = *patchedPodMetadata
+	}
+
 	if woc.controller.Config.InstanceID != "" {
 		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
