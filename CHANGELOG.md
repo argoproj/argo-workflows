@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.7.0 (2025-07-15)
+
+Full Changelog: [v3.7.0-rc4...v3.7.0](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc4...v3.7.0)
+
 ## v3.7.0-rc4 (2025-07-15)
 
 Full Changelog: [v3.7.0-rc3...v3.7.0-rc4](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc3...v3.7.0-rc4)
