@@ -33,6 +33,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/strftime"
@@ -9134,6 +9136,424 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
 	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
+}
+
+const operatorRetryExpressionFilterNodeType = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-02-17T07:47:45Z"
+  generateName: test01-fail-
+  generation: 16
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+    workflows.argoproj.io/workflow-archiving-status: Archived
+  name: test01-fail-5kk6k
+  namespace: default
+  resourceVersion: "13390875"
+  uid: c92acf65-2ee9-4289-88ac-68c46ff3f5b1
+spec:
+  entrypoint: step-entrypoint
+  retryStrategy:
+    expression: "{{node.type}} == Pod"
+    limit: 5
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: step-entrypoint
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: step-a
+        template: a
+    - - arguments: {}
+        name: step-b
+        template: dag-b
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag-b
+        template: b
+    inputs: {}
+    metadata: {}
+    name: dag-b
+    outputs: {}
+  - container:
+      args:
+      - echo a step && sleep 5
+      command:
+      - sh
+      - -c
+      image: busybox:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: a
+    outputs: {}
+  - container:
+      args:
+      - echo b step && sleep 5 && exit 1
+      command:
+      - sh
+      - -c
+      image: busybox:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: b
+    outputs: {}
+  ttlStrategy:
+    secondsAfterCompletion: 86400
+    secondsAfterFailure: 86400
+    secondsAfterSuccess: 86400
+status:
+  artifactGCStatus:
+    notSpecified: true
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2025-02-17T07:50:20Z"
+  message: retryStrategy.expression evaluated to false
+  nodes:
+    test01-fail-5kk6k:
+      children:
+      - test01-fail-5kk6k-3586905781
+      displayName: test01-fail-5kk6k
+      finishedAt: "2025-02-17T07:50:20Z"
+      id: test01-fail-5kk6k
+      message: retryStrategy.expression evaluated to false
+      name: test01-fail-5kk6k
+      phase: Failed
+      progress: 1/6
+      resourcesDuration:
+        cpu: 0
+        memory: 86
+      startedAt: "2025-02-17T07:47:45Z"
+      templateName: step-entrypoint
+      templateScope: local/test01-fail-5kk6k
+      type: Retry
+    test01-fail-5kk6k-35275742:
+      boundaryID: test01-fail-5kk6k-262832542
+      displayName: dag-b(4)
+      finishedAt: "2025-02-17T07:50:10Z"
+      hostNodeName: virtual-kubelet-cn-zhangjiakou-c
+      id: test01-fail-5kk6k-35275742
+      message: Error (exit code 1)
+      name: test01-fail-5kk6k(0)[1].step-b(0).dag-b(4)
+      nodeFlag:
+        retried: true
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 14
+      startedAt: "2025-02-17T07:50:00Z"
+      templateName: b
+      templateScope: local/test01-fail-5kk6k
+      type: Pod
+    test01-fail-5kk6k-145736916:
+      boundaryID: test01-fail-5kk6k-3586905781
+      children:
+      - test01-fail-5kk6k-2065430931
+      displayName: '[1]'
+      finishedAt: "2025-02-17T07:50:20Z"
+      id: test01-fail-5kk6k-145736916
+      message: child 'test01-fail-5kk6k-2065430931' failed
+      name: test01-fail-5kk6k(0)[1]
+      nodeFlag: {}
+      phase: Failed
+      progress: 0/5
+      resourcesDuration:
+        cpu: 0
+        memory: 71
+      startedAt: "2025-02-17T07:48:19Z"
+      templateScope: local/test01-fail-5kk6k
+      type: StepGroup
+    test01-fail-5kk6k-262832542:
+      boundaryID: test01-fail-5kk6k-3586905781
+      children:
+      - test01-fail-5kk6k-3224414927
+      displayName: step-b(0)
+      finishedAt: "2025-02-17T07:50:20Z"
+      id: test01-fail-5kk6k-262832542
+      name: test01-fail-5kk6k(0)[1].step-b(0)
+      nodeFlag:
+        retried: true
+      outboundNodes:
+      - test01-fail-5kk6k-35275742
+      phase: Failed
+      progress: 0/5
+      resourcesDuration:
+        cpu: 0
+        memory: 71
+      startedAt: "2025-02-17T07:48:19Z"
+      templateName: dag-b
+      templateScope: local/test01-fail-5kk6k
+      type: DAG
+    test01-fail-5kk6k-639711311:
+      boundaryID: test01-fail-5kk6k-262832542
+      displayName: dag-b(1)
+      finishedAt: "2025-02-17T07:49:09Z"
+      hostNodeName: virtual-kubelet-cn-zhangjiakou-c
+      id: test01-fail-5kk6k-639711311
+      message: Error (exit code 1)
+      name: test01-fail-5kk6k(0)[1].step-b(0).dag-b(1)
+      nodeFlag:
+        retried: true
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 14
+      startedAt: "2025-02-17T07:48:59Z"
+      templateName: b
+      templateScope: local/test01-fail-5kk6k
+      type: Pod
+    test01-fail-5kk6k-1286364745:
+      boundaryID: test01-fail-5kk6k-3586905781
+      children:
+      - test01-fail-5kk6k-1349880453
+      displayName: '[0]'
+      finishedAt: "2025-02-17T07:48:19Z"
+      id: test01-fail-5kk6k-1286364745
+      name: test01-fail-5kk6k(0)[0]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 1/6
+      resourcesDuration:
+        cpu: 0
+        memory: 86
+      startedAt: "2025-02-17T07:47:45Z"
+      templateScope: local/test01-fail-5kk6k
+      type: StepGroup
+    test01-fail-5kk6k-1349880453:
+      boundaryID: test01-fail-5kk6k-3586905781
+      children:
+      - test01-fail-5kk6k-2264667876
+      displayName: step-a
+      finishedAt: "2025-02-17T07:48:19Z"
+      id: test01-fail-5kk6k-1349880453
+      name: test01-fail-5kk6k(0)[0].step-a
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/6
+      resourcesDuration:
+        cpu: 0
+        memory: 86
+      startedAt: "2025-02-17T07:47:45Z"
+      templateName: a
+      templateScope: local/test01-fail-5kk6k
+      type: Retry
+    test01-fail-5kk6k-2065430931:
+      boundaryID: test01-fail-5kk6k-3586905781
+      children:
+      - test01-fail-5kk6k-262832542
+      displayName: step-b
+      finishedAt: "2025-02-17T07:50:20Z"
+      id: test01-fail-5kk6k-2065430931
+      message: retryStrategy.expression evaluated to false
+      name: test01-fail-5kk6k(0)[1].step-b
+      phase: Failed
+      progress: 0/5
+      resourcesDuration:
+        cpu: 0
+        memory: 71
+      startedAt: "2025-02-17T07:48:19Z"
+      templateName: dag-b
+      templateScope: local/test01-fail-5kk6k
+      type: Retry
+    test01-fail-5kk6k-2183546449:
+      boundaryID: test01-fail-5kk6k-262832542
+      displayName: dag-b(3)
+      finishedAt: "2025-02-17T07:49:50Z"
+      hostNodeName: virtual-kubelet-cn-zhangjiakou-c
+      id: test01-fail-5kk6k-2183546449
+      message: Error (exit code 1)
+      name: test01-fail-5kk6k(0)[1].step-b(0).dag-b(3)
+      nodeFlag:
+        retried: true
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 15
+      startedAt: "2025-02-17T07:49:40Z"
+      templateName: b
+      templateScope: local/test01-fail-5kk6k
+      type: Pod
+    test01-fail-5kk6k-2264667876:
+      boundaryID: test01-fail-5kk6k-3586905781
+      children:
+      - test01-fail-5kk6k-145736916
+      displayName: step-a(0)
+      finishedAt: "2025-02-17T07:48:08Z"
+      hostNodeName: virtual-kubelet-cn-zhangjiakou-c
+      id: test01-fail-5kk6k-2264667876
+      name: test01-fail-5kk6k(0)[0].step-a(0)
+      nodeFlag:
+        retried: true
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 15
+      startedAt: "2025-02-17T07:47:45Z"
+      templateName: a
+      templateScope: local/test01-fail-5kk6k
+      type: Pod
+    test01-fail-5kk6k-2317620306:
+      boundaryID: test01-fail-5kk6k-262832542
+      displayName: dag-b(0)
+      finishedAt: "2025-02-17T07:48:48Z"
+      hostNodeName: virtual-kubelet-cn-zhangjiakou-c
+      id: test01-fail-5kk6k-2317620306
+      message: Error (exit code 1)
+      name: test01-fail-5kk6k(0)[1].step-b(0).dag-b(0)
+      nodeFlag:
+        retried: true
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 14
+      startedAt: "2025-02-17T07:48:19Z"
+      templateName: b
+      templateScope: local/test01-fail-5kk6k
+      type: Pod
+    test01-fail-5kk6k-2787687828:
+      boundaryID: test01-fail-5kk6k-262832542
+      displayName: dag-b(2)
+      finishedAt: "2025-02-17T07:49:30Z"
+      hostNodeName: virtual-kubelet-cn-zhangjiakou-c
+      id: test01-fail-5kk6k-2787687828
+      message: Error (exit code 1)
+      name: test01-fail-5kk6k(0)[1].step-b(0).dag-b(2)
+      nodeFlag:
+        retried: true
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 14
+      startedAt: "2025-02-17T07:49:19Z"
+      templateName: b
+      templateScope: local/test01-fail-5kk6k
+      type: Pod
+    test01-fail-5kk6k-3224414927:
+      boundaryID: test01-fail-5kk6k-262832542
+      children:
+      - test01-fail-5kk6k-2317620306
+      - test01-fail-5kk6k-639711311
+      - test01-fail-5kk6k-2787687828
+      - test01-fail-5kk6k-2183546449
+      - test01-fail-5kk6k-35275742
+      displayName: dag-b
+      finishedAt: "2025-02-17T07:50:20Z"
+      id: test01-fail-5kk6k-3224414927
+      message: No more retries left
+      name: test01-fail-5kk6k(0)[1].step-b(0).dag-b
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/5
+      resourcesDuration:
+        cpu: 0
+        memory: 71
+      startedAt: "2025-02-17T07:48:19Z"
+      templateName: b
+      templateScope: local/test01-fail-5kk6k
+      type: Retry
+    test01-fail-5kk6k-3586905781:
+      children:
+      - test01-fail-5kk6k-1286364745
+      displayName: test01-fail-5kk6k(0)
+      finishedAt: "2025-02-17T07:50:20Z"
+      id: test01-fail-5kk6k-3586905781
+      message: child 'test01-fail-5kk6k-2065430931' failed
+      name: test01-fail-5kk6k(0)
+      nodeFlag:
+        retried: true
+      outboundNodes:
+      - test01-fail-5kk6k-262832542
+      phase: Failed
+      progress: 1/6
+      resourcesDuration:
+        cpu: 0
+        memory: 86
+      startedAt: "2025-02-17T07:47:45Z"
+      templateName: step-entrypoint
+      templateScope: local/test01-fail-5kk6k
+      type: Steps
+  phase: Failed
+  progress: 1/6
+  resourcesDuration:
+    cpu: 0
+    memory: 86
+  startedAt: "2025-02-17T07:47:45Z"
+  taskResultsCompletionStatus:
+    test01-fail-5kk6k-35275742: true
+    test01-fail-5kk6k-639711311: true
+    test01-fail-5kk6k-2183546449: true
+    test01-fail-5kk6k-2264667876: true
+    test01-fail-5kk6k-2317620306: true
+    test01-fail-5kk6k-2787687828: true`
+
+func TestRetryExpressionFilterNodeType(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionFilterNodeType)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	retryNode, err := wf.GetNodeByName("test01-fail-5kk6k(0)[1].step-b(0).dag-b")
+	require.NoError(t, err)
+	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
+	scope := env.GetFuncMap(localScope)
+	var shouldContinue bool
+	shouldContinue, err = argoexpr.EvalBool("{{node.type}} == Pod", scope)
+	require.NoError(t, err)
+	assert.True(t, shouldContinue)
+
+	retryNode, err = wf.GetNodeByName("test01-fail-5kk6k(0)[1].step-b")
+	require.NoError(t, err)
+	localScope = buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
+	scope = env.GetFuncMap(localScope)
+	shouldContinue, err = argoexpr.EvalBool("{{node.type}} == Pod", scope)
+	require.NoError(t, err)
+	assert.False(t, shouldContinue)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
+
+	retryNode, err = wf.GetNodeByName("test01-fail-5kk6k")
+	require.NoError(t, err)
+	localScope = buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
+	scope = env.GetFuncMap(localScope)
+	shouldContinue, err = argoexpr.EvalBool("{{node.type}} == Pod", scope)
+	assert.False(t, shouldContinue)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 }
 
 const operatorRetryExpressionError = `
