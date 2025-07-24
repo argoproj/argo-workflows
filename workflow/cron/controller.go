@@ -77,7 +77,8 @@ func init() {
 func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceID string, metrics *metrics.Metrics,
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *Controller {
-	logger := logging.RequireLoggerFromContext(ctx).WithField("component", "cron")
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "cron").InContext(ctx)
+
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -153,7 +154,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	logger := cc.logger.WithField("cronWorkflow", key)
+	ctx, logger := cc.logger.WithField("cronWorkflow", key).InContext(ctx)
 	logger.Infof(ctx, "Processing %s", key)
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key)

@@ -56,7 +56,13 @@ type initLogger struct {
 	fields  Fields
 }
 
+// Implementing this would be an anti-pattern
 func (i initLogger) NewBackgroundContext() context.Context {
+	panic("not implemented, don't implement this")
+}
+
+// Implementing this would be an anti-pattern
+func (i initLogger) InContext(ctx context.Context) (context.Context, Logger) {
 	panic("not implemented, don't implement this")
 }
 

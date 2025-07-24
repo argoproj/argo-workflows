@@ -76,7 +76,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	podInterface := kubeClient.CoreV1().Pods(req.GetNamespace())
 
-	logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()}).InContext(ctx)
 
 	var podListOptions metav1.ListOptions
 
@@ -118,7 +118,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
-		logger := logger.WithField("podName", pod.GetName())
+		ctx, logger := logger.WithField("podName", pod.GetName()).InContext(ctx)
 		logger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
 			streamedPods[pod.UID] = true

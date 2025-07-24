@@ -60,8 +60,7 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// Required: argo=true field for test filtering compatibility
-			logger = logger.WithField("argo", true)
-			ctx = logging.WithLogger(ctx, logger)
+			ctx = logging.WithLogger(ctx, logger.WithField("argo", true))
 			cmd.SetContext(ctx)
 
 			// Disable printing of usage string on errors, except for argument validation errors
@@ -95,8 +94,7 @@ func NewRootCommand() *cobra.Command {
 	}
 
 	// Required: argo=true field for test filtering compatibility
-	logger = logger.WithField("argo", true)
-	ctx = logging.WithLogger(ctx, logger)
+	ctx = logging.WithLogger(ctx, logger.WithField("argo", true))
 	command.SetContext(ctx)
 
 	return &command

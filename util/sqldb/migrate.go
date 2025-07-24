@@ -24,7 +24,7 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 
 func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
 	dbType := DBTypeFor(session)
-	logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType)
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType).InContext(ctx)
 	logger.Info(ctx, "Migrating database schema")
 
 	{
@@ -103,19 +103,16 @@ func applyChange(ctx context.Context, session db.Session, changeSchemaVersion in
 	err := session.Tx(func(tx db.Session) error {
 		rs, err := tx.SQL().Exec(fmt.Sprintf("update %s set schema_version = ? where schema_version = ?", versionTableName), changeSchemaVersion, changeSchemaVersion-1)
 		if err != nil {
-			logger = logger.WithFields(logging.Fields{"err": err, "change": c})
-			logger.Error(ctx, "Error applying database change")
+			logger.WithFields(logging.Fields{"err": err, "change": c}).Error(ctx, "Error applying database change")
 			return err
 		}
 		rowsAffected, err := rs.RowsAffected()
 		if err != nil {
-			logger = logger.WithFields(logging.Fields{"err": err, "change": c})
-			logger.Error(ctx, "Rows affected problem")
+			logger.WithError(err).WithField("change", c).Error(ctx, "Rows affected problem")
 			return err
 		}
 		if rowsAffected == 1 {
-			logger = logger.WithFields(logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c})
-			logger.Info(ctx, "applying database change")
+			logger.WithFields(logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info(ctx, "applying database change")
 			if c != nil {
 				err := c.Apply(ctx, tx)
 				if err != nil {
@@ -123,8 +120,7 @@ func applyChange(ctx context.Context, session db.Session, changeSchemaVersion in
 				}
 			}
 		}
-		logger = logger.WithFields(logging.Fields{"change": c, "rowsaffected": rowsAffected})
-		logger.Info(ctx, "done")
+		logger.WithFields(logging.Fields{"change": c, "rowsaffected": rowsAffected}).Info(ctx, "done")
 		return nil
 	})
 	return err

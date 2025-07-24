@@ -341,7 +341,6 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				// object is probably metav1.Status, `FromObject` can deal with anything
 				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
 			}
-			logCtx := logger.WithFields(logging.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			if !cleaner.WillExclude("status.nodes") {
 				if err := s.hydrator.Hydrate(ctx, wf); err != nil {
 					return sutils.ToStatusError(err, codes.Internal)
@@ -351,7 +350,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			if err != nil {
 				return sutils.ToStatusError(fmt.Errorf("unable to CleanFields in request: %w", err), codes.Internal)
 			}
-			logCtx.Debug(ctx, "Sending workflow event")
+			logger.WithFields(logging.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase}).Debug(ctx, "Sending workflow event")
 			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: newWf})
 			if err != nil {
 				return sutils.ToStatusError(err, codes.Internal)

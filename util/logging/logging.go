@@ -166,6 +166,9 @@ type Logger interface {
 	// NewBackgroundContext returns a new context with this logger in it
 	NewBackgroundContext() context.Context
 
+	// InContext returns a new context with this logger in it
+	InContext(ctx context.Context) (context.Context, Logger)
+
 	Level() Level
 }
 

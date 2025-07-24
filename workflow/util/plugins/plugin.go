@@ -41,10 +41,10 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 	if p.invalid[method] {
 		return nil
 	}
-	log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 		"address": p.address,
 		"method":  method,
-	})
+	}).InContext(ctx)
 	body, err := json.Marshal(args)
 	if err != nil {
 		return err
