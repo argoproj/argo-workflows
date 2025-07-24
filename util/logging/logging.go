@@ -146,22 +146,18 @@ type Logger interface {
 	WithField(name string, value any) Logger
 	WithError(err error) Logger
 
-	// When issuing Error, adding this will Panic
+	// When issuing a log, adding this will panic
 	WithPanic() Logger
-	// When issuing Error, adding this will exit 1
+	// When issuing a log, adding this will exit 1
 	WithFatal() Logger
 
 	Debug(ctx context.Context, msg string)
-	Debugf(ctx context.Context, format string, args ...any)
 
 	Info(ctx context.Context, msg string)
-	Infof(ctx context.Context, format string, args ...any)
 
 	Warn(ctx context.Context, msg string)
-	Warnf(ctx context.Context, format string, args ...any)
 
 	Error(ctx context.Context, msg string)
-	Errorf(ctx context.Context, format string, args ...any)
 
 	// NewBackgroundContext returns a new context with this logger in it
 	NewBackgroundContext() context.Context

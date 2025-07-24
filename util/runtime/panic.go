@@ -17,8 +17,9 @@ func RecoverFromPanic(ctx context.Context, log logging.Logger) {
 		stackSize := runtime.Stack(stackTraceBuffer, false)
 		// Free up the unused spaces
 		stackTraceBuffer = stackTraceBuffer[:stackSize]
-		log.Errorf(ctx, "recovered from panic %q. Call stack:\n%s",
-			r,
-			stackTraceBuffer)
+		log.WithFields(logging.Fields{
+			"error": r,
+			"stack": stackTraceBuffer,
+		}).Error(ctx, "recovered from panic")
 	}
 }

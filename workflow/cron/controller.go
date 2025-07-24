@@ -102,10 +102,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 func (cc *Controller) Run(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	defer cc.cronWfQueue.ShutDown()
-	cc.logger.Infof(ctx, "Starting CronWorkflow controller")
-	if cc.instanceID != "" {
-		cc.logger.Infof(ctx, "...with InstanceID: %s", cc.instanceID)
-	}
+	cc.logger.WithField("instanceID", cc.instanceID).Info(ctx, "Starting CronWorkflow controller")
 
 	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceID)
@@ -155,7 +152,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	defer cc.keyLock.Unlock(key)
 
 	ctx, logger := cc.logger.WithField("cronWorkflow", key).InContext(ctx)
-	logger.Infof(ctx, "Processing %s", key)
+	logger.Info(ctx, "Processing cron workflow")
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
@@ -163,14 +160,14 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		return true
 	}
 	if !exists {
-		logger.Infof(ctx, "Deleting '%s'", key)
+		logger.Info(ctx, "Deleting cron workflow")
 		cc.cron.Delete(key)
 		return true
 	}
 
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		logger.Errorf(ctx, "malformed cluster workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
+		logger.WithField("type", reflect.TypeOf(obj).Name()).Error(ctx, "malformed cluster workflow template: expected *unstructured.Unstructured, got type")
 		return true
 	}
 	cronWf := &v1alpha1.CronWorkflow{}
@@ -211,7 +208,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 	}
 
-	logger.Infof(ctx, "CronWorkflow %s added", key)
+	logger.Info(ctx, "CronWorkflow added")
 
 	return true
 }
@@ -222,7 +219,7 @@ func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error 
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
-					cc.logger.Warnf(ctx, "Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
+					cc.logger.WithField("obj", obj).Warn(ctx, "Cron Workflow FilterFunc: is not an unstructured")
 					return false
 				}
 				return !isCompleted(un)

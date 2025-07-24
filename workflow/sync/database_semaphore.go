@@ -125,12 +125,10 @@ func (s *databaseSemaphore) getLimitFromDB(ctx context.Context, _ string) (int, 
 // Otherwise queries the database for the limit.
 func (s *databaseSemaphore) getLimit(ctx context.Context) int {
 	logger := s.logger(ctx)
-	logger.WithFields(logging.Fields{
-		"dbKey": s.shortDBKey,
-	}).Infof(ctx, "getLimit")
+	logger.WithField("dbKey", s.shortDBKey).Info(ctx, "getLimit")
 	limit, _, err := s.limitGetter.get(ctx, s.shortDBKey)
 	if err != nil {
-		logger.WithError(err).Errorf(ctx, "Failed to get limit for semaphore %s", s.name)
+		logger.WithField("name", s.name).WithError(err).Error(ctx, "Failed to get limit")
 		return 0
 	}
 	return limit

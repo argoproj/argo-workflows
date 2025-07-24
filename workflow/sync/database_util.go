@@ -64,7 +64,7 @@ func (d *dbInfo) migrate(ctx context.Context) {
 		err := migrate(ctx, d.session, &d.config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
-			logger.Warnf(ctx, "cannot initialize semaphore database: %v", err)
+			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
 			d.session = nil
 		} else {
 			logger.Info(ctx, "Sync db migration complete")

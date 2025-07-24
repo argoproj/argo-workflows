@@ -257,12 +257,12 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 			}
 			if isDir {
 				if err = putDirectory(ctx, bucket, objectName, path); err != nil {
-					logger.Warnf(ctx, "failed to put directory: %v", err)
+					logger.WithError(err).Warn(ctx, "failed to put directory")
 					return !isTransientOSSErr(ctx, err), err
 				}
 			} else {
 				if err = putFile(ctx, bucket, objectName, path); err != nil {
-					logger.Warnf(ctx, "failed to put file: %v", err)
+					logger.WithError(err).Warn(ctx, "failed to put file")
 					return !isTransientOSSErr(ctx, err), err
 				}
 			}
@@ -449,15 +449,15 @@ func multipartUpload(ctx context.Context, bucket *oss.Bucket, objectName, path s
 		// Call the UploadPart method to upload each chunck.
 		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
 		if err != nil {
-			logger.Warnf(ctx, "Upload part error: %v", err)
+			logger.WithError(err).Warn(ctx, "Upload part error")
 			return err
 		}
-		logger.Infof(ctx, "Upload part number: %v, ETag: %v", part.PartNumber, part.ETag)
+		logger.WithFields(logging.Fields{"partNumber": part.PartNumber, "etag": part.ETag}).Info(ctx, "Upload part")
 		parts = append(parts, part)
 	}
 	_, err = bucket.CompleteMultipartUpload(imur, parts)
 	if err != nil {
-		logger.Warnf(ctx, "Complete multipart upload error: %v", err)
+		logger.WithError(err).Warn(ctx, "Complete multipart upload error")
 		return err
 	}
 	return nil

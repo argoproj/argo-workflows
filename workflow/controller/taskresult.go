@@ -81,17 +81,17 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		resultName := result.GetName()
 
-		woc.log.Debugf(ctx, "task result:\n%+v", result)
-		woc.log.Debugf(ctx, "task result name:\n%+v", resultName)
+		woc.log.WithField("result", result).Debug(ctx, "task result")
+		woc.log.WithField("resultName", resultName).Debug(ctx, "task result name")
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
 		// If the task result is completed, set the state to true.
 		switch label {
 		case "true":
-			woc.log.Debugf(ctx, "Marking task result complete %s", resultName)
+			woc.log.WithField("resultName", resultName).Debug(ctx, "Marking task result complete")
 			woc.wf.Status.MarkTaskResultComplete(ctx, resultName)
 		case "false":
-			woc.log.Debugf(ctx, "Marking task result incomplete %s", resultName)
+			woc.log.WithField("resultName", resultName).Debug(ctx, "Marking task result incomplete")
 			woc.wf.Status.MarkTaskResultIncomplete(ctx, resultName)
 		}
 

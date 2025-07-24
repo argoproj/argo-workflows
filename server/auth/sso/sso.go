@@ -299,7 +299,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if s.userInfoPath != "" {
 		groups, err = c.GetUserInfoGroups(s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
-			s.logger.WithError(err).Errorf(r.Context(), "failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
+			s.logger.WithField("userInfoPath", s.userInfoPath).WithError(err).Error(r.Context(), "failed to get groups claim from the given userInfoPath")
 			w.WriteHeader(401)
 			return
 		}
@@ -335,12 +335,12 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
-		s.logger.WithError(err).Errorf(r.Context(), "failed to encrypt and serialize the jwt token")
+		s.logger.WithError(err).Error(r.Context(), "failed to encrypt and serialize the jwt token")
 		w.WriteHeader(401)
 		return
 	}
 	value := Prefix + raw
-	s.logger.Debugf(r.Context(), "handing oauth2 callback %v", value)
+	s.logger.WithField("value", value).Debug(r.Context(), "handing oauth2 callback")
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",

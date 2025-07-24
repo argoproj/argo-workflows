@@ -37,7 +37,7 @@ func (woc *wfOperationCtx) queuePodsForCleanup(ctx context.Context) {
 		nodeID := woc.nodeID(pod)
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
-			woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
+			woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
 			continue
 		}
 		nodePhase := node.Phase

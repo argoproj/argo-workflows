@@ -107,7 +107,7 @@ func NewContextFromClientSet(wftmplClientset typed.WorkflowTemplateInterface, cl
 
 // GetTemplateByName returns a template by name in the context.
 func (tplCtx *TemplateContext) GetTemplateByName(ctx context.Context, name string) (*wfv1.Template, error) {
-	tplCtx.log.Debugf(ctx, "Getting the template by name: %s", name)
+	tplCtx.log.WithField("name", name).Debug(ctx, "Getting the template by name")
 
 	tmpl := tplCtx.tmplBase.GetTemplateByName(name)
 
@@ -226,7 +226,7 @@ func (tplCtx *TemplateContext) resolveTemplateImpl(ctx context.Context, tmplHold
 			}
 			err = tplCtx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
 			if err != nil {
-				tplCtx.log.Errorf(ctx, "Failed to store the inline template: %v", err)
+				tplCtx.log.WithError(err).Error(ctx, "Failed to store the inline template")
 			}
 		}
 		tmpl = newTmpl

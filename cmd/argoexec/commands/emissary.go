@@ -83,7 +83,7 @@ func NewEmissaryCommand() *cobra.Command {
 			for _, x := range template.ContainerSet.GetGraph() {
 				if x.Name == containerName {
 					for _, y := range x.Dependencies {
-						logger.Infof(ctx, "waiting for dependency %q", y)
+						logger.WithField("dependency", y).Info(ctx, "waiting for dependency")
 					WaitForDependency:
 						for {
 							select {
@@ -149,11 +149,11 @@ func NewEmissaryCommand() *cobra.Command {
 				go func() {
 					for s := range signals {
 						if osspecific.CanIgnoreSignal(s) {
-							logger.Debugf(ctx, "ignore signal %s", s)
+							logger.WithField("signal", s).Debug(ctx, "ignore signal")
 							continue
 						}
 
-						logger.Debugf(ctx, "forwarding signal %s", s)
+						logger.WithField("signal", s).Debug(ctx, "forwarding signal")
 						_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
 					}
 				}()
@@ -199,7 +199,7 @@ func NewEmissaryCommand() *cobra.Command {
 							}).Info(ctx, "main container(s) exited, terminating container")
 							err = em.Kill(ctx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
 							if err != nil {
-								logger.WithError(err).Errorf(ctx, "failed to terminate/kill container %s", containerName)
+								logger.WithField("containerName", containerName).WithError(err).Error(ctx, "failed to terminate/kill container")
 							}
 						}()
 
@@ -311,15 +311,18 @@ func saveArtifact(ctx context.Context, srcPath string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if common.FindOverlappingVolume(template, srcPath) != nil {
-		logger.Infof(ctx, "no need to save artifact - on overlapping volume: %s", srcPath)
+		logger.WithField("srcPath", srcPath).Info(ctx, "no need to save artifact - on overlapping volume")
 		return nil
 	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithError(err).Warnf(ctx, "cannot save artifact %s", srcPath)
+		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
 		return nil
 	}
 	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
-	logger.Infof(ctx, "%s -> %s", srcPath, dstPath)
+	logger.WithFields(logging.Fields{
+		"src": srcPath,
+		"dst": dstPath,
+	}).Info(ctx, "saving artifact")
 	z := filepath.Dir(dstPath)
 	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
@@ -342,12 +345,12 @@ func saveParameter(ctx context.Context, srcPath string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if common.FindOverlappingVolume(template, srcPath) != nil {
-		logger.Infof(ctx, "no need to save parameter - on overlapping volume: %s", srcPath)
+		logger.WithField("src", srcPath).Info(ctx, "no need to save parameter - on overlapping volume")
 		return nil
 	}
 	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithError(err).Errorf(ctx, "cannot save parameter %s", srcPath)
+		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
 		return nil
 	}
 	if err != nil {
@@ -355,7 +358,10 @@ func saveParameter(ctx context.Context, srcPath string) error {
 	}
 	defer func() { _ = src.Close() }()
 	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
-	logger.Infof(ctx, "%s -> %s", srcPath, dstPath)
+	logger.WithFields(logging.Fields{
+		"src": srcPath,
+		"dst": dstPath,
+	}).Info(ctx, "saving parameter")
 	z := filepath.Dir(dstPath)
 	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", z, err)

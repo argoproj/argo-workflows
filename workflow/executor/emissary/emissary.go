@@ -78,7 +78,7 @@ func (e emissary) CopyFile(ctx context.Context, containerName string, sourcePath
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression?
 	sourceFile := filepath.Join(common.VarRunArgoPath, "outputs", "artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
-	logging.RequireLoggerFromContext(ctx).Infof(ctx, "%s -> %s", sourceFile, destPath)
+	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"source": sourceFile, "dest": destPath}).Info(ctx, "Copying file")
 	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
 		// If compressed file does not exist then the source artifact did not exist

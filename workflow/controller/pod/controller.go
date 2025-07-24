@@ -131,7 +131,7 @@ func (c *Controller) GetPodPhaseMetrics(ctx context.Context) map[string]int64 {
 		for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
 			objs, err := c.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 			if err != nil {
-				c.log.WithError(err).Errorf(ctx, "failed to  list pods in phase %s", phase)
+				c.log.WithField("phase", phase).WithError(err).Error(ctx, "failed to list pods in phase")
 			} else {
 				result[string(phase)] = int64(len(objs))
 			}
@@ -226,7 +226,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 		if !lastTransition.IsZero() && delayDuration > 0 {
 			delay = time.Until(lastTransition.Add(delayDuration))
 		}
-		c.log.WithFields(logging.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC}).Infof(ctx, "queuing pod delay: %s", delay)
+		c.log.WithFields(logging.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC, "delay": delay}).Info(ctx, "queuing pod delay")
 		switch {
 		case delay > 0:
 			c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
