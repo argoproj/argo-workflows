@@ -458,9 +458,7 @@ func GetDefaultTransport(opts S3ClientOpts) (*http.Transport, error) {
 
 // NewS3Client instantiates a new S3 client object backed
 func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
-	log := logging.RequireLoggerFromContext(ctx)
-	log = log.WithField("component", "s3_client")
-	ctx = logging.WithLogger(ctx, log)
+	ctx, _ = logging.RequireLoggerFromContext(ctx).WithField("component", "s3_client").InContext(ctx)
 	s3cli := s3client{
 		S3ClientOpts: opts,
 	}

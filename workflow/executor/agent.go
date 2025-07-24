@@ -127,7 +127,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			break
 		}
 		nodeID, tmpl := task.NodeID, task.Template
-		logger := logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID)
+		ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID).InContext(ctx)
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.

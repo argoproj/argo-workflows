@@ -51,9 +51,9 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
 	}
-	log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager")
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
-	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
+	log.Infof(ctx, "Sync manager ttl: %s", syncLimitCacheTTL)
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
 		lock:              &sync.RWMutex{},

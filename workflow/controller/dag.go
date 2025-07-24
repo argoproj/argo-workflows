@@ -424,7 +424,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	node := dagCtx.getTaskNode(ctx, taskName)
 	task := dagCtx.GetTask(ctx, taskName)
-	log := woc.log.WithField("taskName", taskName)
+	ctx, log := woc.log.WithField("taskName", taskName).InContext(ctx)
 	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
 		scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 		if err != nil {

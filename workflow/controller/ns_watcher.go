@@ -32,9 +32,7 @@ type (
 )
 
 func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubeclientset kubernetes.Interface) (cache.SharedIndexInformer, error) {
-	log := logging.RequireLoggerFromContext(ctx)
-	log = log.WithField("component", "ns_watcher")
-	ctx = logging.WithLogger(ctx, log)
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "ns_watcher").InContext(ctx)
 	can, _ := authutil.CanI(ctx, wfc.kubeclientset, []string{"get", "watch", "list"}, "", metav1.NamespaceAll, "namespaces")
 	if !can {
 		log.Warn(ctx, "was unable to get permissions for get/watch/list verbs on the namespace resource, per-namespace parallelism will not work")

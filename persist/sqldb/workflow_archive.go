@@ -99,7 +99,7 @@ func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
-	logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()}).InContext(ctx)
 	logger.Debug(ctx, "Archiving workflow")
 	wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	workflow, err := json.Marshal(wf)

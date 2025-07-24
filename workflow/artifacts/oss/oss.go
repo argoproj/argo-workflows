@@ -216,7 +216,7 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key})
+			ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key}).InContext(ctx)
 			logger.Info(ctx, "OSS Save")
 			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {

@@ -33,7 +33,7 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 	}
 	streaming := &sync.Map{}
 	streamPod := func(pod *corev1.Pod) {
-		logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name})
+		ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name}).InContext(ctx)
 		go func(pod *corev1.Pod) {
 			err := func() error {
 				_, loaded := streaming.LoadOrStore(pod.Name, true)

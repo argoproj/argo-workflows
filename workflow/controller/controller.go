@@ -370,14 +370,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wait.UntilWithContext(ctx, wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod)
 
-	workerLogger := logger.WithField("component", "workflow_worker")
-	workerCtx := logging.WithLogger(ctx, workerLogger)
+	workerCtx, _ := logger.WithField("component", "workflow_worker").InContext(ctx)
 	for i := 0; i < wfWorkers; i++ {
 		go wait.UntilWithContext(workerCtx, wfc.runWorker, time.Second)
 	}
 
-	archiveLogger := logger.WithField("component", "archive_worker")
-	archiveCtx := logging.WithLogger(ctx, archiveLogger)
+	archiveCtx, _ := logger.WithField("component", "archive_worker").InContext(ctx)
 	for i := 0; i < wfArchiveWorkers; i++ {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
@@ -456,8 +454,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
-	logger := logging.RequireLoggerFromContext(ctx).WithField("component", "configmap_watcher")
-	ctx = logging.WithLogger(ctx, logger)
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "configmap_watcher").InContext(ctx)
 	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
@@ -551,8 +548,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(ctx context.Context) {
 
 	periodicity := env.LookupEnvDurationOr(ctx, "WORKFLOW_GC_PERIOD", 5*time.Minute)
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger = logger.WithField("component", "wf_garbage_collector")
-	ctx = logging.WithLogger(ctx, logger)
+	ctx, logger = logger.WithField("component", "wf_garbage_collector").InContext(ctx)
 	logger.WithField("periodicity", periodicity).Info(ctx, "Performing periodic GC")
 	ticker := time.NewTicker(periodicity)
 	for {
@@ -1106,8 +1102,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.S
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
-	logger := logging.RequireLoggerFromContext(ctx).WithField("component", "config_map_informer")
-	ctx = logging.WithLogger(ctx, logger)
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "config_map_informer").InContext(ctx)
 	logger.WithField("executorPlugins", wfc.executorPlugins != nil).Info(ctx, "Plugins")
 	if wfc.executorPlugins != nil {
 		//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)

@@ -187,6 +187,10 @@ func TestInitLogger(t *testing.T) {
 		})
 
 		assert.Panics(t, func() {
+			initLogger.InContext(ctx)
+		})
+
+		assert.Panics(t, func() {
 			initLogger.Level()
 		})
 	})

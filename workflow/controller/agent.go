@@ -111,7 +111,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
-	log := woc.log.WithField("podName", podName)
+	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
