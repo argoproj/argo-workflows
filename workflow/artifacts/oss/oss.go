@@ -8,7 +8,9 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -44,6 +46,7 @@ var (
 	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge", "InternalError"}
 	bucketLogFilePrefix    = "bucket-log-"
 	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
+	jobs                   = 5
 )
 
 type ossCredentials struct {
@@ -98,6 +101,15 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 }
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
+	// reference https://github.com/aliyun/ossutil/blob/master/lib/cp.go
+	if jobsNum, ok := os.LookupEnv("jobs"); ok {
+		if n, err := strconv.Atoi(jobsNum); err == nil {
+			jobs = n
+		} else {
+			return nil, fmt.Errorf("failed to parse jobs number: %w", err)
+		}
+	}
+
 	var options []oss.ClientOption
 
 	// for oss driver, the proxy cannot be configured through environment variables
@@ -503,38 +515,79 @@ func putFile(bucket *oss.Bucket, objectName, path string) error {
 	return multipartUpload(bucket, objectName, path, fStat.Size())
 }
 
-func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
-	return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		// build the name to be used in OSS
-		nameInDir, err := filepath.Rel(dir, fpath)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		fObjectName := filepath.Join(objectName, nameInDir)
-		// create an OSS dir explicitly for every local dir, , including empty dirs.
-		if info.Mode().IsDir() {
-			// create OSS dir
-			if !strings.HasSuffix(fObjectName, "/") {
-				fObjectName += "/"
-			}
-			err = bucket.PutObject(fObjectName, nil)
+type task struct {
+	fObjectName string
+	fpath       string
+	isDir       bool
+}
+
+func generatePutTasks(objectName, dir string) chan task {
+	tasks := make(chan task)
+	go func() {
+		defer close(tasks)
+		_ = filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+
 			if err != nil {
+				log.WithFields(log.Fields{"fpath": fpath}).Error("Failed to walk artifacts path", err)
 				return err
 			}
-		}
-		if !info.Mode().IsRegular() {
-			return nil
-		}
 
-		err = putFile(bucket, fObjectName, fpath)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+			nameInDir, err := filepath.Rel(dir, fpath)
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
+			fObjectName := filepath.Join(objectName, nameInDir)
+
+			if info.IsDir() {
+				// Ensure directory objects end with slash
+				if !strings.HasSuffix(fObjectName, "/") {
+					fObjectName += "/"
+				}
+				tasks <- task{fObjectName: fObjectName, isDir: true}
+				return nil
+			}
+			if info.Mode().IsRegular() {
+				tasks <- task{fObjectName: fObjectName, fpath: fpath, isDir: false}
+			}
+			return nil
+		})
+	}()
+	return tasks
+}
+func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
+	parallelNum := make(chan string, jobs)
+	tasks := generatePutTasks(objectName, dir)
+	errCh := make(chan error)
+	var wg sync.WaitGroup
+	for putTask := range tasks {
+		parallelNum <- putTask.fObjectName
+		wg.Add(1)
+		go func(putTask task) {
+			defer wg.Done()
+			var err error
+			if putTask.isDir {
+				err = bucket.PutObject(putTask.fObjectName, nil)
+			} else {
+				err = putFile(bucket, putTask.fObjectName, putTask.fpath)
+			}
+			if err != nil {
+				log.WithFields(log.Fields{"bucket": bucket, "key": putTask.fObjectName, "path": putTask.fpath}).Error("Error uploading file to oss")
+				// Send first error only
+				select {
+				case errCh <- errors.InternalWrapError(err):
+				default:
+				}
+			}
+			<-parallelNum
+		}(putTask)
+	}
+	close(parallelNum)
+	wg.Wait()
+	close(errCh)
+	if err := <-errCh; err != nil {
+		return err
+	}
+	return nil
 }
 
 // IsOssErrCode tests if an err is an oss.ServiceError with the specified code
