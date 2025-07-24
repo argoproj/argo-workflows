@@ -91,8 +91,6 @@ type Initializer interface {
 	Init(tmpl wfv1.Template) error
 }
 
-//go:generate mockery --name=ContainerRuntimeExecutor
-
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string

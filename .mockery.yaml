@@ -1,0 +1,40 @@
+# global config
+filename: "{{.InterfaceName}}.go"
+dir: "{{.InterfaceDir}}/mocks"
+outpkg: "mocks"
+mockname: "{{.InterfaceName}}"
+with-expecter: false
+# individual interface config
+
+packages:
+  github.com/argoproj/argo-workflows/v3/persist/sqldb:
+    interfaces:
+      WorkflowArchive:
+
+  github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow:
+    interfaces:
+      WorkflowServiceClient:
+
+  github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate:
+    interfaces:
+      WorkflowTemplateServiceClient:
+
+  github.com/argoproj/argo-workflows/v3/server/auth:
+    interfaces:
+      Gatekeeper:
+
+  github.com/argoproj/argo-workflows/v3/server/auth/sso:
+    interfaces:
+      Interface:
+
+  github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories:
+    interfaces:
+      Interface:
+
+  github.com/argoproj/argo-workflows/v3/workflow/executor:
+    interfaces:
+      ContainerRuntimeExecutor:
+  
+  github.com/argoproj/argo-workflows/v3/workflow/sync:
+    interfaces:
+      Throttler:

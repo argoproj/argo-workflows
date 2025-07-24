@@ -323,6 +323,7 @@ argoexec-nonroot-image:
 .PHONY: codegen
 codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS)
 	go generate ./...
+	$(TOOL_MOCKERY) --config .mockery.yaml
  	# The generated markdown contains links to nowhere for interfaces, so remove them
 	sed -i.bak 's/\[interface{}\](#interface)/`interface{}`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
