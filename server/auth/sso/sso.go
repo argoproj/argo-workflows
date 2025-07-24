@@ -42,8 +42,6 @@ const (
 // Matches //, /\ and both of these with whitespace in between (eg / / or / \).
 var invalidRedirectRegex = regexp.MustCompile(`[/\\](?:[\s\v]*|\.{1,2})[/\\]`)
 
-//go:generate mockery --name=Interface
-
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)

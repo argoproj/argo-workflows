@@ -67,8 +67,6 @@ type archivedWorkflowCount struct {
 	Total uint64 `db:"total,omitempty" json:"total"`
 }
 
-//go:generate mockery --name=WorkflowArchive
-
 type WorkflowArchive interface {
 	ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)

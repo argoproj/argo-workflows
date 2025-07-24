@@ -18,8 +18,6 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
-//go:generate mockery --name=Interface
-
 type Interface interface {
 	// Resolve Figures out the correct repository to for a workflow.
 	Resolve(ctx context.Context, ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRefStatus, error)
