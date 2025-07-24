@@ -33,6 +33,8 @@ type SSOConfig struct {
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// FilterGroupsRegex filters groups using regular expressions
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
+	// AutoLogin enables auto-login
+	AutoLogin bool `json:"autoLogin,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {
