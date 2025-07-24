@@ -86,18 +86,38 @@ spec:
 > v3.2 and after
 
 You can also use `expression` to control retries.
-This is an [expression](variables.md#expression) with access to the following variables:
+This is an [expr expression](variables.md#expression) with access to the following variables:
 
-- `lastRetry.exitCode`: The exit code of the last retry, or "-1" if not available
+- `lastRetry.exitCode`: The exit code of the last retry as a string, or "-1" if not available
+
+    ```yaml
+    expression: asInt(lastRetry.exitCode) > 1 # Retry if code is greater than 1
+    ```
+
 - `lastRetry.status`: The phase of the last retry: Error, Failed
+
+    ```yaml
+    expression: lastRetry.status != "Error" # Retry if not an error
+    ```
+
 - `lastRetry.duration`: The duration of the last retry, in seconds
+
+    ```yaml
+    expression: asInt(lastRetry.duration) < 60 # Retry unless duration >= 1 minute
+    ```
+
 - `lastRetry.message`: The message output from the last retry (available from version 3.5)
+
+    ```yaml
+    # Retry if message matches the regular expression
+    expression: lastRetry.message matches 'imminent node shutdown|pod deleted'
+    ```
 
 If `expression` evaluates to false, the step will not be retried.
 
 The `expression` result will be logical *and* with the `retryPolicy`. Both must be true to retry.
 
-See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-conditional.yaml) for usage.
+Boolean operators can be used to combine multiple conditions. See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-conditional.yaml) for usage.
 
 ## Back-Off
 

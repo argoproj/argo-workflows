@@ -1,6 +1,8 @@
 package progress
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -8,7 +10,7 @@ import (
 
 // UpdateProgress ensures the workflow's progress is updated with the individual node progress.
 // This func can perform any repair work needed
-func UpdateProgress(wf *wfv1.Workflow) {
+func UpdateProgress(ctx context.Context, wf *wfv1.Workflow) {
 	wf.Status.Progress = wfv1.ProgressZero
 	// We loop over all executable nodes first, otherwise sum will be wrong.
 	for nodeID, node := range wf.Status.Nodes {
@@ -18,7 +20,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		// all executable nodes should have progress defined, if not, we just set it to the default value.
 		if node.Progress == wfv1.ProgressUndefined {
 			node.Progress = wfv1.ProgressDefault
-			wf.Status.Nodes.Set(nodeID, node)
+			wf.Status.Nodes.Set(ctx, nodeID, node)
 		}
 		// it could be possible for corruption to result in invalid progress, we just ignore invalid progress
 		if !node.Progress.IsValid() {
@@ -28,7 +30,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped, wfv1.NodeOmitted:
 			node.Progress = node.Progress.Complete()
-			wf.Status.Nodes.Set(nodeID, node)
+			wf.Status.Nodes.Set(ctx, nodeID, node)
 		}
 		// the total should only contain node that are valid
 		wf.Status.Progress = wf.Status.Progress.Add(node.Progress)
@@ -43,7 +45,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		progress := sumProgress(wf, node, make(map[string]bool))
 		if progress.IsValid() {
 			node.Progress = progress
-			wf.Status.Nodes.Set(nodeID, node)
+			wf.Status.Nodes.Set(ctx, nodeID, node)
 		}
 	}
 	// we could check an invariant here, wf.Status.Nodes[wf.Name].Progress == wf.Status.Progress, but I think there's

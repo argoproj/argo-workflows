@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -14,13 +15,13 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/credentials-go/credentials"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -52,7 +53,11 @@ type ossCredentials struct {
 func (cred *ossCredentials) GetAccessKeyID() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
-		log.Infof("get access key id failed: %+v", err)
+		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Infof(ctx, "get access key id failed: %+v", err)
 		return ""
 	}
 	return tea.StringValue(credential.AccessKeyId)
@@ -61,7 +66,11 @@ func (cred *ossCredentials) GetAccessKeyID() string {
 func (cred *ossCredentials) GetAccessKeySecret() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
-		log.Infof("get access key secret failed: %+v", err)
+		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Infof(ctx, "get access key secret failed: %+v", err)
 		return ""
 	}
 	return tea.StringValue(credential.AccessKeySecret)
@@ -70,7 +79,11 @@ func (cred *ossCredentials) GetAccessKeySecret() string {
 func (cred *ossCredentials) GetSecurityToken() string {
 	credential, err := cred.teaCred.GetCredential()
 	if err != nil {
-		log.Infof("get access security token failed: %+v", err)
+		ctx := context.Background()
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		logger := logging.GetLoggerFromContext(ctx)
+		logger.Infof(ctx, "get access security token failed: %+v", err)
 		return ""
 	}
 	return tea.StringValue(credential.SecurityToken)
@@ -96,9 +109,14 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
+
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	logger := logging.GetLoggerFromContext(ctx)
 	if ossDriver.UseSDKCreds {
 		// using default provider chains in sdk to get credential
-		log.Infof("Using default sdk provider chains for OSS driver")
+		logger.Infof(ctx, "Using default sdk provider chains for OSS driver")
 		// need install ack-pod-identity-webhook in your cluster when using oidc provider for OSS drirver
 		// the mutating webhook will help to inject the required OIDC env variables and toke volume mount configuration
 		// please refer to https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook
@@ -109,7 +127,7 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 		provider := &ossCredentialsProvider{cred: cred}
 		return oss.New(ossDriver.Endpoint, "", "", oss.SetCredentialsProvider(provider))
 	}
-	log.Infof("Using AK provider")
+	logger.Infof(ctx, "Using AK provider")
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
@@ -118,22 +136,23 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 }
 
 // Load downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
-func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (ossDriver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Infof(ctx, "OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucketName := inputArtifact.OSS.Bucket
 			err = setBucketLogging(osscli, bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			objectName := inputArtifact.OSS.Key
 			dirPath := filepath.Dir(path)
@@ -146,12 +165,12 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 				return true, nil
 			}
 			if !IsOssErrCode(origErr, "NoSuchKey") {
-				return !isTransientOSSErr(origErr), fmt.Errorf("failed to get file: %w", origErr)
+				return !isTransientOSSErr(ctx, origErr), fmt.Errorf("failed to get file: %w", origErr)
 			}
 			// If we get here, the error was a NoSuchKey. The key might be a oss "directory"
 			isDir, err := IsOssDirectory(bucket, objectName)
 			if err != nil {
-				return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
+				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
 			}
 			if !isDir {
 				// It's neither a file, nor a directory. Return the original NoSuchKey error
@@ -159,7 +178,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			}
 
 			if err = GetOssDirectory(bucket, objectName, path); err != nil {
-				return !isTransientOSSErr(err), fmt.Errorf("failed get directory: %v", err)
+				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed get directory: %v", err)
 			}
 			return true, nil
 		})
@@ -167,23 +186,24 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 }
 
 // OpenStream opens a stream reader for an artifact from OSS compliant storage
-func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	var stream io.ReadCloser
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("OSS OpenStream, key: %s", inputArtifact.OSS.Key)
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Infof(ctx, "OSS OpenStream, key: %s", inputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucketName := inputArtifact.OSS.Bucket
 			err = setBucketLogging(osscli, bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			s, origErr := bucket.GetObject(inputArtifact.OSS.Key)
 			if origErr == nil {
@@ -191,11 +211,11 @@ func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.Re
 				return true, nil
 			}
 			if !IsOssErrCode(err, "NoSuchKey") {
-				return !isTransientOSSErr(origErr), fmt.Errorf("failed to get file: %w", origErr)
+				return !isTransientOSSErr(ctx, origErr), fmt.Errorf("failed to get file: %w", origErr)
 			}
 			isDir, err := IsOssDirectory(bucket, inputArtifact.OSS.Key)
 			if err != nil {
-				return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, inputArtifact.OSS.Key, err)
+				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, inputArtifact.OSS.Key, err)
 			}
 			if !isDir {
 				return false, origErr
@@ -208,56 +228,57 @@ func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.Re
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
-func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Infof(ctx, "OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			isDir, err := file.IsDirectory(path)
 			if err != nil {
-				log.Warnf("Failed to test if %s is a directory: %v", path, err)
+				logger.Warnf(ctx, "Failed to test if %s is a directory: %v", path, err)
 				return false, nil
 			}
 			bucketName := outputArtifact.OSS.Bucket
 			err = setBucketLogging(osscli, bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			if outputArtifact.OSS.CreateBucketIfNotPresent {
 				exists, err := osscli.IsBucketExist(bucketName)
 				if err != nil {
-					return !isTransientOSSErr(err), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, err)
+					return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, err)
 				}
 				if !exists {
 					err = osscli.CreateBucket(bucketName)
 					if err != nil {
-						return !isTransientOSSErr(err), fmt.Errorf("failed to automatically create bucket %s when it's not present: %w", bucketName, err)
+						return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to automatically create bucket %s when it's not present: %w", bucketName, err)
 					}
 				}
 			}
 			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			objectName := outputArtifact.OSS.Key
 			if outputArtifact.OSS.LifecycleRule != nil {
 				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
 				if err != nil {
-					return !isTransientOSSErr(err), err
+					return !isTransientOSSErr(ctx, err), err
 				}
 			}
 			if isDir {
 				if err = putDirectory(bucket, objectName, path); err != nil {
-					log.Warnf("failed to put directory: %v", err)
-					return !isTransientOSSErr(err), err
+					logger.Warnf(ctx, "failed to put directory: %v", err)
+					return !isTransientOSSErr(ctx, err), err
 				}
 			} else {
 				if err = putFile(bucket, objectName, path); err != nil {
-					log.Warnf("failed to put file: %v", err)
-					return !isTransientOSSErr(err), err
+					logger.Warnf(ctx, "failed to put file: %v", err)
+					return !isTransientOSSErr(ctx, err), err
 				}
 			}
 
@@ -267,56 +288,57 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 }
 
 // Delete deletes an artifact from an OSS compliant storage
-func (ossDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+func (ossDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("OSS Delete artifact: key: %s", artifact.OSS.Key)
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Infof(ctx, "OSS Delete artifact: key: %s", artifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucketName := artifact.OSS.Bucket
 			err = setBucketLogging(osscli, bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			objectName := artifact.OSS.Key
 			err = bucket.DeleteObject(objectName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			return true, nil
 		})
 	return err
 }
 
-func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (ossDriver *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucketName := artifact.OSS.Bucket
 			err = setBucketLogging(osscli, bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
-				return !isTransientOSSErr(err), err
+				return !isTransientOSSErr(ctx, err), err
 			}
 			pre := oss.Prefix(artifact.OSS.Key)
 			continueToken := ""
 			for {
 				results, err := bucket.ListObjectsV2(pre, oss.ContinuationToken(continueToken))
 				if err != nil {
-					return !isTransientOSSErr(err), err
+					return !isTransientOSSErr(ctx, err), err
 				}
 				// Add to files. By default, 100 records are returned at a time. https://help.aliyun.com/zh/oss/user-guide/list-objects-18
 				for _, object := range results.Objects {
@@ -390,11 +412,11 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 	return err
 }
 
-func isTransientOSSErr(err error) bool {
+func isTransientOSSErr(ctx context.Context, err error) bool {
 	if err == nil {
 		return false
 	}
-	if errutil.IsTransientErr(err) {
+	if errutil.IsTransientErr(ctx, err) {
 		return true
 	}
 	if ossErr, ok := err.(oss.ServiceError); ok {
@@ -409,13 +431,21 @@ func isTransientOSSErr(err error) bool {
 
 // OSS simple upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/simple-upload?spm=a2c63.p38356.0.0.2c072398fh5k3W#section-ym8-svm-rmu
 func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
-	log.Info("OSS Simple Uploading")
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	logger := logging.GetLoggerFromContext(ctx)
+	logger.Info(ctx, "OSS Simple Uploading")
 	return bucket.PutObjectFromFile(objectName, path)
 }
 
 // OSS multipart upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/multipart-upload?spm=a2c63.p38356.0.0.4ebe423fzsaPiN#section-trz-mpy-tes
 func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int64) error {
-	log.Info("OSS Multipart Uploading")
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	logger := logging.GetLoggerFromContext(ctx)
+	logger.Info(ctx, "OSS Multipart Uploading")
 	// Calculate the number of chunks
 	chunkNum := int(math.Ceil(float64(objectSize)/float64(maxObjectSize))) + 1
 	chunks, err := oss.SplitFileByPartNum(path, chunkNum)
@@ -442,22 +472,26 @@ func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int
 		// Call the UploadPart method to upload each chunck.
 		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
 		if err != nil {
-			log.Warnf("Upload part error: %v", err)
+			logger.Warnf(ctx, "Upload part error: %v", err)
 			return err
 		}
-		log.Infof("Upload part number: %v, ETag: %v", part.PartNumber, part.ETag)
+		logger.Infof(ctx, "Upload part number: %v, ETag: %v", part.PartNumber, part.ETag)
 		parts = append(parts, part)
 	}
 	_, err = bucket.CompleteMultipartUpload(imur, parts)
 	if err != nil {
-		log.Warnf("Complete multipart upload error: %v", err)
+		logger.Warnf(ctx, "Complete multipart upload error: %v", err)
 		return err
 	}
 	return nil
 }
 
 func putFile(bucket *oss.Bucket, objectName, path string) error {
-	log.Debugf("putFile from %s to %s", path, objectName)
+	ctx := context.Background()
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	logger := logging.GetLoggerFromContext(ctx)
+	logger.Debugf(ctx, "putFile from %s to %s", path, objectName)
 	fStat, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -559,7 +593,11 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 
 		err = bucket.GetObjectToFile(f, fpath)
 		if err != nil {
-			log.Warnf("failed to load object %s to %s error: %v", f, fpath, err)
+			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Warnf(ctx, "failed to load object %s to %s error: %v", f, fpath, err)
 			return err
 		}
 	}
@@ -579,7 +617,11 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	for {
 		lor, err := bucket.ListObjects(marker, pre)
 		if err != nil {
-			log.Warnf("oss list object(%s) error: %v", objectKey, err)
+			ctx := context.Background()
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			logger := logging.GetLoggerFromContext(ctx)
+			logger.Warnf(ctx, "oss list object(%s) error: %v", objectKey, err)
 			return files, err
 		}
 		for _, obj := range lor.Objects {
@@ -595,20 +637,20 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 }
 
 // IsDirectory tests if the key is acting like a OSS directory
-func (ossDriver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (ossDriver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	osscli, err := ossDriver.newOSSClient()
 	if err != nil {
-		return !isTransientOSSErr(err), err
+		return !isTransientOSSErr(ctx, err), err
 	}
 	bucketName := artifact.OSS.Bucket
 	bucket, err := osscli.Bucket(bucketName)
 	if err != nil {
-		return !isTransientOSSErr(err), err
+		return !isTransientOSSErr(ctx, err), err
 	}
 	objectName := artifact.OSS.Key
 	isDir, err := IsOssDirectory(bucket, objectName)
 	if err != nil {
-		return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
+		return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
 	}
 	return isDir, nil
 }

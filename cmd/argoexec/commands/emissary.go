@@ -19,11 +19,16 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
+
+	"github.com/argoproj/argo-workflows/v3/util/archive"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/archive"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -154,7 +159,20 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 				pid := command.Process.Pid
-				ctx, cancel := context.WithCancel(context.Background())
+				cmdCtx := cmd.Context()
+				if cmdCtx == nil {
+					cmdCtx = context.Background()
+					cmd.SetContext(cmdCtx)
+				}
+
+				log := logging.GetLoggerFromContext(cmdCtx)
+				if log == nil {
+					log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+					cmdCtx = logging.WithLogger(context.Background(), log)
+					cmd.SetContext(cmdCtx)
+				}
+
+				ctx, cancel := context.WithCancel(cmdCtx)
 				defer cancel()
 				go func() {
 					for {
@@ -172,6 +190,32 @@ func NewEmissaryCommand() *cobra.Command {
 						}
 					}
 				}()
+
+				for _, sidecarName := range template.GetSidecarNames() {
+					if sidecarName == containerName {
+						em, err := emissary.New()
+						if err != nil {
+							return fmt.Errorf("failed to create emissary: %w", err)
+						}
+
+						go func() {
+							mainContainerNames := template.GetMainContainerNames()
+							err = em.Wait(ctx, mainContainerNames)
+							if err != nil {
+								logger.WithError(err).Errorf("failed to wait for main container(s) %v", mainContainerNames)
+							}
+
+							logger.Infof("main container(s) %v exited, terminating container %s", mainContainerNames, containerName)
+							err = em.Kill(ctx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
+							if err != nil {
+								logger.WithError(err).Errorf("failed to terminate/kill container %s", containerName)
+							}
+						}()
+
+						break
+					}
+				}
+
 				return osspecific.Wait(command.Process)
 
 			})

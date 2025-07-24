@@ -95,6 +95,12 @@
             "type": "string",
             "name": "namespace",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.",
+            "name": "nameFilter",
+            "in": "query"
           }
         ],
         "responses": {
@@ -9871,7 +9877,8 @@
       "required": [
         "name",
         "scope",
-        "url"
+        "url",
+        "target"
       ],
       "properties": {
         "name": {
@@ -9880,6 +9887,10 @@
         },
         "scope": {
           "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
+          "type": "string"
+        },
+        "target": {
+          "description": "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
           "type": "string"
         },
         "url": {
@@ -10189,6 +10200,10 @@
         "synchronizationStatus": {
           "description": "SynchronizationStatus is the synchronization status of the node",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus"
+        },
+        "taskResultSynced": {
+          "description": "TaskResultSynced is used to determine if the node's output has been received",
+          "type": "boolean"
         },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",

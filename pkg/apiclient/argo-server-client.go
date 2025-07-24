@@ -16,6 +16,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -79,7 +80,11 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 
 func newContext(auth string) context.Context {
 	if auth == "" {
-		return context.Background()
+		bgCtx := context.Background()
+		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		return bgCtx
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", auth))
+	bgCtx := context.Background()
+	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	return metadata.NewOutgoingContext(bgCtx, metadata.Pairs("authorization", auth))
 }

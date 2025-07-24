@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	promgo "github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 
@@ -107,7 +109,7 @@ func (m *Metrics) RunPrometheusServer(ctx context.Context, isDummy bool) {
 	<-ctx.Done()
 
 	// Shutdown the server gracefully with a 1 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), 1*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Infof("Unable to shutdown %s at localhost:%v%s", name, m.config.port(), m.config.path())

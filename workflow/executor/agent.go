@@ -76,8 +76,8 @@ type response struct {
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	taskWorkers := env.LookupEnvIntOr(common.EnvAgentTaskWorkers, 16)
-	requeueTime := env.LookupEnvDurationOr(common.EnvAgentPatchRate, 10*time.Second)
+	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
+	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
 	ae.log.WithFields(log.Fields{"taskWorkers": taskWorkers, "requeueTime": requeueTime}).Info("Starting Agent")
 
 	taskQueue := make(chan task)
@@ -192,12 +192,14 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				Jitter:   0.1,
 				Steps:    5,
 				Cap:      30 * time.Second,
-			}, errors.IsTransientErr, func() error {
+			}, func(err error) bool {
+				return errors.IsTransientErr(ctx, err)
+			}, func() error {
 				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
 				return err
 			})
 
-			if err != nil && !errors.IsTransientErr(err) {
+			if err != nil && !errors.IsTransientErr(ctx, err) {
 				ae.log.WithError(err).
 					Error("TaskSet Patch Failed")
 

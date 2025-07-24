@@ -3,16 +3,18 @@ package auth
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
 	auth "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // CanIArgo attempts to determine if a verb is actionable by a certain resource, this resource must be an argo resource
 func CanIArgo(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
-	logCtx := log.WithFields(log.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
-	logCtx.Debug("CanI")
+	logger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+	logger = logger.WithFields(logging.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
+	logger.Debug(ctx, "CanI")
 	return CanI(ctx, kubeclientset, []string{verb}, "argoproj.io", namespace, resource)
 }
 

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"time"
 
 	"k8s.io/client-go/util/workqueue"
@@ -17,7 +18,7 @@ func GetRequeueTime() time.Duration {
 	// Higher values mean that workflows with many short running (<20s) nodes do not progress as quickly.
 	// So some users may wish to have this as low as 2s.
 	// The default of 10s provides a balance more most users.
-	return env.LookupEnvDurationOr(common.EnvVarDefaultRequeueTime, 10*time.Second)
+	return env.LookupEnvDurationOr(context.Background(), common.EnvVarDefaultRequeueTime, 10*time.Second)
 }
 
 type fixedItemIntervalRateLimiter struct{}
