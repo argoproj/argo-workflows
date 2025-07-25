@@ -30,6 +30,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
+	if wfc.throttler != nil {
+		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
+	}
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
