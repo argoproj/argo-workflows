@@ -27,6 +27,7 @@ type customMetricValue struct {
 	lastUpdated     time.Time
 	labels          []*wfv1.MetricLabel
 	key             string
+	completed       bool
 }
 
 type customMetricUserData struct {
@@ -287,7 +288,12 @@ func (m *Metrics) runCustomGC(ttl time.Duration) {
 		ud.mutex.Lock()
 		for key, value := range ud.values {
 			if time.Since(value.lastUpdated) > ttl {
-				delete(ud.values, key)
+				switch {
+				case value.rtValueFunc != nil && value.completed:
+					delete(ud.values, key)
+				case value.rtValueFunc == nil:
+					delete(ud.values, key)
+				}
 			}
 		}
 		ud.mutex.Unlock()
@@ -311,20 +317,42 @@ func (m *Metrics) customMetricsGC(ctx context.Context, ttl time.Duration) {
 	}
 }
 
-func (m *Metrics) StopRealtimeMetricsForWfUID(key string) {
+type operation int
+
+const (
+	Complete operation = iota
+	Delete
+)
+
+func (m *Metrics) handleRealtimeMetricsForWfUID(key string, op operation) {
 	m.realtimeMutex.Lock()
 	defer m.realtimeMutex.Unlock()
 	if _, exists := m.realtimeWorkflows[key]; !exists {
 		return
 	}
-
 	realtimeMetrics := m.realtimeWorkflows[key]
 	for _, metric := range realtimeMetrics {
 		ud := customUserData(metric.inst, true)
 		ud.mutex.Lock()
-		delete(ud.values, metric.key)
+		switch op {
+		case Complete:
+			for _, value := range ud.values {
+				value.completed = true
+			}
+		case Delete:
+			delete(ud.values, metric.key)
+		}
 		ud.mutex.Unlock()
 	}
+	if op == Delete {
+		delete(m.realtimeWorkflows, key)
+	}
+}
 
-	delete(m.realtimeWorkflows, key)
+func (m *Metrics) CompleteRealtimeMetricsForWfUID(key string) {
+	m.handleRealtimeMetricsForWfUID(key, Complete)
+}
+
+func (m *Metrics) DeleteRealtimeMetricsForWfUID(key string) {
+	m.handleRealtimeMetricsForWfUID(key, Delete)
 }
