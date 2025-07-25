@@ -120,17 +120,19 @@ func TestRealtimeMetricGC(t *testing.T) {
 		func() float64 { return 1.0 },
 	)
 	require.NoError(t, err)
-	assert.Len(t, m.realtimeWorkflows[wfKey], 1)
+	userData, ok := m.GetCustomMetric(name).GetUserdata().(*customMetricUserData)
+	assert.True(t, ok)
+	assert.Len(t, userData.values, 1)
 
 	go m.customMetricsGC(ctx, config.TTL)
 
 	// simulate workflow is still running.
 	// ensure we get at least one TTL run
 	time.Sleep(time.Second * 2)
-	assert.Len(t, m.realtimeWorkflows[wfKey], 1)
+	assert.Len(t, userData.values, 1)
 
 	// simulate workflow is completed.
-	m.StopRealtimeMetricsForWfUID(wfKey)
+	m.CompleteRealtimeMetricsForWfUID(wfKey)
 	timeoutTime := time.Now().Add(time.Second * 2)
 	// Ensure we get at least one TTL run
 	for time.Now().Before(timeoutTime) {
@@ -141,7 +143,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		// Sleep to prevent overloading test worker CPU.
 		time.Sleep(100 * time.Millisecond)
 	}
-	assert.Empty(t, m.realtimeWorkflows[wfKey])
+	assert.Empty(t, userData.values)
 }
 
 func TestWorkflowQueueMetrics(t *testing.T) {
@@ -175,7 +177,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	require.NoError(t, err)
 
 	// We've not yet fed a metric in for 123
-	m.StopRealtimeMetricsForWfUID("123")
+	m.DeleteRealtimeMetricsForWfUID("123")
 	assert.Empty(t, m.realtimeWorkflows["123"])
 
 	const key string = `metric`
@@ -198,7 +200,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	baseCm := m.GetCustomMetric(key)
 	assert.NotNil(t, baseCm)
 
-	m.StopRealtimeMetricsForWfUID("456")
+	m.DeleteRealtimeMetricsForWfUID("456")
 	assert.Empty(t, m.realtimeWorkflows["456"])
 
 	cm := customUserData(baseCm, true)
@@ -206,7 +208,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	assert.Len(t, cm.values, 1)
 	assert.Len(t, m.realtimeWorkflows["123"], 1)
 
-	m.StopRealtimeMetricsForWfUID("123")
+	m.DeleteRealtimeMetricsForWfUID("123")
 	assert.Empty(t, m.realtimeWorkflows["123"])
 	assert.Empty(t, cm.values)
 
