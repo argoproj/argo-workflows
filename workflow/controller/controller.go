@@ -978,7 +978,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		DeleteFunc: func(obj interface{}) {
 			wf, ok := obj.(*unstructured.Unstructured)
 			if ok { // maybe cache.DeletedFinalStateUnknown
-				wfc.metrics.StopRealtimeMetricsForWfUID(string(wf.GetUID()))
+				wfc.metrics.DeleteRealtimeMetricsForWfUID(string(wf.GetUID()))
 			}
 		},
 	})
