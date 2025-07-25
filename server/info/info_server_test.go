@@ -16,8 +16,8 @@ import (
 
 func Test_infoServer_GetUserInfo(t *testing.T) {
 	i := &infoServer{}
-	baseCtx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx := context.WithValue(baseCtx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Name: "myname", Email: "my@email", EmailVerified: true, ServiceAccountName: "my-sa"})
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Name: "myname", Email: "my@email", EmailVerified: true, ServiceAccountName: "my-sa"})
 	info, err := i.GetUserInfo(ctx, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "my-iss", info.Issuer)
@@ -41,7 +41,7 @@ func Test_infoServer_GetInfo(t *testing.T) {
 			},
 			navColor: "red",
 		}
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		info, err := i.GetInfo(ctx, nil)
 		require.NoError(t, err)
 		assert.Equal(t, "argo", info.ManagedNamespace)
@@ -54,7 +54,7 @@ func Test_infoServer_GetInfo(t *testing.T) {
 
 	t.Run("Min Fields", func(t *testing.T) {
 		i := &infoServer{}
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		info, err := i.GetInfo(ctx, nil)
 		require.NoError(t, err)
 		assert.Empty(t, info.ManagedNamespace)

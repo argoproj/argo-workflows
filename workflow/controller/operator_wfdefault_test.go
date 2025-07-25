@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -201,12 +200,10 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(simpleWf)
 	wf1 := wf.DeepCopy()
 	wfResult := wfv1.MustUnmarshalWorkflow(wfDefaultResult)
-	cancel, controller := newControllerWithDefaults()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newControllerWithDefaults(ctx)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.Config.WorkflowDefaults = wfDefault
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
@@ -229,11 +226,9 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	var resultSpec wfv1.WorkflowSpec
 	wfv1.MustUnmarshal([]byte(storedSpecResult), &resultSpec)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
-		cancel, controller := newController(wft)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wft)
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 
@@ -246,7 +241,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	})
 
 	t.Run("SubmitComplexWorkflowRef", func(t *testing.T) {
-		cancel, controller := newController(wft)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wft)
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 
@@ -273,7 +269,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	})
 
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
-		cancel, controller := newController(wft)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wft)
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 

@@ -14,8 +14,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -110,7 +111,7 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	r, err := git.PlainClone(path, false, cloneOptions)
 	switch err {
 	case transport.ErrEmptyRemoteRepository:
-		log.Info("Cloned an empty repository")
+		logging.RequireLoggerFromContext(ctx).Info(ctx, "Cloned an empty repository")
 		r, err := git.PlainInit(path, false)
 		if err != nil {
 			return fmt.Errorf("failed to plain init: %w", err)

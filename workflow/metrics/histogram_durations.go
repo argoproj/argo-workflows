@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 )
@@ -20,7 +20,7 @@ func addOperationDurationHistogram(ctx context.Context, m *Metrics) error {
 	maxOperationTimeSeconds := envutil.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second).Seconds()
 	operationDurationMetricBucketCount := envutil.LookupEnvIntOr(ctx, "OPERATION_DURATION_METRIC_BUCKET_COUNT", operationDurationDefaultBucketCount)
 	if operationDurationMetricBucketCount < 1 {
-		log.Errorf("Invalid OPERATION_DURATION_METRIC_BUCKET_COUNT value of %d, setting to default %d", operationDurationMetricBucketCount, operationDurationDefaultBucketCount)
+		logging.RequireLoggerFromContext(ctx).Errorf(ctx, "Invalid OPERATION_DURATION_METRIC_BUCKET_COUNT value of %d, setting to default %d", operationDurationMetricBucketCount, operationDurationDefaultBucketCount)
 		operationDurationMetricBucketCount = operationDurationDefaultBucketCount
 	}
 	bucketWidth := maxOperationTimeSeconds / float64(operationDurationMetricBucketCount)

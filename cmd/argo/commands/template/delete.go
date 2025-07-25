@@ -42,7 +42,7 @@ func apiServerDeleteWorkflowTemplates(ctx context.Context, allWFs bool, wfTmplNa
 	if err != nil {
 		return err
 	}
-	namespace := client.Namespace()
+	namespace := client.Namespace(ctx)
 	var delWFTmplNames []string
 	if allWFs {
 		wftmplList, err := serviceClient.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{

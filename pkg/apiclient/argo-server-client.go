@@ -30,15 +30,15 @@ type argoServerClient struct {
 
 var _ Client = &argoServerClient{}
 
-func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
+func newArgoServerClient(ctx context.Context, opts ArgoServerOpts, auth string) (context.Context, Client, error) {
 	conn, err := newClientConn(opts)
 	if err != nil {
 		return nil, nil, err
 	}
-	return newContext(auth), &argoServerClient{conn}, nil
+	return newContext(ctx, auth), &argoServerClient{conn}, nil
 }
 
-func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
+func (a *argoServerClient) NewWorkflowServiceClient(_ context.Context) workflowpkg.WorkflowServiceClient {
 	return workflowpkg.NewWorkflowServiceClient(a.ClientConn)
 }
 
@@ -78,13 +78,11 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func newContext(auth string) context.Context {
+func newContext(ctx context.Context, auth string) context.Context {
+	// nolint:contextcheck
+	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	if auth == "" {
-		bgCtx := context.Background()
-		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		return bgCtx
+		return ctx
 	}
-	bgCtx := context.Background()
-	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	return metadata.NewOutgoingContext(bgCtx, metadata.Pairs("authorization", auth))
 }

@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,8 +11,7 @@ import (
 
 func TestUpdater(t *testing.T) {
 	wf := &wfv1.Workflow{}
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
+	ctx := logging.TestContext(t.Context())
 	wfv1.MustUnmarshal(`
 status:
   nodes:

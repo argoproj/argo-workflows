@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -342,11 +341,10 @@ status:
 
 func TestProcessArtifactGCStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
@@ -563,12 +561,10 @@ status:
 func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
 	wfat := wfv1.MustUnmarshalWorkflowArtifactGCTask(artgcTask)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
@@ -715,12 +711,9 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
                         %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
 
 			wf := wfv1.MustUnmarshalWorkflow(workflowSpec)
-			cancel, controller := newController(wf)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
 			defer cancel()
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-			ctx = logging.WithLogger(ctx, log)
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 			hasArtifact := woc.HasArtifactGC()

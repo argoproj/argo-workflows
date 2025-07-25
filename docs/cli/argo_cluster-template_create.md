@@ -14,7 +14,7 @@ argo cluster-template create FILE1 FILE2... [flags]
 	
 # Create a Cluster Workflow Template and print it as YAML:
   argo cluster-template create FILE1 --output yaml
-  
+	
 # Create a Cluster Workflow Template with relaxed validation:
   argo cluster-template create FILE1 --strict false
 
@@ -49,6 +49,7 @@ argo cluster-template create FILE1 FILE2... [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

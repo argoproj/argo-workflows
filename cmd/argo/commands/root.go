@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -123,30 +123,24 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	client.AddAPIClientFlagsToCmd(command)
 	// global log level
 	var logLevel string
+	var logFormat string
 	var glogLevel int
 	var verbose bool
 	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
 		cmdutil.PrintVersionMismatchWarning(cmd.Context(), argo.GetVersion(), grpcutil.LastSeenServerVersion)
 	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		ctx := cmd.Context()
-		if ctx == nil {
-			ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}
-
 		if verbose {
 			logLevel = "debug"
 			glogLevel = 6
 		}
-		cmdutil.SetLogLevel(logLevel)
-		cmdutil.SetGLogLevel(glogLevel)
-		parsedLogLevel, err := logging.ParseLevel(logLevel)
+		ctx, log, err := cmdutil.CmdContextWithLogger(cmd, logLevel, logFormat)
 		if err != nil {
-			panic("")
+			logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create argo pre-run logger")
+			os.Exit(1)
 		}
-		log := logging.NewSlogLogger(parsedLogLevel, logging.GetGlobalFormat())
-		ctx = logging.WithLogger(ctx, log)
-		cmd.SetContext(ctx)
+
+		cmdutil.SetGLogLevel(glogLevel)
 		command.SetContext(ctx)
 
 		log.WithField("version", argo.GetVersion()).Debug(ctx, "CLI version")
@@ -161,13 +155,14 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
+	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
-	cctx := command.Context()
-	if cctx == nil {
-		cctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		command.SetContext(cctx)
+	cctx, log, err := cmdutil.CmdContextWithLogger(command, logLevel, logFormat)
+	if err != nil {
+		logging.InitLogger().WithError(err).WithFatal().Error(cctx, "Failed to create argo logger")
+		os.Exit(1)
 	}
-	log := logging.GetLoggerFromContext(cctx)
+	command.SetContext(cctx)
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()

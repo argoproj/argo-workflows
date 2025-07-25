@@ -18,7 +18,7 @@ import (
 
 type Client interface {
 	NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error)
-	NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
+	NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient
 	NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error)
 	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)
 	NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error)
@@ -35,46 +35,55 @@ type Opts struct {
 	ClientConfigSupplier func() clientcmd.ClientConfig
 	Offline              bool
 	OfflineFiles         []string
-	Context              context.Context
+	// DEPRECATED: use NewClientFromOptsWithContext
+	// nolint: containedctx
+	Context   context.Context
+	LogLevel  string
+	LogFormat string
 }
 
 func (o Opts) String() string {
 	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
 }
 
-func (o *Opts) GetContext() context.Context {
-	if o.Context == nil {
-		o.Context = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}
-
-	return o.Context
-}
-
-// DEPRECATED: use NewClientFromOpts
+// DEPRECATED: use NewClientFromOptsWithContext
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	return NewClientFromOpts(Opts{
+	return NewClientFromOptsWithContext(context.Background(), Opts{
 		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
 		AuthSupplier:   authSupplier,
 		ClientConfigSupplier: func() clientcmd.ClientConfig {
 			return clientConfig
 		},
-		Context: logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())),
 	})
 }
 
+// DEPRECATED: use NewClientFromOptsWithContext
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	ctx := opts.GetContext()
+	ctx := opts.Context
 	if ctx == nil {
-		panic("ctx was nil mate")
+		ctx = context.Background()
 	}
-	log := logging.GetLoggerFromContext(ctx)
+
+	return NewClientFromOptsWithContext(ctx, opts)
+}
+
+func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Context, Client, error) {
+	log := logging.GetLoggerFromContextOrNil(ctx)
 	if log == nil {
-		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
+		logLevel, err := logging.ParseLevelOr(opts.LogLevel, logging.Info)
+		if err != nil {
+			return nil, nil, err
+		}
+		logFormat, err := logging.TypeFromStringOr(opts.LogFormat, logging.Text)
+		if err != nil {
+			return nil, nil, err
+		}
+		log = logging.NewSlogLogger(logLevel, logFormat)
 		ctx = logging.WithLogger(ctx, log)
 	}
 	log.WithField("opts", opts).Debug(ctx, "Client options")
 	if opts.Offline {
-		return newOfflineClient(opts.OfflineFiles)
+		return newOfflineClient(ctx, opts.OfflineFiles)
 	}
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
@@ -83,18 +92,16 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
+		return newHTTP1Client(ctx, opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
 	} else if opts.ArgoServerOpts.URL != "" {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
+		return newArgoServerClient(ctx, opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
-
-		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ArgoKubeOpts, opts.ClientConfig, instanceid.NewService(opts.InstanceID))
-		return ctx, client, err
+		return newArgoKubeClient(ctx, opts.ArgoKubeOpts, opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 	}
 }

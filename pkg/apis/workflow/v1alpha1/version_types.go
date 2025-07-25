@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"errors"
 	"regexp"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Version struct {
@@ -27,4 +29,15 @@ func (v Version) MajorMinorPatch() (string, string, string, error) {
 		return ``, ``, ``, errors.New("Not a formal release")
 	}
 	return matches[1], matches[2], matches[3], nil
+}
+
+func (v Version) Fields() logging.Fields {
+	return logging.Fields{
+		"version":      v.Version,
+		"buildDate":    v.BuildDate,
+		"gitCommit":    v.GitCommit,
+		"gitTag":       v.GitTag,
+		"gitTreeState": v.GitTreeState,
+		"goVersion":    v.GoVersion,
+	}
 }

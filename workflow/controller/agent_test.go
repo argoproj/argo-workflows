@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -89,11 +88,9 @@ status:
     `, &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
@@ -117,13 +114,10 @@ status:
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		ctx = logging.WithLogger(ctx, log)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
@@ -150,11 +144,12 @@ status:
 }
 
 func TestAssessAgentPodStatus(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Run("Failed", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
 		}
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodeFailed, nodeStatus)
 		assert.Empty(t, msg)
 	})
@@ -163,7 +158,7 @@ func TestAssessAgentPodStatus(t *testing.T) {
 			Status: apiv1.PodStatus{Phase: apiv1.PodRunning},
 		}
 
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
 		assert.Empty(t, msg)
 	})
@@ -171,7 +166,7 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
 		}
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
 		assert.Empty(t, msg)
 	})

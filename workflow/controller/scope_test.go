@@ -6,10 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
+	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
@@ -17,21 +20,22 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that we allow whitespaces in between names and brackets
-	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in an error being thrown
-	_, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
+	_, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.Error(t, err)
 }
 
 func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtifactString string) {
+	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
@@ -41,19 +45,19 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in artifact key being modified
-	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
 	// Ensure that subpath template values are also resolved
 	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
 
-	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 	assert.Equal(t, artifact, originalArtifact)

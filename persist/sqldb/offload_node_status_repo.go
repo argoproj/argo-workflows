@@ -35,8 +35,7 @@ func NewOffloadNodeStatusRepo(ctx context.Context, log logging.Logger, session d
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
 	ttl := env.LookupEnvDurationOr(ctx, "OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
-	log = log.WithField("ttl", ttl)
-	log.Debug(ctx, "Node status offloading config")
+	log.WithField("ttl", ttl).Debug(ctx, "Node status offloading config")
 	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl, log: log}, nil
 }
 

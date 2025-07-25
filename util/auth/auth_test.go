@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -28,9 +27,7 @@ func TestCanI(t *testing.T) {
 		}, nil
 	})
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	allowed, err := CanIArgo(ctx, kubeClient, "get", "workflow", "", "")
 	require.NoError(t, err)
 	assert.True(t, allowed)

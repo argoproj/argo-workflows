@@ -17,17 +17,17 @@ type ContainerRuntimeExecutor struct {
 	mock.Mock
 }
 
-// CopyFile provides a mock function with given fields: containerName, sourcePath, destPath, compressionLevel
-func (_m *ContainerRuntimeExecutor) CopyFile(containerName string, sourcePath string, destPath string, compressionLevel int) error {
-	ret := _m.Called(containerName, sourcePath, destPath, compressionLevel)
+// CopyFile provides a mock function with given fields: ctx, containerName, sourcePath, destPath, compressionLevel
+func (_m *ContainerRuntimeExecutor) CopyFile(ctx context.Context, containerName string, sourcePath string, destPath string, compressionLevel int) error {
+	ret := _m.Called(ctx, containerName, sourcePath, destPath, compressionLevel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CopyFile")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string, int) error); ok {
-		r0 = rf(containerName, sourcePath, destPath, compressionLevel)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, int) error); ok {
+		r0 = rf(ctx, containerName, sourcePath, destPath, compressionLevel)
 	} else {
 		r0 = ret.Error(0)
 	}

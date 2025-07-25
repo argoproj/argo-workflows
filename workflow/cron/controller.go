@@ -23,14 +23,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	log "github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -55,7 +54,7 @@ type Controller struct {
 	metrics              *metrics.Metrics
 	eventRecorderManager events.EventRecorderManager
 	cronWorkflowWorkers  int
-	logger               log.Logger
+	logger               logging.Logger
 }
 
 const (
@@ -65,25 +64,21 @@ const (
 var cronSyncPeriod time.Duration
 
 func init() {
-	slog := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
-	ctx := log.WithLogger(context.TODO(), log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
-	ctx = log.WithLogger(ctx, slog)
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
-		slog.WithFatal().Error(ctx, err.Error())
+		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "failed to parse time")
 	}
-	cronSyncPeriod = env.LookupEnvDurationOr(ctx, "CRON_SYNC_PERIOD", 10*time.Second)
-	slog.WithField("cronSyncPeriod", cronSyncPeriod).Info(ctx, "cron config")
+	cronSyncPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CRON_SYNC_PERIOD", 10*time.Second)
+	logging.InitLogger().WithField("cronSyncPeriod", cronSyncPeriod).Info(context.Background(), "cron config")
 }
 
 // NewCronController creates a new cron controller
 func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceID string, metrics *metrics.Metrics,
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *Controller {
-	logger := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
-	logger = logger.WithField("component", "cron")
-	ctx = log.WithLogger(ctx, logger)
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "cron").InContext(ctx)
+
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -120,13 +115,13 @@ func (cc *Controller) Run(ctx context.Context) {
 		cc.logger.WithFatal().Error(ctx, err.Error())
 	}
 
-	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
+	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
 		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceID) },
 		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceID) },
 		cache.Indexers{})
 	go wfInformer.Run(ctx.Done())
 
-	cc.wfLister = util.NewWorkflowLister(wfInformer)
+	cc.wfLister = util.NewWorkflowLister(ctx, wfInformer)
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
@@ -136,16 +131,13 @@ func (cc *Controller) Run(ctx context.Context) {
 	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
 
 	for i := 0; i < cc.cronWorkflowWorkers; i++ {
-		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
+		go wait.UntilWithContext(ctx, cc.runCronWorker, time.Second)
 	}
 
 	<-ctx.Done()
 }
 
-func (cc *Controller) runCronWorker() {
-	ctx := log.WithLogger(context.TODO(), log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
-	ctx = log.WithLogger(ctx, log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
-	ctx = log.WithLogger(ctx, cc.logger)
+func (cc *Controller) runCronWorker(ctx context.Context) {
 	for cc.processNextCronItem(ctx) {
 	}
 }
@@ -162,7 +154,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	logger := cc.logger.WithField("cronWorkflow", key)
+	ctx, logger := cc.logger.WithField("cronWorkflow", key).InContext(ctx)
 	logger.Infof(ctx, "Processing %s", key)
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key)
@@ -184,7 +176,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	cronWf := &v1alpha1.CronWorkflow{}
 	err = util.FromUnstructuredObj(un, cronWf)
 	if err != nil {
-		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
+		cc.eventRecorderManager.Get(ctx, un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
 		logger.WithError(err).Error(ctx, "malformed cron workflow: could not convert from unstructured")
 		return true
 	}

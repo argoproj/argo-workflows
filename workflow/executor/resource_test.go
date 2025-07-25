@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"context"
 	"os"
 	"path"
 	"runtime"
@@ -130,6 +129,7 @@ func TestResourcePatchFlags(t *testing.T) {
 // TestResourceConditionsMatching tests whether the JSON response match
 // with either success or failure conditions.
 func TestResourceConditionsMatching(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	var successReqs labels.Requirements
 	successSelector, err := labels.Parse("status.phase == Succeeded")
 	require.NoError(t, err)
@@ -142,17 +142,17 @@ func TestResourceConditionsMatching(t *testing.T) {
 	require.NoError(t, err)
 
 	jsonBytes := []byte(`{"name": "test","status":{"phase":"Error"}`)
-	finished, err := matchConditions(jsonBytes, successReqs, failReqs)
+	finished, err := matchConditions(ctx, jsonBytes, successReqs, failReqs)
 	require.Error(t, err, `failure condition '{status.phase == [Error]}' evaluated true`)
 	assert.False(t, finished)
 
 	jsonBytes = []byte(`{"name": "test","status":{"phase":"Succeeded"}`)
-	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
+	finished, err = matchConditions(ctx, jsonBytes, successReqs, failReqs)
 	require.NoError(t, err)
 	assert.False(t, finished)
 
 	jsonBytes = []byte(`{"name": "test","status":{"phase":"Pending"}`)
-	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
+	finished, err = matchConditions(ctx, jsonBytes, successReqs, failReqs)
 	require.Error(t, err, "Neither success condition nor the failure condition has been matched. Retrying...")
 	assert.True(t, finished)
 }
@@ -218,9 +218,7 @@ func TestResourceExecRetry(t *testing.T) {
 	}()
 	retry.DefaultBackoff.Duration = 0
 	t.Setenv("PATH", dirname+"/testdata")
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, _, _, err := we.ExecResource(ctx, "", "../../examples/hello-world.yaml", nil)
 	require.ErrorContains(t, err, "no more retries")
 }
@@ -235,9 +233,7 @@ func Test_jqFilter(t *testing.T) {
 		{[]byte(`{"items": [{"key": "foo"}, {"key": "bar"}]}`), ".items.[].key", "foo\nbar"},
 	} {
 		t.Run(string(testCase.input), func(t *testing.T) {
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx := logging.TestContext(t.Context())
 			got, err := jqFilter(ctx, testCase.input, testCase.filter)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.want, got)
@@ -246,7 +242,8 @@ func Test_jqFilter(t *testing.T) {
 }
 
 func Test_runKubectl(t *testing.T) {
-	out, err := runKubectl("kubectl", "version", "--client=true", "--output", "json")
+	ctx := logging.TestContext(t.Context())
+	out, err := runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "json")
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "clientVersion")
 }

@@ -1,7 +1,6 @@
 package context
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,9 +10,7 @@ import (
 )
 
 func TestObjectMeta(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	ctx = InjectObjectMeta(ctx, &meta.ObjectMeta{Name: "foo", Namespace: "bar"})
 	assert.Equal(t, "foo", ObjectName(ctx))
 	assert.Equal(t, "bar", ObjectNamespace(ctx))

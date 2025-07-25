@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -18,7 +17,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var session db.Session
@@ -48,9 +46,7 @@ func NewMigrateCommand() *cobra.Command {
 		Use:   "migrate",
 		Short: "Force DB migration for given cluster/table",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			return sqldb.Migrate(ctx, session, cluster, table)
+			return sqldb.Migrate(cmd.Context(), session, cluster, table)
 		},
 	}
 	migrationCmd.Flags().StringVar(&cluster, "cluster", "default", "Cluster name")
@@ -72,12 +68,11 @@ func NewFakeDataCommand() *cobra.Command {
 			instanceIDService := instanceid.NewService("")
 			wfTmpl := wfv1.MustUnmarshalWorkflow(template)
 
+			ctx := cmd.Context()
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
 				wfArchive := sqldb.NewWorkflowArchive(session, cluster, "", instanceIDService)
-				ctx := context.Background()
-				ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}

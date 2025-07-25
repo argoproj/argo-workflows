@@ -32,7 +32,8 @@ func NewUpdateCommand() *cobra.Command {
 `,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return updateWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
+			ctx := cmd.Context()
+			return updateWorkflowTemplates(ctx, args, &cliUpdateOpts)
 		},
 	}
 	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
@@ -53,11 +54,11 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 		return err
 	}
 
-	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
+	workflowTemplates := generateWorkflowTemplates(ctx, filePaths, cliOpts.strict)
 
 	for _, wftmpl := range workflowTemplates {
 		if wftmpl.Namespace == "" {
-			wftmpl.Namespace = client.Namespace()
+			wftmpl.Namespace = client.Namespace(ctx)
 		}
 		current, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
 			Name:      wftmpl.Name,

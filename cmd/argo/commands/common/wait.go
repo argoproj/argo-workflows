@@ -7,7 +7,6 @@ import (
 	"os"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +14,7 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // waitWorkflows waits for the given workflowNames.
@@ -25,7 +25,7 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	for _, name := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			if ok, _ := waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet); !ok {
+			if ok, _ := waitOnOne(ctx, serviceClient, name, namespace, ignoreNotFound, quiet); !ok {
 				wfSuccessStatus = false
 			}
 			wg.Done()
@@ -39,7 +39,7 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 }
 
-func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) (bool, error) {
+func waitOnOne(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, wfName, namespace string, ignoreNotFound, quiet bool) (bool, error) {
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
@@ -57,7 +57,8 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	for {
 		event, err := stream.Recv()
 		if err == io.EOF {
-			log.Debug("Re-establishing workflow watch")
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.Debug(ctx, "Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
 			if err != nil {
 				return false, err

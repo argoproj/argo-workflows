@@ -9,7 +9,6 @@ import (
 
 	"github.com/Knetic/govaluate"
 	"github.com/robfig/cron/v3"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -54,16 +53,15 @@ type cronWfOperationCtx struct {
 	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
+	// nolint: containedctx
+	ctx context.Context
 }
 
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *cronWfOperationCtx {
-	log := logging.GetLoggerFromContext(ctx)
-	if log == nil {
-		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	}
+	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
 		name:            cronWorkflow.Name,
 		cronWf:          cronWorkflow,
@@ -84,16 +82,14 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 		// to generate the latter function after the job is scheduled, there is a tiny chance that the job is run before
 		// the deterministic function is supplanted. If that happens, we use the infer function as the next-best thing
 		scheduledTimeFunc: inferScheduledTime,
+		ctx:               ctx,
 	}
 }
 
 // Run handles the running of a cron workflow
 // It fits the github.com/robfig/cron.Job interface
 func (woc *cronWfOperationCtx) Run() {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, woc.log)
-	woc.run(ctx, woc.scheduledTimeFunc())
+	woc.run(woc.ctx, woc.scheduledTimeFunc(woc.ctx))
 }
 
 func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Time) {
@@ -129,7 +125,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	woc.metrics.CronWfTrigger(ctx, woc.name, woc.cronWf.Namespace)
 
-	wf := common.ConvertCronWorkflowToWorkflowWithProperties(woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
+	wf := common.ConvertCronWorkflowToWorkflowWithProperties(ctx, woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
 
 	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
@@ -222,7 +218,7 @@ func shouldExecute(when string) (bool, error) {
 	return boolRes, nil
 }
 
-func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
+func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 	if cron.Spec.When == "" {
 		return true, nil
 	}
@@ -239,7 +235,7 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	newWhenStr, err := t.Replace(env, false)
+	newWhenStr, err := t.Replace(ctx, env, false)
 	if err != nil {
 		return false, err
 	}
@@ -260,7 +256,7 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 		return false, nil
 	}
 
-	canProceed, err := evalWhen(woc.cronWf)
+	canProceed, err := evalWhen(ctx, woc.cronWf)
 	if err != nil || !canProceed {
 		return canProceed, err
 	}
@@ -562,14 +558,15 @@ func (woc *cronWfOperationCtx) setAsCompleted() {
 	woc.cronWf.Labels[common.LabelKeyCronWorkflowCompleted] = "true"
 }
 
-func inferScheduledTime() time.Time {
+func inferScheduledTime(ctx context.Context) time.Time {
 	// Infer scheduled runtime by getting current time and zeroing out current seconds and nanoseconds
 	// This works because the finest possible scheduled runtime is a minute. It is unlikely to ever be used, since this
 	// function is quickly supplanted by a deterministic function from the cron engine.
 	now := time.Now().UTC()
 	scheduledTime := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
 
-	log.Infof("inferred scheduled time: %s", scheduledTime)
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithField("scheduledTime", scheduledTime).Info(ctx, "inferred scheduled time")
 	return scheduledTime
 }
 

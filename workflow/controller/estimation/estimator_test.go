@@ -8,9 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func Test_estimator(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	a := metav1.Time{}
 	b := metav1.Time{Time: time.Time{}.Add(time.Second)}
 	p := &estimator{
@@ -38,6 +40,6 @@ func Test_estimator(t *testing.T) {
 		},
 	}
 	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateWorkflowDuration())
-	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration("my-wf"))
-	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration("1"))
+	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration(ctx, "my-wf"))
+	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration(ctx, "1"))
 }

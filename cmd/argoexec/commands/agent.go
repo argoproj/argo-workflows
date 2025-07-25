@@ -9,7 +9,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -37,11 +36,14 @@ func NewAgentInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "init",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			for _, name := range getPluginNames() {
+			ctx := cmd.Context()
+			logger := logging.RequireLoggerFromContext(ctx)
+
+			for _, name := range getPluginNames(ctx) {
 				filename := tokenFilename(name)
-				log.WithField("plugin", name).
+				logger.WithField("plugin", name).
 					WithField("filename", filename).
-					Info("creating token file for plugin")
+					Info(ctx, "creating token file for plugin")
 				if err := os.Mkdir(filepath.Dir(filename), 0o770); err != nil {
 					return err
 				}
@@ -59,18 +61,20 @@ func tokenFilename(name string) string {
 	return filepath.Join(common.VarRunArgoPath, name, "token")
 }
 
-func getPluginNames() []string {
+func getPluginNames(ctx context.Context) []string {
 	var names []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginNames)), &names); err != nil {
-		log.Fatal(err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin names")
+		os.Exit(1)
 	}
 	return names
 }
 
-func getPluginAddresses() []string {
+func getPluginAddresses(ctx context.Context) []string {
 	var addresses []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
-		log.Fatal(err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin addresses")
+		os.Exit(1)
 	}
 	return addresses
 }
@@ -79,30 +83,22 @@ func NewAgentMainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if cmd.Context() == nil {
-				ctx := context.Background()
-				cmd.SetContext(ctx)
-			}
-			log := logging.GetLoggerFromContext(cmd.Context())
-			if log == nil {
-				log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-				ctx := logging.WithLogger(cmd.Context(), log)
-				cmd.SetContext(ctx)
-			}
-			return initAgentExecutor().Agent(cmd.Context())
+			ctx := cmd.Context()
+			return initAgentExecutor(ctx).Agent(ctx)
 		},
 	}
 }
 
-func initAgentExecutor() *executor.AgentExecutor {
+func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 	version := argo.GetVersion()
-	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"version": version.Version}).Info(ctx, "Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, "agent Executor"))
 
-	logs.AddK8SLogTransportWrapper(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	logs.AddK8SLogTransportWrapper(ctx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)
@@ -114,25 +110,28 @@ func initAgentExecutor() *executor.AgentExecutor {
 
 	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
 	if !ok {
-		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
+		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
+		os.Exit(1)
 	}
 	workflowUID, ok := os.LookupEnv(common.EnvVarWorkflowUID)
 	if !ok {
-		log.Fatalf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID)
+		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
+		os.Exit(1)
 	}
 
-	addresses := getPluginAddresses()
-	names := getPluginNames()
+	addresses := getPluginAddresses(ctx)
+	names := getPluginNames(ctx)
 	var plugins []executorplugins.TemplateExecutor
 	for i, address := range addresses {
 		name := names[i]
 		filename := tokenFilename(name)
-		log.WithField("plugin", name).
+		logger.WithField("plugin", name).
 			WithField("filename", filename).
-			Info("loading token file for plugin")
+			Info(ctx, "loading token file for plugin")
 		data, err := os.ReadFile(filename)
 		if err != nil {
-			log.Fatal(err)
+			logger.WithError(err).WithFatal().Error(ctx, "Failed to read token file")
+			os.Exit(1)
 		}
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}

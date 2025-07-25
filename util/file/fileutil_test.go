@@ -3,7 +3,6 @@ package file_test
 import (
 	"archive/tar"
 	"bytes"
-	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -22,9 +21,7 @@ import (
 
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
 func TestCompressContentString(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
 		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"name\":\"pod-limits-rrdm8[0]." +
@@ -42,9 +39,7 @@ func TestCompressContentString(t *testing.T) {
 
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
 func TestGetGzipReader(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
 		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		rawContent := "this is the content"

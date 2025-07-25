@@ -111,8 +111,8 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	}()
 
 	namespace, podName, action := parsePodCleanupKey(podCleanupKey(key))
-	logCtx := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName})
-	logCtx.Info(ctx, "cleaning up pod")
+	ctx, log := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName}).InContext(ctx)
+	log.Info(ctx, "cleaning up pod")
 	err := func() error {
 		switch action {
 		case terminateContainers:
@@ -155,10 +155,8 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		return nil
 	}()
 	if err != nil {
-		logCtx.WithError(err).Warn(ctx, "failed to clean-up pod")
-		bgCtx := context.Background()
-		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		if errorsutil.IsTransientErr(bgCtx, err) || apierr.IsConflict(err) {
+		log.WithError(err).Warn(ctx, "failed to clean-up pod")
+		if errorsutil.IsTransientErr(ctx, err) || apierr.IsConflict(err) {
 			c.workqueue.AddRateLimited(key)
 		}
 	}

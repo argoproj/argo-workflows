@@ -17,10 +17,12 @@ var (
 
 type k8sLogRoundTripper struct {
 	roundTripper http.RoundTripper
-	ctx          context.Context
+	// nolint: containedctx
+	ctx context.Context
 }
 
 func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	logger := logging.RequireLoggerFromContext(m.ctx)
 	now := time.Now()
 	x, err := m.roundTripper.RoundTrip(r)
 	latency := time.Since(now)
@@ -28,11 +30,9 @@ func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	if x != nil {
 		verb, kind := k8s.ParseRequest(r)
 		if latency > extraLongThrottleLatency {
-			logger := logging.GetLoggerFromContext(m.ctx)
-			logger.Warnf(m.ctx, "Waited for %v, request: %s:%s", latency, verb, r.URL.String())
+			logger.WithFields(logging.Fields{"latency": latency, "verb": verb, "url": r.URL.String()}).Warn(m.ctx, "Waited for K8S request")
 		}
-		logger := logging.GetLoggerFromContext(m.ctx)
-		logger.Debugf(m.ctx, "%s %s %d", verb, kind, x.StatusCode)
+		logger.WithFields(logging.Fields{"verb": verb, "kind": kind, "status": x.StatusCode}).Debug(m.ctx, "K8S request")
 	}
 	return x, err
 }

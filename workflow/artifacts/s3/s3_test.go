@@ -2,7 +2,6 @@ package s3
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"os"
@@ -129,10 +128,7 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 }
 
 func TestOpenStreamS3Artifact(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 
 	tests := map[string]struct {
 		s3client  S3Client
@@ -390,8 +386,7 @@ func TestLoadS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-			ctx := logging.WithLogger(context.Background(), log)
+			ctx := logging.TestContext(t.Context())
 			success, err := loadS3Artifact(ctx, tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
@@ -413,10 +408,7 @@ func TestLoadS3Artifact(t *testing.T) {
 }
 
 func TestSaveS3Artifact(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 
 	tempDir := t.TempDir()
 
@@ -552,10 +544,7 @@ func TestSaveS3Artifact(t *testing.T) {
 }
 
 func TestListObjects(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 	tests := map[string]struct {
 		s3client         S3Client
 		bucket           string
@@ -650,10 +639,7 @@ func TestNewS3Client(t *testing.T) {
 		UseSDKCreds:     false,
 		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyID: "", KmsEncryptionContext: ""},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 	s3If, err := NewS3Client(ctx, opts)
 	require.NoError(t, err)
 	s3cli := s3If.(*s3client)
@@ -679,10 +665,7 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 		SecretKey:    "secret",
 		SessionToken: "sessionToken",
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 	s3If, err := NewS3Client(ctx, opts)
 	require.NoError(t, err)
 	s3cli := s3If.(*s3client)
@@ -695,10 +678,7 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 
 // TestNewS3Client tests the s3 constructor
 func TestNewS3ClientWithDiff(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 	t.Run("IAMRole", func(t *testing.T) {
 		opts := S3ClientOpts{
 			Endpoint: "foo.com",
@@ -734,10 +714,7 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 }
 
 func TestDisallowedComboOptions(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := logging.TestContext(t.Context())
 
 	t.Run("KMS and SSEC", func(t *testing.T) {
 		opts := S3ClientOpts{

@@ -1,7 +1,6 @@
 package raw_test
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -32,10 +31,7 @@ func TestLoad(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	err = driver.Load(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), art, lf.Name())
+	err = driver.Load(logging.TestContext(t.Context()), art, lf.Name())
 	require.NoError(t, err)
 
 	dat, err := os.ReadFile(lf.Name())
@@ -50,10 +46,7 @@ func TestOpenStream(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	rc, err := driver.OpenStream(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), art)
+	rc, err := driver.OpenStream(logging.TestContext(t.Context()), art)
 	require.NoError(t, err)
 	defer rc.Close()
 

@@ -34,10 +34,7 @@ func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
 var alwaysOffloadNodeStatus = os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
 
 func init() {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log.WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(ctx, "Hydrator config")
+	logging.InitLogger().WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(context.Background(), "Hydrator config")
 }
 
 type hydrator struct {
@@ -74,10 +71,7 @@ var readRetry = wait.Backoff{Steps: 5, Duration: 100 * time.Millisecond, Factor:
 var writeRetry = wait.Backoff{Steps: 5, Duration: 1 * time.Second, Factor: 2}
 
 func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
-	log := logging.GetLoggerFromContext(ctx)
-	if log == nil {
-		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	}
+	log := logging.RequireLoggerFromContext(ctx)
 	err := packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
 		return err
@@ -102,10 +96,7 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	if !h.IsHydrated(wf) {
 		return nil
 	}
-	log := logging.GetLoggerFromContext(ctx)
-	if log == nil {
-		log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	}
+	log := logging.RequireLoggerFromContext(ctx)
 	var err error
 	log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
 	if !alwaysOffloadNodeStatus {

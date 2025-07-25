@@ -30,14 +30,14 @@ type stepsContext struct {
 	scope *wfScope
 
 	// tmplCtx is the context of template search.
-	tmplCtx *templateresolution.Context
+	tmplCtx *templateresolution.TemplateContext
 
 	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
 	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
 	onExitTemplate bool
 }
 
-func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
@@ -168,7 +168,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		return nil, err
 	}
 	// If this template has outputs from any of its steps, copy them to this node here
-	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
+	outputs, err := woc.getTemplateOutputsFromScope(ctx, tmpl, stepsCtx.scope)
 	if err != nil {
 		return node, err
 	}
@@ -426,7 +426,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
-	err := woc.substituteParamsInVolumes(scope.getParameters())
+	err := woc.substituteParamsInVolumes(ctx, scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +438,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
+		newStepStr, err := template.Replace(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
 			return err
 		}
@@ -475,7 +475,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 				continue
 			}
 
-			resolvedArt, err := scope.resolveArtifact(&art)
+			resolvedArt, err := scope.resolveArtifact(ctx, &art)
 			if err != nil {
 				if art.Optional {
 					continue
@@ -523,7 +523,7 @@ func (woc *wfOperationCtx) expandStepGroup(ctx context.Context, sgNodeName strin
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
-		expandedStep, err := woc.expandStep(step)
+		expandedStep, err := woc.expandStep(ctx, step)
 		if err != nil {
 			return nil, err
 		}
@@ -547,7 +547,7 @@ func (woc *wfOperationCtx) expandStepGroup(ctx context.Context, sgNodeName strin
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
 	var items []wfv1.Item
@@ -591,7 +591,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(t, step.Name, i, item, &newStep, step.When)
+		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When)
 		if err != nil {
 			return nil, err
 		}

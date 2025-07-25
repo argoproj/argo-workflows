@@ -7,11 +7,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/argoproj/argo-workflows/v3"
 )
 
 func TestVersion(t *testing.T) {
-	_, te, err := createDefaultTestMetrics()
+	ctx := logging.TestContext(t.Context())
+	_, te, err := createDefaultTestMetrics(ctx)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 	version := argo.GetVersion()
@@ -25,7 +28,7 @@ func TestVersion(t *testing.T) {
 		attribute.String(AttribBuildGitTreeState, version.GitTreeState),
 		attribute.String(AttribBuildGitTag, version.GitTag),
 	)
-	val, err := te.GetInt64CounterValue(`version`, &attribs)
+	val, err := te.GetInt64CounterValue(ctx, `version`, &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }

@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"testing"
@@ -10,31 +11,32 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/upper/db/v4"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 // semaphoreFactory is a function that creates a semaphore for testing
-type semaphoreFactory func(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func())
+type semaphoreFactory func(ctx context.Context, t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func())
 
 // createTestInternalSemaphore creates an in-memory semaphore for testing
-func createTestInternalSemaphore(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
+func createTestInternalSemaphore(ctx context.Context, t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
-	sem, err := newInternalSemaphore(name, nextWorkflow, func(_ string) (int, error) { return limit, nil }, 0)
+	sem, err := newInternalSemaphore(ctx, name, nextWorkflow, func(ctx context.Context, _ string) (int, error) { return limit, nil }, 0)
 	require.NoError(t, err)
 	return sem, nil, func() {}
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
-func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, dbInfo, func()) {
+func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, dbInfo, func()) {
 	t.Helper()
-	info, deferfunc, _, err := createTestDBSession(t, dbType)
+	info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
 	require.NoError(t, err)
 
 	dbKey := fmt.Sprintf("%s/%s", namespace, name)
 	_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
 	require.NoError(t, err)
 
-	s, err := newDatabaseSemaphore(name, dbKey, nextWorkflow, info, cacheTTL)
+	s, err := newDatabaseSemaphore(ctx, name, dbKey, nextWorkflow, info, cacheTTL)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -42,16 +44,16 @@ func createTestDatabaseSemaphore(t *testing.T, name, namespace string, limit int
 }
 
 // createTestDatabaseSemaphorePostgres creates a database-backed semaphore that conforms to the factory
-func createTestDatabaseSemaphorePostgres(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
+func createTestDatabaseSemaphorePostgres(ctx context.Context, t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
-	s, info, deferfunc := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow, sqldb.Postgres)
+	s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, name, namespace, limit, 0, nextWorkflow, sqldb.Postgres)
 	return s, info.session, deferfunc
 }
 
 // createTestDatabaseSemaphoreMySQL creates a database-backed semaphore that conforms to the factory
-func createTestDatabaseSemaphoreMySQL(t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
+func createTestDatabaseSemaphoreMySQL(ctx context.Context, t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
-	s, info, deferfunc := createTestDatabaseSemaphore(t, name, namespace, limit, 0, nextWorkflow, sqldb.MySQL)
+	s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, name, namespace, limit, 0, nextWorkflow, sqldb.MySQL)
 	return s, info.session, deferfunc
 }
 
@@ -92,33 +94,34 @@ func TestIsSameWorkflowNodeKeys(t *testing.T) {
 // testTryAcquireSemaphore tests the tryAcquire method for one semaphore implementation
 func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
+	ctx := logging.TestContext(t.Context())
 	nextWorkflow := func(key string) {}
 
-	s, dbSession, cleanup := factory(t, "bar", "default", 2, nextWorkflow)
+	s, dbSession, cleanup := factory(ctx, t, "bar", "default", 2, nextWorkflow)
 	defer cleanup()
 
 	now := time.Now()
 	tx := &transaction{db: &dbSession}
-	require.NoError(t, s.addToQueue("default/wf-01", 0, now))
-	require.NoError(t, s.addToQueue("default/wf-02", 0, now.Add(time.Second)))
-	require.NoError(t, s.addToQueue("default/wf-03", 0, now.Add(2*time.Second)))
-	require.NoError(t, s.addToQueue("default/wf-04", 0, now.Add(3*time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-01", 0, now))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-02", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-03", 0, now.Add(2*time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-04", 0, now.Add(3*time.Second)))
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
-	acquired, _ = s.tryAcquire("default/wf-04", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-04", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-03", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-02", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-02", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-01", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 	// now that wf-01 obtained it, wf-02 can
-	acquired, _ = s.tryAcquire("default/wf-02", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-02", tx)
 	assert.True(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-03", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire("default/wf-04", tx)
+	acquired, _ = s.tryAcquire(ctx, "default/wf-04", tx)
 	assert.False(t, acquired)
 }
 
@@ -134,24 +137,25 @@ func TestTryAcquireSemaphore(t *testing.T) {
 // testNotifyWaitersAcquire tests the notifyWaiters method for one semaphore implementation
 func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
+	ctx := logging.TestContext(t.Context())
 	notified := make(map[string]bool)
 	nextWorkflow := func(key string) {
 		notified[key] = true
 	}
 
-	s, dbSession, cleanup := factory(t, "bar", "default", 3, nextWorkflow)
+	s, dbSession, cleanup := factory(ctx, t, "bar", "default", 3, nextWorkflow)
 	defer cleanup()
 
 	now := time.Now()
 	// The ordering here is important and perhaps counterintuitive.
-	require.NoError(t, s.addToQueue("default/wf-04", 0, now.Add(3*time.Second)))
-	require.NoError(t, s.addToQueue("default/wf-02", 0, now.Add(time.Second)))
-	require.NoError(t, s.addToQueue("default/wf-01", 0, now))
-	require.NoError(t, s.addToQueue("default/wf-05", 0, now.Add(4*time.Second)))
-	require.NoError(t, s.addToQueue("default/wf-03", 0, now.Add(2*time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-04", 0, now.Add(3*time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-02", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-01", 0, now))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-05", 0, now.Add(4*time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "default/wf-03", 0, now.Add(2*time.Second)))
 
 	tx := &transaction{db: &dbSession}
-	acquired, _ := s.tryAcquire("default/wf-01", tx)
+	acquired, _ := s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 2)
@@ -161,7 +165,7 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	assert.False(t, notified["default/wf-05"])
 
 	notified = make(map[string]bool)
-	released := s.release("default/wf-01")
+	released := s.release(ctx, "default/wf-01")
 	assert.True(t, released)
 
 	assert.Len(t, notified, 3)
@@ -183,20 +187,21 @@ func TestNotifyWaitersAcquire(t *testing.T) {
 // testNotifyWorkflowFromTemplateSemaphore tests the template semaphore behavior for one semaphore` implementation
 func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
+	ctx := logging.TestContext(t.Context())
 	notified := make(map[string]bool)
 	nextWorkflow := func(key string) {
 		notified[key] = true
 	}
 
-	s, dbSession, cleanup := factory(t, "bar", "foo", 2, nextWorkflow)
+	s, dbSession, cleanup := factory(ctx, t, "bar", "foo", 2, nextWorkflow)
 	defer cleanup()
 
 	now := time.Now()
-	require.NoError(t, s.addToQueue("foo/wf-01/nodeid-123", 0, now))
-	require.NoError(t, s.addToQueue("foo/wf-02/nodeid-456", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/nodeid-123", 0, now))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/nodeid-456", 0, now.Add(time.Second)))
 
 	tx := &transaction{db: &dbSession}
-	acquired, _ := s.tryAcquire("foo/wf-01/nodeid-123", tx)
+	acquired, _ := s.tryAcquire(ctx, "foo/wf-01/nodeid-123", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 1)

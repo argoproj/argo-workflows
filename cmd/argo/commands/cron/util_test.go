@@ -1,7 +1,6 @@
 package cron
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -59,16 +58,14 @@ Conditions:
 
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	out := getCronWorkflowGet(ctx, cronWf)
 	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	next, err := GetNextRuntime(ctx, cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
@@ -101,8 +98,7 @@ spec:
 
 func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	next, err := GetNextRuntime(ctx, cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())

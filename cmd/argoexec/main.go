@@ -13,11 +13,10 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands"
 	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext(logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer stop()
 	err := commands.NewRootCommand().ExecuteContext(ctx)
 	if err != nil {

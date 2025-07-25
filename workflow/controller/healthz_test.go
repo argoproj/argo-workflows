@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -80,12 +81,13 @@ func TestHealthz(t *testing.T) {
 		for _, wf := range tt.workflows {
 			workflowsAsInterfaceSlice = append(workflowsAsInterfaceSlice, wf)
 		}
-		cancel, controller := newController(workflowsAsInterfaceSlice...)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, workflowsAsInterfaceSlice...)
 		defer cancel()
 		controller.lastUnreconciledWorkflows = tt.lastUnreconciledWorkflws
 		rr := httptest.NewRecorder()
 
-		handler := http.HandlerFunc(controller.Healthz)
+		handler := LogMiddleware(logging.RequireLoggerFromContext(ctx), http.HandlerFunc(controller.Healthz))
 
 		req, err := http.NewRequest("GET", "/healthz", nil)
 		if err != nil {

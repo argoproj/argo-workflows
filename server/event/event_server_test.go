@@ -21,11 +21,11 @@ import (
 
 func TestController(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
-	ctx := context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.WfKey, clientset)
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, clientset)
 	instanceIDService := instanceid.NewService("my-instanceid")
 	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewSimpleClientset())
 	newController := func(asyncDispatch bool) *Controller {
-		return NewController(instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
+		return NewController(ctx, instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
 	}
 	e1 := &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}}
 	e2 := &eventpkg.EventRequest{}
@@ -42,7 +42,7 @@ func TestController(t *testing.T) {
 
 		stopCh := make(chan struct{}, 1)
 		stopCh <- struct{}{}
-		s.Run(stopCh)
+		s.Run(ctx, stopCh)
 
 		assert.Empty(t, s.operationQueue, "all events were processed")
 	})

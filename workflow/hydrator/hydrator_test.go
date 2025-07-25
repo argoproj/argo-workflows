@@ -1,10 +1,7 @@
 package hydrator
 
 import (
-	"context"
 	"testing"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,13 +11,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	sqldbmocks "github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
 func TestHydrator(t *testing.T) {
 	defer packer.SetMaxWorkflowSize(260)()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	t.Run("Dehydrate", func(t *testing.T) {
 		t.Run("Packed", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})

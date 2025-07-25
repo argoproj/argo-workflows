@@ -12,7 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.Context) (bool, error) {
+func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.TemplateContext) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range woc.execWf.Spec.Hooks {
 		// exit hook will be executed in runOnExitNode
@@ -55,7 +55,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 	return true, nil
 }
 
-func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
+func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, prefix string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
 		// exit hook will be executed in runOnExitNode
@@ -82,7 +82,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {
-				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs, scope)
+				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, hook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return false, err
 				}

@@ -21,12 +21,13 @@ func NewWaitCommand() *cobra.Command {
   argo wait @latest
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			common.WaitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)
 			return nil
 		},

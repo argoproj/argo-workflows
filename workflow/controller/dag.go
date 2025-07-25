@@ -39,7 +39,7 @@ type dagContext struct {
 	wf *wfv1.Workflow
 
 	// tmplCtx is the context of template search.
-	tmplCtx *templateresolution.Context
+	tmplCtx *templateresolution.TemplateContext
 
 	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
 	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
@@ -225,7 +225,7 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 	return result, nil
 }
 
-func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
@@ -362,7 +362,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		woc.buildLocalScope(scope, prefix, taskNode)
 		woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 	}
-	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
+	outputs, err := woc.getTemplateOutputsFromScope(ctx, tmpl, scope)
 	if err != nil {
 		woc.log.Errorf(ctx, "unable to get outputs")
 		return node, err
@@ -424,7 +424,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	node := dagCtx.getTaskNode(ctx, taskName)
 	task := dagCtx.GetTask(ctx, taskName)
-	log := woc.log.WithField("taskName", taskName)
+	ctx, log := woc.log.WithField("taskName", taskName).InContext(ctx)
 	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
 		scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 		if err != nil {
@@ -461,7 +461,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 
-		processedTmpl, err := common.ProcessArgs(tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
 		}
@@ -563,7 +563,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
+	expandedTasks, err := expandTask(ctx, *newTask)
 	if err != nil {
 		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
@@ -706,7 +706,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 
 	// Perform replacement
 	// Replace woc.volumes
-	err = woc.substituteParamsInVolumes(scope.getParameters())
+	err = woc.substituteParamsInVolumes(ctx, scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -716,7 +716,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	newTaskStr, err := template.Replace(string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	newTaskStr, err := template.Replace(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
 		return nil, err
 	}
@@ -751,7 +751,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 			artifacts = append(artifacts, art)
 			continue
 		}
-		resolvedArt, err := scope.resolveArtifact(&art)
+		resolvedArt, err := scope.resolveArtifact(ctx, &art)
 		if err != nil {
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf(ctx, "Optional artifact '%s' was not found; it won't be available as an input", art.Name)
@@ -792,7 +792,7 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
@@ -835,7 +835,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask, task.When)
+		newTaskName, err := processItem(ctx, tmpl, task.Name, i, item, &newTask, task.When)
 		if err != nil {
 			return nil, err
 		}

@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	cc "golang.org/x/oauth2/clientcredentials"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -26,13 +24,11 @@ func CreateClientWithCertificate(clientCert, clientKey []byte) (*http.Client, er
 	return client, err
 }
 
-func CreateOauth2Client(clientID, clientSecret, tokenURL string, scopes []string, endpointParams []wfv1.OAuth2EndpointParam) *http.Client {
+func CreateOauth2Client(ctx context.Context, clientID, clientSecret, tokenURL string, scopes []string, endpointParams []wfv1.OAuth2EndpointParam) *http.Client {
 	values := url.Values{}
 	for _, endpointParam := range endpointParams {
 		values.Add(endpointParam.Key, endpointParam.Value)
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	conf := cc.Config{
 		ClientID:       clientID,
 		ClientSecret:   clientSecret,

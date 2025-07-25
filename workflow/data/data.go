@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/expr-lang/expr"
@@ -8,8 +9,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface{}, error) {
-	sourcedData, err := processSource(data.Source, processor)
+func ProcessData(ctx context.Context, data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface{}, error) {
+	sourcedData, err := processSource(ctx, data.Source, processor)
 	if err != nil {
 		return nil, fmt.Errorf("unable to process data source: %w", err)
 	}
@@ -20,12 +21,12 @@ func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface
 	return transformedData, nil
 }
 
-func processSource(source wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
+func processSource(ctx context.Context, source wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
 	var data interface{}
 	var err error
 	switch {
 	case source.ArtifactPaths != nil:
-		data, err = processor.ProcessArtifactPaths(source.ArtifactPaths)
+		data, err = processor.ProcessArtifactPaths(ctx, source.ArtifactPaths)
 		if err != nil {
 			return nil, fmt.Errorf("unable to source artifact paths: %w", err)
 		}

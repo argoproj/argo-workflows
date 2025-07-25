@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type SimpleValue struct {
@@ -15,7 +17,8 @@ type SimpleValue struct {
 func processTemplate(t *testing.T, tmpl SimpleValue, replaceMap map[string]string) SimpleValue {
 	tmplBytes, err := json.Marshal(tmpl)
 	require.NoError(t, err)
-	r, err := Replace(string(tmplBytes), replaceMap, true)
+	ctx := logging.TestContext(t.Context())
+	r, err := Replace(ctx, string(tmplBytes), replaceMap, true)
 	require.NoError(t, err)
 	var newTmpl SimpleValue
 	err = json.Unmarshal([]byte(r), &newTmpl)

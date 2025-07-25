@@ -6,13 +6,13 @@ import (
 	"io"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
@@ -34,7 +34,8 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		for {
 			event, err := stream.Recv()
 			if err == io.EOF {
-				log.Debug("Re-establishing workflow watch")
+				logger := logging.RequireLoggerFromContext(ctx)
+				logger.Debug(ctx, "Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
 				errors.CheckError(ctx, err)
 				continue

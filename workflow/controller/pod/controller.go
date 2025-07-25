@@ -58,9 +58,7 @@ type Controller struct {
 
 // NewController creates a pod controller
 func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log = log.WithField("component", "pod_controller")
-	ctx = logging.WithLogger(ctx, log)
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "pod_controller").InContext(ctx)
 	podController := &Controller{
 		config:        config,
 		kubeclientset: clientSet,
@@ -151,22 +149,22 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 		return false
 	}
 	wfOwnerKey := fmt.Sprintf("%s/%s", pod.Namespace, controllerRef.Name)
-	logCtx := c.log.WithFields(logging.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "podName": pod.Name})
+	ctx, log := c.log.WithFields(logging.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "pod": pod.Name}).InContext(ctx)
 	obj, wfExists, err := c.wfInformer.GetIndexer().GetByKey(wfOwnerKey)
 	if err != nil {
-		logCtx.Warn(ctx, "failed to get workflow from informer")
+		log.Warn(ctx, "failed to get workflow from informer")
 	}
 	if !wfExists {
 		return true
 	}
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		c.log.WithField("pod", pod.Name).Warn(ctx, "workflow is not an unstructured")
+		log.Warn(ctx, "workflow is not an unstructured")
 		return true
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		c.log.WithField("pod", pod.Name).Warn(ctx, "workflow unstructured can't be converted to a workflow")
+		log.Warn(ctx, "workflow unstructured can't be converted to a workflow")
 		return true
 	}
 	return wf.DeletionTimestamp != nil

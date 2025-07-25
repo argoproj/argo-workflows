@@ -19,6 +19,7 @@ import (
 const testNamespace = "argo"
 
 type fakeOidcProvider struct {
+	// nolint:containedctx
 	Ctx    context.Context
 	Issuer string
 }
@@ -66,7 +67,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		RedirectURL:          "https://dummy",
 		CustomGroupClaimName: "argo_groups",
 	}
-	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
@@ -87,7 +88,7 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 		RedirectURL:          "https://dummy",
 		CustomGroupClaimName: "argo_groups",
 	}
-	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 
 }
@@ -110,7 +111,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
@@ -124,7 +125,7 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.Error(t, err)
 	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }
@@ -132,8 +133,7 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := fakeClient.Create(ctx, &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{},
@@ -146,7 +146,7 @@ func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	_, err = newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	_, err = newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.Error(t, err)
 	assert.Regexp(t, "If you have already defined a Secret named sso, delete it and retry", err.Error())
 }

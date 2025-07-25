@@ -36,7 +36,7 @@ func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
 func (p *podPhaseGauge) update(ctx context.Context, o metric.Observer) error {
 	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
+		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
 	}
 	return nil
 }

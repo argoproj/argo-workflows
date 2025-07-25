@@ -64,9 +64,9 @@ func TestIsTransientErr(t *testing.T) {
 	})
 	t.Run("ResourceQuotaConflictErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(ctx, apierr.NewConflict(schema.GroupResource{}, "", nil)))
-		assert.Contains(t, hook.LastEntry().Msg, "Non-transient error:")
+		assert.Contains(t, hook.LastEntry().Msg, "Non-transient error")
 		assert.True(t, IsTransientErr(ctx, apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
-		assert.Contains(t, hook.LastEntry().Msg, "Transient error:")
+		assert.Contains(t, hook.LastEntry().Msg, "Transient error")
 	})
 	t.Run("ResourceQuotaTimeoutErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New(""))))
@@ -123,7 +123,7 @@ func TestIsTransientErr(t *testing.T) {
 func TestIsTransientUErr(t *testing.T) {
 	hook := logging.NewTestHook()
 	logger := logging.NewTestLogger(logging.Info, logging.Text, hook)
-	ctx := logging.WithLogger(context.Background(), logger)
+	ctx := logging.WithLogger(logging.TestContext(t.Context()), logger)
 	defer hook.Reset()
 
 	t.Run("NonExceptionalUErr", func(t *testing.T) {

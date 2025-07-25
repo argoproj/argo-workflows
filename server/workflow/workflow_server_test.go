@@ -574,7 +574,8 @@ const clusterworkflowtmpl = `
 
 const userEmailLabel = "my-sub.at.your.org"
 
-func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
+func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context.Context) {
+	t.Helper()
 	var unlabelledObj, wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
 	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
@@ -627,7 +628,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	})
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	listOptions := &metav1.ListOptions{}
 	instanceIDSvc := instanceid.NewService("my-instanceid")
@@ -648,7 +649,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	namespaceAll := metav1.NamespaceAll
 	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewWorkflowServer(instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	server := NewWorkflowServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
 	return server, ctx
 }
 
@@ -671,7 +672,7 @@ func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServ
 }
 
 func TestCreateWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	var req workflowpkg.WorkflowCreateRequest
 	v1alpha1.MustUnmarshal(workflow1, &req)
 	wf, err := server.CreateWorkflow(ctx, &req)
@@ -691,7 +692,7 @@ func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 }
 
 func TestWatchWorkflows(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	wf := &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
@@ -705,7 +706,7 @@ func TestWatchWorkflows(t *testing.T) {
 }
 
 func TestWatchLatestWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	wf := &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
@@ -723,7 +724,7 @@ func TestWatchLatestWorkflow(t *testing.T) {
 }
 
 func TestGetWorkflowWithNotFound(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		wf, err := getWorkflow(ctx, server, "test", "not-found")
 		require.Error(t, err)
@@ -736,7 +737,7 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 }
 
 func TestGetLatestWorkflow(t *testing.T) {
-	_, ctx := getWorkflowServer()
+	_, ctx := getWorkflowServer(t)
 	wfClient := ctx.Value(auth.WfKey).(versioned.Interface)
 	wf, err := getLatestWorkflow(ctx, wfClient, "test")
 	require.NoError(t, err)
@@ -744,7 +745,7 @@ func TestGetLatestWorkflow(t *testing.T) {
 }
 
 func TestGetWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
@@ -756,7 +757,7 @@ func TestGetWorkflow(t *testing.T) {
 }
 
 func TestValidateWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
@@ -765,7 +766,7 @@ func TestValidateWorkflow(t *testing.T) {
 }
 
 func TestListWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	wfl, err := getWorkflowList(ctx, server, "workflows")
 	require.NoError(t, err)
 	assert.NotNil(t, wfl)
@@ -777,7 +778,7 @@ func TestListWorkflow(t *testing.T) {
 }
 
 func TestDeleteWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		delRsp, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "hello-world-b6h5m", Namespace: "workflows"})
 		require.NoError(t, err)
@@ -794,7 +795,7 @@ func TestDeleteWorkflow(t *testing.T) {
 }
 
 func TestRetryWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		retried, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
 		require.NoError(t, err)
@@ -811,7 +812,7 @@ func TestRetryWorkflow(t *testing.T) {
 }
 
 func TestSuspendResumeWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	wf, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
@@ -829,7 +830,7 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 }
 
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 
 	susWfReq := workflowpkg.WorkflowSuspendRequest{
 		Name:      "hello-world-9tql2-not",
@@ -848,7 +849,7 @@ func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
 }
 
 func TestTerminateWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	require.NoError(t, err)
@@ -874,7 +875,7 @@ func TestTerminateWorkflow(t *testing.T) {
 }
 
 func TestStopWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	require.NoError(t, err)
 	rsmWfReq := workflowpkg.WorkflowStopRequest{Name: wf.Name, Namespace: wf.Namespace}
@@ -888,7 +889,7 @@ func TestStopWorkflow(t *testing.T) {
 }
 
 func TestResubmitWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		wf, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "hello-world-9tql2", Namespace: "workflows"})
 		require.NoError(t, err)
@@ -908,7 +909,7 @@ func TestResubmitWorkflow(t *testing.T) {
 }
 
 func TestLintWorkflow(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	wf := &v1alpha1.Workflow{}
 	v1alpha1.MustUnmarshal(unlabelled, &wf)
 	linted, err := server.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Workflow: wf})
@@ -927,7 +928,7 @@ func (t testPodLogsServer) Send(*workflowpkg.LogEntry) error {
 }
 
 func TestPodLogs(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{
@@ -941,7 +942,7 @@ func TestPodLogs(t *testing.T) {
 }
 
 func TestSubmitWorkflowFromResource(t *testing.T) {
-	server, ctx := getWorkflowServer()
+	server, ctx := getWorkflowServer(t)
 	t.Run("SubmitFromWorkflowTemplate fails if missing parameters", func(t *testing.T) {
 		_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",

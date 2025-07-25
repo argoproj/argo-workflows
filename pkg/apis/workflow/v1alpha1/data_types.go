@@ -1,5 +1,7 @@
 package v1alpha1
 
+import "context"
+
 // Data is a data template
 type Data struct {
 	// Source sources external data into a data template
@@ -36,5 +38,5 @@ type ArtifactPaths struct {
 }
 
 type DataSourceProcessor interface {
-	ProcessArtifactPaths(*ArtifactPaths) (interface{}, error)
+	ProcessArtifactPaths(context.Context, *ArtifactPaths) (interface{}, error)
 }

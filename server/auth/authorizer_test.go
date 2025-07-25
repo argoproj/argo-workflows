@@ -22,10 +22,7 @@ func TestAuthorizer_CanI(t *testing.T) {
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
 	})
-	ctx := context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), KubeKey, kubeClient)
+	ctx := context.WithValue(logging.TestContext(t.Context()), KubeKey, kubeClient)
 	t.Run("CanI", func(t *testing.T) {
 		allowed, err := CanI(ctx, "", "", "", "")
 		require.NoError(t, err)

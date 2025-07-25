@@ -26,12 +26,7 @@ func TestDisablePrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	baseCtx := func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
-	baseCtx = logging.WithLogger(baseCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx, cancel := context.WithCancel(baseCtx)
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
@@ -51,12 +46,7 @@ func TestPrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	baseCtx := func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
-	baseCtx = logging.WithLogger(baseCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx, cancel := context.WithCancel(baseCtx)
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
@@ -90,12 +80,7 @@ func TestDummyPrometheusServer(t *testing.T) {
 		Port:    DefaultPrometheusServerPort,
 		Secure:  false,
 	}
-	baseCtx := func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
-	baseCtx = logging.WithLogger(baseCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx, cancel := context.WithCancel(baseCtx)
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)

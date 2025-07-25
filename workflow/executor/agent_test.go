@@ -17,6 +17,7 @@ import (
 )
 
 func TestUnsupportedTemplateTaskWorker(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	ae := &AgentExecutor{
 		consideredTasks: &sync.Map{},
 	}
@@ -24,10 +25,7 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	defer close(taskQueue)
 	responseQueue := make(chan response)
 	defer close(responseQueue)
-	go ae.taskWorker(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), taskQueue, responseQueue)
+	go ae.taskWorker(ctx, taskQueue, responseQueue)
 
 	taskQueue <- task{
 		NodeID: "a",
@@ -73,14 +71,12 @@ func TestAgentPluginExecuteTaskSet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			ae := &AgentExecutor{
 				consideredTasks: &sync.Map{},
 				plugins:         []executorplugins.TemplateExecutor{tc.plugin},
 			}
-			_, requeue, err := ae.processTask(func() context.Context {
-				ctx := context.Background()
-				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			}(), *tc.template)
+			_, requeue, err := ae.processTask(ctx, *tc.template)
 			if err != nil {
 				t.Errorf("expect nil, but got %v", err)
 			}

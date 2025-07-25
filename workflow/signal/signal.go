@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -46,7 +46,7 @@ func SignalContainer(ctx context.Context, restConfig *rest.Config, pod *corev1.P
 }
 
 func ExecPodContainerAndGetOutput(ctx context.Context, restConfig *rest.Config, namespace string, pod string, container string, command ...string) error {
-	x, err := common.ExecPodContainer(restConfig, namespace, pod, container, true, true, command...)
+	x, err := common.ExecPodContainer(ctx, restConfig, namespace, pod, container, true, true, command...)
 	if err != nil {
 		return err
 	}
@@ -54,13 +54,13 @@ func ExecPodContainerAndGetOutput(ctx context.Context, restConfig *rest.Config, 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	stdout, stderr, err := common.GetExecutorOutput(ctx, x)
-	log.
-		WithField("namespace", namespace).
-		WithField("pod", pod).
-		WithField("container", container).
-		WithField("stdout", stdout).
-		WithField("stderr", stderr).
-		WithError(err).
-		Info("signaled container")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{
+		"namespace": namespace,
+		"pod":       pod,
+		"container": container,
+		"stdout":    stdout,
+		"stderr":    stderr,
+	}).WithError(err).Info(ctx, "signaled container")
 	return err
 }

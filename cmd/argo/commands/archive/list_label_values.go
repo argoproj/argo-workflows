@@ -1,10 +1,7 @@
 package archive
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,10 +44,6 @@ func NewListLabelValueCommand() *cobra.Command {
 		},
 	}
 	ctx := command.Context()
-	if ctx != nil {
-		ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		command.SetContext(ctx)
-	}
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to query on, allows 1 value (e.g. -l key1)")
 	err := command.MarkFlagRequired("selector")
 	errors.CheckError(ctx, err)

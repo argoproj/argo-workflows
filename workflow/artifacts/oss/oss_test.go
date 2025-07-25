@@ -1,7 +1,6 @@
 package oss
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -12,9 +11,7 @@ import (
 )
 
 func TestIsTransientOSSErr(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	for _, errCode := range ossTransientErrorCodes {
 		err := oss.ServiceError{Code: errCode}

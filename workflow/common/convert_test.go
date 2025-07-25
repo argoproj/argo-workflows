@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
@@ -20,7 +21,7 @@ spec:
   schedules:
     - "* * * * *"
   workflowMetadata:
-    labels:
+    labels: 
       label1: value1
     annotations:
       annotation2: value2
@@ -118,7 +119,8 @@ spec:
 	require.NoError(t, err)
 	scheduledTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05-07:00")
 	require.NoError(t, err)
-	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", scheduledTime)
+	ctx := logging.TestContext(t.Context())
+	wf = ConvertCronWorkflowToWorkflowWithProperties(ctx, &cronWf, "test-name", scheduledTime)
 	assert.Equal(t, "test-name", wf.Name)
 	assert.Len(t, wf.GetAnnotations(), 2)
 	assert.NotEmpty(t, wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime])
