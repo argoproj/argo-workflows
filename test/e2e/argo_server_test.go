@@ -83,6 +83,29 @@ func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
 		})
 }
 
+// Readiness probe is defined in the base manifest:
+// https://github.com/argoproj/argo-workflows/blob/1e2a87f2afdebbcd0e55069df5a945f5faca9d45/manifests/base/argo-server/argo-server-deployment.yaml#L30-L36
+func (s *ArgoServerSuite) TestReadinessProbe() {
+	s.Run("HTTP/1.1 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/1.1").
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/1.1", response.Raw().Proto) //nolint:bodyclose
+	})
+
+	s.Run("HTTP/2 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/2.0").
+			WithClient(http2Client).
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/2.0", response.Raw().Proto) //nolint:bodyclose
+	})
+}
+
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
 		json := s.e().GET("/api/v1/info").
