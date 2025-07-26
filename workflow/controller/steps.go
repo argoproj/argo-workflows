@@ -510,7 +510,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 
 	err = errorFromChannel(errCh) // fetch the first error during resolveStepReferences
 	if err != nil {
-		return nil, fmt.Errorf("Failed to resolve references: %s", err)
+		return nil, fmt.Errorf("failed to resolve references: %s", err)
 	}
 	return newStepGroup, nil
 }

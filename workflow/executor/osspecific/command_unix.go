@@ -38,7 +38,7 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	stdin, ok := cmd.Stdin.(*os.File)
 	if !ok {
 		// should never happen when stdin is a tty
-		return nil, fmt.Errorf("Cannot convert stdin to os.File, it was %T", cmd.Stdin)
+		return nil, fmt.Errorf("cannot convert stdin to os.File, it was %T", cmd.Stdin)
 	}
 
 	stdout := cmd.Stdout

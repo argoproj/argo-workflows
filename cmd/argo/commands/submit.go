@@ -127,7 +127,7 @@ func submitWorkflowsFromFile(ctx context.Context, serviceClient workflowpkg.Work
 func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *common.CliSubmitOpts) error {
 	if cliOpts.Watch {
 		if len(workflows) > 1 {
-			return errors.New("Cannot watch more than one workflow")
+			return errors.New("cannot watch more than one workflow")
 		}
 		if cliOpts.Wait {
 			return errors.New("--wait cannot be combined with --watch")
@@ -194,7 +194,7 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 		SubmitOptions: submitOpts,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to submit workflow: %v", err)
+		return fmt.Errorf("failed to submit workflow: %v", err)
 	}
 
 	if err = printWorkflow(created, common.GetFlags{Output: cliOpts.Output}); err != nil {
@@ -210,7 +210,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 	}
 
 	if len(workflows) == 0 {
-		return errors.New("No Workflow found in given files")
+		return errors.New("no workflow found in given files")
 	}
 
 	var workflowNames []string
@@ -238,7 +238,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 			CreateOptions: options,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to submit workflow: %v", err)
+			return fmt.Errorf("failed to submit workflow: %v", err)
 		}
 
 		if err = printWorkflow(created, common.GetFlags{Output: cliOpts.Output, Status: cliOpts.GetArgs.Status}); err != nil {
