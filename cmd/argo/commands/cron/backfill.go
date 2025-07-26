@@ -70,7 +70,7 @@ func NewBackfillCommand() *cobra.Command {
 
 func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfillOpts) error {
 	if cliOps.startDate == "" {
-		return fmt.Errorf("Start Date should not be empty")
+		return fmt.Errorf("start date should not be empty")
 	}
 	startTime, err := time.Parse(cliOps.dateFormat, cliOps.startDate)
 	if err != nil {

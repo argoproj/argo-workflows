@@ -45,8 +45,6 @@ linters:
     staticcheck:
       checks:
         - all
-        # Capitalised error strings
-        - "-ST1005"
     govet:
       enable: [nilness]
   exclusions:

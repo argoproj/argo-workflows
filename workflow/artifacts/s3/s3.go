@@ -495,7 +495,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	}
 
 	if opts.EncryptOpts.ServerSideCustomerKey != "" && !opts.Secure {
-		return nil, fmt.Errorf("Secure must be set if EncryptOpts.SSECPassword is set")
+		return nil, fmt.Errorf("secure must be set if EncryptOpts.SSECPassword is set")
 	}
 
 	s3cli.ctx = ctx

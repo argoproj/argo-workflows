@@ -51,7 +51,7 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(cwftmp.Name)
 				}
 			default:
-				return fmt.Errorf("Unknown output mode: %s", output.String())
+				return fmt.Errorf("unknown output mode: %s", output.String())
 			}
 			return nil
 		},
