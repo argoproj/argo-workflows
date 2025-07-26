@@ -424,7 +424,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	templateNode, err := wf.Status.Nodes.Get(nodeID)
 	if err != nil {
 		log.Errorf("was unable to retrieve node for %s", nodeID)
-		return nil, nil, fmt.Errorf("Unable to get artifact and driver due to inability to get node due for %s, err=%s", nodeID, err)
+		return nil, nil, fmt.Errorf("unable to get artifact and driver; could not get node for %s: %v", nodeID, err)
 	}
 	templateName := util.GetTemplateFromNode(*templateNode)
 	if templateName != "" {
