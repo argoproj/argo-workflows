@@ -716,6 +716,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Warn(ctx, "Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(ctx, wf, wfc)
+		ctx = logging.WithLogger(ctx, woc.log)
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
 		return true
@@ -730,9 +731,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(ctx, wf, wfc)
+	ctx = logging.WithLogger(ctx, woc.log)
 
 	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
-		logger.WithField("key", key).Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
+		woc.log.WithField("key", key).Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
 		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
 			woc.persistUpdates(ctx)
