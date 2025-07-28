@@ -15,6 +15,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -23,13 +25,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
 
 	"github.com/argoproj/argo-workflows/v3/util/archive"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 var (
@@ -159,20 +158,7 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 				pid := command.Process.Pid
-				cmdCtx := cmd.Context()
-				if cmdCtx == nil {
-					cmdCtx = context.Background()
-					cmd.SetContext(cmdCtx)
-				}
-
-				log := logging.GetLoggerFromContext(cmdCtx)
-				if log == nil {
-					log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-					cmdCtx = logging.WithLogger(context.Background(), log)
-					cmd.SetContext(cmdCtx)
-				}
-
-				ctx, cancel := context.WithCancel(cmdCtx)
+				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				go func() {
 					for {

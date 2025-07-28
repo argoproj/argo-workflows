@@ -18,6 +18,8 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
+//go:generate mockery --name=Interface
+
 type Interface interface {
 	// Resolve Figures out the correct repository to for a workflow.
 	Resolve(ctx context.Context, ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRefStatus, error)
@@ -85,10 +87,10 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 	var cm *v1.ConfigMap
 	namespace := ref.Namespace
 	configMap := ref.GetConfigMapOr("artifact-repositories")
-	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(namespace).Get(ctx, configMap, metav1.GetOptions{})
-		return !errorsutil.IsTransientErrQuiet(ctx, err), err
+		return !errorsutil.IsTransientErrQuiet(err), err
 	})
 	if err != nil {
 		return nil, err

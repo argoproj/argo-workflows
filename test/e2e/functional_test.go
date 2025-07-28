@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -47,10 +45,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		WaitForWorkflow(fixtures.ToStart).
 		// patch the pod to remove the finalizer
 		Exec("kubectl", []string{"-n", "argo", "patch", "pod", func() string {
-			podList, err := s.KubeClient.CoreV1().Pods("argo").List(func() context.Context {
-				ctx := context.Background()
-				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			}(), metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+			podList, err := s.KubeClient.CoreV1().Pods("argo").List(context.Background(), metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
 			if err != nil {
 				panic(err)
 			}
@@ -163,6 +158,7 @@ spec:
 }
 
 func (s *FunctionalSuite) TestWorkflowRetention() {
+	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
 	s.Given().
 		Workflow("@testdata/exit-1.yaml").
 		When().
@@ -178,7 +174,9 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
-		WaitForWorkflowListFailedCount(2)
+		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
+			return len(list) == 2
+		})
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
@@ -294,10 +292,7 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 		Then().
 		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			ctx, cancel := context.WithTimeout(func() context.Context {
-				ctx := context.Background()
-				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			}(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
@@ -307,10 +302,7 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 					t.Error("timeout waiting for PVC to be deleted")
 					t.FailNow()
 				case <-ticker.C:
-					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(func() context.Context {
-						ctx := context.Background()
-						return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-					}(), metav1.ListOptions{})
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
 					require.NoError(t, err)
 					if len(list.Items) == 0 {
 						return
@@ -602,24 +594,6 @@ func (s *FunctionalSuite) TestParameterAggregationDAGWithRetry() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("parameter-aggregation-dag-with-retry(0)")
-			require.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-			require.NotNil(t, nodeStatus.Outputs)
-			assert.Len(t, nodeStatus.Outputs.Parameters, 1)
-			assert.Equal(t, `["1","2","3"]`, nodeStatus.Outputs.Parameters[0].Value.String())
-		})
-}
-
-func (s *FunctionalSuite) TestParameterAggregationStepsWithRetry() {
-	s.Given().
-		Workflow("@functional/parameter-aggregation-steps-with-retry.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(time.Second * 90).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			nodeStatus := status.Nodes.FindByDisplayName("parameter-aggregation-steps-with-retry(0)")
 			require.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			require.NotNil(t, nodeStatus.Outputs)

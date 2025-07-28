@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,7 +40,7 @@ spec:
     entrypoint: whalesay
     templates:
     - name: whalesay
-      container: 
+      container:
         image: docker/whalesay:latest
         command: [cowsay]
         args: ["hello world"]
@@ -50,8 +48,8 @@ spec:
 	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
 	wfClientSet := argofake.NewSimpleClientset()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, nil, &wfv1.SubmitOpts{DryRun: true})
+	ctx := context.Background()
+	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
 	assert.Equal(t, wf.Status, newWf.Status)
@@ -59,7 +57,6 @@ spec:
 
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
 func TestResubmitWorkflowWithOnExit(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wfName := "test-wf"
 	onExitName := wfName + ".onExit"
 	wf := wfv1.Workflow{
@@ -76,8 +73,8 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	wf.Status.Nodes.Set(ctx, onExitID, onExitNode)
-	newWF, err := FormulateResubmitWorkflow(ctx, &wf, true, nil)
+	wf.Status.Nodes.Set(onExitID, onExitNode)
+	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	require.NoError(t, err)
 	newWFOnExitName := newWF.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
@@ -183,19 +180,19 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/suspend
   uid: 4f08d325-dc5a-43a3-9986-259e259e6ea3
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -249,7 +246,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := context.Background()
 		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -276,7 +273,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-		ctx := context.WithValue(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), auth.ClaimsKey,
+		ctx := context.WithValue(context.TODO(), auth.ClaimsKey,
 			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
 		uim := creator.UserInfoMap(ctx)
 
@@ -307,7 +304,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -352,8 +349,8 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 			},
 		},
 	}
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	p := AddParamToGlobalScope(ctx, &wf, nil, wfv1.Parameter{
+
+	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
 		Name:       "test",
 		Value:      nil,
 		GlobalName: "test",
@@ -367,16 +364,16 @@ kind: Workflow
 metadata:
   name: suspend-template
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
     - - arguments:
@@ -385,7 +382,7 @@ spec:
             value: '{{steps.approve.outputs.parameters.message}}'
         name: release
         template: whalesay
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -395,7 +392,7 @@ spec:
         valueFrom:
           supplied: {}
     suspend: {}
-  - 
+  -
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -466,18 +463,18 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 	require.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 	require.NoError(t, err)
 
 	// make sure global variable was updated
@@ -492,7 +489,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"] = node
 	_, err = wfIf.Create(ctx, noSpaceWf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
 }
 
@@ -650,10 +647,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), wf, false, nil)
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
 		require.NoError(t, err)
 		assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
@@ -684,10 +678,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		ctx := context.WithValue(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), auth.ClaimsKey, &types.Claims{
+		ctx := context.WithValue(context.Background(), auth.ClaimsKey, &types.Claims{
 			Claims:            jwt.Claims{Subject: "yyyy-yyyy-yyyy-yyyy"},
 			Email:             "bar.at.example.com",
 			PreferredUsername: "bar",
@@ -714,10 +705,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), wf, false, nil)
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
 		require.NoError(t, err)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
@@ -732,10 +720,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			}},
 		}
-		wf, err := FormulateResubmitWorkflow(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), wf, false, []string{"message=modified"})
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 	})
@@ -756,22 +741,22 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
   uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
 spec:
-  
+
   entrypoint: foo
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: foo
     outputs: {}
     steps:
-    - - 
+    - -
         name: pass
         template: pass
-    - - 
+    - -
         name: fail
         template: fail
-  - 
+  -
     container:
       args:
       - exit 0
@@ -785,7 +770,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -896,7 +881,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
@@ -1026,7 +1011,7 @@ func TestRetryExitHandler(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(exitHandler)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
@@ -1038,7 +1023,7 @@ func TestRetryExitHandler(t *testing.T) {
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1162,10 +1147,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"override-param-wf": {ID: "override-param-wf", Name: "override-param-wf", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), wf, false, "", []string{"message=modified"})
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 
@@ -1193,10 +1175,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					}},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), wf, false, "", []string{"message=modified"})
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
@@ -1347,8 +1326,7 @@ kind: CronWorkflow
 metadata:
   name: example-integers
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   workflowSpec:
     entrypoint: whalesay
     templates:
@@ -1875,7 +1853,7 @@ status:
 `
 
 func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 
 	// Retry top individual pod node
@@ -2295,10 +2273,7 @@ func TestStepsRetryWorkflow(t *testing.T) {
 			succeeded[node.ID] = true
 		}
 	}
-	newWf, podsToDelete, err := FormulateRetryWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), wf, true, selectorStr, []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
 	require.NoError(err)
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 5)
@@ -2592,10 +2567,7 @@ func TestDAGDiamondRetryWorkflow(t *testing.T) {
 			succeeded[node.ID] = true
 		}
 	}
-	newWf, podsToDelete, err := FormulateRetryWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), wf, true, selectorStr, []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
 
 	require.NoError(err)
 	assert.Len(podsToDelete, 2)
@@ -3022,10 +2994,7 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 	}
 
 	selectorStr := "id=work-avoidance-trkkq-4183398008"
-	newWf, podsToDelete, err := FormulateRetryWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), wf, true, selectorStr, []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
 	require.NoError(err)
 	assert.Len(newWf.Status.Nodes, 6)
 	assert.Len(podsToDelete, 2)
@@ -3178,10 +3147,7 @@ func TestOnExitWorkflow(t *testing.T) {
 	assert := assert.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflow)
 
-	newWf, podsToDelete, err := FormulateRetryWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), wf, false, "", []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{})
 	require.NoError(err)
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 1)
@@ -3931,10 +3897,7 @@ func TestNestedDAG(t *testing.T) {
 		}
 	}
 
-	newWf, podsToDelete, err := FormulateRetryWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
 	require.NoError(err)
 	assert.Len(podsToDelete, 2)
 
@@ -4207,10 +4170,7 @@ status:
 func TestRegressions(t *testing.T) {
 	t.Run("exit handler", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(onExitPanic)
-		newWf, _, err := FormulateRetryWorkflow(func() context.Context {
-			ctx := context.Background()
-			return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		}(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
+		newWf, _, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
 		require.NoError(t, err)
 		// we can't really handle exit handlers granually yet
 		assert.Empty(t, newWf.Status.Nodes)

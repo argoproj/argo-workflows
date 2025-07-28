@@ -1,10 +1,7 @@
 package progress
 
 import (
-	"context"
 	"testing"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,8 +10,6 @@ import (
 )
 
 func TestUpdater(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	ns := "my-ns"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},
@@ -29,7 +24,7 @@ func TestUpdater(t *testing.T) {
 		},
 	}
 
-	UpdateProgress(ctx, wf)
+	UpdateProgress(wf)
 
 	nodes := wf.Status.Nodes
 	assert.Equal(t, wfv1.Progress("50/50"), nodes["pod-1"].Progress, "succeeded pod is completed")

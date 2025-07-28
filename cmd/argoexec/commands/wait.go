@@ -7,8 +7,6 @@ import (
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -32,7 +30,6 @@ func waitContainer(ctx context.Context) error {
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := context.Background()
-	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
@@ -46,15 +43,6 @@ func waitContainer(ctx context.Context) error {
 	err := wfExecutor.Wait(ctx)
 	if err != nil {
 		wfExecutor.AddError(err)
-	}
-
-	if wfExecutor.Template.Resource != nil {
-		// Save log artifacts for resource template
-		err = wfExecutor.ReportOutputsLogs(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(err)
-		}
-		return wfExecutor.HasError()
 	}
 
 	// Capture output script result

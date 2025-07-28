@@ -7,8 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
+	"github.com/argoproj/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -17,7 +16,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 var helloWorldWorkflow = wfv1.Workflow{
@@ -57,7 +55,6 @@ func main() {
 
 	// submit the hello world workflow
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	createdWf, err := wfClient.Create(ctx, &helloWorldWorkflow, metav1.CreateOptions{})
 	checkErr(err)
 	fmt.Printf("Workflow %s submitted\n", createdWf.Name)
@@ -65,7 +62,7 @@ func main() {
 	// wait for the workflow to complete
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", createdWf.Name))
 	watchIf, err := wfClient.Watch(ctx, metav1.ListOptions{FieldSelector: fieldSelector.String(), TimeoutSeconds: ptr.To(int64(180))})
-	errors.CheckError(ctx, err)
+	errors.CheckError(err)
 	defer watchIf.Stop()
 	for next := range watchIf.ResultChan() {
 		wf, ok := next.Object.(*wfv1.Workflow)

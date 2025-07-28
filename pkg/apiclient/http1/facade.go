@@ -12,25 +12,25 @@ import (
 	"regexp"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/argoproj/argo-workflows/v3/util/flatten"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
 // Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
-	baseURL            string
+	baseUrl            string
 	authorization      string
 	insecureSkipVerify bool
 	headers            []string
 	httpClient         *http.Client
 }
 
-func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
-	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient}
+func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
+	return Facade{baseUrl, authorization, insecureSkipVerify, headers, httpClient}
 }
 
 func (h Facade) Get(ctx context.Context, in, out interface{}, path string) error {
@@ -50,7 +50,6 @@ func (h Facade) Delete(ctx context.Context, in, out interface{}, path string) er
 }
 
 func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path string) (*bufio.Reader, error) {
-	log := logging.GetLoggerFromContext(ctx)
 	method := "GET"
 	u, err := h.url(method, path, in)
 	if err != nil {
@@ -67,7 +66,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	req.Header = headers
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
+	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
@@ -91,7 +90,6 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 }
 
 func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
-	log := logging.GetLoggerFromContext(ctx)
 	var data []byte
 	if method != "GET" {
 		var err error
@@ -114,7 +112,7 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	}
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf(ctx, "curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
+	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
@@ -154,7 +152,7 @@ func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 	}
 	// remove any that were not provided
 	path = regexp.MustCompile("{[^}]*}").ReplaceAllString(path, "")
-	return url.Parse(h.baseURL + path + "?" + query.Encode())
+	return url.Parse(h.baseUrl + path + "?" + query.Encode())
 }
 
 func errFromResponse(r *http.Response) error {

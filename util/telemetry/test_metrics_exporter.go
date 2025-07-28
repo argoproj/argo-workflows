@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -37,7 +35,7 @@ func NewTestMetricsExporter() *TestMetricsExporter {
 
 func (t *TestMetricsExporter) getOurMetrics() (*[]metricdata.Metrics, error) {
 	metrics := metricdata.ResourceMetrics{}
-	err := t.Collect(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), &metrics)
+	err := t.Collect(context.TODO(), &metrics)
 	if err != nil {
 		return nil, err
 	}

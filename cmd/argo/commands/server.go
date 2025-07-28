@@ -10,8 +10,8 @@ import (
 
 	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
-	"github.com/pkg/browser"
 	log "github.com/sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -29,7 +29,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -66,14 +65,9 @@ func NewServerCommand() *cobra.Command {
 See %s`, help.ArgoServer()),
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.SetLogFormatter(logFormat)
-			ctx := c.Context()
-			if ctx == nil {
-				ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-				c.SetContext(ctx)
-			}
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init(ctx)
+			pprofutil.Init()
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {
@@ -91,7 +85,7 @@ See %s`, help.ArgoServer()),
 				Kubernetes: kubernetes.NewForConfigOrDie(config),
 				Workflow:   wfclientset.NewForConfigOrDie(config),
 			}
-			ctx, cancel := context.WithCancel(ctx)
+			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			if !namespaced && managedNamespace != "" {
@@ -177,7 +171,7 @@ See %s`, help.ArgoServer()),
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
 					log.Infof("Argo UI is available at %s", url)
-					err := browser.OpenURL(url)
+					err := open.Run(url)
 					if err != nil {
 						log.Warnf("Unable to open the browser. %v", err)
 					}

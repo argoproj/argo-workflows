@@ -12,7 +12,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
@@ -23,7 +22,7 @@ func TestMetrics(t *testing.T) {
 	m.OperationCompleted(m.Ctx, 5)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetFloat64HistogramData(telemetry.InstrumentOperationDurationSeconds.Name(), &attribs)
+	val, err := te.GetFloat64HistogramData(nameOperationDuration, &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, []float64{5, 10, 15, 20, 25, 30}, val.Bounds)
 	assert.Equal(t, []uint64{1, 0, 0, 0, 0, 0, 0}, val.BucketCounts)
@@ -100,11 +99,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)
@@ -158,13 +153,13 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_queue")
 	defer wfQueue.ShutDown()
 
-	assert.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueDepthGauge.Name()))
-	assert.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueLatency.Name()))
+	assert.NotNil(t, m.GetInstrument(nameWorkersQueueDepth))
+	assert.NotNil(t, m.GetInstrument(nameWorkersQueueLatency))
 
 	wfQueue.Add("hello")
 
-	require.NotNil(t, m.GetInstrument(telemetry.InstrumentQueueAddsCount.Name()))
-	val, err := te.GetInt64CounterValue(telemetry.InstrumentQueueAddsCount.Name(), &attribs)
+	require.NotNil(t, m.GetInstrument(nameWorkersQueueAdds))
+	val, err := te.GetInt64CounterValue(nameWorkersQueueAdds, &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
@@ -176,11 +171,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)

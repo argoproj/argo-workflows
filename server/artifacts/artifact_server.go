@@ -24,7 +24,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -67,9 +66,9 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 // single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
 // Valid requests:
 //
-//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}
-//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}/{fileName}
-//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}/{fileDir}/.../{fileName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/[inputs|outputs]/{artifactName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/[inputs|outputs]/{artifactName}/{fileName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/[inputs|outputs]/{artifactName}/{fileDir}/.../{fileName}
 //
 // 'id' field represents 'uid' for archived workflows and 'name' for non-archived
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +77,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		namespaceIndex      = 2
 		archiveDiscrimIndex = 3
 		idIndex             = 4
-		nodeIDIndex         = 5
+		nodeIdIndex         = 5
 		directionIndex      = 6
 		artifactNameIndex   = 7
 		fileNameFirstIndex  = 8
@@ -99,7 +98,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	namespace := requestPath[namespaceIndex]
 	archiveDiscriminator := requestPath[archiveDiscrimIndex]
 	id := requestPath[idIndex] // if archiveDiscriminator == "archived-workflows", this represents workflow UID; if archiveDiscriminator == "workflows", this represents workflow name
-	nodeID := requestPath[nodeIDIndex]
+	nodeId := requestPath[nodeIdIndex]
 	direction := Direction(requestPath[directionIndex])
 	artifactName := requestPath[artifactNameIndex]
 
@@ -121,7 +120,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	switch archiveDiscriminator {
 	case "workflows":
 		workflowName := id
-		log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeID": nodeID, "artifactName": artifactName}).Info("Get artifact file")
+		log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
 
 		wf, err = a.getWorkflowAndValidate(ctx, namespace, workflowName)
 		if err != nil {
@@ -130,9 +129,9 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		}
 	case "archived-workflows":
 		uid := id
-		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeID": nodeID, "artifactName": artifactName}).Info("Get artifact file")
+		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
 
-		wf, err = a.wfArchive.GetWorkflow(ctx, uid, "", "")
+		wf, err = a.wfArchive.GetWorkflow(uid, "", "")
 		if err != nil {
 			a.serverInternalError(err, w)
 			return
@@ -157,7 +156,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	isInput := direction == Inputs
 
-	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeID, artifactName, isInput, wf, fileName)
+	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, fileName)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
@@ -166,7 +165,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	isDir := strings.HasSuffix(r.URL.Path, "/")
 
 	if !isDir {
-		isDir, err := driver.IsDirectory(ctx, artifact)
+		isDir, err := driver.IsDirectory(artifact)
 		if err != nil {
 			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
 				a.serverInternalError(err, w)
@@ -182,7 +181,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if isDir {
 		// return an html page to the user
 
-		objects, err := driver.ListObjects(ctx, artifact)
+		objects, err := driver.ListObjects(artifact)
 		if err != nil {
 			a.httpFromError(err, w)
 			return
@@ -231,7 +230,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
 
-		err = a.returnArtifact(ctx, w, artifact, driver)
+		err = a.returnArtifact(w, artifact, driver)
 
 		if err != nil {
 			a.httpFromError(err, w)
@@ -248,7 +247,7 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 	}
 	namespace := requestPath[2]
 	workflowName := requestPath[3]
-	nodeID := requestPath[4]
+	nodeId := requestPath[4]
 	artifactName := requestPath[5]
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
@@ -257,20 +256,20 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 		return
 	}
 
-	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeID": nodeID, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 
 	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
 	if err != nil {
 		a.httpFromError(err, w)
 		return
 	}
-	art, driver, err := a.getArtifactAndDriver(ctx, nodeID, artifactName, isInput, wf, nil)
+	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
 
-	err = a.returnArtifact(ctx, w, art, driver)
+	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
 		a.httpFromError(err, w)
@@ -293,19 +292,17 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 	uid := requestPath[2]
-	nodeID := requestPath[3]
+	nodeId := requestPath[3]
 	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	wf, err := a.wfArchive.GetWorkflow(ctx, uid, "", "")
+	wf, err := a.wfArchive.GetWorkflow(uid, "", "")
 	if err != nil {
 		a.httpFromError(err, w)
 		return
 	}
 
-	ctx, err = a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
 	if err != nil {
 		a.unauthorizedError(w)
 		return
@@ -317,15 +314,15 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.unauthorizedError(w)
 		return
 	}
-	art, driver, err := a.getArtifactAndDriver(ctx, nodeID, artifactName, isInput, wf, nil)
+	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
 
-	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeID, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 
-	err = a.returnArtifact(ctx, w, art, driver)
+	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
 		a.httpFromError(err, w)
@@ -346,15 +343,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	ctx, err := a.gatekeeper.ContextWithRequest(ctx, ns)
-	if err != nil {
-		return nil, err
-	}
-	// Ensure context has a logger for artifact operations
-	if logging.GetLoggerFromContext(ctx) == nil {
-		ctx = logging.WithLogger(ctx, logging.GetDefaultLogger())
-	}
-	return ctx, nil
+	return a.gatekeeper.ContextWithRequest(ctx, ns)
 }
 
 func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
@@ -393,15 +382,15 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 	}
 }
 
-func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artifactName string, isInput bool, wf *wfv1.Workflow, fileName *string) (*wfv1.Artifact, common.ArtifactDriver, error) {
+func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artifactName string, isInput bool, wf *wfv1.Workflow, fileName *string) (*wfv1.Artifact, common.ArtifactDriver, error) {
 
 	kubeClient := auth.GetKubeClient(ctx)
 
 	var art *wfv1.Artifact
 
-	nodeStatus, err := wf.Status.Nodes.Get(nodeID)
+	nodeStatus, err := wf.Status.Nodes.Get(nodeId)
 	if err != nil {
-		log.Errorf("Was unable to retrieve node for %s", nodeID)
+		log.Errorf("Was unable to retrieve node for %s", nodeId)
 		return nil, nil, fmt.Errorf("was not able to retrieve node")
 	}
 	if isInput {
@@ -421,16 +410,16 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	// 5. Inline Template
 
 	var archiveLocation *wfv1.ArtifactLocation
-	templateNode, err := wf.Status.Nodes.Get(nodeID)
+	templateNode, err := wf.Status.Nodes.Get(nodeId)
 	if err != nil {
-		log.Errorf("was unable to retrieve node for %s", nodeID)
-		return nil, nil, fmt.Errorf("Unable to get artifact and driver due to inability to get node due for %s, err=%s", nodeID, err)
+		log.Errorf("was unable to retrieve node for %s", nodeId)
+		return nil, nil, fmt.Errorf("Unable to get artifact and driver due to inability to get node due for %s, err=%s", nodeId, err)
 	}
 	templateName := util.GetTemplateFromNode(*templateNode)
 	if templateName != "" {
 		template := wf.GetTemplateByName(templateName)
 		if template == nil {
-			return nil, nil, fmt.Errorf("no template found for name %q associated with nodeID %q", templateName, nodeID)
+			return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
 		}
 		archiveLocation = template.ArchiveLocation // this is case 4
 	}
@@ -464,8 +453,8 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	return art, driver, nil
 }
 
-func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
-	stream, err := driver.OpenStream(ctx, art)
+func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
+	stream, err := driver.OpenStream(art)
 	if err != nil {
 		return err
 	}
@@ -504,7 +493,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = a.hydrator.Hydrate(ctx, wf)
+	err = a.hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}

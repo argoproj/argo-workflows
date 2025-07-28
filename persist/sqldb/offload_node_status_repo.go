@@ -1,18 +1,17 @@
 package sqldb
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
@@ -23,21 +22,20 @@ type UUIDVersion struct {
 }
 
 type OffloadNodeStatusRepo interface {
-	Save(ctx context.Context, uid, namespace string, nodes wfv1.Nodes) (string, error)
-	Get(ctx context.Context, uid, version string) (wfv1.Nodes, error)
-	List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error)
-	ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error)
-	Delete(ctx context.Context, uid, version string) error
+	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
+	Get(uid, version string) (wfv1.Nodes, error)
+	List(namespace string) (map[UUIDVersion]wfv1.Nodes, error)
+	ListOldOffloads(namespace string) (map[string][]string, error)
+	Delete(uid, version string) error
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(ctx context.Context, log logging.Logger, session db.Session, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
+func NewOffloadNodeStatusRepo(session db.Session, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
-	ttl := env.LookupEnvDurationOr(ctx, "OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
-	log = log.WithField("ttl", ttl)
-	log.Debug(ctx, "Node status offloading config")
-	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl, log: log}, nil
+	ttl := env.LookupEnvDurationOr("OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
+	log.WithField("ttl", ttl).Debug("Node status offloading config")
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }
 
 type nodesRecord struct {
@@ -53,7 +51,6 @@ type nodeOffloadRepo struct {
 	tableName   string
 	// time to live - at what ttl an offload becomes old
 	ttl time.Duration
-	log logging.Logger
 }
 
 func (wdc *nodeOffloadRepo) IsEnabled() bool {
@@ -71,7 +68,7 @@ func nodeStatusVersion(s wfv1.Nodes) (string, string, error) {
 	return string(marshalled), fmt.Sprintf("fnv:%v", h.Sum32()), nil
 }
 
-func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nodes wfv1.Nodes) (string, error) {
+func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (string, error) {
 	marshalled, version, err := nodeStatusVersion(nodes)
 	if err != nil {
 		return "", err
@@ -87,8 +84,8 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 		Nodes:     marshalled,
 	}
 
-	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
-	logCtx.Debug(ctx, "Offloading nodes")
+	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
+	logCtx.Debug("Offloading nodes")
 	_, err = wdc.session.Collection(wdc.tableName).Insert(record)
 	if err != nil {
 		// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
@@ -96,7 +93,7 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 		if !isDuplicateKeyError(err) {
 			return "", err
 		}
-		logCtx.WithField("err", err).Debug(ctx, "Ignoring duplicate key error")
+		logCtx.WithField("err", err).Info("Ignoring duplicate key error")
 	}
 	// Don't need to clean up the old records here, we have a scheduled cleanup mechanism.
 	// If we clean them up here, when we update, if there is an update conflict, we will not be able to go back.
@@ -115,8 +112,8 @@ func isDuplicateKeyError(err error) bool {
 	return false
 }
 
-func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.Nodes, error) {
-	wdc.log.WithFields(logging.Fields{"uid": uid, "version": version}).Debug(ctx, "Getting offloaded nodes")
+func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
+	log.WithFields(log.Fields{"uid": uid, "version": version}).Debug("Getting offloaded nodes")
 	r := &nodesRecord{}
 	err := wdc.session.SQL().
 		SelectFrom(wdc.tableName).
@@ -135,8 +132,8 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 	return *nodes, nil
 }
 
-func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
-	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing offloaded nodes")
+func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
+	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing offloaded nodes")
 	var records []nodesRecord
 	err := wdc.session.SQL().
 		Select("uid", "version", "nodes").
@@ -161,8 +158,8 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 	return res, nil
 }
 
-func (wdc *nodeOffloadRepo) ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error) {
-	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing old offloaded nodes")
+func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) (map[string][]string, error) {
+	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	var records []UUIDVersion
 	err := wdc.session.SQL().
 		Select("uid", "version").
@@ -181,15 +178,15 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(ctx context.Context, namespace strin
 	return x, nil
 }
 
-func (wdc *nodeOffloadRepo) Delete(ctx context.Context, uid, version string) error {
+func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
 	if uid == "" {
 		return fmt.Errorf("invalid uid")
 	}
 	if version == "" {
 		return fmt.Errorf("invalid version")
 	}
-	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
-	logCtx.Debug(ctx, "Deleting offloaded nodes")
+	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
+	logCtx.Debug("Deleting offloaded nodes")
 	rs, err := wdc.session.SQL().
 		DeleteFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
@@ -203,7 +200,7 @@ func (wdc *nodeOffloadRepo) Delete(ctx context.Context, uid, version string) err
 	if err != nil {
 		return err
 	}
-	logCtx.WithField("rowsAffected", rowsAffected).Debug(ctx, "Deleted offloaded nodes")
+	logCtx.WithField("rowsAffected", rowsAffected).Debug("Deleted offloaded nodes")
 	return nil
 }
 

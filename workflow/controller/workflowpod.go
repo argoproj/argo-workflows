@@ -21,9 +21,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
@@ -54,7 +54,7 @@ var (
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
-func (woc *wfOperationCtx) scheduleOnDifferentHost(ctx context.Context, node *wfv1.NodeStatus, pod *apiv1.Pod) error {
+func (woc *wfOperationCtx) scheduleOnDifferentHost(node *wfv1.NodeStatus, pod *apiv1.Pod) error {
 	if node != nil && pod != nil {
 		if retryNode := FindRetryNode(woc.wf.Status.Nodes, node.ID); retryNode != nil {
 			// recover template for the retry node
@@ -62,7 +62,7 @@ func (woc *wfOperationCtx) scheduleOnDifferentHost(ctx context.Context, node *wf
 			if err != nil {
 				return err
 			}
-			_, retryTmpl, _, err := tmplCtx.ResolveTemplate(ctx, retryNode)
+			_, retryTmpl, _, err := tmplCtx.ResolveTemplate(retryNode)
 			if err != nil {
 				return err
 			}
@@ -119,13 +119,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if exists {
-		woc.log.WithField("podPhase", existing.Status.Phase).Debugf(ctx, "Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+		woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 		return existing, nil
 	}
 
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		// Do not create pods if we are shutting down
-		woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
+		woc.markNodePhase(nodeName, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
 		return nil, nil
 	}
 
@@ -232,18 +232,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
-	woc.addArchiveLocation(ctx, tmpl)
+	woc.addArchiveLocation(tmpl)
 
 	err = woc.setupServiceAccount(ctx, pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
 
-	if (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact()) {
-		// we do not need the wait container for data templates because
+	if tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData {
+		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		// for resource template, add a wait container to collect logs.
 		waitCtr := woc.newWaitContainer(tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
@@ -265,7 +264,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
 
 	if podGC := woc.execWf.Spec.PodGC; podGC != nil {
-		pod.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(ctx, podGC))
+		pod.Annotations[common.AnnotationKeyPodGCStrategy] = fmt.Sprintf("%s/%s", podGC.GetStrategy(), woc.getPodGCDelay(podGC))
 	}
 
 	// Add init container only if it needs input artifacts. This is also true for
@@ -281,10 +280,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", nodeID)
+				woc.log.Panicf("was unable to obtain node for %s", nodeID)
 			}
 			node.Progress = p
-			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			woc.wf.Status.Nodes.Set(nodeID, *node)
 		}
 	}
 
@@ -293,7 +292,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	err = woc.addInputArtifactsVolumes(ctx, pod, tmpl)
+	err = woc.addInputArtifactsVolumes(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -472,9 +471,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if !apierr.IsAlreadyExists(err) {
 				return nil, err
 			}
-			woc.log.Infof(ctx, "Configmap already exists: %s", cm.Name)
+			woc.log.Infof("Configmap already exists: %s", cm.Name)
 		} else {
-			woc.log.Infof(ctx, "Created configmap: %s", created.Name)
+			woc.log.Infof("Created configmap: %s", created.Name)
 		}
 
 		volumeConfig := apiv1.Volume{
@@ -508,14 +507,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		woc.log.Warnf("couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
 	}
 	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := woc.scheduleOnDifferentHost(ctx, node, pod); err != nil {
+	if err := woc.scheduleOnDifferentHost(node, pod); err != nil {
 		return nil, err
 	}
 
@@ -524,7 +523,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		woc.log.Debugf(ctx, "Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
+		woc.log.Debugf("Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
@@ -532,28 +531,26 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	woc.log.Debugf(ctx, "Creating Pod: %s (%s)", nodeName, pod.Name)
+	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, pod.Name)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof(ctx, "Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
+			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
 			}
 		}
-		bgCtx := context.Background()
-		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		if errorsutil.IsTransientErr(bgCtx, err) {
+		if errorsutil.IsTransientErr(err) {
 			return nil, err
 		}
-		woc.log.Infof(ctx, "Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
+		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof(ctx, "Created pod: %s (%s)", nodeName, created.Name)
+	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
 }
@@ -782,9 +779,9 @@ func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
 func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, nodeName string) {
 	// Get boundaryNode Template (if specified)
-	boundaryTemplate, err := woc.GetBoundaryTemplate(ctx, nodeName)
+	boundaryTemplate, err := woc.GetBoundaryTemplate(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't get boundaryTemplate through nodeName %s", nodeName)
+		woc.log.Warnf("couldn't get boundaryTemplate through nodeName %s", nodeName)
 	}
 	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
@@ -823,6 +820,14 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 	} else if wfSpec.PodPriorityClassName != "" {
 		pod.Spec.PriorityClassName = wfSpec.PodPriorityClassName
 	}
+	// Set priority (if specified)
+	if tmpl.Priority != nil {
+		pod.Spec.Priority = tmpl.Priority
+		deprecation.Record(ctx, deprecation.PodPriority)
+	} else if wfSpec.PodPriority != nil {
+		pod.Spec.Priority = wfSpec.PodPriority
+		deprecation.Record(ctx, deprecation.PodPriority)
+	}
 
 	// set hostaliases
 	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
@@ -837,13 +842,13 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 }
 
 // GetBoundaryTemplate get a template through the nodeName
-func (woc *wfOperationCtx) GetBoundaryTemplate(ctx context.Context, nodeName string) (*wfv1.Template, error) {
+func (woc *wfOperationCtx) GetBoundaryTemplate(nodeName string) (*wfv1.Template, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		woc.log.Warnf("couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
 		return nil, err
 	}
-	boundaryTmpl, _, err := woc.GetTemplateByBoundaryID(ctx, node.BoundaryID)
+	boundaryTmpl, _, err := woc.GetTemplateByBoundaryID(node.BoundaryID)
 	if err != nil {
 		return nil, err
 	}
@@ -851,7 +856,7 @@ func (woc *wfOperationCtx) GetBoundaryTemplate(ctx context.Context, nodeName str
 }
 
 // GetTemplateByBoundaryID get a template through the node's BoundaryID.
-func (woc *wfOperationCtx) GetTemplateByBoundaryID(ctx context.Context, boundaryID string) (*wfv1.Template, bool, error) {
+func (woc *wfOperationCtx) GetTemplateByBoundaryID(boundaryID string) (*wfv1.Template, bool, error) {
 	boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
 	if err != nil {
 		return nil, false, err
@@ -860,14 +865,14 @@ func (woc *wfOperationCtx) GetTemplateByBoundaryID(ctx context.Context, boundary
 	if err != nil {
 		return nil, false, err
 	}
-	_, boundaryTmpl, templateStored, err := tmplCtx.ResolveTemplate(ctx, boundaryNode)
+	_, boundaryTmpl, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
 	if err != nil {
 		return nil, templateStored, err
 	}
 	return boundaryTmpl, templateStored, nil
 }
 
-// addVolumeReferences adds any volume mounts that a container/sidecar is referencing, to the pod.spec.volumes
+// addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
@@ -983,7 +988,7 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 // the explicit volume mount and the artifact emptydir and prevent all uses of the emptydir for purposes of
 // loading data. The controller will omit mounting the emptydir to the artifact path, and the executor
 // will load the artifact in the in user's volume (as opposed to the emptydir)
-func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if len(tmpl.Inputs.Artifacts) == 0 {
 		return nil
 	}
@@ -1029,7 +1034,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				return errors.Errorf(errors.CodeBadRequest, "error in inputs.artifacts.%s: %s", art.Name, err.Error())
 			}
 			if !art.HasLocationOrKey() && art.Optional {
-				woc.log.Infof(ctx, "skip volume mount of %s (%s): optional artifact was not provided",
+				woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
 					art.Name, art.Path)
 				continue
 			}
@@ -1038,7 +1043,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				// artifact path overlaps with a mounted volume. do not mount the
 				// artifacts emptydir to the main container. init would have copied
 				// the artifact to the user's volume instead
-				woc.log.Debugf(ctx, "skip volume mount of %s (%s): overlaps with mount %s at %s",
+				woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
 					art.Name, art.Path, overlap.Name, overlap.MountPath)
 				continue
 			}
@@ -1092,7 +1097,7 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // information configured in the controller, for the purposes of archiving outputs. This is skipped
 // for templates which do not need to archive anything, or have explicitly set an archive location
 // in the template.
-func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 	if tmpl.ArchiveLocation.HasLocation() {
 		// User explicitly set the location. nothing else to do.
 		return
@@ -1104,7 +1109,7 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 			needLocation = true
 		}
 	}
-	woc.log.WithField("needLocation", needLocation).Debug(ctx, "")
+	woc.log.WithField("needLocation", needLocation).Debug()
 	if !needLocation {
 		return
 	}

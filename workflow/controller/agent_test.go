@@ -11,7 +11,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -47,6 +46,7 @@ spec:
        url: "{{inputs.parameters.url}}"
 
 `)
+	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -91,10 +91,7 @@ status:
 	t.Run("CreateTaskSet", func(t *testing.T) {
 		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -120,11 +117,7 @@ status:
 		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		ctx = logging.WithLogger(ctx, log)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)

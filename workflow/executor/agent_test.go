@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -24,13 +22,10 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	defer close(taskQueue)
 	responseQueue := make(chan response)
 	defer close(responseQueue)
-	go ae.taskWorker(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), taskQueue, responseQueue)
+	go ae.taskWorker(context.Background(), taskQueue, responseQueue)
 
 	taskQueue <- task{
-		NodeID: "a",
+		NodeId: "a",
 		// This template type is not supported
 		Template: v1alpha1.Template{
 			DAG: &v1alpha1.DAGTemplate{},
@@ -77,10 +72,7 @@ func TestAgentPluginExecuteTaskSet(t *testing.T) {
 				consideredTasks: &sync.Map{},
 				plugins:         []executorplugins.TemplateExecutor{tc.plugin},
 			}
-			_, requeue, err := ae.processTask(func() context.Context {
-				ctx := context.Background()
-				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			}(), *tc.template)
+			_, requeue, err := ae.processTask(context.Background(), *tc.template)
 			if err != nil {
 				t.Errorf("expect nil, but got %v", err)
 			}

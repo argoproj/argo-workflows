@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var invalidCwf = `
@@ -24,12 +23,11 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
   uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
 spec:
-  schedules:
-    - '* * * * *'
+  schedule: '* * * * *'
   workflowSpec:
     entrypoint: argosay
     templates:
-    -
+    - 
       container:
         args:
         - echo
@@ -59,17 +57,13 @@ Conditions:
 
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	out := getCronWorkflowGet(ctx, cronWf)
+	out := getCronWorkflowGet(context.Background(), cronWf)
 	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	next, err := GetNextRuntime(ctx, cronWf)
+	next, err := GetNextRuntime(context.Background(), cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())
@@ -87,7 +81,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
   uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
 spec:
-  schedules:
+  schedules: 
   - '* * * * *'
   - '*/2 * * * *'
   workflowSpec:
@@ -101,9 +95,7 @@ spec:
 
 func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	next, err := GetNextRuntime(ctx, cronWf)
+	next, err := GetNextRuntime(context.Background(), cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())

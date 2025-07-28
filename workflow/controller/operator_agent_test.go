@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -35,8 +33,7 @@ func TestHTTPTemplate(t *testing.T) {
 
 	t.Run("ExecuteHTTPTemplate", func(t *testing.T) {
 		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		pod, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
 		require.NoError(t, err)
@@ -75,8 +72,7 @@ func TestHTTPTemplateWithoutServiceAccount(t *testing.T) {
 
 	t.Run("ExecuteHTTPTemplateWithoutServiceAccount", func(t *testing.T) {
 		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		_, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
 		require.Error(t, err, `pods "%s" not found`, woc.getAgentPodName())

@@ -1,17 +1,14 @@
 package archive
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 func NewListLabelValueCommand() *cobra.Command {
@@ -42,17 +39,11 @@ func NewListLabelValueCommand() *cobra.Command {
 			for _, str := range labels.Items {
 				fmt.Printf("%s\n", str)
 			}
-
 			return nil
 		},
 	}
-	ctx := command.Context()
-	if ctx != nil {
-		ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		command.SetContext(ctx)
-	}
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to query on, allows 1 value (e.g. -l key1)")
 	err := command.MarkFlagRequired("selector")
-	errors.CheckError(ctx, err)
+	errors.CheckError(err)
 	return command
 }

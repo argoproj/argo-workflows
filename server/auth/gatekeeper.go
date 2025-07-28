@@ -44,6 +44,8 @@ const (
 	ClaimsKey  ContextKey = "types.Claims"
 )
 
+//go:generate mockery --name=Gatekeeper
+
 type Gatekeeper interface {
 	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
 	Context(ctx context.Context) (context.Context, error)

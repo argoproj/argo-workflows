@@ -37,7 +37,6 @@ export function WorkflowParametersEditor<T extends WorkflowSpec>(props: {value: 
                         );
                         props.onChange(props.value);
                     }}
-                    source={'parameters'}
                 />
             </div>
         </>

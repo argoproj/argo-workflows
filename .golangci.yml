@@ -8,7 +8,6 @@ run:
     - examples
     - corefunctional
     - functional
-    - metrics
     - plugins
 linters:
   enable:
@@ -43,10 +42,12 @@ linters:
     staticcheck:
       checks:
         - all
+        # Capitalised variable names
+        - "-ST1003"
         # Capitalised error strings
         - "-ST1005"
-    govet:
-      enable: [nilness]
+        # Receiver names
+        - "-ST1016"
   exclusions:
     generated: lax
     presets:

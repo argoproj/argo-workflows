@@ -10,7 +10,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const stepWf = `
@@ -116,9 +115,6 @@ spec:
 func TestSetTemplateDefault(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
 			TemplateDefaults: &wfv1.Template{
@@ -131,8 +127,8 @@ func TestSetTemplateDefault(t *testing.T) {
 	}
 	t.Run("tmplDefaultInConfig", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -158,8 +154,8 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -188,8 +184,8 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -229,8 +225,8 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(context.Background())
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)

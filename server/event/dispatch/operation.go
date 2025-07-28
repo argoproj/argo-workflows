@@ -36,11 +36,6 @@ type Operation struct {
 	env               map[string]interface{}
 }
 
-// Context returns the context associated with this operation
-func (o *Operation) Context() context.Context {
-	return o.ctx
-}
-
 func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eventRecorder record.EventRecorder, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
 	env, err := expressionEnvironment(ctx, namespace, discriminator, payload)
 	if err != nil {
@@ -67,7 +62,7 @@ func (o *Operation) Dispatch(ctx context.Context) error {
 	for _, event := range o.events {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			_, err := o.dispatch(ctx, event)
-			return !errorsutil.IsTransientErr(ctx, err), err
+			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
@@ -119,7 +114,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
-		creator.LabelCreator(o.ctx, wf)
+		creator.Label(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
 		if submit.Arguments != nil {
 			for _, p := range submit.Arguments.Parameters {

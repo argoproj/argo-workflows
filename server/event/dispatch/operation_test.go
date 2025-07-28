@@ -19,17 +19,16 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func Test_metaData(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
-		data := metaData(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())))
+		data := metaData(context.TODO())
 		assert.Empty(t, data)
 	})
 	t.Run("Headers", func(t *testing.T) {
-		ctx := metadata.NewIncomingContext(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), metadata.MD{
+		ctx := metadata.NewIncomingContext(context.TODO(), metadata.MD{
 			"x-valid": []string{"true"},
 			"ignored": []string{"false"},
 		})
@@ -58,12 +57,7 @@ func TestNewOperation(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft-4", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	recorder := record.NewFakeRecorder(6)
 
 	// act
@@ -209,12 +203,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	recorder := record.NewFakeRecorder(10)
 
 	// act
@@ -416,7 +405,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 }
 
 func Test_expressionEnvironment(t *testing.T) {
-	env, err := expressionEnvironment(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
+	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
 	require.NoError(t, err)
 	assert.Equal(t, "my-ns", env["namespace"])
 	assert.Equal(t, "my-d", env["discriminator"])

@@ -64,20 +64,20 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 }
 
 type task struct {
-	NodeID   string
+	NodeId   string
 	Template wfv1.Template
 }
 
 type response struct {
-	NodeID string
+	NodeId string
 	Result *wfv1.NodeResult
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
-	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
+	taskWorkers := env.LookupEnvIntOr(common.EnvAgentTaskWorkers, 16)
+	requeueTime := env.LookupEnvDurationOr(common.EnvAgentPatchRate, 10*time.Second)
 	ae.log.WithFields(log.Fields{"taskWorkers": taskWorkers, "requeueTime": requeueTime}).Info("Starting Agent")
 
 	taskQueue := make(chan task)
@@ -113,7 +113,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
-				taskQueue <- task{NodeID: nodeID, Template: tmpl}
+				taskQueue <- task{NodeId: nodeID, Template: tmpl}
 			}
 		}
 	}
@@ -125,7 +125,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		if !ok {
 			break
 		}
-		nodeID, tmpl := task.NodeID, task.Template
+		nodeID, tmpl := task.NodeId, task.Template
 		log := log.WithField("nodeID", nodeID)
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
@@ -153,7 +153,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			Info("Sending result")
 
 		if result.Phase != "" {
-			responseQueue <- response{NodeID: nodeID, Result: result}
+			responseQueue <- response{NodeId: nodeID, Result: result}
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
@@ -172,7 +172,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 	for {
 		select {
 		case res := <-responseQueue:
-			nodeResults[res.NodeID] = *res.Result
+			nodeResults[res.NodeId] = *res.Result
 		case <-ticker.C:
 			if len(nodeResults) == 0 {
 				continue
@@ -192,14 +192,12 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				Jitter:   0.1,
 				Steps:    5,
 				Cap:      30 * time.Second,
-			}, func(err error) bool {
-				return errors.IsTransientErr(ctx, err)
-			}, func() error {
+			}, errors.IsTransientErr, func() error {
 				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
 				return err
 			})
 
-			if err != nil && !errors.IsTransientErr(ctx, err) {
+			if err != nil && !errors.IsTransientErr(err) {
 				ae.log.WithError(err).
 					Error("TaskSet Patch Failed")
 
@@ -365,7 +363,7 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 			ObjectMeta: executorplugins.ObjectMeta{
 				Name:      ae.WorkflowName,
 				Namespace: ae.Namespace,
-				UID:       ae.workflowUID,
+				Uid:       ae.workflowUID,
 			},
 		},
 		Template: &tmpl,

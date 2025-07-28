@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -13,9 +12,8 @@ import (
 	"strings"
 
 	"github.com/klauspost/pgzip"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/env"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var (
@@ -75,26 +73,25 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 }
 
 // Close the file
-func close(ctx context.Context, f io.Closer) {
+func close(f io.Closer) {
 	err := f.Close()
 	if err != nil {
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Warnf(ctx, "Failed to close the file/writer/reader. %v", err)
+		log.Warnf("Failed to close the file/writer/reader. %v", err)
 	}
 }
 
 // CompressEncodeString will return the compressed string with base64 encoded
-func CompressEncodeString(ctx context.Context, content string) string {
-	return base64.StdEncoding.EncodeToString(CompressContent(ctx, []byte(content)))
+func CompressEncodeString(content string) string {
+	return base64.StdEncoding.EncodeToString(CompressContent([]byte(content)))
 }
 
 // DecodeDecompressString will return  decode and decompress the
-func DecodeDecompressString(ctx context.Context, content string) (string, error) {
+func DecodeDecompressString(content string) (string, error) {
 	buf, err := base64.StdEncoding.DecodeString(content)
 	if err != nil {
 		return "", err
 	}
-	dBuf, err := DecompressContent(ctx, buf)
+	dBuf, err := DecompressContent(buf)
 	if err != nil {
 		return "", err
 	}
@@ -102,7 +99,7 @@ func DecodeDecompressString(ctx context.Context, content string) (string, error)
 }
 
 // CompressContent will compress the byte array using zip writer
-func CompressContent(ctx context.Context, content []byte) []byte {
+func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
 	var gzipWriter io.WriteCloser
 	switch gzipImpl {
@@ -114,26 +111,25 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 
 	_, err := gzipWriter.Write(content)
 	if err != nil {
-		logger := logging.GetLoggerFromContext(ctx)
-		logger.Warnf(ctx, "Error in compressing: %v", err)
+		log.Warnf("Error in compressing: %v", err)
 	}
-	close(ctx, gzipWriter)
+	close(gzipWriter)
 	return buf.Bytes()
 }
 
 // DecompressContent will return the uncompressed content
-func DecompressContent(ctx context.Context, content []byte) ([]byte, error) {
+func DecompressContent(content []byte) ([]byte, error) {
 	buf := bytes.NewReader(content)
 	gzipReader, err := GetGzipReader(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
-	defer close(ctx, gzipReader)
+	defer close(gzipReader)
 	return io.ReadAll(gzipReader)
 }
 
 // WalkManifests is based on filepath.Walk but will only walk through Kubernetes manifests
-func WalkManifests(ctx context.Context, root string, fn func(path string, data []byte) error) error {
+func WalkManifests(root string, fn func(path string, data []byte) error) error {
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		var r io.Reader
 		switch {
@@ -149,16 +145,14 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 			}
 			defer func() {
 				if err := f.Close(); err != nil {
-					logger := logging.GetLoggerFromContext(ctx)
-					logger.WithFatal().Errorf(ctx, "Error closing file[%s]: %v", path, err)
+					log.Fatalf("Error closing file[%s]: %v", path, err)
 				}
 			}()
 			r = f
 		case info.IsDir():
 			return nil // skip
 		default:
-			logger := logging.GetLoggerFromContext(ctx)
-			logger.Debugf(ctx, "ignoring file with unknown extension: %s", path)
+			log.Debugf("ignoring file with unknown extension: %s", path)
 			return nil
 		}
 
@@ -169,24 +163,4 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 
 		return fn(path, bytes)
 	})
-}
-
-// IsDirectory returns whether or not the given file is a directory
-func IsDirectory(path string) (bool, error) {
-	fileOrDir, err := os.Open(path)
-	if err != nil {
-		return false, err
-	}
-	defer func() { _ = fileOrDir.Close() }()
-	stat, err := fileOrDir.Stat()
-	if err != nil {
-		return false, err
-	}
-	return stat.IsDir(), nil
-}
-
-// Exists returns whether or not a path exists
-func Exists(path string) bool {
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
 }

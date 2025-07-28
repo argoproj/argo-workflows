@@ -29,7 +29,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	authmocks "github.com/argoproj/argo-workflows/v3/server/auth/mocks"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
@@ -50,7 +49,7 @@ type fakeArtifactDriver struct {
 	data []byte
 }
 
-func (a *fakeArtifactDriver) Load(_ context.Context, _ *wfv1.Artifact, path string) error {
+func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	return os.WriteFile(path, a.data, 0o600)
 }
 
@@ -77,7 +76,7 @@ var bucketsOfKeys = map[string][]string{
 	},
 }
 
-func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser, error) {
 	//fmt.Printf("deletethis: artifact=%+v\n", artifact)
 
 	key, err := artifact.GetKey()
@@ -111,11 +110,11 @@ func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifa
 	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
 
-func (a *fakeArtifactDriver) Save(_ context.Context, _ string, _ *wfv1.Artifact) error {
+func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (a *fakeArtifactDriver) IsDirectory(_ context.Context, artifact *wfv1.Artifact) (bool, error) {
+func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
 	key, err := artifact.GetKey()
 	if err != nil {
 		return false, err
@@ -128,7 +127,7 @@ func (a *fakeArtifactDriver) IsDirectory(_ context.Context, artifact *wfv1.Artif
 	return strings.HasSuffix(key, "my-s3-artifact-directory") || strings.HasSuffix(key, "my-s3-artifact-directory/"), nil
 }
 
-func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artifact) ([]string, error) {
+func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	key, err := artifact.GetKey()
 	if err != nil {
 		return nil, err
@@ -154,10 +153,10 @@ func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artif
 func newServer() *ArtifactServer {
 	gatekeeper := &authmocks.Gatekeeper{}
 	kube := kubefake.NewSimpleClientset()
-	instanceID := "my-instanceid"
+	instanceId := "my-instanceid"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
-			common.LabelKeyControllerInstanceID: instanceID,
+			common.LabelKeyControllerInstanceID: instanceId,
 		}},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{
@@ -352,14 +351,10 @@ func newServer() *ArtifactServer {
 	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
 	})
-	baseCtx := func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
-	ctx := context.WithValue(context.WithValue(baseCtx, auth.KubeKey, kube), auth.WfKey, argo)
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
-	a.On("GetWorkflow", mock.Anything, "my-uuid", "", "").Return(wf, nil)
+	a.On("GetWorkflow", "my-uuid", "", "").Return(wf, nil)
 
 	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
@@ -374,7 +369,7 @@ func newServer() *ArtifactServer {
 		},
 	})
 
-	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories)
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
 }
 
 func TestArtifactServer_GetArtifactFile(t *testing.T) {

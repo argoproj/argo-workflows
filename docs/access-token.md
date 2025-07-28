@@ -95,7 +95,7 @@ docker run --rm -it \
   -e ARGO_HTTP1=true \
   -e KUBECONFIG=/dev/null \
   -e ARGO_NAMESPACE=$ARGO_NAMESPACE  \
-  quay.io/argoproj/argocli:latest template list -v -e -k
+  argoproj/argocli:latest template list -v -e -k
 ```
 
 ## Token Revocation

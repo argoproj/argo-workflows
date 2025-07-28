@@ -1,12 +1,12 @@
 package logging
 
 import (
-	"context"
 	"io"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
@@ -19,78 +19,62 @@ func New(d common.ArtifactDriver) common.ArtifactDriver {
 	return &driver{d}
 }
 
-func (d *driver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "Loading artifact from %s", d.ArtifactDriver)
+func (d driver) Load(a *wfv1.Artifact, path string) error {
 	t := time.Now()
-	key, _ := inputArtifact.GetKey()
-	err := d.ArtifactDriver.Load(ctx, inputArtifact, path)
-	log.WithField("artifactName", inputArtifact.Name).
+	key, _ := a.GetKey()
+	err := d.ArtifactDriver.Load(a, path)
+	log.WithField("artifactName", a.Name).
 		WithField("key", key).
 		WithField("duration", time.Since(t)).
 		WithError(err).
-		Info(ctx, "Load artifact")
+		Info("Load artifact")
 	return err
 }
 
-func (d *driver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "Opening stream from %s", d.ArtifactDriver)
+func (d driver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
 	t := time.Now()
-	key, _ := inputArtifact.GetKey()
-	rc, err := d.ArtifactDriver.OpenStream(ctx, inputArtifact)
-	log.WithField("artifactName", inputArtifact.Name).
+	key, _ := a.GetKey()
+	rc, err := d.ArtifactDriver.OpenStream(a)
+	log.WithField("artifactName", a.Name).
 		WithField("key", key).
 		WithField("duration", time.Since(t)).
 		WithError(err).
-		Info(ctx, "Stream artifact")
+		Info("Stream artifact")
 	return rc, err
 }
 
-func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "Saving artifact to %s", d.ArtifactDriver)
+func (d driver) Save(path string, a *wfv1.Artifact) error {
 	t := time.Now()
-	key, _ := outputArtifact.GetKey()
-	err := d.ArtifactDriver.Save(ctx, path, outputArtifact)
-	log.WithField("artifactName", outputArtifact.Name).
+	key, _ := a.GetKey()
+	err := d.ArtifactDriver.Save(path, a)
+	log.WithField("artifactName", a.Name).
 		WithField("key", key).
 		WithField("duration", time.Since(t)).
 		WithError(err).
-		Info(ctx, "Save artifact")
+		Info("Save artifact")
 	return err
 }
 
-func (d *driver) Delete(ctx context.Context, s *wfv1.Artifact) error {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "Deleting artifact from %s", d.ArtifactDriver)
-	return d.ArtifactDriver.Delete(ctx, s)
-}
-
-func (d *driver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "Listing objects from %s", d.ArtifactDriver)
+func (d driver) ListObjects(a *wfv1.Artifact) ([]string, error) {
 	t := time.Now()
-	key, _ := artifact.GetKey()
-	list, err := d.ArtifactDriver.ListObjects(ctx, artifact)
-	log.WithField("artifactName", artifact.Name).
+	key, _ := a.GetKey()
+	list, err := d.ArtifactDriver.ListObjects(a)
+	log.WithField("artifactName", a.Name).
 		WithField("key", key).
 		WithField("duration", time.Since(t)).
 		WithError(err).
-		Info(ctx, "List objects")
+		Info("List objects")
 	return list, err
 }
 
-func (d *driver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "Checking if directory from %s", d.ArtifactDriver)
+func (d driver) IsDirectory(a *wfv1.Artifact) (bool, error) {
 	t := time.Now()
-	key, _ := artifact.GetKey()
-	isDir, err := d.ArtifactDriver.IsDirectory(ctx, artifact)
-	log.WithField("artifactName", artifact.Name).
+	key, _ := a.GetKey()
+	isDir, err := d.ArtifactDriver.IsDirectory(a)
+	log.WithField("artifactName", a.Name).
 		WithField("key", key).
 		WithField("duration", time.Since(t)).
 		WithError(err).
-		Info(ctx, "Check if directory")
+		Info("Check if directory")
 	return isDir, err
 }

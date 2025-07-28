@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	eventsv1a1 "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1"
 	"github.com/argoproj/argo-events/pkg/client/clientset/versioned/typed/events/v1alpha1"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
@@ -58,10 +56,7 @@ func TestListSensors(t *testing.T) {
 
 	mockClient := &MockSensorClient{ctrl: ctrl}
 
-	ctx := context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), auth.EventsKey, mockClient)
+	ctx := context.WithValue(context.Background(), auth.EventsKey, mockClient)
 
 	server := &mockSensorServer{
 		sensorClient: mockClient.ArgoprojV1alpha1Sensor(),
@@ -85,10 +80,7 @@ func TestListSensors_SensorClientNotSet(t *testing.T) {
 
 	mockClient := &MockSensorClient{ctrl: ctrl}
 
-	ctx := context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), auth.EventsKey, mockClient)
+	ctx := context.WithValue(context.Background(), auth.EventsKey, mockClient)
 
 	server := &mockSensorServer{
 		sensorClient: mockClient.ArgoprojV1alpha1Sensor(),

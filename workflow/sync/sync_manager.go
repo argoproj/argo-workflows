@@ -2,20 +2,14 @@ package sync
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/upper/db/v4"
+	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type (
@@ -25,58 +19,21 @@ type (
 )
 
 type Manager struct {
-	syncLockMap       map[string]semaphore
-	lock              *sync.RWMutex
-	nextWorkflow      NextWorkflow
-	getSyncLimit      GetSyncLimit
-	syncLimitCacheTTL time.Duration
-	isWFDeleted       IsWorkflowDeleted
-	dbInfo            dbInfo
-	log               logging.Logger
+	syncLockMap  map[string]semaphore
+	lock         *sync.RWMutex
+	nextWorkflow NextWorkflow
+	getSyncLimit GetSyncLimit
+	isWFDeleted  IsWorkflowDeleted
 }
 
-type lockTypeName string
-
-const (
-	lockTypeSemaphore lockTypeName = "semaphore"
-	lockTypeMutex     lockTypeName = "mutex"
-)
-
-func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
-	return createLockManager(ctx, dbSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
-}
-
-func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
-	syncLimitCacheTTL := time.Duration(0)
-	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
-		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
+func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
+	return &Manager{
+		syncLockMap:  make(map[string]semaphore),
+		lock:         &sync.RWMutex{},
+		nextWorkflow: nextWorkflow,
+		getSyncLimit: getSyncLimit,
+		isWFDeleted:  isWFDeleted,
 	}
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log = log.WithField("component", "lock_manager")
-	ctx = logging.WithLogger(ctx, log)
-
-	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
-	sm := &Manager{
-		syncLockMap:       make(map[string]semaphore),
-		lock:              &sync.RWMutex{},
-		nextWorkflow:      nextWorkflow,
-		getSyncLimit:      getSyncLimit,
-		syncLimitCacheTTL: syncLimitCacheTTL,
-		isWFDeleted:       isWFDeleted,
-		dbInfo: dbInfo{
-			session: dbSession,
-			config:  dbConfigFromConfig(config),
-		},
-		log: log,
-	}
-	log.WithField("dbConfigured", sm.dbInfo.session != nil).Info(ctx, "Sync manager initialized")
-	sm.dbInfo.migrate(ctx)
-
-	if sm.dbInfo.session != nil {
-		sm.backgroundNotifier(ctx, config.PollSeconds)
-		sm.dbControllerHeartbeat(ctx, config.HeartbeatSeconds)
-	}
-	return sm
 }
 
 func (sm *Manager) getWorkflowKey(key string) (string, error) {
@@ -96,19 +53,10 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	sm.lock.RLock()
 	defer sm.lock.RUnlock()
 
-	sm.log.Debug(ctx, "Check the workflow existence")
+	log.Debug("Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
-		holders, err := lock.getCurrentHolders()
-		if err != nil {
-			sm.log.WithError(err).Error(ctx, "failed to get current lock holders")
-			continue
-		}
-		pending, err := lock.getCurrentPending()
-		if err != nil {
-			sm.log.WithError(err).Error(ctx, "failed to get current lock pending")
-			continue
-		}
-		keys := append(holders, pending...)
+		keys := lock.getCurrentHolders()
+		keys = append(keys, lock.getCurrentPending()...)
 		for _, holderKeys := range keys {
 			wfKey, err := sm.getWorkflowKey(holderKeys)
 			if err != nil {
@@ -116,9 +64,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			}
 			if !sm.isWFDeleted(wfKey) {
 				lock.release(holderKeys)
-				if err := lock.removeFromQueue(holderKeys); err != nil {
-					sm.log.WithError(err).Warnf(ctx, "failed to remove %s from queue", holderKeys)
-				}
+				lock.removeFromQueue(holderKeys)
 			}
 		}
 	}
@@ -170,11 +116,12 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 			return ErrorLevel, err
 		}
 		for _, syncItem := range syncItems {
-			syncLockName, err := syncItem.lockName(wf.Namespace)
+			syncLockName, err := getLockName(syncItem, wf.Namespace)
 			if err != nil {
 				return ErrorLevel, err
 			}
-			if lockName == syncLockName.String() {
+			checkName := syncLockName.encodeName()
+			if lockName == checkName {
 				return WorkflowLevel, nil
 			}
 		}
@@ -188,12 +135,13 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 				return ErrorLevel, err
 			}
 			for _, syncItem := range syncItems {
-				syncLockName, err := syncItem.lockName(wf.Namespace)
+				syncLockName, err := getLockName(syncItem, wf.Namespace)
 				if err != nil {
 					lastErr = err
 					continue
 				}
-				if lockName == syncLockName.String() {
+				checkName := syncLockName.encodeName()
+				if lockName == checkName {
 					return TemplateLevel, nil
 				}
 			}
@@ -217,7 +165,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 				if semaphore == nil {
 					semaphore, err := sm.initializeSemaphore(holding.Semaphore)
 					if err != nil {
-						sm.log.Warnf(ctx, "cannot initialize semaphore '%s': %v", holding.Semaphore, err)
+						log.Warnf("cannot initialize semaphore '%s': %v", holding.Semaphore, err)
 						continue
 					}
 					sm.syncLockMap[holding.Semaphore] = semaphore
@@ -226,13 +174,12 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 				for _, holders := range holding.Holders {
 					level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Semaphore)
 					if err != nil {
-						sm.log.Warnf(ctx, "cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
+						log.Warnf("cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
 						continue
 					}
 					key := getUpgradedKey(&wf, holders, level)
-					tx := &transaction{db: &sm.dbInfo.session}
-					if semaphore != nil && semaphore.acquire(key, tx) {
-						sm.log.Infof(ctx, "Lock acquired by %s from %s", key, holding.Semaphore)
+					if semaphore != nil && semaphore.acquire(key) {
+						log.Infof("Lock acquired by %s from %s", key, holding.Semaphore)
 					}
 				}
 
@@ -243,27 +190,22 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
 				mutex := sm.syncLockMap[holding.Mutex]
 				if mutex == nil {
-					mutex, err := sm.initializeMutex(holding.Mutex)
-					if err != nil {
-						sm.log.Warnf(ctx, "cannot initialize mutex '%s': %v", holding.Mutex, err)
-						continue
-					}
+					mutex := sm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
 						level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Mutex)
 						if err != nil {
-							sm.log.Warnf(ctx, "cannot obtain lock level for '%s' : %v", holding.Mutex, err)
+							log.Warnf("cannot obtain lock level for '%s' : %v", holding.Mutex, err)
 							continue
 						}
 						key := getUpgradedKey(&wf, holding.Holder, level)
-						tx := &transaction{db: &sm.dbInfo.session}
-						mutex.acquire(key, tx)
+						mutex.acquire(key)
 					}
 					sm.syncLockMap[holding.Mutex] = mutex
 				}
 			}
 		}
 	}
-	sm.log.Infof(ctx, "Manager initialized successfully")
+	log.Infof("Manager initialized successfully")
 }
 
 // TryAcquire tries to acquire the lock from semaphore.
@@ -283,82 +225,16 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	}
 	holderKey := getHolderKey(wf, nodeName)
 
+	var msg string
 	lockKeys := make([]string, len(syncItems))
+	allAcquirable := true
 	for i, syncItem := range syncItems {
-		syncLockName, err := syncItem.lockName(wf.Namespace)
+		syncLockName, err := getLockName(syncItem, wf.Namespace)
 		if err != nil {
 			return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
 		}
-		sm.log.Infof(ctx, "TryAcquire on %s", syncLockName)
-		lockKeys[i] = syncLockName.String()
+		lockKeys[i] = syncLockName.encodeName()
 	}
-
-	if ok, msg, failedLockName, err := sm.prepAcquire(wf, holderKey, syncItems, lockKeys); !ok {
-		return false, false, msg, failedLockName, err
-	}
-
-	needDB, err := needDBSession(lockKeys)
-	if err != nil {
-		return false, false, "", failedLockName, fmt.Errorf("couldn't decode locks for session: %w", err)
-	}
-	if needDB && sm.dbInfo.session == nil {
-		return false, false, "", failedLockName, fmt.Errorf("synchronization database session is not available")
-	}
-	if needDB {
-		var updated bool
-		var already bool
-		var msg string
-		var failedLockName string
-		var lastErr error
-		for retryCounter := range 5 {
-			err := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
-				sm.log.WithFields(logging.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-				}).Info(ctx, "TryAcquire - starting transaction")
-				var err error
-				tx := &transaction{db: &sess}
-				already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
-				sm.log.WithFields(logging.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-				}).Info(ctx, "TryAcquire - transaction completed")
-				return err
-			}, &sql.TxOptions{
-				Isolation: sql.LevelSerializable,
-				ReadOnly:  false,
-			})
-			if err == nil {
-				return already, updated, msg, failedLockName, nil
-			}
-			lastErr = err
-			// Check if this is a serialization error
-			if strings.Contains(err.Error(), "serialization") ||
-				strings.Contains(err.Error(), "dependencies") ||
-				strings.Contains(err.Error(), "deadlock") ||
-				strings.Contains(err.Error(), "rollback") {
-				sm.log.WithFields(logging.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-					"error":     err,
-				}).Info(ctx, "TryAcquire - serialization conflict, retrying")
-				continue
-			} else {
-				sm.log.WithFields(logging.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-					"error":     err,
-				}).Info(ctx, "TryAcquire - tx failed")
-			}
-			// For other errors, return immediately
-			return false, false, "", failedLockName, err
-		}
-		return false, false, "", failedLockName, fmt.Errorf("failed after %d retries: %w", 5, lastErr)
-	}
-	return sm.tryAcquireImpl(wf, nil, holderKey, failedLockName, syncItems, lockKeys)
-}
-
-func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) (bool, string, string, error) {
 	for i, lockKey := range lockKeys {
 		lock, found := sm.syncLockMap[lockKey]
 		if !found {
@@ -367,14 +243,21 @@ func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []
 			case wfv1.SynchronizationTypeSemaphore:
 				lock, err = sm.initializeSemaphore(lockKey)
 			case wfv1.SynchronizationTypeMutex:
-				lock, err = sm.initializeMutex(lockKey)
+				lock = sm.initializeMutex(lockKey)
 			default:
-				return false, "bug: unknown synchronization type in prepAcquire", lockKey, fmt.Errorf("unknown Synchronization Type")
+				return false, false, "", failedLockName, fmt.Errorf("unknown Synchronization Type")
 			}
 			if err != nil {
-				return false, "failed to initialize lock", lockKey, err
+				return false, false, "", failedLockName, err
 			}
 			sm.syncLockMap[lockKey] = lock
+		}
+
+		if syncItems[i].getType() == wfv1.SynchronizationTypeSemaphore {
+			err := sm.checkAndUpdateSemaphoreSize(lock)
+			if err != nil {
+				return false, false, "", "", err
+			}
 		}
 
 		var priority int32
@@ -384,37 +267,15 @@ func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []
 			priority = 0
 		}
 		creationTime := wf.CreationTimestamp
-		ensureInit(wf, syncItems[i].getType())
-		if err := lock.addToQueue(holderKey, priority, creationTime.Time); err != nil {
-			return false, fmt.Sprintf("Failed to add to queue: %v", err), lockKey, err
-		}
-	}
-	return true, "", "", nil
-}
+		lock.addToQueue(holderKey, priority, creationTime.Time)
 
-func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
-	defer sm.unlockAll(lockKeys)
-	allAcquirable := true
-	msg := ""
-	for _, lockKey := range lockKeys {
-		lock, found := sm.syncLockMap[lockKey]
-		if !found {
-			return false, false, "", failedLockName, fmt.Errorf("bug: lock not found: %s", lockKey)
-		}
-		if lock.lock() {
-			acquired, already, newMsg := lock.checkAcquire(holderKey, tx)
-			if !acquired && !already {
-				allAcquirable = false
-				if msg == "" {
-					msg = newMsg
-				}
-				if failedLockName == "" {
-					failedLockName = lockKey
-				}
-			}
-		} else {
+		ensureInit(wf, syncItems[i].getType())
+		acquired, already, newMsg := lock.checkAcquire(holderKey)
+		if !acquired && !already {
 			allAcquirable = false
-			msg = "failed to lock()"
+			if msg == "" {
+				msg = newMsg
+			}
 			if failedLockName == "" {
 				failedLockName = lockKey
 			}
@@ -426,14 +287,11 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 		updated := false
 		for i, lockKey := range lockKeys {
 			lock := sm.syncLockMap[lockKey]
-			acquired, msg := lock.tryAcquire(holderKey, tx)
+			acquired, msg := lock.tryAcquire(holderKey)
 			if !acquired {
 				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}
-			currentHolders, err := sm.getCurrentLockHolders(lockKey)
-			if err != nil {
-				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %s", err)
-			}
+			currentHolders := sm.getCurrentLockHolders(lockKey)
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockAcquired(holderKey, lockKey, currentHolders) {
 				updated = true
 			}
@@ -442,22 +300,12 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 	default: // Not all acquirable
 		updated := false
 		for i, lockKey := range lockKeys {
-			currentHolders, err := sm.getCurrentLockHolders(lockKey)
-			if err != nil {
-				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %s", err)
-			}
+			currentHolders := sm.getCurrentLockHolders(lockKey)
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
 				updated = true
 			}
 		}
 		return false, updated, msg, failedLockName, nil
-	}
-}
-
-func (sm *Manager) unlockAll(lockKeys []string) {
-	for _, lockKey := range lockKeys {
-		lock := sm.syncLockMap[lockKey]
-		lock.unlock()
 	}
 }
 
@@ -470,30 +318,27 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 	defer sm.lock.RUnlock()
 
 	holderKey := getHolderKey(wf, nodeName)
-	sm.log.Infof(ctx, "Release %s", holderKey)
 	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
 	// should never have acquired anything if this errored
 	syncItems, _ := allSyncItems(ctx, syncRef)
 
 	for _, syncItem := range syncItems {
-		lockName, err := syncItem.lockName(wf.Namespace)
+		lockName, err := getLockName(syncItem, wf.Namespace)
 		if err != nil {
 			return
 		}
-		if syncLockHolder, ok := sm.syncLockMap[lockName.String()]; ok {
+		if syncLockHolder, ok := sm.syncLockMap[lockName.encodeName()]; ok {
 			syncLockHolder.release(holderKey)
-			if err := syncLockHolder.removeFromQueue(holderKey); err != nil {
-				sm.log.Warnf(ctx, "Error removing %s from queue: %v", holderKey, err)
-			}
-			lockKey := lockName
+			syncLockHolder.removeFromQueue(holderKey)
+			lockKey := lockName.encodeName()
 			if wf.Status.Synchronization != nil {
-				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey.String())
+				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey)
 			}
 		}
 	}
 }
 
-func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
+func (sm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 	sm.lock.RLock()
 	defer sm.lock.RUnlock()
 
@@ -511,7 +356,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 			for _, holderKey := range holding.Holders {
 				syncLockHolder.release(holderKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
-				sm.log.Infof(ctx, "%s released a lock from %s", holderKey, holding.Semaphore)
+				log.Infof("%s released a lock from %s", holderKey, holding.Semaphore)
 			}
 		}
 
@@ -522,9 +367,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 				continue
 			}
 			key := getHolderKey(wf, "")
-			if err := syncLockHolder.removeFromQueue(key); err != nil {
-				sm.log.Warnf(ctx, "Error removing %s from queue: %v", key, err)
-			}
+			syncLockHolder.removeFromQueue(key)
 		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
@@ -540,7 +383,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 
 			syncLockHolder.release(holding.Holder)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
-			sm.log.Infof(ctx, "%s released a lock from %s", holding.Holder, holding.Mutex)
+			log.Infof("%s released a lock from %s", holding.Holder, holding.Mutex)
 		}
 
 		// Remove the pending Workflow level mutex keys
@@ -550,9 +393,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 				continue
 			}
 			key := getHolderKey(wf, "")
-			if err := syncLockHolder.removeFromQueue(key); err != nil {
-				sm.log.Warnf(ctx, "Error removing %s from queue: %v", key, err)
-			}
+			syncLockHolder.removeFromQueue(key)
 		}
 		wf.Status.Synchronization.Mutex = nil
 	}
@@ -561,12 +402,10 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
 			lock, ok := sm.syncLockMap[node.SynchronizationStatus.Waiting]
 			if ok {
-				if err := lock.removeFromQueue(getHolderKey(wf, node.ID)); err != nil {
-					sm.log.Warnf(ctx, "Error removing %s from queue: %v", getHolderKey(wf, node.ID), err)
-				}
+				lock.removeFromQueue(getHolderKey(wf, node.ID))
 			}
 			node.SynchronizationStatus = nil
-			wf.Status.Nodes.Set(ctx, node.ID, node)
+			wf.Status.Nodes.Set(node.ID, node)
 		}
 	}
 
@@ -597,88 +436,40 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	return key
 }
 
-func (sm *Manager) getCurrentLockHolders(lock string) ([]string, error) {
-	if concurrency, ok := sm.syncLockMap[lock]; ok {
+func (sm *Manager) getCurrentLockHolders(lockName string) []string {
+	if concurrency, ok := sm.syncLockMap[lockName]; ok {
 		return concurrency.getCurrentHolders()
 	}
-	return nil, nil
+	return nil
 }
 
 func (sm *Manager) initializeSemaphore(semaphoreName string) (semaphore, error) {
-	lock, err := DecodeLockName(semaphoreName)
+	limit, err := sm.getSyncLimit(semaphoreName)
 	if err != nil {
 		return nil, err
 	}
-	switch lock.Kind {
-	case lockKindConfigMap:
-		return newInternalSemaphore(semaphoreName, sm.nextWorkflow, sm.getSyncLimit, sm.syncLimitCacheTTL)
-	case lockKindDatabase:
-		if sm.dbInfo.session == nil {
-			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
-		}
-		return newDatabaseSemaphore(semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
-	default:
-		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.Kind)
-	}
+	return NewSemaphore(semaphoreName, limit, sm.nextWorkflow, "semaphore"), nil
 }
 
-func (sm *Manager) initializeMutex(mutexName string) (semaphore, error) {
-	lock, err := DecodeLockName(mutexName)
+func (sm *Manager) initializeMutex(mutexName string) semaphore {
+	return NewMutex(mutexName, sm.nextWorkflow)
+}
+
+func (sm *Manager) isSemaphoreSizeChanged(semaphore semaphore) (bool, int, error) {
+	limit, err := sm.getSyncLimit(semaphore.getName())
 	if err != nil {
-		return nil, err
+		return false, semaphore.getLimit(), err
 	}
-	switch lock.Kind {
-	case lockKindMutex:
-		return newInternalMutex(mutexName, sm.nextWorkflow), nil
-	case lockKindDatabase:
-		if sm.dbInfo.session == nil {
-			return nil, fmt.Errorf("database session is not available for mutex %s", mutexName)
-		}
-		return newDatabaseMutex(mutexName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
-	default:
-		return nil, fmt.Errorf("invalid lock kind %s when initializing mutex", lock.Kind)
-	}
+	return semaphore.getLimit() != limit, limit, nil
 }
 
-func (sm *Manager) backgroundNotifier(ctx context.Context, period *int) {
-	sm.log.WithField("pollInterval", secondsToDurationWithDefault(period, defaultDBPollSeconds)).
-		Info(ctx, "Starting background notification for sync locks")
-	go wait.UntilWithContext(ctx, func(_ context.Context) {
-		sm.lock.Lock()
-		for _, lock := range sm.syncLockMap {
-			lock.probeWaiting()
-		}
-		sm.lock.Unlock()
-	},
-		secondsToDurationWithDefault(period, defaultDBPollSeconds),
-	)
-}
-
-// dbControllerHeartbeat does periodic deadmans switch updates to the controller state
-func (sm *Manager) dbControllerHeartbeat(ctx context.Context, period *int) {
-	// This doesn't need be be transactional, if someone else has the same controller name as us
-	// you've got much worse problems
-	// Failure here is not critical, so we don't check errors, we may already be in the table
-	ll := db.LC().Level()
-	db.LC().SetLevel(db.LogLevelError)
-	_, _ = sm.dbInfo.session.Collection(sm.dbInfo.config.controllerTable).
-		Insert(&controllerHealthRecord{
-			Controller: sm.dbInfo.config.controllerName,
-			Time:       time.Now(),
-		})
-	db.LC().SetLevel(ll)
-
-	sm.dbControllerUpdate(ctx)
-	go wait.UntilWithContext(ctx, func(_ context.Context) { sm.dbControllerUpdate(ctx) },
-		secondsToDurationWithDefault(period, defaultDBHeartbeatSeconds))
-}
-
-func (sm *Manager) dbControllerUpdate(ctx context.Context) {
-	_, err := sm.dbInfo.session.SQL().Update(sm.dbInfo.config.controllerTable).
-		Set(controllerTimeField, time.Now()).
-		Where(db.Cond{controllerNameField: sm.dbInfo.config.controllerName}).
-		Exec()
+func (sm *Manager) checkAndUpdateSemaphoreSize(semaphore semaphore) error {
+	changed, newLimit, err := sm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
-		sm.log.Errorf(ctx, "Failed to update sync controller timestamp: %s", err)
+		return err
 	}
+	if changed {
+		semaphore.resize(newLimit)
+	}
+	return nil
 }

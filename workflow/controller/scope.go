@@ -128,18 +128,18 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 		// Copy resolved artifact pointer before adding subpath
 		copyArt := valArt.DeepCopy()
 
-		subPathAsJSON, err := json.Marshal(art.SubPath)
+		subPathAsJson, err := json.Marshal(art.SubPath)
 		if err != nil {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to marshal artifact subpath for templating")
 		}
 
-		resolvedSubPathAsJSON, err := template.Replace(string(subPathAsJSON), s.getParameters(), true)
+		resolvedSubPathAsJson, err := template.Replace(string(subPathAsJson), s.getParameters(), true)
 		if err != nil {
 			return nil, err
 		}
 
 		var resolvedSubPath string
-		err = json.Unmarshal([]byte(resolvedSubPathAsJSON), &resolvedSubPath)
+		err = json.Unmarshal([]byte(resolvedSubPathAsJson), &resolvedSubPath)
 		if err != nil {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to unmarshal artifact subpath for templating")
 		}
