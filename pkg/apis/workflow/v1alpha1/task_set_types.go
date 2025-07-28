@@ -36,3 +36,7 @@ type NodeResult struct {
 	Outputs  *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
 	Progress Progress  `json:"progress,omitempty" protobuf:"bytes,4,opt,name=progress,casttype=Progress"`
 }
+
+func (in NodeResult) Fulfilled() bool {
+	return in.Phase.Fulfilled()
+}

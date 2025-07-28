@@ -21,7 +21,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -106,8 +105,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		},
 	)
 	resourceCache := cache.NewResourceCache(kubeClient, corev1.NamespaceAll)
-	ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	resourceCache.Run(ctx.Done())
+	resourceCache.Run(context.TODO().Done())
 	var clientForAuthorization ClientForAuthorization = func(authorization string, config *rest.Config) (*rest.Config, *servertypes.Clients, error) {
 		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
@@ -273,14 +271,10 @@ func TestServer_GetWFClient(t *testing.T) {
 }
 
 func x(authorization string) context.Context {
-	baseCtx := func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
-	return metadata.NewIncomingContext(baseCtx, metadata.New(map[string]string{"authorization": authorization}))
+	return metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": authorization}))
 }
 
 func TestGetClaimSet(t *testing.T) {
-	ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	assert.Nil(t, GetClaims(ctx))
+	// we should be able to get nil claim set
+	assert.Nil(t, GetClaims(context.TODO()))
 }

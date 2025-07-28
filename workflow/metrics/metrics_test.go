@@ -12,7 +12,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
@@ -100,11 +99,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)
@@ -176,11 +171,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)

@@ -18,7 +18,6 @@ import (
 	wftemplatemocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate/mocks"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var lintFileData = []byte(`
@@ -81,9 +80,7 @@ func TestLintFile(t *testing.T) {
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(context.Background(), &LintOptions{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
 			WorkflowsClient: wfServiceClientMock,
@@ -113,9 +110,7 @@ func TestLintMultipleKinds(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(context.Background(), &LintOptions{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -159,9 +154,7 @@ func TestLintWithOutput(t *testing.T) {
 	mw := &mocks.MockWriter{}
 	mw.On("Write", mock.Anything).Return(0, nil)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(context.Background(), &LintOptions{
 		Files: []string{file.Name(), "-"},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -204,9 +197,7 @@ func TestLintStdin(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(context.Background(), &LintOptions{
 		Files: []string{"-"},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -244,9 +235,7 @@ func TestLintDeviceFile(t *testing.T) {
 
 	deviceFileName := fmt.Sprintf("/dev/fd/%d", fd)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(context.Background(), &LintOptions{
 		Files: []string{deviceFileName},
 		ServiceClients: ServiceClients{
 			WorkflowsClient: wfServiceClientMock,
@@ -306,9 +295,7 @@ func TestGetFormatter(t *testing.T) {
 				}
 			}
 
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			r, err := Lint(ctx, &LintOptions{Formatter: fmtr})
+			r, err := Lint(context.Background(), &LintOptions{Formatter: fmtr})
 			require.NoError(t, err)
 			assert.Equal(t, test.expectedOutput, r.Msg())
 		})

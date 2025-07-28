@@ -3,14 +3,12 @@
 package e2e
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -24,9 +22,7 @@ func (s *ExamplesSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *ExamplesSuite) TestExampleWorkflows() {
-	ctx := context.Background(); ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	err := fileutil.WalkManifests(ctx, "../../examples", func(path string, data []byte) error {
+	err := fileutil.WalkManifests("../../examples", func(path string, data []byte) error {
 		wfs, err := common.SplitWorkflowYAMLFile(data, true)
 		if err != nil {
 			s.T().Fatalf("Error parsing %s: %v", path, err)

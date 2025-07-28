@@ -48,11 +48,9 @@ export function processURL(urlExpression: string, jsonObject: any) {
     });
 }
 
-export function openLinkWithKey(url: string, target?: string) {
+export function openLinkWithKey(url: string) {
     if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
         window.open(url, '_blank');
-    } else if (target !== `''`) {
-        window.open(url, target);
     } else {
         document.location.href = url;
     }
@@ -61,6 +59,7 @@ export function openLinkWithKey(url: string, target?: string) {
 export function Links({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; workflow?: Workflow; status?: any}; button?: boolean}) {
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
+
     useEffect(() => {
         services.info
             .getInfo()
@@ -73,16 +72,16 @@ export function Links({scope, object, button}: {scope: string; object: {metadata
         <>
             {error && error.message}
             {links &&
-                links.map(({url, name, target}) => {
+                links.map(({url, name}) => {
                     if (button) {
                         return (
-                            <Button onClick={() => openLinkWithKey(processURL(url, object), target)} key={name} icon='external-link-alt'>
+                            <Button onClick={() => openLinkWithKey(processURL(url, object))} key={name} icon='external-link-alt'>
                                 {name}
                             </Button>
                         );
                     }
                     return (
-                        <a key={name} href={processURL(url, object)} target={target} rel='noreferrer'>
+                        <a key={name} href={processURL(url, object)}>
                             {name} <i className='fa fa-external-link-alt' />
                         </a>
                     );

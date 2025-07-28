@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
 )
 
@@ -41,6 +40,8 @@ const (
 // Used to check final redirects are not susceptible to open redirects.
 // Matches //, /\ and both of these with whitespace in between (eg / / or / \).
 var invalidRedirectRegex = regexp.MustCompile(`[/\\](?:[\s\v]*|\.{1,2})[/\\]`)
+
+//go:generate mockery --name=Interface
 
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
@@ -109,7 +110,6 @@ func newSso(
 		return nil, fmt.Errorf("clientSecret empty")
 	}
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err

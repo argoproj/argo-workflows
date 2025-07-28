@@ -1,40 +1,5 @@
 # Changelog
 
-## v3.7.0 (2025-07-15)
-
-Full Changelog: [v3.7.0-rc4...v3.7.0](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc4...v3.7.0)
-
-## v3.7.0-rc4 (2025-07-15)
-
-Full Changelog: [v3.7.0-rc3...v3.7.0-rc4](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc3...v3.7.0-rc4)
-
-### Selected Changes
-
-* [d1d689b36](https://github.com/argoproj/argo-workflows/commit/d1d689b367c4c8a5a8a095ae60b5d7043f99eda9) fix: process aggregate outputs for steps node with retries. Fixes #14647 (#14651)
-
-<details><summary><h3>Contributors</h3></summary>
-
-* jswxstw
-
-</details>
-
-## v3.7.0-rc3 (2025-06-25)
-
-Full Changelog: [v3.7.0-rc2...v3.7.0-rc3](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc2...v3.7.0-rc3)
-
-### Selected Changes
-
-* [e0a0f2856](https://github.com/argoproj/argo-workflows/commit/e0a0f2856ba6e8a49b1ea28b15d50d39f3106125) fix: restore the CRDs to install.yaml (#14599)
-* [b81e8c9fc](https://github.com/argoproj/argo-workflows/commit/b81e8c9fc04667eb973e05a8f4aace7ee81e0f1a) fix: retry forevever on task result creation related transient errors. Fixes #14560 (#14555)
-
-<details><summary><h3>Contributors</h3></summary>
-
-* Alan Clucas
-* Isitha Subasinghe
-* isubasinghe
-
-</details>
-
 ## v3.7.0-rc2 (2025-06-23)
 
 Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc1...v3.7.0-rc2)

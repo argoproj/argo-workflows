@@ -20,8 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/argoproj/argo-workflows/v3/util/file"
 
 	log "github.com/sirupsen/logrus"
@@ -82,14 +80,13 @@ type WorkflowExecutor struct {
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
-
-	// flag to indicate if the task result was created
-	taskResultCreated bool
 }
 
 type Initializer interface {
 	Init(tmpl wfv1.Template) error
 }
+
+//go:generate mockery --name=ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime
 type ContainerRuntimeExecutor interface {
@@ -126,9 +123,7 @@ func NewExecutor(
 	deadline time.Time,
 	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
 ) WorkflowExecutor {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	retry := executorretry.ExecutorRetry(ctx)
-	log.WithFields(log.Fields{"Steps": retry.Steps, "Duration": retry.Duration, "Factor": retry.Factor, "Jitter": retry.Jitter}).Info("Using executor retry strategy")
+	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
 		podUID:                       podUID,
@@ -214,7 +209,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
 			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
 		}
-		err = artDriver.Load(ctx, driverArt, tempArtPath)
+		err = artDriver.Load(driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
@@ -382,7 +377,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 	if err != nil {
 		return err
 	}
-	err = artDriver.Save(ctx, localArtPath, driverArt)
+	err = artDriver.Save(localArtPath, driverArt)
 	if err != nil {
 		return err
 	}
@@ -709,10 +704,10 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	}
 	configmapsIf := we.ClientSet.CoreV1().ConfigMaps(namespace)
 	var configmap *apiv1.ConfigMap
-	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		configmap, err = configmapsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(ctx, err), err
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return "", argoerrs.InternalWrapError(err)
@@ -737,10 +732,10 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 	}
 	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(ctx, err), err
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return []byte{}, argoerrs.InternalWrapError(err)
@@ -806,25 +801,19 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
 // FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
-	var count uint64
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
+		Steps:    5,
 		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	}, errorsutil.IsTransientErr, func() error {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
 		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
-			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
-		} else if err != nil && count%20 == 0 {
-			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
+			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		}
-		count++
 		return err
 	})
 	if err != nil {
@@ -833,23 +822,17 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 }
 
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
-	var count uint64
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
+		Steps:    5,
 		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
-		} else if err != nil && count%20 == 0 {
-			log.WithError(err).Warnf("failed to patch task result attempt: %d", count)
+			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		}
-		count++
 		return err
 	})
 	if err != nil {
@@ -882,9 +865,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 		Jitter:   0.2,
 		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
 			log.WithError(err).Warnf("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/ attempt: %d", count)
@@ -1154,9 +1135,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 
 	go we.monitorDeadline(ctx, containerNames)
 
-	err := retryutil.OnError(executorretry.ExecutorRetry(ctx), func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	err := retryutil.OnError(executorretry.ExecutorRetry, errorsutil.IsTransientErr, func() error {
 		return we.RuntimeExecutor.Wait(ctx, containerNames)
 	})
 

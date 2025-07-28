@@ -1,22 +1,19 @@
 package env
 
 import (
-	"context"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	log "github.com/sirupsen/logrus"
 )
 
-func LookupEnvDurationOr(ctx context.Context, key string, o time.Duration) time.Duration {
+func LookupEnvDurationOr(key string, o time.Duration) time.Duration {
 	v, found := os.LookupEnv(key)
 	if found && v != "" {
 		d, err := time.ParseDuration(v)
 		if err != nil {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger = logger.WithField(key, v).WithError(err)
-			logger.WithPanic().Error(ctx, "failed to parse")
+			log.WithField(key, v).WithError(err).Panic("failed to parse")
 		} else {
 			return d
 		}
@@ -24,14 +21,12 @@ func LookupEnvDurationOr(ctx context.Context, key string, o time.Duration) time.
 	return o
 }
 
-func LookupEnvIntOr(ctx context.Context, key string, o int) int {
+func LookupEnvIntOr(key string, o int) int {
 	v, found := os.LookupEnv(key)
 	if found && v != "" {
 		d, err := strconv.Atoi(v)
 		if err != nil {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger = logger.WithField(key, v).WithError(err)
-			logger.WithPanic().Error(ctx, "failed to convert to int")
+			log.WithField(key, v).WithError(err).Panic("failed to convert to int")
 		} else {
 			return d
 		}
@@ -39,14 +34,12 @@ func LookupEnvIntOr(ctx context.Context, key string, o int) int {
 	return o
 }
 
-func LookupEnvFloatOr(ctx context.Context, key string, o float64) float64 {
+func LookupEnvFloatOr(key string, o float64) float64 {
 	v, found := os.LookupEnv(key)
 	if found && v != "" {
 		d, err := strconv.ParseFloat(v, 64)
 		if err != nil {
-			logger := logging.GetLoggerFromContext(ctx)
-			logger = logger.WithField(key, v).WithError(err)
-			logger.WithPanic().Error(ctx, "failed to convert to float")
+			log.WithField(key, v).WithError(err).Panic("failed to convert to float")
 		} else {
 			return d
 		}

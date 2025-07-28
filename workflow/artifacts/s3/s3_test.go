@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -129,11 +128,6 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 }
 
 func TestOpenStreamS3Artifact(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
-
 	tests := map[string]struct {
 		s3client  S3Client
 		bucket    string
@@ -226,7 +220,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			stream, err := streamS3Artifact(ctx, tc.s3client, &wfv1.Artifact{
+			stream, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{
@@ -390,9 +384,7 @@ func TestLoadS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-			ctx := logging.WithLogger(context.Background(), log)
-			success, err := loadS3Artifact(ctx, tc.s3client, &wfv1.Artifact{
+			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{
@@ -413,11 +405,6 @@ func TestLoadS3Artifact(t *testing.T) {
 }
 
 func TestSaveS3Artifact(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
-
 	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
@@ -524,7 +511,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	for name, tc := range tests {
 		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
-			success, err := saveS3Artifact(ctx,
+			success, err := saveS3Artifact(
 				tc.s3client,
 				tc.localPath,
 				&wfv1.Artifact{
@@ -552,10 +539,7 @@ func TestSaveS3Artifact(t *testing.T) {
 }
 
 func TestListObjects(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
+
 	tests := map[string]struct {
 		s3client         S3Client
 		bucket           string
@@ -608,7 +592,7 @@ func TestListObjects(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, files, err := listObjects(ctx, tc.s3client,
+			_, files, err := listObjects(tc.s3client,
 				&wfv1.Artifact{
 					ArtifactLocation: wfv1.ArtifactLocation{
 						S3: &wfv1.S3Artifact{
@@ -650,11 +634,7 @@ func TestNewS3Client(t *testing.T) {
 		UseSDKCreds:     false,
 		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyID: "", KmsEncryptionContext: ""},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
-	s3If, err := NewS3Client(ctx, opts)
+	s3If, err := NewS3Client(context.Background(), opts)
 	require.NoError(t, err)
 	s3cli := s3If.(*s3client)
 	assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -679,11 +659,7 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 		SecretKey:    "secret",
 		SessionToken: "sessionToken",
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
-	s3If, err := NewS3Client(ctx, opts)
+	s3If, err := NewS3Client(context.Background(), opts)
 	require.NoError(t, err)
 	s3cli := s3If.(*s3client)
 	assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -695,10 +671,6 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 
 // TestNewS3Client tests the s3 constructor
 func TestNewS3ClientWithDiff(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
 	t.Run("IAMRole", func(t *testing.T) {
 		opts := S3ClientOpts{
 			Endpoint: "foo.com",
@@ -706,7 +678,7 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 			Secure:   false,
 			Trace:    true,
 		}
-		s3If, err := NewS3Client(ctx, opts)
+		s3If, err := NewS3Client(context.Background(), opts)
 		require.NoError(t, err)
 		s3cli := s3If.(*s3client)
 		assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -723,7 +695,7 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 			Trace:    true,
 			RoleARN:  "01234567890123456789",
 		}
-		s3If, err := NewS3Client(ctx, opts)
+		s3If, err := NewS3Client(context.Background(), opts)
 		require.NoError(t, err)
 		s3cli := s3If.(*s3client)
 		assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -734,11 +706,6 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 }
 
 func TestDisallowedComboOptions(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx = logging.WithLogger(ctx, log)
-
 	t.Run("KMS and SSEC", func(t *testing.T) {
 		opts := S3ClientOpts{
 			Endpoint:    "foo.com",
@@ -747,7 +714,7 @@ func TestDisallowedComboOptions(t *testing.T) {
 			Trace:       true,
 			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyID: "00000000-0000-0000-0000-000000000000", KmsEncryptionContext: ""},
 		}
-		_, err := NewS3Client(ctx, opts)
+		_, err := NewS3Client(context.Background(), opts)
 		assert.Error(t, err)
 	})
 
@@ -759,7 +726,7 @@ func TestDisallowedComboOptions(t *testing.T) {
 			Trace:       true,
 			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyID: "", KmsEncryptionContext: ""},
 		}
-		_, err := NewS3Client(ctx, opts)
+		_, err := NewS3Client(context.Background(), opts)
 		assert.Error(t, err)
 	})
 }

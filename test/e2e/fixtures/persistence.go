@@ -9,7 +9,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
@@ -36,8 +35,7 @@ func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		if err != nil {
 			panic(err)
 		}
-		log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		if err != nil {
 			panic(err)
 		}

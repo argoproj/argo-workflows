@@ -18,7 +18,6 @@ import (
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 )
 
@@ -164,7 +163,6 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -177,7 +175,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 
 		// acquired the lock
 		woc.operate(ctx)
@@ -194,7 +192,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		wfTwo.Name = "two"
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
 		wocTwo.operate(ctx)
 
@@ -209,12 +207,12 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		wocTwo = newWorkflowOperationCtx(ctx, wocTwo.wf, controller)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
 		wocTwo.operate(ctx)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
@@ -226,7 +224,6 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -239,7 +236,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 
 		// acquired the lock
 		woc.operate(ctx)
@@ -256,7 +253,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		wfTwo.Name = "two"
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
 		wocTwo.operate(ctx)
 
@@ -270,12 +267,12 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		wocTwo = newWorkflowOperationCtx(ctx, wocTwo.wf, controller)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
 		wocTwo.operate(ctx)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
@@ -287,7 +284,6 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -301,7 +297,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		wf.Namespace = "namespace-one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 
 		// acquired the lock
 		woc.operate(ctx)
@@ -319,7 +315,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		wfTwo.Namespace = "namespace-two"
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wfTwo.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
 		wocTwo.operate(ctx)
 
@@ -333,12 +329,12 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		wocTwo = newWorkflowOperationCtx(ctx, wocTwo.wf, controller)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
 		wocTwo.operate(ctx)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
@@ -350,7 +346,6 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -363,7 +358,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 
 		// acquired the lock
 		woc.operate(ctx)
@@ -380,7 +375,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		wfTwo.Name = "two"
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		// Try Acquire the lock
 		wocTwo.operate(ctx)
 
@@ -395,12 +390,12 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
-		wocTwo = newWorkflowOperationCtx(ctx, wocTwo.wf, controller)
+		wocTwo = newWorkflowOperationCtx(wocTwo.wf, controller)
 		wocTwo.operate(ctx)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Semaphore)
@@ -413,7 +408,6 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
@@ -422,7 +416,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		err, _ = woc.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc.wf.Status.Nodes {
@@ -470,14 +464,13 @@ func TestMutexInDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
@@ -487,7 +480,7 @@ func TestMutexInDAG(t *testing.T) {
 		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
-		woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate(ctx)
 		for _, node := range woc1.wf.Status.Nodes {
 			if node.Name == "dag-mutex.B" {
@@ -543,14 +536,13 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("InterpolatedMutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithInterpolatedMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
@@ -560,7 +552,7 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
-		woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate(ctx)
 		for _, node := range woc1.wf.Status.Nodes {
 			assert.NotEqual(wfv1.NodeError, node.Phase)
@@ -608,7 +600,6 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -619,7 +610,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(RetryWfWithSemaphore)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "hello1" {
@@ -631,7 +622,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		// Release the lock from hello1
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "hello1" {
@@ -645,7 +636,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		// Release the lock  from hello2
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		// Nobody is waiting for the lock
 		assert.Nil(woc.wf.Status.Synchronization)
@@ -817,7 +808,6 @@ func TestSynchronizationWithStep(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -830,7 +820,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(StepWithSync)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.NotNil(woc.wf.Status.Synchronization)
 		assert.NotNil(woc.wf.Status.Synchronization.Semaphore)
@@ -841,7 +831,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 		wf1.Name = "step2"
 		wf1, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf1, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc1 := newWorkflowOperationCtx(ctx, wf1, controller)
+		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
 		assert.NotNil(woc1.wf.Status.Synchronization)
 		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
@@ -850,12 +840,12 @@ func TestSynchronizationWithStep(t *testing.T) {
 
 		// Finished all StepGroup in step
 		wf = wfv1.MustUnmarshalWorkflow(StepWithSyncStatus)
-		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc = newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Nil(woc.wf.Status.Synchronization)
 
 		// Second workflow acquire the lock
-		woc1 = newWorkflowOperationCtx(ctx, woc1.wf, controller)
+		woc1 = newWorkflowOperationCtx(woc1.wf, controller)
 		woc1.operate(ctx)
 		assert.NotNil(woc1.wf.Status.Synchronization)
 		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
@@ -895,7 +885,6 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm apiv1.ConfigMap
@@ -908,7 +897,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStepRetry)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
@@ -960,7 +949,6 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
@@ -971,7 +959,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wf.Spec.Synchronization.Mutexes[0].Name = "terminating-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
@@ -983,7 +971,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
 		// This workflow should be pending since the first workflow still holds the lock.
-		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
@@ -999,7 +987,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		require.NoError(t, err)
 
 		// The pending workflow that's being shutdown should have succeeded and released the lock.
-		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
 		assert.Nil(t, wocTwo.wf.Status.Synchronization)
@@ -1015,7 +1003,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wf.Spec.Synchronization.Mutexes[0].Name = "stopping-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
@@ -1027,7 +1015,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		require.NoError(t, err)
 		// This workflow should be pending since the first workflow still holds the lock.
-		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
@@ -1043,7 +1031,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		require.NoError(t, err)
 
 		// The pending workflow that's being shutdown should still be pending and waiting to acquire the lock.
-		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, controller)
+		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.execWf.Status.Phase)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
@@ -1108,8 +1096,7 @@ spec:
 	defer cancel()
 
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
 	holdingJobs := make(map[string]string)

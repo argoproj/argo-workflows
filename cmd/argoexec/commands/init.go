@@ -6,8 +6,6 @@ import (
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func NewInitCommand() *cobra.Command {
@@ -15,17 +13,7 @@ func NewInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Load artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			if ctx == nil {
-				ctx = context.Background()
-				cmd.SetContext(ctx)
-			}
-			log := logging.GetLoggerFromContext(ctx)
-			if log == nil {
-				log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-				ctx = logging.WithLogger(ctx, log)
-				cmd.SetContext(ctx)
-			}
+			ctx := context.Background()
 			err := loadArtifacts(ctx)
 			if err != nil {
 				return fmt.Errorf("%+v", err)

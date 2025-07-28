@@ -13,7 +13,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func Test_resubmitWorkflows(t *testing.T) {
@@ -26,9 +25,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 
 		c.On("ResubmitWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		err := resubmitWorkflows(ctx, c, resubmitOpts, cliSubmitOpts, []string{"foo", "bar"})
+		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{"foo", "bar"})
 		c.AssertNumberOfCalls(t, "ResubmitWorkflow", 2)
 
 		require.NoError(t, err)
@@ -44,9 +41,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 
 		c.On("ResubmitWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		err := resubmitWorkflows(ctx, c, resubmitOpts, cliSubmitOpts, []string{"foo"})
+		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{"foo"})
 		c.AssertNumberOfCalls(t, "ResubmitWorkflow", 1)
 		c.AssertCalled(t, "ResubmitWorkflow", mock.Anything, &workflowpkg.WorkflowResubmitRequest{
 			Name:      "foo",
@@ -82,9 +77,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 		c.On("ListWorkflows", mock.Anything, wfListReq).Return(wfList, nil)
 		c.On("ResubmitWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		err := resubmitWorkflows(ctx, c, resubmitOpts, cliSubmitOpts, []string{})
+		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{})
 
 		c.AssertNumberOfCalls(t, "ResubmitWorkflow", 3)
 		for _, wf := range wfList.Items {
@@ -125,9 +118,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 
 		c.On("ResubmitWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		err := resubmitWorkflows(ctx, c, resubmitOpts, cliSubmitOpts, []string{"foo", "qux"})
+		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{"foo", "qux"})
 		// after de-duplication, there will be 4 workflows to resubmit
 		c.AssertNumberOfCalls(t, "ResubmitWorkflow", 4)
 
@@ -159,9 +150,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 		}
 		cliSubmitOpts := common.CliSubmitOpts{}
 		c.On("ListWorkflows", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		err := resubmitWorkflows(ctx, c, resubmitOpts, cliSubmitOpts, []string{})
+		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{})
 		require.Errorf(t, err, "mock error")
 	})
 
@@ -172,9 +161,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 		}
 		cliSubmitOpts := common.CliSubmitOpts{}
 		c.On("ResubmitWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		err := resubmitWorkflows(ctx, c, resubmitOpts, cliSubmitOpts, []string{"foo"})
+		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{"foo"})
 		require.Errorf(t, err, "mock error")
 	})
 }

@@ -1,14 +1,11 @@
 package raw_test
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,10 +29,7 @@ func TestLoad(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	err = driver.Load(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), art, lf.Name())
+	err = driver.Load(art, lf.Name())
 	require.NoError(t, err)
 
 	dat, err := os.ReadFile(lf.Name())
@@ -50,10 +44,7 @@ func TestOpenStream(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	rc, err := driver.OpenStream(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), art)
+	rc, err := driver.OpenStream(art)
 	require.NoError(t, err)
 	defer rc.Close()
 

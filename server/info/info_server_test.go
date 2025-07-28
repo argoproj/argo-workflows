@@ -11,13 +11,11 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func Test_infoServer_GetUserInfo(t *testing.T) {
 	i := &infoServer{}
-	baseCtx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx := context.WithValue(baseCtx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Name: "myname", Email: "my@email", EmailVerified: true, ServiceAccountName: "my-sa"})
+	ctx := context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Name: "myname", Email: "my@email", EmailVerified: true, ServiceAccountName: "my-sa"})
 	info, err := i.GetUserInfo(ctx, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "my-iss", info.Issuer)
@@ -41,8 +39,7 @@ func Test_infoServer_GetInfo(t *testing.T) {
 			},
 			navColor: "red",
 		}
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		info, err := i.GetInfo(ctx, nil)
+		info, err := i.GetInfo(context.TODO(), nil)
 		require.NoError(t, err)
 		assert.Equal(t, "argo", info.ManagedNamespace)
 		assert.Equal(t, "link-name", info.Links[0].Name)
@@ -54,8 +51,7 @@ func Test_infoServer_GetInfo(t *testing.T) {
 
 	t.Run("Min Fields", func(t *testing.T) {
 		i := &infoServer{}
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		info, err := i.GetInfo(ctx, nil)
+		info, err := i.GetInfo(context.TODO(), nil)
 		require.NoError(t, err)
 		assert.Empty(t, info.ManagedNamespace)
 		assert.Empty(t, info.Links)

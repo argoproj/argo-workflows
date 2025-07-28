@@ -12,7 +12,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
@@ -47,10 +46,9 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 		clusterWorkflowTemplates: map[string]*wfv1.ClusterWorkflowTemplate{},
 	}
 	workflowTemplateGetters := offlineWorkflowTemplateGetterMap{}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+
 	for _, basePath := range paths {
-		err := file.WalkManifests(ctx, basePath, func(path string, bytes []byte) error {
+		err := file.WalkManifests(basePath, func(path string, bytes []byte) error {
 			for _, pr := range common.ParseObjects(bytes, false) {
 				obj, err := pr.Object, pr.Err
 				if err != nil {
@@ -96,7 +94,7 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 		}
 	}
 
-	return ctx, &offlineClient{
+	return context.Background(), &offlineClient{
 		clusterWorkflowTemplateGetter:       clusterWorkflowTemplateGetter,
 		namespacedWorkflowTemplateGetterMap: workflowTemplateGetters,
 	}, nil

@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestInlineDAG(t *testing.T) {
@@ -38,11 +37,8 @@ spec:
 `)
 	cancel, wfc := newController(wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	woc := newWorkflowOperationCtx(ctx, wf, wfc)
-	woc.operate(ctx)
+	woc := newWorkflowOperationCtx(wf, wfc)
+	woc.operate(context.Background())
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
@@ -72,11 +68,8 @@ spec:
 `)
 	cancel, wfc := newController(wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	woc := newWorkflowOperationCtx(ctx, wf, wfc)
-	woc.operate(ctx)
+	woc := newWorkflowOperationCtx(wf, wfc)
+	woc.operate(context.Background())
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("a")
@@ -172,9 +165,7 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
@@ -276,9 +267,7 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
