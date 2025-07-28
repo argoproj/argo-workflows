@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -73,6 +72,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			we := WorkflowExecutor{
 				Template: wfv1.Template{
 					Inputs: wfv1.Inputs{
@@ -80,9 +80,6 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 					},
 				},
 			}
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 			err := we.LoadArtifacts(ctx)
 			require.EqualError(t, err, test.error)
 		})
@@ -113,9 +110,7 @@ func TestSaveParameters(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
@@ -202,9 +197,7 @@ func TestDefaultParameters(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "Default Value", we.Template.Outputs.Parameters[0].Value.String())
@@ -235,15 +228,14 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestIsTarball(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	tests := []struct {
 		path      string
 		isTarball bool
@@ -259,7 +251,7 @@ func TestIsTarball(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ok, err := isTarball(test.path)
+		ok, err := isTarball(ctx, test.path)
 		if test.expectErr {
 			require.Error(t, err, test.path)
 		} else {
@@ -270,11 +262,12 @@ func TestIsTarball(t *testing.T) {
 }
 
 func TestUnzip(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	zipPath := "testdata/file.zip"
 	destPath := "testdata/unzippedFile"
 
 	// test
-	err := unzip(zipPath, destPath)
+	err := unzip(ctx, zipPath, destPath)
 	require.NoError(t, err)
 
 	// check unzipped file
@@ -487,9 +480,7 @@ func TestSaveArtifacts(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		_, err := tt.workflowExecutor.SaveArtifacts(ctx)
 		if err != nil {
 			assert.True(t, tt.expectError)
@@ -500,9 +491,7 @@ func TestSaveArtifacts(t *testing.T) {
 }
 
 func TestMonitorProgress(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	annotationPackTickDuration := 5 * time.Millisecond
 	readProgressFileTickDuration := time.Millisecond
@@ -516,6 +505,7 @@ func TestMonitorProgress(t *testing.T) {
 	})
 	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	we := NewExecutor(
+		ctx,
 		nil,
 		taskResults,
 		nil,
@@ -562,9 +552,7 @@ func TestSaveLogs(t *testing.T) {
 			RuntimeExecutor: &mockRuntimeExecutor,
 		}
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		logArtifacts := we.SaveLogs(ctx)
 
 		require.EqualError(t, we.errors[0], artStorageError)
@@ -593,9 +581,7 @@ func TestReportOutputs(t *testing.T) {
 			taskResultClient: mockTaskResultClient,
 		}
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := we.ReportOutputs(ctx, artifacts)
 
 		require.NoError(t, err)

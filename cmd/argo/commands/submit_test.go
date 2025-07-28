@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,13 +18,13 @@ import (
 func Test_submitWorkflows(t *testing.T) {
 	t.Run("Submit workflow with invalid options", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{Watch: true, Wait: true})
 		require.Error(t, err, "--wait cannot be combined with --watch")
 	})
 	t.Run("Submit without providing workflow", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
 		require.Error(t, err, "No Workflow found in given files")
 	})
@@ -35,7 +34,7 @@ func Test_submitWorkflows(t *testing.T) {
 		workflow := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "argo"}, Spec: wfv1.WorkflowSpec{Priority: &priority}}
 
 		c.On("CreateWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
 
 		require.NoError(t, err)
@@ -57,7 +56,7 @@ func Test_submitWorkflows(t *testing.T) {
 		cliSubmitOpts := common.CliSubmitOpts{Priority: &priorityCLI}
 
 		c.On("CreateWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-		ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &cliSubmitOpts)
 
 		require.NoError(t, err)

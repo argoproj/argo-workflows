@@ -48,13 +48,14 @@ func NewCpCommand() *cobra.Command {
 			workflowName := args[0]
 			outputDir := args[1]
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
 			if len(namespace) == 0 {
-				namespace = client.Namespace()
+				namespace = client.Namespace(ctx)
 			}
 			workflow, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 				Name:      workflowName,

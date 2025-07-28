@@ -3,9 +3,8 @@ package progress
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // UpdateProgress ensures the workflow's progress is updated with the individual node progress.
@@ -42,7 +41,7 @@ func UpdateProgress(ctx context.Context, wf *wfv1.Workflow) {
 		if executable(node.Type) {
 			continue
 		}
-		progress := sumProgress(wf, node, make(map[string]bool))
+		progress := sumProgress(ctx, wf, node, make(map[string]bool))
 		if progress.IsValid() {
 			node.Progress = progress
 			wf.Status.Nodes.Set(ctx, nodeID, node)
@@ -63,7 +62,8 @@ func executable(nodeType wfv1.NodeType) bool {
 	}
 }
 
-func sumProgress(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]bool) wfv1.Progress {
+func sumProgress(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]bool) wfv1.Progress {
+	logger := logging.RequireLoggerFromContext(ctx)
 	progress := wfv1.ProgressZero
 	for _, childNodeID := range node.Children {
 		if visited[childNodeID] {
@@ -73,10 +73,10 @@ func sumProgress(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]boo
 		// this will tolerate missing child (will be "") and therefore ignored
 		child, err := wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			log.Warnf("Coudn't obtain child for %s, panicking", childNodeID)
+			logger.WithField("childNodeID", childNodeID).Warn(ctx, "Couldn't obtain child, panicking")
 			continue
 		}
-		progress = progress.Add(sumProgress(wf, *child, visited))
+		progress = progress.Add(sumProgress(ctx, wf, *child, visited))
 		if executable(child.Type) {
 			v := child.Progress
 			if v.IsValid() {

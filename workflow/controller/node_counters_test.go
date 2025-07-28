@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
@@ -137,13 +136,10 @@ func TestCounters(t *testing.T) {
 	assert.NotNil(t, pod)
 	pod1 := pod.DeepCopy()
 	pod1.Name = "2"
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	woc.controller = controller
-	syncPodsInformer(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), woc, pod, *pod1)
+	syncPodsInformer(logging.TestContext(t.Context()), woc, pod, *pod1)
 	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
 	assert.Equal(t, int64(4), woc.getActivePods(""))

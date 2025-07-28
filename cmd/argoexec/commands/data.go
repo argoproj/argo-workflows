@@ -14,8 +14,7 @@ func NewDataCommand() *cobra.Command {
 		Use:   "data",
 		Short: "Process data",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			err := execData(ctx)
+			err := execData(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("%+v", err)
 			}
@@ -25,12 +24,13 @@ func NewDataCommand() *cobra.Command {
 	return &command
 }
 
+// nolint: contextcheck
 func execData(ctx context.Context) error {
-	wfExecutor := initExecutor()
+	wfExecutor := initExecutor(ctx)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	bgCtx := context.Background()
-	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	// nolint:contextcheck
+	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)
@@ -38,7 +38,7 @@ func execData(ctx context.Context) error {
 
 	err := wfExecutor.Data(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	return nil

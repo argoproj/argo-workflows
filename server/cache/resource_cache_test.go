@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,7 +74,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 			},
 		})
 	cache := NewResourceCache(kubeClient, v1.NamespaceAll)
-	ctx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	cache.Run(ctx.Done())
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {

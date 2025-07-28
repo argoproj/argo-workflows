@@ -10,18 +10,18 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
@@ -68,18 +68,15 @@ func isTransientGCSErr(ctx context.Context, err error) bool {
 	return false
 }
 
-func (h *ArtifactDriver) newGCSClient() (*storage.Client, error) {
+func (h *ArtifactDriver) newGCSClient(ctx context.Context) (*storage.Client, error) {
 	if h.ServiceAccountKey != "" {
-		return newGCSClientWithCredential(h.ServiceAccountKey)
+		return newGCSClientWithCredential(ctx, h.ServiceAccountKey)
 	}
 	// Assume it uses Workload Identity
-	return newGCSClientDefault()
+	return newGCSClientDefault(ctx)
 }
 
-func newGCSClientWithCredential(serviceAccountJSON string) (*storage.Client, error) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+func newGCSClientWithCredential(ctx context.Context, serviceAccountJSON string) (*storage.Client, error) {
 	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), storage.ScopeReadWrite)
 	if err != nil {
 		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %w", err)
@@ -91,10 +88,7 @@ func newGCSClientWithCredential(serviceAccountJSON string) (*storage.Client, err
 	return client, nil
 }
 
-func newGCSClientDefault() (*storage.Client, error) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+func newGCSClientDefault(ctx context.Context) (*storage.Client, error) {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("GCS storage.NewClient: %w", err)
@@ -107,16 +101,17 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			key := filepath.Clean(inputArtifact.GCS.Key)
-			log.Infof("GCS Load path: %s, key: %s", path, key)
-			gcsClient, err := h.newGCSClient()
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.Infof(ctx, "GCS Load path: %s, key: %s", path, key)
+			gcsClient, err := h.newGCSClient(ctx)
 			if err != nil {
-				log.Warnf("Failed to create new GCS client: %v", err)
+				logger.Warnf(ctx, "Failed to create new GCS client: %v", err)
 				return !isTransientGCSErr(ctx, err), err
 			}
 			defer gcsClient.Close()
 			err = downloadObjects(ctx, gcsClient, inputArtifact.GCS.Bucket, key, path)
 			if err != nil {
-				log.Warnf("Failed to download objects from GCS: %v", err)
+				logger.Warnf(ctx, "Failed to download objects from GCS: %v", err)
 				return !isTransientGCSErr(ctx, err), err
 			}
 			return true, nil
@@ -172,7 +167,8 @@ func downloadObject(ctx context.Context, client *storage.Client, bucket, key, ob
 	}
 	defer func() {
 		if err := out.Close(); err != nil {
-			log.Fatalf("Error closing file[%s]: %v", localPath, err)
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.Errorf(ctx, "Error closing file[%s]: %v", localPath, err)
 		}
 	}()
 	_, err = io.Copy(out, rc)
@@ -225,8 +221,8 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			key := filepath.Clean(outputArtifact.GCS.Key)
-			log.Infof("GCS Save path: %s, key: %s", path, key)
-			client, err := h.newGCSClient()
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": key}).Info(ctx, "GCS Save")
+			client, err := h.newGCSClient(ctx)
 			if err != nil {
 				return !isTransientGCSErr(ctx, err), err
 			}
@@ -308,7 +304,8 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			log.Fatalf("Error closing file[%s]: %v", localPath, err)
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.Errorf(ctx, "Error closing file[%s]: %v", localPath, err)
 		}
 	}()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)
@@ -334,7 +331,7 @@ func deleteObject(ctx context.Context, client *storage.Client, bucket, key strin
 func (h *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			client, err := h.newGCSClient()
+			client, err := h.newGCSClient(ctx)
 			if err != nil {
 				return !isTransientGCSErr(ctx, err), err
 			}
@@ -353,10 +350,11 @@ func (h *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifac
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS List bucket: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
-			client, err := h.newGCSClient()
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.WithFields(logging.Fields{"bucket": artifact.GCS.Bucket, "key": artifact.GCS.Key}).Info(ctx, "GCS List")
+			client, err := h.newGCSClient(ctx)
 			if err != nil {
-				log.Warnf("Failed to create new GCS client: %v", err)
+				logger.WithError(err).Warn(ctx, "Failed to create new GCS client")
 				return !isTransientGCSErr(ctx, err), err
 			}
 			defer client.Close()

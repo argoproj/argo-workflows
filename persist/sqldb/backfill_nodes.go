@@ -20,7 +20,7 @@ func (s backfillNodes) String() string {
 }
 
 func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error) {
-	logger := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Backfill node status")
 	rs, err := session.SQL().SelectFrom(s.tableName).
 		Columns("workflow").
@@ -55,8 +55,8 @@ func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error
 		if err != nil {
 			return err
 		}
-		logCtx := logger.WithFields(logging.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version})
-		logCtx.Info(ctx, "Back-filling node status")
+		ctx, logger := logger.WithFields(logging.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version}).InContext(ctx)
+		logger.Info(ctx, "Back-filling node status")
 		res, err := session.SQL().Update(archiveTableName).
 			Set("version", wf.ResourceVersion).
 			Set("nodes", marshalled).
@@ -71,7 +71,7 @@ func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error
 			return err
 		}
 		if rowsAffected != 1 {
-			logCtx.WithField("rowsAffected", rowsAffected).Warn(ctx, "Expected exactly one row affected")
+			logger.WithField("rowsAffected", rowsAffected).Warn(ctx, "Expected exactly one row affected")
 		}
 	}
 	return nil

@@ -39,7 +39,7 @@ func (o OfflineClusterWorkflowTemplateServiceClient) DeleteClusterWorkflowTempla
 }
 
 func (o OfflineClusterWorkflowTemplateServiceClient) LintClusterWorkflowTemplate(ctx context.Context, req *clusterworkflowtmplpkg.ClusterWorkflowTemplateLintRequest, opts ...grpc.CallOption) (*v1alpha1.ClusterWorkflowTemplate, error) {
-	err := validate.ValidateClusterWorkflowTemplate(nil, o.clusterWorkflowTemplateGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateClusterWorkflowTemplate(ctx, nil, o.clusterWorkflowTemplateGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}

@@ -99,15 +99,15 @@ type customInstrument struct {
 // For realtime this acts as a thunk to the calling convention
 // For non-realtime we have to fake observability as prometheus provides
 // up/down and set on the same gauge type, which otel forbids.
-func (i *customInstrument) customCallback(_ context.Context, o metric.Observer) error {
+func (i *customInstrument) customCallback(ctx context.Context, o metric.Observer) error {
 	ud := customUserData(i.Instrument, true)
 	ud.mutex.RLock()
 	defer ud.mutex.RUnlock()
 	for _, value := range ud.values {
 		if value.rtValueFunc != nil {
-			i.ObserveFloat(o, value.rtValueFunc(), value.getLabels())
+			i.ObserveFloat(ctx, o, value.rtValueFunc(), value.getLabels())
 		} else {
-			i.ObserveFloat(o, value.prometheusValue, value.getLabels())
+			i.ObserveFloat(ctx, o, value.prometheusValue, value.getLabels())
 		}
 	}
 	return nil

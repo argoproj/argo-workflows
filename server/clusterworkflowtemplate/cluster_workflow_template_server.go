@@ -40,7 +40,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	cwts.instanceIDService.Label(req.Template)
 	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
+	err := validate.ValidateClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -60,7 +60,7 @@ func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx contex
 }
 
 func (cwts *ClusterWorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, name string) (*v1alpha1.ClusterWorkflowTemplate, error) {
-	wfTmpl, err := cwts.cwftmplStore.Getter(ctx).Get(name)
+	wfTmpl, err := cwts.cwftmplStore.Getter(ctx).Get(ctx, name)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
 	}
@@ -107,7 +107,7 @@ func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx conte
 	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
 
-	err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -127,7 +127,7 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	wfClient := auth.GetWfClient(ctx)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
 
-	err = validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
+	err = validate.ValidateClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}

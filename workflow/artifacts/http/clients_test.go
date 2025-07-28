@@ -7,12 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestCreateOauth2Client(t *testing.T) {
 	endpointParams := []wfv1.OAuth2EndpointParam{{Key: "key", Value: "value"}}
 	scopes := []string{"some", "scopes"}
-	client := CreateOauth2Client("clientID", "clientSecret", "tokenURL", scopes, endpointParams)
+	client := CreateOauth2Client(logging.TestContext(t.Context()), "clientID", "clientSecret", "tokenURL", scopes, endpointParams)
 
 	assert.NotNil(t, client)
 }

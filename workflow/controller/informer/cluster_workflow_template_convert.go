@@ -1,6 +1,7 @@
 package informer
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -44,7 +45,7 @@ type ClusterWorkflowTemplateFromInformerGetter struct {
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
 }
 
-func (getter *ClusterWorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+func (getter *ClusterWorkflowTemplateFromInformerGetter) Get(_ context.Context, name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	obj, exists, err := getter.cwftmplInformer.Informer().GetStore().GetByKey(name)
 	if err != nil {
 		return nil, err

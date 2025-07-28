@@ -6,9 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestDecodeLockName(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	type args struct {
 		lockName string
 	}
@@ -80,17 +83,18 @@ func TestDecodeLockName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DecodeLockName(tt.args.lockName)
+			got, err := DecodeLockName(ctx, tt.args.lockName)
 			if !tt.wantErr(t, err, fmt.Sprintf("decodeLockName(%v)", tt.args.lockName)) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "decodeLockName(%v)", tt.args.lockName)
-			got.validateEncoding(tt.args.lockName)
+			got.validateEncoding(ctx, tt.args.lockName)
 		})
 	}
 }
 
 func TestNeedDBSession(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	tests := []struct {
 		name     string
 		lockKeys []string
@@ -142,7 +146,7 @@ func TestNeedDBSession(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := needDBSession(tt.lockKeys)
+			got, err := needDBSession(ctx, tt.lockKeys)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

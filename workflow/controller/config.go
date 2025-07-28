@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -20,12 +19,12 @@ import (
 )
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
-	log := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	bytes, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
-	log.Info(ctx, "Configuration:\n"+string(bytes))
+	logger.WithField("config", string(bytes)).Info(ctx, "Configuration")
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive
@@ -36,7 +35,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
-		log.Info(ctx, "Persistence configuration enabled")
+		logger.Info(ctx, "Persistence configuration enabled")
 		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
 			return err
@@ -46,18 +45,18 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			log.Info(ctx, "Persistence Session created successfully")
+			logger.Info(ctx, "Persistence Session created successfully")
 			wfc.session = session
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
-			log.Info(ctx, "Node status offloading is enabled")
+			logger.Info(ctx, "Node status offloading is enabled")
 		} else {
-			log.Info(ctx, "Node status offloading is disabled")
+			logger.Info(ctx, "Node status offloading is disabled")
 		}
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
@@ -67,12 +66,12 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 				return err
 			}
 			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
-			log.Info(ctx, "Workflow archiving is enabled")
+			logger.Info(ctx, "Workflow archiving is enabled")
 		} else {
-			log.Info(ctx, "Workflow archiving is disabled")
+			logger.Info(ctx, "Workflow archiving is disabled")
 		}
 	} else {
-		log.Info(ctx, "Persistence configuration disabled")
+		logger.Info(ctx, "Persistence configuration disabled")
 	}
 
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
@@ -80,7 +79,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.rateLimiter = wfc.newRateLimiter()
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
-	log.WithField("executorImage", wfc.executorImage()).
+	logger.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
 		Info(ctx, "")
@@ -91,7 +90,8 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 func (wfc *WorkflowController) initDB(ctx context.Context) error {
 	persistence := wfc.Config.Persistence
 	if persistence == nil || persistence.SkipMigration {
-		log.Info("DB migration is disabled")
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.Info(ctx, "DB migration is disabled")
 		return nil
 	}
 	tableName, err := persist.GetTableName(persistence)

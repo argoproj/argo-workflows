@@ -56,7 +56,7 @@ func TestNewDriverS3(t *testing.T) {
 		}},
 	}
 
-	got, err := newDriver(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), art, &mockResourceInterface{})
+	got, err := newDriver(logging.TestContext(t.Context()), art, &mockResourceInterface{})
 	require.NoError(t, err)
 
 	artDriver := got.(*s3.ArtifactDriver)

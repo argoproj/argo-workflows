@@ -123,7 +123,7 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		wfClient:          wfClient,
 		namespace:         namespace,
 	}
-	err = client.startStores(restConfig)
+	err = client.startStores(ctx, restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +131,7 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 	return ctx, client, nil
 }
 
-func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
+func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient.Config) error {
 	if a.opts.CacheWorkflows {
 		wfStore, err := store.NewSQLiteStore(a.instanceIDService)
 		if err != nil {
@@ -148,7 +148,7 @@ func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
 		if err != nil {
 			return err
 		}
-		wftmplInformer.Run(a.opts.CachingCloseCh)
+		wftmplInformer.Run(ctx, a.opts.CachingCloseCh)
 		a.wfTmplStore = wftmplInformer
 	} else {
 		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
@@ -159,7 +159,7 @@ func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
 		if err != nil {
 			return err
 		}
-		cwftmplInformer.Run(a.opts.CachingCloseCh)
+		cwftmplInformer.Run(ctx, a.opts.CachingCloseCh)
 		a.cwfTmplStore = cwftmplInformer
 	} else {
 		a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
@@ -167,9 +167,9 @@ func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
 	return nil
 }
 
-func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
+func (a *argoKubeClient) NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	wfServer := workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	wfServer := workflowserver.NewWorkflowServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
 	go wfServer.Run(a.opts.CachingCloseCh)
 	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }

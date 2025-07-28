@@ -40,16 +40,16 @@ func (_m *ContainerRuntimeExecutor) EXPECT() *ContainerRuntimeExecutor_Expecter 
 }
 
 // CopyFile provides a mock function for the type ContainerRuntimeExecutor
-func (_mock *ContainerRuntimeExecutor) CopyFile(containerName string, sourcePath string, destPath string, compressionLevel int) error {
-	ret := _mock.Called(containerName, sourcePath, destPath, compressionLevel)
+func (_mock *ContainerRuntimeExecutor) CopyFile(ctx context.Context, containerName string, sourcePath string, destPath string, compressionLevel int) error {
+	ret := _mock.Called(ctx, containerName, sourcePath, destPath, compressionLevel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CopyFile")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, int) error); ok {
-		r0 = returnFunc(containerName, sourcePath, destPath, compressionLevel)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, int) error); ok {
+		r0 = returnFunc(ctx, containerName, sourcePath, destPath, compressionLevel)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -62,19 +62,20 @@ type ContainerRuntimeExecutor_CopyFile_Call struct {
 }
 
 // CopyFile is a helper method to define mock.On call
+//   - ctx context.Context
 //   - containerName string
 //   - sourcePath string
 //   - destPath string
 //   - compressionLevel int
-func (_e *ContainerRuntimeExecutor_Expecter) CopyFile(containerName interface{}, sourcePath interface{}, destPath interface{}, compressionLevel interface{}) *ContainerRuntimeExecutor_CopyFile_Call {
-	return &ContainerRuntimeExecutor_CopyFile_Call{Call: _e.mock.On("CopyFile", containerName, sourcePath, destPath, compressionLevel)}
+func (_e *ContainerRuntimeExecutor_Expecter) CopyFile(ctx interface{}, containerName interface{}, sourcePath interface{}, destPath interface{}, compressionLevel interface{}) *ContainerRuntimeExecutor_CopyFile_Call {
+	return &ContainerRuntimeExecutor_CopyFile_Call{Call: _e.mock.On("CopyFile", ctx, containerName, sourcePath, destPath, compressionLevel)}
 }
 
-func (_c *ContainerRuntimeExecutor_CopyFile_Call) Run(run func(containerName string, sourcePath string, destPath string, compressionLevel int)) *ContainerRuntimeExecutor_CopyFile_Call {
+func (_c *ContainerRuntimeExecutor_CopyFile_Call) Run(run func(ctx context.Context, containerName string, sourcePath string, destPath string, compressionLevel int)) *ContainerRuntimeExecutor_CopyFile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -84,15 +85,20 @@ func (_c *ContainerRuntimeExecutor_CopyFile_Call) Run(run func(containerName str
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		var arg3 int
+		var arg3 string
 		if args[3] != nil {
-			arg3 = args[3].(int)
+			arg3 = args[3].(string)
+		}
+		var arg4 int
+		if args[4] != nil {
+			arg4 = args[4].(int)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -103,7 +109,7 @@ func (_c *ContainerRuntimeExecutor_CopyFile_Call) Return(err error) *ContainerRu
 	return _c
 }
 
-func (_c *ContainerRuntimeExecutor_CopyFile_Call) RunAndReturn(run func(containerName string, sourcePath string, destPath string, compressionLevel int) error) *ContainerRuntimeExecutor_CopyFile_Call {
+func (_c *ContainerRuntimeExecutor_CopyFile_Call) RunAndReturn(run func(ctx context.Context, containerName string, sourcePath string, destPath string, compressionLevel int) error) *ContainerRuntimeExecutor_CopyFile_Call {
 	_c.Call.Return(run)
 	return _c
 }

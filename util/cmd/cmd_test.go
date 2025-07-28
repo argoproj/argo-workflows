@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
@@ -112,10 +112,11 @@ func TestIsURL(t *testing.T) {
 
 func TestPrintVersionMismatchWarning(t *testing.T) {
 	tests := []struct {
-		name          string
-		clientVersion *wfv1.Version
-		serverVersion string
-		expectedLog   string
+		name           string
+		clientVersion  *wfv1.Version
+		serverVersion  string
+		expectedLog    string
+		expectedFields logging.Fields
 	}{
 		{
 			name: "server version not set",
@@ -123,14 +124,16 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 				Version: "v3.1.0",
 				GitTag:  "v3.1.0",
 			},
-			serverVersion: "",
+			serverVersion:  "",
+			expectedFields: nil,
 		},
 		{
 			name: "client version is untagged",
 			clientVersion: &wfv1.Version{
 				Version: "v3.1.0",
 			},
-			serverVersion: "v3.1.1",
+			serverVersion:  "v3.1.1",
+			expectedFields: nil,
 		},
 		{
 			name: "version mismatch",
@@ -139,7 +142,11 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 				GitTag:  "v3.1.0",
 			},
 			serverVersion: "v3.1.1",
-			expectedLog:   "CLI version (v3.1.0) does not match server version (v3.1.1). This can lead to unexpected behavior.",
+			expectedLog:   "CLI version does not match server version. This can lead to unexpected behavior.",
+			expectedFields: logging.Fields{
+				"clientVersion": "v3.1.0",
+				"serverVersion": "v3.1.1",
+			},
 		},
 	}
 
@@ -147,18 +154,15 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a test hook to capture log messages
 			hook := logging.NewTestHook()
+			logger := logging.NewTestLogger(logging.Info, logging.Text, hook)
+			ctx := logging.WithLogger(logging.TestContext(t.Context()), logger)
 
-			// Add the hook to the default logger
-			defaultLogger := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat(), hook)
-
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			ctx = logging.WithLogger(ctx, defaultLogger)
+			defer hook.Reset()
 			PrintVersionMismatchWarning(ctx, *tt.clientVersion, tt.serverVersion)
 
 			if tt.expectedLog != "" {
 				lastEntry := hook.LastEntry()
-				assert.NotNil(t, lastEntry)
+				require.NotNil(t, lastEntry)
 				assert.Equal(t, tt.expectedLog, lastEntry.Msg)
 				assert.Equal(t, logging.Warn, lastEntry.Level)
 			} else {

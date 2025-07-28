@@ -1,17 +1,21 @@
 package osspecific
 
 import (
+	"context"
 	"os"
 	"os/exec"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func StartCommand(cmd *exec.Cmd) (func(), error) {
+func StartCommand(ctx context.Context, cmd *exec.Cmd) (func(), error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	if cmd.Stdin == nil {
 		cmd.Stdin = os.Stdin
 	}
 
 	if isTerminal(cmd.Stdin) {
-		logger.Warn("TTY detected but is not supported on windows")
+		logger.Warn(ctx, "TTY detected but is not supported on windows")
 	}
 	return simpleStart(cmd)
 }

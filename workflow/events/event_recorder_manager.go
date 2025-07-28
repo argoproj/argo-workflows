@@ -1,13 +1,14 @@
 package events
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -19,7 +20,7 @@ import (
 const defaultSpamBurst = 10000
 
 type EventRecorderManager interface {
-	Get(namespace string) record.EventRecorder
+	Get(ctx context.Context, namespace string) record.EventRecorder
 }
 
 type eventRecorderManager struct {
@@ -58,7 +59,17 @@ func customEventAggregatorFuncWithAnnotations(event *apiv1.Event) (string, strin
 		""), event.Message
 }
 
-func (m *eventRecorderManager) Get(namespace string) record.EventRecorder {
+type debugfAdapter struct {
+	logger logging.Logger
+}
+
+// debugfAdapter adapts the logging system to the signature expected by StartLogging.
+func (a *debugfAdapter) Debugf(format string, args ...interface{}) {
+	// nolint:contextcheck
+	a.logger.Debugf(context.Background(), format, args...)
+}
+
+func (m *eventRecorderManager) Get(ctx context.Context, namespace string) record.EventRecorder {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	eventRecorder, ok := m.eventRecorders[namespace]
@@ -67,7 +78,8 @@ func (m *eventRecorderManager) Get(namespace string) record.EventRecorder {
 	}
 	eventCorrelationOption := record.CorrelatorOptions{BurstSize: defaultSpamBurst, KeyFunc: customEventAggregatorFuncWithAnnotations}
 	eventBroadcaster := record.NewBroadcasterWithCorrelatorOptions(eventCorrelationOption)
-	eventBroadcaster.StartLogging(log.Debugf)
+	adapter := &debugfAdapter{logger: logging.RequireLoggerFromContext(ctx)}
+	eventBroadcaster.StartLogging(adapter.Debugf)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: m.kubernetes.CoreV1().Events(namespace)})
 	m.eventRecorders[namespace] = eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: "workflow-controller"})
 	return m.eventRecorders[namespace]

@@ -20,7 +20,7 @@ func New(d common.ArtifactDriver) common.ArtifactDriver {
 }
 
 func (d *driver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log.Infof(ctx, "Loading artifact from %s", d.ArtifactDriver)
 	t := time.Now()
 	key, _ := inputArtifact.GetKey()
@@ -34,7 +34,7 @@ func (d *driver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path st
 }
 
 func (d *driver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log.Infof(ctx, "Opening stream from %s", d.ArtifactDriver)
 	t := time.Now()
 	key, _ := inputArtifact.GetKey()
@@ -48,7 +48,7 @@ func (d *driver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (
 }
 
 func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log.Infof(ctx, "Saving artifact to %s", d.ArtifactDriver)
 	t := time.Now()
 	key, _ := outputArtifact.GetKey()
@@ -62,13 +62,13 @@ func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 }
 
 func (d *driver) Delete(ctx context.Context, s *wfv1.Artifact) error {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log.Infof(ctx, "Deleting artifact from %s", d.ArtifactDriver)
 	return d.ArtifactDriver.Delete(ctx, s)
 }
 
 func (d *driver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log.Infof(ctx, "Listing objects from %s", d.ArtifactDriver)
 	t := time.Now()
 	key, _ := artifact.GetKey()
@@ -82,7 +82,7 @@ func (d *driver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]st
 }
 
 func (d *driver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	log.Infof(ctx, "Checking if directory from %s", d.ArtifactDriver)
 	t := time.Now()
 	key, _ := artifact.GetKey()

@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -50,18 +49,18 @@ func PrintVersion(cliName string, version wfv1.Version, short bool) {
 
 // PrintVersionMismatchWarning detects if there's a mismatch between the client and server versions and prints a warning if so
 func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version, serverVersion string) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	if serverVersion != "" && clientVersion.GitTag != "" && serverVersion != clientVersion.Version {
-		log.Warnf(ctx, "CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", clientVersion.Version, serverVersion)
+		log.WithFields(logging.Fields{"clientVersion": clientVersion.Version, "serverVersion": serverVersion}).Warn(ctx, "CLI version does not match server version. This can lead to unexpected behavior.")
 	}
 }
 
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
 func MustIsDir(ctx context.Context, filePath string) bool {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.WithFatal().Error(ctx, err.Error())
+		log.WithError(err).WithFatal().Error(ctx, "Failed to check if file is a directory")
 	}
 	return fileInfo.IsDir()
 }
@@ -104,20 +103,24 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 	return labels, nil
 }
 
-// SetLogFormatter sets a log formatter for logrus
-func SetLogFormatter(logFormat string) {
-	timestampFormat := "2006-01-02T15:04:05.000Z"
-	switch strings.ToLower(logFormat) {
-	case "json":
-		logging.SetGlobalFormat(logging.JSON)
-		logrus.SetFormatter(&logrus.JSONFormatter{TimestampFormat: timestampFormat})
-	case "text":
-		logging.SetGlobalFormat(logging.Text)
-		logrus.SetFormatter(&logrus.TextFormatter{
-			TimestampFormat: timestampFormat,
-			FullTimestamp:   true,
-		})
-	default:
-		os.Exit(1)
+// Ensures we have a logger at the specified level
+func CmdContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Context, logging.Logger, error) {
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
 	}
+
+	level, err := logging.ParseLevel(logLevel)
+	if err != nil {
+		return nil, nil, err
+	}
+	format, err := logging.TypeFromString(logType)
+	if err != nil {
+		return nil, nil, err
+	}
+	logger := logging.NewSlogLogger(level, format)
+	ctx = logging.WithLogger(ctx, logger)
+
+	cmd.SetContext(ctx)
+	return ctx, logger, nil
 }

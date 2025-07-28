@@ -330,15 +330,13 @@ var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
 
-func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
-	return func(lockName string) (int, error) {
+func GetSyncLimitFunc(kube *fake.Clientset) func(context.Context, string) (int, error) {
+	return func(ctx context.Context, lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
 		if len(items) < 4 {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
 		}
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
 		if err != nil {
 			return 0, err
@@ -358,8 +356,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -564,8 +561,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -640,8 +636,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -704,14 +699,13 @@ type mockGetSyncLimit struct {
 	outputErr  error
 }
 
-func (m *mockGetSyncLimit) getSyncLimit(s string) (int, error) {
+func (m *mockGetSyncLimit) getSyncLimit(_ context.Context, s string) (int, error) {
 	m.callCount++
 	return m.outputSize, m.outputErr
 }
 
 func TestSemaphoreSizeCache(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 
 	mockedNow := time.Now()
@@ -744,7 +738,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
@@ -755,7 +749,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 
@@ -768,7 +762,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -780,7 +774,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
@@ -794,7 +788,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now again
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -806,7 +800,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 	})
 
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
@@ -831,7 +825,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
@@ -842,7 +836,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 
@@ -855,7 +849,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -867,7 +861,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
@@ -881,7 +875,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now again
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -893,7 +887,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 	})
 }
 
@@ -904,8 +898,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -946,8 +939,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 }
 
 func TestMutexWfLevel(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
@@ -1032,13 +1024,12 @@ func TestMutexWfLevel(t *testing.T) {
 }
 
 func TestCheckWorkflowExistence(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "1"
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -1062,17 +1053,17 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 
-		holders, err := mutex.getCurrentHolders()
+		holders, err := mutex.getCurrentHolders(ctx)
 		require.NoError(t, err)
 		assert.Len(t, holders, 1)
-		pending, err := mutex.getCurrentPending()
+		pending, err := mutex.getCurrentPending(ctx)
 		require.NoError(t, err)
 		assert.Len(t, pending, 1)
 		syncManager.CheckWorkflowExistence(ctx)
-		holders, err = semaphore.getCurrentHolders()
+		holders, err = semaphore.getCurrentHolders(ctx)
 		require.NoError(t, err)
 		assert.Empty(t, holders)
-		pending, err = semaphore.getCurrentPending()
+		pending, err = semaphore.getCurrentPending(ctx)
 		require.NoError(t, err)
 		assert.Empty(t, pending)
 	})
@@ -1085,8 +1076,7 @@ func TestTriggerWFWithSemaphoreAndMutex(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["test-sem"] = "1"
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
@@ -1486,8 +1476,7 @@ status:
 `
 
 func TestMutexMigration(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	assert := assert.New(t)
 	require := require.New(t)
 	kube := fake.NewSimpleClientset()
@@ -1518,10 +1507,10 @@ func TestMutexMigration(t *testing.T) {
 		lockName, err := syncItems[0].lockName(wfMutex2.Namespace)
 		require.NoError(err)
 
-		sem, found := syncMgr.syncLockMap[lockName.String()]
+		sem, found := syncMgr.syncLockMap[lockName.String(ctx)]
 		require.True(found)
 
-		holders, err := sem.getCurrentHolders()
+		holders, err := sem.getCurrentHolders(ctx)
 		require.NoError(err)
 		require.Len(holders, 1)
 
@@ -1562,10 +1551,10 @@ func TestMutexMigration(t *testing.T) {
 		lockName, err := syncItems[0].lockName(wfMutex3.Namespace)
 		require.NoError(err)
 
-		sem, found := syncMgr.syncLockMap[lockName.String()]
+		sem, found := syncMgr.syncLockMap[lockName.String(ctx)]
 		require.True(found)
 
-		holders, err := sem.getCurrentHolders()
+		holders, err := sem.getCurrentHolders(ctx)
 		require.NoError(err)
 		require.Len(holders, 1)
 
@@ -1620,14 +1609,16 @@ func TestCheckHolderVersion(t *testing.T) {
 }
 
 func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
+
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows platforms")
 	}
 
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			// Create database session and info
-			info, deferfunc, _, err := createTestDBSession(t, dbType)
+			info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
 			require.NoError(t, err)
 			defer deferfunc()
 
@@ -1672,7 +1663,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", "foo/test-semaphore", 100)
 			require.NoError(t, err)
 			// Initialize a semaphore so it gets added to the syncLockMap
-			testsem, err := newDatabaseSemaphore("test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
+			testsem, err := newDatabaseSemaphore(ctx, "test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
 			require.NoError(t, err)
 			syncLockMap := make(map[string]semaphore)
 			syncLockMap["sem/test-semaphore"] = testsem
@@ -1684,7 +1675,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 
 			// Run the background notifier manually once
 			for _, lock := range syncLockMap {
-				lock.probeWaiting()
+				lock.probeWaiting(ctx)
 			}
 
 			// Check that only the active controller's lock remains
@@ -1702,8 +1693,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 }
 
 func TestUnconfiguredSemaphores(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	t.Run("UnconfiguredConfigMapSemaphore", func(t *testing.T) {
 		// Setup with a fake k8s client but no ConfigMap created
@@ -1803,7 +1793,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 		for _, dbType := range testDBTypes {
 			t.Run(string(dbType), func(t *testing.T) {
 				// Setup test database using helper
-				info, cleanup, syncConfig, err := createTestDBSession(t, dbType)
+				info, cleanup, syncConfig, err := createTestDBSession(ctx, t, dbType)
 				require.NoError(t, err)
 				defer cleanup()
 

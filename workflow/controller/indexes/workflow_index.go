@@ -1,13 +1,14 @@
 package indexes
 
 import (
+	"context"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -17,7 +18,7 @@ var (
 )
 
 func init() {
-	log.WithField("indexWorkflowSemaphoreKeys", indexWorkflowSemaphoreKeys).Info("index config")
+	logging.InitLogger().WithField("indexWorkflowSemaphoreKeys", indexWorkflowSemaphoreKeys).Info(context.Background(), "index config")
 }
 
 func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
