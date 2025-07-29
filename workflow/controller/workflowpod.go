@@ -119,7 +119,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if exists {
-		woc.log.WithField("podPhase", existing.Status.Phase).Debugf(ctx, "Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+		woc.log.WithFields(logging.Fields{"podPhase": existing.Status.Phase, "nodeName": nodeName, "nodeID": nodeID}).Debug(ctx, "Skipped pod creation: already exists")
 		return existing, nil
 	}
 
@@ -281,7 +281,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", nodeID)
+				woc.log.WithField("nodeID", nodeID).WithPanic().Error(ctx, "was unable to obtain node")
 			}
 			node.Progress = p
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
@@ -472,9 +472,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if !apierr.IsAlreadyExists(err) {
 				return nil, err
 			}
-			woc.log.Infof(ctx, "Configmap already exists: %s", cm.Name)
+			woc.log.WithField("name", cm.Name).Info(ctx, "Configmap already exists")
 		} else {
-			woc.log.Infof(ctx, "Created configmap: %s", created.Name)
+			woc.log.WithField("name", created.Name).Info(ctx, "Created configmap")
 		}
 
 		volumeConfig := apiv1.Volume{
@@ -508,7 +508,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
 	}
 	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
 	if err != nil {
@@ -524,7 +524,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		woc.log.Debugf(ctx, "Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
+		woc.log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
@@ -532,14 +532,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	woc.log.Debugf(ctx, "Creating Pod: %s (%s)", nodeName, pod.Name)
+	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": pod.Name}).Debug(ctx, "Creating Pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof(ctx, "Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
+			woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": pod.Name}).Info(ctx, "Failed pod creation: already exists")
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
@@ -548,10 +548,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if errorsutil.IsTransientErr(ctx, err) {
 			return nil, err
 		}
-		woc.log.Infof(ctx, "Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
+		woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": pod.Name, "error": err}).Info(ctx, "Failed to create pod")
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof(ctx, "Created pod: %s (%s)", nodeName, created.Name)
+	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": created.Name}).Info(ctx, "Created pod")
 	woc.activePods++
 	return created, nil
 }
@@ -784,7 +784,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 	// Get boundaryNode Template (if specified)
 	boundaryTemplate, err := woc.GetBoundaryTemplate(ctx, nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't get boundaryTemplate through nodeName %s", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't get boundaryTemplate")
 	}
 	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
@@ -840,7 +840,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 func (woc *wfOperationCtx) GetBoundaryTemplate(ctx context.Context, nodeName string) (*wfv1.Template, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
 		return nil, err
 	}
 	boundaryTmpl, _, err := woc.GetTemplateByBoundaryID(ctx, node.BoundaryID)
@@ -1030,8 +1030,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				return errors.Errorf(errors.CodeBadRequest, "error in inputs.artifacts.%s: %s", art.Name, err.Error())
 			}
 			if !art.HasLocationOrKey() && art.Optional {
-				woc.log.Infof(ctx, "skip volume mount of %s (%s): optional artifact was not provided",
-					art.Name, art.Path)
+				woc.log.WithFields(logging.Fields{"name": art.Name, "path": art.Path}).Info(ctx, "skip volume mount")
 				continue
 			}
 			overlap := common.FindOverlappingVolume(tmpl, art.Path)
@@ -1039,8 +1038,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				// artifact path overlaps with a mounted volume. do not mount the
 				// artifacts emptydir to the main container. init would have copied
 				// the artifact to the user's volume instead
-				woc.log.Debugf(ctx, "skip volume mount of %s (%s): overlaps with mount %s at %s",
-					art.Name, art.Path, overlap.Name, overlap.MountPath)
+				woc.log.WithFields(logging.Fields{"name": art.Name, "path": art.Path, "overlapName": overlap.Name, "overlapMountPath": overlap.MountPath}).Debug(ctx, "skip volume mount")
 				continue
 			}
 			volMount := apiv1.VolumeMount{
@@ -1399,7 +1397,7 @@ func mirrorVolumeMounts(ctx context.Context, sourceContainer, targetContainer *a
 		if targetContainer.VolumeMounts == nil {
 			targetContainer.VolumeMounts = make([]apiv1.VolumeMount, 0)
 		}
-		logging.RequireLoggerFromContext(ctx).Debugf(ctx, "Adding volume mount %v to container %v", volMnt.Name, targetContainer.Name)
+		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"name": volMnt.Name, "containerName": targetContainer.Name}).Debug(ctx, "Adding volume mount")
 		targetContainer.VolumeMounts = append(targetContainer.VolumeMounts, volMnt)
 
 	}

@@ -174,7 +174,7 @@ func (s3Driver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Ar
 	log := logging.RequireLoggerFromContext(ctx)
 	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
-			log.Infof(ctx, "S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
+			log.WithFields(logging.Fields{"path": path, "key": inputArtifact.S3.Key}).Info(ctx, "S3 Load")
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
@@ -215,7 +215,7 @@ func loadS3Artifact(ctx context.Context, s3cli S3Client, inputArtifact *wfv1.Art
 // OpenStream opens a stream reader for an artifact from S3 compliant storage
 func (s3Driver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.Infof(ctx, "S3 OpenStream: key: %s", inputArtifact.S3.Key)
+	log.WithField("key", inputArtifact.S3.Key).Info(ctx, "S3 OpenStream")
 	// nolint:contextcheck
 	s3cli, err := s3Driver.newS3Client(log.NewBackgroundContext())
 	if err != nil {
@@ -254,7 +254,7 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 	log := logging.RequireLoggerFromContext(ctx)
 	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
-			log.Infof(ctx, "S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
+			log.WithFields(logging.Fields{"path": path, "key": outputArtifact.S3.Key}).Info(ctx, "S3 Save")
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
@@ -272,7 +272,7 @@ func (s3Driver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artif
 	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		return isTransientS3Err(ctx, err)
 	}, func() error {
-		log.Infof(ctx, "S3 Delete artifact: key: %s", artifact.S3.Key)
+		log.WithField("key", artifact.S3.Key).Info(ctx, "S3 Delete")
 		s3cli, err := s3Driver.newS3Client(ctx)
 		if err != nil {
 			return err
@@ -374,7 +374,7 @@ func listObjects(ctx context.Context, s3cli S3Client, artifact *wfv1.Artifact) (
 		return !isTransientS3Err(ctx, err), files, fmt.Errorf("failed to list directory: %v", err)
 	}
 	log := logging.RequireLoggerFromContext(ctx)
-	log.Debugf(ctx, "successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
+	log.WithFields(logging.Fields{"bucket": artifact.S3.Bucket, "key": artifact.S3.Key, "files": files}).Debug(ctx, "successfully listing S3 directory")
 
 	if len(files) == 0 {
 		directoryExists, err := s3cli.KeyExists(artifact.S3.Bucket, artifact.S3.Key)

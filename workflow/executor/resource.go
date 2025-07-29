@@ -80,7 +80,7 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
 	selfLink := inferObjectSelfLink(obj)
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Infof(ctx, "Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
+	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
@@ -202,7 +202,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
 		}
-		logger.Infof(ctx, "Waiting for conditions: %s", successSelector)
+		logger.WithField("conditions", successSelector).Info(ctx, "Waiting for conditions")
 		successReqs, _ = successSelector.Requirements()
 	}
 
@@ -212,7 +212,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
 		}
-		logger.Infof(ctx, "Failing for conditions: %s", failSelector)
+		logger.WithField("conditions", failSelector).Info(ctx, "Failing for conditions")
 		failReqs, _ = failSelector.Requirements()
 	}
 	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
@@ -220,22 +220,22 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		func(ctx context.Context) (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
 			if err == nil {
-				logger.Infof(ctx, "Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
+				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace}).Info(ctx, "Returning from successful wait for resource")
 				return true, nil
 			}
 			if isErrRetryable || argoerr.IsTransientErr(ctx, err) {
-				logger.Infof(ctx, "Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
+				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace, "error": err}).Info(ctx, "Waiting for resource resulted in retryable error")
 				return false, nil
 			}
 
-			logger.Warnf(ctx, "Waiting for resource %s in namespace %s resulted in non-retryable error: %v", resourceName, resourceNamespace, err)
+			logger.WithField("name", resourceName).WithField("namespace", resourceNamespace).WithError(err).Warn(ctx, "Waiting for resource resulted in non-retryable error")
 			return false, err
 		})
 	if err != nil {
 		if wait.Interrupted(err) {
-			logger.Warnf(ctx, "Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
+			logger.WithField("name", resourceName).Warn(ctx, "Waiting for resource resulted in timeout due to repeated errors")
 		} else {
-			logger.Warnf(ctx, "Waiting for resource %s resulted in error %v", resourceName, err)
+			logger.WithField("name", resourceName).WithError(err).Warn(ctx, "Waiting for resource resulted in error")
 		}
 		return err
 	}
@@ -285,12 +285,12 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 	numMatched := 0
 	for _, req := range successReqs {
 		matched := req.Matches(ls)
-		logger.Infof(ctx, "success condition '%s' evaluated %v", req, matched)
+		logger.WithFields(logging.Fields{"condition": req, "matched": matched}).Info(ctx, "success condition evaluated")
 		if matched {
 			numMatched++
 		}
 	}
-	logger.Infof(ctx, "%d/%d success conditions matched", numMatched, len(successReqs))
+	logger.WithFields(logging.Fields{"numMatched": numMatched, "total": len(successReqs)}).Info(ctx, "success conditions matched")
 	if numMatched >= len(successReqs) {
 		return false, nil
 	}
@@ -302,10 +302,10 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if len(we.Template.Outputs.Parameters) == 0 {
-		logger.Infof(ctx, "No output parameters")
+		logger.Info(ctx, "No output parameters")
 		return nil
 	}
-	logger.Infof(ctx, "Saving resource output parameters")
+	logger.Info(ctx, "Saving resource output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
 		if param.ValueFrom == nil {
 			continue
@@ -342,7 +342,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		}
 
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
-		logger.Infof(ctx, "Saved output parameter: %s, value: %s", param.Name, output)
+		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
 	err := we.ReportOutputs(ctx, nil)
 	return err

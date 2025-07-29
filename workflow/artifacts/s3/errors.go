@@ -29,7 +29,7 @@ func isTransientS3Err(ctx context.Context, err error) bool {
 	log := logging.RequireLoggerFromContext(ctx)
 	for _, transientErrCode := range s3TransientErrorCodes {
 		if IsS3ErrCode(err, transientErrCode) {
-			log.Errorf(ctx, "Transient S3 error: %v", err)
+			log.WithError(err).Error(ctx, "Transient S3 error")
 			return true
 		}
 	}

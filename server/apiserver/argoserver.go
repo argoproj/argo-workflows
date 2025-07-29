@@ -288,7 +288,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	log.WithFields(logging.Fields{
 		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
 	}).Info(ctx, "GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
-	log.WithFields(logging.Fields{"url": url}).Infof(ctx, "Argo Server started successfully on %s", url)
+	log.WithField("url", url).Info(ctx, "Argo Server started successfully")
 	browserOpenFunc(url)
 
 	<-as.stopCh
@@ -452,7 +452,7 @@ func (as *argoServer) checkServeErr(ctx context.Context, name string, err error)
 			// a nil stopCh indicates a graceful shutdown
 			log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
 		} else {
-			log.WithFields(nameField).WithError(err).WithFatal().Errorf(ctx, "%s: %v", name, err)
+			log.WithFields(nameField).WithError(err).WithFatal().Error(ctx, "server failure")
 		}
 	} else {
 		log.WithFields(nameField).Info(ctx, "graceful shutdown")

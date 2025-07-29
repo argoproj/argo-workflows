@@ -37,7 +37,7 @@ func IsTransientErr(ctx context.Context, err error) bool {
 func IsTransientErrQuiet(ctx context.Context, err error) bool {
 	isTransient := isTransientErr(err)
 	if isTransient {
-		logging.RequireLoggerFromContext(ctx).WithError(err).Infof(ctx, "Transient error")
+		logging.RequireLoggerFromContext(ctx).WithError(err).Info(ctx, "Transient error")
 	}
 	return isTransient
 }

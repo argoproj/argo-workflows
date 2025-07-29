@@ -64,7 +64,7 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 
 		if isSASAccountKey(azblobDriver.AccountKey) {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.Infof(ctx, "Provided account key is a SAS token. Using no-credential client.")
+			logger.Info(ctx, "Provided account key is a SAS token. Using no-credential client.")
 			serviceURL := fmt.Sprintf("%s?%s", containerURL.String(), azblobDriver.AccountKey)
 			containerClient, err := container.NewClientWithNoCredential(serviceURL, nil)
 			return containerClient, err

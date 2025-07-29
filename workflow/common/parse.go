@@ -49,7 +49,7 @@ func ParseObjects(ctx context.Context, body []byte, strict bool) []ParseResult {
 			if un.GetKind() != "" {
 				res = append(res, ParseResult{nil, err})
 			} else {
-				log.Errorf(ctx, "yaml file at index %d is not valid: %s", i, err)
+				log.WithField("index", i).WithError(err).Error(ctx, "yaml file is not valid")
 			}
 			continue
 		}
@@ -126,7 +126,7 @@ func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv
 		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.Workflow)
 		if !ok {
-			log.Warnf(ctx, "%s is not of kind Workflow. Ignoring...", obj.GetName())
+			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind Workflow. Ignoring...")
 			continue
 		}
 		if err != nil { // only returns parsing errors for workflow types
@@ -145,7 +145,7 @@ func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool
 		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.WorkflowTemplate)
 		if !ok {
-			log.Warnf(ctx, "%s is not of kind WorkflowTemplate. Ignoring...", obj.GetName())
+			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind WorkflowTemplate. Ignoring...")
 			continue
 		}
 		if err != nil { // only returns parsing errors for template types
@@ -164,7 +164,7 @@ func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([
 		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.CronWorkflow)
 		if !ok {
-			log.Warnf(ctx, "%s is not of kind CronWorkflow. Ignoring...", obj.GetName())
+			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind CronWorkflow. Ignoring...")
 			continue
 		}
 		if err != nil { // only returns parsing errors for cron types
@@ -183,7 +183,7 @@ func SplitClusterWorkflowTemplateYAMLFile(ctx context.Context, body []byte, stri
 		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.ClusterWorkflowTemplate)
 		if !ok {
-			log.Warnf(ctx, "%s is not of kind ClusterWorkflowTemplate. Ignoring...", obj.GetName())
+			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind ClusterWorkflowTemplate. Ignoring...")
 			continue
 		}
 		if err != nil { // only returns parsing errors for cwft types

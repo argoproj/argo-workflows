@@ -124,14 +124,14 @@ See %s`, help.ArgoServer()),
 				}
 
 				if tlsCertificateSecretName != "" {
-					logger.Infof(ctx, "Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
+					logger.WithField("secretName", tlsCertificateSecretName).Info(ctx, "Getting contents of Kubernetes secret for TLS Certificates")
 					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(ctx, clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
 					if err != nil {
 						return err
 					}
-					logger.Infof(ctx, "Successfully loaded TLS config from Kubernetes secret %s", tlsCertificateSecretName)
+					logger.WithField("secretName", tlsCertificateSecretName).Info(ctx, "Successfully loaded TLS config from Kubernetes secret")
 				} else {
-					logger.Infof(ctx, "Generating Self Signed TLS Certificates for Secure Mode")
+					logger.Info(ctx, "Generating Self Signed TLS Certificates for Secure Mode")
 					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
 					if err != nil {
 						return err
@@ -176,10 +176,10 @@ See %s`, help.ArgoServer()),
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
-					logger.Infof(ctx, "Argo UI is available at %s", url)
+					logger.WithField("url", url).Info(ctx, "Argo UI is available")
 					err := browser.OpenURL(url)
 					if err != nil {
-						logger.Warnf(ctx, "Unable to open the browser. %v", err)
+						logger.WithError(err).Warn(ctx, "Unable to open the browser")
 					}
 				}
 			}

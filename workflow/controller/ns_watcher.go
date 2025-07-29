@@ -109,7 +109,7 @@ func updateNS(ctx context.Context, ns *apiv1.Namespace, updateFn updateFunc, res
 		log.WithField("namespace", ns.Name).WithError(err).Error(ctx, "was unable to extract the limit")
 		return
 	}
-	log.Infof(ctx, "changing namespace parallelism in %s to %d", ns.Name, limit)
+	log.WithFields(logging.Fields{"namespace": ns.Name, "limit": limit}).Info(ctx, "changing namespace parallelism limit")
 	updateFn(ns.Name, limit)
 }
 

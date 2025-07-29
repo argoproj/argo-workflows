@@ -10,7 +10,7 @@ func (woc *wfOperationCtx) executePluginTemplate(ctx context.Context, nodeName s
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		if opts.boundaryID == "" {
-			woc.log.Warnf(ctx, "[DEBUG] boundaryID was nil")
+			woc.log.Debug(ctx, "boundaryID was nil")
 		}
 		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePlugin, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, true)
 	}

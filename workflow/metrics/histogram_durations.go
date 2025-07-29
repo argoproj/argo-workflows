@@ -20,7 +20,10 @@ func addOperationDurationHistogram(ctx context.Context, m *Metrics) error {
 	maxOperationTimeSeconds := envutil.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second).Seconds()
 	operationDurationMetricBucketCount := envutil.LookupEnvIntOr(ctx, "OPERATION_DURATION_METRIC_BUCKET_COUNT", operationDurationDefaultBucketCount)
 	if operationDurationMetricBucketCount < 1 {
-		logging.RequireLoggerFromContext(ctx).Errorf(ctx, "Invalid OPERATION_DURATION_METRIC_BUCKET_COUNT value of %d, setting to default %d", operationDurationMetricBucketCount, operationDurationDefaultBucketCount)
+		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
+			"value":   operationDurationMetricBucketCount,
+			"default": operationDurationDefaultBucketCount,
+		}).Error(ctx, "Invalid OPERATION_DURATION_METRIC_BUCKET_COUNT value, setting to default")
 		operationDurationMetricBucketCount = operationDurationDefaultBucketCount
 	}
 	bucketWidth := maxOperationTimeSeconds / float64(operationDurationMetricBucketCount)

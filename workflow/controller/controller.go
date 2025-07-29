@@ -473,9 +473,9 @@ func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 				logger.Error(ctx, "invalid config map object received in config watcher. Ignored processing")
 				continue
 			}
-			logger.Debugf(ctx, "received config map %s/%s update", cm.Namespace, cm.Name)
+			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Debug(ctx, "received config map update")
 			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				logger.Infof(ctx, "Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+				logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Info(ctx, "Received Workflow Controller config map update")
 				wfc.UpdateConfig(ctx)
 			}
 			wfc.notifySemaphoreConfigUpdate(ctx, cm)
@@ -490,16 +490,16 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, 
 	logger := logging.RequireLoggerFromContext(ctx)
 	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
-		logger.Errorf(ctx, "failed get the workflow from informer. %v", err)
+		logger.WithError(err).Error(ctx, "failed get the workflow from informer")
 	}
 
 	for _, obj := range wfs {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
-			logger.Warnf(ctx, "received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
+			logger.WithField("index", indexes.SemaphoreConfigIndexName).Warn(ctx, "received object from indexer is not an unstructured")
 			continue
 		}
-		logger.Infof(ctx, "Adding workflow %s/%s", un.GetNamespace(), un.GetName())
+		logger.WithFields(logging.Fields{"namespace": un.GetNamespace(), "name": un.GetName()}).Info(ctx, "Adding workflow")
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
@@ -752,7 +752,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	err = wfc.hydrator.Hydrate(ctx, woc.wf)
 	if err != nil {
-		woc.log.Errorf(ctx, "hydration failed: %v", err)
+		woc.log.WithError(err).Error(ctx, "hydration failed")
 		woc.markWorkflowError(ctx, err)
 		woc.persistUpdates(ctx)
 		return true
@@ -918,7 +918,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
-					logger.Warnf(ctx, "Workflow FilterFunc: '%v' is not an unstructured", obj)
+					logger.WithField("obj", obj).Warn(ctx, "Workflow FilterFunc: is not an unstructured")
 					return false
 				}
 				needed := reconciliationNeeded(un)

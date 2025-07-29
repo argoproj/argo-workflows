@@ -51,7 +51,7 @@ func WaitForTermination(ctx context.Context, c KubernetesClientInterface, contai
 	} else {
 		defer timer.Stop()
 	}
-	log.Infof(ctx, "Starting to wait completion of containers %s...", strings.Join(containerNames, ","))
+	log.WithFields(logging.Fields{"containers": strings.Join(containerNames, ",")}).Info(ctx, "Starting to wait completion of containers")
 	for {
 		select {
 		case <-ticker.C:
@@ -102,7 +102,7 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 			continue
 		}
 		if s.State.Terminated != nil {
-			log.Infof(ctx, "Container %s is already terminated: %v", s.Name, s.State.Terminated.String())
+			log.WithFields(logging.Fields{"container": s.Name, "state": s.State.Terminated.String()}).Info(ctx, "Container is already terminated")
 			continue
 		}
 		if pod.Spec.ShareProcessNamespace != nil && *pod.Spec.ShareProcessNamespace {
@@ -125,17 +125,17 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 // KillGracefully kills a container gracefully.
 func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.Infof(ctx, "SIGTERM containers %s: %s", strings.Join(containerNames, ","), syscall.SIGTERM.String())
+	log.WithFields(logging.Fields{"containers": strings.Join(containerNames, ","), "signal": syscall.SIGTERM.String()}).Info(ctx, "SIGTERM containers")
 	err := TerminatePodWithContainerNames(ctx, c, containerNames, syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
 	err = WaitForTermination(ctx, c, containerNames, terminationGracePeriodDuration)
 	if err == nil {
-		log.Infof(ctx, "Containers %s successfully killed", strings.Join(containerNames, ","))
+		log.WithFields(logging.Fields{"containers": strings.Join(containerNames, ",")}).Info(ctx, "Containers successfully killed")
 		return nil
 	}
-	log.Infof(ctx, "SIGKILL containers %s: %s", strings.Join(containerNames, ","), syscall.SIGKILL.String())
+	log.WithFields(logging.Fields{"containers": strings.Join(containerNames, ","), "signal": syscall.SIGKILL.String()}).Info(ctx, "SIGKILL containers")
 	err = TerminatePodWithContainerNames(ctx, c, containerNames, syscall.SIGKILL)
 	if err != nil {
 		return err
@@ -144,14 +144,14 @@ func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerN
 	if err != nil {
 		return err
 	}
-	log.Infof(ctx, "Containers %s successfully killed", strings.Join(containerNames, ","))
+	log.WithFields(logging.Fields{"containers": strings.Join(containerNames, ",")}).Info(ctx, "Containers successfully killed")
 	return nil
 }
 
 // CopyArchive downloads files and directories as a tarball and saves it to a specified path.
 func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerName, sourcePath, destPath string) error {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.Infof(ctx, "Archiving %s:%s to %s", containerName, sourcePath, destPath)
+	log.WithFields(logging.Fields{"container": containerName, "source": sourcePath, "dest": destPath}).Info(ctx, "Archiving")
 	b, err := c.CreateArchive(ctx, containerName, sourcePath)
 	if err != nil {
 		return err
