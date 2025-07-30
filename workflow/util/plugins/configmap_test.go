@@ -54,8 +54,9 @@ func TestToConfigMap(t *testing.T) {
 			"workflows.argoproj.io/configmap-type": "ExecutorPlugin",
 		}, cm.Labels)
 		assert.Equal(t, map[string]string{
-			"sidecar.automountServiceAccountToken": "true",
-			"sidecar.container":                    "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
+			"sidecar.automountServiceAccountToken":         "true",
+			"sidecar.automountWorkflowServiceAccountToken": "false",
+			"sidecar.container":                            "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
 		}, cm.Data)
 
 	})
@@ -66,37 +67,65 @@ func TestFromConfigMap(t *testing.T) {
 		_, err := FromConfigMap(&apiv1.ConfigMap{})
 		require.EqualError(t, err, "sidecar is invalid: at least one port is mandatory")
 	})
-	t.Run("Valid", func(t *testing.T) {
-		p, err := FromConfigMap(&apiv1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "my-plug-executor-plugin",
-				Annotations: map[string]string{
-					"my-anno": "my-value",
+	t.Run("Valid combinations", func(t *testing.T) {
+		tests := []struct {
+			name              string
+			data              map[string]string
+			wantToken         bool
+			wantWorkflowToken bool
+		}{
+			{
+				name: "automountServiceAccountToken",
+				data: map[string]string{
+					"sidecar.automountServiceAccountToken": "true",
+					"sidecar.container":                    "{'name': 'my-name', 'ports': [{}], 'resources': {'requests': {}, 'limits': {}}, 'securityContext': {}}",
 				},
-				Labels: map[string]string{
-					common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapExecutorPlugin,
-					"my-label":                   "my-value",
+				wantToken:         true,
+				wantWorkflowToken: false,
+			},
+			{
+				name: "automountWorkflowServiceAccountToken",
+				data: map[string]string{
+					"sidecar.automountWorkflowServiceAccountToken": "true",
+					"sidecar.container":                            "{'name': 'my-name', 'ports': [{}], 'resources': {'requests': {}, 'limits': {}}, 'securityContext': {}}",
 				},
+				wantToken:         false,
+				wantWorkflowToken: true,
 			},
-			Data: map[string]string{
-				"sidecar.automountServiceAccountToken": "true",
-				"sidecar.container":                    "{'name': 'my-name', 'ports': [{}], 'resources': {'requests': {}, 'limits': {}}, 'securityContext': {}}",
-			},
-		})
-		require.NoError(t, err)
-		assert.Equal(t, "ExecutorPlugin", p.Kind)
-		assert.Equal(t, "my-plug", p.Name)
-		assert.Len(t, p.Annotations, 1)
-		assert.Len(t, p.Labels, 1)
-		assert.True(t, p.Spec.Sidecar.AutomountServiceAccountToken)
-		assert.Equal(t, apiv1.Container{
-			Name:  "my-name",
-			Ports: []apiv1.ContainerPort{{}},
-			Resources: apiv1.ResourceRequirements{
-				Limits:   map[apiv1.ResourceName]resource.Quantity{},
-				Requests: map[apiv1.ResourceName]resource.Quantity{},
-			},
-			SecurityContext: &apiv1.SecurityContext{},
-		}, p.Spec.Sidecar.Container)
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				p, err := FromConfigMap(&apiv1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-plug-executor-plugin",
+						Annotations: map[string]string{
+							"my-anno": "my-value",
+						},
+						Labels: map[string]string{
+							common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapExecutorPlugin,
+							"my-label":                   "my-value",
+						},
+					},
+					Data: tt.data,
+				})
+				require.NoError(t, err)
+				assert.Equal(t, "ExecutorPlugin", p.Kind)
+				assert.Equal(t, "my-plug", p.Name)
+				assert.Len(t, p.Annotations, 1)
+				assert.Len(t, p.Labels, 1)
+				assert.Equal(t, tt.wantWorkflowToken, p.Spec.Sidecar.AutomountWorkflowServiceAccountToken)
+				assert.Equal(t, tt.wantToken, p.Spec.Sidecar.AutomountServiceAccountToken)
+				assert.Equal(t, apiv1.Container{
+					Name:  "my-name",
+					Ports: []apiv1.ContainerPort{{}},
+					Resources: apiv1.ResourceRequirements{
+						Limits:   map[apiv1.ResourceName]resource.Quantity{},
+						Requests: map[apiv1.ResourceName]resource.Quantity{},
+					},
+					SecurityContext: &apiv1.SecurityContext{},
+				}, p.Spec.Sidecar.Container)
+			})
+		}
 	})
 }
