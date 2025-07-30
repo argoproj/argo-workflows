@@ -180,7 +180,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 		woc.log.WithError(err).Error(ctx, "failed to marshall cron workflow status.active data")
 		return
 	}
-	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
 			return !errorsutil.IsTransientErr(ctx, err), err
