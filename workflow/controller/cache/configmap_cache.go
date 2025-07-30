@@ -74,7 +74,7 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 		Steps:    5,
 		Cap:      30 * time.Second,
 	}, func(err error) bool {
-		return argoerr.IsTransientErr(ctx, err) || (apierr.IsConflict(err) && strings.Contains(err.Error(), ""))
+		return argoerr.IsTransientErr(ctx, err) || (apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on configmaps"))
 	}, func() error {
 		var innerErr error
 		entry, innerErr = c.load(ctx, key)
