@@ -13,8 +13,12 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
+
+	kwait "k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -59,6 +63,24 @@ func (c *configMapCache) validateConfigmap(cm *apiv1.ConfigMap) error {
 }
 
 func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
+	var entry *Entry
+	err := retry.OnError(kwait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, func(err error) bool {
+		return argoerr.IsTransientErr(err) || apierr.IsConflict(err)
+	}, func() error {
+		var innerErr error
+		entry, innerErr = c.load(ctx, key)
+		return innerErr
+	})
+	return entry, err
+}
+
+func (c *configMapCache) load(ctx context.Context, key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("invalid cache key: %s", key)
 	}
@@ -72,13 +94,11 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 			c.logError(err, log.Fields{}, "config map cache miss: config map does not exist")
 			return nil, nil
 		}
-		c.logError(err, log.Fields{}, "Error loading config map cache")
-		return nil, fmt.Errorf("could not load config map cache: %w", err)
-	} else {
-		err := c.validateConfigmap(cm)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
+	err = c.validateConfigmap(cm)
+	if err != nil {
+		return nil, err
 	}
 
 	c.logInfo(log.Fields{}, "config map cache loaded")
@@ -105,14 +125,28 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cm, metav1.UpdateOptions{})
 	if err != nil {
-		c.logError(err, log.Fields{}, "Error updating last hit timestamp on cache")
-		return nil, fmt.Errorf("error updating last hit timestamp on cache: %w", err)
+		return nil, err
 	}
-
 	return &entry, nil
 }
 
 func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
+	err := retry.OnError(kwait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, func(err error) bool {
+		return argoerr.IsTransientErr(err) || apierr.IsConflict(err)
+	}, func() error {
+		innerErr := c.save(ctx, key, nodeID, value)
+		return innerErr
+	})
+	return err
+}
+
+func (c *configMapCache) save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
 		errString := fmt.Sprintf("invalid cache key: %s", key)
 		err := errors.New(errString)
