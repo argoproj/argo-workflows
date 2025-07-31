@@ -32,7 +32,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -236,7 +235,7 @@ type testEventRecorderManager struct {
 	eventRecorder *record.FakeRecorder
 }
 
-func (t testEventRecorderManager) Get(_ context.Context, _ string) record.EventRecorder {
+func (t testEventRecorderManager) Get(string) record.EventRecorder {
 	return t.eventRecorder
 }
 
@@ -253,7 +252,7 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 // test exporter extract metric values from the metrics subsystem
 var testExporter *telemetry.TestMetricsExporter
 
-func newController(ctx context.Context, options ...interface{}) (context.CancelFunc, *WorkflowController) {
+func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
 	for _, opt := range options {
@@ -267,7 +266,7 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset(coreObjects...)
 	wfc := &WorkflowController{
 		Config: config.Config{
@@ -297,8 +296,8 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
 	}
 
@@ -312,24 +311,25 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 
 	// always compare to NewWorkflowController to see what this block of code should be doing
 	{
-		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics(ctx)
+		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics()
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
+		wfc.podCleanupQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
-		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
-		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
+		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
-		wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
+		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -341,7 +341,6 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
-		go wfc.configMapInformer.Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
 			wfc.wfInformer,
@@ -351,7 +350,6 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
-			wfc.configMapInformer,
 		} {
 			for !c.HasSynced() {
 				time.Sleep(5 * time.Millisecond)
@@ -362,8 +360,8 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 	return cancel, wfc
 }
 
-func newControllerWithDefaults(ctx context.Context) (context.CancelFunc, *WorkflowController) {
-	cancel, controller := newController(ctx, func(controller *WorkflowController) {
+func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
+	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{HostNetwork: ptr.To(true)},
 		}
@@ -371,8 +369,8 @@ func newControllerWithDefaults(ctx context.Context) (context.CancelFunc, *Workfl
 	return cancel, controller
 }
 
-func newControllerWithComplexDefaults(ctx context.Context) (context.CancelFunc, *WorkflowController) {
-	cancel, controller := newController(ctx, func(controller *WorkflowController) {
+func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController) {
+	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
@@ -397,8 +395,8 @@ func newControllerWithComplexDefaults(ctx context.Context) (context.CancelFunc, 
 	return cancel, controller
 }
 
-func newControllerWithDefaultsVolumeClaimTemplate(ctx context.Context) (context.CancelFunc, *WorkflowController) {
-	cancel, controller := newController(ctx, func(controller *WorkflowController) {
+func newControllerWithDefaultsVolumeClaimTemplate() (context.CancelFunc, *WorkflowController) {
+	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				VolumeClaimTemplates: []apiv1.PersistentVolumeClaim{{
@@ -443,26 +441,26 @@ func expectNamespacedWorkflow(ctx context.Context, controller *WorkflowControlle
 	test(wf)
 }
 
-func getPod(ctx context.Context, woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
-func listPods(ctx context.Context, woc *wfOperationCtx) (*apiv1.PodList, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
 type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
-func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
+func withOutputs(outputs wfv1.Outputs) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
-		nodeID := woc.nodeID(pod)
+		nodeId := woc.nodeID(pod)
 		taskResult := &wfv1.WorkflowTaskResult{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: workflow.APIVersion,
 				Kind:       workflow.WorkflowTaskResultKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: nodeID,
+				Name: nodeId,
 				Labels: map[string]string{
 					common.LabelKeyWorkflow:               woc.wf.Name,
 					common.LabelKeyReportOutputsCompleted: "true",
@@ -475,7 +473,7 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 		}
 		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 			Create(
-				ctx,
+				context.Background(),
 				taskResult,
 				metav1.CreateOptions{},
 			)
@@ -566,7 +564,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			}
 			if phase == apiv1.PodSucceeded {
 				nodeID := woc.nodeID(&pod)
-				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+				woc.wf.Status.MarkTaskResultComplete(nodeID)
 			}
 		}
 	}
@@ -589,7 +587,7 @@ func deletePods(ctx context.Context, woc *wfOperationCtx) {
 func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	ans := true
 	t.Run("WithoutDefaults", func(t *testing.T) {
-		cancel, controller := newController(logging.TestContext(t.Context()))
+		cancel, controller := newController()
 		defer cancel()
 		workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		err := controller.setWorkflowDefaults(workflow)
@@ -597,7 +595,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(helloWorldWf))
 	})
 	t.Run("WithDefaults", func(t *testing.T) {
-		cancel, controller := newControllerWithDefaults(logging.TestContext(t.Context()))
+		cancel, controller := newControllerWithDefaults()
 		defer cancel()
 		defaultWorkflowSpec := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		err := controller.setWorkflowDefaults(defaultWorkflowSpec)
@@ -609,7 +607,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 }
 
 func TestAddingWorkflowDefaultComplex(t *testing.T) {
-	cancel, controller := newControllerWithComplexDefaults(logging.TestContext(t.Context()))
+	cancel, controller := newControllerWithComplexDefaults()
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
 	var ten int32 = 10
@@ -628,7 +626,7 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 }
 
 func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
-	cancel, controller := newControllerWithComplexDefaults(logging.TestContext(t.Context()))
+	cancel, controller := newControllerWithComplexDefaults()
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWfTTL)
 	var ten int32 = 10
@@ -646,7 +644,7 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 }
 
 func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
-	cancel, controller := newControllerWithDefaultsVolumeClaimTemplate(logging.TestContext(t.Context()))
+	cancel, controller := newControllerWithDefaultsVolumeClaimTemplate()
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
 	err := controller.setWorkflowDefaults(workflow)
@@ -663,14 +661,11 @@ func TestNamespacedController(t *testing.T) {
 		}, nil
 	})
 
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController()
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-
-	ctx := logging.TestContext(t.Context())
-
-	controller.createClusterWorkflowTemplateInformer(ctx)
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
 }
 
@@ -683,14 +678,11 @@ func TestClusterController(t *testing.T) {
 		}, nil
 	})
 
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController()
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-
-	ctx := logging.TestContext(t.Context())
-
-	controller.createClusterWorkflowTemplateInformer(ctx)
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
 }
 
@@ -704,8 +696,7 @@ func TestParallelism(t *testing.T) {
 		},
 	} {
 		t.Run(tt, func(t *testing.T) {
-			ctx := logging.TestContext(t.Context())
-			cancel, controller := newController(ctx,
+			cancel, controller := newController(
 				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-0
@@ -740,7 +731,7 @@ spec:
 				f,
 			)
 			defer cancel()
-
+			ctx := context.Background()
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
@@ -763,10 +754,10 @@ spec:
 }
 
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController()
 	defer cancel()
 
-	controller.archivedWorkflowGarbageCollector(logging.TestContext(t.Context()))
+	controller.archivedWorkflowGarbageCollector(context.Background())
 }
 
 const wfWithTmplRef = `
@@ -811,13 +802,10 @@ spec:
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wfTmpl)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
+	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-
-	ctx := logging.TestContext(t.Context())
-
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
@@ -864,25 +852,23 @@ spec:
 `
 
 func TestInvalidWorkflowMetadata(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-
 	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabelsFrom)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(context.Background())
 	require.ErrorContains(t, err, "invalid label value")
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
-	cancel, controller = newController(logging.TestContext(t.Context()), wf)
+	cancel, controller = newController(wf)
 	defer cancel()
-	woc = newWorkflowOperationCtx(ctx, wf, controller)
-	err = woc.setExecWorkflow(ctx)
+	woc = newWorkflowOperationCtx(wf, controller)
+	err = woc.setExecWorkflow(context.Background())
 	require.ErrorContains(t, err, "invalid label value")
 }
 
 func TestIsArchivable(t *testing.T) {
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController()
 	defer cancel()
 	var lblSelector metav1.LabelSelector
 	lblSelector.MatchLabels = make(map[string]string)
@@ -909,20 +895,18 @@ func TestIsArchivable(t *testing.T) {
 }
 
 func TestReleaseAllWorkflowLocks(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController()
 	defer cancel()
 	t.Run("nilObject", func(t *testing.T) {
-		controller.releaseAllWorkflowLocks(ctx, nil)
+		controller.releaseAllWorkflowLocks(nil)
 	})
 	t.Run("unStructuredObject", func(t *testing.T) {
 		un := &unstructured.Unstructured{}
-		controller.releaseAllWorkflowLocks(ctx, un)
+		controller.releaseAllWorkflowLocks(un)
 	})
 	t.Run("otherObject", func(t *testing.T) {
 		un := &wfv1.Workflow{}
-		controller.releaseAllWorkflowLocks(ctx, un)
+		controller.releaseAllWorkflowLocks(un)
 	})
 }
 
@@ -937,10 +921,10 @@ metadata:
 spec:
  entrypoint: whalesay
  synchronization:
-   semaphores:
-     - configMapKeyRef:
-         name: my-config
-         key: workflow
+   semaphore:
+     configMapKeyRef:
+       name: my-config
+       key: workflow
  templates:
  - name: whalesay
    container:
@@ -958,7 +942,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	wf2.Name = "two"
 	wf2.Spec.Synchronization = nil
 
-	cancel, controller := newController(logging.TestContext(t.Context()), wf, wf1, wf2)
+	cancel, controller := newController(wf, wf1, wf2)
 	defer cancel()
 
 	cm := apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
@@ -975,9 +959,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	}
 	assert.Equal(0, controller.wfQueue.Len())
 
-	ctx := logging.TestContext(t.Context())
-
-	controller.notifySemaphoreConfigUpdate(ctx, &cm)
+	controller.notifySemaphoreConfigUpdate(&cm)
 	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }
@@ -989,7 +971,7 @@ func TestParallelismWithInitializeRunningWorkflows(t *testing.T) {
 		},
 	} {
 		t.Run(tt, func(t *testing.T) {
-			cancel, controller := newController(logging.TestContext(t.Context()),
+			cancel, controller := newController(
 				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-0
@@ -1027,8 +1009,7 @@ status:
 				f,
 			)
 			defer cancel()
-
-			ctx := logging.TestContext(t.Context())
+			ctx := context.Background()
 
 			// process my-wf-0; update status to Pending
 			assert.True(t, controller.processNextItem(ctx))
@@ -1056,7 +1037,7 @@ func TestNamespaceParallelismWithInitializeRunningWorkflows(t *testing.T) {
 		},
 	} {
 		t.Run(tt, func(t *testing.T) {
-			cancel, controller := newController(logging.TestContext(t.Context()),
+			cancel, controller := newController(
 				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-ns-0-wf-0
@@ -1116,8 +1097,7 @@ status:
 				f,
 			)
 			defer cancel()
-
-			ctx := logging.TestContext(t.Context())
+			ctx := context.Background()
 
 			ns0PendingWfTested := false
 			ns1PendingWfTested := false
@@ -1163,13 +1143,13 @@ spec:
       container:
         image: my-image
   `)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1193,13 +1173,13 @@ spec:
       container:
         image: my-image
   `)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodPending)
@@ -1209,7 +1189,7 @@ spec:
 	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
-	pods, err := listPods(ctx, woc)
+	pods, err := listPods(woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 }
@@ -1219,13 +1199,13 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 	wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	wf.Status.Phase = wfv1.WorkflowPending
 
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	for _, node := range woc.wf.Status.Nodes {
@@ -1235,13 +1215,13 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 
 func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(fromExrpessingWf)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1253,13 +1233,13 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 
 func TestWorkflowWithLongArguments(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testLongArgumentsWorkflow)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
@@ -1332,13 +1312,13 @@ spec:
 
 func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(podSpecPatchTemplateLevelWf)
-	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	assert.True(t, controller.processNextItem(ctx))
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 

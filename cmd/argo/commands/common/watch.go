@@ -6,13 +6,13 @@ import (
 	"io"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
@@ -34,13 +34,12 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		for {
 			event, err := stream.Recv()
 			if err == io.EOF {
-				logger := logging.RequireLoggerFromContext(ctx)
-				logger.Debug(ctx, "Re-establishing workflow watch")
+				log.Debug("Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
-				errors.CheckError(ctx, err)
+				errors.CheckError(err)
 				continue
 			}
-			errors.CheckError(ctx, err)
+			errors.CheckError(err)
 			if event == nil {
 				continue
 			}
@@ -65,7 +64,7 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			return nil
 		}
 
-		err := printWorkflowStatus(ctx, wf, getArgs)
+		err := printWorkflowStatus(wf, getArgs)
 		if err != nil {
 			return err
 		}
@@ -75,11 +74,11 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 }
 
-func printWorkflowStatus(ctx context.Context, wf *wfv1.Workflow, getArgs GetFlags) error {
+func printWorkflowStatus(wf *wfv1.Workflow, getArgs GetFlags) error {
 	if wf == nil {
 		return nil
 	}
-	if err := packer.DecompressWorkflow(ctx, wf); err != nil {
+	if err := packer.DecompressWorkflow(wf); err != nil {
 		return err
 	}
 	print("\033[H\033[2J")

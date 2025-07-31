@@ -11,5 +11,6 @@ spec:
         - name: test
           value: "{{ workflow.mainEntrypoint }}"
     container:
-      image: argoproj/argosay:v2
-      args: [echo, "We got here!"]
+      image: alpine
+      command: [echo]
+      args: ["We got here!"]

@@ -360,12 +360,6 @@ definitions:
     Backoff:
         description: Backoff is a backoff strategy to use within retryStrategy
         properties:
-            cap:
-                description: |-
-                    Cap is a limit on revised values of the duration parameter. If a
-                    multiplication by the factor parameter would make the duration
-                    exceed the cap then the duration is set to the cap
-                type: string
             duration:
                 description: Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
                 type: string
@@ -1207,12 +1201,7 @@ definitions:
                 description: When is an expression in which the task should conditionally execute
                 type: string
             withItems:
-                description: |-
-                    WithItems expands a task into multiple parallel tasks from the items in the list
-                    Note: The structure of WithItems is free-form, so we need
-                    "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
-                    +kubebuilder:validation:Schemaless
-                    +kubebuilder:pruning:PreserveUnknownFields
+                description: WithItems expands a task into multiple parallel tasks from the items in the list
                 items:
                     $ref: '#/definitions/Item'
                 type: array
@@ -1341,13 +1330,13 @@ definitions:
         title: Represents an empty directory for a pod.
         type: object
     EnvFromSource:
-        description: EnvFromSource represents the source of a set of ConfigMaps or Secrets
+        description: EnvFromSource represents the source of a set of ConfigMaps
         properties:
             configMapRef:
                 $ref: '#/definitions/ConfigMapEnvSource'
             prefix:
                 description: |-
-                    Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.
+                    An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.
                     +optional
                 type: string
             secretRef:
@@ -2042,7 +2031,9 @@ definitions:
             TODO: Rename to Int32OrString
         type: object
     Item:
-        description: +protobuf.options.(gogoproto.goproto_stringer)=false
+        description: |-
+            +protobuf.options.(gogoproto.goproto_stringer)=false
+            +kubebuilder:validation:Type=object
         title: |-
             Item expands a single workflow step into multiple parallel steps
             The value of Item can be a map, string, bool, or number
@@ -2132,8 +2123,6 @@ definitions:
                 $ref: '#/definitions/LifecycleHandler'
             preStop:
                 $ref: '#/definitions/LifecycleHandler'
-            stopSignal:
-                $ref: '#/definitions/Signal'
         type: object
     LifecycleHandler:
         description: |-
@@ -2300,9 +2289,6 @@ definitions:
     Mutex:
         description: Mutex holds Mutex configuration
         properties:
-            database:
-                description: Database specifies this is database controlled if this is set true
-                type: boolean
             name:
                 description: name of the mutex
                 type: string
@@ -2549,7 +2535,7 @@ definitions:
                     $ref: '#/definitions/Parameter'
                 type: array
             result:
-                description: Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
+                description: Result holds the result (stdout) of a script template
                 type: string
         type: object
     OwnerReference:
@@ -2592,7 +2578,9 @@ definitions:
             uid:
                 $ref: '#/definitions/UID'
         type: object
-    ParallelSteps: {}
+    ParallelSteps:
+        description: +kubebuilder:validation:Type=array
+        type: object
     Parameter:
         description: Parameter indicate a passed string parameter to a service template with an optional default value
         properties:
@@ -2955,6 +2943,7 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                     Also, matchLabelKeys cannot be set when labelSelector isn't set.
+                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
                     +listType=atomic
                     +optional
@@ -2971,6 +2960,7 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                     Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+                    This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
                     +listType=atomic
                     +optional
@@ -3861,9 +3851,7 @@ definitions:
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             source:
-                description: |-
-                    Source contains the source code of the script to execute
-                    +optional
+                description: Source contains the source code of the script to execute
                 type: string
             startupProbe:
                 $ref: '#/definitions/Probe'
@@ -4173,8 +4161,6 @@ definitions:
         properties:
             configMapKeyRef:
                 $ref: '#/definitions/ConfigMapKeySelector'
-            database:
-                $ref: '#/definitions/SyncDatabaseRef'
             namespace:
                 default: '[namespace of workflow]'
                 type: string
@@ -4224,11 +4210,6 @@ definitions:
                     token into.
                 type: string
         type: object
-    Signal:
-        description: |-
-            Signal defines the stop signal of containers
-            +enum
-        type: string
     SleepAction:
         properties:
             seconds:
@@ -4292,11 +4273,6 @@ definitions:
                     Could also be a Duration, e.g.: "2m", "6h"
                 type: string
         type: object
-    SyncDatabaseRef:
-        properties:
-            key:
-                type: string
-        type: object
     Synchronization:
         description: Synchronization holds synchronization lock configuration
         properties:
@@ -4356,11 +4332,6 @@ definitions:
                 $ref: '#/definitions/IntOrString'
             affinity:
                 $ref: '#/definitions/Affinity'
-            annotations:
-                additionalProperties:
-                    type: string
-                description: Annotations is a list of annotations to add to the template at runtime
-                type: object
             archiveLocation:
                 $ref: '#/definitions/ArtifactLocation'
             automountServiceAccountToken:
@@ -4438,6 +4409,10 @@ definitions:
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                     container fields which are not strings (e.g. resource limits).
                 type: string
+            priority:
+                description: Priority to apply to workflow pods.
+                format: int32
+                type: integer
             priorityClassName:
                 description: PriorityClassName to apply to workflow pods.
                 type: string
