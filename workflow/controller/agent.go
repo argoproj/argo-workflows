@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -16,7 +17,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -30,7 +30,7 @@ func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
 }
 
 func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
-	woc.log.Info(ctx, "reconcileAgentPod")
+	woc.log.Infof("reconcileAgentPod")
 	if len(woc.taskSet) == 0 {
 		return nil
 	}
@@ -40,26 +40,25 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	}
 	// Check Pod is just created
 	if pod != nil && pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(ctx, pod)
+		woc.updateAgentPodStatus(pod)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
-	woc.log.Info(ctx, "updateAgentPodStatus")
-	newPhase, message := assessAgentPodStatus(ctx, pod)
+func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
+	woc.log.Info("updateAgentPodStatus")
+	newPhase, message := assessAgentPodStatus(pod)
 	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+		woc.markTaskSetNodesError(fmt.Errorf(`agent pod failed with reason:"%s"`, message))
 	}
 }
 
-func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {
+func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	var newPhase wfv1.NodePhase
 	var message string
-	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("namespace", pod.Namespace).
+	log.WithField("namespace", pod.Namespace).
 		WithField("podName", pod.Name).
-		Info(ctx, "assessAgentPodStatus")
+		Info("assessAgentPodStatus")
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
@@ -111,7 +110,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
-	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
+	log := woc.log.WithField("podName", podName)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
@@ -187,11 +186,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
+	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts()...)
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts(ctx)...)
+	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts()...)
 
 	pod = &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -227,7 +226,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
+	woc.addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
 	woc.addMetadata(pod, tmpl)
 	woc.addDNSConfig(pod)
 
@@ -243,24 +242,24 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
-	log.Debug(ctx, "Creating Agent pod")
+	log.Debug("Creating Agent pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		log.WithError(err).Info(ctx, "Failed to create Agent pod")
+		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
 			}
 		}
-		if errorsutil.IsTransientErr(ctx, err) {
+		if errorsutil.IsTransientErr(err) {
 			woc.requeue()
 			return created, nil
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
-	log.Info(ctx, "Created Agent pod")
+	log.Info("Created Agent pod")
 	return created, nil
 }
 

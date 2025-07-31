@@ -61,13 +61,12 @@ func NewStopCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			ctx, apiClient, err := client.NewAPIClient(ctx)
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
-			stopArgs.namespace = client.Namespace(ctx)
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			stopArgs.namespace = client.Namespace()
 
 			return stopWorkflows(ctx, serviceClient, stopArgs, args)
 		},

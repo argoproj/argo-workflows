@@ -1,10 +1,9 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"testing"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +38,7 @@ func templatedWorkflow(name string, syncBlock string) *wfv1.Workflow {
 }
 
 func TestMultipleMutexLock(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MultipleMutex", func(t *testing.T) {
@@ -95,7 +94,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(wf1)
 		// Fail to acquire because two locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -104,7 +103,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(ctx, wf2)
+		syncManager.ReleaseAll(wf2)
 		// Fail to acquire because three locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -113,7 +112,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(ctx, wf3)
+		syncManager.ReleaseAll(wf3)
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -172,8 +171,8 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(ctx, wf1)
-		syncManager.ReleaseAll(ctx, wf2)
+		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(wf2)
 
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
@@ -199,7 +198,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(multipleConfigMap), &cm)
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -279,7 +278,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release 1 and sem
-		syncManager.ReleaseAll(ctx, wfmands1)
+		syncManager.ReleaseAll(wfmands1)
 
 		// Succeed 1
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -305,8 +304,8 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(ctx, wf1)
-		syncManager.ReleaseAll(ctx, wfsem)
+		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(wfsem)
 
 		// And reacquire in a sem+mutex wf
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfmands1copy, "", wfmands1copy.Spec.Synchronization)
@@ -319,7 +318,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 	})
 }
 func TestPriority(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Priority", func(t *testing.T) {
@@ -375,7 +374,7 @@ func TestPriority(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release locks
-		syncManager.ReleaseAll(ctx, wflow)
+		syncManager.ReleaseAll(wflow)
 
 		// Attempt to acquire 2 again, but priority blocks
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -396,7 +395,7 @@ func TestPriority(t *testing.T) {
 }
 
 func TestDuplicates(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Mutex", func(t *testing.T) {

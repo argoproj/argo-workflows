@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +16,7 @@ func TestKill(t *testing.T) {
 	shell := "pwsh.exe"
 	cmd := exec.Command(shell, "-c", `while(1) { sleep 600000 }`)
 
-	_, err := StartCommand(logging.TestContext(t.Context()), cmd)
+	_, err := StartCommand(cmd)
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup

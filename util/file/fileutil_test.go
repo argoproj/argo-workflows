@@ -15,13 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/rand"
 )
 
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
 func TestCompressContentString(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
 		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"name\":\"pod-limits-rrdm8[0]." +
@@ -29,9 +27,9 @@ func TestCompressContentString(t *testing.T) {
 			"\"Succeeded\",\"boundaryID\":\"pod-limits-rrdm8\",\"startedAt\":\"2019-03-07T19:14:50Z\",\"finishedAt\":" +
 			"\"2019-03-07T19:14:55Z\"}}"
 
-		compString := file.CompressEncodeString(ctx, content)
+		compString := file.CompressEncodeString(content)
 
-		resultString, _ := file.DecodeDecompressString(ctx, compString)
+		resultString, _ := file.DecodeDecompressString(compString)
 
 		assert.Equal(t, content, resultString)
 	}
@@ -39,11 +37,10 @@ func TestCompressContentString(t *testing.T) {
 
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
 func TestGetGzipReader(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
 		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		rawContent := "this is the content"
-		content := file.CompressEncodeString(ctx, rawContent)
+		content := file.CompressEncodeString(rawContent)
 		buf, err := base64.StdEncoding.DecodeString(content)
 		require.NoError(t, err)
 		bufReader := bytes.NewReader(buf)

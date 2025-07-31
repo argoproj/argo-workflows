@@ -1,7 +1,6 @@
 package template
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,7 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-func generateWorkflowTemplates(ctx context.Context, filePaths []string, strict bool) []wfv1.WorkflowTemplate {
+func generateWorkflowTemplates(filePaths []string, strict bool) []wfv1.WorkflowTemplate {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -23,7 +22,7 @@ func generateWorkflowTemplates(ctx context.Context, filePaths []string, strict b
 
 	var workflowTemplates []wfv1.WorkflowTemplate
 	for _, body := range fileContents {
-		wftmpls := unmarshalWorkflowTemplates(ctx, body, strict)
+		wftmpls := unmarshalWorkflowTemplates(body, strict)
 		workflowTemplates = append(workflowTemplates, wftmpls...)
 	}
 
@@ -35,7 +34,7 @@ func generateWorkflowTemplates(ctx context.Context, filePaths []string, strict b
 }
 
 // unmarshalWorkflowTemplates unmarshals the input bytes as either json or yaml
-func unmarshalWorkflowTemplates(ctx context.Context, wfBytes []byte, strict bool) []wfv1.WorkflowTemplate {
+func unmarshalWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.WorkflowTemplate {
 	var wf wfv1.WorkflowTemplate
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -45,7 +44,7 @@ func unmarshalWorkflowTemplates(ctx context.Context, wfBytes []byte, strict bool
 	if err == nil {
 		return []wfv1.WorkflowTemplate{wf}
 	}
-	yamlWfs, err := common.SplitWorkflowTemplateYAMLFile(ctx, wfBytes, strict)
+	yamlWfs, err := common.SplitWorkflowTemplateYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}

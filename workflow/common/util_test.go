@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -93,25 +92,23 @@ func TestFindOverlappingVolume(t *testing.T) {
 }
 
 func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	_, err := SplitWorkflowYAMLFile(ctx, []byte(validWf), false)
+	_, err := SplitWorkflowYAMLFile([]byte(validWf), false)
 	require.NoError(t, err)
 
-	_, err = SplitWorkflowYAMLFile(ctx, []byte(invalidWf), false)
+	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
 	require.EqualError(t, err, `json: unknown field "doesNotExist"`)
 }
 
 func TestParseObjects(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	assert.Len(t, ParseObjects(ctx, []byte(validWf), false), 1)
+	assert.Len(t, ParseObjects([]byte(validWf), false), 1)
 
-	res := ParseObjects(ctx, []byte(invalidWf), false)
+	res := ParseObjects([]byte(invalidWf), false)
 	assert.Len(t, res, 1)
 	assert.NotNil(t, res[0].Object)
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(ctx, invalidObj, false))
+	assert.Empty(t, ParseObjects(invalidObj, false))
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
@@ -203,10 +200,9 @@ func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
 		},
 	}
 
-	ctx := logging.TestContext(t.Context())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := substituteConfigMapKeyRefParam(ctx, tt.configMapKeyRefParam, globalParams)
+			result, err := substituteConfigMapKeyRefParam(tt.configMapKeyRefParam, globalParams)
 			assert.Equal(t, tt.expected, result)
 			if tt.expectedErr != "" {
 				require.EqualError(t, err, tt.expectedErr)
@@ -218,7 +214,6 @@ func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
 }
 
 func TestOverridableDefaultInputArts(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	tmpl := wfv1.Template{}
 	tmpl.Name = "artifact-printing"
 
@@ -242,13 +237,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
-	newTmpl, err = ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
@@ -263,7 +258,6 @@ func (cs mockConfigMapStore) GetByKey(key string) (interface{}, bool, error) {
 }
 
 func TestOverridableTemplateInputParamsValue(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	tmpl := wfv1.Template{}
 	tmpl.Name = "artifact-printing"
 
@@ -294,19 +288,18 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }
 
 func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	tmpl := wfv1.Template{}
 	tmpl.Name = "artifact-printing"
 
@@ -353,12 +346,12 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	globalParams := map[string]string{paramName: "overrideValue"}
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)

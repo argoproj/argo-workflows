@@ -1,7 +1,6 @@
 package sqldb
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ import (
 
 // ListWorkflowsLabelKeys returns distinct name from argo_archived_workflows_labels table
 // SELECT DISTINCT name FROM argo_archived_workflows_labels
-func (r *workflowArchive) ListWorkflowsLabelKeys(ctx context.Context) (*wfv1.LabelKeys, error) {
+func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 
 	err := r.session.SQL().
@@ -36,7 +35,7 @@ func (r *workflowArchive) ListWorkflowsLabelKeys(ctx context.Context) (*wfv1.Lab
 
 // ListWorkflowsLabelValues returns distinct value from argo_archived_workflows_labels table
 // SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
-func (r *workflowArchive) ListWorkflowsLabelValues(ctx context.Context, key string) (*wfv1.LabelValues, error) {
+func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 	err := r.session.SQL().
 		Select(db.Raw("DISTINCT value")).

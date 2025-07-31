@@ -1,7 +1,6 @@
 package pod
 
 import (
-	"context"
 	"slices"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 )
 
 func (c *Controller) EnactAnyPodCleanup(
-	ctx context.Context,
 	selector labels.Selector,
 	pod *apiv1.Pod,
 	strategy wfv1.PodGCStrategy,
@@ -26,9 +24,9 @@ func (c *Controller) EnactAnyPodCleanup(
 	case noAction: // ignore
 		break
 	case deletePod:
-		c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
+		c.queuePodForCleanupAfter(pod.Namespace, pod.Name, action, delay)
 	default:
-		c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action)
+		c.queuePodForCleanup(pod.Namespace, pod.Name, action)
 	}
 
 }

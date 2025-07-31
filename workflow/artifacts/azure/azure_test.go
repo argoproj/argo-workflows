@@ -1,13 +1,13 @@
 package azure
 
 import (
+	"context"
 	"errors"
+	"log"
 	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -62,10 +62,9 @@ func TestArtifactDriver_WithServiceKey_DownloadDirectory_Subdir(t *testing.T) {
 	}
 
 	// ensure container exists
-	ctx := logging.TestContext(t.Context())
-	containerClient, err := driver.newAzureContainerClient(ctx)
+	containerClient, err := driver.newAzureContainerClient()
 	require.NoError(t, err)
-	_, err = containerClient.Create(ctx, nil)
+	_, err = containerClient.Create(context.Background(), nil)
 	var responseError *azcore.ResponseError
 	if err != nil && (!errors.As(err, &responseError) || responseError.ErrorCode != "ContainerAlreadyExists") {
 		require.NoError(t, err)
@@ -101,14 +100,13 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 		ContainerName: driver.Container,
 	}.SignWithSharedKey(credential)
 	if err != nil {
-		t.Fatalf("Failed to create SAS query params: %s", err.Error())
+		log.Fatal(err.Error())
 	}
 
 	driver.AccountKey = sasQueryParams.Encode()
 
 	// ensure container exists
-	ctx := logging.TestContext(t.Context())
-	containerClient, err := driver.newAzureContainerClient(ctx)
+	containerClient, err := driver.newAzureContainerClient()
 	require.NoError(t, err)
 
 	// test read/write operations to the azurite container  using the container client
@@ -117,11 +115,10 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 }
 
 func testContainerClientReadWriteOperations(t *testing.T, containerClient *container.Client, driver ArtifactDriver) {
-	ctx := logging.TestContext(t.Context())
 	// put a file in a subdir on the azurite blob storage
 	// download the dir, containing a subdir
 	blobClient := containerClient.NewBlockBlobClient("dir/subdir/file-in-subdir.txt")
-	_, err := blobClient.UploadBuffer(ctx, []byte("foo"), nil)
+	_, err := blobClient.UploadBuffer(context.Background(), []byte("foo"), nil)
 	require.NoError(t, err)
 
 	azureArtifact := wfv1.AzureArtifact{
@@ -133,7 +130,7 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 		},
 	}
 	dstDir := t.TempDir()
-	err = driver.DownloadDirectory(ctx, containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
+	err = driver.DownloadDirectory(containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
 	require.NoError(t, err)
 	assert.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
 }

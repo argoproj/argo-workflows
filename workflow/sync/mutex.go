@@ -1,15 +1,12 @@
 package sync
 
 import (
+	log "github.com/sirupsen/logrus"
 	sema "golang.org/x/sync/semaphore"
 )
 
 // newInternalMutex creates a size 1 semaphore
 func newInternalMutex(name string, nextWorkflow NextWorkflow) *prioritySemaphore {
-	logger := syncLogger{
-		name:     name,
-		lockType: lockTypeMutex,
-	}
 	return &prioritySemaphore{
 		name:         name,
 		limitGetter:  &mutexLimit{},
@@ -17,6 +14,9 @@ func newInternalMutex(name string, nextWorkflow NextWorkflow) *prioritySemaphore
 		semaphore:    sema.NewWeighted(int64(1)),
 		lockHolder:   make(map[string]bool),
 		nextWorkflow: nextWorkflow,
-		logger:       logger.get,
+		log: log.WithFields(log.Fields{
+			"lockType": lockTypeMutex,
+			"name":     name,
+		}),
 	}
 }

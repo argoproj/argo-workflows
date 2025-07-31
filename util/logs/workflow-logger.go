@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -76,7 +76,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	podInterface := kubeClient.CoreV1().Pods(req.GetNamespace())
 
-	ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()}).InContext(ctx)
+	logCtx := log.WithFields(log.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
 
 	var podListOptions metav1.ListOptions
 
@@ -95,7 +95,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		podListOptions.FieldSelector = "metadata.name=" + req.GetPodName()
 	}
 
-	logger.WithField("options", podListOptions).Debug(ctx, "List options")
+	logCtx.WithField("options", podListOptions).Debug("List options")
 
 	// Keep a track of those we are logging, we also have a mutex to guard reads. Even if we stop streaming, we
 	// keep a marker here so we don't start again.
@@ -108,7 +108,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	if logOptions == nil {
 		logOptions = &corev1.PodLogOptions{}
 	}
-	logger.WithField("options", logOptions).Debug(ctx, "Log options")
+	logCtx.WithField("options", logOptions).Debug("Log options")
 
 	// make a copy of requested log options and set timestamps to true, so they can be parsed out later
 	podLogStreamOptions := *logOptions
@@ -118,23 +118,23 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
-		ctx, logger := logger.WithField("podName", pod.GetName()).InContext(ctx)
-		logger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
+		logCtx := logCtx.WithField("podName", pod.GetName())
+		logCtx.WithFields(log.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug("Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
 			streamedPods[pod.UID] = true
 			wg.Add(1)
 			go func(podName string) {
 				defer wg.Done()
-				logger.Debug(ctx, "Streaming pod logs")
-				defer logger.Debug(ctx, "Pod logs stream done")
+				logCtx.Debug("Streaming pod logs")
+				defer logCtx.Debug("Pod logs stream done")
 				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
 				if err != nil {
-					logger.WithError(err).Error(ctx, "Failed to get pod logs")
+					logCtx.Error(err)
 					return
 				}
 				defer func() {
 					if err := stream.Close(); err != nil {
-						logger.WithError(err).Warn(ctx, "Failed to close stream")
+						logCtx.Warn("Failed to close stream", err)
 					}
 				}()
 				scanner := bufio.NewScanner(stream)
@@ -156,7 +156,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						}
 						timestamp, err := time.Parse(time.RFC3339, parts[0])
 						if err != nil {
-							logger.WithError(err).Error(ctx, "Failed to decode or infer timestamp from log line")
+							logCtx.Errorf("unable to decode or infer timestamp from log line: %s", err)
 							// The current timestamp is the next best substitute. This won't be shown, but will be used
 							// for sorting
 							timestamp = time.Now()
@@ -168,12 +168,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							content = line
 						}
 						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
-							logger.WithFields(logging.Fields{"timestamp": timestamp, "content": content}).Debug(ctx, "Log line")
+							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
 							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 						}
 					}
 				}
-				logger.Debug(ctx, "No more log lines to stream")
+				logCtx.Debug("No more log lines to stream")
 				// out of data, we do not want to start watching again
 			}(pod.GetName())
 		}
@@ -186,7 +186,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	defer podWatch.Stop()
 
 	// only list after we start the watch
-	logger.Debug(ctx, "Listing workflow pods")
+	logCtx.Debug("Listing workflow pods")
 	list, err := podInterface.List(ctx, podListOptions)
 	if err != nil {
 		return err
@@ -216,19 +216,19 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		go func() {
 			defer close(stopWatchingPods)
 			defer wg.Done()
-			defer logger.Debug(ctx, "Done watching workflow events")
-			logger.Debug(ctx, "Watching for workflow events")
+			defer logCtx.Debug("Done watching workflow events")
+			logCtx.Debug("Watching for workflow events")
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				case event, open := <-wfWatch.ResultChan():
 					if !open {
-						logger.Debug(ctx, "Re-establishing workflow watch")
+						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch.Stop()
 						wfWatch, err = wfInterface.Watch(ctx, wfListOptions)
 						if err != nil {
-							logger.WithError(err).Error(ctx, "Failed to re-establish workflow watch")
+							logCtx.Error(err)
 							return
 						}
 						continue
@@ -236,10 +236,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
 						// object is probably probably metav1.Status
-						logger.WithError(apierr.FromObject(event.Object)).Warn(ctx, "watch object was not a workflow")
+						logCtx.WithError(apierr.FromObject(event.Object)).Warn("watch object was not a workflow")
 						return
 					}
-					logger.WithFields(logging.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug(ctx, "Workflow event")
+					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
 						return
 					}
@@ -251,19 +251,19 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			defer logger.Debug(ctx, "Done watching pod events")
-			logger.Debug(ctx, "Watching for pod events")
+			defer logCtx.Debug("Done watching pod events")
+			logCtx.Debug("Watching for pod events")
 			for {
 				select {
 				case <-stopWatchingPods:
 					return
 				case event, open := <-podWatch.ResultChan():
 					if !open {
-						logger.Info(ctx, "Re-establishing pod watch")
+						logCtx.Info("Re-establishing pod watch")
 						podWatch.Stop()
 						podWatch, err = podInterface.Watch(ctx, podListOptions)
 						if err != nil {
-							logger.WithError(err).Error(ctx, "Failed to re-establish pod watch")
+							logCtx.Error(err)
 							return
 						}
 						continue
@@ -271,10 +271,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
 						// object is probably probably metav1.Status
-						logger.WithError(apierr.FromObject(event.Object)).Warn(ctx, "watch object was not a pod")
+						logCtx.WithError(apierr.FromObject(event.Object)).Warn("watch object was not a pod")
 						return
 					}
-					logger.WithFields(logging.Fields{"eventType": event.Type, "podName": pod.GetName()}).Debug(ctx, "Pod event")
+					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
 					if pod.Status.Phase != corev1.PodPending {
 						ensureWeAreStreaming(pod)
 					}
@@ -283,14 +283,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 			}
 		}()
 	} else {
-		logger.Debug(ctx, "Not starting watches")
+		logCtx.Debug("Not starting watches")
 	}
 
 	doneSorting := make(chan struct{})
 	go func() {
 		defer close(doneSorting)
-		defer logger.Debug(ctx, "Done sorting entries")
-		logger.Debug(ctx, "Sorting entries")
+		defer logCtx.Debug("Done sorting entries")
+		logCtx.Debug("Sorting entries")
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		entries := logEntries{}
@@ -301,7 +301,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				// head
 				var e logEntry
 				e, entries = entries[0], entries[1:]
-				logger.WithFields(logging.Fields{"timestamp": e.timestamp, "content": e.content}).Debug(ctx, "Sending entry")
+				logCtx.WithFields(log.Fields{"timestamp": e.timestamp, "content": e.content}).Debug("Sending entry")
 				err := sender.Send(&workflowpkg.LogEntry{Content: e.content, PodName: e.podName})
 				if err != nil {
 					return err
@@ -313,7 +313,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		defer func() {
 			err := send()
 			if err != nil {
-				logger.WithError(err).Error(ctx, "Failed to send final logs")
+				logCtx.Error(err)
 			}
 		}()
 		for {
@@ -328,18 +328,18 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 			case <-ticker.C:
 				err := send()
 				if err != nil {
-					logger.WithError(err).Error(ctx, "Failed to send logs")
+					logCtx.Error(err)
 					return
 				}
 			}
 		}
 	}()
 
-	logger.Debug(ctx, "Waiting for work-group")
+	logCtx.Debug("Waiting for work-group")
 	wg.Wait()
-	logger.Debug(ctx, "Work-group done")
+	logCtx.Debug("Work-group done")
 	close(unsortedEntries)
 	<-doneSorting
-	logger.Debug(ctx, "Done-done")
+	logCtx.Debug("Done-done")
 	return nil
 }

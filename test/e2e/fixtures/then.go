@@ -20,7 +20,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -60,12 +59,12 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	}
 	_, _ = fmt.Println("Checking expectation", workflowName)
 
-	ctx := logging.TestContext(t.t.Context())
+	ctx := context.Background()
 	wf, err := t.client.Get(ctx, workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	err = t.hydrator.Hydrate(ctx, wf)
+	err = t.hydrator.Hydrate(wf)
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -75,7 +74,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 }
 
 func (t *Then) ExpectWorkflowDeleted() *Then {
-	ctx := logging.TestContext(t.t.Context())
+	ctx := context.Background()
 	_, err := t.client.Get(ctx, t.wf.Name, metav1.GetOptions{})
 	if err == nil || !apierr.IsNotFound(err) {
 		t.t.Errorf("expected workflow to be deleted: %v", err)
@@ -100,7 +99,7 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 				podName := util.GeneratePodName(t.wf.Name, n.Name, util.GetTemplateFromNode(*n), n.ID, version)
 
 				var err error
-				ctx := logging.TestContext(t.t.Context())
+				ctx := context.Background()
 				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
@@ -124,7 +123,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	}
 	_, _ = fmt.Println("Checking cron expectation")
 
-	ctx := logging.TestContext(t.t.Context())
+	ctx := context.Background()
 	cronWf, err := t.cronClient.Get(ctx, t.cronWf.Name, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -146,7 +145,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	t.t.Helper()
 	_, _ = fmt.Println("Listing workflows")
 
-	ctx := logging.TestContext(t.t.Context())
+	ctx := context.Background()
 	wfList, err := t.client.List(ctx, listOptions)
 	if err != nil {
 		t.t.Fatal(err)
@@ -171,7 +170,7 @@ var HasInvolvedObjectWithName = func(kind string, name string) func(event apiv1.
 func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, block func(*testing.T, []apiv1.Event)) *Then {
 	t.t.Helper()
 
-	ctx := logging.TestContext(t.t.Context())
+	ctx := context.Background()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -204,10 +203,7 @@ func (t *Then) ExpectPVCDeleted() *Then {
 	t.t.Helper()
 	timeout := defaultTimeout
 	_, _ = fmt.Println("Checking", timeout.String(), "for expecting PVCs deletion")
-	ctx, cancel := context.WithTimeout(func() context.Context {
-		ctx := logging.TestContext(t.t.Context())
-		return ctx
-	}(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	for {
 		select {
@@ -263,16 +259,14 @@ func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *test
 		t.t.Error(err)
 	}
 
-	ctx := logging.TestContext(t.t.Context())
-	object, err := c.StatObject(ctx, bucketName, key, minio.StatObjectOptions{})
+	object, err := c.StatObject(context.Background(), bucketName, key, minio.StatObjectOptions{})
 	f(t.t, object, err)
 }
 
 func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
 	t.t.Helper()
 
-	ctx := logging.TestContext(t.t.Context())
-	list, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name})
+	list, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name})
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -285,8 +279,7 @@ func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
 func (t *Then) ExpectContainerLogs(container string, f func(t *testing.T, logs string)) *Then {
 	t.t.Helper()
 
-	ctx := logging.TestContext(t.t.Context())
-	stream, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).GetLogs(t.wf.Name, &apiv1.PodLogOptions{Container: container}).Stream(ctx)
+	stream, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).GetLogs(t.wf.Name, &apiv1.PodLogOptions{Container: container}).Stream(context.Background())
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -304,7 +297,7 @@ func (t *Then) ExpectContainerLogs(container string, f func(t *testing.T, logs s
 
 func (t *Then) ExpectWorkflowTaskSet(block func(t *testing.T, wfts *wfv1.WorkflowTaskSet)) *Then {
 	t.t.Helper()
-	ctx := logging.TestContext(t.t.Context())
+	ctx := context.Background()
 	wfts, err := t.wftsClient.Get(ctx, t.wf.Name, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)

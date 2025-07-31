@@ -1,7 +1,6 @@
 package clustertemplate
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,7 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
+func generateClusterWorkflowTemplates(filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -23,7 +22,7 @@ func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, s
 
 	var clusterWorkflowTemplates []wfv1.ClusterWorkflowTemplate
 	for _, body := range fileContents {
-		cwftmpls, err := unmarshalClusterWorkflowTemplates(ctx, body, strict)
+		cwftmpls, err := unmarshalClusterWorkflowTemplates(body, strict)
 		if err != nil {
 			log.Fatalf("Failed to parse cluster workflow template: %v", err)
 		}
@@ -38,7 +37,7 @@ func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, s
 }
 
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml
-func unmarshalClusterWorkflowTemplates(ctx context.Context, wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
+func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
 	var cwft wfv1.ClusterWorkflowTemplate
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -48,7 +47,7 @@ func unmarshalClusterWorkflowTemplates(ctx context.Context, wfBytes []byte, stri
 	if err == nil {
 		return []wfv1.ClusterWorkflowTemplate{cwft}, nil
 	}
-	yamlWfs, err := common.SplitClusterWorkflowTemplateYAMLFile(ctx, wfBytes, strict)
+	yamlWfs, err := common.SplitClusterWorkflowTemplateYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs, nil
 	}
