@@ -48,7 +48,7 @@ func (i *Instrument) Record(ctx context.Context, val float64, attribs InstAttrib
 
 func (i *Instrument) RegisterCallback(m *Metrics, f metric.Callback) error {
 	switch inst := i.otel.(type) {
-	case *metric.Float64ObservableUpDownCounter:
+	case *metric.Float64ObservableCounter:
 		_, err := (*m.otelMeter).RegisterCallback(f, *inst)
 		return err
 	case *metric.Float64ObservableGauge:
@@ -78,7 +78,7 @@ func (i *Instrument) ObserveFloat(ctx context.Context, o metric.Observer, val fl
 	switch inst := i.otel.(type) {
 	case *metric.Float64ObservableGauge:
 		o.ObserveFloat64(*inst, val, i.attributes(ctx, attribs))
-	case *metric.Float64ObservableUpDownCounter:
+	case *metric.Float64ObservableCounter:
 		o.ObserveFloat64(*inst, val, i.attributes(ctx, attribs))
 	default:
 		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
