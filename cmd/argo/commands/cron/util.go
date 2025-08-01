@@ -8,14 +8,16 @@ import (
 	"strings"
 	"time"
 
+	argoJson "github.com/argoproj/pkg/json"
 	"github.com/robfig/cron/v3"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
-	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
+	"github.com/argoproj/pkg/humanize"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in
@@ -37,7 +39,7 @@ func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time,
 	return nextRunTime, nil
 }
 
-func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool) []v1alpha1.CronWorkflow {
+func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkflow {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -45,7 +47,7 @@ func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool)
 
 	var cronWorkflows []v1alpha1.CronWorkflow
 	for _, body := range fileContents {
-		cronWfs := unmarshalCronWorkflows(ctx, body, strict)
+		cronWfs := unmarshalCronWorkflows(body, strict)
 		cronWorkflows = append(cronWorkflows, cronWfs...)
 	}
 
@@ -57,7 +59,7 @@ func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool)
 }
 
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
+func unmarshalCronWorkflows(wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
 	var cronWf v1alpha1.CronWorkflow
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -67,7 +69,7 @@ func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []
 	if err == nil {
 		return []v1alpha1.CronWorkflow{cronWf}
 	}
-	yamlWfs, err := common.SplitCronWorkflowYAMLFile(ctx, wfBytes, strict)
+	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}

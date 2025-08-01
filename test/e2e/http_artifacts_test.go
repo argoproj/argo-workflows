@@ -10,11 +10,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-type HTTPArtifactsSuite struct {
+type HttpArtifactsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *HTTPArtifactsSuite) TestInputArtifactHttp() {
+func (s *HttpArtifactsSuite) TestInputArtifactHttp() {
 	s.Given().
 		Workflow("@testdata/http/input-artifact-http.yaml").
 		When().
@@ -22,7 +22,7 @@ func (s *HTTPArtifactsSuite) TestInputArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *HTTPArtifactsSuite) TestOutputArtifactHttp() {
+func (s *HttpArtifactsSuite) TestOutputArtifactHttp() {
 	s.Given().
 		Workflow("@testdata/http/output-artifact-http.yaml").
 		When().
@@ -30,7 +30,7 @@ func (s *HTTPArtifactsSuite) TestOutputArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *HTTPArtifactsSuite) TestBasicAuthArtifactHttp() {
+func (s *HttpArtifactsSuite) TestBasicAuthArtifactHttp() {
 	s.Given().
 		Workflow("@testdata/http/basic-auth-artifact-http.yaml").
 		When().
@@ -38,7 +38,7 @@ func (s *HTTPArtifactsSuite) TestBasicAuthArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *HTTPArtifactsSuite) TestOAuthArtifactHttp() {
+func (s *HttpArtifactsSuite) TestOAuthArtifactHttp() {
 	s.Given().
 		Workflow("@testdata/http/oauth-artifact-http.yaml").
 		When().
@@ -46,7 +46,7 @@ func (s *HTTPArtifactsSuite) TestOAuthArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *HTTPArtifactsSuite) TestClientCertAuthArtifactHttp() {
+func (s *HttpArtifactsSuite) TestClientCertAuthArtifactHttp() {
 	s.Given().
 		Workflow("@testdata/http/clientcert-auth-artifact-http.yaml").
 		When().
@@ -54,7 +54,7 @@ func (s *HTTPArtifactsSuite) TestClientCertAuthArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *HTTPArtifactsSuite) TestArtifactoryArtifacts() {
+func (s *HttpArtifactsSuite) TestArtifactoryArtifacts() {
 	s.Given().
 		Workflow("@testdata/http/artifactory-artifact.yaml").
 		When().
@@ -63,5 +63,5 @@ func (s *HTTPArtifactsSuite) TestArtifactoryArtifacts() {
 }
 
 func TestHttpArtifactsSuite(t *testing.T) {
-	suite.Run(t, new(HTTPArtifactsSuite))
+	suite.Run(t, new(HttpArtifactsSuite))
 }

@@ -2,7 +2,6 @@ export interface Link {
     name: string;
     scope: string;
     url: string;
-    target?: string;
 }
 
 export interface Column {

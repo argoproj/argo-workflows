@@ -27,6 +27,7 @@ const (
 	Schedule Type = iota
 	Mutex
 	Semaphore
+	PodPriority
 )
 
 func (t *Type) asString() string {
@@ -37,6 +38,8 @@ func (t *Type) asString() string {
 		return `synchronization mutex`
 	case Semaphore:
 		return `synchronization semaphore`
+	case PodPriority:
+		return `workflow podpriority`
 	default:
 		return `unknown`
 	}

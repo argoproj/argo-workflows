@@ -82,13 +82,12 @@ func NewRetryCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			ctx, apiClient, err := client.NewAPIClient(ctx)
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
-			retryOpts.namespace = client.Namespace(ctx)
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			retryOpts.namespace = client.Namespace()
 
 			return retryWorkflows(ctx, serviceClient, retryOpts, cliSubmitOpts, args)
 		},

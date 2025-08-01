@@ -25,15 +25,14 @@ func NewLintCommand() *cobra.Command {
 		Short: "validate a file or directory of workflow template manifests",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			ctx, apiClient, err := client.NewAPIClient(ctx)
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
 				return err
 			}
 			opts := lint.LintOptions{
 				Files:            args,
 				Strict:           strict,
-				DefaultNamespace: client.Namespace(ctx),
+				DefaultNamespace: client.Namespace(),
 				Printer:          os.Stdout,
 			}
 			return lint.RunLint(ctx, apiClient, []string{wf.WorkflowTemplatePlural}, output.String(), false, opts)

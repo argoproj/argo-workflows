@@ -7,13 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestCreateOauth2Client(t *testing.T) {
 	endpointParams := []wfv1.OAuth2EndpointParam{{Key: "key", Value: "value"}}
 	scopes := []string{"some", "scopes"}
-	client := CreateOauth2Client(logging.TestContext(t.Context()), "clientID", "clientSecret", "tokenURL", scopes, endpointParams)
+	client := CreateOauth2Client("clientID", "clientSecret", "tokenURL", scopes, endpointParams)
 
 	assert.NotNil(t, client)
 }
@@ -26,7 +25,7 @@ func TestCreateClientWithCertificateInvalidCert(t *testing.T) {
 }
 
 func TestCreateClientWithCertificateValidCert(t *testing.T) {
-	client, err := CreateClientWithCertificate([]byte(CertPem), []byte(KeyPem))
+	client, err := CreateClientWithCertificate([]byte(CERT_PEM), []byte(KEY_PEM))
 
 	require.NoError(t, err)
 	assert.NotNil(t, client)
@@ -34,7 +33,7 @@ func TestCreateClientWithCertificateValidCert(t *testing.T) {
 
 // test certificate pair
 const (
-	CertPem = `-----BEGIN CERTIFICATE-----
+	CERT_PEM = `-----BEGIN CERTIFICATE-----
 MIIEmjCCAoICCQDQejieQSZTxzANBgkqhkiG9w0BAQsFADAPMQ0wCwYDVQQDDAR0
 ZXN0MB4XDTIyMDQyNTEzNDc0MloXDTMyMDQyMjEzNDc0MlowDzENMAsGA1UEAwwE
 dGVzdDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMHT/tfskuXizar1
@@ -62,7 +61,7 @@ Dw77DP1QZe4G6WwrdGooxSYSBn4joKV4TI9sbyd34HJQnkMch0ugz9dlpZyT1P8Y
 aszMnFjeymK5OCkMUhg/KNr4WK58pc/3uFMhy8bn
 -----END CERTIFICATE-----
 `
-	KeyPem = `-----BEGIN PRIVATE KEY-----
+	KEY_PEM = `-----BEGIN PRIVATE KEY-----
 MIIJQgIBADANBgkqhkiG9w0BAQEFAASCCSwwggkoAgEAAoICAQDB0/7X7JLl4s2q
 9eQw60pGk9XLgnUIRDu2+oWsX73zCT2PbMWsUee9G8OU1kMwNMXQHlM0gm0bL8cO
 m3xMiw+DWo3V7XCqHGFFHC3Jc44MqIEwz6pcwHw1WQ9uckjk2dedKUGgbiIuk4J6

@@ -18,14 +18,14 @@ var sharedTE *telemetry.TestMetricsExporter = nil
 // takes effect within a single binary
 // This can be fixed when we update to client-go 0.27 or later and we can
 // create workqueues with https://godocs.io/k8s.io/client-go/util/workqueue#NewRateLimitingQueueWithConfig
-func getSharedMetrics(ctx context.Context) (*Metrics, *telemetry.TestMetricsExporter, error) {
+func getSharedMetrics() (*Metrics, *telemetry.TestMetricsExporter, error) {
 	if sharedMetrics == nil {
 		config := telemetry.Config{
 			Enabled: true,
 			TTL:     1 * time.Second,
 		}
 		var err error
-		sharedMetrics, sharedTE, err = createTestMetrics(ctx, &config, Callbacks{})
+		sharedMetrics, sharedTE, err = createTestMetrics(&config, Callbacks{})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -37,14 +37,15 @@ func getSharedMetrics(ctx context.Context) (*Metrics, *telemetry.TestMetricsExpo
 
 // CreateDefaultTestMetrics creates a boring testExporter enabled
 // metrics, suitable for many tests
-func CreateDefaultTestMetrics(ctx context.Context) (*Metrics, *telemetry.TestMetricsExporter, error) {
+func CreateDefaultTestMetrics() (*Metrics, *telemetry.TestMetricsExporter, error) {
 	config := telemetry.Config{
 		Enabled: true,
 	}
-	return createTestMetrics(ctx, &config, Callbacks{})
+	return createTestMetrics(&config, Callbacks{})
 }
 
-func createTestMetrics(ctx context.Context, config *telemetry.Config, callbacks Callbacks) (*Metrics, *telemetry.TestMetricsExporter, error) {
+func createTestMetrics(config *telemetry.Config, callbacks Callbacks) (*Metrics, *telemetry.TestMetricsExporter, error) {
+	ctx /* with cancel*/ := context.Background()
 	te := telemetry.NewTestMetricsExporter()
 
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, config, callbacks, metric.WithReader(te))

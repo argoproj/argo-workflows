@@ -95,12 +95,6 @@
             "type": "string",
             "name": "namespace",
             "in": "query"
-          },
-          {
-            "type": "string",
-            "description": "Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.",
-            "name": "nameFilter",
-            "in": "query"
           }
         ],
         "responses": {
@@ -3014,16 +3008,6 @@
             "type": "string",
             "description": "Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.",
             "name": "nameFilter",
-            "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "createdAfter",
-            "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "finishedBefore",
             "in": "query"
           }
         ],
@@ -8559,10 +8543,6 @@
       "description": "Backoff is a backoff strategy to use within retryStrategy",
       "type": "object",
       "properties": {
-        "cap": {
-          "description": "Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap",
-          "type": "string"
-        },
         "duration": {
           "description": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")",
           "type": "string"
@@ -9141,6 +9121,14 @@
     "io.argoproj.workflow.v1alpha1.CronWorkflowStatus": {
       "description": "CronWorkflowStatus is the status of a CronWorkflow",
       "type": "object",
+      "required": [
+        "active",
+        "lastScheduledTime",
+        "conditions",
+        "succeeded",
+        "failed",
+        "phase"
+      ],
       "properties": {
         "active": {
           "description": "Active is a list of active workflows stemming from this CronWorkflow",
@@ -9219,7 +9207,7 @@
           }
         },
         "inline": {
-          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa).",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "name": {
@@ -9243,7 +9231,7 @@
           "type": "string"
         },
         "withItems": {
-          "description": "WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+          "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
@@ -9877,8 +9865,7 @@
       "required": [
         "name",
         "scope",
-        "url",
-        "target"
+        "url"
       ],
       "properties": {
         "name": {
@@ -9887,10 +9874,6 @@
         },
         "scope": {
           "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
-          "type": "string"
-        },
-        "target": {
-          "description": "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
           "type": "string"
         },
         "url": {
@@ -10035,10 +10018,6 @@
       "description": "Mutex holds Mutex configuration",
       "type": "object",
       "properties": {
-        "database": {
-          "description": "Database specifies this is database controlled if this is set true",
-          "type": "boolean"
-        },
         "name": {
           "description": "name of the mutex",
           "type": "string"
@@ -10200,10 +10179,6 @@
         "synchronizationStatus": {
           "description": "SynchronizationStatus is the synchronization status of the node",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus"
-        },
-        "taskResultSynced": {
-          "description": "TaskResultSynced is used to determine if the node's output has been received",
-          "type": "boolean"
         },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
@@ -10409,7 +10384,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "result": {
-          "description": "Result holds the result (stdout) of a script or container template, or the response body of an HTTP template",
+          "description": "Result holds the result (stdout) of a script template",
           "type": "string"
         }
       }
@@ -10451,7 +10426,7 @@
           "type": "string"
         },
         "value": {
-          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value",
+          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
           "type": "string"
         },
         "valueFrom": {
@@ -10993,12 +10968,8 @@
       "type": "object",
       "properties": {
         "configMapKeyRef": {
-          "description": "ConfigMapKeyRef is a configmap selector for Semaphore configuration",
+          "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
-        },
-        "database": {
-          "description": "SyncDatabaseRef is a database reference for Semaphore configuration",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SyncDatabaseRef"
         },
         "namespace": {
           "description": "Namespace is the namespace of the configmap, default: [namespace of workflow]",
@@ -11151,17 +11122,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.SyncDatabaseRef": {
-      "type": "object",
-      "required": [
-        "key"
-      ],
-      "properties": {
-        "key": {
-          "type": "string"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.Synchronization": {
       "description": "Synchronization holds synchronization lock configuration",
       "type": "object",
@@ -11243,13 +11203,6 @@
         "affinity": {
           "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
-        },
-        "annotations": {
-          "description": "Annotations is a list of annotations to add to the template at runtime",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
         },
         "archiveLocation": {
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
@@ -11345,12 +11298,16 @@
           "type": "integer"
         },
         "plugin": {
-          "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+          "description": "Plugin is a plugin template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
+        },
+        "priority": {
+          "description": "Priority to apply to workflow pods.",
+          "type": "integer"
         },
         "priorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
@@ -12118,6 +12075,10 @@
           "description": "PodMetadata defines additional metadata that should be applied to workflow pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
+        "podPriority": {
+          "description": "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
+          "type": "integer"
+        },
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
           "type": "string"
@@ -12335,7 +12296,7 @@
           }
         },
         "inline": {
-          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an \"inline\" field. Kubernetes doesn't allow recursive types, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa).",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "name": {
@@ -12359,7 +12320,7 @@
           "type": "string"
         },
         "withItems": {
-          "description": "WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+          "description": "WithItems expands a step into multiple parallel steps from the items in the list",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
@@ -13189,7 +13150,7 @@
       }
     },
     "io.k8s.api.core.v1.EnvFromSource": {
-      "description": "EnvFromSource represents the source of a set of ConfigMaps or Secrets",
+      "description": "EnvFromSource represents the source of a set of ConfigMaps",
       "type": "object",
       "properties": {
         "configMapRef": {
@@ -13197,7 +13158,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapEnvSource"
         },
         "prefix": {
-          "description": "Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.",
+          "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
           "type": "string"
         },
         "secretRef": {
@@ -13746,10 +13707,6 @@
         "preStop": {
           "description": "PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks",
           "$ref": "#/definitions/io.k8s.api.core.v1.LifecycleHandler"
-        },
-        "stopSignal": {
-          "description": "StopSignal defines which signal will be sent to a container when it is being stopped. If not specified, the default is defined by the container runtime in use. StopSignal can only be set for Pods with a non-empty .spec.os.name",
-          "type": "string"
         }
       }
     },
@@ -14222,7 +14179,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector"
         },
         "matchLabelKeys": {
-          "description": "MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn't set.",
+          "description": "MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn't set. This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).",
           "type": "array",
           "items": {
             "type": "string"
@@ -14230,7 +14187,7 @@
           "x-kubernetes-list-type": "atomic"
         },
         "mismatchLabelKeys": {
-          "description": "MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn't set.",
+          "description": "MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn't set. This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).",
           "type": "array",
           "items": {
             "type": "string"
@@ -15156,7 +15113,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.HostPathVolumeSource"
         },
         "image": {
-          "description": "image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine. The volume is resolved at pod startup depending on which PullPolicy value is provided:\n\n- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.\n\nThe volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.",
+          "description": "image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine. The volume is resolved at pod startup depending on which PullPolicy value is provided:\n\n- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.\n\nThe volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath). The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.",
           "$ref": "#/definitions/io.k8s.api.core.v1.ImageVolumeSource"
         },
         "iscsi": {
@@ -15398,7 +15355,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector"
         },
         "unhealthyPodEvictionPolicy": {
-          "description": "UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods should be considered for eviction. Current implementation considers healthy pods, as pods that have status.conditions item with type=\"Ready\",status=\"True\".\n\nValid policies are IfHealthyBudget and AlwaysAllow. If no policy is specified, the default behavior will be used, which corresponds to the IfHealthyBudget policy.\n\nIfHealthyBudget policy means that running pods (status.phase=\"Running\"), but not yet healthy can be evicted only if the guarded application is not disrupted (status.currentHealthy is at least equal to status.desiredHealthy). Healthy pods will be subject to the PDB for eviction.\n\nAlwaysAllow policy means that all running pods (status.phase=\"Running\"), but not yet healthy are considered disrupted and can be evicted regardless of whether the criteria in a PDB is met. This means perspective running pods of a disrupted application might not get a chance to become healthy. Healthy pods will be subject to the PDB for eviction.\n\nAdditional policies may be added in the future. Clients making eviction decisions should disallow eviction of unhealthy pods if they encounter an unrecognized policy in this field.",
+          "description": "UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods should be considered for eviction. Current implementation considers healthy pods, as pods that have status.conditions item with type=\"Ready\",status=\"True\".\n\nValid policies are IfHealthyBudget and AlwaysAllow. If no policy is specified, the default behavior will be used, which corresponds to the IfHealthyBudget policy.\n\nIfHealthyBudget policy means that running pods (status.phase=\"Running\"), but not yet healthy can be evicted only if the guarded application is not disrupted (status.currentHealthy is at least equal to status.desiredHealthy). Healthy pods will be subject to the PDB for eviction.\n\nAlwaysAllow policy means that all running pods (status.phase=\"Running\"), but not yet healthy are considered disrupted and can be evicted regardless of whether the criteria in a PDB is met. This means perspective running pods of a disrupted application might not get a chance to become healthy. Healthy pods will be subject to the PDB for eviction.\n\nAdditional policies may be added in the future. Clients making eviction decisions should disallow eviction of unhealthy pods if they encounter an unrecognized policy in this field.\n\nThis field is beta-level. The eviction API uses this field when the feature gate PDBUnhealthyPodEvictionPolicy is enabled (enabled by default).",
           "type": "string"
         }
       }

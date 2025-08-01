@@ -80,12 +80,12 @@ func NewRetryCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			serviceClient := apiClient.NewWorkflowServiceClient()
 			archiveServiceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			if err != nil {
 				return err
 			}
-			retryOpts.namespace = client.Namespace(ctx)
+			retryOpts.namespace = client.Namespace()
 
 			return retryArchivedWorkflows(ctx, archiveServiceClient, serviceClient, retryOpts, cliSubmitOpts, args)
 		},

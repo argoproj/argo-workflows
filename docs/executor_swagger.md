@@ -113,7 +113,7 @@ ownership management and SELinux relabeling.
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="any-string"></span> AnyString
 
@@ -468,7 +468,6 @@ of a single workflow step, which the executor will use as a default location to 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| cap | string| `string` |  | | Cap is a limit on revised values of the duration parameter. If a</br>multiplication by the factor parameter would make the duration</br>exceed the cap then the duration is set to the cap |  |
 | duration | string| `string` |  | | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") |  |
 | factor | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.</br>It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.</br>However, when the workflow fails, the pod's deadline is then overridden by maxDuration.</br>This ensures that the workflow does not exceed the specified maximum duration when retries are involved. |  |
@@ -984,7 +983,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
-| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>Note: The structure of WithItems is free-form, so we need</br>"x-kubernetes-preserve-unknown-fields: true" in the validation schema.</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
+| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list |  |
 | withParam | string| `string` |  | | WithParam expands a task into multiple parallel tasks from the value in the parameter,</br>which is expected to be a JSON list. |  |
 | withSequence | [Sequence](#sequence)| `Sequence` |  | |  |  |
 
@@ -1116,7 +1115,7 @@ can be used as map keys in json.
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="empty-dir-volume-source"></span> EmptyDirVolumeSource
 
@@ -1140,7 +1139,7 @@ can be used as map keys in json.
 ### <span id="env-from-source"></span> EnvFromSource
 
 
-> EnvFromSource represents the source of a set of ConfigMaps or Secrets
+> EnvFromSource represents the source of a set of ConfigMaps
   
 
 
@@ -1152,7 +1151,7 @@ can be used as map keys in json.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapRef | [ConfigMapEnvSource](#config-map-env-source)| `ConfigMapEnvSource` |  | |  |  |
-| prefix | string| `string` |  | | Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.</br>+optional |  |
+| prefix | string| `string` |  | | An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.</br>+optional |  |
 | secretRef | [SecretEnvSource](#secret-env-source)| `SecretEnvSource` |  | |  |  |
 
 
@@ -1309,7 +1308,7 @@ The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="flex-volume-source"></span> FlexVolumeSource
 
@@ -1857,11 +1856,12 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 
 > +protobuf.options.(gogoproto.goproto_stringer)=false
++kubebuilder:validation:Type=object
   
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="key-to-path"></span> KeyToPath
 
@@ -1952,7 +1952,6 @@ until the action is complete, unless the container process fails, in which case 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | postStart | [LifecycleHandler](#lifecycle-handler)| `LifecycleHandler` |  | |  |  |
 | preStop | [LifecycleHandler](#lifecycle-handler)| `LifecycleHandler` |  | |  |  |
-| stopSignal | [Signal](#signal)| `Signal` |  | |  |  |
 
 
 
@@ -2186,7 +2185,6 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| database | boolean| `bool` |  | | Database specifies this is database controlled if this is set true |  |
 | name | string| `string` |  | | name of the mutex |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
@@ -2347,7 +2345,7 @@ save/load the directory appropriately.
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="o-auth2-auth"></span> OAuth2Auth
 
@@ -2488,7 +2486,7 @@ save/load the directory appropriately.
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
 | exitCode | string| `string` |  | | ExitCode holds the exit code of a script template |  |
 | parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters holds the list of output parameters produced by a step</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
-| result | string| `string` |  | | Result holds the result (stdout) of a script or container template, or the response body of an HTTP template |  |
+| result | string| `string` |  | | Result holds the result (stdout) of a script template |  |
 
 
 
@@ -2521,9 +2519,12 @@ be cluster-scoped, so there is no namespace field.
 ### <span id="parallel-steps"></span> ParallelSteps
 
 
+> +kubebuilder:validation:Type=array
   
 
-`interface{}`
+
+
+[interface{}](#interface)
 
 ### <span id="parameter"></span> Parameter
 
@@ -2683,7 +2684,7 @@ type of volume that is owned by someone else (the system).
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="pod-affinity"></span> PodAffinity
 
@@ -2721,8 +2722,8 @@ a pod of the set of pods is running
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | labelSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
-| matchLabelKeys | []string| `[]string` |  | | MatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both matchLabelKeys and labelSelector.</br>Also, matchLabelKeys cannot be set when labelSelector isn't set.</br></br>+listType=atomic</br>+optional |  |
-| mismatchLabelKeys | []string| `[]string` |  | | MismatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.</br>Also, mismatchLabelKeys cannot be set when labelSelector isn't set.</br></br>+listType=atomic</br>+optional |  |
+| matchLabelKeys | []string| `[]string` |  | | MatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both matchLabelKeys and labelSelector.</br>Also, matchLabelKeys cannot be set when labelSelector isn't set.</br>This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).</br></br>+listType=atomic</br>+optional |  |
+| mismatchLabelKeys | []string| `[]string` |  | | MismatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.</br>Also, mismatchLabelKeys cannot be set when labelSelector isn't set.</br>This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).</br></br>+listType=atomic</br>+optional |  |
 | namespaceSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | namespaces | []string| `[]string` |  | | namespaces specifies a static list of namespace names that the term applies to.</br>The term is applied to the union of the namespaces listed in this field</br>and the ones selected by namespaceSelector.</br>null or empty namespaces list and null namespaceSelector means "this pod's namespace".</br>+optional</br>+listType=atomic |  |
 | topologyKey | string| `string` |  | | This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching</br>the labelSelector in the specified namespaces, where co-located is defined as running on a node</br>whose value of the label with key topologyKey matches that of any node on which any of the</br>selected pods is running.</br>Empty topologyKey is not allowed. |  |
@@ -3037,7 +3038,7 @@ cause implementors to also use a fixed point implementation.
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="quobyte-volume-source"></span> QuobyteVolumeSource
 
@@ -3247,7 +3248,7 @@ cause implementors to also use a fixed point implementation.
 
 
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="retry-policy"></span> RetryPolicy
 
@@ -3410,7 +3411,7 @@ cause implementors to also use a fixed point implementation.
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
-| source | string| `string` |  | | Source contains the source code of the script to execute</br>+optional |  |
+| source | string| `string` |  | | Source contains the source code of the script to execute |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
 | stdinOnce | boolean| `bool` |  | | Whether the container runtime should close the stdin channel after it has been opened by</br>a single attach. When stdin is true the stdin stream will remain open across multiple attach</br>sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the</br>first client attaches to stdin, and then remains open and accepts data until the client disconnects,</br>at which time stdin is closed and remains closed until the container is restarted. If this</br>flag is false, a container processes that reads from stdin will never receive an EOF.</br>Default is false</br>+optional |  |
@@ -3588,7 +3589,6 @@ are set, the values in SecurityContext take precedence.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
-| database | [SyncDatabaseRef](#sync-database-ref)| `SyncDatabaseRef` |  | |  |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
@@ -3634,21 +3634,6 @@ otherwise).
 | audience | string| `string` |  | | audience is the intended audience of the token. A recipient of a token</br>must identify itself with an identifier specified in the audience of the</br>token, and otherwise should reject the token. The audience defaults to the</br>identifier of the apiserver.</br>+optional |  |
 | expirationSeconds | int64 (formatted integer)| `int64` |  | | expirationSeconds is the requested duration of validity of the service</br>account token. As the token approaches expiration, the kubelet volume</br>plugin will proactively rotate the service account token. The kubelet will</br>start trying to rotate the token if the token is older than 80 percent of</br>its time to live or if the token is older than 24 hours.Defaults to 1 hour</br>and must be at least 10 minutes.</br>+optional |  |
 | path | string| `string` |  | | path is the path relative to the mount point of the file to project the</br>token into. |  |
-
-
-
-### <span id="signal"></span> Signal
-
-
-> Signal defines the stop signal of containers
-+enum
-  
-
-
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| Signal | string| string | | Signal defines the stop signal of containers</br>+enum |  |
 
 
 
@@ -3718,7 +3703,7 @@ of the first container processes are calculated.
 
   
 
-`interface{}`
+[interface{}](#interface)
 
 ### <span id="suspend-template"></span> SuspendTemplate
 
@@ -3735,21 +3720,6 @@ of the first container processes are calculated.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.</br>Could also be a Duration, e.g.: "2m", "6h" |  |
-
-
-
-### <span id="sync-database-ref"></span> SyncDatabaseRef
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| key | string| `string` |  | |  |  |
 
 
 
@@ -3860,7 +3830,6 @@ of the first container processes are calculated.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | activeDeadlineSeconds | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | affinity | [Affinity](#affinity)| `Affinity` |  | |  |  |
-| annotations | map of string| `map[string]string` |  | | Annotations is a list of annotations to add to the template at runtime |  |
 | archiveLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
 | automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.</br>ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
@@ -3883,6 +3852,7 @@ of the first container processes are calculated.
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
+| priority | int32 (formatted integer)| `int32` |  | | Priority to apply to workflow pods. |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |
 | retryStrategy | [RetryStrategy](#retry-strategy)| `RetryStrategy` |  | |  |  |
@@ -4349,4 +4319,4 @@ intent and helps make sure that UIDs and names do not get conflated.
 
 
 
-`interface{}`
+[interface{}](#interface)
