@@ -25,7 +25,7 @@ func TarGzToWriter(ctx context.Context, sourcePath string, level int, w io.Write
 		return errors.InternalErrorf("getting absolute path: %v", err)
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Infof(ctx, "Taring %s", sourcePath)
+	logger.WithField("source", sourcePath).Info(ctx, "taring")
 	sourceFi, err := os.Stat(sourcePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -60,7 +60,7 @@ func ZipToWriter(ctx context.Context, sourcePath string, zw *zip.Writer) error {
 		return errors.InternalErrorf("getting absolute path: %v", err)
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Infof(ctx, "Zipping %s", sourcePath)
+	logger.WithField("source", sourcePath).Info(ctx, "zipping")
 	sourceFi, err := os.Stat(sourcePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -81,7 +81,7 @@ func ZipToWriter(ctx context.Context, sourcePath string, zw *zip.Writer) error {
 func tarDir(ctx context.Context, sourcePath string, tw *tar.Writer) error {
 	baseName := filepath.Base(sourcePath)
 	count := 0
-	logger := logging.RequireLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx).WithField("sourcePath", sourcePath)
 	err := filepath.Walk(sourcePath, func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.InternalWrapError(err)
@@ -92,7 +92,7 @@ func tarDir(ctx context.Context, sourcePath string, tw *tar.Writer) error {
 			return errors.InternalWrapError(err)
 		}
 		nameInArchive = filepath.ToSlash(filepath.Join(baseName, nameInArchive))
-		logger.Debugf(ctx, "writing %s", nameInArchive)
+		logger.WithField("nameInArchive", nameInArchive).Debug(ctx, "writing")
 		count++
 
 		var header *tar.Header
@@ -136,7 +136,10 @@ func tarDir(ctx context.Context, sourcePath string, tw *tar.Writer) error {
 		}
 		return nil
 	})
-	logger.Infof(ctx, "archived %d files/dirs in %s", count, sourcePath)
+	logger.WithFields(logging.Fields{
+		"count":  count,
+		"source": sourcePath,
+	}).Info(ctx, "archived files/dirs")
 	return err
 }
 
@@ -180,7 +183,7 @@ func zipDir(ctx context.Context, sourcePath string, zw *zip.Writer) error {
 			return errors.InternalWrapError(err)
 		}
 		nameInArchive = filepath.Join(baseName, nameInArchive)
-		logger.Infof(ctx, "writing %s", nameInArchive)
+		logger.WithField("name", nameInArchive).Info(ctx, "writing")
 		count++
 
 		fileWriter, err := zw.Create(nameInArchive)
@@ -204,7 +207,10 @@ func zipDir(ctx context.Context, sourcePath string, zw *zip.Writer) error {
 
 		return nil
 	})
-	logger.Infof(ctx, "archive[zip] %d files/dirs in %s", count, sourcePath)
+	logger.WithFields(logging.Fields{
+		"count":  count,
+		"source": sourcePath,
+	}).Info(ctx, "archive[zip] files/dirs")
 	return err
 }
 

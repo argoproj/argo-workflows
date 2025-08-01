@@ -67,7 +67,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	req.Header = headers
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
+	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
@@ -114,7 +114,7 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	}
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf(ctx, "curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
+	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{

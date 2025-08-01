@@ -102,16 +102,16 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 		func() (bool, error) {
 			key := filepath.Clean(inputArtifact.GCS.Key)
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.Infof(ctx, "GCS Load path: %s, key: %s", path, key)
+			logger.WithFields(logging.Fields{"path": path, "key": key}).Info(ctx, "GCS Load")
 			gcsClient, err := h.newGCSClient(ctx)
 			if err != nil {
-				logger.Warnf(ctx, "Failed to create new GCS client: %v", err)
+				logger.WithError(err).Warn(ctx, "Failed to create new GCS client")
 				return !isTransientGCSErr(ctx, err), err
 			}
 			defer gcsClient.Close()
 			err = downloadObjects(ctx, gcsClient, inputArtifact.GCS.Bucket, key, path)
 			if err != nil {
-				logger.Warnf(ctx, "Failed to download objects from GCS: %v", err)
+				logger.WithError(err).Warn(ctx, "Failed to download objects from GCS")
 				return !isTransientGCSErr(ctx, err), err
 			}
 			return true, nil
@@ -168,7 +168,7 @@ func downloadObject(ctx context.Context, client *storage.Client, bucket, key, ob
 	defer func() {
 		if err := out.Close(); err != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.Errorf(ctx, "Error closing file[%s]: %v", localPath, err)
+			logger.WithField("path", localPath).WithError(err).Error(ctx, "Error closing file")
 		}
 	}()
 	_, err = io.Copy(out, rc)
@@ -305,7 +305,7 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 	defer func() {
 		if err := f.Close(); err != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.Errorf(ctx, "Error closing file[%s]: %v", localPath, err)
+			logger.WithField("path", localPath).WithError(err).Error(ctx, "Error closing file")
 		}
 	}()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)

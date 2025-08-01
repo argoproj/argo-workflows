@@ -16,5 +16,5 @@ func LogChanges(ctx context.Context, old, new interface{}) {
 	a, _ := json.Marshal(old)
 	b, _ := json.Marshal(new)
 	patch, _ := jsonpatch.CreateMergePatch(a, b)
-	logger.Debugf(ctx, "Log changes patch: %s", string(patch))
+	logger.WithField("patch", string(patch)).Debug(ctx, "Log changes patch")
 }

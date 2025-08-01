@@ -159,7 +159,10 @@ func NewExecutor(
 func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 	if r := recover(); r != nil {
 		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
-		logging.RequireLoggerFromContext(ctx).WithFatal().Errorf(ctx, "executor panic: %+v\n%s", r, debug.Stack())
+		logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
+			"error": r,
+			"stack": debug.Stack(),
+		}).Error(ctx, "executor panic")
 	} else {
 		if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
@@ -173,11 +176,11 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	logger.Info(ctx, "Start loading input artifacts...")
 	for _, art := range we.Template.Inputs.Artifacts {
 
-		logger.Infof(ctx, "Downloading artifact: %s", art.Name)
+		logger.WithField("name", art.Name).Info(ctx, "Downloading artifact")
 
 		if !art.HasLocationOrKey() {
 			if art.Optional {
-				logger.Warnf(ctx, "Ignoring optional artifact '%s' which was not supplied", art.Name)
+				logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
 				continue
 			} else {
 				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
@@ -206,7 +209,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			// mounts, we need to load the artifact into the user specified volume mount,
 			// as opposed to the `input-artifacts` volume that is an implementation detail
 			// unbeknownst to the user.
-			logger.Infof(ctx, "Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
+			logger.WithFields(logging.Fields{"path": art.Path, "mountPath": mnt.MountPath}).Info(ctx, "Specified artifact path overlaps with volume mount, extracting to volume mount")
 			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
 		}
 
@@ -222,7 +225,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		err = artDriver.Load(ctx, driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
-				logger.Infof(ctx, "Skipping optional input artifact that was not found: %s", art.Name)
+				logger.WithField("name", art.Name).Info(ctx, "Skipping optional input artifact that was not found")
 				continue
 			}
 			return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
@@ -262,7 +265,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			return err
 		}
 
-		logger.Infof(ctx, "Successfully download file: %s", artPath)
+		logger.WithField("path", artPath).Info(ctx, "Successfully download file")
 		if art.Mode != nil {
 			err = chmod(artPath, *art.Mode, art.RecurseMode)
 			if err != nil {
@@ -281,16 +284,16 @@ func (we *WorkflowExecutor) StageFiles(ctx context.Context) error {
 	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
-		logger.Infof(ctx, "Loading script source to %s", common.ExecutorScriptSourcePath)
+		logger.WithField("path", common.ExecutorScriptSourcePath).Info(ctx, "Loading script source")
 		filePath = common.ExecutorScriptSourcePath
 		body = []byte(we.Template.Script.Source)
 		mode = os.FileMode(0o755)
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
-			logger.Infof(ctx, "manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
+			logger.WithField("name", we.Template.Resource.ManifestFrom.Artifact.Name).Info(ctx, "manifest already staged")
 			return nil
 		}
-		logger.Infof(ctx, "Loading manifest to %s", common.ExecutorResourceManifestPath)
+		logger.WithField("path", common.ExecutorResourceManifestPath).Info(ctx, "Loading manifest")
 		filePath = common.ExecutorResourceManifestPath
 		body = []byte(we.Template.Resource.Manifest)
 	default:
@@ -308,11 +311,11 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	logger := logging.RequireLoggerFromContext(ctx)
 	artifacts := wfv1.Artifacts{}
 	if len(we.Template.Outputs.Artifacts) == 0 {
-		logger.Infof(ctx, "No output artifacts")
+		logger.Info(ctx, "No output artifacts")
 		return artifacts, nil
 	}
 
-	logger.Infof(ctx, "Saving output artifacts")
+	logger.Info(ctx, "Saving output artifacts")
 	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
 		return artifacts, argoerrs.InternalWrapError(err)
@@ -347,7 +350,7 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 	fileName, localArtPath, err := we.stageArchiveFile(ctx, containerName, art)
 	if err != nil {
 		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
-			logger.Warnf(ctx, "Ignoring optional artifact '%s' which does not exist in path '%s': %v", art.Name, art.Path, err)
+			logger.WithField("name", art.Name).WithField("path", art.Path).WithError(err).Warn(ctx, "Ignoring optional artifact which does not exist in path")
 			return false, nil
 		}
 		return false, err
@@ -358,7 +361,7 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 	}
 	size := fi.Size()
 	if size == 0 {
-		logger.Warnf(ctx, "The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
+		logger.WithField("path", localArtPath).Warn(ctx, "The file is empty. It may not be uploaded successfully depending on the artifact driver")
 	}
 	err = we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
 	return err == nil, err
@@ -395,7 +398,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		return err
 	}
 	we.maybeDeleteLocalArtPath(ctx, localArtPath)
-	logging.RequireLoggerFromContext(ctx).Infof(ctx, "Successfully saved file: %s", localArtPath)
+	logging.RequireLoggerFromContext(ctx).WithField("path", localArtPath).Info(ctx, "Successfully saved file")
 	return nil
 }
 
@@ -407,7 +410,7 @@ func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localAr
 		// we just want reduce peak space usage
 		err := os.Remove(localArtPath)
 		if err != nil {
-			logger.Warnf(ctx, "Failed to remove %s: %v", localArtPath, err)
+			logger.WithField("path", localArtPath).WithError(err).Warn(ctx, "Failed to remove")
 		}
 	} else {
 		logging.RequireLoggerFromContext(ctx).WithField("localArtPath", localArtPath).Info(ctx, "not deleting local artifact")
@@ -421,7 +424,7 @@ func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localAr
 // to the SaveArtifacts call and may be a directory or file.
 func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName string, art *wfv1.Artifact) (string, string, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Infof(ctx, "Staging artifact: %s", art.Name)
+	logger.WithField("name", art.Name).Info(ctx, "Staging artifact")
 	strategy := art.Archive
 	if strategy == nil {
 		// If no strategy is specified, default to the tar strategy
@@ -443,10 +446,10 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
 		mountedArtPath := filepath.Join(common.ExecutorMainFilesystemDir, art.Path)
-		logger.Infof(ctx, "Staging %s from mirrored volume mount %s", art.Path, mountedArtPath)
+		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Staging from mirrored volume mount")
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
-			logger.Infof(ctx, "No compression strategy needed. Staging skipped")
+			logger.WithField("fileName", fileName).Info(ctx, "No compression strategy needed, staging skipped")
 			if !file.Exists(mountedArtPath) {
 				return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
 			}
@@ -465,7 +468,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 			if err != nil {
 				return "", "", err
 			}
-			logger.Infof(ctx, "Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+			logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Successfully staged from mirrored volume mount")
 			return fileName, localArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
@@ -479,13 +482,13 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		if err != nil {
 			return "", "", err
 		}
-		logger.Infof(ctx, "Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Successfully staged from mirrored volume mount")
 		return fileName, localArtPath, nil
 	}
 
 	fileName := fmt.Sprintf("%s.tgz", art.Name)
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
-	logger.Infof(ctx, "Copying %s from container base image layer to %s", art.Path, localArtPath)
+	logger.WithFields(logging.Fields{"path": art.Path, "localArtPath": localArtPath}).Info(ctx, "Copying from container base image layer")
 
 	err := we.RuntimeExecutor.CopyFile(ctx, containerName, art.Path, localArtPath, compressionLevel)
 	if err != nil {
@@ -496,7 +499,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		return fileName, localArtPath, nil
 	}
 	// localArtPath now points to a .tgz file, and the archive strategy is *not* tar. We need to untar it
-	logger.Infof(ctx, "Untaring %s archive before upload", localArtPath)
+	logger.WithField("path", localArtPath).Info(ctx, "Untaring archive before upload")
 	unarchivedArtPath := path.Join(filepath.Dir(localArtPath), art.Name)
 	err = untar(localArtPath, unarchivedArtPath)
 	if err != nil {
@@ -539,7 +542,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		if err != nil {
 			return "", "", err
 		}
-		logger.Infof(ctx, "Successfully zipped %s to %s", unarchivedArtPath, localArtPath)
+		logger.WithFields(logging.Fields{"unarchivedArtPath": unarchivedArtPath, "localArtPath": localArtPath}).Info(ctx, "Successfully zipped")
 		return fileName, localArtPath, nil
 	}
 	return fileName, localArtPath, nil
@@ -574,12 +577,12 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if len(we.Template.Outputs.Parameters) == 0 {
-		logger.Infof(ctx, "No output parameters")
+		logger.Info(ctx, "No output parameters")
 		return nil
 	}
-	logger.Infof(ctx, "Saving output parameters")
+	logger.Info(ctx, "Saving output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
-		logger.Infof(ctx, "Saving path output parameter: %s", param.Name)
+		logger.WithField("name", param.Name).Info(ctx, "Saving path output parameter")
 		// Determine the file path of where to find the parameter
 		if param.ValueFrom == nil || param.ValueFrom.Path == "" {
 			continue
@@ -587,7 +590,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
-			logger.Infof(ctx, "Copying %s from base image layer", param.ValueFrom.Path)
+			logger.WithField("path", param.ValueFrom.Path).Info(ctx, "Copying from base image layer")
 			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
@@ -600,7 +603,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 				output = wfv1.AnyStringPtr(fileContents)
 			}
 		} else {
-			logger.Infof(ctx, "Copying %s from volume mount", param.ValueFrom.Path)
+			logger.WithField("path", param.ValueFrom.Path).Info(ctx, "Copying from volume mount")
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
@@ -618,7 +621,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		// Trims off a single newline for user convenience
 		output = wfv1.AnyStringPtr(strings.TrimSuffix(output.String(), "\n"))
 		we.Template.Outputs.Parameters[i].Value = output
-		logger.Infof(ctx, "Successfully saved output parameter: %s", param.Name)
+		logger.WithField("name", param.Name).Info(ctx, "Successfully saved output parameter")
 	}
 	return nil
 }
@@ -942,14 +945,14 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 // isTarball returns whether or not the file is a tarball
 func isTarball(ctx context.Context, filePath string) (bool, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Infof(ctx, "Detecting if %s is a tarball", filePath)
+	logger.WithField("path", filePath).Info(ctx, "Detecting if file is a tarball")
 	f, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return false, err
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			logger.WithFatal().Errorf(ctx, "Error closing file[%s]: %v", filePath, err)
+			logger.WithFatal().WithField("path", filePath).WithError(err).Error(ctx, "Error closing file")
 		}
 	}()
 	gzr, err := gzip.NewReader(f)
@@ -1084,10 +1087,10 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 			if err := extractAndWriteFile(f); err != nil {
 				return err
 			}
-			logger.Infof(ctx, "Extracting file: %s", f.Name)
+			logger.WithFields(logging.Fields{"name": f.Name, "src": src}).Info(ctx, "Extracting file")
 		}
 
-		logger.Infof(ctx, "Extraction of %s finished!", src)
+		logger.WithField("src", src).Info(ctx, "Extraction finished")
 
 		return nil
 	}
@@ -1270,7 +1273,7 @@ func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames [
 	logger.Info(ctx, "Killing containers")
 	terminationGracePeriodDuration := GetTerminationGracePeriodDuration()
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
-		logger.Warnf(ctx, "Failed to kill %q: %v", containerNames, err)
+		logger.WithField("containerNames", containerNames).WithError(err).Warn(ctx, "Failed to kill")
 	}
 }
 

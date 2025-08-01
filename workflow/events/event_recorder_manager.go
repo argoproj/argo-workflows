@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -66,7 +67,8 @@ type debugfAdapter struct {
 // debugfAdapter adapts the logging system to the signature expected by StartLogging.
 func (a *debugfAdapter) Debugf(format string, args ...interface{}) {
 	// nolint:contextcheck
-	a.logger.Debugf(context.Background(), format, args...)
+	msg := fmt.Sprintf(format, args...)
+	a.logger.Debug(context.Background(), msg)
 }
 
 func (m *eventRecorderManager) Get(ctx context.Context, namespace string) record.EventRecorder {

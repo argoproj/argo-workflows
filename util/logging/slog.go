@@ -165,29 +165,9 @@ func (s *slogLogger) executeHooks(ctx context.Context, level Level, msg string) 
 	}
 }
 
-func (s *slogLogger) Info(ctx context.Context, msg string) {
-	s.executeHooks(ctx, Info, msg)
-	s.logger.LogAttrs(ctx, slog.LevelInfo, msg, fieldsToAttrs(s.fields)...)
-}
-
-func (s *slogLogger) Infof(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Info(ctx, msg)
-}
-
-func (s *slogLogger) Warn(ctx context.Context, msg string) {
-	s.executeHooks(ctx, Warn, msg)
-	s.logger.LogAttrs(ctx, slog.LevelWarn, msg, fieldsToAttrs(s.fields)...)
-}
-
-func (s *slogLogger) Warnf(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Warn(ctx, msg)
-}
-
-func (s *slogLogger) Error(ctx context.Context, msg string) {
-	s.executeHooks(ctx, Error, msg)
-	s.logger.LogAttrs(ctx, slog.LevelError, msg, fieldsToAttrs(s.fields)...)
+func (s *slogLogger) commonLog(ctx context.Context, level Level, msg string) {
+	s.executeHooks(ctx, level, msg)
+	s.logger.LogAttrs(ctx, convertLevel(level), msg, fieldsToAttrs(s.fields)...)
 	switch {
 	case s.withFatal:
 		if exitFunc := GetExitFunc(); exitFunc != nil {
@@ -200,19 +180,20 @@ func (s *slogLogger) Error(ctx context.Context, msg string) {
 	}
 }
 
-func (s *slogLogger) Errorf(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Error(ctx, msg)
-}
-
 func (s *slogLogger) Debug(ctx context.Context, msg string) {
-	s.executeHooks(ctx, Debug, msg)
-	s.logger.LogAttrs(ctx, slog.LevelDebug, msg, fieldsToAttrs(s.fields)...)
+	s.commonLog(ctx, Debug, msg)
 }
 
-func (s *slogLogger) Debugf(ctx context.Context, format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	s.Debug(ctx, msg)
+func (s *slogLogger) Info(ctx context.Context, msg string) {
+	s.commonLog(ctx, Info, msg)
+}
+
+func (s *slogLogger) Warn(ctx context.Context, msg string) {
+	s.commonLog(ctx, Warn, msg)
+}
+
+func (s *slogLogger) Error(ctx context.Context, msg string) {
+	s.commonLog(ctx, Error, msg)
 }
 
 // convertLevel converts our Level type to slog.Level

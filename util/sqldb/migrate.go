@@ -99,7 +99,7 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 func applyChange(ctx context.Context, session db.Session, changeSchemaVersion int, versionTableName string, c Change) error {
 	// https://upper.io/blog/2020/08/29/whats-new-on-upper-v4/#transactions-enclosed-by-functions
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Infof(ctx, "apply change %s", c)
+	logger.WithField("change", c).Info(ctx, "apply change")
 	err := session.Tx(func(tx db.Session) error {
 		rs, err := tx.SQL().Exec(fmt.Sprintf("update %s set schema_version = ? where schema_version = ?", versionTableName), changeSchemaVersion, changeSchemaVersion-1)
 		if err != nil {

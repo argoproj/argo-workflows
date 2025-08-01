@@ -22,7 +22,10 @@ func PanicLoggerUnaryServerInterceptor(log logging.Logger) grpc.UnaryServerInter
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Errorf(ctx, "Recovered from panic: %+v\n%s", r, debug.Stack())
+				log.WithFields(logging.Fields{
+					"error": r,
+					"stack": debug.Stack(),
+				}).Error(ctx, "Recovered from panic")
 				err = status.Errorf(codes.Internal, "%s", r)
 			}
 		}()
@@ -36,7 +39,10 @@ func PanicLoggerStreamServerInterceptor(log logging.Logger) grpc.StreamServerInt
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Errorf(stream.Context(), "Recovered from panic: %+v\n%s", r, debug.Stack())
+				log.WithFields(logging.Fields{
+					"error": r,
+					"stack": debug.Stack(),
+				}).Error(stream.Context(), "Recovered from panic")
 				err = status.Errorf(codes.Internal, "%s", r)
 			}
 		}()

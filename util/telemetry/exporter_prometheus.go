@@ -91,14 +91,14 @@ func (m *Metrics) RunPrometheusServer(ctx context.Context, isDummy bool) {
 		}
 		srv.TLSConfig = tlsConfig
 		go func() {
-			logger.Infof(ctx, "Starting %s at localhost:%v%s", name, m.config.port(), m.config.path())
+			logger.WithFields(logging.Fields{"name": name, "port": m.config.port(), "path": m.config.path()}).Info(ctx, "Starting prometheus server")
 			if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
 				panic(err)
 			}
 		}()
 	} else {
 		go func() {
-			logger.Infof(ctx, "Starting %s at localhost:%v%s", name, m.config.port(), m.config.path())
+			logger.WithFields(logging.Fields{"name": name, "port": m.config.port(), "path": m.config.path()}).Info(ctx, "Starting prometheus server")
 			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 				panic(err)
 			}
@@ -112,8 +112,8 @@ func (m *Metrics) RunPrometheusServer(ctx context.Context, isDummy bool) {
 	shutdownCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		logger.Infof(ctx, "Unable to shutdown %s at localhost:%v%s", name, m.config.port(), m.config.path())
+		logger.WithFields(logging.Fields{"name": name, "port": m.config.port(), "path": m.config.path()}).Info(ctx, "Unable to shutdown prometheus server")
 	} else {
-		logger.Infof(ctx, "Successfully shutdown %s at localhost:%v%s", name, m.config.port(), m.config.path())
+		logger.WithFields(logging.Fields{"name": name, "port": m.config.port(), "path": m.config.path()}).Info(ctx, "Successfully shutdown prometheus server")
 	}
 }

@@ -79,7 +79,7 @@ func (i *syncItem) lockName(wfNamespace string) (*lockName, error) {
 
 func DecodeLockName(ctx context.Context, name string) (*lockName, error) {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.Infof(ctx, "DecodeLockName %s", name)
+	log.WithField("name", name).Info(ctx, "DecodeLockName")
 	items := strings.SplitN(name, "/", 3)
 	if len(items) < 3 {
 		return nil, errors.New(errors.CodeBadRequest, "Invalid lock key: unknown format")
