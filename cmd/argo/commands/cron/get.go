@@ -24,7 +24,7 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace(ctx)
+			namespace := client.Namespace()
 
 			for _, arg := range args {
 				cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflow.GetCronWorkflowRequest{

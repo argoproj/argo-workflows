@@ -1,20 +1,17 @@
 package controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestUpdateConfig(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx)
+	cancel, controller := newController()
 	defer cancel()
-
-	err := controller.updateConfig(ctx)
+	err := controller.updateConfig(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)

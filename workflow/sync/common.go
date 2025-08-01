@@ -1,24 +1,23 @@
 package sync
 
 import (
-	"context"
 	"time"
 )
 
 type semaphore interface {
-	acquire(ctx context.Context, holderKey string, tx *transaction) bool
-	checkAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, bool, string)
-	tryAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, string)
-	release(ctx context.Context, key string) bool
-	addToQueue(ctx context.Context, holderKey string, priority int32, creationTime time.Time) error
-	removeFromQueue(ctx context.Context, holderKey string) error
-	getCurrentHolders(ctx context.Context) ([]string, error)
-	getCurrentPending(ctx context.Context) ([]string, error)
+	acquire(holderKey string, tx *transaction) bool
+	checkAcquire(holderKey string, tx *transaction) (bool, bool, string)
+	tryAcquire(holderKey string, tx *transaction) (bool, string)
+	release(key string) bool
+	addToQueue(holderKey string, priority int32, creationTime time.Time) error
+	removeFromQueue(holderKey string) error
+	getCurrentHolders() ([]string, error)
+	getCurrentPending() ([]string, error)
 	getName() string
-	getLimit(ctx context.Context) int // Testing only
-	probeWaiting(ctx context.Context)
-	lock(ctx context.Context) bool
-	unlock(ctx context.Context)
+	getLimit() int // Testing only
+	probeWaiting()
+	lock() bool
+	unlock()
 }
 
 // expose for overriding in tests

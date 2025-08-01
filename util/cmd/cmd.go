@@ -2,17 +2,16 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -48,19 +47,17 @@ func PrintVersion(cliName string, version wfv1.Version, short bool) {
 }
 
 // PrintVersionMismatchWarning detects if there's a mismatch between the client and server versions and prints a warning if so
-func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version, serverVersion string) {
-	log := logging.RequireLoggerFromContext(ctx)
+func PrintVersionMismatchWarning(clientVersion wfv1.Version, serverVersion string) {
 	if serverVersion != "" && clientVersion.GitTag != "" && serverVersion != clientVersion.Version {
-		log.WithFields(logging.Fields{"clientVersion": clientVersion.Version, "serverVersion": serverVersion}).Warn(ctx, "CLI version does not match server version. This can lead to unexpected behavior.")
+		log.Warnf("CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", clientVersion.Version, serverVersion)
 	}
 }
 
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
-func MustIsDir(ctx context.Context, filePath string) bool {
-	log := logging.RequireLoggerFromContext(ctx)
+func MustIsDir(filePath string) bool {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.WithError(err).WithFatal().Error(ctx, "Failed to check if file is a directory")
+		log.Fatal(err)
 	}
 	return fileInfo.IsDir()
 }
@@ -103,24 +100,18 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 	return labels, nil
 }
 
-// Ensures we have a logger at the specified level
-func CmdContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Context, logging.Logger, error) {
-	ctx := cmd.Context()
-	if ctx == nil {
-		ctx = context.Background()
+// SetLogFormatter sets a log formatter for logrus
+func SetLogFormatter(logFormat string) {
+	timestampFormat := "2006-01-02T15:04:05.000Z"
+	switch strings.ToLower(logFormat) {
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{TimestampFormat: timestampFormat})
+	case "text":
+		log.SetFormatter(&log.TextFormatter{
+			TimestampFormat: timestampFormat,
+			FullTimestamp:   true,
+		})
+	default:
+		log.Fatalf("Unknown log format '%s'", logFormat)
 	}
-
-	level, err := logging.ParseLevel(logLevel)
-	if err != nil {
-		return nil, nil, err
-	}
-	format, err := logging.TypeFromString(logType)
-	if err != nil {
-		return nil, nil, err
-	}
-	logger := logging.NewSlogLogger(level, format)
-	ctx = logging.WithLogger(ctx, logger)
-
-	cmd.SetContext(ctx)
-	return ctx, logger, nil
 }

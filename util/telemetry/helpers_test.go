@@ -6,14 +6,15 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
-func createDefaultTestMetrics(ctx context.Context) (*Metrics, *TestMetricsExporter, error) {
+func createDefaultTestMetrics() (*Metrics, *TestMetricsExporter, error) {
 	config := Config{
 		Enabled: true,
 	}
-	return createTestMetrics(ctx, &config)
+	return createTestMetrics(&config)
 }
 
-func createTestMetrics(ctx context.Context, config *Config) (*Metrics, *TestMetricsExporter, error) {
+func createTestMetrics(config *Config) (*Metrics, *TestMetricsExporter, error) {
+	ctx /* with cancel*/ := context.Background()
 	te := NewTestMetricsExporter()
 
 	m, err := NewMetrics(ctx, TestScopeName, TestScopeName, config, metric.WithReader(te))

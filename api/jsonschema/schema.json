@@ -5782,10 +5782,6 @@
           "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
           "type": "string"
         },
-        "target": {
-          "description": "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
-          "type": "string"
-        },
         "url": {
           "description": "The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"",
           "type": "string"
@@ -5794,8 +5790,7 @@
       "required": [
         "name",
         "scope",
-        "url",
-        "target"
+        "url"
       ],
       "type": "object",
       "x-kubernetes-patch-merge-key": "name",
@@ -6094,10 +6089,6 @@
         "synchronizationStatus": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus",
           "description": "SynchronizationStatus is the synchronization status of the node"
-        },
-        "taskResultSynced": {
-          "description": "TaskResultSynced is used to determine if the node's output has been received",
-          "type": "boolean"
         },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,9 +53,9 @@ func checkCannotAcquire(ctx context.Context, t *testing.T, syncMgr *Manager, wf 
 }
 
 func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize int) (context.Context, func(), *Manager, *Manager) {
-	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+	ctx, cancel := context.WithCancel(context.Background())
 	// Create a database session for the semaphore
-	info, deferfn, cfg, err := createTestDBSession(ctx, t, dbType)
+	info, deferfn, cfg, err := createTestDBSession(t, dbType)
 	deferfn2 := func() {
 		deferfn()
 		cancel()
@@ -70,12 +68,12 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
 	require.NotNil(t, syncMgr1.dbInfo.session)
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
 	require.NotNil(t, syncMgr2.dbInfo.session)
 	return ctx, deferfn2, syncMgr1, syncMgr2

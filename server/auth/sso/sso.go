@@ -18,6 +18,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -25,7 +26,6 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
 )
 
@@ -40,6 +40,8 @@ const (
 // Used to check final redirects are not susceptible to open redirects.
 // Matches //, /\ and both of these with whitespace in between (eg / / or / \).
 var invalidRedirectRegex = regexp.MustCompile(`[/\\](?:[\s\v]*|\.{1,2})[/\\]`)
+
+//go:generate mockery --name=Interface
 
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
@@ -66,7 +68,6 @@ type sso struct {
 	customClaimName   string
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
-	logger            logging.Logger
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -88,12 +89,11 @@ func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface,
 	return oidc.NewProvider(ctx, issuer)
 }
 
-func New(ctx context.Context, c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
-	return newSso(ctx, providerFactoryOIDC, c, secretsIf, baseHRef, secure)
+func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+	return newSso(providerFactoryOIDC, c, secretsIf, baseHRef, secure)
 }
 
 func newSso(
-	ctx context.Context,
 	factory providerFactory,
 	c Config,
 	secretsIf corev1.SecretInterface,
@@ -109,6 +109,7 @@ func newSso(
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
+	ctx := context.Background()
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -199,12 +200,11 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
-	logger := logging.RequireLoggerFromContext(ctx).WithFields(lf)
-	logger.Info(ctx, "SSO configuration")
+	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
 		config:            config,
@@ -220,7 +220,6 @@ func newSso(
 		userInfoPath:      c.UserInfoPath,
 		issuer:            c.Issuer,
 		filterGroupsRegex: filterGroupsRegex,
-		logger:            logger,
 	}, nil
 }
 
@@ -231,7 +230,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	state, err := pkgrand.RandString(10)
 	if err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to create state")
+		log.WithError(err).Error("failed to create state")
 		w.WriteHeader(500)
 		return
 	}
@@ -254,7 +253,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(state)
 	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to get cookie")
+		log.WithError(err).Error("failed to get cookie")
 		w.WriteHeader(400)
 		return
 	}
@@ -263,25 +262,25 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
 	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to get oauth2Token by using code from the oauth2 server")
+		log.WithError(err).Error("failed to get oauth2Token by using code from the oauth2 server")
 		w.WriteHeader(401)
 		return
 	}
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
-		s.logger.Error(r.Context(), "failed to extract id_token from the response")
+		log.Error("failed to extract id_token from the response")
 		w.WriteHeader(401)
 		return
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to verify the id token issued")
+		log.WithError(err).Error("failed to verify the id token issued")
 		w.WriteHeader(401)
 		return
 	}
 	c := &types.Claims{}
 	if err := idToken.Claims(c); err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to get claims from the id token")
+		log.WithError(err).Error("failed to get claims from the id token")
 		w.WriteHeader(401)
 		return
 	}
@@ -291,7 +290,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if s.customClaimName != "" {
 		groups, err = c.GetCustomGroup(s.customClaimName)
 		if err != nil {
-			s.logger.Warn(r.Context(), err.Error())
+			log.Warn(err)
 		}
 	}
 	// Some SSO implementations (Okta) require a call to
@@ -299,7 +298,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if s.userInfoPath != "" {
 		groups, err = c.GetUserInfoGroups(s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
-			s.logger.WithField("userInfoPath", s.userInfoPath).WithError(err).Error(r.Context(), "failed to get groups claim from the given userInfoPath")
+			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
 			w.WriteHeader(401)
 			return
 		}
@@ -335,12 +334,12 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to encrypt and serialize the jwt token")
+		log.WithError(err).Errorf("failed to encrypt and serialize the jwt token")
 		w.WriteHeader(401)
 		return
 	}
 	value := Prefix + raw
-	s.logger.WithField("value", value).Debug(r.Context(), "handing oauth2 callback")
+	log.Debugf("handing oauth2 callback %v", value)
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",

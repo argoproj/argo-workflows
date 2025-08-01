@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -12,30 +13,25 @@ import (
 	"github.com/argoproj/argo-workflows/v3"
 	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
-	logger := logging.RequireLoggerFromContext(ctx)
 	bytes, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
-	logger.WithField("config", string(bytes)).Info(ctx, "Configuration")
+	log.Info("Configuration:\n" + string(bytes))
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
-	if wfc.throttler != nil {
-		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
-	}
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
-		logger.Info(ctx, "Persistence configuration enabled")
+		log.Info("Persistence configuration enabled")
 		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
 			return err
@@ -45,18 +41,18 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			logger.Info(ctx, "Persistence Session created successfully")
+			log.Info("Persistence Session created successfully")
 			wfc.session = session
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
-			logger.Info(ctx, "Node status offloading is enabled")
+			log.Info("Node status offloading is enabled")
 		} else {
-			logger.Info(ctx, "Node status offloading is disabled")
+			log.Info("Node status offloading is disabled")
 		}
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
@@ -66,23 +62,23 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 				return err
 			}
 			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
-			logger.Info(ctx, "Workflow archiving is enabled")
+			log.Info("Workflow archiving is enabled")
 		} else {
-			logger.Info(ctx, "Workflow archiving is disabled")
+			log.Info("Workflow archiving is disabled")
 		}
 	} else {
-		logger.Info(ctx, "Persistence configuration disabled")
+		log.Info("Persistence configuration disabled")
 	}
 
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
-	wfc.updateEstimatorFactory(ctx)
+	wfc.updateEstimatorFactory()
 	wfc.rateLimiter = wfc.newRateLimiter()
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
-	logger.WithField("executorImage", wfc.executorImage()).
+	log.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
-		Info(ctx, "")
+		Info()
 	return nil
 }
 
@@ -90,8 +86,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 func (wfc *WorkflowController) initDB(ctx context.Context) error {
 	persistence := wfc.Config.Persistence
 	if persistence == nil || persistence.SkipMigration {
-		logger := logging.RequireLoggerFromContext(ctx)
-		logger.Info(ctx, "DB migration is disabled")
+		log.Info("DB migration is disabled")
 		return nil
 	}
 	tableName, err := persist.GetTableName(persistence)

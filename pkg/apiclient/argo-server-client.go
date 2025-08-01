@@ -16,7 +16,6 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -30,15 +29,15 @@ type argoServerClient struct {
 
 var _ Client = &argoServerClient{}
 
-func newArgoServerClient(ctx context.Context, opts ArgoServerOpts, auth string) (context.Context, Client, error) {
+func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
 	conn, err := newClientConn(opts)
 	if err != nil {
 		return nil, nil, err
 	}
-	return newContext(ctx, auth), &argoServerClient{conn}, nil
+	return newContext(auth), &argoServerClient{conn}, nil
 }
 
-func (a *argoServerClient) NewWorkflowServiceClient(_ context.Context) workflowpkg.WorkflowServiceClient {
+func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	return workflowpkg.NewWorkflowServiceClient(a.ClientConn)
 }
 
@@ -78,11 +77,9 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func newContext(ctx context.Context, auth string) context.Context {
-	// nolint:contextcheck
-	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
+func newContext(auth string) context.Context {
 	if auth == "" {
-		return ctx
+		return context.Background()
 	}
-	return metadata.NewOutgoingContext(bgCtx, metadata.Pairs("authorization", auth))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", auth))
 }
