@@ -1,0 +1,16 @@
+metadata:
+  generateName: metadata-
+spec:
+  arguments:
+    parameters:
+      - name: foo
+        value: bar
+  workflowMetadata:
+    labelsFrom:
+      my-label:
+        expression: workflow.parameters.foo
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

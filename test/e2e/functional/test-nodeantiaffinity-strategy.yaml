@@ -1,0 +1,15 @@
+metadata:
+  name: test-nodeantiaffinity-strategy
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      retryStrategy:
+        limit: '1'
+        retryPolicy: "Always"
+        affinity:
+          nodeAntiAffinity: {}
+      container:
+          name: main
+          image: 'argoproj/argosay:v2'
+          args: [ exit, "1" ]

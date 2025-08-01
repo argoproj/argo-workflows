@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-wf-
+  label:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: message
+        value: arg-value
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        args:
+        - echo
+        - "{{inputs.parameters.message}}"
+      inputs:
+        parameters:
+          - name: message
+            value: input-value

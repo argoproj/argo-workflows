@@ -1,0 +1,15 @@
+metadata:
+  generateName: test-backoff-strategy-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      retryStrategy:
+        limit: '10'
+        backoff:
+          duration: 10s
+          maxDuration: 1m
+      container:
+          name: main
+          image: 'argoproj/argosay:v2'
+          args: [ exit, "1" ]

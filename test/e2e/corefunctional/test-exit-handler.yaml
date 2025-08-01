@@ -1,0 +1,13 @@
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]

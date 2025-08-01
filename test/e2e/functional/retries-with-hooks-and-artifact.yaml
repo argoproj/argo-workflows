@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retries-with-hooks-and-artifact
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      when retries and hooks are both included, the workflow cannot resolve the artifact 
+    workflows.argoproj.io/version: '>= 3.5.0'
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: build
+            template: output-artifact
+            hooks:
+              started:
+                expression: steps["build"].status == "Running"
+                template: started
+              success:
+                expression: steps["build"].status == "Succeeded"
+                template: success
+              failed:
+                expression: steps["build"].status == "Failed" || steps["build"].status == "Error"
+                template: failed
+        - - name: print
+            template: print-artifact
+            arguments:
+              artifacts:
+                - name: message
+                  from: "{{steps.build.outputs.artifacts.result}}"
+
+    - name: output-artifact
+      script:
+        image: argoproj/argosay:v2
+        command: [/bin/sh]
+        source: |
+          sleep 1
+          echo 'Welcome' > result.txt
+          [ "{{retries}}" = "2" ]
+      retryStrategy: 
+        limit: 2
+      outputs:
+        artifacts:
+          - name: result
+            path: /result.txt
+
+    - name: started
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "STARTED!"]
+
+    - name: success
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "SUCCEEDED!"]
+
+    - name: failed
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "FAILED or ERROR!"]
+
+    - name: print-artifact
+      inputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      container:
+        image: argoproj/argosay:v2
+        args: ["cat", "/tmp/message"]

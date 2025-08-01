@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-configmapkeyselector-wf-
+  label:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: cm-name
+      value: cmref-parameters
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: '{{ workflow.parameters.cm-name}}'
+            key: msg
+    container:
+      image: argoproj/argosay:v2
+      args:
+        - echo
+        - "{{inputs.parameters.message}}"

@@ -1,0 +1,14 @@
+metadata:
+  generateName: test-pod-cleanup-on-pod-success-label-match-
+spec:
+  podGC:
+    strategy: OnPodSuccess
+    labelSelector:
+      matchLabels:
+        evicted: true
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [exit, 1]

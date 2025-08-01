@@ -1,0 +1,9 @@
+metadata:
+  name: event-consumer
+spec:
+  event:
+    selector: true
+  submit:
+    workflowTemplateRef:
+      name: event-consumer
+      clusterScope: true

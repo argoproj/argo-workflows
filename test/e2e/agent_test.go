@@ -22,41 +22,7 @@ type AgentSuite struct {
 
 func (s *AgentSuite) TestParallel() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: http-template-par-
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: one
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://argoproj.github.io"}]
-          - name: two
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://argoproj.github.io"}]
-          - name: three
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://argoproj.github.io"}]
-          - name: four
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://argoproj.github.io"}]
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-        url: "{{inputs.parameters.url}}"
-`).
+		Workflow("@functional/http-template-par.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
@@ -94,49 +60,7 @@ spec:
 
 func (s *AgentSuite) TestStatusCondition() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: http-template-condition-
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: http-status-is-201-fails
-            template: http-status-is-201
-            arguments:
-              parameters: [{name: url, value: "http://httpbin:9100/status/200"}]
-          - name: http-status-is-201-succeeds
-            template: http-status-is-201
-            arguments:
-              parameters: [{name: url, value: "http://httpbin:9100/status/201"}]
-          - name: http-body-contains-google-fails
-            template: http-body-contains-google
-            arguments:
-              parameters: [{name: url, value: "http://httpbin:9100/status/200"}]
-          - name: http-body-contains-google-succeeds
-            template: http-body-contains-google
-            arguments:
-              parameters: [{name: url, value: "https://google.com"}]
-    - name: http-status-is-201
-      inputs:
-        parameters:
-          - name: url
-      http:
-        successCondition: "response.statusCode == 201"
-        url: "{{inputs.parameters.url}}"
-    - name: http-body-contains-google
-      inputs:
-        parameters:
-          - name: url
-      http:
-        successCondition: "response.body contains \"google\""
-        url: "{{inputs.parameters.url}}"
-`).
+		Workflow("@functional/http-template-condition.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(2 * time.Minute).

@@ -23,32 +23,7 @@ type HooksSuite struct {
 
 func (s *HooksSuite) TestWorkflowLevelHooksSuccessVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-
-spec:
-  entrypoint: main
-  hooks:
-    running:
-      expression: workflow.status == "Running"
-      template: argosay
-    succeed:
-      expression: workflow.status == "Succeeded"
-      template: argosay
-
-  templates:
-    - name: main
-      steps:
-      - - name: step1
-          template: argosay
-
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
@@ -67,38 +42,7 @@ spec:
 
 func (s *HooksSuite) TestWorkflowLevelHooksFailVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-
-spec:
-  entrypoint: main
-  hooks:
-    running:
-      expression: workflow.status == "Running"
-      template: hook
-    failed:
-      expression: workflow.status == "Failed"
-      template: hook
-
-  templates:
-    - name: main
-      steps:
-      - - name: step1
-          template: argosay
-
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay; exit 1"]
-        
-    - name: hook
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
@@ -117,39 +61,7 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksStepSuccessVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-tmpl-level-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: step-1
-            hooks:
-              running:
-                expression: steps["step-1"].status == "Running"
-                template: argosay
-              succeed:
-                expression: steps["step-1"].status == "Succeeded"
-                template: argosay
-            template: argosay
-        - - name: step-2
-            hooks:
-              running:
-                expression: steps["step-2"].status == "Running"
-                template: argosay
-              succeed:
-                expression: steps["step-2"].status == "Succeeded"
-                template: argosay
-            template: argosay
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook-tmpl-level.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
@@ -180,35 +92,7 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksStepFailVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-tmpl-level-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: step-1
-            hooks:
-              running:
-                expression: steps["step-1"].status == "Running"
-                template: hook
-              failed:
-                expression: steps["step-1"].status == "Failed"
-                template: hook
-            template: argosay
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay; exit 1"]
-    - name: hook
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook-tmpl-level.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
@@ -227,41 +111,7 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksDagSuccessVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-tmpl-level-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: step-1
-            hooks:
-              running:
-                expression: tasks["step-1"].status == "Running"
-                template: argosay
-              succeed:
-                expression: tasks["step-1"].status == "Succeeded"
-                template: argosay
-            template: argosay
-          - name: step-2
-            hooks:
-              running:
-                expression: tasks["step-2"].status == "Running"
-                template: argosay
-              succeed:
-                expression: tasks["step-2"].status == "Succeeded"
-                template: argosay
-            template: argosay
-            dependencies: [step-1]
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook-tmpl-level.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
@@ -291,36 +141,7 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksDagFailVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-tmpl-level-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: step-1
-            hooks:
-              running:
-                expression: tasks["step-1"].status == "Running"
-                template: hook
-              failed:
-                expression: tasks["step-1"].status == "Failed"
-                template: hook
-            template: argosay
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay; exit 1"]
-    - name: hook
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook-tmpl-level.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
@@ -339,64 +160,7 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksDagHasDependencyVersion() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-tmpl-level-
-spec:
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: A
-            template: fail
-            hooks:
-              running:
-                template: hook
-                expression: tasks.A.status == "Running"
-              success:
-                template: hook
-                expression: tasks.A.status == "Succeeded"
-          - name: B
-            template: success
-            dependencies:
-              - A
-            hooks:
-              running:
-                template: hook
-                expression: tasks.B.status == "Running"
-              success:
-                template: hook
-                expression: tasks.B.status == "Succeeded"
-    - name: success
-      container:
-        name: ''
-        image: argoproj/argosay:v2
-        command:
-          - /bin/sh
-          - '-c'
-        args:
-          - /bin/sleep 1; /argosay; exit 0
-    - name: fail
-      container:
-        name: ''
-        image: argoproj/argosay:v2
-        command:
-          - /bin/sh
-          - '-c'
-        args:
-          - /bin/sleep 1; /argosay; exit 1
-    - name: hook
-      container:
-        name: ''
-        image: argoproj/argosay:v2
-        command:
-          - /bin/sh
-          - '-c'
-        args:
-          - /bin/sleep 1; /argosay
-  entrypoint: main
-`).When().
+		Workflow("@functional/lifecycle-hook-tmpl-level.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
@@ -419,38 +183,7 @@ spec:
 
 func (s *HooksSuite) TestWorkflowLevelHooksWaitForTriggeredHook() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-
-spec:
-  entrypoint: main
-  hooks:
-    running:
-      expression: workflow.status == "Running"
-      template: argosay-sleep-2seconds
-    # This hook never triggered by following test.
-    # To guarantee workflow does not wait forever for untriggered hooks.
-    failed:
-      expression: workflow.status == "Failed"
-      template: argosay-sleep-2seconds
-  templates:
-    - name: main
-      steps:
-      - - name: step1
-          template: argosay
-
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
-    - name: argosay-sleep-2seconds
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 2; /argosay"]
-`).When().
+		Workflow("@functional/lifecycle-hook.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
@@ -468,37 +201,7 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksWaitForTriggeredHook() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: example-steps
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: job
-            template: argosay
-            hooks:
-              running:
-                expression: steps['job'].status == "Running"
-                template: argosay-sleep-2seconds
-              failed:
-                expression: steps['job'].status == "Failed"
-                template: argosay-sleep-2seconds
-
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
-    - name: argosay-sleep-2seconds
-      container:
-        image: argoproj/argosay:v2
-        command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 2; /argosay"]
-`).When().
+		Workflow("@functional/example-steps.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
@@ -516,37 +219,7 @@ spec:
 // Ref: https://github.com/argoproj/argo-workflows/issues/11117
 func (s *HooksSuite) TestTemplateLevelHooksWaitForTriggeredHookAndRespectSynchronization() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: example-steps-simple-mutex
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: job
-            template: exit0
-            hooks:
-              running:
-                expression: steps['job'].status == "Running"
-                template: sleep
-              succeed:
-                expression: steps['job'].status == "Succeeded"
-                template: sleep
-    - name: sleep
-      synchronization:
-        mutexes:
-          - name: job
-      container:
-        image: argoproj/argosay:v2
-        args: ["sleep", "4"]
-    - name: exit0
-      container:
-        image: argoproj/argosay:v2
-        args: ["sleep", "2"]
-`).When().
+		Workflow("@functional/example-steps-simple-mutex.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
@@ -568,40 +241,7 @@ spec:
 
 func (s *HooksSuite) TestWorkflowLevelHooksWithRetry() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-workflow-level-hooks-with-retry
-spec:
-  templates:
-    - name: argosay
-      container:
-        image: argoproj/argosay:v2
-        command:
-          - /bin/sh
-          - '-c'
-        args:
-          - /bin/sleep 1; exit 1
-      retryStrategy:
-        limit: 1
-    - name: hook
-      container:
-        image: argoproj/argosay:v2
-        command:
-          - /bin/sh
-          - '-c'
-        args:
-          - /argosay
-  entrypoint: argosay
-  hooks:
-    failed:
-      template: hook
-      expression: workflow.status == "Failed"
-    running:
-      template: hook
-      expression: workflow.status == "Running"
-`).When().
+		Workflow("@functional/test-workflow-level-hooks-with-retry.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
@@ -649,80 +289,7 @@ spec:
 func (s *HooksSuite) TestTemplateLevelHooksWithRetry() {
 	var children []string
 	(s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retries-with-hooks-and-artifact
-  labels:
-    workflows.argoproj.io/test: "true"
-  annotations:
-    workflows.argoproj.io/description: |
-      when retries and hooks are both included, the workflow cannot resolve the artifact 
-    workflows.argoproj.io/version: '>= 3.5.0'
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: build
-            template: output-artifact
-            hooks:
-              started:
-                expression: steps["build"].status == "Running"
-                template: started
-              success:
-                expression: steps["build"].status == "Succeeded"
-                template: success
-              failed:
-                expression: steps["build"].status == "Failed" || steps["build"].status == "Error"
-                template: failed
-        - - name: print
-            template: print-artifact
-            arguments:
-              artifacts:
-                - name: message
-                  from: "{{steps.build.outputs.artifacts.result}}"
-    
-    - name: output-artifact
-      script:
-        image: argoproj/argosay:v2
-        command: [/bin/sh]
-        source: |
-          sleep 1
-          echo 'Welcome' > result.txt
-          [ "{{retries}}" = "2" ]
-      retryStrategy: 
-        limit: 2
-      outputs:
-        artifacts:
-          - name: result
-            path: /result.txt
-
-    - name: started
-      container:
-        image: argoproj/argosay:v2
-        args: ["echo", "STARTED!"]
-
-    - name: success
-      container:
-        image: argoproj/argosay:v2
-        args: ["echo", "SUCCEEDED!"]
-
-    - name: failed
-      container:
-        image: argoproj/argosay:v2
-        args: ["echo", "FAILED or ERROR!"]
-
-    - name: print-artifact
-      inputs:
-        artifacts:
-          - name: message
-            path: /tmp/message
-      container:
-        image: argoproj/argosay:v2
-        args: ["cat", "/tmp/message"]
-`).When().
+		Workflow("@functional/retries-with-hooks-and-artifact.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
@@ -766,30 +333,7 @@ spec:
 func (s *HooksSuite) TestExitHandlerWithWorkflowLevelDeadline() {
 	var onExitNodeName string
 	(s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: exit-handler-with-workflow-level-deadline
-spec:
-  entrypoint: main
-  activeDeadlineSeconds: 1
-  hooks:
-    exit:
-      template: exit-handler
-  templates:
-    - name: main
-      steps:
-      - - name: sleep
-          template: sleep
-    - name: exit-handler
-      steps:
-      - - name: sleep
-          template: sleep
-    - name: sleep
-      container:
-        image: argoproj/argosay:v2
-        args: ["sleep", "5"]
-`).When().
+		Workflow("@functional/exit-handler-with-workflow-level-deadline.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted, 2*time.Minute).
 		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {
@@ -812,33 +356,7 @@ spec:
 func (s *HooksSuite) TestHttpExitHandlerWithWorkflowLevelDeadline() {
 	var onExitNodeName string
 	(s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-exit-handler-with-workflow-level-deadline
-spec:
-  entrypoint: main
-  activeDeadlineSeconds: 1
-  hooks:
-    exit:
-      template: exit-handler
-  templates:
-    - name: main
-      steps:
-      - - name: sleep
-          template: sleep
-    - name: sleep
-      container:
-        image: argoproj/argosay:v2
-        args: ["sleep", "5"]
-    - name: exit-handler
-      steps:
-      - - name: http
-          template: http
-    - name: http
-      http:
-        url: http://httpbin:9100/get
-`).When().
+		Workflow("@functional/http-exit-handler-with-workflow-level-deadline.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {

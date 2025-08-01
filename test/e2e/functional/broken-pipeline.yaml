@@ -1,0 +1,18 @@
+metadata:
+  name: broken-pipeline
+spec:
+  entrypoint: main
+  templates:
+  - name: do-something
+    container:
+      image: argoproj/argosay:v2
+  - name: main
+    dag:
+      tasks:
+        - name: do-something
+          template: do-something
+        - name: run-tests-broken
+          depends: "do-something"
+          templateRef:
+            name: run-tests-broken
+            template: main

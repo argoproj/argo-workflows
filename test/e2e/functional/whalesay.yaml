@@ -1,0 +1,21 @@
+metadata:
+  generateName: whalesay-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    dag:
+      tasks:
+        - name: redis
+          template: redis-tmpl
+        - name: whale
+          dependencies: [redis]
+          template: whale-tmpl
+  - name: redis-tmpl
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "100s"]
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
