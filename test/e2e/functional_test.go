@@ -910,6 +910,32 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed)
 }
 
+func (s *FunctionalSuite) TestWorkflowPodMetadataPatch() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: basic-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+	  image: argoproj/argosay:v2
+	podMetadataPatch: ''
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, "", *p.ObjectMeta.Annotations[""]),
+				assert.Equal(t, "", *p.ObejctMeta.Labels[""])
+			//todo: add as many assertion statements as necessary here.
+		},
+
+		)
+}
+
 func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
 	s.Given().
 		Workflow(`

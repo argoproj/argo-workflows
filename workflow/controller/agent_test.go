@@ -23,6 +23,11 @@ metadata:
 spec:
   podSpecPatch: |
     nodeName: virtual-node
+  podMetadataPatch: |
+	annotations: 
+	  annotation-1: annotation-value-1
+	labels:
+	  labels-1: labels-value-1
   entrypoint: main
   templates:
     - name: main

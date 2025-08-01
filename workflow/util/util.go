@@ -1535,6 +1535,39 @@ func ConvertYAMLToJSON(str string) (string, error) {
 	return str, nil
 }
 
+func ApplyPodMetadataPatch(podMetadata metav1.ObjectMeta, podMetadataPatchYamls ...string) (*metav1.ObjectMeta, error) {
+	podMetadataJSON, err := json.Marshal(podMetadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to marshal Pod metadata")
+	}
+
+	for _, podMetadataPatchYaml := range podMetadataPatchYamls {
+		// convert to json because PodMetadata has only json tags
+		podMetadataPatchJSON, err := ConvertYAMLToJSON(podMetadataPatchYaml)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to convert the PodMetadataPatch yaml to json")
+		}
+
+		// validate the patch to be ObjectMeta
+		if err := json.Unmarshal([]byte(podMetadataPatchJSON), &metav1.ObjectMeta{}); err != nil {
+			return nil, fmt.Errorf("invalid PodMetadataPatch %q: %w", podMetadataPatchYaml, err)
+		}
+
+		//TODO: is it necessary below to cast the second argument to []byte?
+		podMetadataJSON, err = strategicpatch.StrategicMergePatch(podMetadataJSON, podMetadataJSON, metav1.ObjectMeta{})
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
+	}
+
+	var newPodMetadata metav1.ObjectMeta
+	err = json.Unmarshal(podMetadataJSON, &newPodMetadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merging the patch")
+	}
+	return &newPodMetadata, nil
+}
+
 func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*apiv1.PodSpec, error) {
 	podSpecJSON, err := json.Marshal(podSpec)
 	if err != nil {
