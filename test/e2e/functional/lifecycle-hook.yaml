@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-
+spec:
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: argosay-sleep-2seconds
+    # This hook never triggered by following test.
+    # To guarantee workflow does not wait forever for untriggered hooks.
+    failed:
+      expression: workflow.status == "Failed"
+      template: argosay-sleep-2seconds
+  templates:
+    - name: main
+      steps:
+      - - name: step1
+          template: argosay
+
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 1; /argosay"]
+    - name: argosay-sleep-2seconds
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 2; /argosay"]

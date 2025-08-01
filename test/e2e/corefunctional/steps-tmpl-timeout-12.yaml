@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-tmpl-timeout-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "5s"}]
+      - name: hello2a
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "10s"}]
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "15s"}]
+
+  - name: whalesay
+    timeout: "{{inputs.parameters.message}}"
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 30s]

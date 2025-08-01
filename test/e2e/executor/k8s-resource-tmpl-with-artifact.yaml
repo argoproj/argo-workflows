@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-artifact-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+        - name: manifest
+          path: /tmp/manifestfrom-path.yaml
+          raw:
+            data: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                generateName: k8s-pod-resource-
+              spec:
+                containers:
+                - name: argosay-container
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]
+                restartPolicy: Never
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifestFrom:
+          artifact:
+            name: manifest

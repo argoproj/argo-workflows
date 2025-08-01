@@ -16,17 +16,7 @@ type FailedMainSuite struct {
 
 func (s *FailedMainSuite) TestFailedMain() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: failed-main-
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: argoproj/argosay:v2
-      args: [ exit, "1" ]
-`).
+		Workflow("@functional/failed-main.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed)

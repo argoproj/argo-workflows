@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-nested-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    steps:
+      - - name: call-whalesay-template
+          templateRef:
+            name: workflow-template-nested-template
+            template: whalesay-template
+          arguments:
+            parameters:
+            - name: message
+              value: "hello from nested"

@@ -1,0 +1,11 @@
+metadata:
+  generateName: archie-
+  labels:
+    foo: 1
+spec:
+  entrypoint: run-archie
+  templates:
+    - name: run-archie
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "hello \u0000"]

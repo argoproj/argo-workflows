@@ -1838,46 +1838,7 @@ func (s *CLISuite) TestArchiveLabel() {
 
 func (s *CLISuite) TestArgoSetOutputs() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: suspend-template-
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: approve
-        template: approve
-      - name: approve-no-vars
-        template: approve-no-vars
-    - - name: release
-        template: whalesay
-        arguments:
-          parameters:
-            - name: message
-              value: "{{steps.approve.outputs.parameters.message}}"
-
-  - name: approve
-    suspend: {}
-    outputs:
-      parameters:
-        - name: message
-          valueFrom:
-            supplied: {}
-
-  - name: approve-no-vars
-    suspend: {}
-
-  - name: whalesay
-    inputs:
-      parameters:
-        - name: message
-    container:
-      image: argoproj/argosay:v2
-      args: ["echo", "{{inputs.parameters.message}}"]
-`).
+		Workflow("@cli/suspend-template.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).

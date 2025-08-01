@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: default-params-
+spec:
+  entrypoint: start
+  templates:
+  - name: start
+    steps:
+      - - name: generate-1
+          template: generate
+      - - name: generate-2
+          when: "True == False"
+          template: generate
+    outputs:
+      parameters:
+        - name: nested-out-parameter
+          valueFrom:
+            default: "Default value"
+            parameter: "{{steps.generate-2.outputs.parameters.out-parameter}}"
+
+  - name: generate
+    container:
+      image: argoproj/argosay:v2
+      args: [echo, my-output-parameter, /tmp/my-output-parameter.txt]
+    outputs:
+      parameters:
+      - name: out-parameter
+        valueFrom:
+          path: /tmp/my-output-parameter.txt

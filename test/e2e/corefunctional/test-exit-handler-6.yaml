@@ -1,0 +1,5 @@
+metadata:
+  generateName: test-exit-handler-
+spec:
+  workflowTemplateRef:
+    name: test-exit-handler

@@ -1,0 +1,8 @@
+metadata:
+  generateName: test-pod-cleanup-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

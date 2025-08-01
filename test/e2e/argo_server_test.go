@@ -174,29 +174,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 	s.Require().NoError(err)
 
 	s.Given().
-		WorkflowTemplate(`
-metadata:
-  name: github-webhook
-spec:
-  entrypoint: main
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  templates:
-    - name: main
-      container:
-         image: argoproj/argosay:v2
-`).
-		WorkflowEventBinding(`
-metadata:
-  name: github-webhook
-spec:
-  event:
-    selector: metadata["x-github-event"] == ["push"]
-  submit:
-    workflowTemplateRef:
-      name: github-webhook
-`).
+		WorkflowTemplate("@api/github-webhook.yaml").
+		WorkflowEventBinding("@api/github-webhook.yaml").
 		When().
 		CreateWorkflowTemplates().
 		CreateWorkflowEventBinding().
@@ -218,54 +197,8 @@ spec:
 
 func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromEvent() {
 	s.Given().
-		WorkflowTemplate(`
-metadata:
-  name: event-consumer
-spec:
-  entrypoint: main
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  arguments:
-    parameters:
-      - name: salutation
-        value: "hello"
-  templates:
-    - name: main
-      steps:
-      - - name: a
-          template: argosay
-          arguments:
-            parameters:
-            - name: salutation
-              value: "{{workflow.parameters.salutation}}"
-            - name: appellation
-              value: "{{workflow.parameters.appellation}}"
-
-    - name: argosay
-      inputs:
-        parameters:
-          - name: salutation
-          - name: appellation
-      container:
-         image: argoproj/argosay:v2
-         args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.appellation}}"]
-`).
-		WorkflowEventBinding(`
-metadata:
-  name: event-consumer
-spec:
-  event:
-    selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
-  submit:
-    workflowTemplateRef:
-      name: event-consumer
-    arguments:
-      parameters:
-        - name: appellation
-          valueFrom:
-            event: payload.appellation
-`).
+		WorkflowTemplate("@api/event-consumer.yaml").
+		WorkflowEventBinding("@api/event-consumer.yaml").
 		When().
 		CreateWorkflowEventBinding().
 		CreateWorkflowTemplates().
@@ -299,17 +232,7 @@ spec:
       container:
          image: argoproj/argosay:v2
 `).
-		WorkflowEventBinding(`
-metadata:
-  name: event-consumer
-spec:
-  event:
-    selector: true
-  submit:
-    workflowTemplateRef:
-      name: event-consumer
-      clusterScope: true
-`).
+		WorkflowEventBinding("@api/event-consumer.yaml").
 		When().
 		CreateWorkflowEventBinding().
 		CreateClusterWorkflowTemplates().
@@ -329,10 +252,7 @@ spec:
 
 func (s *ArgoServerSuite) TestEventOnMalformedWorkflowEventBinding() {
 	s.Given().
-		WorkflowEventBinding(`
-metadata:
-  name: malformed
-`).
+		WorkflowEventBinding("@api/malformed.yaml").
 		When().
 		CreateWorkflowEventBinding().
 		And(func() {
@@ -1426,32 +1346,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 	s.Run("List", func() {
 		// make sure list options work correctly
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]
-`)
+			CronWorkflow("@api/test-cron-wf-basic.yaml")
 
 		s.e().GET("/api/v1/cron-workflows/argo").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-2").
@@ -1806,18 +1701,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			IsNull()
 	})
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: archie-
-  labels:
-    foo: 1
-spec:
-  entrypoint: run-archie
-  templates:
-    - name: run-archie
-      container:
-        image: argoproj/argosay:v2
-        args: [echo, "hello \\u0001F44D"]`).
+		Workflow("@api/archie.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1829,19 +1713,7 @@ spec:
 	var failedUID types.UID
 	var failedName string
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: jughead-
-  labels:
-    foo: 3
-spec:
-  entrypoint: run-jughead
-  templates:
-    - name: run-jughead
-      container:
-        image: argoproj/argosay:v2
-        command: [sh, -c]
-        args: ["echo intentional failure; exit 1"]`).
+		Workflow("@api/jughead.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1851,17 +1723,7 @@ spec:
 			failedName = metadata.Name
 		})
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: betty-
-  labels:
-    foo: 2
-spec:
-  entrypoint: run-betty
-  templates:
-    - name: run-betty
-      container:
-        image: argoproj/argosay:v2`).
+		Workflow("@api/betty.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived)
@@ -2582,18 +2444,7 @@ func (s *ArgoServerSuite) TestPostgresNullBytes() {
 	_ = uid
 
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: archie-
-  labels:
-    foo: 1
-spec:
-  entrypoint: run-archie
-  templates:
-    - name: run-archie
-      container:
-        image: argoproj/argosay:v2
-        args: [echo, "hello \u0000"]`).
+		Workflow("@api/archie.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).

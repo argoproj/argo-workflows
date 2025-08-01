@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: param-limit-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: limit
+        value: "1"
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: limit
+    retryStrategy:
+      limit: "{{inputs.parameters.limit}}"
+    container:
+      image: argoproj/argosay:v2
+      args: [exit, 1]

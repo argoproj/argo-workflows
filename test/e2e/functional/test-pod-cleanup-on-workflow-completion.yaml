@@ -1,0 +1,11 @@
+metadata:
+  generateName: test-pod-cleanup-on-workflow-completion-
+spec:
+  podGC:
+    strategy: OnWorkflowCompletion
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [exit, 1]

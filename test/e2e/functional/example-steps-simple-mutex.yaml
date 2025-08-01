@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: example-steps-simple-mutex
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: job
+            template: exit0
+            hooks:
+              running:
+                expression: steps['job'].status == "Running"
+                template: sleep
+              succeed:
+                expression: steps['job'].status == "Succeeded"
+                template: sleep
+    - name: sleep
+      synchronization:
+        mutexes:
+          - name: job
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "4"]
+    - name: exit0
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "2"]

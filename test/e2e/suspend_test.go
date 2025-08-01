@@ -19,41 +19,7 @@ type TestSuspendSitue struct {
 }
 
 func (s *TestSuspendSitue) TestSuspendNodeTimeoutWithoutDefaultValue() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-node-timeout-without-default-value
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: approve
-        template: approve
-    - - name: release
-        template: whalesay
-        arguments:
-          parameters:
-            - name: message
-              value: "{{steps.approve.outputs.parameters.message}}"
-  - name: approve
-    suspend:
-      duration: 5s
-    outputs:
-      parameters:
-        - name: message
-          valueFrom:
-            supplied: {}
-  - name: whalesay
-    inputs:
-      parameters:
-        - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`).
+	s.Given().Workflow("@functional/suspend-node-timeout-without-default-value.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -65,42 +31,7 @@ spec:
 }
 
 func (s *TestSuspendSitue) TestSuspendNodeTimeoutWithDefaultValue() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-node-timeout-with-default-value
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: approve
-        template: approve
-    - - name: release
-        template: whalesay
-        arguments:
-          parameters:
-            - name: message
-              value: "{{steps.approve.outputs.parameters.message}}"
-  - name: approve
-    suspend:
-      duration: 5s
-    outputs:
-      parameters:
-        - name: message
-          valueFrom:
-            default: default message
-            supplied: {}
-  - name: whalesay
-    inputs:
-      parameters:
-        - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`).
+	s.Given().Workflow("@functional/suspend-node-timeout-with-default-value.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).

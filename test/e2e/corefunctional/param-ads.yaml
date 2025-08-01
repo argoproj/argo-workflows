@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: param-ads-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: ads
+        value: "5"
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: ads
+    activeDeadlineSeconds: "{{inputs.parameters.ads}}"
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 10s]

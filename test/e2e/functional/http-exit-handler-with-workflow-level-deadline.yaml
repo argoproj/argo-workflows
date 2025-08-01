@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-exit-handler-with-workflow-level-deadline
+spec:
+  entrypoint: main
+  activeDeadlineSeconds: 1
+  hooks:
+    exit:
+      template: exit-handler
+  templates:
+    - name: main
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "5"]
+    - name: exit-handler
+      steps:
+      - - name: http
+          template: http
+    - name: http
+      http:
+        url: http://httpbin:9100/get

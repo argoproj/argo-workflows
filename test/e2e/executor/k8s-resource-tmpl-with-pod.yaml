@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-pod-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            generateName: k8s-pod-resource-
+          spec:
+            containers:
+            - name: argosay-container
+              image: argoproj/argosay:v2
+              command: ["/argosay"]
+            restartPolicy: Never

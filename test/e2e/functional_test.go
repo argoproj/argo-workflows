@@ -73,24 +73,7 @@ func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 
 func (s *FunctionalSuite) TestWorkflowMetadataLabelsFrom() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: metadata-
-spec:
-  arguments:
-    parameters:
-      - name: foo
-        value: bar
-  workflowMetadata:
-    labelsFrom:
-      my-label:
-        expression: workflow.parameters.foo
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        image: argoproj/argosay:v2
-`).
+		Workflow("@corefunctional/metadata.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -139,18 +122,7 @@ func (s *FunctionalSuite) TestJSONVariables() {
 
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: workflow-ttl-
-spec:
-  ttlStrategy:
-    secondsAfterCompletion: 0
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        image: argoproj/argosay:v2
-`).
+		Workflow("@corefunctional/workflow-ttl.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -195,39 +167,7 @@ func (s *FunctionalSuite) TestResourceQuota() {
 
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: continue-on-fail-
-spec:
-  entrypoint: main
-  parallelism: 2
-  templates:
-  - name: main
-    steps:
-    - - name: A
-        template: whalesay
-      - name: B
-        template: boom
-        continueOn:
-          failed: true
-    - - name: C
-        template: whalesay
-
-  - name: boom
-    dag:
-      tasks:
-      - name: B-1
-        template: whalesplosion
-
-  - name: whalesay
-    container:
-      image: argoproj/argosay:v2
-
-  - name: whalesplosion
-    container:
-      image: argoproj/argosay:v2
-      args: [ exit, "1" ]
-`).
+		Workflow("@corefunctional/continue-on-fail.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second).
@@ -244,34 +184,7 @@ spec:
 
 func (s *FunctionalSuite) TestContinueOnFailDag() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: continue-on-failed-dag-
-spec:
-  entrypoint: workflow-ignore
-  templates:
-    - name: workflow-ignore
-      dag:
-        failFast: false
-        tasks:
-          - name: F
-            template: fail
-            continueOn:
-              failed: true
-          - name: P
-            template: pass
-            dependencies:
-              - F
-
-    - name: pass
-      container:
-        image: argoproj/argosay:v2
-
-    - name: fail
-      container:
-        image: argoproj/argosay:v2
-        args: [ exit, "1" ]
-`).
+		Workflow("@corefunctional/continue-on-failed-dag.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -466,29 +379,7 @@ func (s *FunctionalSuite) TestDAGEmptyParam() {
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: pending-retry-workflow-
-spec:
-  entrypoint: dag
-  templates:
-  - name: cowsay
-    container:
-      image: argoproj/argosay:v2
-      args: ["echo", "a"]
-      resources:
-        limits:
-          memory: 128M
-  - name: dag
-    dag:
-      tasks:
-      - name: a
-        template: cowsay
-      - name: b
-        template: cowsay
-`).
+		Workflow("@corefunctional/pending-retry-workflow.yaml").
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
@@ -509,31 +400,7 @@ spec:
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflowWithRetryStrategy() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: pending-retry-workflow-with-retry-strategy-
-spec:
-  entrypoint: dag
-  templates:
-  - name: cowsay
-    retryStrategy:
-      limit: 1
-    container:
-      image: argoproj/argosay:v2
-      args: ["echo", "a"]
-      resources:
-        limits:
-          memory: 128M
-  - name: dag
-    dag:
-      tasks:
-      - name: a
-        template: cowsay
-      - name: b
-        template: cowsay
-`).
+		Workflow("@corefunctional/pending-retry-workflow-with-retry-strategy.yaml").
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
@@ -663,29 +530,8 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandlerError() {
 	s.Given().
-		WorkflowTemplate(`
-metadata:
-  name: test-exit-handler
-spec:
-  entrypoint: main
-  onExit: exit-handler
-  templates:
-    - name: main
-      container:
-        name: main
-        image: argoproj/argosay:v2
-    - name: exit-handler
-      templateRef:
-        name: nonexistent
-        template: exit-handler
-`).
-		Workflow(`
-metadata:
-  generateName: test-exit-handler-
-spec:
-  workflowTemplateRef:
-    name: test-exit-handler
-`).
+		WorkflowTemplate("@corefunctional/test-exit-handler.yaml").
+		Workflow("@corefunctional/test-exit-handler.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
@@ -698,40 +544,8 @@ spec:
 
 func (s *FunctionalSuite) TestWorkflowLifecycleHookWithWorkflowTemplate() {
 	s.Given().
-		WorkflowTemplate(`
-metadata:
-  name: test-exit-handler
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      inputs:
-        parameters:
-        - name: message
-      container:
-        image: argoproj/argosay:v2
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-`).
-		Workflow(`
-metadata:
-  generateName: test-lifecycle-hook-
-spec:
-  entrypoint: hooks-exit-test
-  templates:
-  - name: hooks-exit-test
-    container:
-      image: argoproj/argosay:v2
-    hooks:
-      exit:
-        templateRef:
-          name: test-exit-handler
-          template: main
-        arguments:
-          parameters:
-            - name: message
-              value: "hello world"
-`).
+		WorkflowTemplate("@corefunctional/test-exit-handler.yaml").
+		Workflow("@corefunctional/test-lifecycle-hook.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
@@ -762,27 +576,7 @@ func (s *FunctionalSuite) TestWorkflowHookParameterTemplates() {
 
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: param-ads-
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: ads
-        value: "5"
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-        - name: ads
-    activeDeadlineSeconds: "{{inputs.parameters.ads}}"
-    container:
-      image: argoproj/argosay:v2
-      args: [sleep, 10s]
-`).
+		Workflow("@corefunctional/param-ads.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -794,28 +588,7 @@ spec:
 
 func (s *FunctionalSuite) TestParametrizableLimit() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: param-limit-
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: limit
-        value: "1"
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-        - name: limit
-    retryStrategy:
-      limit: "{{inputs.parameters.limit}}"
-    container:
-      image: argoproj/argosay:v2
-      args: [exit, 1]
-`).
+		Workflow("@corefunctional/param-limit.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -830,38 +603,7 @@ spec:
 
 func (s *FunctionalSuite) TestTemplateLevelTimeout() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-tmpl-timeout-
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  - name: hello-hello-hello
-    steps:
-    - - name: hello1
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "5s"}]
-      - name: hello2a
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "10s"}]
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "15s"}]
-
-  - name: whalesay
-    timeout: "{{inputs.parameters.message}}"
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: argoproj/argosay:v2
-      args: [sleep, 30s]
-`).
+		Workflow("@corefunctional/steps-tmpl-timeout.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
@@ -871,39 +613,7 @@ spec:
 
 func (s *FunctionalSuite) TestTemplateLevelTimeoutWithForbidden() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: steps-tmpl-timeout-
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  - name: hello-hello-hello
-    steps:
-    - - name: hello1
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "5s"}]
-      - name: hello2a
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "10s"}]
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "15s"}]
-
-  - name: whalesay
-    resources:
-      limits:
-        memory: 145M
-    timeout: "{{inputs.parameters.message}}"
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: argoproj/argosay:v2
-      args: [sleep, 30s]
-`).
+		Workflow("@corefunctional/steps-tmpl-timeout.yaml").
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
@@ -912,18 +622,7 @@ spec:
 
 func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: basic-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        image: argoproj/argosay:v2
-      # ordering of the containers in the next line is intentionally reversed
-      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'
-`).
+		Workflow("@corefunctional/basic.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -987,27 +686,7 @@ func (s *FunctionalSuite) TestHTTPOutputs() {
 
 func (s *FunctionalSuite) TestScriptAsNonRoot() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: script-nonroot-
-spec:
-  entrypoint: whalesay
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    runAsNonRoot: true
-  templates:
-    - name: whalesay
-      script:
-        image: argoproj/argosay:v2
-        command: ["bash"]
-        source: |
-          ls -l /argo/staging
-          cat /argo/stahing/script
-          sleep 10s
-`).
+		Workflow("@corefunctional/script-nonroot.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
@@ -1050,52 +729,7 @@ func TestFunctionalSuite(t *testing.T) {
 
 func (s *FunctionalSuite) TestStepLevelMemoize() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-memoize-
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-    - name: hello-hello-hello
-      steps:
-        - - name: hello1
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-        - - name: hello2a
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-    - name: memostep
-      inputs:
-        parameters:
-        - name: message
-      memoize:
-        key: "{{inputs.parameters.message}}"
-        maxAge: "10s"
-        cache:
-          configMap:
-            name: my-config-memo-step
-      steps:
-      - - name: cache
-          template: whalesay
-          arguments:
-            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
-      outputs:
-        parameters:
-        - name: output
-          valueFrom:
-            Parameter: "{{steps.cache.outputs.result}}"
-    - name: whalesay
-      inputs:
-        parameters:
-        - name: message
-      container:
-        image: argoproj/argosay:v2
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-`).
+		Workflow("@corefunctional/steps-memoize.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -1113,47 +747,7 @@ spec:
 
 func (s *FunctionalSuite) TestStepLevelMemoizeNoOutput() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-memoize-noout-
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-    - name: hello-hello-hello
-      steps:
-        - - name: hello1
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-        - - name: hello2a
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-    - name: memostep
-      inputs:
-        parameters:
-        - name: message
-      memoize:
-        key: "{{inputs.parameters.message}}"
-        maxAge: "10s"
-        cache:
-          configMap:
-            name: my-config-memo-step-no-out
-      steps:
-      - - name: cache
-          template: whalesay
-          arguments:
-            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
-    - name: whalesay
-      inputs:
-        parameters:
-        - name: message
-      container:
-        image: argoproj/argosay:v2
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-`).
+		Workflow("@corefunctional/steps-memoize-noout.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -1171,53 +765,7 @@ spec:
 
 func (s *FunctionalSuite) TestDAGLevelMemoize() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: dag-memoize-
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-    - name: hello-hello-hello
-      steps:
-        - - name: hello1
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-        - - name: hello2a
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-    - name: memostep
-      inputs:
-        parameters:
-        - name: message
-      memoize:
-        key: "{{inputs.parameters.message}}"
-        maxAge: "10s"
-        cache:
-          configMap:
-            name: my-config-memo-dag
-      dag:
-        tasks:
-        - name: cache
-          template: whalesay
-          arguments:
-            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
-      outputs:
-        parameters:
-        - name: output
-          valueFrom:
-            Parameter: "{{tasks.cache.outputs.result}}"
-    - name: whalesay
-      inputs:
-        parameters:
-        - name: message
-      container:
-        image: argoproj/argosay:v2
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-`).
+		Workflow("@corefunctional/dag-memoize.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -1235,48 +783,7 @@ spec:
 
 func (s *FunctionalSuite) TestDAGLevelMemoizeNoOutput() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: dag-memoize-noout-
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-    - name: hello-hello-hello
-      steps:
-        - - name: hello1
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-        - - name: hello2a
-            template: memostep
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-    - name: memostep
-      inputs:
-        parameters:
-        - name: message
-      memoize:
-        key: "{{inputs.parameters.message}}"
-        maxAge: "10s"
-        cache:
-          configMap:
-            name: my-config-memo-dag
-      dag:
-        tasks:
-        - name: cache
-          template: whalesay
-          arguments:
-            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
-    - name: whalesay
-      inputs:
-        parameters:
-        - name: message
-      container:
-        image: argoproj/argosay:v2
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-`).
+		Workflow("@corefunctional/dag-memoize-noout.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -1294,25 +801,7 @@ spec:
 
 func (s *FunctionalSuite) TestContainerSetRetryFail() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: containerset-retry-success-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      containerSet:
-        containers:
-          - name: a
-            image: argoproj/argosay:v2
-            command: [sh, -c]
-            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
-        retryStrategy:
-          retries: 2
-          duration: "5s"
-`).
+		Workflow("@corefunctional/containerset-retry-success.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
@@ -1320,22 +809,7 @@ spec:
 
 func (s *FunctionalSuite) TestContainerSetRetrySuccess() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: containerset-no-retry-fail-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      containerSet:
-        containers:
-          - name: a
-            image: argoproj/argosay:v2
-            command: [sh, -c]
-            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
-`).
+		Workflow("@corefunctional/containerset-no-retry-fail.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed)

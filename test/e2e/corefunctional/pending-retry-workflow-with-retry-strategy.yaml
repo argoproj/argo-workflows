@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pending-retry-workflow-with-retry-strategy-
+spec:
+  entrypoint: dag
+  templates:
+  - name: cowsay
+    retryStrategy:
+      limit: 1
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
+      resources:
+        limits:
+          memory: 128M
+  - name: dag
+    dag:
+      tasks:
+      - name: a
+        template: cowsay
+      - name: b
+        template: cowsay

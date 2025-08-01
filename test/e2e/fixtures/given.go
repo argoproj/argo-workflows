@@ -39,14 +39,11 @@ type Given struct {
 	config            *config.Config
 }
 
-// creates a workflow based on the parameter, this may be:
-//
-// 1. A file name if it starts with "@"
-// 2. Raw YAML.
-func (g *Given) Workflow(text string) *Given {
+// creates a workflow from a file path with @ prefix
+func (g *Given) Workflow(filename string) *Given {
 	g.t.Helper()
 	g.wf = &wfv1.Workflow{}
-	g.readResource(text, g.wf)
+	g.readResource(filename, g.wf)
 	g.checkImages(g.wf, false)
 	return g
 }
@@ -74,19 +71,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	if strings.HasPrefix(text, "@") {
 		file = strings.TrimPrefix(text, "@")
 	} else {
-		f, err := os.CreateTemp("", "argo_e2e")
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		_, err = f.Write([]byte(text))
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		err = f.Close()
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		file = f.Name()
+		g.t.Fatalf("literal YAML is no longer supported in %T, use @file notation instead", v)
 	}
 
 	{
@@ -175,26 +160,26 @@ func (g *Given) WorkflowName(name string) *Given {
 	return g
 }
 
-func (g *Given) WorkflowEventBinding(text string) *Given {
+func (g *Given) WorkflowEventBinding(filename string) *Given {
 	g.t.Helper()
 	g.wfeb = &wfv1.WorkflowEventBinding{}
-	g.readResource(text, g.wfeb)
+	g.readResource(filename, g.wfeb)
 	return g
 }
 
-func (g *Given) WorkflowTemplate(text string) *Given {
+func (g *Given) WorkflowTemplate(filename string) *Given {
 	g.t.Helper()
 	wfTemplate := &wfv1.WorkflowTemplate{}
-	g.readResource(text, wfTemplate)
+	g.readResource(filename, wfTemplate)
 	g.checkImages(wfTemplate, false)
 	g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	return g
 }
 
-func (g *Given) CronWorkflow(text string) *Given {
+func (g *Given) CronWorkflow(filename string) *Given {
 	g.t.Helper()
 	g.cronWf = &wfv1.CronWorkflow{}
-	g.readResource(text, g.cronWf)
+	g.readResource(filename, g.cronWf)
 	g.checkImages(g.cronWf, false)
 	return g
 }
@@ -237,10 +222,10 @@ func (g *Given) RunCli(args []string, block func(t *testing.T, output string, er
 	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
-func (g *Given) ClusterWorkflowTemplate(text string) *Given {
+func (g *Given) ClusterWorkflowTemplate(filename string) *Given {
 	g.t.Helper()
 	cwfTemplate := &wfv1.ClusterWorkflowTemplate{}
-	g.readResource(text, cwfTemplate)
+	g.readResource(filename, cwfTemplate)
 	g.cwfTemplates = append(g.cwfTemplates, cwfTemplate)
 	return g
 }

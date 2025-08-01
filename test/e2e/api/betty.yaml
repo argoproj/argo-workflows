@@ -1,0 +1,10 @@
+metadata:
+  generateName: betty-
+  labels:
+    foo: 2
+spec:
+  entrypoint: run-betty
+  templates:
+    - name: run-betty
+      container:
+        image: argoproj/argosay:v2

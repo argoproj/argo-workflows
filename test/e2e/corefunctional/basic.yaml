@@ -1,0 +1,10 @@
+metadata:
+  generateName: basic-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+      # ordering of the containers in the next line is intentionally reversed
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'

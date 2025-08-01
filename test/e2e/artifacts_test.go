@@ -621,38 +621,7 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: default-params-
-spec:
-  entrypoint: start
-  templates:
-  - name: start
-    steps:
-      - - name: generate-1
-          template: generate
-      - - name: generate-2
-          when: "True == False"
-          template: generate
-    outputs:
-      parameters:
-        - name: nested-out-parameter
-          valueFrom:
-            default: "Default value"
-            parameter: "{{steps.generate-2.outputs.parameters.out-parameter}}"
-
-  - name: generate
-    container:
-      image: argoproj/argosay:v2
-      args: [echo, my-output-parameter, /tmp/my-output-parameter.txt]
-    outputs:
-      parameters:
-      - name: out-parameter
-        valueFrom:
-          path: /tmp/my-output-parameter.txt
-`).
+		Workflow("@executor/default-params.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -722,35 +691,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 func (s *ArtifactsSuite) TestResourceLog() {
 	s.Run("Basic", func() {
 		s.Given().
-			Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: resource-tmpl-wf-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      resource:
-        action: create
-        successCondition: status.phase == Succeeded
-        setOwnerReference: true
-        manifest: |
-          apiVersion: argoproj.io/v1alpha1
-          kind: Workflow
-          metadata:
-            generateName: hello-world-
-            labels:
-              workflows.argoproj.io/test: "true"
-          spec:
-            entrypoint: whalesay
-            templates:
-              - name: whalesay
-                container:
-                  image: argoproj/argosay:v2
-                  command: [sh, -c]
-                  args: [echo, ":) Hello Argo!"]
-`).
+			Workflow("@executor/resource-tmpl-wf.yaml").
 			When().
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -764,22 +705,7 @@ spec:
 func (s *ArtifactsSuite) TestContainersetLogs() {
 	s.Run("Basic", func() {
 		s.Given().
-			Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: containerset-logs-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      containerSet:
-        containers:
-          - name: a
-            image: argoproj/argosay:v2
-          - name: b
-            image: argoproj/argosay:v2
-`).
+			Workflow("@executor/containerset-logs.yaml").
 			When().
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -814,28 +740,7 @@ spec:
 
 func (s *ArtifactsSuite) TestGitArtifactDepthClone() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: git-depth-
-spec:
-  entrypoint: git-depth
-  templates:
-  - name: git-depth
-    inputs:
-      artifacts:
-      - name: git-repo
-        path: /tmp/git
-        git:
-          repo: https://github.com/argoproj-labs/go-git.git
-          revision: master
-          depth: 1
-    container:
-      image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["ls -l"]
-      workingDir: /tmp/git
-`).
+		Workflow("@executor/git-depth.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
@@ -843,37 +748,7 @@ spec:
 
 func (s *ArtifactsSuite) TestArtifactEphemeralVolume() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: artifact-volume-claim-
-spec:
-  entrypoint: artifact-volume-claim
-  volumeClaimTemplates:
-    - metadata:
-        name: vol
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 1Mi
-  templates:
-  - name: artifact-volume-claim
-    inputs:
-      artifacts:
-      - name: artifact-volume-claim
-        path: /tmp/input/input.txt
-        raw:
-          data: abc
-    container:
-      image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["ls -l"]
-      workingDir: /tmp
-      volumeMounts:
-      - name: vol
-        mountPath: /tmp
-`).
+		Workflow("@executor/artifact-volume-claim.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)

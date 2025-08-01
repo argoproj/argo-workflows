@@ -1,0 +1,17 @@
+metadata:
+  generateName: test-lifecycle-hook-
+spec:
+  entrypoint: hooks-exit-test
+  templates:
+  - name: hooks-exit-test
+    container:
+      image: argoproj/argosay:v2
+    hooks:
+      exit:
+        templateRef:
+          name: test-exit-handler
+          template: main
+        arguments:
+          parameters:
+            - name: message
+              value: "hello world"

@@ -20,33 +20,7 @@ type ResourceTemplateSuite struct {
 
 func (s *ResourceTemplateSuite) TestResourceTemplateWithWorkflow() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: k8s-resource-tmpl-with-wf-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      resource:
-        action: create
-        setOwnerReference: true
-        successCondition: status.phase == Succeeded
-        failureCondition: status.phase == Failed
-        manifest: |
-          apiVersion: argoproj.io/v1alpha1
-          kind: Workflow
-          metadata:
-            generateName: k8s-wf-resource-
-          spec:
-            entrypoint: main
-            templates:
-              - name: main
-                container:
-                  image: argoproj/argosay:v2
-                  command: ["/argosay"]
-`).
+		Workflow("@executor/k8s-resource-tmpl-with-wf.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -58,32 +32,7 @@ spec:
 
 func (s *ResourceTemplateSuite) TestResourceTemplateWithPod() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: k8s-resource-tmpl-with-pod-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      resource:
-        action: create
-        setOwnerReference: true
-        successCondition: status.phase == Succeeded
-        failureCondition: status.phase == Failed
-        manifest: |
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            generateName: k8s-pod-resource-
-          spec:
-            containers:
-            - name: argosay-container
-              image: argoproj/argosay:v2
-              command: ["/argosay"]
-            restartPolicy: Never
-`).
+		Workflow("@executor/k8s-resource-tmpl-with-pod.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -95,39 +44,7 @@ spec:
 
 func (s *ResourceTemplateSuite) TestResourceTemplateWithArtifact() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: k8s-resource-tmpl-with-artifact-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      inputs:
-        artifacts:
-        - name: manifest
-          path: /tmp/manifestfrom-path.yaml
-          raw:
-            data: |
-              apiVersion: v1
-              kind: Pod
-              metadata:
-                generateName: k8s-pod-resource-
-              spec:
-                containers:
-                - name: argosay-container
-                  image: argoproj/argosay:v2
-                  command: ["/argosay"]
-                restartPolicy: Never
-      resource:
-        action: create
-        successCondition: status.phase == Succeeded
-        failureCondition: status.phase == Failed
-        manifestFrom:
-          artifact:
-            name: manifest
-`).
+		Workflow("@executor/k8s-resource-tmpl-with-artifact.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -159,37 +76,7 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 
 func (s *ResourceTemplateSuite) TestResourceTemplateAutomountServiceAccountTokenDisabled() {
 	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: k8s-resource-tmpl-with-automountservicetoken-disabled-
-spec:
-  serviceAccountName: argo
-  automountServiceAccountToken: false
-  executor:
-    serviceAccountName: default
-  entrypoint: main
-  templates:
-    - name: main
-      resource:
-        action: create
-        setOwnerReference: true
-        successCondition: status.phase == Succeeded
-        failureCondition: status.phase == Failed
-        manifest: |
-          apiVersion: argoproj.io/v1alpha1
-          kind: Workflow
-          metadata:
-            generateName: k8s-wf-resource-
-          spec:
-            entrypoint: main
-            templates:
-              - name: main
-                container:
-                  image: argoproj/argosay:v2
-                  command: ["/argosay"]
-`).
+		Workflow("@executor/k8s-resource-tmpl-with-automountservicetoken-disabled.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().

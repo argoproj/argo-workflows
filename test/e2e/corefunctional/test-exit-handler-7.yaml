@@ -1,0 +1,14 @@
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+    - name: main
+      container:
+        name: main
+        image: argoproj/argosay:v2
+    - name: exit-handler
+      templateRef:
+        name: nonexistent
+        template: exit-handler

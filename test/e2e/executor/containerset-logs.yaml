@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-logs-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2

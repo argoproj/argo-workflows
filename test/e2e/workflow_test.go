@@ -22,45 +22,7 @@ type WorkflowSuite struct {
 }
 
 func (s *WorkflowSuite) TestWorkflowFailedWhenAllPodSetFailedFromPending() {
-	(s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: active-deadline-fanout-template-level-
-  namespace: argo
-spec:
-  entrypoint: entrypoint
-  templates:
-  - name: entrypoint
-    steps:
-    - - name: fanout
-        template: echo
-        arguments:
-          parameters:
-            - name: item
-              value: "{{item}}"
-        withItems:
-          - 1
-          - 2
-          - 3
-          - 4
-  - name: echo
-    inputs:
-      parameters:
-        - name: item
-    container:
-      image: argoproj/argosay:v2
-      imagePullPolicy: Always
-      command:
-        - sh
-        - '-c'
-      args:
-        - echo
-        - 'workflow number {{inputs.parameters.item}}'
-        - sleep
-        - '20'
-    activeDeadlineSeconds: 2 # defined on template level, not workflow level !
-`).
+	(s.Given().Workflow("@functional/active-deadline-fanout-template-level.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed, time.Minute*11).
@@ -121,27 +83,7 @@ spec:
 }
 
 func (s *WorkflowSuite) TestWorkflowInlinePodName() {
-	s.Given().Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-inline-
-  labels:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: a
-            inline:
-              container:
-                image: argoproj/argosay:v2
-                command:
-                  - cowsay
-                args:
-                  - "foo"
-`).
+	s.Given().Workflow("@functional/steps-inline.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted, time.Minute*1).

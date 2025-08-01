@@ -20,33 +20,7 @@ type WorkflowConfigMapSelectorSubstitutionSuite struct {
 
 func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestKeySubstitution() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-configmapkeyselector-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: message
-      value: msg
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: cmref-parameters
-            key: '{{ workflow.parameters.message }}'
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - echo
-        - "{{inputs.parameters.message}}"
-`).
+		Workflow("@functional/workflow-template-configmapkeyselector-wf.yaml").
 		When().
 		CreateConfigMap(
 			"cmref-parameters",
@@ -64,33 +38,7 @@ spec:
 
 func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestNameSubstitution() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-configmapkeyselector-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: cm-name
-      value: cmref-parameters
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: '{{ workflow.parameters.cm-name}}'
-            key: msg
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - echo
-        - "{{inputs.parameters.message}}"
-`).
+		Workflow("@functional/workflow-template-configmapkeyselector-wf.yaml").
 		When().
 		CreateConfigMap(
 			"cmref-parameters",
@@ -108,33 +56,7 @@ spec:
 
 func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestInvalidNameParameterSubstitution() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-configmapkeyselector-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: cm-name
-      value: cmref-parameters
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: '{{ workflow.parameters.cm-name }}'
-            key: msg
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - echo
-        - "{{inputs.parameters.message}}"
-`).
+		Workflow("@functional/workflow-template-configmapkeyselector-wf.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored)
@@ -142,34 +64,7 @@ spec:
 
 func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestDefaultParamValueWhenNotFound() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-configmapkeyselector-wf-default-param-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: message
-      value: msg
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          default: "default-val"
-          configMapKeyRef:
-            name: cmref-parameters
-            key: not-existing-key
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - echo
-        - "{{inputs.parameters.message}}"
-`).
+		Workflow("@functional/workflow-template-configmapkeyselector-wf-default-param.yaml").
 		When().
 		CreateConfigMap(
 			"cmref-parameters",
@@ -187,34 +82,7 @@ spec:
 
 func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestGlobalArgDefaultCMParamValueWhenNotFound() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-cmkeyselector-wf-global-arg-default-param-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: simple-global-param
-        valueFrom:
-          default: "default value"
-          configMapKeyRef:
-            name: not-existing-cm
-            key: not-existing-key
-  templates:
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v2
-        command: [sh, -c]
-        args: ["sleep 1; echo -n {{workflow.parameters.simple-global-param}} > /tmp/message.txt"]
-      outputs:
-        parameters:
-         - name: message
-           valueFrom:
-             path: /tmp/message.txt
-`).
+		Workflow("@functional/workflow-template-cmkeyselector-wf-global-arg-default-param.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).

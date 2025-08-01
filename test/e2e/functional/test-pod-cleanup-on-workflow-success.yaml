@@ -1,0 +1,10 @@
+metadata:
+  generateName: test-pod-cleanup-on-workflow-success-
+spec:
+  podGC:
+    strategy: OnWorkflowSuccess
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

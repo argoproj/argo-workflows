@@ -1,0 +1,10 @@
+metadata:
+  generateName: workflow-ttl-
+spec:
+  ttlStrategy:
+    secondsAfterCompletion: 0
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

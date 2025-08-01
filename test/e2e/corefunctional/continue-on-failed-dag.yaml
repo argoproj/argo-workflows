@@ -1,0 +1,26 @@
+metadata:
+  generateName: continue-on-failed-dag-
+spec:
+  entrypoint: workflow-ignore
+  templates:
+    - name: workflow-ignore
+      dag:
+        failFast: false
+        tasks:
+          - name: F
+            template: fail
+            continueOn:
+              failed: true
+          - name: P
+            template: pass
+            dependencies:
+              - F
+
+    - name: pass
+      container:
+        image: argoproj/argosay:v2
+
+    - name: fail
+      container:
+        image: argoproj/argosay:v2
+        args: [ exit, "1" ]

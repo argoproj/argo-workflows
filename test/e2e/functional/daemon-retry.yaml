@@ -1,0 +1,34 @@
+metadata:
+  name: daemon-retry
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: daemoned
+          template: daemoned
+        - name: whale
+          dependencies: [daemoned]
+          template: whale-tmpl
+  - name: daemoned
+    retryStrategy:
+      limit: 2
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args:
+        - "-c"
+        - |
+          echo "Attempt {{retries}}";
+          if [ "{{retries}}" -eq 0 ]; then
+            sleep 10 && exit 1;
+          else
+            sleep 120 && exit 1;
+          fi
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args: ["-c", "echo hi & sleep 15 && echo bye"]

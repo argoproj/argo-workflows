@@ -1,0 +1,16 @@
+metadata:
+  generateName: cwft-wf-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    steps:
+    - - name: call-whalesay-template
+        templateRef:
+          name: cluster-workflow-template-nested-template 
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: hello from nested
