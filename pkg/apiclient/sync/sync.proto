@@ -1,0 +1,70 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/sync";
+
+import "google/api/annotations.proto";
+
+package sync;
+
+enum SyncConfigType {
+  CONFIG_MAP = 0;
+  DATABASE = 1;
+}
+
+message CreateSyncLimitRequest {
+  SyncConfigType type = 1;
+  string namespace = 2;
+  string name = 3;
+  string key = 4;
+  int32 sizeLimit = 5;
+}
+
+message SyncLimitResponse {
+  SyncConfigType type = 1;
+  string namespace = 2;
+  string name = 3;
+  string key = 4;
+  int32 sizeLimit = 5;
+}
+
+message GetSyncLimitRequest {
+  SyncConfigType type = 1;
+  string namespace = 2;
+  string name = 3;
+  string key = 4;
+}
+
+message UpdateSyncLimitRequest {
+  SyncConfigType type = 1;
+  string namespace = 2;
+  string name = 3;
+  string key = 4;
+  int32 sizeLimit = 5;
+}
+
+message DeleteSyncLimitRequest {
+  SyncConfigType type = 1;
+  string namespace = 2;
+  string name = 3;
+  string key = 4;
+}
+
+message DeleteSyncLimitResponse {
+}
+
+service SyncService {
+  rpc CreateSyncLimit(CreateSyncLimitRequest) returns (SyncLimitResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/sync/{namespace}"
+      body : "*"
+    };
+  }
+  rpc GetSyncLimit(GetSyncLimitRequest) returns (SyncLimitResponse) {
+    option (google.api.http).get = "/api/v1/sync/{namespace}/{name}";
+  };
+  rpc UpdateSyncLimit(UpdateSyncLimitRequest) returns (SyncLimitResponse) {
+    option (google.api.http).put = "/api/v1/sync/{namespace}/{name}";
+  };
+  rpc DeleteSyncLimit(DeleteSyncLimitRequest) returns (DeleteSyncLimitResponse) {
+    option (google.api.http).delete = "/api/v1/sync/{namespace}/{name}";
+  };
+}

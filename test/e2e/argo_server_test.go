@@ -2612,6 +2612,115 @@ spec:
 
 }
 
+func (s *ArgoServerSuite) TestSyncService() {
+	syncNamespace := "argo"
+	configmapName := "test-sync-cm"
+	syncKey := "test-key"
+
+	s.Run("CreateSyncLimit", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(map[string]interface{}{
+				"type":      "CONFIG_MAP",
+				"name":      configmapName,
+				"key":       syncKey,
+				"sizeLimit": 100,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("name", configmapName).
+			HasValue("key", syncKey).
+			HasValue("sizeLimit", 100)
+	})
+
+	s.Run("CreateSyncLimit-cm-exist", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(map[string]interface{}{
+				"type":      "CONFIG_MAP",
+				"name":      configmapName,
+				"key":       syncKey + "-exist",
+				"sizeLimit": 100,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("name", configmapName).
+			HasValue("key", syncKey+"-exist").
+			HasValue("sizeLimit", 100)
+	})
+
+	s.Run("GetSyncLimit", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
+			WithQuery("key", syncKey).
+			WithQuery("type", "CONFIG_MAP").
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("name", configmapName).
+			HasValue("key", syncKey).
+			HasValue("sizeLimit", 100)
+	})
+
+	s.Run("UpdateSyncLimit", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
+			WithJSON(map[string]interface{}{
+				"type":      "CONFIG_MAP",
+				"key":       syncKey,
+				"sizeLimit": 200,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("name", configmapName).
+			HasValue("key", syncKey).
+			HasValue("sizeLimit", 200)
+	})
+
+	s.Run("InvalidSizeLimit", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(map[string]interface{}{
+				"type":      "CONFIG_MAP",
+				"name":      configmapName + "-invalid",
+				"key":       syncKey,
+				"sizeLimit": 0,
+			}).
+			Expect().
+			Status(400)
+	})
+
+	s.Run("KeyDoesNotExist", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
+			WithQuery("key", "non-existent-key").
+			WithQuery("type", "CONFIG_MAP").
+			Expect().
+			Status(404)
+	})
+
+	s.Run("DeleteSyncLimit", func() {
+		s.e().DELETE("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
+			WithQuery("key", syncKey).
+			WithQuery("type", "CONFIG_MAP").
+			Expect().
+			Status(200)
+
+		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
+			WithQuery("key", syncKey).
+			WithQuery("type", "CONFIG_MAP").
+			Expect().
+			Status(404)
+	})
+
+	s.Run("UpdateNonExistentLimit", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName+"-non-existent").
+			WithJSON(map[string]interface{}{
+				"type":      "CONFIG_MAP",
+				"key":       syncKey,
+				"sizeLimit": 200,
+			}).Expect().
+			Status(404)
+	})
+}
+
 func TestArgoServerSuite(t *testing.T) {
 	suite.Run(t, new(ArgoServerSuite))
 }
