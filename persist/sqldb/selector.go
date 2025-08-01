@@ -1,7 +1,6 @@
 package sqldb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/upper/db/v4"
@@ -48,12 +47,10 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		options.Limit = -1
 		options.Offset = -1
 	}
-	out := selector.
+	return selector.
 		OrderBy("-startedat").
 		Limit(options.Limit).
-		Offset(options.Offset)
-	fmt.Printf("DEBUG: %s", out.String())
-	return out, nil
+		Offset(options.Offset), nil
 }
 
 func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (out string, outArgs []any, err error) {
