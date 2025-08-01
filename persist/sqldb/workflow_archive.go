@@ -316,6 +316,13 @@ func createdAfterClause(createdAfter time.Time) db.Cond {
 	return db.Cond{}
 }
 
+func finishedBeforeClause(finishedBefore time.Time) db.Cond {
+	if !finishedBefore.IsZero() {
+		return db.Cond{"finishedat <=": finishedBefore}
+	}
+	return db.Cond{}
+}
+
 func startedAtToClause(to time.Time) db.Cond {
 	if !to.IsZero() {
 		return db.Cond{"startedat <=": to}
