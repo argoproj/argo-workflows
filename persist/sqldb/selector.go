@@ -16,7 +16,8 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
-		And(createdAfterClause(options.CreatedAfter))
+		And(createdAfterClause(options.CreatedAfter)).
+		And(finishedBeforeClause(options.FinishedBefore))
 
 	if options.Name != "" {
 		nameFilter := options.NameFilter
