@@ -20,7 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
-var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
+var unlabelled, cwftObj2, cwftObj3, cwftObjExpr v1alpha1.ClusterWorkflowTemplate
 
 func init() {
 	v1alpha1.MustUnmarshal(`{
@@ -146,6 +146,40 @@ func init() {
     ]
   }
 }`, &cwftObj3)
+
+	v1alpha1.MustUnmarshal(`{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "ClusterWorkflowTemplate",
+    "metadata": {
+      "name": "cluster-workflow-template-expr",
+	  "labels": {
+	  	"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+	  }
+    },
+    "spec": {
+      "arguments": {
+        "parameters": [
+          {
+            "name": "global_message",
+            "default": "hello global"
+          }
+        ]
+      },
+      "templates": [
+        {
+          "name": "whalesay-template",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "message",
+                "default": "{{=sprig.uuidv4()}}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+}`, &cwftObjExpr)
 }
 
 const userEmailLabel = "my-sub.at.your.org"
@@ -153,7 +187,7 @@ const userEmailLabel = "my-sub.at.your.org"
 func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	t.Helper()
 	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
+	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3, &cwftObjExpr)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
@@ -214,7 +248,7 @@ func TestWorkflowTemplateServer_ListClusterWorkflowTemplates(t *testing.T) {
 	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateListRequest{}
 	cwftRsp, err := server.ListClusterWorkflowTemplates(ctx, &cwftReq)
 	require.NoError(t, err)
-	assert.Len(t, cwftRsp.Items, 2)
+	assert.Len(t, cwftRsp.Items, 3)
 	for _, item := range cwftRsp.Items {
 		assert.Contains(t, item.Labels, common.LabelKeyControllerInstanceID)
 	}
@@ -283,4 +317,21 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 		})
 		require.Error(t, err)
 	})
+}
+
+func TestClusterWorkflowTemplateServer_GetClusterWorkflowTemplate_Expr(t *testing.T) {
+	server, ctx := getClusterWorkflowTemplateServer(t)
+
+	resp, err := server.GetClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
+		Name: "cluster-workflow-template-expr",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+
+	assert.Equal(t, "hello global", resp.Spec.Arguments.Parameters[0].Default.String())
+
+	// Check that 'Value' has been populated with the evaluated result
+	assert.NotNil(t, resp.Spec.Templates[0].Inputs.Parameters[0].Value)
+	assert.NotEmpty(t, resp.Spec.Templates[0].Inputs.Parameters[0].Value.String())
+	assert.Equal(t, "{{=sprig.uuidv4()}}", resp.Spec.Templates[0].Inputs.Parameters[0].Default.String())
 }
