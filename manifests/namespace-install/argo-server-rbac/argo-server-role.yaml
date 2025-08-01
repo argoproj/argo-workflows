@@ -12,7 +12,7 @@ rules:
       - watch
       - list
       - create
-      - patch
+      - update
   - apiGroups:
       - ""
     resources:
