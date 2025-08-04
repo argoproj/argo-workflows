@@ -43,11 +43,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
-	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -334,7 +334,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wfc.runConfigMapWatcher(ctx)
 	}
 
-	go wfc.nsInformer.Run(ctx.Done())
+	// namespace informer only works if has RBAC access
+	var nsInformerHasSynced func() bool
+	if wfc.nsInformer != nil {
+		go wfc.nsInformer.Run(ctx.Done())
+		nsInformerHasSynced = wfc.nsInformer.HasSynced
+	} else {
+		nsInformerHasSynced = func() bool {
+			return true
+		}
+	}
+
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
@@ -348,7 +358,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
-		wfc.nsInformer.HasSynced,
+		nsInformerHasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.PodController.HasSynced(),
 		wfc.configMapInformer.HasSynced,
@@ -513,14 +523,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
-
-	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset, wfc.namespace) {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 

@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
@@ -61,6 +62,7 @@ import (
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/json"
+	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -235,9 +237,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	cwftmplInformer, err := clusterworkflowtemplate.NewInformer(as.restConfig)
-	if err != nil {
-		log.Fatal(err)
+	kubeclientset := kubernetes.NewForConfigOrDie(as.restConfig)
+	var cwftmplInformer *clusterworkflowtemplate.Informer
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, resourceCacheNamespace) {
+		cwftmplInformer, err = clusterworkflowtemplate.NewInformer(as.restConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
@@ -276,7 +282,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
 	wftmplStore.Run(as.stopCh)
-	cwftmplInformer.Run(as.stopCh)
+	if cwftmplInformer != nil {
+		cwftmplInformer.Run(as.stopCh)
+	}
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
 	go func() { as.checkServeErr("httpServer", http.Serve(conn, handler)) }()

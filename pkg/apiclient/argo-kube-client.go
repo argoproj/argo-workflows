@@ -28,6 +28,7 @@ import (
 	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 )
 
 var (
@@ -71,6 +72,7 @@ type argoKubeClient struct {
 	wfLister          store.WorkflowLister
 	wfStore           store.WorkflowStore
 	namespace         string
+	kubeClient        *kubernetes.Clientset
 }
 
 var _ Client = &argoKubeClient{}
@@ -122,8 +124,9 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		instanceIDService: instanceIDService,
 		wfClient:          wfClient,
 		namespace:         namespace,
+		kubeClient:        kubeClient,
 	}
-	err = client.startStores(restConfig)
+	err = client.startStores(ctx, restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +134,7 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 	return ctx, client, nil
 }
 
-func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
+func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient.Config) error {
 	if a.opts.CacheWorkflows {
 		wfStore, err := store.NewSQLiteStore(a.instanceIDService)
 		if err != nil {
@@ -154,16 +157,19 @@ func (a *argoKubeClient) startStores(restConfig *restclient.Config) error {
 		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
 	}
 
-	if a.opts.CacheClusterWorkflowTemplates {
-		cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
-		if err != nil {
-			return err
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, a.kubeClient, a.namespace) {
+		if a.opts.CacheClusterWorkflowTemplates {
+			cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
+			if err != nil {
+				return err
+			}
+			cwftmplInformer.Run(a.opts.CachingCloseCh)
+			a.cwfTmplStore = cwftmplInformer
+		} else {
+			a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
 		}
-		cwftmplInformer.Run(a.opts.CachingCloseCh)
-		a.cwfTmplStore = cwftmplInformer
-	} else {
-		a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
 	}
+
 	return nil
 }
 
