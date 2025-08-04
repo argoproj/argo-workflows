@@ -104,6 +104,7 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 		podSpecPatches = append(podSpecPatches, processedTmpl.PodSpecPatch)
 	}
 	return podSpecPatches, nil
+
 }
 
 func (woc *wfOperationCtx) processPodMetadataPatch(ctx context.Context, tmpl *wfv1.Template, pod *apiv1.Pod) ([]string, error) {
@@ -117,13 +118,12 @@ func (woc *wfOperationCtx) processPodMetadataPatch(ctx context.Context, tmpl *wf
 		toProcess = append(toProcess, woc.execWf.Spec.PodMetadataPatch)
 	}
 	if tmpl.HasPodMetadataPatch() {
-		toProcess = append(toProcess, woc.execWf.Spec.PodMetadataPatch)
+		toProcess = append(toProcess, tmpl.PodMetadataPatch)
 	}
 
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodMetadataPatch = patch
-		//ToDo: when debugging tests, this is a good breakpoint to check for correct impl.
 		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodMetadataPatch variables")
@@ -415,6 +415,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Apply the patch string from workflow and template
 	var podSpecPatchs []string
+	//todo: should be here instead
 	podSpecPatchs, err = woc.processPodSpecPatch(ctx, tmpl, pod)
 	if err != nil {
 		return nil, err
@@ -429,6 +430,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Apply the patch string from workflow and template
 	var podMetadataPatchs []string
+	// should be here instead
 	podMetadataPatchs, err = woc.processPodMetadataPatch(ctx, tmpl, pod)
 	if err != nil {
 		return nil, err

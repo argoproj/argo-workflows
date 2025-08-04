@@ -46,11 +46,6 @@ spec:
         resources:
           limits:
             memory: 1G
-	podMetadataPatch: |
-	annotations: 
-	  annotation-1: annotation-value-1
-	labels:
-	  labels-1: labels-value-1
   entrypoint: entrypoint
   podGC: {}
   podSpecPatch: |

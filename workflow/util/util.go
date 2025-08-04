@@ -1535,7 +1535,7 @@ func ConvertYAMLToJSON(str string) (string, error) {
 	return str, nil
 }
 
-func ApplyPodMetadataPatch(podMetadata metav1.ObjectMeta, podMetadataPatchYamls ...string) (*metav1.ObjectMeta, error) {
+func ApplyPodMetadataPatchOld(podMetadata metav1.ObjectMeta, podMetadataPatchYamls ...string) (*metav1.ObjectMeta, error) {
 	podMetadataJSON, err := json.Marshal(podMetadata)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Failed to marshal Pod metadata")
@@ -1554,7 +1554,7 @@ func ApplyPodMetadataPatch(podMetadata metav1.ObjectMeta, podMetadataPatchYamls 
 		}
 
 		//TODO: is it necessary below to cast the second argument to []byte?
-		podMetadataJSON, err = strategicpatch.StrategicMergePatch(podMetadataJSON, podMetadataJSON, metav1.ObjectMeta{})
+		podMetadataJSON, err = strategicpatch.StrategicMergePatch(podMetadataJSON, []byte(podMetadataPatchJSON), metav1.ObjectMeta{})
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
 		}
@@ -1598,6 +1598,41 @@ func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*api
 		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 	}
 	return &newPodSpec, nil
+}
+
+func ApplyPodMetadataPatch(podMetadata metav1.ObjectMeta, podMetaDataPatchYamls ...string) (*metav1.ObjectMeta, error) {
+	podMetadataJSON, err := json.Marshal(podMetadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to marshal the Pod metadata")
+	}
+
+	for _, podMetadataPatchYaml := range podMetaDataPatchYamls {
+		//todo: is the below true?
+		// must convert to json because Podmetadata has only json tags
+		podMetadataPatchJSON, err := ConvertYAMLToJSON(podMetadataPatchYaml)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to convert the PodMetadataPatch yaml to json")
+		}
+
+		// validate the patch to be a PodSpec
+		if err := json.Unmarshal([]byte(podMetadataPatchJSON), &metav1.ObjectMeta{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podMetadataPatchYaml, err)
+		}
+
+		//todo: should be isolated already by here.
+		podMetadataJSON, err = strategicpatch.StrategicMergePatch(podMetadataJSON, []byte(podMetadataPatchJSON), metav1.ObjectMeta{})
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
+	}
+
+	var newPodMetadata metav1.ObjectMeta
+	err = json.Unmarshal(podMetadataJSON, &newPodMetadata)
+	//todo: is correct after this.
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+	}
+	return &newPodMetadata, nil
 }
 
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {

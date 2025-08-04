@@ -32,20 +32,6 @@ func unmarshalTemplate(yamlStr string) *wfv1.Template {
 	return wfv1.MustUnmarshalTemplate(yamlStr)
 }
 
-// newMetadataWoc a new operation context suitable for testing patched metadata specifically
-func newPatchedMetadataWoc(ctx context.Context, wfs ...wfv1.Workflow) *wfOperationCtx {
-	var wf *wfv1.Workflow
-	if len(wfs) == 0 {
-		wf = wfv1.MustUnmarshalWorkflow(helloWorldMetadataPatchedWf)
-	} else {
-		wf = &wfs[0]
-	}
-	cancel, controller := newController(ctx, wf, defaultServiceAccount)
-	defer cancel()
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	return woc
-}
-
 // newWoc a new operation context suitable for testing
 func newWoc(ctx context.Context, wfs ...wfv1.Workflow) *wfOperationCtx {
 	var wf *wfv1.Workflow
@@ -454,7 +440,6 @@ func TestTolerations(t *testing.T) {
 // TestMetadata verifies ability to carry forward annotations and labels
 func TestMetadata(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	//TODO: I think woc = workflow operation context
 	woc := newWoc(ctx)
 	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
@@ -476,13 +461,10 @@ func TestMetadata(t *testing.T) {
 	}
 }
 
-// TODO: this is potentially where we will test PodMetadataPatch
-// Question is - do we remove the above test?
 // TestMetadata verifies ability to carry forward annotations and labels even when patch is included.
 func TestMetadataPatch(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	//TODO: should we use a specialized or general woc in this context?
-	woc := newPatchedMetadataWoc(ctx)
+	woc := newWoc(ctx)
 	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
@@ -730,23 +712,19 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
 		assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 	})
-	//TODO: I think it would be appropriate to add a t.Run for podMetadataPatch within this test.
 	t.Run("CommandFromPodMetadataPatch", func(t *testing.T) {
-		//todo: in the end, should use newWoc() updated with patched metadata, instead of a diff woc.
 		ctx := logging.TestContext(t.Context())
-		woc := newPatchedMetadataWoc(ctx)
+		woc := newWoc(ctx)
 		podMetadata := &metav1.ObjectMeta{
-			Annotations: map[string]string{"test-annotation-1": "test-annotation"},
-			Labels:      map[string]string{"test-label-1": "test-label"},
+			Annotations: map[string]string{"test-annotation": "test-annotation-value"},
+			Labels:      map[string]string{"test-label": "test-label-value"},
 		}
-		//todo: use this.
-		_, err := json.Marshal(podMetadata)
+		podMetadataPatch, err := json.Marshal(podMetadata)
 		require.NoError(t, err)
-		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodMetadataPatch: string(podMetadataPatch)}, &createWorkflowPodOpts{})
 		require.NoError(t, err)
-		//ToDo: replace bar with something more applicable below.
-		assert.Equal(t, "test-label-1-value", pod.Annotations["test-label-1-key"])
-		assert.Equal(t, "test-annotation-1-value", pod.Annotations["test-annotation-1-key"])
+		assert.Equal(t, "test-annotation-value", pod.Annotations["test-annotation"])
+		assert.Equal(t, "test-label-value", pod.Labels["test-label"])
 
 	})
 	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
@@ -759,21 +737,10 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		}}
 		podSpecPatch, err := json.Marshal(podSpec)
 		require.NoError(t, err)
-		//todo: need to replicate below details in call after
-		//pod, err := woc.createWorkflowPod(func() context.Context {
-		//	ctx := context.Background()
-		//	return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		//	// 		}(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch), PodMetadataPatch: string(podMetadataPatch)}, &createWorkflowPodOpts{})
-		//}(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
-		//
 		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
 		require.NoError(t, err)
-		//TODO: need to add the pod metadata here somewhere.
 		cmd := append(append(emissaryCmd, woc.getExecutorLogOpts(ctx)...), "--", "bar")
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
-		//TODO: currently not setting the value.
-		//assert.Equal(t, "test-label-1-value", pod.ObjectMeta.Annotations["test-label-1-key"])
-		//assert.Equal(t, "test-annotation-1-value", pod.ObjectMeta.Annotations["test-annotation-1-key"])
 	})
 }
 
@@ -1414,8 +1381,7 @@ func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
 	}
 }
 
-// TODO: refactor to PodSpecPatch instead of Patch
-var helloWorldWfWithPatch = `
+var helloWorldWfWithPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1445,14 +1411,14 @@ spec:
   entrypoint:
   templates:
   - name: whalesay
-    podMetadataPatch: ''
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
     container:
-     image: docker/whalesay:latest
-     command: [cowsay]
-     args: ["hello world"]
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
 `
 
-var helloWorldWfWithWFPatch = `
+var helloWorldWfWithWFPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1468,24 +1434,23 @@ spec:
       args: ["hello world"]
 `
 
-// todo: update podMetadataPatch
 var helloWorldWfWithWFMetadataPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-	name: hello-world
+  name: hello-world
 spec:
-	entrypoint: whalesay
-    podMetadataPatch: ''
-	templates:
-	- name: whalesay
-	  container: 
-		image: docker/whalesay:latest
-		command: [cowsay]
-		args: ["hello world"]
+  entrypoint: whalesay
+  podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
+  templates:
+  - name: whalesay
+    container: 
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
 `
 
-var helloWorldWfWithWFYAMLPatch = `
+var helloWorldWfWithWFYAMLPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1507,7 +1472,6 @@ spec:
       args: ["hello world"]
 `
 
-// todo: update podmetadatapatch
 var helloWorldWfWithWFYAMLMetadataPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1515,19 +1479,22 @@ metadata:
   name: hello-world
 spec:
   entrypoint: whalesay
-  podMetadataPatch:
-    annotations:
-    labels:
+  podSpecPatch: |
+    containers:
+      - name: main
+        resources:
+          limits:
+            cpu: "800m"
   templates:
   - name: whalesay
-  podMetadataPatch: ''
-  container:
-    image: docker/whalesay:latest
-    command: [cowsay]
-    args: ["hello world]"
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
 `
 
-var helloWorldWfWithTmplAndWFPatch = `
+var helloWorldWfWithTmplAndWFPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1551,8 +1518,6 @@ spec:
       args: ["hello world"]
 `
 
-// Todo: I do not know if the below patch levels are both important. Does a metadata patch apply here (I think it does.)?
-// todo: also the commands included,, may not be necessary.
 var helloWorldWfWithTmplAndWFMetadataPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1560,21 +1525,16 @@ metadata:
   name: hello-world
 spec:
   entrypoint: whalesay
-  podMetadataPatch: |
-    annotations:
-      annotation-key-1: annotation-val-1
-	labels:
-      label-key-1: label-val-1
   templates:
   - name: whalesay
-    podMetadataPatchL ''
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
     container:
       image: docker/whalesay:latest
       command: [cowsay]
       args: ["hello world"]
 `
 
-var helloWorldWfWithInvalidPatchFormat = `
+var helloWorldWfWithInvalidPodSpecPatchFormat = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1590,7 +1550,6 @@ spec:
       args: ["hello world"]
 `
 
-// TODO:are the extra commands below necessary?
 var helloWorldWfWithInvalidMetadataPatchFormat = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1599,51 +1558,47 @@ metadata:
 spec:
   entrypoint: whalesay
   templates:
-	- name: whalesay
-	  podMetadataPatch: ''
-	  container: 
-		image: docker/whalesay:latest
-		command: [cowsay]
-		args: ["hello world"]
+  - name: whalesay
+    podMetadataPatch: '{"annotations"}' # not a valid JSON here
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
 `
 
 func TestPodMetadataPatch(t *testing.T) {
 	// validate pod metadata with template-level priority
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithMetadataPatch)
 	ctx := logging.TestContext(t.Context())
-	// todo: really should be using the same woc
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	//todo: update checks here. this is a placeholder for structure.
-	assert.Equal(t, "expected-annotation", pod.Annotations["metadata.annotations.wof.cowsay"])
-	assert.Equal(t, "expected-label", pod.Annotations["metadata.labels.wof.cowsay"])
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
 
 	// validate pod metadata with workflow-level priority
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFMetadataPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "expected-annotation", pod.Annotations["metadata.annotations.wof.cowsay"])
-	assert.Equal(t, "expected-label", pod.Annotations["metadata.labels.wof.cowsay"])
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
 
 	// validate pod metadata set at the template level in YAML format (as opposed to string json)
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLMetadataPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "expected-annotation", pod.Annotations["metadata.annotations.wof.cowsay"])
-	assert.Equal(t, "expected-label", pod.Annotations["metadata.labels.wof.cowsay"])
-
-	//todo: should we also validate template-level YAML patch?
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
 
 	// validate pod metadata with both template and workflow-level priority (should use two separate and an override, check all)
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFMetadataPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "expected-annotation", pod.Annotations["metadata.annotations.wof.cowsay"])
-	assert.Equal(t, "expected-label", pod.Annotations["metadata.labels.wof.cowsay"])
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
 
 	// validate error is thrown when invalid pod metadata patch is set.
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidMetadataPatchFormat)
@@ -1655,27 +1610,27 @@ func TestPodMetadataPatch(t *testing.T) {
 }
 
 func TestPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPodSpecPatch)
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPodSpecPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPodSpecPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFPodSpecPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1683,7 +1638,7 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, apiv1.Capability("ALL"), pod.Spec.Containers[1].SecurityContext.Capabilities.Add[0])
 	assert.Equal(t, []apiv1.Capability(nil), pod.Spec.Containers[1].SecurityContext.Capabilities.Drop)
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPatchFormat)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPodSpecPatchFormat)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1691,8 +1646,6 @@ func TestPodSpecPatch(t *testing.T) {
 	require.EqualError(t, errors.Cause(err), "invalid character '}' after object key")
 }
 
-// TODO: Why is this one down here?
-// TODO: definitely test on workflow-step-level, ie. here.
 var helloWorldStepWfWithPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1707,7 +1660,7 @@ spec:
         template: whalesay
   - name: whalesay
     podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
-	podMetadataPatch: '{"labels":{"test-label-1-key": "test-label-1-val"}, "annotations"": {"test-annotation-1-key": "test-annotation-1-val"}}'
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
     container:
       image: docker/whalesay:latest
       command: [cowsay]
@@ -1724,8 +1677,8 @@ func TestPodSpecPatchPodName(t *testing.T) {
 		wantPodName    string
 		workflowYaml   string
 	}{
-		{"v1", "hello-world", helloWorldWfWithPatch},
-		{"v2", "hello-world", helloWorldWfWithPatch},
+		{"v1", "hello-world", helloWorldWfWithPodSpecPatch},
+		{"v2", "hello-world", helloWorldWfWithPodSpecPatch},
 		{"v1", "hello-world-3731220306", helloWorldStepWfWithPatch},
 		{"v2", "hello-world-whalesay-3731220306", helloWorldStepWfWithPatch},
 	}
@@ -1762,7 +1715,7 @@ func TestMainContainerCustomization(t *testing.T) {
 	// podSpecPatch in workflow spec takes precedence over the main container's
 	// configuration in controller so here we respect what's specified in podSpecPatch.
 	t.Run("PodSpecPatchPrecedence", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPodSpecPatch)
 		woc := newWoc(ctx, *wf)
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := woc.execWf.Spec.Templates[0].Container
@@ -2057,7 +2010,6 @@ func TestGetDeadline(t *testing.T) {
 	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
 }
 
-// TODO: Add a test verifying that these defaults carry over even with patched
 // verify that both controller- and workflow-level annotations are not overridden by spec patch,
 // UNLESS they are the same key, in which case they are overridden.
 func TestPodMetadataPatchedWithWorkflowDefaults(t *testing.T) {
@@ -2080,15 +2032,14 @@ func TestPodMetadataPatchedWithWorkflowDefaults(t *testing.T) {
 		},
 	}
 
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldMetadataPatchedWf)
-	//todo: is below necessary?
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	ctx = logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	//TODO: This is where we can add/assert some overrides/non-overrides from the patch
+	//TODO:  add/assert some overrides/non-overrides from the patch
 	assert.Equal(t, "annotation-value", pod.Annotations["controller-level-pod-annotation"])
 	assert.Equal(t, "set-by-controller", pod.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "label-value", pod.Labels["controller-level-pod-label"])
@@ -2105,7 +2056,7 @@ func TestPodMetadataPatchedWithWorkflowDefaults(t *testing.T) {
 			},
 		},
 	}
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldMetadataPatchedWf)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
 
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	err = woc.setExecWorkflow(ctx)
@@ -2126,7 +2077,6 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 
 	wfDefaultAnnotations := make(map[string]string)
 	wfDefaultAnnotations["controller-level-pod-annotation"] = "annotation-value"
-	//ToDO: Why does this say 'set by controlller'?
 	wfDefaultAnnotations["workflow-level-pod-annotation"] = "set-by-controller"
 	wfDefaultLabels := make(map[string]string)
 	wfDefaultLabels["controller-level-pod-label"] = "label-value"

@@ -23,20 +23,16 @@ metadata:
 spec:
   podSpecPatch: |
     nodeName: virtual-node
-  podMetadataPatch: |
-	annotations: 
-	  annotation-1: annotation-value-1
-	labels:
-	  labels-1: labels-value-1
+    podMetadataPatch: '{"podMetadataPatch": {"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}}'
   entrypoint: main
   templates:
     - name: main
       steps:
-        - name: good
+        - - name: good
             template: http
             arguments:
               parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - name: bad
+        - - name: bad
             template: http
             continueOn:
               failed: true

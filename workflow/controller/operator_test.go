@@ -1424,11 +1424,11 @@ spec:
           resources:
             limits:
               memory: "{{=(sprig.int(retries) + 1) * 64}}Mi"
-	podMetadataPatch: |
-	  annotations: 
-	    annotation-1: annotation-value-1
-	  labels:
-	    labels-1: labels-value-1
+    podMetadataPatch: |
+      annotations:
+        annotation-1: annotation-value-1
+      labels:
+        labels-1: labels-value-1
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

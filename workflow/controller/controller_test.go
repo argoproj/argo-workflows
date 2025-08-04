@@ -46,24 +46,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-// TODO: patched workflow
-var helloWorldMetadataPatchedWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-	podMetadataPatch: "{}"
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-// TODO: this wf is used for test case loooking at
 var helloWorldWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -80,6 +62,7 @@ spec:
       labels:
         labelKey1: "labelValue1"
         labelKey2: "labelValue2"
+    podMetadataPatch: "{}"
     container:
       image: docker/whalesay:latest
       command: [cowsay]

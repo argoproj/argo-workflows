@@ -471,7 +471,6 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		}
 		pod.Spec = *patchedPodSpec
 	}
-	//TODO: potentially need to update this with podmetadata case -- not certain yet if applicable, and how extensive.
 
 	// Use the Service Account and/or Labels and Annotations specified for our Pod, if they exist
 	if podInfo.serviceAccount != "" {
