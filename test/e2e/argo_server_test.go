@@ -1,5 +1,3 @@
-//go:build api
-
 package e2e
 
 import (
@@ -2624,6 +2622,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 				Name:      configmapName,
 				Key:       syncKey,
 				SizeLimit: 100,
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
 			}).
 			Expect().
 			Status(200).
@@ -2636,6 +2635,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 	s.Run("CreateSyncLimit-cm-exist", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
 			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
 				Name:      configmapName,
 				Key:       syncKey + "-exist",
 				SizeLimit: 100,
@@ -2664,6 +2664,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
 				Name:      configmapName,
 				SizeLimit: 200,
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
 			}).
 			Expect().
 			Status(200).
@@ -2679,6 +2680,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 				Name:      configmapName + "-invalid",
 				Key:       syncKey,
 				SizeLimit: 0,
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
 			}).
 			Expect().
 			Status(400)
@@ -2708,8 +2710,9 @@ func (s *ArgoServerSuite) TestSyncService() {
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
 				Name:      configmapName,
 				SizeLimit: 200,
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
 			}).Expect().
-			Status(404)
+			Status(400)
 	})
 }
 
