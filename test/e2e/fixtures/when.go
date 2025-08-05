@@ -23,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -55,7 +54,7 @@ func (w *When) SubmitWorkflow() *When {
 		w.t.Fatal("No workflow to submit")
 	}
 	_, _ = fmt.Println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	label(w.wf)
 	wf, err := w.client.Create(ctx, w.wf, metav1.CreateOptions{})
 	if err != nil {
@@ -83,7 +82,7 @@ func label(obj metav1.Object) {
 
 func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, false), metav1.CreateOptions{})
@@ -98,7 +97,7 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 
 func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, true), metav1.CreateOptions{})
@@ -114,7 +113,7 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
 	w.t.Helper()
 	_, _ = fmt.Println("Submitting workflow from cron workflow", w.cronWf.Name)
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	label(w.cronWf)
 	wf, err := w.client.Create(ctx, common.ConvertCronWorkflowToWorkflow(w.cronWf), metav1.CreateOptions{})
 	if err != nil {
@@ -131,7 +130,7 @@ func (w *When) CreateWorkflowEventBinding() *When {
 		w.t.Fatal("No workflow event to create")
 	}
 	_, _ = fmt.Println("Creating workflow event binding")
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	label(w.wfeb)
 	_, err := w.wfebClient.Create(ctx, w.wfeb, metav1.CreateOptions{})
 	if err != nil {
@@ -147,7 +146,7 @@ func (w *When) CreateWorkflowTemplates() *When {
 		w.t.Fatal("No workflow templates to create")
 	}
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	for _, wfTmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Creating workflow template", wfTmpl.Name)
 		label(wfTmpl)
@@ -170,7 +169,7 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 		w.t.Fatal("No cluster workflow templates to create")
 	}
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	for _, cwfTmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Creating cluster workflow template", cwfTmpl.Name)
 		label(cwfTmpl)
@@ -194,7 +193,7 @@ func (w *When) CreateCronWorkflow() *When {
 	}
 	_, _ = fmt.Println("Creating cron workflow", w.cronWf.Name)
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	label(w.cronWf)
 	cronWf, err := w.cronClient.Create(ctx, w.cronWf, metav1.CreateOptions{})
 	if err != nil {
@@ -329,7 +328,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	start := time.Now()
 	_, _ = fmt.Printf("Waiting up to %s for workflow with %s\n", timeout, describeListOptions(listOptions))
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 
 	watch, err := w.client.Watch(ctx, listOptions)
 	if err != nil {
@@ -391,13 +390,11 @@ func (w *When) WaitForWorkflowListCount(timeout time.Duration, count int) *When 
 
 func (w *When) waitForWorkflowListCount(timeout time.Duration, labelSelector string, count int) *When {
 	w.t.Helper()
+
 	start := time.Now()
 	opts := metav1.ListOptions{LabelSelector: labelSelector}
 	_, _ = fmt.Printf("Waiting up to %s for %d workflows with %s\n", timeout, count, describeListOptions(opts))
-	ctx, cancel := context.WithTimeout(func() context.Context {
-		ctx := logging.TestContext(w.t.Context())
-		return ctx
-	}(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	for {
 		select {
@@ -448,7 +445,7 @@ func (w *When) waitForCronWorkflow(timeout time.Duration, labelSelector string, 
 	opts := metav1.ListOptions{LabelSelector: labelSelector, FieldSelector: fieldSelector}
 	start := time.Now()
 	_, _ = fmt.Printf("Waiting up to %s for cron workflow with %s\n", timeout, describeListOptions(opts))
-	ctx, cancel := context.WithTimeout(logging.TestContext(w.t.Context()), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	for {
 		select {
@@ -468,12 +465,12 @@ func (w *When) waitForCronWorkflow(timeout time.Duration, labelSelector string, 
 		}
 		time.Sleep(time.Second)
 	}
+
 }
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
-	err := w.hydrator.Hydrate(ctx, wf)
+	err := w.hydrator.Hydrate(wf)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -492,7 +489,7 @@ func (w *When) Wait(timeout time.Duration) *When {
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
 	_, _ = fmt.Println("Deleting", w.wf.Name)
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	err := w.client.Delete(ctx, w.wf.Name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -502,7 +499,7 @@ func (w *When) DeleteWorkflow() *When {
 
 func (w *When) RemoveFinalizers(shouldErr bool) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 
 	_, err := w.client.Patch(ctx, w.wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
 	if err != nil && shouldErr {
@@ -513,7 +510,7 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 
 func (w *When) AddNamespaceLimit(limit string) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	patchMap := make(map[string]interface{})
 	metadata := make(map[string]interface{})
 	labels := make(map[string]interface{})
@@ -546,7 +543,7 @@ var (
 
 func (w *When) WaitForPod(condition PodCondition) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
@@ -605,7 +602,7 @@ func (w *When) CreateConfigMap(name string, data map[string]string, customLabels
 		labels[k] = v
 	}
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels},
 		Data:       data,
@@ -625,7 +622,7 @@ func (w *When) UpdateConfigMap(name string, data map[string]string, customLabels
 		labels[k] = v
 	}
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Update(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels},
 		Data:       data,
@@ -638,7 +635,7 @@ func (w *When) UpdateConfigMap(name string, data map[string]string, customLabels
 
 func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	fmt.Printf("deleting configmap %s\n", name)
 	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
@@ -656,7 +653,7 @@ func (w *When) setupDBSession() db.Session {
 		w.t.Fatal("Require synchronization to be setup")
 	}
 
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	dbSession, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
 	if err != nil {
 		w.t.Fatal(err)
@@ -802,7 +799,7 @@ func (w *When) ClearDBSemaphoreState() *When {
 
 func (w *When) PodsQuota(podLimit int) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -824,7 +821,7 @@ func (w *When) StorageQuota(storageLimit string) *When {
 
 func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(ctx, &corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
 		Spec:       corev1.ResourceQuotaSpec{Hard: rl},
@@ -852,7 +849,7 @@ func (w *When) DeleteMemoryQuota() *When {
 
 func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -871,7 +868,7 @@ func (w *When) SuspendCronWorkflow() *When {
 }
 
 func (w *When) setCronWorkflowSuspend(suspend bool) *When {
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	w.t.Helper()
 	spec := map[string]interface{}{"suspend": suspend}
 	data, err := json.Marshal(map[string]interface{}{"spec": spec})
@@ -887,7 +884,7 @@ func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 
 func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
+	ctx := context.Background()
 	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"shutdown": strategy}})
 	if err != nil {
 		w.t.Fatal(err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -12,7 +13,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var (
@@ -55,25 +55,25 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
-	return apiclient.NewClientFromOptsWithContext(ctx,
+	return apiclient.NewClientFromOpts(
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,
 			InstanceID:     instanceID,
 			AuthSupplier: func() string {
 				authString, err := GetAuthString()
 				if err != nil {
-					logger := logging.RequireLoggerFromContext(ctx)
-					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
+					log.Fatal(err)
 				}
 				return authString
 			},
 			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
+			Context:              ctx,
 		})
 }
 
-func Namespace(ctx context.Context) string {
+func Namespace() string {
 	if Offline {
 		return ""
 	}
@@ -86,8 +86,7 @@ func Namespace(ctx context.Context) string {
 	}
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
-		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithFatal().WithError(err).Error(ctx, "Failed to get namespace")
+		log.Fatal(err)
 	}
 	return namespace
 }

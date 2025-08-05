@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var artgcWorkflow = `apiVersion: argoproj.io/v1alpha1
@@ -341,11 +341,11 @@ status:
 
 func TestProcessArtifactGCStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
@@ -561,18 +561,17 @@ status:
 func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
 	wfat := wfv1.MustUnmarshalWorkflowArtifactGCTask(artgcTask)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	// verify that we update these Status fields:
 	// - Artifact.Deleted
 	// - Conditions
 
-	_, err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
+	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
 	require.NoError(t, err)
 
 	for _, expectedArtifact := range []struct {
@@ -711,10 +710,9 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
                         %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
 
 			wf := wfv1.MustUnmarshalWorkflow(workflowSpec)
-			ctx := logging.TestContext(t.Context())
-			cancel, controller := newController(ctx, wf)
+			cancel, controller := newController(wf)
 			defer cancel()
-			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc := newWorkflowOperationCtx(wf, controller)
 
 			hasArtifact := woc.HasArtifactGC()
 

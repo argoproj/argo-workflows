@@ -1,12 +1,11 @@
 package sync
 
 import (
-	"context"
 	"time"
 )
 
 type limitProvider interface {
-	get(ctx context.Context, key string) (int, bool, error)
+	get(key string) (int, bool, error)
 }
 
 var _ limitProvider = &cachedLimit{}
@@ -27,10 +26,10 @@ func newCachedLimit(getter GetSyncLimit, TTL time.Duration) *cachedLimit {
 	}
 }
 
-func (c *cachedLimit) get(ctx context.Context, key string) (int, bool, error) {
+func (c *cachedLimit) get(key string) (int, bool, error) {
 	changed := false
 	if nowFn().Sub(c.limitTimestamp) >= c.TTL {
-		limit, err := c.getter(ctx, key)
+		limit, err := c.getter(key)
 		if err != nil {
 			return c.limit, false, err
 		}

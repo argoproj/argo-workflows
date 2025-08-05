@@ -23,9 +23,10 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (dbInfo, func(), config.SyncConfig, error) {
+func createTestDBSession(t *testing.T, dbType sqldb.DBType) (dbInfo, func(), config.SyncConfig, error) {
 	t.Helper()
 
+	ctx := context.Background()
 	var cfg config.SyncConfig
 	var termContainerFn func()
 	var err error

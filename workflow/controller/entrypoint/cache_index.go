@@ -3,9 +3,8 @@ package entrypoint
 import (
 	"context"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/lru"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type cacheIndex struct {
@@ -14,15 +13,11 @@ type cacheIndex struct {
 }
 
 func (i *cacheIndex) Lookup(ctx context.Context, image string, options Options) (*Image, error) {
-	logger := logging.RequireLoggerFromContext(ctx)
 	if cmd, ok := i.cache.Get(image); ok {
-		logger.WithFields(logging.Fields{
-			"image": image,
-			"cmd":   cmd,
-		}).Debug(ctx, "Cache hit")
+		log.WithField("image", image).WithField("cmd", cmd).Debug("Cache hit")
 		return cmd.(*Image), nil
 	}
-	logger.WithField("image", image).Debug(ctx, "Cache miss")
+	log.WithField("image", image).Debug("Cache miss")
 	v, err := i.delegate.Lookup(ctx, image, options)
 	if err != nil {
 		return nil, err

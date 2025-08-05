@@ -200,15 +200,7 @@ spec:
     container:
       image: argoproj/argosay:v2
       command: ["bash"]
-      args:
-        - "-c"
-        - |
-          echo "Attempt {{retries}}";
-          if [ "{{retries}}" -eq 0 ]; then
-            sleep 10 && exit 1;
-          else
-            sleep 120 && exit 1;
-          fi
+      args: ["-c", "sleep 10 && exit 1"]
   - name: whale-tmpl
     container:
       image: argoproj/argosay:v2

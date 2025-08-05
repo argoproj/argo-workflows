@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Change interface {
-	Apply(ctx context.Context, session db.Session) error
+	Apply(session db.Session) error
 }
 
 type TypedChanges map[DBType]Change
@@ -24,8 +23,7 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 
 func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
 	dbType := DBTypeFor(session)
-	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType).InContext(ctx)
-	logger.Info(ctx, "Migrating database schema")
+	log.WithFields(log.Fields{"dbType": dbType}).Info("Migrating database schema")
 
 	{
 		// poor mans SQL migration
@@ -87,7 +85,7 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 	// try and make changes idempotent, as it is possible for the change to apply, but the archive update to fail
 	// and therefore try and apply again next try
 	for changeSchemaVersion, change := range changes {
-		err := applyChange(ctx, session, changeSchemaVersion, versionTableName, change)
+		err := applyChange(session, changeSchemaVersion, versionTableName, change)
 		if err != nil {
 			return err
 		}
@@ -96,31 +94,30 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 	return nil
 }
 
-func applyChange(ctx context.Context, session db.Session, changeSchemaVersion int, versionTableName string, c Change) error {
+func applyChange(session db.Session, changeSchemaVersion int, versionTableName string, c Change) error {
 	// https://upper.io/blog/2020/08/29/whats-new-on-upper-v4/#transactions-enclosed-by-functions
-	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("change", c).Info(ctx, "apply change")
+	log.Infof("apply change %s", c)
 	err := session.Tx(func(tx db.Session) error {
 		rs, err := tx.SQL().Exec(fmt.Sprintf("update %s set schema_version = ? where schema_version = ?", versionTableName), changeSchemaVersion, changeSchemaVersion-1)
 		if err != nil {
-			logger.WithFields(logging.Fields{"err": err, "change": c}).Error(ctx, "Error applying database change")
+			log.WithFields(log.Fields{"err": err, "change": c}).Error("Error applying database change")
 			return err
 		}
 		rowsAffected, err := rs.RowsAffected()
 		if err != nil {
-			logger.WithError(err).WithField("change", c).Error(ctx, "Rows affected problem")
+			log.WithFields(log.Fields{"err": err, "change": c}).Error("Rows affected problem")
 			return err
 		}
 		if rowsAffected == 1 {
-			logger.WithFields(logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info(ctx, "applying database change")
+			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info("applying database change")
 			if c != nil {
-				err := c.Apply(ctx, tx)
+				err := c.Apply(tx)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		logger.WithFields(logging.Fields{"change": c, "rowsaffected": rowsAffected}).Info(ctx, "done")
+		log.WithFields(log.Fields{"change": c, "rowsaffected": rowsAffected}).Info("done")
 		return nil
 	})
 	return err

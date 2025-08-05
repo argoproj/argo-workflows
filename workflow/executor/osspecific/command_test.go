@@ -10,8 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestSimpleStartCloser(t *testing.T) {
@@ -28,7 +26,7 @@ func TestSimpleStartCloser(t *testing.T) {
 	// Using SlowWriter causes the situation where the invoked command has exited but its outputs have not been written yet.
 	cmd.Stdout = slowWriter
 
-	closer, err := StartCommand(logging.TestContext(t.Context()), cmd)
+	closer, err := StartCommand(cmd)
 	require.NoError(t, err)
 	err = cmd.Wait()
 	require.NoError(t, err)

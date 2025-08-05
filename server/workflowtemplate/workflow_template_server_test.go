@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,22 +165,21 @@ const wftStr3 = `{
 
 const userEmailLabel = "my-sub.at.your.org"
 
-func getWorkflowTemplateServer(t *testing.T) (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
-	t.Helper()
+func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
 	var unlabelledObj, wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
 	v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
 	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	wftmplStore := NewWorkflowTemplateClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
 	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer(t)
+	server, ctx := getWorkflowTemplateServer()
 	t.Run("Without parameter values", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
 		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
@@ -216,7 +213,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer(t)
+	server, ctx := getWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		wftRsp, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "workflow-template-whalesay-template2", Namespace: "default"})
 		require.NoError(t, err)
@@ -232,7 +229,7 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer(t)
+	server, ctx := getWorkflowTemplateServer()
 	wftRsp, err := server.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{Namespace: "default"})
 	require.NoError(t, err)
 	assert.Len(t, wftRsp.Items, 2)
@@ -242,7 +239,7 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer(t)
+	server, ctx := getWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		_, err := server.DeleteWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateDeleteRequest{Namespace: "default", Name: "workflow-template-whalesay-template2"})
 		require.NoError(t, err)
@@ -254,7 +251,7 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_LintWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer(t)
+	server, ctx := getWorkflowTemplateServer()
 	tmpl, err := server.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{
 		Template: &v1alpha1.WorkflowTemplate{},
 	})
@@ -263,7 +260,7 @@ func TestWorkflowTemplateServer_LintWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer(t)
+	server, ctx := getWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		var wftObj1 v1alpha1.WorkflowTemplate
 		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)

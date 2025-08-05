@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -10,8 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestCanI(t *testing.T) {
@@ -27,7 +26,7 @@ func TestCanI(t *testing.T) {
 		}, nil
 	})
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	allowed, err := CanIArgo(ctx, kubeClient, "get", "workflow", "", "")
 	require.NoError(t, err)
 	assert.True(t, allowed)

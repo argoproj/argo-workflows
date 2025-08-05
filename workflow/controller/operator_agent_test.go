@@ -1,10 +1,9 @@
 package controller
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,13 +28,12 @@ spec:
 
 func TestHTTPTemplate(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(httpwf)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	cancel, controller := newController(wf, defaultServiceAccount)
 	defer cancel()
 
 	t.Run("ExecuteHTTPTemplate", func(t *testing.T) {
-		ctx := logging.TestContext(t.Context())
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		pod, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
 		require.NoError(t, err)
@@ -69,13 +67,12 @@ func TestHTTPTemplate(t *testing.T) {
 
 func TestHTTPTemplateWithoutServiceAccount(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(httpwf)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
 	t.Run("ExecuteHTTPTemplateWithoutServiceAccount", func(t *testing.T) {
-		ctx := logging.TestContext(t.Context())
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		_, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
 		require.Error(t, err, `pods "%s" not found`, woc.getAgentPodName())

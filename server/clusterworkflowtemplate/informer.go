@@ -2,8 +2,9 @@ package clusterworkflowtemplate
 
 import (
 	"context"
-	"os"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -11,7 +12,6 @@ import (
 
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
@@ -41,7 +41,7 @@ func NewInformer(restConfig *rest.Config) (*Informer, error) {
 }
 
 // Start informer in separate go-routine and block until cache sync
-func (cwti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
+func (cwti *Informer) Run(stopCh <-chan struct{}) {
 
 	go cwti.informer.Informer().Run(stopCh)
 
@@ -49,16 +49,14 @@ func (cwti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 		stopCh,
 		cwti.informer.Informer().HasSynced,
 	) {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Timed out waiting for caches to sync")
-		os.Exit(1)
+		log.Fatal("Timed out waiting for caches to sync")
 	}
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
-func (cwti *Informer) Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter {
+func (cwti *Informer) Getter(_ context.Context) templateresolution.ClusterWorkflowTemplateGetter {
 	if cwti.informer == nil {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Template informer not started")
-		os.Exit(1)
+		log.Fatal("Template informer not started")
 	}
-	return templateresolution.WrapClusterWorkflowTemplateLister(cwti.informer.Lister())
+	return cwti.informer.Lister()
 }

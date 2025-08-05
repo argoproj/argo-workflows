@@ -1,7 +1,6 @@
 package estimation
 
 import (
-	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -19,7 +18,7 @@ import (
 
 type EstimatorFactory interface {
 	// ALWAYS return as estimator, even if it also returns an error.
-	NewEstimator(ctx context.Context, wf *wfv1.Workflow) (Estimator, error)
+	NewEstimator(wf *wfv1.Workflow) (Estimator, error)
 }
 
 type estimatorFactory struct {
@@ -34,11 +33,11 @@ var (
 	skipWorkflowDurationEstimation = env.LookupEnvStringOr("SKIP_WORKFLOW_DURATION_ESTIMATION", "false")
 )
 
-func NewEstimatorFactory(ctx context.Context, wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
+func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 
-func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) (Estimator, error) {
+func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 	defaultEstimator := &estimator{wf: wf}
 	if skipWorkflowDurationEstimation == "true" {
 		return defaultEstimator, nil
@@ -73,7 +72,7 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
-				err = f.hydrator.Hydrate(ctx, newestWf)
+				err = f.hydrator.Hydrate(newestWf)
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed hydrate last workflow: %w", err)
 				}
@@ -84,7 +83,7 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(ctx, wf.Namespace, requirements)
+			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(wf.Namespace, requirements)
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %v", err)
 			}

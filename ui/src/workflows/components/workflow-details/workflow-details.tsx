@@ -434,7 +434,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        openLinkWithKey(processURL(link.url, object), link.target);
+        openLinkWithKey(processURL(link.url, object));
     }
 
     function setParameter(key: string, value: string) {
