@@ -1,17 +1,17 @@
 package template
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) (int, error) {
+func simpleReplace(w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) (int, error) {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {
 		// Attempt to resolve nested tags, if possible
@@ -29,8 +29,7 @@ func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[
 		}
 		if allowUnresolved {
 			// just write the same string back
-			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithError(errors.InternalError("unresolved")).Debug(ctx, "unresolved is allowed")
+			log.WithError(errors.InternalError("unresolved")).Debug("unresolved is allowed ")
 			return fmt.Fprintf(w, "{{%s}}", tag)
 		}
 		return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)

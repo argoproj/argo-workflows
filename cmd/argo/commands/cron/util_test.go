@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var invalidCwf = `
@@ -58,15 +58,13 @@ Conditions:
 
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	ctx := logging.TestContext(t.Context())
-	out := getCronWorkflowGet(ctx, cronWf)
+	out := getCronWorkflowGet(context.Background(), cronWf)
 	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	ctx := logging.TestContext(t.Context())
-	next, err := GetNextRuntime(ctx, cronWf)
+	next, err := GetNextRuntime(context.Background(), cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())
@@ -98,8 +96,7 @@ spec:
 
 func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
-	ctx := logging.TestContext(t.Context())
-	next, err := GetNextRuntime(ctx, cronWf)
+	next, err := GetNextRuntime(context.Background(), cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())

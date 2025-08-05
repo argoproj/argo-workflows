@@ -3,7 +3,6 @@
 package osspecific
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -14,12 +13,9 @@ import (
 
 	"github.com/creack/pty"
 	"golang.org/x/term"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func StartCommand(ctx context.Context, cmd *exec.Cmd) (func(), error) {
-	logger := logging.RequireLoggerFromContext(ctx).WithField("argo", true)
+func StartCommand(cmd *exec.Cmd) (func(), error) {
 	closer := func() {}
 
 	if cmd.Stdin == nil {
@@ -64,7 +60,7 @@ func StartCommand(ctx context.Context, cmd *exec.Cmd) (func(), error) {
 	go func() {
 		for range sigWinchCh {
 			if err := pty.InheritSize(stdin, ptmx); err != nil {
-				logger.WithError(err).Warn(ctx, "Cannot resize pty")
+				logger.WithError(err).Warn("Cannot resize pty")
 			}
 		}
 	}()

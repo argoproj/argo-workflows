@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/printer"
 )
 
@@ -46,7 +46,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace(ctx)
+			namespace := client.Namespace()
 			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
 			if err != nil {
 				return err
@@ -67,8 +67,7 @@ func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg
 	}
 	var workflows wfv1.Workflows
 	for {
-		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithField("listOpts", listOpts).Debug(ctx, "Listing archived workflows")
+		log.WithField("listOpts", listOpts).Debug()
 		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: namespace, ListOptions: listOpts})
 		if err != nil {
 			return nil, err

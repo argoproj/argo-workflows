@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func Test_stopWorkflows(t *testing.T) {
@@ -21,8 +21,7 @@ func Test_stopWorkflows(t *testing.T) {
 			dryRun: true,
 		}
 
-		ctx := logging.TestContext(t.Context())
-		err := stopWorkflows(ctx, c, stopArgs, []string{"foo", "bar"})
+		err := stopWorkflows(context.Background(), c, stopArgs, []string{"foo", "bar"})
 		c.AssertNotCalled(t, "StopWorkflow")
 
 		require.NoError(t, err)
@@ -36,8 +35,7 @@ func Test_stopWorkflows(t *testing.T) {
 
 		c.On("StopWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := logging.TestContext(t.Context())
-		err := stopWorkflows(ctx, c, stopArgs, []string{"foo", "bar"})
+		err := stopWorkflows(context.Background(), c, stopArgs, []string{"foo", "bar"})
 		c.AssertNumberOfCalls(t, "StopWorkflow", 2)
 
 		require.NoError(t, err)
@@ -66,8 +64,7 @@ func Test_stopWorkflows(t *testing.T) {
 
 		c.On("StopWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := logging.TestContext(t.Context())
-		err := stopWorkflows(ctx, c, stopArgs, []string{})
+		err := stopWorkflows(context.Background(), c, stopArgs, []string{})
 		c.AssertNumberOfCalls(t, "StopWorkflow", 3)
 
 		require.NoError(t, err)
@@ -96,8 +93,7 @@ func Test_stopWorkflows(t *testing.T) {
 
 		c.On("StopWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
-		ctx := logging.TestContext(t.Context())
-		err := stopWorkflows(ctx, c, stopArgs, []string{"foo", "qux"})
+		err := stopWorkflows(context.Background(), c, stopArgs, []string{"foo", "qux"})
 		// after de-duplication, there will be 4 workflows to stop
 		c.AssertNumberOfCalls(t, "StopWorkflow", 4)
 
@@ -111,8 +107,7 @@ func Test_stopWorkflows(t *testing.T) {
 			labelSelector: "custom-label=true",
 		}
 		c.On("ListWorkflows", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
-		ctx := logging.TestContext(t.Context())
-		err := stopWorkflows(ctx, c, stopArgs, []string{})
+		err := stopWorkflows(context.Background(), c, stopArgs, []string{})
 		require.Errorf(t, err, "mock error")
 	})
 
@@ -122,8 +117,7 @@ func Test_stopWorkflows(t *testing.T) {
 			namespace: "argo",
 		}
 		c.On("StopWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
-		ctx := logging.TestContext(t.Context())
-		err := stopWorkflows(ctx, c, stopArgs, []string{"foo"})
+		err := stopWorkflows(context.Background(), c, stopArgs, []string{"foo"})
 		require.Errorf(t, err, "mock error")
 	})
 }

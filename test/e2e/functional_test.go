@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -47,7 +45,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		WaitForWorkflow(fixtures.ToStart).
 		// patch the pod to remove the finalizer
 		Exec("kubectl", []string{"-n", "argo", "patch", "pod", func() string {
-			podList, err := s.KubeClient.CoreV1().Pods("argo").List(logging.TestContext(s.T().Context()), metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+			podList, err := s.KubeClient.CoreV1().Pods("argo").List(context.Background(), metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
 			if err != nil {
 				panic(err)
 			}
@@ -291,7 +289,7 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 		Then().
 		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			ctx, cancel := context.WithTimeout(logging.TestContext(t.Context()), 15*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
@@ -301,7 +299,7 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 					t.Error("timeout waiting for PVC to be deleted")
 					t.FailNow()
 				case <-ticker.C:
-					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(logging.TestContext(t.Context()), metav1.ListOptions{})
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
 					require.NoError(t, err)
 					if len(list.Items) == 0 {
 						return

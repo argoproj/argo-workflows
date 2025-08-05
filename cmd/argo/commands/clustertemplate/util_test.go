@@ -5,8 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const cwfts = `
@@ -42,8 +40,7 @@ spec:
 `
 
 func TestUnmarshalCWFT(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	clusterwfts, err := unmarshalClusterWorkflowTemplates(ctx, []byte(cwfts), false)
+	clusterwfts, err := unmarshalClusterWorkflowTemplates([]byte(cwfts), false)
 	require.NoError(t, err)
 	assert.Len(t, clusterwfts, 2)
 }

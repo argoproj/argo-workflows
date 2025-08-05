@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -15,9 +15,7 @@ import (
 	common "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -64,18 +62,12 @@ func NewSubmitCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.Priority = &priority
 			}
 
-			ctx, apiClient, err := client.NewAPIClient(ctx)
-			if err != nil {
-				return err
-			}
-
 			if !cliSubmitOpts.Watch && len(cliSubmitOpts.GetArgs.Status) > 0 {
-				logging.RequireLoggerFromContext(ctx).Warn(ctx, "--status should only be used with --watch")
+				log.Warn("--status should only be used with --watch")
 			}
 
 			if parametersFile != "" {
@@ -84,8 +76,12 @@ func NewSubmitCommand() *cobra.Command {
 				}
 			}
 
-			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
-			namespace := client.Namespace(ctx)
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 			if from != "" {
 				return submitWorkflowFromResource(ctx, serviceClient, namespace, from, &submitOpts, &cliSubmitOpts)
 			} else {
@@ -106,16 +102,9 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&cliSubmitOpts.ScheduledTime, "scheduled-time", "", "Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339")
 
 	// Only complete files with appropriate extension.
-	ctx, _, err := cmdutil.CmdContextWithLogger(command, string(logging.Info), string(logging.Text))
+	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create submit logger")
-		os.Exit(1)
-	}
-	logger := logging.RequireLoggerFromContext(ctx)
-	err = command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
-	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to set annotation")
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	return command
 }
@@ -128,7 +117,7 @@ func submitWorkflowsFromFile(ctx context.Context, serviceClient workflowpkg.Work
 
 	var workflows []wfv1.Workflow
 	for _, body := range fileContents {
-		wfs := unmarshalWorkflows(ctx, body, cliOpts.Strict)
+		wfs := unmarshalWorkflows(body, cliOpts.Strict)
 		workflows = append(workflows, wfs...)
 	}
 
@@ -262,7 +251,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalWorkflows(ctx context.Context, wfBytes []byte, strict bool) []wfv1.Workflow {
+func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -272,11 +261,10 @@ func unmarshalWorkflows(ctx context.Context, wfBytes []byte, strict bool) []wfv1
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
-	yamlWfs, err := wfcommon.SplitWorkflowYAMLFile(ctx, wfBytes, strict)
+	yamlWfs, err := wfcommon.SplitWorkflowYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}
-	logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to parse workflow")
-	os.Exit(1)
+	log.Fatalf("Failed to parse workflow: %v", err)
 	return nil
 }

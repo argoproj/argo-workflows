@@ -9,6 +9,7 @@ import (
 
 	"github.com/Knetic/govaluate"
 	"github.com/robfig/cron/v3"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -23,7 +24,6 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -41,6 +41,7 @@ const (
 
 type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
+	name            string
 	cronWf          *v1alpha1.CronWorkflow
 	wfClientset     versioned.Interface
 	wfClient        typed.WorkflowInterface
@@ -48,20 +49,18 @@ type cronWfOperationCtx struct {
 	cronWfIf        typed.CronWorkflowInterface
 	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	log             logging.Logger
+	log             *log.Entry
 	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
-	// nolint: containedctx
-	ctx context.Context
 }
 
-func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *cronWfOperationCtx {
-	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
+		name:            cronWorkflow.Name,
 		cronWf:          cronWorkflow,
 		wfClientset:     wfClientset,
 		wfClient:        wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
@@ -69,7 +68,7 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 		cronWfIf:        wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
-		log: log.WithFields(logging.Fields{
+		log: log.WithFields(log.Fields{
 			"workflow":  cronWorkflow.Name,
 			"namespace": cronWorkflow.Namespace,
 		}),
@@ -80,20 +79,20 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 		// to generate the latter function after the job is scheduled, there is a tiny chance that the job is run before
 		// the deterministic function is supplanted. If that happens, we use the infer function as the next-best thing
 		scheduledTimeFunc: inferScheduledTime,
-		ctx:               ctx,
 	}
 }
 
 // Run handles the running of a cron workflow
 // It fits the github.com/robfig/cron.Job interface
 func (woc *cronWfOperationCtx) Run() {
-	woc.run(woc.ctx, woc.scheduledTimeFunc(woc.ctx))
+	ctx := context.Background()
+	woc.run(ctx, woc.scheduledTimeFunc())
 }
 
 func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Time) {
 	defer woc.persistUpdate(ctx)
 
-	woc.log.Info(ctx, "Running")
+	woc.log.Infof("Running %s", woc.name)
 
 	// If the cron workflow has a schedule that was just updated, update its annotation
 	if woc.cronWf.IsUsingNewSchedule() {
@@ -121,9 +120,9 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 		return
 	}
 
-	woc.metrics.CronWfTrigger(ctx, woc.cronWf.Name, woc.cronWf.Namespace)
+	woc.metrics.CronWfTrigger(ctx, woc.name, woc.cronWf.Namespace)
 
-	wf := common.ConvertCronWorkflowToWorkflowWithProperties(ctx, woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
+	wf := common.ConvertCronWorkflowToWorkflowWithProperties(woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
 
 	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
@@ -177,19 +176,19 @@ func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context)
 func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
 	data, err := json.Marshal(patch)
 	if err != nil {
-		woc.log.WithError(err).Error(ctx, "failed to marshall cron workflow status.active data")
+		woc.log.WithError(err).Error("failed to marshall cron workflow status.active data")
 		return
 	}
-	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+			return !errorsutil.IsTransientErr(err), err
 		}
 		woc.cronWf = cronWf
 		return true, nil
 	})
 	if err != nil {
-		woc.log.WithError(err).Error(ctx, "failed to update cron workflow")
+		woc.log.WithError(err).Error("failed to update cron workflow")
 		return
 	}
 }
@@ -216,7 +215,7 @@ func shouldExecute(when string) (bool, error) {
 	return boolRes, nil
 }
 
-func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
+func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	if cron.Spec.When == "" {
 		return true, nil
 	}
@@ -233,7 +232,7 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	newWhenStr, err := t.Replace(ctx, env, false)
+	newWhenStr, err := t.Replace(env, false)
 	if err != nil {
 		return false, err
 	}
@@ -245,16 +244,16 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 
 func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, error) {
 	if woc.cronWf.Spec.Suspend {
-		woc.log.Info(ctx, "CronWorkflow suspended, skipping execution")
+		woc.log.Infof("%s is suspended, skipping execution", woc.name)
 		return false, nil
 	}
 
 	if woc.cronWf.Status.Phase == v1alpha1.StoppedPhase {
-		woc.log.Info(ctx, "CronWorkflow is marked as stopped since it achieved the stopping condition")
+		woc.log.Infof("CronWorkflow %s is marked as stopped since it achieved the stopping condition", woc.cronWf.Name)
 		return false, nil
 	}
 
-	canProceed, err := evalWhen(ctx, woc.cronWf)
+	canProceed, err := evalWhen(woc.cronWf)
 	if err != nil || !canProceed {
 		return canProceed, err
 	}
@@ -265,14 +264,14 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 			// Do nothing
 		case v1alpha1.ForbidConcurrent:
 			if len(woc.cronWf.Status.Active) > 0 {
-				woc.metrics.CronWfPolicy(ctx, woc.cronWf.Name, woc.cronWf.Namespace, v1alpha1.ForbidConcurrent)
-				woc.log.Info(ctx, "'ConcurrencyPolicy: Forbid' and has an active Workflow so it was not run")
+				woc.metrics.CronWfPolicy(ctx, woc.name, woc.cronWf.Namespace, v1alpha1.ForbidConcurrent)
+				woc.log.Infof("%s has 'ConcurrencyPolicy: Forbid' and has an active Workflow so it was not run", woc.name)
 				return false, nil
 			}
 		case v1alpha1.ReplaceConcurrent:
 			if len(woc.cronWf.Status.Active) > 0 {
-				woc.metrics.CronWfPolicy(ctx, woc.cronWf.Name, woc.cronWf.Namespace, v1alpha1.ReplaceConcurrent)
-				woc.log.Info(ctx, "'ConcurrencyPolicy: Replace' and has active Workflows")
+				woc.metrics.CronWfPolicy(ctx, woc.name, woc.cronWf.Namespace, v1alpha1.ReplaceConcurrent)
+				woc.log.Infof("%s has 'ConcurrencyPolicy: Replace' and has active Workflows", woc.name)
 				err := woc.terminateOutstandingWorkflows(ctx)
 				if err != nil {
 					return false, err
@@ -287,16 +286,16 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 
 func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context) error {
 	for _, wfObjectRef := range woc.cronWf.Status.Active {
-		woc.log.WithField("name", wfObjectRef.Name).Info(ctx, "stopping")
+		woc.log.Infof("stopping '%s'", wfObjectRef.Name)
 		err := util.TerminateWorkflow(ctx, woc.wfClient, wfObjectRef.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
+				woc.log.Warnf("workflow %q not found when trying to terminate outstanding workflows", wfObjectRef.Name)
 				continue
 			}
 			alreadyShutdownErr, ok := err.(util.AlreadyShutdownError)
 			if ok {
-				woc.log.Warn(ctx, alreadyShutdownErr.Error())
+				woc.log.Warn(alreadyShutdownErr.Error())
 				continue
 			}
 			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
@@ -345,7 +344,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Conte
 			if !missedExecutionTime.IsZero() {
 				// if missedExecutionTime is within StartDeadlineSeconds, We are still within the deadline window, run the Workflow
 				if woc.cronWf.Spec.StartingDeadlineSeconds != nil && now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
-					woc.log.WithFields(logging.Fields{"name": woc.cronWf.Name, "missedExecutionTime": missedExecutionTime.Format("Mon Jan _2 15:04:05 2006")}).Info(ctx, "missed an execution and is within StartingDeadline")
+					woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 					return missedExecutionTime, nil
 				}
 			}
@@ -407,7 +406,7 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflows []v1alpha1.Workflow) error {
-	woc.log.WithField("name", woc.cronWf.Name).Debug(ctx, "Enforcing history limit")
+	woc.log.Debugf("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
@@ -457,18 +456,18 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 		err := woc.wfClient.Delete(ctx, wf.Name, v1.DeleteOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				woc.log.WithField("workflow", wf.Name).Info(ctx, "Workflow was already deleted")
+				woc.log.Infof("Workflow '%s' was already deleted", wf.Name)
 				continue
 			}
 			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
 		}
-		woc.log.WithField("workflow", wf.Name).Info(ctx, "Deleted Workflow due to CronWorkflow history limit")
+		woc.log.Infof("Deleted Workflow '%s' due to CronWorkflow '%s' history limit", wf.Name, woc.cronWf.Name)
 	}
 	return nil
 }
 
 func (woc *cronWfOperationCtx) reportCronWorkflowError(ctx context.Context, conditionType v1alpha1.ConditionType, errString string) {
-	woc.log.WithField("conditionType", conditionType).Error(ctx, errString)
+	woc.log.WithField("conditionType", conditionType).Error(errString)
 	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
 		Type:    conditionType,
 		Message: errString,
@@ -556,15 +555,14 @@ func (woc *cronWfOperationCtx) setAsCompleted() {
 	woc.cronWf.Labels[common.LabelKeyCronWorkflowCompleted] = "true"
 }
 
-func inferScheduledTime(ctx context.Context) time.Time {
+func inferScheduledTime() time.Time {
 	// Infer scheduled runtime by getting current time and zeroing out current seconds and nanoseconds
 	// This works because the finest possible scheduled runtime is a minute. It is unlikely to ever be used, since this
 	// function is quickly supplanted by a deterministic function from the cron engine.
 	now := time.Now().UTC()
 	scheduledTime := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
 
-	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("scheduledTime", scheduledTime).Info(ctx, "inferred scheduled time")
+	log.Infof("inferred scheduled time: %s", scheduledTime)
 	return scheduledTime
 }
 

@@ -45,15 +45,14 @@ func NewDeleteCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			ctx, apiClient, err := client.NewAPIClient(ctx)
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
 			if !allNamespaces {
-				flags.namespace = client.Namespace(ctx)
+				flags.namespace = client.Namespace()
 			}
 			for _, name := range args {
 				workflows = append(workflows, wfv1.Workflow{

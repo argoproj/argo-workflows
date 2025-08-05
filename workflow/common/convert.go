@@ -1,14 +1,13 @@
 package common
 
 import (
-	"context"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // labelsToPropagate includes the labels of a CronWorkflow which are to be
@@ -30,18 +29,16 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return toWorkflow(*cronWf, meta)
 }
 
-func ConvertCronWorkflowToWorkflowWithProperties(ctx context.Context, cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
-	log := logging.RequireLoggerFromContext(ctx)
+func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
 	cronWfLabels := cronWf.GetLabels()
 	wfLabels := make(map[string]string)
 	for _, k := range labelsToPropagate {
 		v, ok := cronWfLabels[k]
 		if ok {
 			wfLabels[k] = v
-			log.WithFields(logging.Fields{
-				"key":   k,
-				"value": v,
-			}).Debug(ctx, "propagated the label of the cron workflow to the workflow to be scheduled.")
+			log.WithField("key", k).
+				WithField("value", v).
+				Debug("propagated the label of the cron workflow to the workflow to be scheduled.")
 		}
 	}
 

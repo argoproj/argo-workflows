@@ -1,11 +1,10 @@
 package sync
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,7 +73,7 @@ func TestMultiWithParallelismLimitAndPriority(t *testing.T) {
 func TestMultiInitWithWorkflows(t *testing.T) {
 	queuedKey := ""
 	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 
 	wfclientset := fakewfclientset.NewSimpleClientset(
 		wfv1.MustUnmarshalWorkflow(`

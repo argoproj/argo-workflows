@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -19,7 +20,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
 )
@@ -72,7 +72,6 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := logging.TestContext(t.Context())
 			we := WorkflowExecutor{
 				Template: wfv1.Template{
 					Inputs: wfv1.Inputs{
@@ -80,7 +79,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 					},
 				},
 			}
-			err := we.LoadArtifacts(ctx)
+			err := we.LoadArtifacts(context.Background())
 			require.EqualError(t, err, test.error)
 		})
 	}
@@ -110,7 +109,7 @@ func TestSaveParameters(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
@@ -197,7 +196,7 @@ func TestDefaultParameters(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "Default Value", we.Template.Outputs.Parameters[0].Value.String())
@@ -228,14 +227,13 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestIsTarball(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	tests := []struct {
 		path      string
 		isTarball bool
@@ -251,7 +249,7 @@ func TestIsTarball(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ok, err := isTarball(ctx, test.path)
+		ok, err := isTarball(test.path)
 		if test.expectErr {
 			require.Error(t, err, test.path)
 		} else {
@@ -262,12 +260,11 @@ func TestIsTarball(t *testing.T) {
 }
 
 func TestUnzip(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	zipPath := "testdata/file.zip"
 	destPath := "testdata/unzippedFile"
 
 	// test
-	err := unzip(ctx, zipPath, destPath)
+	err := unzip(zipPath, destPath)
 	require.NoError(t, err)
 
 	// check unzipped file
@@ -480,7 +477,7 @@ func TestSaveArtifacts(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ctx := logging.TestContext(t.Context())
+		ctx := context.Background()
 		_, err := tt.workflowExecutor.SaveArtifacts(ctx)
 		if err != nil {
 			assert.True(t, tt.expectError)
@@ -491,7 +488,7 @@ func TestSaveArtifacts(t *testing.T) {
 }
 
 func TestMonitorProgress(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 
 	annotationPackTickDuration := 5 * time.Millisecond
 	readProgressFileTickDuration := time.Millisecond
@@ -505,7 +502,6 @@ func TestMonitorProgress(t *testing.T) {
 	})
 	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	we := NewExecutor(
-		ctx,
 		nil,
 		taskResults,
 		nil,
@@ -552,7 +548,7 @@ func TestSaveLogs(t *testing.T) {
 			RuntimeExecutor: &mockRuntimeExecutor,
 		}
 
-		ctx := logging.TestContext(t.Context())
+		ctx := context.Background()
 		logArtifacts := we.SaveLogs(ctx)
 
 		require.EqualError(t, we.errors[0], artStorageError)
@@ -581,7 +577,7 @@ func TestReportOutputs(t *testing.T) {
 			taskResultClient: mockTaskResultClient,
 		}
 
-		ctx := logging.TestContext(t.Context())
+		ctx := context.Background()
 		err := we.ReportOutputs(ctx, artifacts)
 
 		require.NoError(t, err)

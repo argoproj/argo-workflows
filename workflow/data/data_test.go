@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -9,14 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type testDataSourceProcessor struct{}
 
 var _ v1alpha1.DataSourceProcessor = &testDataSourceProcessor{}
 
-func (t testDataSourceProcessor) ProcessArtifactPaths(context.Context, *v1alpha1.ArtifactPaths) (interface{}, error) {
+func (t testDataSourceProcessor) ProcessArtifactPaths(*v1alpha1.ArtifactPaths) (interface{}, error) {
 	return []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, nil
 }
 
@@ -24,21 +22,20 @@ type nullTestDataSourceProcessor struct{}
 
 var _ v1alpha1.DataSourceProcessor = &nullTestDataSourceProcessor{}
 
-func (t nullTestDataSourceProcessor) ProcessArtifactPaths(context.Context, *v1alpha1.ArtifactPaths) (interface{}, error) {
+func (t nullTestDataSourceProcessor) ProcessArtifactPaths(*v1alpha1.ArtifactPaths) (interface{}, error) {
 	return nil, fmt.Errorf("cannot get artifacts")
 }
 
 func TestProcessSource(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	artifactPathsSource := v1alpha1.DataSource{ArtifactPaths: &v1alpha1.ArtifactPaths{}}
-	data, err := processSource(ctx, artifactPathsSource, &testDataSourceProcessor{})
+	data, err := processSource(artifactPathsSource, &testDataSourceProcessor{})
 	require.NoError(t, err)
 	assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
 
-	_, err = processSource(ctx, artifactPathsSource, &nullTestDataSourceProcessor{})
+	_, err = processSource(artifactPathsSource, &nullTestDataSourceProcessor{})
 	require.Error(t, err)
 
-	_, err = processSource(ctx, v1alpha1.DataSource{}, &nullTestDataSourceProcessor{})
+	_, err = processSource(v1alpha1.DataSource{}, &nullTestDataSourceProcessor{})
 	require.Error(t, err)
 }
 

@@ -1,7 +1,6 @@
 package cron
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -18,7 +17,7 @@ type cronFacade struct {
 	entryIDs map[string][]cron.EntryID
 }
 
-type ScheduledTimeFunc func(ctx context.Context) time.Time
+type ScheduledTimeFunc func() time.Time
 
 func newCronFacade() *cronFacade {
 	return &cronFacade{
@@ -60,7 +59,7 @@ func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) (Sch
 	// Return a function to return the last scheduled time.
 	// If multiple schedules are configured, it will return
 	// the most recent schedule time for the key
-	return func(_ context.Context) time.Time {
+	return func() time.Time {
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		var t time.Time
