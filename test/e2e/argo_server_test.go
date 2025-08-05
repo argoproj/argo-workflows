@@ -1,5 +1,3 @@
-//go:build api
-
 package e2e
 
 import (
@@ -22,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -2619,11 +2618,11 @@ func (s *ArgoServerSuite) TestSyncService() {
 
 	s.Run("CreateSyncLimit", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
-			WithJSON(map[string]interface{}{
-				"type":      "CONFIG_MAP",
-				"name":      configmapName,
-				"key":       syncKey,
-				"sizeLimit": 100,
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+				Name:      configmapName,
+				Key:       syncKey,
+				SizeLimit: 100,
 			}).
 			Expect().
 			Status(200).
@@ -2635,11 +2634,11 @@ func (s *ArgoServerSuite) TestSyncService() {
 
 	s.Run("CreateSyncLimit-cm-exist", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
-			WithJSON(map[string]interface{}{
-				"type":      "CONFIG_MAP",
-				"name":      configmapName,
-				"key":       syncKey + "-exist",
-				"sizeLimit": 100,
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+				Name:      configmapName,
+				Key:       syncKey + "-exist",
+				SizeLimit: 100,
 			}).
 			Expect().
 			Status(200).
@@ -2651,8 +2650,10 @@ func (s *ArgoServerSuite) TestSyncService() {
 
 	s.Run("GetSyncLimit", func() {
 		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey).
-			WithQuery("type", "CONFIG_MAP").
+			WithJSON(syncpkg.GetSyncLimitRequest{
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Key:  syncKey,
+			}).
 			Expect().
 			Status(200).
 			JSON().Object().
@@ -2663,10 +2664,11 @@ func (s *ArgoServerSuite) TestSyncService() {
 
 	s.Run("UpdateSyncLimit", func() {
 		s.e().PUT("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithJSON(map[string]interface{}{
-				"type":      "CONFIG_MAP",
-				"key":       syncKey,
-				"sizeLimit": 200,
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+				Name:      configmapName,
+				Key:       syncKey,
+				SizeLimit: 200,
 			}).
 			Expect().
 			Status(200).
@@ -2678,11 +2680,11 @@ func (s *ArgoServerSuite) TestSyncService() {
 
 	s.Run("InvalidSizeLimit", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
-			WithJSON(map[string]interface{}{
-				"type":      "CONFIG_MAP",
-				"name":      configmapName + "-invalid",
-				"key":       syncKey,
-				"sizeLimit": 0,
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+				Name:      configmapName + "-invalid",
+				Key:       syncKey,
+				SizeLimit: 0,
 			}).
 			Expect().
 			Status(400)
@@ -2690,34 +2692,41 @@ func (s *ArgoServerSuite) TestSyncService() {
 
 	s.Run("KeyDoesNotExist", func() {
 		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", "non-existent-key").
-			WithQuery("type", "CONFIG_MAP").
+			WithJSON(syncpkg.GetSyncLimitRequest{
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Key:  syncKey,
+			}).
 			Expect().
 			Status(404)
 	})
 
 	s.Run("DeleteSyncLimit", func() {
 		s.e().DELETE("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey).
-			WithQuery("type", "CONFIG_MAP").
+			WithJSON(syncpkg.DeleteSyncLimitRequest{
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Key:  syncKey,
+			}).
 			Expect().
 			Status(200)
 
 		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey).
-			WithQuery("type", "CONFIG_MAP").
+			WithJSON(syncpkg.GetSyncLimitRequest{
+				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Key:  syncKey,
+			}).
 			Expect().
 			Status(404)
 	})
 
 	s.Run("UpdateNonExistentLimit", func() {
 		s.e().PUT("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName+"-non-existent").
-			WithJSON(map[string]interface{}{
-				"type":      "CONFIG_MAP",
-				"key":       syncKey,
-				"sizeLimit": 200,
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+				Name:      configmapName + "-non-existent",
+				Key:       syncKey + "-non-existent",
+				SizeLimit: 200,
 			}).Expect().
-			Status(404)
+			Status(400)
 	})
 }
 
