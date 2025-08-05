@@ -23,7 +23,7 @@ func NewResumeCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace(ctx)
+			namespace := client.Namespace()
 			for _, name := range args {
 				_, err := serviceClient.ResumeCronWorkflow(ctx, &cronworkflowpkg.CronWorkflowResumeRequest{
 					Name:      name,

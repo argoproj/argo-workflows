@@ -203,7 +203,6 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 		queue: []string{
 			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
 			"io.argoproj.workflow.v1alpha1.WorkflowTemplate", "io.argoproj.workflow.v1alpha1.WorkflowEventBinding",
-			"io.argoproj.workflow.v1alpha1.InfoResponse",
 		},
 		external: []string{},
 		index:    make(map[string]Set),
@@ -240,7 +239,7 @@ FILES:
 		for _, m := range matches {
 			kind := m[1]
 			switch kind {
-			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate", "WorkflowEventBinding", "InfoResponse":
+			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate", "WorkflowEventBinding":
 			default:
 				continue FILES
 			}

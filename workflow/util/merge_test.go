@@ -267,7 +267,6 @@ spec:
   arguments:
     parameters:
       - name: PARAM1
-        value: WorkflowTemplate value 1 ignored
       - name: PARAM2
       - name: PARAM3
         value: WorkflowTemplate value 3
@@ -383,15 +382,6 @@ func TestJoinWfSpecArguments(t *testing.T) {
 	result := wfv1.MustUnmarshalWorkflow(wfArgumentsResult)
 
 	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
-	require.NoError(t, err)
-	assert.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
-}
-
-func TestJoinWfSpecArgumentsWithNil(t *testing.T) {
-	assert := assert.New(t)
-	wf := wfv1.MustUnmarshalWorkflow(wfArguments)
-	result := wfv1.MustUnmarshalWorkflow(wfArguments)
-	targetWf, err := JoinWorkflowSpec(&wf.Spec, nil, nil)
 	require.NoError(t, err)
 	assert.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
 }

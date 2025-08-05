@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestInlineDAG(t *testing.T) {
@@ -35,11 +35,10 @@ spec:
                   - name: foo
                     value: bar
 `)
-	ctx := logging.TestContext(t.Context())
-	cancel, wfc := newController(ctx, wf)
+	cancel, wfc := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(ctx, wf, wfc)
-	woc.operate(ctx)
+	woc := newWorkflowOperationCtx(wf, wfc)
+	woc.operate(context.Background())
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
@@ -67,11 +66,10 @@ spec:
                 args:
                   - '{{inputs.parameters.message}}'
 `)
-	ctx := logging.TestContext(t.Context())
-	cancel, wfc := newController(ctx, wf)
+	cancel, wfc := newController(wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(ctx, wf, wfc)
-	woc.operate(ctx)
+	woc := newWorkflowOperationCtx(wf, wfc)
+	woc.operate(context.Background())
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("a")
@@ -163,13 +161,13 @@ spec:
 func TestCallTemplateWithInlineSteps(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowTemplateWithInlineSteps)
 	wf := wfv1.MustUnmarshalWorkflow(workflowCallTemplateWithInline)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf, wftmpl)
+	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(ctx, woc)
+	pods, err := listPods(woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 	count := 0
@@ -265,13 +263,13 @@ spec:
 func TestCallTemplateWithInlineDAG(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowTemplateWithInlineDAG)
 	wf := wfv1.MustUnmarshalWorkflow(workflowCallTemplateWithInline)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf, wftmpl)
+	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(ctx, woc)
+	pods, err := listPods(woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 	count := 0

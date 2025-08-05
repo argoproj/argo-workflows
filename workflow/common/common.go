@@ -16,7 +16,7 @@ const (
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// AnnotationKeyServiceAccountTokenName is used to name the secret that containers the service account token name.
-	// It is intentionally named similar to ` `kubernetes.io/service-account.name`.
+	// It is intentially named similar to ` `kubernetes.io/service-account.name`.
 	AnnotationKeyServiceAccountTokenName = workflow.WorkflowFullName + "/service-account-token.name"
 
 	// AnnotationKeyNodeID is the ID of the node.
@@ -52,10 +52,6 @@ const (
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
-
-	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
-	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
-
 	// AnnotationKeyPodGCStrategy is listed as an annotation on the Pod
 	// the strategy for the pod, in case the pod is orphaned from its workflow
 	AnnotationKeyPodGCStrategy = workflow.WorkflowFullName + "/pod-gc-strategy"
@@ -67,11 +63,6 @@ const (
 	LabelKeyCreator                  = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail             = workflow.WorkflowFullName + "/creator-email"
 	LabelKeyCreatorPreferredUsername = workflow.WorkflowFullName + "/creator-preferred-username"
-	// Who action on this workflow.
-	LabelKeyActor                  = workflow.WorkflowFullName + "/actor"
-	LabelKeyActorEmail             = workflow.WorkflowFullName + "/actor-email"
-	LabelKeyActorPreferredUsername = workflow.WorkflowFullName + "/actor-preferred-username"
-	LabelKeyAction                 = workflow.WorkflowFullName + "/action"
 	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
@@ -98,7 +89,7 @@ const (
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
 	// LabelKeyWorkflowEventBinding is a label applied to Workflows that are submitted from a WorkflowEventBinding
 	LabelKeyWorkflowEventBinding = workflow.WorkflowFullName + "/workflow-event-binding"
-	// LabelKeyClusterWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
+	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
@@ -109,9 +100,6 @@ const (
 
 	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
 	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
-
-	// LabelKeyCronWorkflowBackfill is a label applied to the cron workflow when the workflow is created by backfill
-	LabelKeyCronWorkflowBackfill = workflow.WorkflowFullName + "/backfill"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)

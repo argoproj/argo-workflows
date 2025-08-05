@@ -2,7 +2,6 @@ package template
 
 import (
 	"bytes"
-	"context"
 	"io"
 
 	"github.com/valyala/fasttemplate"
@@ -16,7 +15,7 @@ const (
 )
 
 type Template interface {
-	Replace(ctx context.Context, replaceMap map[string]interface{}, allowUnresolved bool) (string, error)
+	Replace(replaceMap map[string]interface{}, allowUnresolved bool) (string, error)
 }
 
 func NewTemplate(s string) (Template, error) {
@@ -31,16 +30,16 @@ type impl struct {
 	*fasttemplate.Template
 }
 
-func (t *impl) Replace(ctx context.Context, replaceMap map[string]interface{}, allowUnresolved bool) (string, error) {
+func (t *impl) Replace(replaceMap map[string]interface{}, allowUnresolved bool) (string, error) {
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:
 			env := exprenv.GetFuncMap(replaceMap)
-			return expressionReplace(ctx, w, expression, env, allowUnresolved)
+			return expressionReplace(w, expression, env, allowUnresolved)
 		default:
-			return simpleReplace(ctx, w, tag, replaceMap, allowUnresolved)
+			return simpleReplace(w, tag, replaceMap, allowUnresolved)
 		}
 	})
 	return replacedTmpl.String(), err

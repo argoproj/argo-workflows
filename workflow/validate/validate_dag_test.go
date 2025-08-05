@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var dagCycle = `
@@ -35,7 +33,7 @@ spec:
 `
 
 func TestDAGCycle(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagCycle)
+	err := validate(dagCycle)
 	require.ErrorContains(t, err, "cycle")
 }
 
@@ -62,7 +60,7 @@ spec:
 `
 
 func TestAnyWithoutExpandingTask(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagAnyWithoutExpandingTask)
+	err := validate(dagAnyWithoutExpandingTask)
 	require.ErrorContains(t, err, "does not contain any items")
 }
 
@@ -82,7 +80,7 @@ spec:
 `
 
 func TestDAGUndefinedTemplate(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagUndefinedTemplate)
+	err := validate(dagUndefinedTemplate)
 	require.ErrorContains(t, err, "undefined")
 }
 
@@ -305,19 +303,18 @@ spec:
 `
 
 func TestDAGVariableResolution(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, dagUnresolvedVar)
+	err := validate(dagUnresolvedVar)
 	require.ErrorContains(t, err, "failed to resolve {{tasks.A.outputs.parameters.unresolvable}}")
 
-	err = validate(ctx, dagResolvedVar)
+	err = validate(dagResolvedVar)
 	require.NoError(t, err)
 
-	err = validate(ctx, dagResolvedVarNotAncestor)
+	err = validate(dagResolvedVarNotAncestor)
 	require.ErrorContains(t, err, "templates.unresolved.tasks.C missing dependency 'B' for parameter 'message'")
 
-	err = validate(ctx, dagResolvedGlobalVar)
+	err = validate(dagResolvedGlobalVar)
 	require.NoError(t, err)
-	err = validate(ctx, dagResolvedGlobalVarReversed)
+	err = validate(dagResolvedGlobalVarReversed)
 	require.NoError(t, err)
 }
 
@@ -375,7 +372,7 @@ spec:
 `
 
 func TestDAGArtifactResolution(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagResolvedArt)
+	err := validate(dagResolvedArt)
 	require.NoError(t, err)
 }
 
@@ -609,22 +606,21 @@ spec:
 `
 
 func TestDAGStatusReference(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, dagStatusReference)
+	err := validate(dagStatusReference)
 	require.NoError(t, err)
 
-	err = validate(ctx, dagStatusNoFutureReferenceSimple)
+	err = validate(dagStatusNoFutureReferenceSimple)
 	// Can't reference the status of steps that have not run yet
 	require.ErrorContains(t, err, "failed to resolve {{tasks.B.status}}")
 
-	err = validate(ctx, dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
+	err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
 	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
 	require.ErrorContains(t, err, "failed to resolve {{tasks.B.status}}")
 
-	err = validate(ctx, dagStatusPastReferenceChain)
+	err = validate(dagStatusPastReferenceChain)
 	require.NoError(t, err)
 
-	err = validate(ctx, dagStatusOnlyDirectAncestors)
+	err = validate(dagStatusOnlyDirectAncestors)
 	// Can't reference steps that are not direct ancestors of node
 	// Here Node E references the status of Node B, even though it is not its descendent
 	require.ErrorContains(t, err, "failed to resolve {{tasks.B.status}}")
@@ -661,7 +657,7 @@ spec:
 `
 
 func TestDAGNonExistantTarget(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagNonexistantTarget)
+	err := validate(dagNonexistantTarget)
 	require.ErrorContains(t, err, "target 'DOESNTEXIST' is not defined")
 
 }
@@ -701,7 +697,7 @@ spec:
 `
 
 func TestDAGTargetSubstitution(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagTargetSubstitution)
+	err := validate(dagTargetSubstitution)
 	require.NoError(t, err)
 }
 
@@ -735,7 +731,7 @@ spec:
 `
 
 func TestDAGTargetMissingInputParam(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagTargetMissingInputParam)
+	err := validate(dagTargetMissingInputParam)
 	require.Error(t, err)
 }
 
@@ -766,7 +762,7 @@ spec:
 `
 
 func TestDependsAndDependencies(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagDependsAndDependencies)
+	err := validate(dagDependsAndDependencies)
 	require.ErrorContains(t, err, "templates.dag-target cannot use both 'depends' and 'dependencies' in the same DAG template")
 }
 
@@ -798,7 +794,7 @@ spec:
 `
 
 func TestDependsAndContinueOn(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagDependsAndContinueOn)
+	err := validate(dagDependsAndContinueOn)
 	require.ErrorContains(t, err, "templates.dag-target cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'")
 }
 
@@ -850,7 +846,7 @@ spec:
 `
 
 func TestDAGDependsDigit(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagDependsDigit)
+	err := validate(dagDependsDigit)
 	require.ErrorContains(t, err, "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 }
 
@@ -902,7 +898,7 @@ spec:
 `
 
 func TestDAGDependenciesDigit(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagDependenciesDigit)
+	err := validate(dagDependenciesDigit)
 	require.ErrorContains(t, err, "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 }
 
@@ -931,7 +927,7 @@ spec:
 `
 
 func TestDAGWithDigitNameNoDepends(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagWithDigitNoDepends)
+	err := validate(dagWithDigitNoDepends)
 	require.NoError(t, err)
 }
 
@@ -959,7 +955,7 @@ spec:
         arguments:
           parameters:
           - name: item
-            value: '{{item}}' 
+            value: '{{item}}'
           - name: input
             value: '{{tasks.fanout.outputs.parameters.output}}'
         withParam: "{{tasks.fanout.outputs.parameters.output}}"
@@ -1021,7 +1017,7 @@ spec:
 `
 
 func TestDAGOutputsResolveTaskAggregatedOutputs(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagOutputsResolveTaskAggregatedOutputs)
+	err := validate(dagOutputsResolveTaskAggregatedOutputs)
 	require.NoError(t, err)
 }
 
@@ -1058,7 +1054,7 @@ spec:
 `
 
 func TestDAGMissingParamValueInTask(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagMissingParamValueInTask)
+	err := validate(dagMissingParamValueInTask)
 	require.ErrorContains(t, err, ".valueFrom only allows: default, configMapKeyRef and supplied")
 }
 
@@ -1091,7 +1087,7 @@ spec:
 `
 
 func TestDAGArgParamValueFromConfigMapInTask(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), dagArgParamValueFromConfigMapInTask)
+	err := validate(dagArgParamValueFromConfigMapInTask)
 	require.NoError(t, err)
 }
 
@@ -1121,6 +1117,6 @@ spec:
 `
 
 func TestFailDAGArgParamValueFromPathInTask(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), failDagArgParamValueFromPathInTask)
+	err := validate(failDagArgParamValueFromPathInTask)
 	require.ErrorContains(t, err, "valueFrom only allows: default, configMapKeyRef and supplied")
 }

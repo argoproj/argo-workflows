@@ -4,59 +4,54 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
-	logger := logging.RequireLoggerFromContext(ctx)
+func (wfc *WorkflowController) updateConfig() error {
 	bytes, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
-	logger.WithField("config", string(bytes)).Info(ctx, "Configuration")
+	log.Info("Configuration:\n" + string(bytes))
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
-	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
-	wfc.wfArchive = persist.NullWorkflowArchive
+	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
-	if wfc.throttler != nil {
-		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
-	}
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
-		logger.Info(ctx, "Persistence configuration enabled")
-		tableName, err := persist.GetTableName(persistence)
+		log.Info("Persistence configuration enabled")
+		tableName, err := sqldb.GetTableName(persistence)
 		if err != nil {
 			return err
 		}
 		if wfc.session == nil {
-			session, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
+			session, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
 			if err != nil {
 				return err
 			}
-			logger.Info(ctx, "Persistence Session created successfully")
+			log.Info("Persistence Session created successfully")
 			wfc.session = session
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
-			logger.Info(ctx, "Node status offloading is enabled")
+			log.Info("Node status offloading is enabled")
 		} else {
-			logger.Info(ctx, "Node status offloading is disabled")
+			log.Info("Node status offloading is disabled")
 		}
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
@@ -65,41 +60,40 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
-			logger.Info(ctx, "Workflow archiving is enabled")
+			wfc.wfArchive = sqldb.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			log.Info("Workflow archiving is enabled")
 		} else {
-			logger.Info(ctx, "Workflow archiving is disabled")
+			log.Info("Workflow archiving is disabled")
 		}
 	} else {
-		logger.Info(ctx, "Persistence configuration disabled")
+		log.Info("Persistence configuration disabled")
 	}
 
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
-	wfc.updateEstimatorFactory(ctx)
+	wfc.updateEstimatorFactory()
 	wfc.rateLimiter = wfc.newRateLimiter()
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
-	logger.WithField("executorImage", wfc.executorImage()).
+	log.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
-		Info(ctx, "")
+		Info()
 	return nil
 }
 
 // initDB inits argo DB tables
-func (wfc *WorkflowController) initDB(ctx context.Context) error {
+func (wfc *WorkflowController) initDB() error {
 	persistence := wfc.Config.Persistence
 	if persistence == nil || persistence.SkipMigration {
-		logger := logging.RequireLoggerFromContext(ctx)
-		logger.Info(ctx, "DB migration is disabled")
+		log.Info("DB migration is disabled")
 		return nil
 	}
-	tableName, err := persist.GetTableName(persistence)
+	tableName, err := sqldb.GetTableName(persistence)
 	if err != nil {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.session, persistence.GetClusterName(), tableName)
+	return sqldb.NewMigrate(wfc.session, persistence.GetClusterName(), tableName).Exec(context.Background())
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {

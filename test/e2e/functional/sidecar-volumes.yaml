@@ -23,19 +23,23 @@ spec:
 
   - name: generate
     script:
-      image: argoproj/argosay:v2
-      args: ["sleep", "5"]
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import time
+        time.sleep(5)
     sidecars:
     - name: sidevol
-      image: argoproj/argosay:v2
-      args: ["echo", "it works", "/mnt/vol/test-art"]
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'it works' > /mnt/vol/test-art"]
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
 
   - name: verify
     container:
-      image: argoproj/argosay:v2
+      image: alpine:latest
       command: [sh, -c]
       args: ['[[ "$(cat /mnt/vol/test-art)" == "it works" ]]']
       volumeMounts:

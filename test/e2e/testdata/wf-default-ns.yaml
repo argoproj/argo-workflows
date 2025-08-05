@@ -6,8 +6,7 @@ metadata:
   labels:
     workflows.argoproj.io/test: "true"
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -20,5 +19,6 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: argoproj/argosay:v2
-          args: [ "echo", "hello" ]
+          image: python:alpine3.6
+          command: [ "sh", -c ]
+          args: [ "echo hello" ]

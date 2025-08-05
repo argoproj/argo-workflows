@@ -8,7 +8,7 @@ import (
 
 var currentTime = time.Now
 
-type lruTTLCache struct {
+type lruTtlCache struct {
 	timeout time.Duration
 	cache   *lru.Cache
 }
@@ -18,14 +18,14 @@ type item struct {
 	value      any
 }
 
-func NewLRUTtlCache(timeout time.Duration, size int) *lruTTLCache {
-	return &lruTTLCache{
+func NewLRUTtlCache(timeout time.Duration, size int) *lruTtlCache {
+	return &lruTtlCache{
 		timeout: timeout,
 		cache:   lru.New(size),
 	}
 }
 
-func (c *lruTTLCache) Get(key string) (any, bool) {
+func (c *lruTtlCache) Get(key string) (any, bool) {
 	if data, ok := c.cache.Get(key); ok {
 		item := data.(*item)
 		if currentTime().Before(item.expiryTime) {
@@ -36,7 +36,7 @@ func (c *lruTTLCache) Get(key string) (any, bool) {
 	return nil, false
 }
 
-func (c *lruTTLCache) Add(key string, value any) {
+func (c *lruTtlCache) Add(key string, value any) {
 	c.cache.Add(key, &item{
 		expiryTime: currentTime().Add(c.timeout),
 		value:      value,

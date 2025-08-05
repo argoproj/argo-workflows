@@ -9,7 +9,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
@@ -18,10 +17,9 @@ kind: CronWorkflow
 metadata:
   name: hello-world
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   workflowMetadata:
-    labels: 
+    labels:
       label1: value1
     annotations:
       annotation2: value2
@@ -85,15 +83,14 @@ status:
 	require.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
 
-	cronWfInstanceIDString := `apiVersion: argoproj.io/v1alpha1
+	cronWfInstanceIdString := `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: hello-world
   labels:
     workflows.argoproj.io/controller-instanceid: test-controller
 spec:
-  schedules:
-    - "* * * * *"
+  schedule: "* * * * *"
   workflowMetadata:
     labels:
       label1: value1
@@ -109,18 +106,17 @@ spec:
           args: ["hello world"]
 `
 
-	err = yaml.Unmarshal([]byte(cronWfInstanceIDString), &cronWf)
+	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	require.NoError(t, err)
 	wf = ConvertCronWorkflowToWorkflow(&cronWf)
 	require.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID)
 	assert.Equal(t, "test-controller", wf.GetLabels()[LabelKeyControllerInstanceID])
 
-	err = yaml.Unmarshal([]byte(cronWfInstanceIDString), &cronWf)
+	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	require.NoError(t, err)
 	scheduledTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05-07:00")
 	require.NoError(t, err)
-	ctx := logging.TestContext(t.Context())
-	wf = ConvertCronWorkflowToWorkflowWithProperties(ctx, &cronWf, "test-name", scheduledTime)
+	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", scheduledTime)
 	assert.Equal(t, "test-name", wf.Name)
 	assert.Len(t, wf.GetAnnotations(), 2)
 	assert.NotEmpty(t, wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime])

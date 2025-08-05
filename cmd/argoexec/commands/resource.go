@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -16,7 +15,8 @@ func NewResourceCommand() *cobra.Command {
 		Short: "update a resource and wait for resource conditions",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := execResource(cmd.Context(), args[0])
+			ctx := cmd.Context()
+			err := execResource(ctx, args[0])
 			if err != nil {
 				return fmt.Errorf("%+v", err)
 			}
@@ -26,29 +26,25 @@ func NewResourceCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
 func execResource(ctx context.Context, action string) error {
-	wfExecutor := initExecutor(ctx)
+	wfExecutor := initExecutor()
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	// nolint:contextcheck
-	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
+	bgCtx := context.Background()
 
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)
-	if !wfExecutor.Template.SaveLogsAsArtifact() {
-		defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
-	}
-	err := wfExecutor.StageFiles(ctx)
+	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+	err := wfExecutor.StageFiles()
 	if err != nil {
-		wfExecutor.AddError(ctx, err)
+		wfExecutor.AddError(err)
 		return err
 	}
 
 	isDelete := action == "delete"
 	if isDelete && (wfExecutor.Template.Resource.SuccessCondition != "" || wfExecutor.Template.Resource.FailureCondition != "" || len(wfExecutor.Template.Outputs.Parameters) > 0) {
 		err = fmt.Errorf("successCondition, failureCondition and outputs are not supported for delete action")
-		wfExecutor.AddError(ctx, err)
+		wfExecutor.AddError(err)
 		return err
 	}
 	manifestPath := common.ExecutorResourceManifestPath
@@ -61,22 +57,22 @@ func execResource(ctx context.Context, action string) error {
 			}
 		}
 	}
-	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(ctx,
+	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(
 		action, manifestPath, wfExecutor.Template.Resource.Flags,
 	)
 	if err != nil {
-		wfExecutor.AddError(ctx, err)
+		wfExecutor.AddError(err)
 		return err
 	}
 	if !isDelete {
 		err = wfExecutor.WaitResource(ctx, resourceNamespace, resourceName, selfLink)
 		if err != nil {
-			wfExecutor.AddError(ctx, err)
+			wfExecutor.AddError(err)
 			return err
 		}
 		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceName)
 		if err != nil {
-			wfExecutor.AddError(ctx, err)
+			wfExecutor.AddError(err)
 			return err
 		}
 	}

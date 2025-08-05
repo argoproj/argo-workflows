@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
@@ -17,7 +17,6 @@ import (
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -85,7 +84,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 	if err != nil {
 		return err
 	}
-	clients, err := getLintClients(ctx, client, kinds)
+	clients, err := getLintClients(client, kinds)
 	if err != nil {
 		return err
 	}
@@ -97,11 +96,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 	}
 
 	if !res.Success {
-		if exitFunc := logging.GetExitFunc(); exitFunc != nil {
-			exitFunc(1)
-		} else {
-			os.Exit(1)
-		}
+		log.StandardLogger().Exit(1)
 	}
 	return nil
 }
@@ -124,7 +119,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	}
 
 	for _, file := range opts.Files {
-		err := fileutil.WalkManifests(ctx, file, func(path string, data []byte) error {
+		err := fileutil.WalkManifests(file, func(path string, data []byte) error {
 			res := lintData(ctx, path, data, opts)
 			results.Results = append(results.Results, res)
 
@@ -147,7 +142,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		Errs: []error{},
 	}
 
-	for i, pr := range common.ParseObjects(ctx, data, opts.Strict) {
+	for i, pr := range common.ParseObjects(data, opts.Strict) {
 		obj, err := pr.Object, pr.Err
 		if obj == nil {
 			continue // could not parse to kubernetes object
@@ -158,12 +153,12 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 			namespace = opts.DefaultNamespace
 		}
 		objName := ""
-		ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("objectName", objName).InContext(ctx)
+
 		switch v := obj.(type) {
 		case *wfv1.ClusterWorkflowTemplate:
 			objName = getObjectName(wf.ClusterWorkflowTemplateKind, v, i)
 			if opts.ServiceClients.ClusterWorkflowTemplateClient == nil {
-				logger.Debug(ctx, "ignoring object, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options", objName)
 				continue
 			}
 			res.Linted = true
@@ -176,7 +171,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		case *wfv1.CronWorkflow:
 			objName = getObjectName(wf.CronWorkflowKind, v, i)
 			if opts.ServiceClients.CronWorkflowsClient == nil {
-				logger.Debug(ctx, "ignoring object, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options kinds", objName)
 				continue
 			}
 			res.Linted = true
@@ -189,7 +184,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		case *wfv1.Workflow:
 			objName = getObjectName(wf.WorkflowKind, v, i)
 			if opts.ServiceClients.WorkflowsClient == nil {
-				logger.Debug(ctx, "ignoring object, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options kinds", objName)
 				continue
 			}
 			res.Linted = true
@@ -204,7 +199,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		case *wfv1.WorkflowTemplate:
 			objName = getObjectName(wf.WorkflowTemplateKind, v, i)
 			if opts.ServiceClients.WorkflowTemplatesClient == nil {
-				logger.Debug(ctx, "ignoring object, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options kinds", objName)
 				continue
 			}
 			res.Linted = true
@@ -282,13 +277,13 @@ func getObjectName(kind string, obj metav1.Object, objIndex int) string {
 	return fmt.Sprintf(`"%s" (%s)`, name, kind)
 }
 
-func getLintClients(ctx context.Context, client apiclient.Client, kinds []string) (ServiceClients, error) {
+func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, error) {
 	res := ServiceClients{}
 	var err error
 	for _, kind := range kinds {
 		switch kind {
 		case wf.WorkflowPlural, wf.WorkflowShortName:
-			res.WorkflowsClient = client.NewWorkflowServiceClient(ctx)
+			res.WorkflowsClient = client.NewWorkflowServiceClient()
 		case wf.WorkflowTemplatePlural, wf.WorkflowTemplateShortName:
 			res.WorkflowTemplatesClient, err = client.NewWorkflowTemplateServiceClient()
 			if err != nil {

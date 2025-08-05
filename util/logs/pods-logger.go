@@ -7,12 +7,11 @@ import (
 	"regexp"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Callback func(pod *corev1.Pod, data []byte) error
@@ -33,7 +32,7 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 	}
 	streaming := &sync.Map{}
 	streamPod := func(pod *corev1.Pod) {
-		ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name}).InContext(ctx)
+		logCtx := log.WithFields(log.Fields{"namespace": pod.Namespace, "podName": pod.Name})
 		go func(pod *corev1.Pod) {
 			err := func() error {
 				_, loaded := streaming.LoadOrStore(pod.Name, true)
@@ -46,7 +45,7 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 					return err
 				}
 				defer func() { _ = stream.Close() }()
-				logger.Debug(ctx, "streaming pod logs")
+				logCtx.Debug("streaming pod logs")
 				s := bufio.NewScanner(stream)
 				for {
 					select {
@@ -58,7 +57,7 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 						}
 						data := s.Bytes()
 						if rx.Match(data) {
-							logger.Debug(ctx, string(data))
+							logCtx.Debugln(string(data))
 							if err := callback(pod, data); err != nil {
 								return err
 							}
@@ -67,7 +66,7 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 				}
 			}()
 			if err != nil {
-				logger.WithError(err).Error(ctx, "streaming pod logs")
+				logCtx.Error(err)
 			}
 		}(pod)
 	}

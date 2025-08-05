@@ -10,7 +10,7 @@ import (
 )
 
 // WorkflowConditionCallback is the function prototype to provide this gauge with the condition of the workflows
-type WorkflowConditionCallback func(ctx context.Context) map[wfv1.Condition]int64
+type WorkflowConditionCallback func() map[wfv1.Condition]int64
 
 type workflowConditionGauge struct {
 	callback WorkflowConditionCallback
@@ -18,7 +18,13 @@ type workflowConditionGauge struct {
 }
 
 func addWorkflowConditionGauge(_ context.Context, m *Metrics) error {
-	err := m.CreateBuiltinInstrument(telemetry.InstrumentWorkflowCondition)
+	const nameWorkflowCondition = `workflow_condition`
+	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
+		nameWorkflowCondition,
+		"Workflow condition.",
+		"{unit}",
+		telemetry.WithAsBuiltIn(),
+	)
 	if err != nil {
 		return err
 	}
@@ -26,18 +32,19 @@ func addWorkflowConditionGauge(_ context.Context, m *Metrics) error {
 	if m.callbacks.WorkflowCondition != nil {
 		wfcGauge := workflowConditionGauge{
 			callback: m.callbacks.WorkflowCondition,
-			gauge:    m.GetInstrument(telemetry.InstrumentWorkflowCondition.Name()),
+			gauge:    m.GetInstrument(nameWorkflowCondition),
 		}
 		return wfcGauge.gauge.RegisterCallback(m.Metrics, wfcGauge.update)
+
 	}
 	return nil
 	// TODO init all phases?
 }
 
-func (c *workflowConditionGauge) update(ctx context.Context, o metric.Observer) error {
-	conditions := c.callback(ctx)
+func (c *workflowConditionGauge) update(_ context.Context, o metric.Observer) error {
+	conditions := c.callback()
 	for condition, val := range conditions {
-		c.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{
+		c.gauge.ObserveInt(o, val, telemetry.InstAttribs{
 			{Name: telemetry.AttribWorkflowType, Value: string(condition.Type)},
 			{Name: telemetry.AttribWorkflowStatus, Value: string(condition.Status)},
 		})

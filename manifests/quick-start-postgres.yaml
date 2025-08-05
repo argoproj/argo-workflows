@@ -1876,25 +1876,6 @@ spec:
                         type: array
                     type: object
                   metadata:
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      finalizers:
-                        items:
-                          type: string
-                        type: array
-                      generateName:
-                        type: string
-                      labels:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      name:
-                        type: string
-                      namespace:
-                        type: string
                     type: object
                   workflowTemplateRef:
                     properties:
@@ -2987,7 +2968,6 @@ rules:
   - ""
   resources:
   - configmaps
-  - namespaces
   verbs:
   - get
   - watch
@@ -3390,26 +3370,6 @@ data:
     completed: 10
     failed: 3
     errored: 3
-  synchronization: |
-    connectionPool:
-      maxIdleConns: 100
-      maxOpenConns: 0
-      connMaxLifetime: 0s
-    controllerName: test
-    limitTableName: sync_limit
-    stateTableName: sync_state
-    controllerTableName: sync_controller
-    inactiveControllerSeconds: 300
-    postgresql:
-      host: postgres
-      port: 5432
-      database: postgres
-      userNameSecret:
-        name: argo-postgres-config
-        key: username
-      passwordSecret:
-        name: argo-postgres-config
-        key: password
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -3592,7 +3552,7 @@ stringData:
     NuJLvtwCMGDCxhdYm7OrJ0aUfZzP6w==
     -----END PRIVATE KEY-----
   pass: password
-  tokenURL: http://httpbin:9100/base64/YWNjZXNzX3Rva2VuPWZha2V0b2tlbg==
+  tokenURL: http://httpbin:9100/response-headers?access_token=faketoken&token_type=Bearer
   user: admin
 type: Opaque
 ---
@@ -3796,10 +3756,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - env:
-        - name: PORT
-          value: "80"
-        image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
+      - image: kong/httpbin
         livenessProbe:
           httpGet:
             path: /get
@@ -3845,7 +3802,7 @@ spec:
           value: admin
         - name: MINIO_SECRET_KEY
           value: password
-        image: quay.io/minio/minio:RELEASE.2022-11-17T23-20-09Z@sha256:b2a98df34c3e8d605a5e96f0bc1657dd440a5bd53d95465a7b342e736da9c6cf
+        image: minio/minio:RELEASE.2022-11-17T23-20-09Z
         lifecycle:
           postStart:
             exec:
@@ -3890,9 +3847,9 @@ spec:
     spec:
       containers:
       - env:
-        - name: POSTGRESQL_ADMIN_PASSWORD
+        - name: POSTGRES_PASSWORD
           value: password
-        image: quay.io/fedora/postgresql-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
+        image: postgres:12-alpine
         name: main
         ports:
         - containerPort: 5432

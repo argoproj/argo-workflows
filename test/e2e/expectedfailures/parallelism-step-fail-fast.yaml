@@ -15,9 +15,11 @@ spec:
             template: sleep
     - name: fail
       container:
-        image: argoproj/argosay:v2
-        command: ["exit", "1"]
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["exit 1"]
     - name: sleep
       container:
-        image: argoproj/argosay:v2
-        command: ["sleep", "5"]
+        image: alpine:latest
+        command: [ sh, -c ]
+        args: [ "sleep 5" ]
