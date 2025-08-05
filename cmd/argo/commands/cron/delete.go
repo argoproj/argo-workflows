@@ -25,7 +25,7 @@ func NewDeleteCommand() *cobra.Command {
 			}
 			if all {
 				cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
-					Namespace: client.Namespace(ctx),
+					Namespace: client.Namespace(),
 				})
 				if err != nil {
 					return err
@@ -37,7 +37,7 @@ func NewDeleteCommand() *cobra.Command {
 			for _, name := range args {
 				_, err := serviceClient.DeleteCronWorkflow(ctx, &cronworkflowpkg.DeleteCronWorkflowRequest{
 					Name:      name,
-					Namespace: client.Namespace(ctx),
+					Namespace: client.Namespace(),
 				})
 				if err != nil {
 					return err

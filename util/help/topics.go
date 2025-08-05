@@ -3,7 +3,7 @@ package help
 import (
 	"fmt"
 
-	argo "github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3"
 )
 
 func root() string {

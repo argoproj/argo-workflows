@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTryJSONUnmarshal(t *testing.T) {
+func TestTryJsonUnmarshal(t *testing.T) {
 	for _, testcase := range []struct {
 		input    []string
 		success  bool
@@ -28,7 +28,7 @@ func TestTryJSONUnmarshal(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("Unmarshal %v", testcase.input),
 			func(t *testing.T) {
-				list, success := tryJSONUnmarshal(testcase.input)
+				list, success := tryJsonUnmarshal(testcase.input)
 				require.Equal(t, testcase.success, success)
 				if success {
 					assert.Equal(t, testcase.expected, list)
@@ -56,7 +56,7 @@ func TestAggregatedJsonValueList(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("Aggregate %v", testcase.input),
 			func(t *testing.T) {
-				result, err := aggregatedJSONValueList(testcase.input)
+				result, err := aggregatedJsonValueList(testcase.input)
 				require.NoError(t, err)
 				assert.Equal(t, testcase.expected, result)
 			})

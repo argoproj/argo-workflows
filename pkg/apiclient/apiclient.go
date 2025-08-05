@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -13,12 +14,11 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Client interface {
 	NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error)
-	NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient
+	NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
 	NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error)
 	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)
 	NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error)
@@ -27,7 +27,6 @@ type Client interface {
 
 type Opts struct {
 	ArgoServerOpts ArgoServerOpts
-	ArgoKubeOpts   ArgoKubeOpts
 	InstanceID     string
 	AuthSupplier   func() string
 	// DEPRECATED: use `ClientConfigSupplier`
@@ -35,55 +34,37 @@ type Opts struct {
 	ClientConfigSupplier func() clientcmd.ClientConfig
 	Offline              bool
 	OfflineFiles         []string
-	// DEPRECATED: use NewClientFromOptsWithContext
-	// nolint: containedctx
-	Context   context.Context
-	LogLevel  string
-	LogFormat string
+	Context              context.Context
 }
 
 func (o Opts) String() string {
 	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
 }
 
-// DEPRECATED: use NewClientFromOptsWithContext
+func (o *Opts) GetContext() context.Context {
+	if o.Context == nil {
+		o.Context = context.Background()
+	}
+
+	return o.Context
+}
+
+// DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	return NewClientFromOptsWithContext(context.Background(), Opts{
+	return NewClientFromOpts(Opts{
 		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
 		AuthSupplier:   authSupplier,
 		ClientConfigSupplier: func() clientcmd.ClientConfig {
 			return clientConfig
 		},
+		Context: context.Background(),
 	})
 }
 
-// DEPRECATED: use NewClientFromOptsWithContext
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	ctx := opts.Context
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	return NewClientFromOptsWithContext(ctx, opts)
-}
-
-func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Context, Client, error) {
-	log := logging.GetLoggerFromContextOrNil(ctx)
-	if log == nil {
-		logLevel, err := logging.ParseLevelOr(opts.LogLevel, logging.Info)
-		if err != nil {
-			return nil, nil, err
-		}
-		logFormat, err := logging.TypeFromStringOr(opts.LogFormat, logging.Text)
-		if err != nil {
-			return nil, nil, err
-		}
-		log = logging.NewSlogLogger(logLevel, logFormat)
-		ctx = logging.WithLogger(ctx, log)
-	}
-	log.WithField("opts", opts).Debug(ctx, "Client options")
+	log.WithField("opts", opts).Debug("Client options")
 	if opts.Offline {
-		return newOfflineClient(ctx, opts.OfflineFiles)
+		return newOfflineClient(opts.OfflineFiles)
 	}
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
@@ -92,16 +73,18 @@ func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Conte
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newHTTP1Client(ctx, opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
+		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
 	} else if opts.ArgoServerOpts.URL != "" {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newArgoServerClient(ctx, opts.ArgoServerOpts, opts.AuthSupplier())
+		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
-		return newArgoKubeClient(ctx, opts.ArgoKubeOpts, opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+
+		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+		return ctx, client, err
 	}
 }

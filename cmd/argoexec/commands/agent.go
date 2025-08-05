@@ -7,8 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -36,14 +35,11 @@ func NewAgentInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "init",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			logger := logging.RequireLoggerFromContext(ctx)
-
-			for _, name := range getPluginNames(ctx) {
+			for _, name := range getPluginNames() {
 				filename := tokenFilename(name)
-				logger.WithField("plugin", name).
+				log.WithField("plugin", name).
 					WithField("filename", filename).
-					Info(ctx, "creating token file for plugin")
+					Info("creating token file for plugin")
 				if err := os.Mkdir(filepath.Dir(filename), 0o770); err != nil {
 					return err
 				}
@@ -61,20 +57,18 @@ func tokenFilename(name string) string {
 	return filepath.Join(common.VarRunArgoPath, name, "token")
 }
 
-func getPluginNames(ctx context.Context) []string {
+func getPluginNames() []string {
 	var names []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginNames)), &names); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin names")
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	return names
 }
 
-func getPluginAddresses(ctx context.Context) []string {
+func getPluginAddresses() []string {
 	var addresses []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin addresses")
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	return addresses
 }
@@ -83,22 +77,20 @@ func NewAgentMainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			return initAgentExecutor(ctx).Agent(ctx)
+			return initAgentExecutor().Agent(context.Background())
 		},
 	}
 }
 
-func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
+func initAgentExecutor() *executor.AgentExecutor {
 	version := argo.GetVersion()
-	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithFields(logging.Fields{"version": version.Version}).Info(ctx, "Starting Workflow Executor")
+	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, "agent Executor"))
 
-	logs.AddK8SLogTransportWrapper(ctx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)
@@ -110,28 +102,25 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 
 	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
-		os.Exit(1)
+		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
 	workflowUID, ok := os.LookupEnv(common.EnvVarWorkflowUID)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
-		os.Exit(1)
+		log.Fatalf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID)
 	}
 
-	addresses := getPluginAddresses(ctx)
-	names := getPluginNames(ctx)
+	addresses := getPluginAddresses()
+	names := getPluginNames()
 	var plugins []executorplugins.TemplateExecutor
 	for i, address := range addresses {
 		name := names[i]
 		filename := tokenFilename(name)
-		logger.WithField("plugin", name).
+		log.WithField("plugin", name).
 			WithField("filename", filename).
-			Info(ctx, "loading token file for plugin")
+			Info("loading token file for plugin")
 		data, err := os.ReadFile(filename)
 		if err != nil {
-			logger.WithError(err).WithFatal().Error(ctx, "Failed to read token file")
-			os.Exit(1)
+			log.Fatal(err)
 		}
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}

@@ -10,6 +10,5 @@ export const icons: {[key: string]: Icon} = {
     Running: 'circle-notch',
     Skipped: 'forward',
     Succeeded: 'check',
-    Suspended: 'pause',
-    Memoized: 'database'
+    Suspended: 'pause'
 };

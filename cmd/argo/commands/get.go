@@ -32,13 +32,12 @@ func NewGetCommand() *cobra.Command {
 `,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			ctx, apiClient, err := client.NewAPIClient(ctx)
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
-			namespace := client.Namespace(ctx)
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 					Name:      name,

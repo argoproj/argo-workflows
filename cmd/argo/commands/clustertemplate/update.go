@@ -53,7 +53,7 @@ func updateClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
 		return err
 	}
 
-	clusterWorkflowTemplates := generateClusterWorkflowTemplates(ctx, filePaths, cliOpts.strict)
+	clusterWorkflowTemplates := generateClusterWorkflowTemplates(filePaths, cliOpts.strict)
 
 	for _, wftmpl := range clusterWorkflowTemplates {
 		current, err := serviceClient.GetClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateGetRequest{

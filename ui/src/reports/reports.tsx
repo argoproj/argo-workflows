@@ -4,7 +4,7 @@ import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 
 import * as React from 'react';
-import {useContext, useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {Bar, ChartData} from 'react-chartjs-2';
 import {RouteComponentProps} from 'react-router-dom';
 
@@ -33,7 +33,6 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
-    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [labels, setLabels] = useState((queryParams.get('labels') || '').split(',').filter(v => v !== ''));
     // internal state
@@ -42,10 +41,6 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
 
     // save history
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
         history.push(historyUrl('reports' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, labels: labels.join(',')}));
     }, [namespace, labels]);
 

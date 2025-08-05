@@ -2,7 +2,6 @@
 package pod
 
 import (
-	"context"
 	"fmt"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -28,14 +27,14 @@ func (c *Controller) GetPodsByIndex(index, key string) ([]interface{}, error) {
 	return c.podInformer.GetIndexer().ByIndex(index, key)
 }
 
-func (c *Controller) TerminateContainers(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, terminateContainers)
+func (c *Controller) TerminateContainers(namespace, name string) {
+	c.queuePodForCleanup(namespace, name, terminateContainers)
 }
 
-func (c *Controller) DeletePod(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, deletePod)
+func (c *Controller) DeletePod(namespace, name string) {
+	c.queuePodForCleanup(namespace, name, deletePod)
 }
 
-func (c *Controller) RemoveFinalizer(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, removeFinalizer)
+func (c *Controller) RemoveFinalizer(namespace, name string) {
+	c.queuePodForCleanup(namespace, name, removeFinalizer)
 }

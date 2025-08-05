@@ -1,10 +1,9 @@
 package controller
 
 import (
+	"context"
 	"strings"
 	"testing"
-
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,14 +61,14 @@ spec:
 
 func TestStepsOnExitTmpl(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmpl)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc.wf.Status.Nodes {
@@ -130,14 +129,14 @@ spec:
 
 func TestDAGOnExitTmpl(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc.wf.Status.Nodes {
@@ -190,11 +189,11 @@ spec:
 
 func TestStepsOnExitTmplWithArt(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmplWithArt)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	for idx, node := range woc.wf.Status.Nodes {
@@ -210,10 +209,10 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
-			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc1.wf.Status.Nodes {
@@ -265,11 +264,11 @@ spec:
 
 func TestDAGOnExitTmplWithArt(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmplWithArt)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	for idx, node := range woc.wf.Status.Nodes {
@@ -285,10 +284,10 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
-			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc1.wf.Status.Nodes {
@@ -350,15 +349,15 @@ spec:
 
 func TestStepsTmplOnExit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsTmplOnExit)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 	onExitNodeIsPresent := false
@@ -371,7 +370,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 
 	assert.True(t, onExitNodeIsPresent)
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
-	woc2 := newWorkflowOperationCtx(ctx, woc1.wf, controller)
+	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
 	woc2.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
 	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
@@ -386,11 +385,11 @@ func TestStepsTmplOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
-			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 
-	woc3 := newWorkflowOperationCtx(ctx, woc2.wf, controller)
+	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
 	woc3.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc3.wf.Status.Phase)
 	onExitNodeIsPresent = false
@@ -455,15 +454,15 @@ spec:
 
 func TestDAGOnExit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExit)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 	onExitNodeIsPresent := false
@@ -476,7 +475,7 @@ func TestDAGOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
-	woc2 := newWorkflowOperationCtx(ctx, woc1.wf, controller)
+	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
 	woc2.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
 	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
@@ -491,10 +490,10 @@ func TestDAGOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
-			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	woc3 := newWorkflowOperationCtx(ctx, woc2.wf, controller)
+	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
 	woc3.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc3.wf.Status.Phase)
 	onExitNodeIsPresent = false
@@ -692,18 +691,18 @@ status:
 
 func TestDagOnExitAndRetryStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExitAndRetryStrategy)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var testWorkflowOnExitHTTPReconciliation = `apiVersion: argoproj.io/v1alpha1
+var testWorkflowOnExitHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: hello-world-sx6lw
@@ -743,12 +742,12 @@ status:
 `
 
 func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitHTTPReconciliation)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitHttpReconciliation)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
@@ -761,7 +760,7 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	assert.Len(t, taskSets.Items, 1)
 }
 
-var testWorkflowOnExitStepsHTTPReconciliation = `apiVersion: argoproj.io/v1alpha1
+var testWorkflowOnExitStepsHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: hello-world-647r7
@@ -841,12 +840,12 @@ status:
 `
 
 func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitStepsHTTPReconciliation)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitStepsHttpReconciliation)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
@@ -985,11 +984,11 @@ status:
   phase: Running
   progress: 2/2
 `)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
@@ -1034,16 +1033,16 @@ spec:
         command: [sh, -c]
         args: ["echo {{inputs.parameters.status}}"]
 `)
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
-	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
 	var hasExitNode bool

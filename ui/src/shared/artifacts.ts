@@ -57,19 +57,19 @@ export function artifactRepoHasLocation(ar: ArtifactRepository) {
 }
 
 export function artifactKey<A extends Artifact>(a: A) {
-    if (a.gcs?.key) {
+    if (a.gcs) {
         return a.gcs.key;
-    } else if (a.git?.repo) {
+    } else if (a.git) {
         return a.git.repo + '#' + (a.git.revision || 'HEAD');
-    } else if (a.http?.url) {
+    } else if (a.http) {
         return a.http.url;
-    } else if (a.s3?.key) {
+    } else if (a.s3) {
         return a.s3.key;
-    } else if (a.oss?.key) {
+    } else if (a.oss) {
         return a.oss.key;
     } else if (a.raw) {
         return 'raw';
-    } else if (a.azure?.blob) {
+    } else if (a.azure) {
         return a.azure.blob;
     }
     return 'unknown';
