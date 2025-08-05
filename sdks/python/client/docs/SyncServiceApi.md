@@ -278,7 +278,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **update_sync_limit**
-> SyncSyncLimitResponse update_sync_limit(namespace, name)
+> SyncSyncLimitResponse update_sync_limit(namespace, name, body)
 
 
 
@@ -292,6 +292,7 @@ import argo_workflows
 from argo_workflows.api import sync_service_api
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from argo_workflows.model.sync_sync_limit_response import SyncSyncLimitResponse
+from argo_workflows.model.sync_update_sync_limit_request import SyncUpdateSyncLimitRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -316,10 +317,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
     name = "name_example" # str | 
+    body = SyncUpdateSyncLimitRequest(
+        key="key_example",
+        name="name_example",
+        namespace="namespace_example",
+        size_limit=1,
+        type=SyncSyncConfigType("CONFIG_MAP"),
+    ) # SyncUpdateSyncLimitRequest | 
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.update_sync_limit(namespace, name)
+        api_response = api_instance.update_sync_limit(namespace, name, body)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->update_sync_limit: %s\n" % e)
@@ -332,6 +340,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
  **name** | **str**|  |
+ **body** | [**SyncUpdateSyncLimitRequest**](SyncUpdateSyncLimitRequest.md)|  |
 
 ### Return type
 
@@ -343,7 +352,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 

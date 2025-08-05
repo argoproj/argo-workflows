@@ -11744,6 +11744,26 @@
         }
       },
       "type": "object"
+    },
+    "sync.UpdateSyncLimitRequest": {
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      },
+      "type": "object"
     }
   },
   "oneOf": [

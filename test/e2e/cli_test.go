@@ -1805,6 +1805,47 @@ func (s *CLISuite) TestArchive() {
 	})
 }
 
+func (s *CLISuite) TestSync() {
+	s.Given().
+		RunCli([]string{"sync", "configmap", "create", "test-sync-configmap", "--key", "test-key", "--size-limit", "1000"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Configmap sync limit created")
+			assert.Contains(t, output, "key test-key")
+			assert.Contains(t, output, "size limit 1000")
+		})
+
+	s.Run("Get ConfigMap sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "configmap", "get", "test-sync-configmap", "--key", "test-key"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync Configmap name: test-sync-configmap")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Size Limit: 1000")
+			})
+	})
+
+	s.Run("Update ConfigMap sync configs", func() {
+		s.Given().
+			RunCli([]string{"sync", "configmap", "update", "test-sync-configmap", "--key", "test-key", "--size-limit", "2000"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Updated sync limit for ConfigMap test-sync-configmap")
+				assert.Contains(t, output, "key test-key")
+				assert.Contains(t, output, "size limit 2000")
+			})
+	})
+
+	s.Run("Delete ConfigMap sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "configmap", "delete", "test-sync-configmap", "--key", "test-key"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Deleted sync limit for ConfigMap test-sync-configmap")
+				assert.Contains(t, output, "argo namespace")
+				assert.Contains(t, output, "key test-key")
+			})
+	})
+
+}
+
 func (s *CLISuite) TestArchiveLabel() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").

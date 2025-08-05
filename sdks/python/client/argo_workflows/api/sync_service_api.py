@@ -24,6 +24,7 @@ from argo_workflows.model_utils import (  # noqa: F401
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from argo_workflows.model.sync_create_sync_limit_request import SyncCreateSyncLimitRequest
 from argo_workflows.model.sync_sync_limit_response import SyncSyncLimitResponse
+from argo_workflows.model.sync_update_sync_limit_request import SyncUpdateSyncLimitRequest
 
 
 class SyncServiceApi(object):
@@ -256,10 +257,12 @@ class SyncServiceApi(object):
                 'all': [
                     'namespace',
                     'name',
+                    'body',
                 ],
                 'required': [
                     'namespace',
                     'name',
+                    'body',
                 ],
                 'nullable': [
                 ],
@@ -278,6 +281,8 @@ class SyncServiceApi(object):
                         (str,),
                     'name':
                         (str,),
+                    'body':
+                        (SyncUpdateSyncLimitRequest,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -286,6 +291,7 @@ class SyncServiceApi(object):
                 'location_map': {
                     'namespace': 'path',
                     'name': 'path',
+                    'body': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -294,7 +300,9 @@ class SyncServiceApi(object):
                 'accept': [
                     'application/json'
                 ],
-                'content_type': [],
+                'content_type': [
+                    'application/json'
+                ]
             },
             api_client=api_client
         )
@@ -550,6 +558,7 @@ class SyncServiceApi(object):
         self,
         namespace,
         name,
+        body,
         **kwargs
     ):
         """update_sync_limit  # noqa: E501
@@ -557,12 +566,13 @@ class SyncServiceApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.update_sync_limit(namespace, name, async_req=True)
+        >>> thread = api.update_sync_limit(namespace, name, body, async_req=True)
         >>> result = thread.get()
 
         Args:
             namespace (str):
             name (str):
+            body (SyncUpdateSyncLimitRequest):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -625,5 +635,7 @@ class SyncServiceApi(object):
             namespace
         kwargs['name'] = \
             name
+        kwargs['body'] = \
+            body
         return self.update_sync_limit_endpoint.call_with_http_info(**kwargs)
 

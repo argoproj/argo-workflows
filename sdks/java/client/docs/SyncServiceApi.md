@@ -230,7 +230,7 @@ Name | Type | Description  | Notes
 
 <a name="syncServiceUpdateSyncLimit"></a>
 # **syncServiceUpdateSyncLimit**
-> SyncSyncLimitResponse syncServiceUpdateSyncLimit(namespace, name)
+> SyncSyncLimitResponse syncServiceUpdateSyncLimit(namespace, name, body)
 
 
 
@@ -258,8 +258,9 @@ public class Example {
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
     String name = "name_example"; // String | 
+    SyncUpdateSyncLimitRequest body = new SyncUpdateSyncLimitRequest(); // SyncUpdateSyncLimitRequest | 
     try {
-      SyncSyncLimitResponse result = apiInstance.syncServiceUpdateSyncLimit(namespace, name);
+      SyncSyncLimitResponse result = apiInstance.syncServiceUpdateSyncLimit(namespace, name, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling SyncServiceApi#syncServiceUpdateSyncLimit");
@@ -278,6 +279,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
  **name** | **String**|  |
+ **body** | [**SyncUpdateSyncLimitRequest**](SyncUpdateSyncLimitRequest.md)|  |
 
 ### Return type
 
@@ -289,7 +291,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 ### HTTP response details

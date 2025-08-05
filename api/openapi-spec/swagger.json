@@ -2423,6 +2423,14 @@
             "name": "name",
             "in": "path",
             "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sync.UpdateSyncLimitRequest"
+            }
           }
         ],
         "responses": {
@@ -15971,6 +15979,26 @@
       ]
     },
     "sync.SyncLimitResponse": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      }
+    },
+    "sync.UpdateSyncLimitRequest": {
       "type": "object",
       "properties": {
         "key": {

@@ -62,8 +62,11 @@ service SyncService {
     option (google.api.http).get = "/api/v1/sync/{namespace}/{name}";
   };
   rpc UpdateSyncLimit(UpdateSyncLimitRequest) returns (SyncLimitResponse) {
-    option (google.api.http).put = "/api/v1/sync/{namespace}/{name}";
-  };
+    option (google.api.http) = {
+      put : "/api/v1/sync/{namespace}/{name}"
+      body : "*"
+    };
+  }
   rpc DeleteSyncLimit(DeleteSyncLimitRequest) returns (DeleteSyncLimitResponse) {
     option (google.api.http).delete = "/api/v1/sync/{namespace}/{name}";
   };

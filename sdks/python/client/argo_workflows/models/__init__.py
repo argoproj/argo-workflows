@@ -394,6 +394,7 @@ from argo_workflows.model.stream_result_of_sensor_sensor_watch_event import Stre
 from argo_workflows.model.sync_create_sync_limit_request import SyncCreateSyncLimitRequest
 from argo_workflows.model.sync_sync_config_type import SyncSyncConfigType
 from argo_workflows.model.sync_sync_limit_response import SyncSyncLimitResponse
+from argo_workflows.model.sync_update_sync_limit_request import SyncUpdateSyncLimitRequest
 from argo_workflows.model.sysctl import Sysctl
 from argo_workflows.model.tcp_socket_action import TCPSocketAction
 from argo_workflows.model.toleration import Toleration
