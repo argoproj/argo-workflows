@@ -139,7 +139,7 @@ func (m *Metrics) matchExistingMetric(metricSpec *wfv1.Prometheus) (*telemetry.I
 			if wantedType != wfv1.MetricTypeGauge && !metricSpec.IsRealtime() {
 				return nil, fmt.Errorf("Found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
-		case *metric.Float64ObservableUpDownCounter:
+		case *metric.Float64ObservableCounter:
 			if wantedType != wfv1.MetricTypeCounter {
 				return nil, fmt.Errorf("Found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
@@ -257,7 +257,7 @@ func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
 	case metricType == wfv1.MetricTypeHistogram:
 		return m.CreateInstrument(telemetry.Float64Histogram, metricSpec.Name, metricSpec.Help, "{item}", telemetry.WithDefaultBuckets(metricSpec.Histogram.GetBuckets()))
 	case metricType == wfv1.MetricTypeCounter:
-		err := m.CreateInstrument(telemetry.Float64ObservableUpDownCounter, metricSpec.Name, metricSpec.Help, "{item}")
+		err := m.CreateInstrument(telemetry.Float64ObservableCounter, metricSpec.Name, metricSpec.Help, "{item}")
 		if err != nil {
 			return err
 		}
