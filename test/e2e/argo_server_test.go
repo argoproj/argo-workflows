@@ -2637,7 +2637,6 @@ func (s *ArgoServerSuite) TestSyncService() {
 	s.Run("CreateSyncLimit-cm-exist", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
 			WithJSON(syncpkg.CreateSyncLimitRequest{
-				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
 				Name:      configmapName,
 				Key:       syncKey + "-exist",
 				SizeLimit: 100,
@@ -2714,7 +2713,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 				SizeLimit: 200,
 				Type: syncpkg.SyncConfigType_CONFIG_MAP,
 			}).Expect().
-			Status(400)
+			Status(404)
 	})
 }
 
