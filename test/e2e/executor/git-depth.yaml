@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-depth-
+spec:
+  entrypoint: git-depth
+  templates:
+  - name: git-depth
+    inputs:
+      artifacts:
+      - name: git-repo
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["ls -l"]
+      workingDir: /tmp/git

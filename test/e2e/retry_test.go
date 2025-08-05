@@ -22,24 +22,7 @@ type RetryTestSuite struct {
 
 func (s *RetryTestSuite) TestRetryLimit() {
 	s.Given().
-		Workflow(`
-metadata:
-  name: test-retry-limit
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      retryStrategy:
-        limit: 0
-        backoff:
-          duration: 2s
-          factor: 2
-          maxDuration: 5m
-      container:
-        name: main
-        image: 'argoproj/argosay:v2'
-        args: [ exit, "1" ]
-`).
+		Workflow("@functional/test-retry-limit.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -66,23 +49,7 @@ spec:
 
 func (s *RetryTestSuite) TestRetryBackoff() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: test-backoff-strategy-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      retryStrategy:
-        limit: '10'
-        backoff:
-          duration: 10s
-          maxDuration: 1m
-      container:
-          name: main
-          image: 'argoproj/argosay:v2'
-          args: [ exit, "1" ]
-`).
+		Workflow("@functional/test-backoff-strategy.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(time.Second * 90).
@@ -92,23 +59,7 @@ spec:
 			assert.LessOrEqual(t, len(status.Nodes), 10)
 		})
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: test-backoff-strategy-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      retryStrategy:
-        limit: 10
-        backoff:
-          duration: 10s
-          maxDuration: 1m
-      container:
-          name: main
-          image: 'argoproj/argosay:v2'
-          args: [ exit, "1" ]
-`).
+		Workflow("@functional/test-backoff-strategy.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(time.Second * 90).
@@ -122,13 +73,7 @@ spec:
 func (s *RetryTestSuite) TestWorkflowTemplateWithRetryStrategyInContainerSet() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-with-containerset.yaml").
-		Workflow(`
-metadata:
-  name: workflow-template-containerset
-spec:
-  workflowTemplateRef:
-    name: containerset-with-retrystrategy
-`).
+		Workflow("@functional/workflow-template-containerset.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
@@ -160,23 +105,7 @@ spec:
 
 func (s *RetryTestSuite) TestRetryNodeAntiAffinity() {
 	s.Given().
-		Workflow(`
-metadata:
-  name: test-nodeantiaffinity-strategy
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      retryStrategy:
-        limit: '1'
-        retryPolicy: "Always"
-        affinity:
-          nodeAntiAffinity: {}
-      container:
-          name: main
-          image: 'argoproj/argosay:v2'
-          args: [ exit, "1" ]
-`).
+		Workflow("@functional/test-nodeantiaffinity-strategy.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHaveFailedPod).

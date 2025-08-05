@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-cmkeyselector-wf-global-arg-default-param-
+  label:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: simple-global-param
+        valueFrom:
+          default: "default value"
+          configMapKeyRef:
+            name: not-existing-cm
+            key: not-existing-key
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["sleep 1; echo -n {{workflow.parameters.simple-global-param}} > /tmp/message.txt"]
+      outputs:
+        parameters:
+         - name: message
+           valueFrom:
+             path: /tmp/message.txt

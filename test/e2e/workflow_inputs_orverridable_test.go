@@ -20,33 +20,7 @@ type WorkflowInputsOverridableSuite struct {
 
 func (s *WorkflowInputsOverridableSuite) TestArgsValueParamsOverrideInputParamsValueFrom() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-inputs-overridable-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: message
-        value: arg-value
-  templates:
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v2
-        args:
-        - echo
-        - "{{inputs.parameters.message}}"
-      inputs:
-        parameters:
-          - name: message
-            valueFrom:
-              configMapKeyRef:
-                name: cmref-parameters
-                key: cmref-key
-`).
+		Workflow("@functional/workflow-inputs-overridable-wf.yaml").
 		When().
 		CreateConfigMap(
 			"cmref-parameters",
@@ -65,36 +39,7 @@ spec:
 
 func (s *WorkflowInputsOverridableSuite) TestArgsValueFromParamsOverrideInputParamsValueFrom() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-inputs-overridable-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: new-cmref-parameters
-            key: cmref-key
-  templates:
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v2
-        args:
-        - echo
-        - "{{inputs.parameters.message}}"
-      inputs:
-        parameters:
-          - name: message
-            valueFrom:
-              configMapKeyRef:
-                name: cmref-parameters
-                key: cmref-key
-`).
+		Workflow("@functional/workflow-inputs-overridable-wf.yaml").
 		When().
 		CreateConfigMap(
 			"cmref-parameters",
@@ -118,30 +63,7 @@ spec:
 
 func (s *WorkflowInputsOverridableSuite) TestArgsValueParamsOverrideInputParamsValue() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: message
-        value: arg-value
-  templates:
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v2
-        args:
-        - echo
-        - "{{inputs.parameters.message}}"
-      inputs:
-        parameters:
-          - name: message
-            value: input-value
-`).
+		Workflow("@functional/workflow-template-wf.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -154,33 +76,7 @@ spec:
 
 func (s *WorkflowInputsOverridableSuite) TestArgsValueFromParamsOverrideInputParamsValue() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-inputs-overridable-wf-
-  label:
-    workflows.argoproj.io/test: "true"
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: cmref-parameters
-            key: cmref-key
-  templates:
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v2
-        args:
-        - echo
-        - "{{inputs.parameters.message}}"
-      inputs:
-        parameters:
-          - name: message
-            value: input-value
-`).
+		Workflow("@functional/workflow-inputs-overridable-wf.yaml").
 		When().
 		CreateConfigMap(
 			"cmref-parameters",

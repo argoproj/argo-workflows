@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-inputs-overridable-wf-
+  label:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: new-cmref-parameters
+            key: cmref-key
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        args:
+        - echo
+        - "{{inputs.parameters.message}}"
+      inputs:
+        parameters:
+          - name: message
+            valueFrom:
+              configMapKeyRef:
+                name: cmref-parameters
+                key: cmref-key

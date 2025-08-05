@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-wf-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: k8s-wf-resource-
+          spec:
+            entrypoint: main
+            templates:
+              - name: main
+                container:
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]

@@ -1,0 +1,31 @@
+metadata:
+  generateName: continue-on-fail-
+spec:
+  entrypoint: main
+  parallelism: 2
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: whalesay
+      - name: B
+        template: boom
+        continueOn:
+          failed: true
+    - - name: C
+        template: whalesay
+
+  - name: boom
+    dag:
+      tasks:
+      - name: B-1
+        template: whalesplosion
+
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+
+  - name: whalesplosion
+    container:
+      image: argoproj/argosay:v2
+      args: [ exit, "1" ]

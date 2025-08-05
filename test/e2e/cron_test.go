@@ -36,28 +36,7 @@ func (s *CronSuite) TearDownSubTest() {
 func (s *CronSuite) TestBasic() {
 	s.Run("TestBasic", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic
-spec:
-  schedules:
-    -  "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2`).
+			CronWorkflow("@cron/test-cron-wf-basic.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -111,28 +90,7 @@ spec:
 	})
 	s.Run("TestSuspend", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic-suspend
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2`).
+			CronWorkflow("@cron/test-cron-wf-basic-suspend.yaml").
 			When().
 			CreateCronWorkflow().
 			SuspendCronWorkflow().
@@ -143,28 +101,7 @@ spec:
 	})
 	s.Run("TestResume", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic-resume
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2`).
+			CronWorkflow("@cron/test-cron-wf-basic-resume.yaml").
 			When().
 			CreateCronWorkflow().
 			ResumeCronWorkflow("test-cron-wf-basic-resume").
@@ -175,29 +112,7 @@ spec:
 	})
 	s.Run("TestBasicForbid", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic-forbid
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Forbid"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          args: ["sleep", "300s"]`).
+			CronWorkflow("@cron/test-cron-wf-basic-forbid.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflow(fixtures.ToBeRunning).
@@ -210,31 +125,7 @@ spec:
 	})
 	s.Run("TestBasicAllow", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic-allow
-  labels:
-
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          args: ["sleep", "300s"]`).
+			CronWorkflow("@cron/test-cron-wf-basic-allow.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflowListCount(3*time.Minute, 2).
@@ -245,29 +136,7 @@ spec:
 	})
 	s.Run("TestBasicReplace", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic-replace
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Replace"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          args: ["sleep", "300s"]`).
+			CronWorkflow("@cron/test-cron-wf-basic-replace.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflow(fixtures.ToBeRunning).
@@ -282,28 +151,7 @@ spec:
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-succeed-1
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Forbid"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 1
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2`).
+			CronWorkflow("@cron/test-cron-wf-succeed-1.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -317,29 +165,7 @@ spec:
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-fail-1
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Forbid"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 1
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          args: ["exit", "1"]`).
+			CronWorkflow("@cron/test-cron-wf-fail-1.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflow(fixtures.ToBeFailed).
@@ -353,31 +179,7 @@ spec:
 	})
 	s.Run("TestStoppingConditionWithSucceeded", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-stop-condition-succeeded
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  stopStrategy:
-    expression: "cronworkflow.succeeded >= 1"
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-            image: argoproj/argosay:v2
-            command: [/argosay]`).
+			CronWorkflow("@cron/test-cron-wf-stop-condition-succeeded.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForCronWorkflowCompleted(3 * time.Minute).
@@ -391,28 +193,7 @@ spec:
 	})
 	s.Run("TestStoppingConditionWithFailed", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-stop-condition-failed
-spec:
-  schedules:
-    - "* * * * *"
-  concurrencyPolicy: "Allow"
-  stopStrategy:
-    expression: "cronworkflow.failed >= 1"
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          args: ["exit", "1"]`).
+			CronWorkflow("@cron/test-cron-wf-stop-condition-failed.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForCronWorkflowCompleted(3 * time.Minute).
@@ -426,30 +207,7 @@ spec:
 	})
 	s.Run("TestMultipleWithTimezone", func() {
 		s.Given().
-			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-multiple-with-timezone
-spec:
-  schedules:
-    - "* * * * *"
-    - "0 1 * * *"
-  timezone: "America/Los_Angeles"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2`).
+			CronWorkflow("@cron/test-multiple-with-timezone.yaml").
 			When().
 			CreateCronWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).

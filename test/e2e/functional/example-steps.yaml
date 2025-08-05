@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: example-steps
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: job
+            template: argosay
+            hooks:
+              running:
+                expression: steps['job'].status == "Running"
+                template: argosay-sleep-2seconds
+              failed:
+                expression: steps['job'].status == "Failed"
+                template: argosay-sleep-2seconds
+
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 5; /argosay"]
+    - name: argosay-sleep-2seconds
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 2; /argosay"]

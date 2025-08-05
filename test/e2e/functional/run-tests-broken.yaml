@@ -1,0 +1,20 @@
+metadata:
+  name: run-tests-broken
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+      - - name: postgres
+          template: postgres
+      - - name: run-tests-broken
+          template: run-tests-broken
+  - name: run-tests-broken
+    container:
+      image: argoproj/argosay:v2
+  - name: postgres
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "100s"]
+      name: database
