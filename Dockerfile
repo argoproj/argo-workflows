@@ -123,8 +123,6 @@ USER 8737
 
 WORKDIR /home/argo
 
-# Temporary workaround for https://github.com/grpc/grpc-go/issues/434
-ENV GRPC_ENFORCE_ALPN_ENABLED=false
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
