@@ -4204,6 +4204,9 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, &wfDefault.ObjectMeta)
 		workflowTemplateSpec = wftHolder.GetWorkflowSpec()
 	}
+	if len(woc.execWf.Spec.PodSpecPatch) > 0 && woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+		return fmt.Errorf("PodSpecPatch may not be setted during execution when the controller is set `templateReferencing: Secure|Strict`")
+	}
 	// Update the Entrypoint, ShutdownStrategy and Suspend
 	if woc.needsStoredWfSpecUpdate() {
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
