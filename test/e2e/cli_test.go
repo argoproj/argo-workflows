@@ -1805,7 +1805,7 @@ func (s *CLISuite) TestArchive() {
 	})
 }
 
-func (s *CLISuite) TestSync() {
+func (s *CLISuite) TestSyncCLI() {
 	s.Given().
 		RunCli([]string{"sync", "configmap", "create", "test-sync-configmap", "--key", "test-key", "--size-limit", "1000"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)

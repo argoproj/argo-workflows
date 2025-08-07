@@ -5,9 +5,9 @@ All URIs are relative to *http://localhost:2746*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**syncServiceCreateSyncLimit**](SyncServiceApi.md#syncServiceCreateSyncLimit) | **POST** /api/v1/sync/{namespace} | 
-[**syncServiceDeleteSyncLimit**](SyncServiceApi.md#syncServiceDeleteSyncLimit) | **DELETE** /api/v1/sync/{namespace}/{name} | 
-[**syncServiceGetSyncLimit**](SyncServiceApi.md#syncServiceGetSyncLimit) | **GET** /api/v1/sync/{namespace}/{name} | 
-[**syncServiceUpdateSyncLimit**](SyncServiceApi.md#syncServiceUpdateSyncLimit) | **PUT** /api/v1/sync/{namespace}/{name} | 
+[**syncServiceDeleteSyncLimit**](SyncServiceApi.md#syncServiceDeleteSyncLimit) | **DELETE** /api/v1/sync/{namespace}/{key} | 
+[**syncServiceGetSyncLimit**](SyncServiceApi.md#syncServiceGetSyncLimit) | **GET** /api/v1/sync/{namespace}/{key} | 
+[**syncServiceUpdateSyncLimit**](SyncServiceApi.md#syncServiceUpdateSyncLimit) | **PUT** /api/v1/sync/{namespace}/{key} | 
 
 
 <a name="syncServiceCreateSyncLimit"></a>
@@ -82,7 +82,7 @@ Name | Type | Description  | Notes
 
 <a name="syncServiceDeleteSyncLimit"></a>
 # **syncServiceDeleteSyncLimit**
-> Object syncServiceDeleteSyncLimit(namespace, name, type, key)
+> Object syncServiceDeleteSyncLimit(namespace, key, type, name)
 
 
 
@@ -109,11 +109,11 @@ public class Example {
 
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
-    String name = "name_example"; // String | 
-    String type = "CONFIG_MAP"; // String | 
     String key = "key_example"; // String | 
+    String type = "CONFIG_MAP"; // String | 
+    String name = "name_example"; // String | 
     try {
-      Object result = apiInstance.syncServiceDeleteSyncLimit(namespace, name, type, key);
+      Object result = apiInstance.syncServiceDeleteSyncLimit(namespace, key, type, name);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling SyncServiceApi#syncServiceDeleteSyncLimit");
@@ -131,9 +131,9 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
- **name** | **String**|  |
+ **key** | **String**|  |
  **type** | **String**|  | [optional] [default to CONFIG_MAP] [enum: CONFIG_MAP, DATABASE]
- **key** | **String**|  | [optional]
+ **name** | **String**|  | [optional]
 
 ### Return type
 
@@ -156,7 +156,7 @@ Name | Type | Description  | Notes
 
 <a name="syncServiceGetSyncLimit"></a>
 # **syncServiceGetSyncLimit**
-> SyncSyncLimitResponse syncServiceGetSyncLimit(namespace, name, type, key)
+> SyncSyncLimitResponse syncServiceGetSyncLimit(namespace, key, type, name)
 
 
 
@@ -183,11 +183,11 @@ public class Example {
 
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
-    String name = "name_example"; // String | 
-    String type = "CONFIG_MAP"; // String | 
     String key = "key_example"; // String | 
+    String type = "CONFIG_MAP"; // String | 
+    String name = "name_example"; // String | 
     try {
-      SyncSyncLimitResponse result = apiInstance.syncServiceGetSyncLimit(namespace, name, type, key);
+      SyncSyncLimitResponse result = apiInstance.syncServiceGetSyncLimit(namespace, key, type, name);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling SyncServiceApi#syncServiceGetSyncLimit");
@@ -205,9 +205,9 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
- **name** | **String**|  |
+ **key** | **String**|  |
  **type** | **String**|  | [optional] [default to CONFIG_MAP] [enum: CONFIG_MAP, DATABASE]
- **key** | **String**|  | [optional]
+ **name** | **String**|  | [optional]
 
 ### Return type
 
@@ -230,7 +230,7 @@ Name | Type | Description  | Notes
 
 <a name="syncServiceUpdateSyncLimit"></a>
 # **syncServiceUpdateSyncLimit**
-> SyncSyncLimitResponse syncServiceUpdateSyncLimit(namespace, name, body)
+> SyncSyncLimitResponse syncServiceUpdateSyncLimit(namespace, key, body)
 
 
 
@@ -257,10 +257,10 @@ public class Example {
 
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
-    String name = "name_example"; // String | 
+    String key = "key_example"; // String | 
     SyncUpdateSyncLimitRequest body = new SyncUpdateSyncLimitRequest(); // SyncUpdateSyncLimitRequest | 
     try {
-      SyncSyncLimitResponse result = apiInstance.syncServiceUpdateSyncLimit(namespace, name, body);
+      SyncSyncLimitResponse result = apiInstance.syncServiceUpdateSyncLimit(namespace, key, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling SyncServiceApi#syncServiceUpdateSyncLimit");
@@ -278,7 +278,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
- **name** | **String**|  |
+ **key** | **String**|  |
  **body** | [**SyncUpdateSyncLimitRequest**](SyncUpdateSyncLimitRequest.md)|  |
 
 ### Return type

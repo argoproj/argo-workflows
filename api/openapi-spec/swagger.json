@@ -2356,7 +2356,7 @@
         }
       }
     },
-    "/api/v1/sync/{namespace}/{name}": {
+    "/api/v1/sync/{namespace}/{key}": {
       "get": {
         "tags": [
           "SyncService"
@@ -2371,7 +2371,7 @@
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "key",
             "in": "path",
             "required": true
           },
@@ -2387,7 +2387,7 @@
           },
           {
             "type": "string",
-            "name": "key",
+            "name": "name",
             "in": "query"
           }
         ],
@@ -2420,7 +2420,7 @@
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "key",
             "in": "path",
             "required": true
           },
@@ -2462,7 +2462,7 @@
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "key",
             "in": "path",
             "required": true
           },
@@ -2478,7 +2478,7 @@
           },
           {
             "type": "string",
-            "name": "key",
+            "name": "name",
             "in": "query"
           }
         ],

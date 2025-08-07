@@ -2649,8 +2649,8 @@ func (s *ArgoServerSuite) TestSyncService() {
 	})
 
 	s.Run("GetSyncLimit", func() {
-		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey).
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("name", configmapName).
 			Expect().
 			Status(200).
 			JSON().Object().
@@ -2660,10 +2660,9 @@ func (s *ArgoServerSuite) TestSyncService() {
 	})
 
 	s.Run("UpdateSyncLimit", func() {
-		s.e().PUT("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
 				Name:      configmapName,
-				Key:       syncKey,
 				SizeLimit: 200,
 			}).
 			Expect().
@@ -2686,29 +2685,28 @@ func (s *ArgoServerSuite) TestSyncService() {
 	})
 
 	s.Run("KeyDoesNotExist", func() {
-		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey+"-non-existent").
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithQuery("name", configmapName).
 			Expect().
 			Status(404)
 	})
 
 	s.Run("DeleteSyncLimit", func() {
-		s.e().DELETE("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey).
+		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("name", configmapName).
 			Expect().
 			Status(200)
 
-		s.e().GET("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName).
-			WithQuery("key", syncKey).
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("name", configmapName).
 			Expect().
 			Status(404)
 	})
 
 	s.Run("UpdateNonExistentLimit", func() {
-		s.e().PUT("/api/v1/sync/{namespace}/{name}", syncNamespace, configmapName+"-non-existent").
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
-				Name:      configmapName + "-non-existent",
-				Key:       syncKey + "-non-existent",
+				Name:      configmapName,
 				SizeLimit: 200,
 			}).Expect().
 			Status(404)

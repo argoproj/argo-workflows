@@ -59,15 +59,15 @@ service SyncService {
     };
   }
   rpc GetSyncLimit(GetSyncLimitRequest) returns (SyncLimitResponse) {
-    option (google.api.http).get = "/api/v1/sync/{namespace}/{name}";
+    option (google.api.http).get = "/api/v1/sync/{namespace}/{key}";
   };
   rpc UpdateSyncLimit(UpdateSyncLimitRequest) returns (SyncLimitResponse) {
     option (google.api.http) = {
-      put : "/api/v1/sync/{namespace}/{name}"
+      put : "/api/v1/sync/{namespace}/{key}"
       body : "*"
     };
   }
   rpc DeleteSyncLimit(DeleteSyncLimitRequest) returns (DeleteSyncLimitResponse) {
-    option (google.api.http).delete = "/api/v1/sync/{namespace}/{name}";
+    option (google.api.http).delete = "/api/v1/sync/{namespace}/{key}";
   };
 }

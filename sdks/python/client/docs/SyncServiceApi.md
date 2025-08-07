@@ -5,9 +5,9 @@ All URIs are relative to *http://localhost:2746*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**create_sync_limit**](SyncServiceApi.md#create_sync_limit) | **POST** /api/v1/sync/{namespace} | 
-[**delete_sync_limit**](SyncServiceApi.md#delete_sync_limit) | **DELETE** /api/v1/sync/{namespace}/{name} | 
-[**get_sync_limit**](SyncServiceApi.md#get_sync_limit) | **GET** /api/v1/sync/{namespace}/{name} | 
-[**update_sync_limit**](SyncServiceApi.md#update_sync_limit) | **PUT** /api/v1/sync/{namespace}/{name} | 
+[**delete_sync_limit**](SyncServiceApi.md#delete_sync_limit) | **DELETE** /api/v1/sync/{namespace}/{key} | 
+[**get_sync_limit**](SyncServiceApi.md#get_sync_limit) | **GET** /api/v1/sync/{namespace}/{key} | 
+[**update_sync_limit**](SyncServiceApi.md#update_sync_limit) | **PUT** /api/v1/sync/{namespace}/{key} | 
 
 
 # **create_sync_limit**
@@ -97,7 +97,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_sync_limit**
-> bool, date, datetime, dict, float, int, list, str, none_type delete_sync_limit(namespace, name)
+> bool, date, datetime, dict, float, int, list, str, none_type delete_sync_limit(namespace, key)
 
 
 
@@ -133,13 +133,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
-    name = "name_example" # str | 
+    key = "key_example" # str | 
     type = "CONFIG_MAP" # str |  (optional) if omitted the server will use the default value of "CONFIG_MAP"
-    key = "key_example" # str |  (optional)
+    name = "name_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.delete_sync_limit(namespace, name)
+        api_response = api_instance.delete_sync_limit(namespace, key)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->delete_sync_limit: %s\n" % e)
@@ -147,7 +147,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.delete_sync_limit(namespace, name, type=type, key=key)
+        api_response = api_instance.delete_sync_limit(namespace, key, type=type, name=name)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->delete_sync_limit: %s\n" % e)
@@ -159,9 +159,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
- **name** | **str**|  |
+ **key** | **str**|  |
  **type** | **str**|  | [optional] if omitted the server will use the default value of "CONFIG_MAP"
- **key** | **str**|  | [optional]
+ **name** | **str**|  | [optional]
 
 ### Return type
 
@@ -187,7 +187,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_sync_limit**
-> SyncSyncLimitResponse get_sync_limit(namespace, name)
+> SyncSyncLimitResponse get_sync_limit(namespace, key)
 
 
 
@@ -224,13 +224,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
-    name = "name_example" # str | 
+    key = "key_example" # str | 
     type = "CONFIG_MAP" # str |  (optional) if omitted the server will use the default value of "CONFIG_MAP"
-    key = "key_example" # str |  (optional)
+    name = "name_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.get_sync_limit(namespace, name)
+        api_response = api_instance.get_sync_limit(namespace, key)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->get_sync_limit: %s\n" % e)
@@ -238,7 +238,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.get_sync_limit(namespace, name, type=type, key=key)
+        api_response = api_instance.get_sync_limit(namespace, key, type=type, name=name)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->get_sync_limit: %s\n" % e)
@@ -250,9 +250,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
- **name** | **str**|  |
+ **key** | **str**|  |
  **type** | **str**|  | [optional] if omitted the server will use the default value of "CONFIG_MAP"
- **key** | **str**|  | [optional]
+ **name** | **str**|  | [optional]
 
 ### Return type
 
@@ -278,7 +278,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **update_sync_limit**
-> SyncSyncLimitResponse update_sync_limit(namespace, name, body)
+> SyncSyncLimitResponse update_sync_limit(namespace, key, body)
 
 
 
@@ -316,7 +316,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
-    name = "name_example" # str | 
+    key = "key_example" # str | 
     body = SyncUpdateSyncLimitRequest(
         key="key_example",
         name="name_example",
@@ -327,7 +327,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.update_sync_limit(namespace, name, body)
+        api_response = api_instance.update_sync_limit(namespace, key, body)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->update_sync_limit: %s\n" % e)
@@ -339,7 +339,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
- **name** | **str**|  |
+ **key** | **str**|  |
  **body** | [**SyncUpdateSyncLimitRequest**](SyncUpdateSyncLimitRequest.md)|  |
 
 ### Return type

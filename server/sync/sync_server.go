@@ -133,6 +133,8 @@ func (s *syncServer) updateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyn
 }
 
 func (s *syncServer) DeleteSyncLimit(ctx context.Context, req *syncpkg.DeleteSyncLimitRequest) (*syncpkg.DeleteSyncLimitResponse, error) {
+	fmt.Printf("Deleting sync limit for ConfigMap %s in namespace %s with key %s\n", req.Name, req.Namespace, req.Key)
+
 	kubeClient := auth.GetKubeClient(ctx)
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)

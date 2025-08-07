@@ -102,7 +102,7 @@ class SyncServiceApi(object):
                 'auth': [
                     'BearerToken'
                 ],
-                'endpoint_path': '/api/v1/sync/{namespace}/{name}',
+                'endpoint_path': '/api/v1/sync/{namespace}/{key}',
                 'operation_id': 'delete_sync_limit',
                 'http_method': 'DELETE',
                 'servers': None,
@@ -110,13 +110,13 @@ class SyncServiceApi(object):
             params_map={
                 'all': [
                     'namespace',
-                    'name',
-                    'type',
                     'key',
+                    'type',
+                    'name',
                 ],
                 'required': [
                     'namespace',
-                    'name',
+                    'key',
                 ],
                 'nullable': [
                 ],
@@ -139,24 +139,24 @@ class SyncServiceApi(object):
                 'openapi_types': {
                     'namespace':
                         (str,),
-                    'name':
+                    'key':
                         (str,),
                     'type':
                         (str,),
-                    'key':
+                    'name':
                         (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
-                    'name': 'name',
-                    'type': 'type',
                     'key': 'key',
+                    'type': 'type',
+                    'name': 'name',
                 },
                 'location_map': {
                     'namespace': 'path',
-                    'name': 'path',
+                    'key': 'path',
                     'type': 'query',
-                    'key': 'query',
+                    'name': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -175,7 +175,7 @@ class SyncServiceApi(object):
                 'auth': [
                     'BearerToken'
                 ],
-                'endpoint_path': '/api/v1/sync/{namespace}/{name}',
+                'endpoint_path': '/api/v1/sync/{namespace}/{key}',
                 'operation_id': 'get_sync_limit',
                 'http_method': 'GET',
                 'servers': None,
@@ -183,13 +183,13 @@ class SyncServiceApi(object):
             params_map={
                 'all': [
                     'namespace',
-                    'name',
-                    'type',
                     'key',
+                    'type',
+                    'name',
                 ],
                 'required': [
                     'namespace',
-                    'name',
+                    'key',
                 ],
                 'nullable': [
                 ],
@@ -212,24 +212,24 @@ class SyncServiceApi(object):
                 'openapi_types': {
                     'namespace':
                         (str,),
-                    'name':
+                    'key':
                         (str,),
                     'type':
                         (str,),
-                    'key':
+                    'name':
                         (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
-                    'name': 'name',
-                    'type': 'type',
                     'key': 'key',
+                    'type': 'type',
+                    'name': 'name',
                 },
                 'location_map': {
                     'namespace': 'path',
-                    'name': 'path',
+                    'key': 'path',
                     'type': 'query',
-                    'key': 'query',
+                    'name': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -248,7 +248,7 @@ class SyncServiceApi(object):
                 'auth': [
                     'BearerToken'
                 ],
-                'endpoint_path': '/api/v1/sync/{namespace}/{name}',
+                'endpoint_path': '/api/v1/sync/{namespace}/{key}',
                 'operation_id': 'update_sync_limit',
                 'http_method': 'PUT',
                 'servers': None,
@@ -256,12 +256,12 @@ class SyncServiceApi(object):
             params_map={
                 'all': [
                     'namespace',
-                    'name',
+                    'key',
                     'body',
                 ],
                 'required': [
                     'namespace',
-                    'name',
+                    'key',
                     'body',
                 ],
                 'nullable': [
@@ -279,18 +279,18 @@ class SyncServiceApi(object):
                 'openapi_types': {
                     'namespace':
                         (str,),
-                    'name':
+                    'key':
                         (str,),
                     'body':
                         (SyncUpdateSyncLimitRequest,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
-                    'name': 'name',
+                    'key': 'key',
                 },
                 'location_map': {
                     'namespace': 'path',
-                    'name': 'path',
+                    'key': 'path',
                     'body': 'body',
                 },
                 'collection_format_map': {
@@ -391,7 +391,7 @@ class SyncServiceApi(object):
     def delete_sync_limit(
         self,
         namespace,
-        name,
+        key,
         **kwargs
     ):
         """delete_sync_limit  # noqa: E501
@@ -399,16 +399,16 @@ class SyncServiceApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_sync_limit(namespace, name, async_req=True)
+        >>> thread = api.delete_sync_limit(namespace, key, async_req=True)
         >>> result = thread.get()
 
         Args:
             namespace (str):
-            name (str):
+            key (str):
 
         Keyword Args:
             type (str): [optional] if omitted the server will use the default value of "CONFIG_MAP"
-            key (str): [optional]
+            name (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -467,14 +467,14 @@ class SyncServiceApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['namespace'] = \
             namespace
-        kwargs['name'] = \
-            name
+        kwargs['key'] = \
+            key
         return self.delete_sync_limit_endpoint.call_with_http_info(**kwargs)
 
     def get_sync_limit(
         self,
         namespace,
-        name,
+        key,
         **kwargs
     ):
         """get_sync_limit  # noqa: E501
@@ -482,16 +482,16 @@ class SyncServiceApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_sync_limit(namespace, name, async_req=True)
+        >>> thread = api.get_sync_limit(namespace, key, async_req=True)
         >>> result = thread.get()
 
         Args:
             namespace (str):
-            name (str):
+            key (str):
 
         Keyword Args:
             type (str): [optional] if omitted the server will use the default value of "CONFIG_MAP"
-            key (str): [optional]
+            name (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -550,14 +550,14 @@ class SyncServiceApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['namespace'] = \
             namespace
-        kwargs['name'] = \
-            name
+        kwargs['key'] = \
+            key
         return self.get_sync_limit_endpoint.call_with_http_info(**kwargs)
 
     def update_sync_limit(
         self,
         namespace,
-        name,
+        key,
         body,
         **kwargs
     ):
@@ -566,12 +566,12 @@ class SyncServiceApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.update_sync_limit(namespace, name, body, async_req=True)
+        >>> thread = api.update_sync_limit(namespace, key, body, async_req=True)
         >>> result = thread.get()
 
         Args:
             namespace (str):
-            name (str):
+            key (str):
             body (SyncUpdateSyncLimitRequest):
 
         Keyword Args:
@@ -633,8 +633,8 @@ class SyncServiceApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['namespace'] = \
             namespace
-        kwargs['name'] = \
-            name
+        kwargs['key'] = \
+            key
         kwargs['body'] = \
             body
         return self.update_sync_limit_endpoint.call_with_http_info(**kwargs)
