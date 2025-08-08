@@ -446,30 +446,44 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
-
-	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
+	controllerConfigWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
+		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.configController.GetNamespace()).Watch(ctx, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", wfc.configController.GetName()),
+			})
 		},
 	})
 	if err != nil {
 		panic(err)
 	}
-	defer retryWatcher.Stop()
+	defer controllerConfigWatcher.Stop()
+	semaphoreConfigWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
+		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.GetManagedNamespace()).Watch(ctx, metav1.ListOptions{})
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer semaphoreConfigWatcher.Stop()
 
 	for {
 		select {
-		case event := <-retryWatcher.ResultChan():
+		case event := <-controllerConfigWatcher.ResultChan():
 			cm, ok := event.Object.(*apiv1.ConfigMap)
 			if !ok {
-				log.Errorf("invalid config map object received in config watcher. Ignored processing")
+				log.Error("invalid config map object received in config watcher. Ignored processing")
+				continue
+			}
+			log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+			wfc.UpdateConfig(ctx)
+		case event := <-semaphoreConfigWatcher.ResultChan():
+			cm, ok := event.Object.(*apiv1.ConfigMap)
+			if !ok {
+				log.Error(ctx, "invalid config map object received in semaphore config watcher. Ignored processing")
 				continue
 			}
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
-				wfc.UpdateConfig(ctx)
-			}
 			wfc.notifySemaphoreConfigUpdate(cm)
 		case <-ctx.Done():
 			return
