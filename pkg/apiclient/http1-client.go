@@ -8,6 +8,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/http1"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -39,6 +40,10 @@ func (h httpClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowte
 
 func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
+}
+
+func (h httpClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
+	return http1.SyncServiceClient(h), nil
 }
 
 func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
