@@ -4433,6 +4433,11 @@ definitions:
                 type: integer
             plugin:
                 $ref: '#/definitions/Plugin'
+            podMetadataPatch:
+                description: |-
+                    PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of
+                    metadata fields Labels and Annotations, which are not strings.
+                type: string
             podSpecPatch:
                 description: |-
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of

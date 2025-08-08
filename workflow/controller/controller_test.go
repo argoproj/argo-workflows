@@ -62,6 +62,7 @@ spec:
       labels:
         labelKey1: "labelValue1"
         labelKey2: "labelValue2"
+    podMetadataPatch: "{}"
     container:
       image: docker/whalesay:latest
       command: [cowsay]
