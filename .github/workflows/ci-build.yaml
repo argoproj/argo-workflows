@@ -389,13 +389,13 @@ jobs:
       - name: Failure debug - k3s logs
         if: ${{ failure() }}
         run: journalctl -u k3s
-      - name: Failure debug - describe MinIO/MySQL deployment
+      - name: Failure debug - describe MinIO/Database deployment
         if: ${{ failure() }}
         run: |
           set -eux
           kubectl get deploy
           kubectl describe deploy
-      - name: Failure debug - describe MinIO/MySQL pods
+      - name: Failure debug - describe MinIO/Database pods
         if: ${{ failure() }}
         run: |
           set -eux
