@@ -460,13 +460,21 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		}
 		promhttp.Handler().ServeHTTP(w, r)
 	})
-	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	addRouteFunc("/", static.NewFilesServer(as.baseHRef, as.rootPath, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
 
-	if as.baseHRef != "" && as.baseHRef != "/" && as.baseHRef != as.rootPath {
-		basePath := strings.TrimSuffix(as.baseHRef, "/")
-		mux.Handle(basePath+"/", http.StripPrefix(basePath, http.HandlerFunc(static.NewFilesServer(as.baseHRef, as.rootPath, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)))
+	staticServerFiles := static.NewFilesServer(as.baseHRef, as.rootPath, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles
+
+	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
+	addRouteFunc("/", staticServerFiles)
+
+	if  as.baseHRef != as.rootPath {
+		if as.baseHRef == "" || as.baseHRef == "/" {
+			mux.Handle("/", http.HandlerFunc(staticServerFiles))
+		} else {
+			basePath := strings.TrimSuffix(as.baseHRef, "/")
+			mux.Handle(basePath + "/", http.StripPrefix(basePath, http.HandlerFunc(staticServerFiles)))
+		}
 	}
+
 	return handler
 }
 
