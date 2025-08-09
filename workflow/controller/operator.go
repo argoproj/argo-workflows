@@ -3704,8 +3704,12 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
+func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string, globalScope map[string]string) (string, error) {
 	replaceMap := make(map[string]interface{})
+	// Start with the global scope
+	for k, v := range globalScope {
+		replaceMap[k] = v
+	}
 	var newName string
 
 	switch item.GetType() {
