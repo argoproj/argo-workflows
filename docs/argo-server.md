@@ -50,6 +50,14 @@ If the server is running behind reverse proxy with a sub-path different from `/`
 `/argo`), you can set an alternative sub-path with the `--base-href` flag or the `ARGO_BASE_HREF`
 environment variable.
 
+### Root Path
+
+If the server is running behind reverse proxy where all endpoints (API, UI, artifacts, OAuth, metrics)
+need to share the same path prefix, you can set a path prefix with the `--root-path` flag or the
+`ARGO_ROOT_PATH` environment variable.
+
+This is particularly useful for reverse proxies like AWS ALB that don't support path rewrites.
+
 ### Transport Layer Security
 
 See [TLS](tls.md).
@@ -95,7 +103,7 @@ argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 
 You can get ingress working as follows:
 
-Add `ARGO_BASE_HREF` as environment variable to `deployment/argo-server`.
+Add `ARGO_BASE_HREF` and `ARGO_BASE_HREF` as environment variable to `deployment/argo-server`.
 Do not forget to add a trailing `/` character.
 
 ```yaml
@@ -118,6 +126,8 @@ spec:
         - server
         env:
           - name: ARGO_BASE_HREF
+            value: /argo/
+          - name: ARGO_ROOT_PATH
             value: /argo/
         image: quay.io/argoproj/argocli:latest
         name: argo-server

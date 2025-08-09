@@ -34,6 +34,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
+      --root-path string                     Path prefix for all server endpoints (API, UI, artifacts, OAuth, metrics). Used for reverse proxy subpath deployments.
   -e, --secure                               Whether or not we should listen on TLS. (default true)
       --tls-certificate-secret-name string   The name of a Kubernetes secret that contains the server certificates
       --x-frame-options string               Set X-Frame-Options header in HTTP responses. (default "DENY")
@@ -43,6 +44,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
 
 ```
       --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-root-path string          Path prefix for API server endpoints. Defaults to the ARGO_ROOT_PATH environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
