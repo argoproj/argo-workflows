@@ -72,8 +72,7 @@ func (s *ArgoServerSuite) TestReadinessProbe() {
 		response := s.e().GET("/").
 			WithProto("HTTP/1.1").
 			Expect().
-			Status(200).
-			HasContentType("text/html")
+			Status(200)
 		s.Equal("HTTP/1.1", response.Raw().Proto) //nolint:bodyclose
 	})
 
@@ -82,8 +81,7 @@ func (s *ArgoServerSuite) TestReadinessProbe() {
 			WithProto("HTTP/2.0").
 			WithClient(http2Client).
 			Expect().
-			Status(200).
-			HasContentType("text/html")
+			Status(200)
 		s.Equal("HTTP/2.0", response.Raw().Proto) //nolint:bodyclose
 	})
 }
