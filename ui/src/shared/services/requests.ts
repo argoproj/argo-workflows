@@ -41,7 +41,8 @@ export default {
 
     loadEventSource(url: string): Observable<string> {
         return new Observable((observer: Observer<any>) => {
-            const eventSource = new EventSource(url);
+            const finalUrl = apiUrl(url);
+            const eventSource = new EventSource(finalUrl);
             // an null event is the best way I could find to get an event whenever we open the event source
             // otherwise, you'd have to wait for your first message (which maybe some time)
             eventSource.onopen = () => observer.next(null);
@@ -49,16 +50,16 @@ export default {
             eventSource.onerror = () => {
                 switch (eventSource.readyState) {
                     case EventSource.CONNECTING:
-                        observer.error(new Error('Failed to connect to ' + url));
+                        observer.error(new Error('Failed to connect to ' + finalUrl));
                         break;
                     case EventSource.OPEN:
-                        observer.error(new Error('Error in open connection to ' + url));
+                        observer.error(new Error('Error in open connection to ' + finalUrl));
                         break;
                     case EventSource.CLOSED:
-                        observer.error(new Error('Connection closed to ' + url));
+                        observer.error(new Error('Connection closed to ' + finalUrl));
                         break;
                     default:
-                        observer.error(new Error('Unknown error with ' + url));
+                        observer.error(new Error('Unknown error with ' + finalUrl));
                 }
             };
 
