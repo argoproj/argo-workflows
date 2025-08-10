@@ -6,13 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestInterceptor(t *testing.T) {
 	logOutput := bytes.NewBufferString("")
-	log.SetOutput(logOutput)
+	logger := logging.NewSlogLoggerCustom(logging.Info, logging.Text, logOutput)
 
 	realHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -21,11 +22,11 @@ func TestInterceptor(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
-	handler := Interceptor(realHandler)
+	handler := NewLoggingInterceptor(logger).Interceptor(realHandler)
 	handler.ServeHTTP(rr, req)
 
 	expectedLogContains := []string{
-		"level=info",
+		"level=INFO",
 		"method=GET",
 		"path=/test",
 		"size=0",
@@ -38,6 +39,8 @@ func TestInterceptor(t *testing.T) {
 	}
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Interceptor did not call the next handler correctly")
-	assert.Equal(t, "/test", log.WithFields(log.Fields{}).WithField("path", "/test").Data["path"], "Interceptor did not log the correct path")
-	assert.Equal(t, "GET", log.WithFields(log.Fields{}).WithField("method", "GET").Data["method"], "Interceptor did not log the correct method")
+
+	// Test that the logger can create fields correctly
+	testFields := logger.WithField("path", "/test").WithField("method", "GET")
+	assert.NotNil(t, testFields, "Logger should be able to create fields")
 }

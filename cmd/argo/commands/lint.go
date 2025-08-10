@@ -67,7 +67,7 @@ func runLint(ctx context.Context, args []string, offline bool, lintKinds []strin
 	ops := lint.LintOptions{
 		Files:            args,
 		Strict:           strict,
-		DefaultNamespace: client.Namespace(),
+		DefaultNamespace: client.Namespace(ctx),
 		Printer:          os.Stdout,
 	}
 	return lint.RunLint(ctx, apiClient, lintKinds, output, offline, ops)

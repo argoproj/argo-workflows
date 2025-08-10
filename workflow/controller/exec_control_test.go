@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -13,11 +12,9 @@ import (
 )
 
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	woc := newWorkflowOperationCtx(ctx, &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{
@@ -136,13 +133,11 @@ status:
 `
 
 func TestHandleExecutionControlErrorMarksProvidedNode(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	workflow := v1alpha1.MustUnmarshalWorkflow(workflowWithContainerSetPodInPending)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
@@ -156,13 +151,11 @@ func TestHandleExecutionControlErrorMarksProvidedNode(t *testing.T) {
 }
 
 func TestHandleExecutionControlErrorMarksChildNodes(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	workflow := v1alpha1.MustUnmarshalWorkflow(workflowWithContainerSetPodInPending)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	woc := newWorkflowOperationCtx(ctx, workflow, controller)
 

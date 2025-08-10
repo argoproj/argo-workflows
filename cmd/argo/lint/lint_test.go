@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -81,8 +80,7 @@ func TestLintFile(t *testing.T) {
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	res, err := Lint(ctx, &LintOptions{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
@@ -113,8 +111,7 @@ func TestLintMultipleKinds(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	res, err := Lint(ctx, &LintOptions{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
@@ -159,8 +156,7 @@ func TestLintWithOutput(t *testing.T) {
 	mw := &mocks.MockWriter{}
 	mw.On("Write", mock.Anything).Return(0, nil)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	res, err := Lint(ctx, &LintOptions{
 		Files: []string{file.Name(), "-"},
 		ServiceClients: ServiceClients{
@@ -204,8 +200,7 @@ func TestLintStdin(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	res, err := Lint(ctx, &LintOptions{
 		Files: []string{"-"},
 		ServiceClients: ServiceClients{
@@ -244,8 +239,7 @@ func TestLintDeviceFile(t *testing.T) {
 
 	deviceFileName := fmt.Sprintf("/dev/fd/%d", fd)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	res, err := Lint(ctx, &LintOptions{
 		Files: []string{deviceFileName},
 		ServiceClients: ServiceClients{
@@ -306,8 +300,7 @@ func TestGetFormatter(t *testing.T) {
 				}
 			}
 
-			ctx := context.Background()
-			ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx := logging.TestContext(t.Context())
 			r, err := Lint(ctx, &LintOptions{Formatter: fmtr})
 			require.NoError(t, err)
 			assert.Equal(t, test.expectedOutput, r.Msg())

@@ -47,7 +47,7 @@ func NewLintCommand() *cobra.Command {
 			}
 			opts := lint.LintOptions{
 				Files:            args,
-				DefaultNamespace: client.Namespace(),
+				DefaultNamespace: client.Namespace(ctx),
 				Strict:           strict,
 				Printer:          os.Stdout,
 			}

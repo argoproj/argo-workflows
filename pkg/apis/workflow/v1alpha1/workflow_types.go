@@ -1824,12 +1824,12 @@ func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 
 // Set the status of a node by key
 func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	if status.Name == "" {
-		log.Warnf(ctx, "Name was not set for key %s", key)
+		log.WithField("key", key).Warn(ctx, "Name was not set for key")
 	}
 	if status.ID == "" {
-		log.Warnf(ctx, "ID was not set for key %s", key)
+		log.WithField("key", key).Warn(ctx, "ID was not set for key")
 	}
 	_, ok := n[key]
 	if ok {
@@ -1843,10 +1843,10 @@ func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
 
 // Delete a node from the Nodes by key
 func (n Nodes) Delete(ctx context.Context, key string) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	has := n.Has(key)
 	if !has {
-		log.Warnf(ctx, "Trying to delete non existent key %s", key)
+		log.WithField("key", key).Warn(ctx, "Trying to delete non existent key")
 		return
 	}
 	delete(n, key)
@@ -2508,7 +2508,7 @@ func (n NodeStatus) IsDaemoned() bool {
 
 // IsPartOfExitHandler returns whether node is part of exit handler.
 func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	currentNode := n
 	for !currentNode.IsExitNode() {
 		if currentNode.BoundaryID == "" {
@@ -2516,7 +2516,7 @@ func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool 
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
-			log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", currentNode.BoundaryID)
+			log.WithField("boundaryID", currentNode.BoundaryID).WithPanic().Error(ctx, "was unable to obtain node for boundaryID")
 		}
 		currentNode = boundaryNode
 	}

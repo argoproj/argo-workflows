@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -81,6 +80,29 @@ func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
+}
+
+// Readiness probe is defined in the base manifest:
+// https://github.com/argoproj/argo-workflows/blob/1e2a87f2afdebbcd0e55069df5a945f5faca9d45/manifests/base/argo-server/argo-server-deployment.yaml#L30-L36
+func (s *ArgoServerSuite) TestReadinessProbe() {
+	s.Run("HTTP/1.1 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/1.1").
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/1.1", response.Raw().Proto) //nolint:bodyclose
+	})
+
+	s.Run("HTTP/2 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/2.0").
+			WithClient(http2Client).
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/2.0", response.Raw().Proto) //nolint:bodyclose
+	})
 }
 
 func (s *ArgoServerSuite) TestInfo() {
@@ -401,8 +423,7 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 }
 
 func (s *ArgoServerSuite) createServiceAccount(name string) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(s.T().Context())
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
@@ -414,8 +435,7 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(s.T().Context())
 	nsName := fixtures.Namespace
 	goodSaName := "argotestgood"
 	s.createServiceAccount(goodSaName)
@@ -1685,9 +1705,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.GetLoggerFromContext(ctx)
+	ctx := logging.TestContext(s.T().Context())
+	log := logging.RequireLoggerFromContext(ctx)
 	t := s.T()
 	req, err := http.NewRequest("GET", baseURL+url, nil)
 	s.Require().NoError(err)
@@ -1778,6 +1797,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
 	var name string
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
 	s.Given().
 		Workflow(`
 metadata:

@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
@@ -58,28 +58,21 @@ func (d *dbInfo) migrate(ctx context.Context) {
 	if d.session == nil {
 		return
 	}
-	log.Infof("Setting up sync manager database")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.Info(ctx, "Setting up sync manager database")
 	if !d.config.skipMigration {
 		err := migrate(ctx, d.session, &d.config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
-			log.Warnf("cannot initialize semaphore database: %v", err)
+			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
 			d.session = nil
 		} else {
-			log.Infof("Sync db migration complete")
+			logger.Info(ctx, "Sync db migration complete")
 		}
 	} else {
-		log.Infof("Sync db migration skipped")
+		logger.Info(ctx, "Sync db migration skipped")
 	}
 }
-
-// func (d *dbInfo) getConfig() dbConfig {
-// 	return d.config
-// }
-
-// func (d *dbInfo) getSession() db.Session {
-// 	return d.session
-// }
 
 func dbConfigFromConfig(config *config.SyncConfig) dbConfig {
 	if config == nil {

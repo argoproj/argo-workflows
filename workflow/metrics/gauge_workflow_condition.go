@@ -10,7 +10,7 @@ import (
 )
 
 // WorkflowConditionCallback is the function prototype to provide this gauge with the condition of the workflows
-type WorkflowConditionCallback func() map[wfv1.Condition]int64
+type WorkflowConditionCallback func(ctx context.Context) map[wfv1.Condition]int64
 
 type workflowConditionGauge struct {
 	callback WorkflowConditionCallback
@@ -34,10 +34,10 @@ func addWorkflowConditionGauge(_ context.Context, m *Metrics) error {
 	// TODO init all phases?
 }
 
-func (c *workflowConditionGauge) update(_ context.Context, o metric.Observer) error {
-	conditions := c.callback()
+func (c *workflowConditionGauge) update(ctx context.Context, o metric.Observer) error {
+	conditions := c.callback(ctx)
 	for condition, val := range conditions {
-		c.gauge.ObserveInt(o, val, telemetry.InstAttribs{
+		c.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{
 			{Name: telemetry.AttribWorkflowType, Value: string(condition.Type)},
 			{Name: telemetry.AttribWorkflowStatus, Value: string(condition.Status)},
 		})

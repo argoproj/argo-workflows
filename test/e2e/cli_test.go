@@ -199,7 +199,8 @@ func (s *CLISuite) TestSubmitInvalidWf() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic-invalid.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.Error(t, err)
-			assert.Contains(t, output, "yaml file at index 0 is not valid:")
+			assert.Contains(t, output, "yaml file is not valid")
+			assert.Contains(t, output, "index=0")
 		})
 }
 

@@ -39,7 +39,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			if listArgs.allNamespaces {
 				namespace = ""
 			}

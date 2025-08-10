@@ -8,6 +8,7 @@ run:
     - examples
     - corefunctional
     - functional
+    - metrics
     - plugins
 linters:
   enable:
@@ -15,6 +16,8 @@ linters:
     - bidichk
     - bodyclose
     - copyloopvar
+    - contextcheck
+    - containedctx
     - errcheck
     - gosec
     - govet
@@ -92,3 +95,6 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+issues:
+  max-issues-per-linter: 0  # 0 means unlimited
+  max-same-issues: 0

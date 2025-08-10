@@ -347,24 +347,21 @@ func newTTLController(t *testing.T) *Controller {
 	clock := testingclock.NewFakeClock(time.Now())
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
-	gcMetrics, err := metrics.New(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	ctx := logging.TestContext(t.Context())
+	gcMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
-	log := logging.NewSlogLogger(logging.Debug, logging.Text)
 	return &Controller{
 		wfclientset: wfclientset,
 		wfInformer:  wfInformer,
 		clock:       clock,
 		workqueue:   workqueue.NewTypedDelayingQueueWithConfig[string](workqueue.TypedDelayingQueueConfig[string]{}),
 		metrics:     gcMetrics,
-		log:         log,
+		log:         logging.RequireLoggerFromContext(ctx),
 	}
 }
 
-func enqueueWF(controller *Controller, un *unstructured.Unstructured) {
-	controller.enqueueWF(un)
+func enqueueWF(ctx context.Context, controller *Controller, un *unstructured.Unstructured) {
+	controller.enqueueWF(ctx, un)
 	time.Sleep(100*time.Millisecond + time.Second)
 }
 
@@ -373,12 +370,13 @@ func TestEnqueueWF(t *testing.T) {
 	var un *unstructured.Unstructured
 
 	controller := newTTLController(t)
+	ctx := logging.TestContext(t.Context())
 
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(completedWf))
 	un, err = util.ToUnstructured(wf)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 }
 
@@ -388,6 +386,7 @@ func TestTTLStrategySucceeded(t *testing.T) {
 	var ten int32 = 10
 
 	controller := newTTLController(t)
+	ctx := logging.TestContext(t.Context())
 
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(succeededWf))
@@ -395,7 +394,7 @@ func TestTTLStrategySucceeded(t *testing.T) {
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
 	wf1 := wfv1.MustUnmarshalWorkflow([]byte(succeededWf))
@@ -403,7 +402,7 @@ func TestTTLStrategySucceeded(t *testing.T) {
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 	wf2 := wfv1.MustUnmarshalWorkflow([]byte(wftRefWithTTLinWFT))
@@ -411,10 +410,9 @@ func TestTTLStrategySucceeded(t *testing.T) {
 	un, err = util.ToUnstructured(wf2)
 	require.NoError(t, err)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf2, metav1.CreateOptions{})
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
@@ -425,7 +423,7 @@ func TestTTLStrategySucceeded(t *testing.T) {
 
 	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf3, metav1.CreateOptions{})
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 }
@@ -436,6 +434,7 @@ func TestTTLStrategyFailed(t *testing.T) {
 	var ten int32 = 10
 
 	controller := newTTLController(t)
+	ctx := logging.TestContext(t.Context())
 
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
@@ -443,7 +442,7 @@ func TestTTLStrategyFailed(t *testing.T) {
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
 	wf1 := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
@@ -451,7 +450,7 @@ func TestTTLStrategyFailed(t *testing.T) {
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 1, controller.workqueue.Len())
 }
 
@@ -459,19 +458,21 @@ func TestNoTTLStrategyFailed(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
 	controller := newTTLController(t)
+	ctx := logging.TestContext(t.Context())
+
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
 	wf1 := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	require.NoError(t, err)
-	enqueueWF(controller, un)
+	enqueueWF(ctx, controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 }
 
@@ -481,6 +482,7 @@ func TestTTLStrategyFromUnstructured(t *testing.T) {
 	var five int32 = 5
 
 	controller3 := newTTLController(t)
+	ctx := logging.TestContext(t.Context())
 	wf3 := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
 	ttlstrategy3 := wfv1.TTLStrategy{SecondsAfterSuccess: &five}
 	wf3.Spec.TTLStrategy = &ttlstrategy3
@@ -488,7 +490,7 @@ func TestTTLStrategyFromUnstructured(t *testing.T) {
 	un, err = util.ToUnstructured(wf3)
 	t.Log(wf3.Spec.TTLStrategy)
 	require.NoError(t, err)
-	enqueueWF(controller3, un)
+	enqueueWF(ctx, controller3, un)
 	assert.Equal(t, 0, controller3.workqueue.Len())
 }
 

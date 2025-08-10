@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,11 +10,9 @@ import (
 )
 
 func TestUpdateConfig(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	ctx := logging.WithLogger(context.Background(), log)
 
 	err := controller.updateConfig(ctx)
 	require.NoError(t, err)

@@ -19,8 +19,7 @@ import (
 // TestDagXfail verifies a DAG can fail properly
 func TestDagXfail(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_xfail.yaml")
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -29,8 +28,7 @@ func TestDagXfail(t *testing.T) {
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
 func TestDagRetrySucceeded(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_retry_succeeded.yaml")
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -39,9 +37,7 @@ func TestDagRetrySucceeded(t *testing.T) {
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
 func TestDagRetryExhaustedXfail(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-exhausted-retries-xfail.yaml")
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -50,9 +46,7 @@ func TestDagRetryExhaustedXfail(t *testing.T) {
 // TestDagDisableFailFast test disable fail fast function
 func TestDagDisableFailFast(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-disable-fail-fast.yaml")
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -98,7 +92,8 @@ func TestSingleDependency(t *testing.T) {
 	var controller *WorkflowController
 	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
 		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
-		closer, controller = newController()
+		ctx := logging.TestContext(t.Context())
+		closer, controller = newController(ctx)
 		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 		// If the status is "skipped" skip the root node.
@@ -110,9 +105,6 @@ func TestSingleDependency(t *testing.T) {
 		}
 		wf := wfv1.MustUnmarshalWorkflow(wfString)
 
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -200,12 +192,11 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -248,14 +239,14 @@ func TestEvaluateDependsLogic(t *testing.T) {
 			Depends: "should-execute-2 || should-not-execute",
 		},
 	}
-
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is running
@@ -267,8 +258,6 @@ func TestEvaluateDependsLogic(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	// Task B should not proceed, task A is still running
 	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
@@ -352,13 +341,14 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		},
 	}
 
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is still running, A-1 succeeded but A-2 failed
@@ -376,8 +366,6 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	// Task B should not proceed as task A is still running
 	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
@@ -441,13 +429,14 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 		},
 	}
 
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is running
@@ -460,8 +449,6 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	// Task B should proceed and execute
 	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
@@ -493,13 +480,14 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 		},
 	}
 
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
-		log:          logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is running
@@ -511,9 +499,6 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 			},
 		},
 	}
-
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 	// Task B should proceed and execute
 	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
@@ -543,13 +528,14 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 			},
 		}
 
+		ctx := logging.TestContext(t.Context())
 		d := &dagContext{
 			boundaryName: "test",
 			tasks:        testTasks,
 			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 			dependencies: make(map[string][]string),
 			dependsLogic: make(map[string]string),
-			log:          logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()),
+			log:          logging.RequireLoggerFromContext(ctx),
 		}
 
 		// Task A is running
@@ -561,8 +547,6 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 				},
 			},
 		}
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 
 		execute, proceed, err := d.evaluateDependsLogic(ctx, "Run")
 		require.NoError(t, err)
@@ -835,12 +819,11 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -907,7 +890,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - 
+  -
     container:
       command:
       - cowsay
@@ -1059,12 +1042,11 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -1109,12 +1091,11 @@ spec:
 `
 
 func TestDAGWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -1160,7 +1141,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - sleep 10
@@ -1348,12 +1329,11 @@ status:
 
 // This tests that a DAG with retry strategy in its tasks fails successfully when terminated
 func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -1369,16 +1349,16 @@ kind: Workflow
 metadata:
   name: dag-diamond-dj7q5
 spec:
-  
+
   entrypoint: diamond
   templates:
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: echo
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1387,7 +1367,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -1509,12 +1489,11 @@ status:
 
 // This tests that a DAG with retry strategy in its tasks fails successfully when terminated
 func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -1541,29 +1520,29 @@ kind: Workflow
 metadata:
   name: wf-retry-pol
 spec:
-  
+
   entrypoint: run-steps
   onExit: onExit
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: run-steps
     outputs: {}
     steps:
-    - - 
+    - -
         name: run-dag
         template: run-dag
-    - - 
+    - -
         name: manual-onExit
         template: onExit
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: fail
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1572,7 +1551,7 @@ spec:
     metadata: {}
     name: run-dag
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 2
@@ -1589,7 +1568,7 @@ spec:
     retryStrategy:
       limit: 100
       retryPolicy: OnError
-  - 
+  -
     container:
       args:
       - hello world
@@ -1699,12 +1678,11 @@ status:
 `
 
 func TestRetryStrategyNodes(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -1731,17 +1709,17 @@ kind: Workflow
 metadata:
   name: dag-diamond-88trp
 spec:
-  
+
   entrypoint: diamond
   templates:
-  - 
+  -
     dag:
       failFast: false
       tasks:
-      - 
+      -
         name: A
         template: echo
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1751,7 +1729,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 0
@@ -1765,7 +1743,7 @@ spec:
     metadata: {}
     name: echo
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -1866,12 +1844,11 @@ status:
 `
 
 func TestOnExitDAGPhase(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -1898,17 +1875,17 @@ kind: Workflow
 metadata:
   name: exit-handler-bug-example
 spec:
-  
+
   entrypoint: dag
   templates:
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: step-2
         onExit: on-exit
         template: step-template
-      - 
+      -
         dependencies:
         - step-2
         name: step-3
@@ -1918,7 +1895,7 @@ spec:
     metadata: {}
     name: dag
     outputs: {}
-  - 
+  -
     container:
       args:
       - echo exit-handler-step-{{pod.name}}
@@ -1932,7 +1909,7 @@ spec:
     metadata: {}
     name: on-exit
     outputs: {}
-  - 
+  -
     container:
       args:
       - echo step {{pod.name}}
@@ -1998,12 +1975,11 @@ status:
 `
 
 func TestOnExitNonLeaf(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2117,11 +2093,10 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(testDagOptionalInputArtifacts)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -2137,10 +2112,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-6bnnl
 spec:
-  
+
   entrypoint: statis
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -2153,7 +2128,7 @@ spec:
     metadata: {}
     name: a
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit!
@@ -2166,19 +2141,19 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - 
+  -
     inputs: {}
     metadata: {}
     name: steps
     outputs: {}
     steps:
-    - - 
+    - -
         name: step-a
         template: a
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         onExit: exit
         template: steps
@@ -2270,12 +2245,11 @@ status:
 `
 
 func TestDagTargetTaskOnExit(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2339,7 +2313,7 @@ spec:
       parameters:
       - name: scheduled-jobs
         value: '[]'
-  - 
+  -
     container:
       args:
       - hello world
@@ -2424,12 +2398,11 @@ status:
 `
 
 func TestEmptyWithParamDAG(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2527,7 +2500,7 @@ spec:
         fi
         echo "process $chunk"
   - activeDeadlineSeconds: 300
-    
+
     inputs: {}
     metadata: {}
     name: finish
@@ -3126,12 +3099,11 @@ status:
 `
 
 func TestFailsWithParamDAG(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -3182,7 +3154,7 @@ spec:
     metadata: {}
     name: ok
     outputs: {}
-  - 
+  -
     container:
       args:
       - |
@@ -3256,11 +3228,10 @@ status:
 
 func TestLeafContinueOn(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testLeafContinueOn)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -3420,11 +3391,10 @@ status:
 
 func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOutputsReferTaskAggregatedOuputs)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -3500,11 +3470,10 @@ status:
 
 func TestDagHttpChildrenAssigned(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagHTTPChildrenAssigned)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -3631,11 +3600,10 @@ status:
 
 func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retryTypeDagTaskRunExitNodeAfterCompleted)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	// retryTypeDAGTask completed
 	printAChild := woc.wf.Status.Nodes.FindByDisplayName("printA(0)")
@@ -3702,8 +3670,7 @@ spec:
         command: [cowsay]
         args: ["I have a {{inputs.parameters.thing}}"]`)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	woc1 := newWoc(ctx, *woc.wf)
@@ -3713,8 +3680,7 @@ spec:
 
 func TestDagWftmplHookWithRetry(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_wftmpl_hook_with_retry.yaml")
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 

@@ -67,8 +67,6 @@ type archivedWorkflowCount struct {
 	Total uint64 `db:"total,omitempty" json:"total"`
 }
 
-//go:generate mockery --name=WorkflowArchive
-
 type WorkflowArchive interface {
 	ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
@@ -101,9 +99,8 @@ func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
-	logger := logging.GetLoggerFromContext(ctx)
-	logCtx := logger.WithFields(logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
-	logCtx.Debug(ctx, "Archiving workflow")
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"uid": wf.UID, "labels": wf.GetLabels()}).InContext(ctx)
+	logger.Debug(ctx, "Archiving workflow")
 	wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	workflow, err := json.Marshal(wf)
 	if err != nil {
@@ -456,7 +453,7 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 }
 
 func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {
-	logger := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -474,7 +471,7 @@ func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error 
 }
 
 func (r *workflowArchive) DeleteExpiredWorkflows(ctx context.Context, ttl time.Duration) error {
-	logger := logging.GetLoggerFromContext(ctx)
+	logger := logging.RequireLoggerFromContext(ctx)
 	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).

@@ -1,13 +1,13 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type lockKind string
@@ -77,8 +77,9 @@ func (i *syncItem) lockName(wfNamespace string) (*lockName, error) {
 	}
 }
 
-func DecodeLockName(name string) (*lockName, error) {
-	log.Infof("DecodeLockName %s", name)
+func DecodeLockName(ctx context.Context, name string) (*lockName, error) {
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithField("name", name).Info(ctx, "DecodeLockName")
 	items := strings.SplitN(name, "/", 3)
 	if len(items) < 3 {
 		return nil, errors.New(errors.CodeBadRequest, "Invalid lock key: unknown format")
@@ -110,12 +111,12 @@ func DecodeLockName(name string) (*lockName, error) {
 	return &lock, nil
 }
 
-func (ln *lockName) String() string {
+func (ln *lockName) String(ctx context.Context) string {
 	switch ln.Kind {
 	case lockKindMutex, lockKindDatabase:
-		return ln.validateEncoding(fmt.Sprintf("%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName))
+		return ln.validateEncoding(ctx, fmt.Sprintf("%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName))
 	default:
-		return ln.validateEncoding(fmt.Sprintf("%s/%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key))
+		return ln.validateEncoding(ctx, fmt.Sprintf("%s/%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key))
 	}
 }
 
@@ -135,8 +136,8 @@ func (ln *lockName) validate() error {
 	return nil
 }
 
-func (ln *lockName) validateEncoding(encoding string) string {
-	decoded, err := DecodeLockName(encoding)
+func (ln *lockName) validateEncoding(ctx context.Context, encoding string) string {
+	decoded, err := DecodeLockName(ctx, encoding)
 	if err != nil {
 		panic(fmt.Sprintf("bug: unable to decode lock (%s) that was just encoded: %s", encoding, err))
 	}
@@ -150,9 +151,9 @@ func (ln *lockName) dbKey() string {
 	return fmt.Sprintf("%s/%s", ln.Namespace, ln.ResourceName)
 }
 
-func needDBSession(lockKeys []string) (bool, error) {
+func needDBSession(ctx context.Context, lockKeys []string) (bool, error) {
 	for _, key := range lockKeys {
-		lock, err := DecodeLockName(key)
+		lock, err := DecodeLockName(ctx, key)
 		if err != nil {
 			return false, err
 		}

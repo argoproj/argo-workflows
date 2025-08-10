@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -30,12 +29,12 @@ spec:
 
 func TestHTTPTemplate(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(httpwf)
-	cancel, controller := newController(wf, defaultServiceAccount)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
 	defer cancel()
 
 	t.Run("ExecuteHTTPTemplate", func(t *testing.T) {
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		pod, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
@@ -70,12 +69,12 @@ func TestHTTPTemplate(t *testing.T) {
 
 func TestHTTPTemplateWithoutServiceAccount(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(httpwf)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
 	t.Run("ExecuteHTTPTemplateWithoutServiceAccount", func(t *testing.T) {
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		_, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})

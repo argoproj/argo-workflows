@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -75,8 +74,7 @@ func TestMultiWithParallelismLimitAndPriority(t *testing.T) {
 func TestMultiInitWithWorkflows(t *testing.T) {
 	queuedKey := ""
 	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	wfclientset := fakewfclientset.NewSimpleClientset(
 		wfv1.MustUnmarshalWorkflow(`

@@ -17,7 +17,7 @@ data:
   namespace: my-namespace
 
   # Parallelism limits the max total parallel workflows that can execute at the same time
-  # (available since Argo v2.3). Controller must be restarted to take effect.
+  # (available since Argo v2.3).
   parallelism: "10"
 
   # Limit the maximum number of incomplete workflows in a namespace.

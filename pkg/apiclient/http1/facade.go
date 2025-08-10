@@ -50,7 +50,7 @@ func (h Facade) Delete(ctx context.Context, in, out interface{}, path string) er
 }
 
 func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path string) (*bufio.Reader, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	method := "GET"
 	u, err := h.url(method, path, in)
 	if err != nil {
@@ -67,7 +67,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	req.Header = headers
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
+	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
@@ -91,9 +91,9 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 }
 
 func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	var data []byte
-	if method != "GET" {
+	if method != "GET" && method != "DELETE" {
 		var err error
 		data, err = json.Marshal(in)
 		if err != nil {
@@ -114,7 +114,7 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	}
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
-	log.Debugf(ctx, "curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
+	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
@@ -148,7 +148,7 @@ func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 		x := "{" + s + "}"
 		if strings.Contains(path, x) {
 			path = strings.Replace(path, x, v, 1)
-		} else if method == "GET" {
+		} else if method == "GET" || method == "DELETE" {
 			query.Set(s, v)
 		}
 	}

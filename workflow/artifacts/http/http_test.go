@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,9 +25,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 
 	t.Run("Found", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "found")
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := driver.Load(ctx, &wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
 		}, tempFile)
@@ -41,9 +38,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 		h1 := wfv1.Header{Name: "Accept", Value: "application/json"}
 		h2 := wfv1.Header{Name: "Authorization", Value: "Bearer foo-bar"}
 		a.Headers = []wfv1.Header{h1, h2}
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := driver.Load(ctx, &wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
 		}, tempFile)
@@ -54,9 +49,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 	})
 	t.Run("NotFound", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "not-found")
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := driver.Load(ctx, &wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
@@ -75,9 +68,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 
 	t.Run("NotFound", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "not-found")
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := driver.Load(ctx, &wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
@@ -90,9 +81,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	})
 	t.Run("Found", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "found")
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := driver.Load(ctx, &wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows"},
@@ -149,9 +138,7 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 				},
 			},
 		}
-		ctx := context.Background()
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		err := driver.Save(ctx, tempFile, &art)
 		require.NoError(t, err)
 	})

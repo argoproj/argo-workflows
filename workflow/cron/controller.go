@@ -23,14 +23,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	log "github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -55,7 +54,7 @@ type Controller struct {
 	metrics              *metrics.Metrics
 	eventRecorderManager events.EventRecorderManager
 	cronWorkflowWorkers  int
-	logger               log.Logger
+	logger               logging.Logger
 }
 
 const (
@@ -65,25 +64,21 @@ const (
 var cronSyncPeriod time.Duration
 
 func init() {
-	slog := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
-	ctx := log.WithLogger(context.TODO(), log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
-	ctx = log.WithLogger(ctx, slog)
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
-		slog.WithFatal().Error(ctx, err.Error())
+		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "failed to parse time")
 	}
-	cronSyncPeriod = env.LookupEnvDurationOr(ctx, "CRON_SYNC_PERIOD", 10*time.Second)
-	slog.WithField("cronSyncPeriod", cronSyncPeriod).Info(ctx, "cron config")
+	cronSyncPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CRON_SYNC_PERIOD", 10*time.Second)
+	logging.InitLogger().WithField("cronSyncPeriod", cronSyncPeriod).Info(context.Background(), "cron config")
 }
 
 // NewCronController creates a new cron controller
 func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceID string, metrics *metrics.Metrics,
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *Controller {
-	logger := log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat())
-	logger = logger.WithField("component", "cron")
-	ctx = log.WithLogger(ctx, logger)
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "cron").InContext(ctx)
+
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -107,10 +102,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 func (cc *Controller) Run(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	defer cc.cronWfQueue.ShutDown()
-	cc.logger.Infof(ctx, "Starting CronWorkflow controller")
-	if cc.instanceID != "" {
-		cc.logger.Infof(ctx, "...with InstanceID: %s", cc.instanceID)
-	}
+	cc.logger.WithField("instanceID", cc.instanceID).Info(ctx, "Starting CronWorkflow controller")
 
 	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceID)
@@ -120,13 +112,13 @@ func (cc *Controller) Run(ctx context.Context) {
 		cc.logger.WithFatal().Error(ctx, err.Error())
 	}
 
-	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
+	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
 		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceID) },
 		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceID) },
 		cache.Indexers{})
 	go wfInformer.Run(ctx.Done())
 
-	cc.wfLister = util.NewWorkflowLister(wfInformer)
+	cc.wfLister = util.NewWorkflowLister(ctx, wfInformer)
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
@@ -136,16 +128,13 @@ func (cc *Controller) Run(ctx context.Context) {
 	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
 
 	for i := 0; i < cc.cronWorkflowWorkers; i++ {
-		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
+		go wait.UntilWithContext(ctx, cc.runCronWorker, time.Second)
 	}
 
 	<-ctx.Done()
 }
 
-func (cc *Controller) runCronWorker() {
-	ctx := log.WithLogger(context.TODO(), log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
-	ctx = log.WithLogger(ctx, log.NewSlogLogger(log.GetGlobalLevel(), log.GetGlobalFormat()))
-	ctx = log.WithLogger(ctx, cc.logger)
+func (cc *Controller) runCronWorker(ctx context.Context) {
 	for cc.processNextCronItem(ctx) {
 	}
 }
@@ -162,8 +151,8 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	logger := cc.logger.WithField("cronWorkflow", key)
-	logger.Infof(ctx, "Processing %s", key)
+	ctx, logger := cc.logger.WithField("cronWorkflow", key).InContext(ctx)
+	logger.Info(ctx, "Processing cron workflow")
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
@@ -171,20 +160,20 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		return true
 	}
 	if !exists {
-		logger.Infof(ctx, "Deleting '%s'", key)
+		logger.Info(ctx, "Deleting cron workflow")
 		cc.cron.Delete(key)
 		return true
 	}
 
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		logger.Errorf(ctx, "malformed cluster workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
+		logger.WithField("type", reflect.TypeOf(obj).Name()).Error(ctx, "malformed cluster workflow template: expected *unstructured.Unstructured, got type")
 		return true
 	}
 	cronWf := &v1alpha1.CronWorkflow{}
 	err = util.FromUnstructuredObj(un, cronWf)
 	if err != nil {
-		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
+		cc.eventRecorderManager.Get(ctx, un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
 		logger.WithError(err).Error(ctx, "malformed cron workflow: could not convert from unstructured")
 		return true
 	}
@@ -219,7 +208,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 	}
 
-	logger.Infof(ctx, "CronWorkflow %s added", key)
+	logger.Info(ctx, "CronWorkflow added")
 
 	return true
 }
@@ -230,7 +219,7 @@ func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error 
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
-					cc.logger.Warnf(ctx, "Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
+					cc.logger.WithField("obj", obj).Warn(ctx, "Cron Workflow FilterFunc: is not an unstructured")
 					return false
 				}
 				return !isCompleted(un)

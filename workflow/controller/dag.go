@@ -39,7 +39,7 @@ type dagContext struct {
 	wf *wfv1.Workflow
 
 	// tmplCtx is the context of template search.
-	tmplCtx *templateresolution.Context
+	tmplCtx *templateresolution.TemplateContext
 
 	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
 	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
@@ -123,7 +123,7 @@ func (d *dagContext) getTaskNode(ctx context.Context, taskName string) *wfv1.Nod
 	nodeID := d.taskNodeID(taskName)
 	node, err := d.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		d.log.Warnf(ctx, "was unable to obtain the node for %s, taskName %s", nodeID, taskName)
+		d.log.WithFields(logging.Fields{"nodeID": nodeID, "taskName": taskName}).Warn(ctx, "was unable to obtain the node")
 		return nil
 	}
 	return node
@@ -225,7 +225,7 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 	return result, nil
 }
 
-func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
@@ -348,29 +348,29 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			for i, childID := range taskNode.Children {
 				childNode, err := woc.wf.Status.Nodes.Get(childID)
 				if err != nil {
-					woc.log.Errorf(ctx, "was unable to obtain node for %s", childID)
+					woc.log.WithField("nodeID", childID).Error(ctx, "was unable to obtain node for nodeID")
 					return nil, fmt.Errorf("Critical error, unable to find %s", childID)
 				}
 				childNodes[i] = *childNode
 			}
 			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
 			if err != nil {
-				woc.log.Errorf(ctx, "unable to processAggregateNodeOutputs")
+				woc.log.Error(ctx, "unable to processAggregateNodeOutputs")
 				return nil, errors.InternalWrapError(err)
 			}
 		}
 		woc.buildLocalScope(scope, prefix, taskNode)
 		woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 	}
-	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
+	outputs, err := woc.getTemplateOutputsFromScope(ctx, tmpl, scope)
 	if err != nil {
-		woc.log.Errorf(ctx, "unable to get outputs")
+		woc.log.Error(ctx, "unable to get outputs")
 		return node, err
 	}
 	if outputs != nil {
 		node, err = woc.wf.GetNodeByName(nodeName)
 		if err != nil {
-			woc.log.Errorf(ctx, "unable to get node by name for %s", nodeName)
+			woc.log.WithField("nodeName", nodeName).Error(ctx, "unable to get node by name for nodeName")
 			return nil, err
 		}
 		node.Outputs = outputs
@@ -380,7 +380,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 		if err != nil {
-			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Errorf(ctx, "Failed to save node outputs to cache")
+			woc.log.WithField("nodeID", node.ID).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -406,12 +406,12 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(ctx context.Context
 	}
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "was unable to obtain node by name for %s", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "was unable to obtain node by name for nodeName")
 		return err
 	}
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
-	woc.log.Infof(ctx, "Outbound nodes of %s set to %s", node.ID, outbound)
+	woc.log.WithFields(logging.Fields{"nodeID": node.ID, "outbound": outbound}).Info(ctx, "Outbound nodes set")
 	return nil
 }
 
@@ -424,11 +424,11 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	node := dagCtx.getTaskNode(ctx, taskName)
 	task := dagCtx.GetTask(ctx, taskName)
-	log := woc.log.WithField("taskName", taskName)
+	ctx, log := woc.log.WithField("taskName", taskName).InContext(ctx)
 	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
 		scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 		if err != nil {
-			log.Errorf(ctx, "Failed to build local scope from task")
+			log.WithError(err).Error(ctx, "Failed to build local scope from task")
 			woc.markNodeError(ctx, node.Name, err)
 			return
 		}
@@ -461,7 +461,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 
-		processedTmpl, err := common.ProcessArgs(tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
 		}
@@ -474,7 +474,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
-			log.Errorf(ctx, "Failed to build local scope from task")
+			log.WithError(err).Error(ctx, "Failed to build local scope from task")
 			return
 		}
 		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
@@ -520,7 +520,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				for _, outNodeID := range outboundNodeIDs {
 					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 					if err != nil {
-						woc.log.Errorf(ctx, "was unable to obtain node for %s", outNodeID)
+						woc.log.WithField("nodeID", outNodeID).Error(ctx, "was unable to obtain node for nodeID")
 						return
 					}
 					woc.addChildNode(ctx, nodeName, taskNodeName)
@@ -563,7 +563,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
+	expandedTasks, err := expandTask(ctx, *newTask)
 	if err != nil {
 		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
@@ -589,7 +589,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		node = dagCtx.getTaskNode(ctx, t.Name)
 		if node == nil {
-			woc.log.Infof(ctx, "All of node %s dependencies %v completed", taskNodeName, taskDependencies)
+			woc.log.WithFields(logging.Fields{"nodeName": taskNodeName, "dependencies": taskDependencies}).Info(ctx, "All of node dependencies completed")
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 
@@ -706,7 +706,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 
 	// Perform replacement
 	// Replace woc.volumes
-	err = woc.substituteParamsInVolumes(scope.getParameters())
+	err = woc.substituteParamsInVolumes(ctx, scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -716,7 +716,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	newTaskStr, err := template.Replace(string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	newTaskStr, err := template.Replace(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
 		return nil, err
 	}
@@ -751,10 +751,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 			artifacts = append(artifacts, art)
 			continue
 		}
-		resolvedArt, err := scope.resolveArtifact(&art)
+		resolvedArt, err := scope.resolveArtifact(ctx, &art)
 		if err != nil {
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
-				woc.log.Warnf(ctx, "Optional artifact '%s' was not found; it won't be available as an input", art.Name)
+				woc.log.WithField("name", art.Name).Warn(ctx, "Optional artifact was not found; it won't be available as an input")
 				continue
 			}
 			return nil, err
@@ -792,7 +792,7 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
@@ -835,7 +835,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask, task.When)
+		newTaskName, err := processItem(ctx, tmpl, task.Name, i, item, &newTask, task.When)
 		if err != nil {
 			return nil, err
 		}
@@ -890,7 +890,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 			for _, childNodeID := range depNode.Children {
 				childNodePhase, err := d.wf.Status.Nodes.GetPhase(childNodeID)
 				if err != nil {
-					d.log.Warnf(ctx, "was unable to obtain node for %s", childNodeID)
+					d.log.WithField("nodeID", childNodeID).Warn(ctx, "was unable to obtain node")
 					allFailed = false // we don't know if all failed
 					continue
 				}

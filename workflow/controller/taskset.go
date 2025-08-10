@@ -120,7 +120,7 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(ctx context.Context
 		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
 		childNodeName, err := woc.wf.Status.Nodes.GetName(child)
 		if err != nil {
-			woc.log.WithFatal().Errorf(ctx, "was unable to get child node name for %s", child)
+			woc.log.WithField("nodeID", child).WithFatal().Error(ctx, "was unable to get child node name for nodeID")
 			panic("unable to obtain child node name")
 		}
 		if woc.nodeRequiresTaskSetReconciliation(ctx, childNodeName) {
@@ -142,8 +142,8 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.Warnf(ctx, "returning but assumed validity before")
-				woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
+				woc.log.Warn(ctx, "returning but assumed validity before")
+				woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
 				return err
 			}
 
