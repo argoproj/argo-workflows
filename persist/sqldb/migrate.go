@@ -23,7 +23,7 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
     workflow text,
     startedat timestamp default CURRENT_TIMESTAMP,
     finishedat timestamp default CURRENT_TIMESTAMP,
-	creationtimestamp timestamp default CURRENT_TIMESTAMP,
+    creationtimestamp timestamp default CURRENT_TIMESTAMP,
     primary key (id, namespace)
 )`),
 		sqldb.AnsiSQLChange(`create unique index idx_name on ` + tableName + ` (name)`),
