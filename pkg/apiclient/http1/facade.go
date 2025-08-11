@@ -93,7 +93,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
 	log := logging.RequireLoggerFromContext(ctx)
 	var data []byte
-	if method != "GET" {
+	if method != "GET" && method != "DELETE" {
 		var err error
 		data, err = json.Marshal(in)
 		if err != nil {
@@ -148,7 +148,7 @@ func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 		x := "{" + s + "}"
 		if strings.Contains(path, x) {
 			path = strings.Replace(path, x, v, 1)
-		} else if method == "GET" {
+		} else if method == "GET" || method == "DELETE" {
 			query.Set(s, v)
 		}
 	}
