@@ -15,7 +15,9 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		And(nameEqual(options.Name)).
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
-		And(startedAtToClause(options.MaxStartedAt))
+		And(startedAtToClause(options.MaxStartedAt)).
+		And(createdAfterClause(options.CreatedAfter)).
+		And(finishedBeforeClause(options.FinishedBefore))
 
 	selector, err := labelsClause(selector, t, options.LabelRequirements, tableName, labelTableName, true)
 	if err != nil {
