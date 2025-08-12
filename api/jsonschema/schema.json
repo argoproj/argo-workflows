@@ -11693,6 +11693,77 @@
         }
       },
       "type": "object"
+    },
+    "sync.CreateSyncLimitRequest": {
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      },
+      "type": "object"
+    },
+    "sync.DeleteSyncLimitResponse": {
+      "type": "object"
+    },
+    "sync.SyncConfigType": {
+      "default": "CONFIG_MAP",
+      "enum": [
+        "CONFIG_MAP",
+        "DATABASE"
+      ],
+      "type": "string"
+    },
+    "sync.SyncLimitResponse": {
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      },
+      "type": "object"
+    },
+    "sync.UpdateSyncLimitRequest": {
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      },
+      "type": "object"
     }
   },
   "oneOf": [
