@@ -349,7 +349,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 				childNode, err := woc.wf.Status.Nodes.Get(childID)
 				if err != nil {
 					woc.log.WithField("nodeID", childID).Error(ctx, "was unable to obtain node for nodeID")
-					return nil, fmt.Errorf("Critical error, unable to find %s", childID)
+					return nil, fmt.Errorf("critical error; unable to find %s", childID)
 				}
 				childNodes[i] = *childNode
 			}

@@ -61,7 +61,7 @@ func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
 			Template: &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
+			return fmt.Errorf("failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
 		}
 		printClusterWorkflowTemplate(created, cliOpts.output.String())
 	}
