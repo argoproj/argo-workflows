@@ -6711,6 +6711,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"podMetadataPatch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -8028,6 +8035,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
+						},
+					},
+					"podMetadataPatch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

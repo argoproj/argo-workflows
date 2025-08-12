@@ -434,6 +434,10 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of
+	// metadata fields Labels and Annotations, which are not strings.
+	PodMetadataPatch string `json:"podMetadataPatch,omitempty" protobuf:"bytes,44,opt,name=podMetadataPatch"`
 }
 
 type LabelValueFrom struct {
@@ -610,6 +614,10 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
 
+func (wfs *WorkflowSpec) HasPodMetadataPatch() bool {
+	return wfs.PodMetadataPatch != ""
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
@@ -760,6 +768,10 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+
+	// PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of
+	// metadata fields Labels and Annotations, which are not strings.
+	PodMetadataPatch string `json:"podMetadataPatch,omitempty" protobuf:"bytes,45,opt,name=podMetadataPatch"`
 }
 
 // SetType will set the template object based on template type.
@@ -801,6 +813,10 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 
 func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
+}
+
+func (tmpl *Template) HasPodMetadataPatch() bool {
+	return tmpl.PodMetadataPatch != ""
 }
 
 func (tmpl *Template) GetSidecarNames() []string {
