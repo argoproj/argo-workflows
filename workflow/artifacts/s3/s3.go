@@ -408,9 +408,8 @@ func GetAWSCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
 }
 
 // GetAssumeRoleCredentials gets Assumed role credentials
-func GetAssumeRoleCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
-	ctx := context.Background()
-	cfg, err := config.LoadDefaultConfig(ctx)
+func getAssumeRoleCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +426,7 @@ func GetAssumeRoleCredentials(opts S3ClientOpts) (*credentials.Credentials, erro
 	return credentials.NewStaticV4(value.AccessKeyID, value.SecretAccessKey, value.SessionToken), nil
 }
 
-func GetCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
+func GetCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
 	if opts.AccessKey != "" && opts.SecretKey != "" {
 		if opts.SessionToken != "" {
 			log.WithField("endpoint", opts.Endpoint).Info("Creating minio client using ephemeral credentials")
@@ -438,7 +437,7 @@ func GetCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
 		}
 	} else if opts.RoleARN != "" {
 		log.WithField("roleArn", opts.RoleARN).Info("Creating minio client using assumed-role credentials")
-		return GetAssumeRoleCredentials(opts)
+		return getAssumeRoleCredentials(ctx, opts)
 	} else if opts.UseSDKCreds {
 		log.Info("Creating minio client using AWS SDK credentials")
 		return GetAWSCredentials(opts)
@@ -463,7 +462,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	var minioClient *minio.Client
 	var err error
 
-	credentials, err := GetCredentials(opts)
+	credentials, err := GetCredentials(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
