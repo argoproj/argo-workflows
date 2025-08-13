@@ -152,7 +152,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                 iconClassName: 'fa fa-trash',
                 disabled: edited,
                 action: () => {
-                    popup.confirm('confirm', 'Are you sure you want to delete this cron workflow?').then(yes => {
+                    popup.confirm('confirm', 'Are you sure you want to delete this cron workflow? (This also deletes all Workflows it spawned)').then(yes => {
                         if (yes) {
                             services.cronWorkflows
                                 .delete(name, namespace)
