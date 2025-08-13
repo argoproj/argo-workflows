@@ -1,0 +1,12 @@
+metadata:
+  generateName: jughead-
+  labels:
+    foo: 3
+spec:
+  entrypoint: run-jughead
+  templates:
+    - name: run-jughead
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]

@@ -1,0 +1,5 @@
+metadata:
+  name: workflow-template-containerset
+spec:
+  workflowTemplateRef:
+    name: containerset-with-retrystrategy

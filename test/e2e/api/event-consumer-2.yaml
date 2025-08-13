@@ -1,0 +1,13 @@
+metadata:
+  name: event-consumer
+spec:
+  event:
+    selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+  submit:
+    workflowTemplateRef:
+      name: event-consumer
+    arguments:
+      parameters:
+        - name: appellation
+          valueFrom:
+            event: payload.appellation

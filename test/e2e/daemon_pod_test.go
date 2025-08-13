@@ -20,29 +20,7 @@ type DaemonPodSuite struct {
 
 func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: whalesay-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    dag:
-      tasks:
-        - name: redis
-          template: redis-tmpl
-        - name: whale
-          dependencies: [redis]
-          template: whale-tmpl
-  - name: redis-tmpl
-    daemon: true
-    container:
-      image: argoproj/argosay:v2
-      args: ["sleep", "100s"]
-  - name: whale-tmpl
-    container:
-      image: argoproj/argosay:v2
-`).
+		Workflow("@functional/whalesay.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
@@ -54,29 +32,7 @@ spec:
 
 func (s *DaemonPodSuite) TestDaemonFromWorkflowTemplate() {
 	s.Given().
-		WorkflowTemplate(`
-metadata:
-  name: daemon
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-        - name: redis
-          template: redis-tmpl
-        - name: whale
-          dependencies: [redis]
-          template: whale-tmpl
-  - name: redis-tmpl
-    daemon: true
-    container:
-      image: argoproj/argosay:v2
-      args: ["sleep", "100s"]
-  - name: whale-tmpl
-    container:
-      image: argoproj/argosay:v2
-`).
+		WorkflowTemplate("@functional/daemon.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflowsFromWorkflowTemplates().
@@ -116,47 +72,8 @@ spec:
 
 func (s *DaemonPodSuite) TestDaemonTemplateRef() {
 	s.Given().
-		WorkflowTemplate(`
-metadata:
-  name: broken-pipeline
-spec:
-  entrypoint: main
-  templates:
-  - name: do-something
-    container:
-      image: argoproj/argosay:v2
-  - name: main
-    dag:
-      tasks:
-        - name: do-something
-          template: do-something
-        - name: run-tests-broken
-          depends: "do-something"
-          templateRef:
-            name: run-tests-broken
-            template: main
-`).
-		WorkflowTemplate(`
-metadata:
-  name: run-tests-broken
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-      - - name: postgres
-          template: postgres
-      - - name: run-tests-broken
-          template: run-tests-broken
-  - name: run-tests-broken
-    container:
-      image: argoproj/argosay:v2
-  - name: postgres
-    daemon: true
-    container:
-      image: argoproj/argosay:v2
-      args: ["sleep", "100s"]
-      name: database`).
+		WorkflowTemplate("@functional/broken-pipeline.yaml").
+		WorkflowTemplate("@functional/run-tests-broken.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflowsFromWorkflowTemplates().
@@ -179,42 +96,7 @@ func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 
 func (s *DaemonPodSuite) TestDaemonPodRetry() {
 	s.Given().
-		Workflow(`
-metadata:
-  name: daemon-retry
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-        - name: daemoned
-          template: daemoned
-        - name: whale
-          dependencies: [daemoned]
-          template: whale-tmpl
-  - name: daemoned
-    retryStrategy:
-      limit: 2
-    daemon: true
-    container:
-      image: argoproj/argosay:v2
-      command: ["bash"]
-      args:
-        - "-c"
-        - |
-          echo "Attempt {{retries}}";
-          if [ "{{retries}}" -eq 0 ]; then
-            sleep 10 && exit 1;
-          else
-            sleep 120 && exit 1;
-          fi
-  - name: whale-tmpl
-    container:
-      image: argoproj/argosay:v2
-      command: ["bash"]
-      args: ["-c", "echo hi & sleep 15 && echo bye"]
-`).
+		Workflow("@functional/daemon-retry.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).

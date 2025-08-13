@@ -1,0 +1,13 @@
+metadata:
+  generateName: test-pod-cleanup-on-pod-completion-label-selected-
+spec:
+  podGC:
+    strategy: OnPodCompletion
+    labelSelector:
+      matchLabels:
+        evicted: true
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
