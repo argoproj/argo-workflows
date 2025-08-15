@@ -10,8 +10,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-//go:generate mockery --name=Throttler
-
 // Throttler allows the controller to limit number of items it is processing in parallel.
 // Items are processed in priority order, and one processing starts, other items (including higher-priority items)
 // will be kept pending until the processing is complete.
@@ -139,7 +137,10 @@ func (m *multiThrottler) Remove(key Key) {
 
 	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
 	delete(m.running, key)
-	m.pending[namespace].remove(key)
+	_, ok := m.pending[namespace]
+	if ok {
+		m.pending[namespace].remove(key)
+	}
 	m.queueThrottled()
 }
 

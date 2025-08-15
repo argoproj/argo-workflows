@@ -1,14 +1,15 @@
 package progress
 
 import (
-	log "github.com/sirupsen/logrus"
+	"context"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // UpdateProgress ensures the workflow's progress is updated with the individual node progress.
 // This func can perform any repair work needed
-func UpdateProgress(wf *wfv1.Workflow) {
+func UpdateProgress(ctx context.Context, wf *wfv1.Workflow) {
 	wf.Status.Progress = wfv1.ProgressZero
 	// We loop over all executable nodes first, otherwise sum will be wrong.
 	for nodeID, node := range wf.Status.Nodes {
@@ -18,7 +19,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		// all executable nodes should have progress defined, if not, we just set it to the default value.
 		if node.Progress == wfv1.ProgressUndefined {
 			node.Progress = wfv1.ProgressDefault
-			wf.Status.Nodes.Set(nodeID, node)
+			wf.Status.Nodes.Set(ctx, nodeID, node)
 		}
 		// it could be possible for corruption to result in invalid progress, we just ignore invalid progress
 		if !node.Progress.IsValid() {
@@ -28,7 +29,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped, wfv1.NodeOmitted:
 			node.Progress = node.Progress.Complete()
-			wf.Status.Nodes.Set(nodeID, node)
+			wf.Status.Nodes.Set(ctx, nodeID, node)
 		}
 		// the total should only contain node that are valid
 		wf.Status.Progress = wf.Status.Progress.Add(node.Progress)
@@ -40,10 +41,10 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		if executable(node.Type) {
 			continue
 		}
-		progress := sumProgress(wf, node, make(map[string]bool))
+		progress := sumProgress(ctx, wf, node, make(map[string]bool))
 		if progress.IsValid() {
 			node.Progress = progress
-			wf.Status.Nodes.Set(nodeID, node)
+			wf.Status.Nodes.Set(ctx, nodeID, node)
 		}
 	}
 	// we could check an invariant here, wf.Status.Nodes[wf.Name].Progress == wf.Status.Progress, but I think there's
@@ -61,7 +62,8 @@ func executable(nodeType wfv1.NodeType) bool {
 	}
 }
 
-func sumProgress(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]bool) wfv1.Progress {
+func sumProgress(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]bool) wfv1.Progress {
+	logger := logging.RequireLoggerFromContext(ctx)
 	progress := wfv1.ProgressZero
 	for _, childNodeID := range node.Children {
 		if visited[childNodeID] {
@@ -71,10 +73,10 @@ func sumProgress(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]boo
 		// this will tolerate missing child (will be "") and therefore ignored
 		child, err := wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			log.Warnf("Coudn't obtain child for %s, panicking", childNodeID)
+			logger.WithField("childNodeID", childNodeID).Warn(ctx, "Couldn't obtain child, panicking")
 			continue
 		}
-		progress = progress.Add(sumProgress(wf, *child, visited))
+		progress = progress.Add(sumProgress(ctx, wf, *child, visited))
 		if executable(child.Type) {
 			v := child.Progress
 			if v.IsValid() {

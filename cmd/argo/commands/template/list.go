@@ -28,7 +28,8 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflow templates",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
@@ -36,7 +37,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			if listArgs.allNamespaces {
 				namespace = apiv1.NamespaceAll
 			}
@@ -59,7 +60,7 @@ func NewListCommand() *cobra.Command {
 				printTable(wftmplList.Items, &listArgs)
 			case "name":
 				for _, wftmp := range wftmplList.Items {
-					fmt.Println(wftmp.ObjectMeta.Name)
+					fmt.Println(wftmp.Name)
 				}
 			default:
 				return fmt.Errorf("Unknown output mode: %s", listArgs.output)
@@ -82,9 +83,9 @@ func printTable(wfList []wfv1.WorkflowTemplate, listArgs *listFlags) {
 	_, _ = fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
 		if listArgs.allNamespaces {
-			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
+			_, _ = fmt.Fprintf(w, "%s\t", wf.Namespace)
 		}
-		_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Name)
+		_, _ = fmt.Fprintf(w, "%s\t", wf.Name)
 		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

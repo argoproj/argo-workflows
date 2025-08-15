@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,17 +12,20 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func Test_submitWorkflows(t *testing.T) {
 	t.Run("Submit workflow with invalid options", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
-		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{Watch: true, Wait: true})
+		ctx := logging.TestContext(t.Context())
+		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{Watch: true, Wait: true})
 		require.Error(t, err, "--wait cannot be combined with --watch")
 	})
 	t.Run("Submit without providing workflow", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
-		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
+		ctx := logging.TestContext(t.Context())
+		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
 		require.Error(t, err, "No Workflow found in given files")
 	})
 	t.Run("Submit workflow with priority set in spec", func(t *testing.T) {
@@ -32,7 +34,8 @@ func Test_submitWorkflows(t *testing.T) {
 		workflow := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "argo"}, Spec: wfv1.WorkflowSpec{Priority: &priority}}
 
 		c.On("CreateWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
+		ctx := logging.TestContext(t.Context())
+		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
 
 		require.NoError(t, err)
 		arg := c.Mock.Calls[0].Arguments[1]
@@ -53,7 +56,8 @@ func Test_submitWorkflows(t *testing.T) {
 		cliSubmitOpts := common.CliSubmitOpts{Priority: &priorityCLI}
 
 		c.On("CreateWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &cliSubmitOpts)
+		ctx := logging.TestContext(t.Context())
+		err := submitWorkflows(ctx, c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &cliSubmitOpts)
 
 		require.NoError(t, err)
 		arg := c.Mock.Calls[0].Arguments[1]

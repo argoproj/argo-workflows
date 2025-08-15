@@ -5,11 +5,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestUninitalized(t *testing.T) {
 	metricsF = nil
-	Record(context.Background(), Schedule)
+	ctx := logging.TestContext(t.Context())
+	Record(ctx, Schedule)
 }
 
 func TestInitalized(t *testing.T) {
@@ -26,7 +29,7 @@ func TestInitalized(t *testing.T) {
 		}
 	}
 	Initialize(fn)
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	Record(ctx, Schedule)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, countSchedule)

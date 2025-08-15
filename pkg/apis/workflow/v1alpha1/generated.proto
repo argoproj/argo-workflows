@@ -934,6 +934,9 @@ message Link {
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
   optional string url = 3;
+
+  // Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.
+  optional string target = 4;
 }
 
 message ManifestFrom {
@@ -993,6 +996,9 @@ message Mutex {
 
   // Namespace is the namespace of the mutex, default: [namespace of workflow]
   optional string namespace = 2;
+
+  // Database specifies this is database controlled if this is set true
+  optional bool database = 3;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -1133,6 +1139,9 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
+
+  // TaskResultSynced is used to determine if the node's output has been received
+  optional bool taskResultSynced = 28;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -1484,11 +1493,14 @@ message SemaphoreHolding {
 
 // SemaphoreRef is a reference of Semaphore
 message SemaphoreRef {
-  // ConfigMapKeyRef is configmap selector for Semaphore configuration
+  // ConfigMapKeyRef is a configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
 
   // Namespace is the namespace of the configmap, default: [namespace of workflow]
   optional string namespace = 2;
+
+  // SyncDatabaseRef is a database reference for Semaphore configuration
+  optional SyncDatabaseRef database = 3;
 }
 
 message SemaphoreStatus {
@@ -1581,6 +1593,10 @@ message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
   // Could also be a Duration, e.g.: "2m", "6h"
   optional string duration = 1;
+}
+
+message SyncDatabaseRef {
+  optional string key = 1;
 }
 
 // Synchronization holds synchronization lock configuration

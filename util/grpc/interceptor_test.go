@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,8 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return mockReturn, nil }
 		msts := &mockServerTransportStream{}
-		ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+		baseCtx := logging.TestContext(t.Context())
+		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
 		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
 		m, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
@@ -51,7 +53,8 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	t.Run("upstream error handling", func(t *testing.T) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
 		msts := &mockServerTransportStream{}
-		ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+		baseCtx := logging.TestContext(t.Context())
+		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
 		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
 		_, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
@@ -65,7 +68,8 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 			return mockReturn, nil
 		}
 		msts := &mockServerTransportStream{isError: true}
-		ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+		baseCtx := logging.TestContext(t.Context())
+		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
 		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
 		m, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
@@ -90,9 +94,12 @@ func (msts mockServerStream) SetHeader(md metadata.MD) error {
 }
 func (mockServerStream) SendHeader(md metadata.MD) error { return nil }
 func (mockServerStream) SetTrailer(md metadata.MD)       {}
-func (mockServerStream) Context() context.Context        { return context.Background() }
-func (mockServerStream) SendMsg(m any) error             { return nil }
-func (mockServerStream) RecvMsg(m any) error             { return nil }
+func (mockServerStream) Context() context.Context {
+	// nolint:contextcheck
+	return logging.TestContext(context.Background())
+}
+func (mockServerStream) SendMsg(m any) error { return nil }
+func (mockServerStream) RecvMsg(m any) error { return nil }
 
 var _ grpc.ServerStream = &mockServerStream{}
 

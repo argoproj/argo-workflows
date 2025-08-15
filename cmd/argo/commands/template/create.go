@@ -44,18 +44,18 @@ func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 		return err
 	}
 
-	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
+	workflowTemplates := generateWorkflowTemplates(ctx, filePaths, cliOpts.strict)
 
 	for _, wftmpl := range workflowTemplates {
 		if wftmpl.Namespace == "" {
-			wftmpl.Namespace = client.Namespace()
+			wftmpl.Namespace = client.Namespace(ctx)
 		}
 		created, err := serviceClient.CreateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateCreateRequest{
 			Namespace: wftmpl.Namespace,
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to create workflow template: %v", err)
+			return fmt.Errorf("failed to create workflow template: %v", err)
 		}
 		printWorkflowTemplate(created, cliOpts.output.String())
 	}

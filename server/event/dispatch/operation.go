@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/expr-lang/expr"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/labels"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
@@ -29,11 +29,17 @@ import (
 )
 
 type Operation struct {
+	// nolint: containedctx
 	ctx               context.Context
 	eventRecorder     record.EventRecorder
 	instanceIDService instanceid.Service
 	events            []wfv1.WorkflowEventBinding
 	env               map[string]interface{}
+}
+
+// Context returns the context associated with this operation
+func (o *Operation) Context() context.Context {
+	return o.ctx
 }
 
 func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eventRecorder record.EventRecorder, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
@@ -53,19 +59,21 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 // not to be converted with sutils, parent calling function should handle this
 // responsibility
 func (o *Operation) Dispatch(ctx context.Context) error {
-	log.Debug("Executing event dispatch")
+	logger := logging.RequireLoggerFromContext(ctx)
+
+	logger.Debug(ctx, "Executing event dispatch")
 
 	data, _ := json.MarshalIndent(o.env, "", "  ")
-	log.Debugln(string(data))
+	logger.Debug(ctx, string(data))
 
 	var errs []error
 	for _, event := range o.events {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			_, err := o.dispatch(ctx, event)
-			return !errorsutil.IsTransientErr(err), err
+			return !errorsutil.IsTransientErr(ctx, err), err
 		})
 		if err != nil {
-			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
+			logger.WithError(err).WithFields(logging.Fields{"namespace": event.Namespace, "event": event.Name}).Error(ctx, "failed to dispatch from event")
 			o.eventRecorder.Event(&event, corev1.EventTypeWarning, "WorkflowEventBindingError", "failed to dispatch event: "+err.Error())
 			errs = append(errs, err)
 		}
@@ -77,14 +85,17 @@ func (o *Operation) Dispatch(ctx context.Context) error {
 }
 
 func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding) (*wfv1.Workflow, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+
 	selector := wfeb.Spec.Event.Selector
 	matched, err := argoexpr.EvalBool(selector, o.env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
-	log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched}).Debug("Selector evaluation")
+	logger.WithFields(logging.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched}).Debug(ctx, "Selector evaluation")
 	submit := wfeb.Spec.Submit
 	if matched && submit != nil {
+		// nolint: contextcheck
 		client := auth.GetWfClient(o.ctx)
 		ref := wfeb.Spec.Submit.WorkflowTemplateRef
 		var tmpl wfv1.WorkflowSpecHolder
@@ -114,6 +125,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
+		// nolint: contextcheck
 		creator.LabelCreator(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
 		if submit.Arguments != nil {

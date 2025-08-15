@@ -1,6 +1,7 @@
 package clustertemplate
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-func generateClusterWorkflowTemplates(filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
+func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -22,7 +23,7 @@ func generateClusterWorkflowTemplates(filePaths []string, strict bool) []wfv1.Cl
 
 	var clusterWorkflowTemplates []wfv1.ClusterWorkflowTemplate
 	for _, body := range fileContents {
-		cwftmpls, err := unmarshalClusterWorkflowTemplates(body, strict)
+		cwftmpls, err := unmarshalClusterWorkflowTemplates(ctx, body, strict)
 		if err != nil {
 			log.Fatalf("Failed to parse cluster workflow template: %v", err)
 		}
@@ -37,7 +38,7 @@ func generateClusterWorkflowTemplates(filePaths []string, strict bool) []wfv1.Cl
 }
 
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml
-func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
+func unmarshalClusterWorkflowTemplates(ctx context.Context, wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
 	var cwft wfv1.ClusterWorkflowTemplate
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -47,7 +48,7 @@ func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.Clus
 	if err == nil {
 		return []wfv1.ClusterWorkflowTemplate{cwft}, nil
 	}
-	yamlWfs, err := common.SplitClusterWorkflowTemplateYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitClusterWorkflowTemplateYAMLFile(ctx, wfBytes, strict)
 	if err == nil {
 		return yamlWfs, nil
 	}
@@ -57,7 +58,7 @@ func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.Clus
 func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt string) {
 	switch outFmt {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -73,6 +74,6 @@ func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt strin
 
 func printClusterWorkflowTemplateHelper(wf *wfv1.ClusterWorkflowTemplate) {
 	const fmtStr = "%-20s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+	fmt.Printf(fmtStr, "Name:", wf.Name)
+	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.CreationTimestamp.Time))
 }

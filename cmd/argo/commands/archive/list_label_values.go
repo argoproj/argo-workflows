@@ -39,11 +39,13 @@ func NewListLabelValueCommand() *cobra.Command {
 			for _, str := range labels.Items {
 				fmt.Printf("%s\n", str)
 			}
+
 			return nil
 		},
 	}
+	ctx := command.Context()
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to query on, allows 1 value (e.g. -l key1)")
 	err := command.MarkFlagRequired("selector")
-	errors.CheckError(err)
+	errors.CheckError(ctx, err)
 	return command
 }

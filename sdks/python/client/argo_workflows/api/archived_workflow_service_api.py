@@ -331,6 +331,7 @@ class ArchivedWorkflowServiceApi(object):
                     'list_options_send_initial_events',
                     'name_prefix',
                     'namespace',
+                    'name_filter',
                 ],
                 'required': [],
                 'nullable': [
@@ -370,6 +371,8 @@ class ArchivedWorkflowServiceApi(object):
                         (str,),
                     'namespace':
                         (str,),
+                    'name_filter':
+                        (str,),
                 },
                 'attribute_map': {
                     'list_options_label_selector': 'listOptions.labelSelector',
@@ -384,6 +387,7 @@ class ArchivedWorkflowServiceApi(object):
                     'list_options_send_initial_events': 'listOptions.sendInitialEvents',
                     'name_prefix': 'namePrefix',
                     'namespace': 'namespace',
+                    'name_filter': 'nameFilter',
                 },
                 'location_map': {
                     'list_options_label_selector': 'query',
@@ -398,6 +402,7 @@ class ArchivedWorkflowServiceApi(object):
                     'list_options_send_initial_events': 'query',
                     'name_prefix': 'query',
                     'namespace': 'query',
+                    'name_filter': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -866,6 +871,7 @@ class ArchivedWorkflowServiceApi(object):
             list_options_send_initial_events (bool): `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional. [optional]
             name_prefix (str): [optional]
             namespace (str): [optional]
+            name_filter (str): Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

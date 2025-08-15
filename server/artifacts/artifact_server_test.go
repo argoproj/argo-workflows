@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	authmocks "github.com/argoproj/argo-workflows/v3/server/auth/mocks"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
@@ -49,7 +50,7 @@ type fakeArtifactDriver struct {
 	data []byte
 }
 
-func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
+func (a *fakeArtifactDriver) Load(_ context.Context, _ *wfv1.Artifact, path string) error {
 	return os.WriteFile(path, a.data, 0o600)
 }
 
@@ -76,10 +77,10 @@ var bucketsOfKeys = map[string][]string{
 	},
 }
 
-func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifact) (io.ReadCloser, error) {
 	//fmt.Printf("deletethis: artifact=%+v\n", artifact)
 
-	key, err := artifact.ArtifactLocation.GetKey()
+	key, err := artifact.GetKey()
 	if err != nil {
 		return nil, err
 	}
@@ -110,11 +111,11 @@ func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser,
 	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
 
-func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
+func (a *fakeArtifactDriver) Save(_ context.Context, _ string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (a *fakeArtifactDriver) IsDirectory(_ context.Context, artifact *wfv1.Artifact) (bool, error) {
 	key, err := artifact.GetKey()
 	if err != nil {
 		return false, err
@@ -127,7 +128,7 @@ func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) 
 	return strings.HasSuffix(key, "my-s3-artifact-directory") || strings.HasSuffix(key, "my-s3-artifact-directory/"), nil
 }
 
-func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	key, err := artifact.GetKey()
 	if err != nil {
 		return nil, err
@@ -150,13 +151,14 @@ func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, err
 	return []string{}, nil
 }
 
-func newServer() *ArtifactServer {
+func newServer(t *testing.T) *ArtifactServer {
+	t.Helper()
 	gatekeeper := &authmocks.Gatekeeper{}
 	kube := kubefake.NewSimpleClientset()
-	instanceId := "my-instanceid"
+	instanceID := "my-instanceid"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
-			common.LabelKeyControllerInstanceID: instanceId,
+			common.LabelKeyControllerInstanceID: instanceID,
 		}},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{
@@ -351,10 +353,10 @@ func newServer() *ArtifactServer {
 	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
 	})
-	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
-	a.On("GetWorkflow", "my-uuid", "", "").Return(wf, nil)
+	a.On("GetWorkflow", mock.Anything, "my-uuid", "", "").Return(wf, nil)
 
 	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
@@ -369,11 +371,11 @@ func newServer() *ArtifactServer {
 		},
 	})
 
-	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
 }
 
 func TestArtifactServer_GetArtifactFile(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 
 	tests := []struct {
 		path string
@@ -477,7 +479,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 					// verify that the files are contained in the listing we got back
 					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))
 					for _, file := range tt.directoryFiles {
-						assert.True(t, strings.Contains(string(all), file))
+						assert.Contains(t, string(all), file)
 					}
 				} else {
 					assert.Equal(t, "my-data", string(all))
@@ -489,7 +491,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 }
 
 func TestArtifactServer_GetOutputArtifact(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 
 	tests := []struct {
 		fileName     string
@@ -528,7 +530,7 @@ func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 }
 
 func TestArtifactServer_GetOutputArtifactWithTemplate(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 
 	tests := []struct {
 		fileName     string
@@ -559,7 +561,7 @@ func TestArtifactServer_GetOutputArtifactWithTemplate(t *testing.T) {
 }
 
 func TestArtifactServer_GetOutputArtifactWithInlineTemplate(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 
 	tests := []struct {
 		fileName     string
@@ -590,7 +592,7 @@ func TestArtifactServer_GetOutputArtifactWithInlineTemplate(t *testing.T) {
 }
 
 func TestArtifactServer_GetInputArtifact(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 
 	tests := []struct {
 		fileName     string
@@ -622,7 +624,7 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 // TestArtifactServer_NodeWithoutArtifact makes sure that the server doesn't panic due to a nil-pointer error
 // when trying to get an artifact from a node result without any artifacts
 func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 	r := &http.Request{}
 	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
 	recorder := httptest.NewRecorder()
@@ -634,7 +636,7 @@ func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
 }
 
 func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-ns/your-wf/my-node-1/my-artifact")
 	recorder := httptest.NewRecorder()
@@ -643,7 +645,7 @@ func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
 }
 
 func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-uuid/my-node-1/my-artifact")
 	recorder := httptest.NewRecorder()
@@ -652,7 +654,7 @@ func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 }
 
 func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 	r := &http.Request{}
 	// missing my-artifact part to have a valid URL
 	r.URL = mustParse("/input-artifacts/my-uuid/my-node-1")
@@ -673,7 +675,7 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 }
 
 func TestArtifactServer_httpBadRequestError(t *testing.T) {
-	s := newServer()
+	s := newServer(t)
 	recorder := httptest.NewRecorder()
 	s.httpBadRequestError(recorder)
 
@@ -684,11 +686,12 @@ func TestArtifactServer_httpBadRequestError(t *testing.T) {
 }
 
 func TestArtifactServer_httpFromError(t *testing.T) {
-	s := newServer()
+	ctx := logging.TestContext(t.Context())
+	s := newServer(t)
 	recorder := httptest.NewRecorder()
 	err := errors.New("math: square root of negative number")
 
-	s.httpFromError(err, recorder)
+	s.httpFromError(ctx, err, recorder)
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
@@ -698,7 +701,7 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 	recorder = httptest.NewRecorder()
 	err = apierr.NewUnauthorized("")
 
-	s.httpFromError(err, recorder)
+	s.httpFromError(ctx, err, recorder)
 
 	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
 	output, err = io.ReadAll(recorder.Result().Body)
@@ -708,6 +711,6 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 	recorder = httptest.NewRecorder()
 	err = argoerrors.New(argoerrors.CodeNotFound, "not found")
 
-	s.httpFromError(err, recorder)
+	s.httpFromError(ctx, err, recorder)
 	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
 }

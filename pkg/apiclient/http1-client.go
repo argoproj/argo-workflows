@@ -21,7 +21,7 @@ func (h httpClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.Archi
 	return http1.ArchivedWorkflowsServiceClient(h), nil
 }
 
-func (h httpClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
+func (h httpClient) NewWorkflowServiceClient(_ context.Context) workflowpkg.WorkflowServiceClient {
 	return http1.WorkflowServiceClient(h)
 }
 
@@ -41,6 +41,6 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
 }
 
-func newHTTP1Client(baseUrl string, auth string, insecureSkipVerify bool, headers []string, customHttpClient *http.Client) (context.Context, Client, error) {
-	return context.Background(), httpClient(http1.NewFacade(baseUrl, auth, insecureSkipVerify, headers, customHttpClient)), nil
+func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
+	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient)), nil
 }

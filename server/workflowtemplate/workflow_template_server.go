@@ -46,7 +46,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
+	err := validate.ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -66,7 +66,7 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req 
 }
 
 func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, namespace string, name string) (*v1alpha1.WorkflowTemplate, error) {
-	wfTmpl, err := wts.wftmplStore.Getter(ctx, namespace).Get(name)
+	wfTmpl, err := wts.wftmplStore.Getter(ctx, namespace).Get(ctx, name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -116,7 +116,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.WorkflowTemplate, resour
 	// For the next pagination, the resourceVersion of the last item is set in the Continue field.
 	if limit != 0 && len(wfList.Items) == int(limit) {
 		lastIndex := len(wfList.Items) - 1
-		wfList.ListMeta.Continue = wfList.Items[lastIndex].ResourceVersion
+		wfList.Continue = wfList.Items[lastIndex].ResourceVersion
 	}
 }
 
@@ -151,7 +151,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	var items []v1alpha1.WorkflowTemplate
 	if req.NamePattern != "" {
 		for _, item := range wfList.Items {
-			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
+			if strings.Contains(item.Name, req.NamePattern) {
 				items = append(items, item)
 			}
 		}
@@ -180,7 +180,7 @@ func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req
 	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -199,7 +199,7 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
+	err = validate.ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}

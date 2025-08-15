@@ -27,8 +27,8 @@ func NewArtifactDeleteCommand() *cobra.Command {
 		Use:          "delete",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			namespace := client.Namespace()
+			ctx := cmd.Context()
+			namespace := client.Namespace(ctx)
 			clientConfig := client.GetConfig()
 
 			if podName, ok := os.LookupEnv(common.EnvVarArtifactGCPodHash); ok {
@@ -42,7 +42,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
 				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, podName)
 
-				err = deleteArtifacts(labelSelector, cmd.Context(), artifactGCTaskInterface)
+				err = deleteArtifacts(labelSelector, ctx, artifactGCTaskInterface)
 				if err != nil {
 					return err
 				}
@@ -54,7 +54,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 
 func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
 
-	taskList, err := artifactGCTaskInterface.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+	taskList, err := artifactGCTaskInterface.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
 	}
@@ -84,8 +84,8 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 					return err
 				}
 
-				err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-					err = drv.Delete(&artifact)
+				err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+					err = drv.Delete(ctx, &artifact)
 					if err != nil {
 						errString := err.Error()
 						artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: false, Error: &errString}
@@ -102,7 +102,7 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 		if err != nil {
 			return err
 		}
-		_, err = artifactGCTaskInterface.Patch(context.Background(), task.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+		_, err = artifactGCTaskInterface.Patch(ctx, task.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
 		if err != nil {
 			return err
 		}

@@ -95,10 +95,10 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	if err != nil {
 		return err
 	}
-	wfClient := apiClient.NewWorkflowServiceClient()
+	wfClient := apiClient.NewWorkflowServiceClient(ctx)
 	req := cronworkflow.GetCronWorkflowRequest{
 		Name:      cronWFName,
-		Namespace: client.Namespace(),
+		Namespace: client.Namespace(ctx),
 	}
 	cronWF, err := cronClient.GetCronWorkflow(ctx, &req)
 	if err != nil {
@@ -133,17 +133,17 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 		timeStr := scheTime.String()
 		scheList = append(scheList, timeStr)
 	}
-	wfJsonByte, err := json.Marshal(wf)
+	wfJSONByte, err := json.Marshal(wf)
 	if err != nil {
 		return err
 	}
-	yamlbyte, err := yaml.JSONToYAML(wfJsonByte)
+	yamlbyte, err := yaml.JSONToYAML(wfJSONByte)
 	if err != nil {
 		return err
 	}
 	wfYamlStr := "apiVersion: argoproj.io/v1alpha1 \n" + string(yamlbyte)
 	if len(scheList) > 0 {
-		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(), cronWFName, scheList, wfClient, cliOps)
+		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(ctx), cronWFName, scheList, wfClient, cliOps)
 	} else {
 		fmt.Print("There is no suitable scheduling time.")
 	}
@@ -201,10 +201,10 @@ const backfillWf = `{
 func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, scheTime []string, wfClient workflow.WorkflowServiceClient, cliOps backfillOpts) error {
 	var monitorWfObj v1alpha1.Workflow
 	err := json.Unmarshal([]byte(backfillWf), &monitorWfObj)
-	if monitorWfObj.ObjectMeta.Labels == nil {
-		monitorWfObj.ObjectMeta.Labels = make(map[string]string)
+	if monitorWfObj.Labels == nil {
+		monitorWfObj.Labels = make(map[string]string)
 	}
-	monitorWfObj.ObjectMeta.Labels[common.LabelKeyCronWorkflowBackfill] = cronWFName
+	monitorWfObj.Labels[common.LabelKeyCronWorkflowBackfill] = cronWFName
 	if err != nil {
 		return err
 	}
@@ -234,11 +234,11 @@ func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, sche
 		}
 		wfNames = append(wfNames, c.Name)
 	}
-	printBackFillOutput(wfNames, len(scheTime), cliOps)
+	printBackFillOutput(ctx, wfNames, len(scheTime), cliOps)
 	return nil
 }
 
-func printBackFillOutput(wfNames []string, totalSches int, cliOps backfillOpts) {
+func printBackFillOutput(ctx context.Context, wfNames []string, totalSches int, cliOps backfillOpts) {
 	fmt.Printf("Created %s Backfill task for Cronworkflow %s \n", cliOps.name, cliOps.cronWfName)
 	fmt.Printf("==================================================\n")
 	fmt.Printf("Backfill Period :\n")
@@ -248,7 +248,7 @@ func printBackFillOutput(wfNames []string, totalSches int, cliOps backfillOpts) 
 	fmt.Printf("==================================================\n")
 	fmt.Printf("Backfill Workflows: \n")
 	fmt.Printf("   NAMESPACE\t WORKFLOW: \n")
-	namespace := client.Namespace()
+	namespace := client.Namespace(ctx)
 	for idx, wfName := range wfNames {
 		fmt.Printf("%d. %s \t %s \n", idx+1, namespace, wfName)
 	}

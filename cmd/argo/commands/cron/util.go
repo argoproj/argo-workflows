@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -38,7 +37,7 @@ func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time,
 	return nextRunTime, nil
 }
 
-func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkflow {
+func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool) []v1alpha1.CronWorkflow {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -46,7 +45,7 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 
 	var cronWorkflows []v1alpha1.CronWorkflow
 	for _, body := range fileContents {
-		cronWfs := unmarshalCronWorkflows(body, strict)
+		cronWfs := unmarshalCronWorkflows(ctx, body, strict)
 		cronWorkflows = append(cronWorkflows, cronWfs...)
 	}
 
@@ -58,17 +57,17 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 }
 
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
-	var cronWf wfv1.CronWorkflow
+func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
+	var cronWf v1alpha1.CronWorkflow
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}
 	err := argoJson.Unmarshal(wfBytes, &cronWf, jsonOpts...)
 	if err == nil {
-		return []wfv1.CronWorkflow{cronWf}
+		return []v1alpha1.CronWorkflow{cronWf}
 	}
-	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitCronWorkflowYAMLFile(ctx, wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}
@@ -76,10 +75,10 @@ func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
 	return nil
 }
 
-func printCronWorkflow(ctx context.Context, wf *wfv1.CronWorkflow, outFmt string) {
+func printCronWorkflow(ctx context.Context, wf *v1alpha1.CronWorkflow, outFmt string) {
 	switch outFmt {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -93,13 +92,13 @@ func printCronWorkflow(ctx context.Context, wf *wfv1.CronWorkflow, outFmt string
 	}
 }
 
-func getCronWorkflowGet(ctx context.Context, cwf *wfv1.CronWorkflow) string {
+func getCronWorkflowGet(ctx context.Context, cwf *v1alpha1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
 
 	out := ""
-	out += fmt.Sprintf(fmtStr, "Name:", cwf.ObjectMeta.Name)
-	out += fmt.Sprintf(fmtStr, "Namespace:", cwf.ObjectMeta.Namespace)
-	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.ObjectMeta.CreationTimestamp.Time))
+	out += fmt.Sprintf(fmtStr, "Name:", cwf.Name)
+	out += fmt.Sprintf(fmtStr, "Namespace:", cwf.Namespace)
+	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.CreationTimestamp.Time))
 	out += fmt.Sprintf(fmtStr, "Schedules:", cwf.Spec.GetScheduleString())
 	out += fmt.Sprintf(fmtStr, "Suspended:", cwf.Spec.Suspend)
 	if cwf.Spec.Timezone != "" {
@@ -128,7 +127,7 @@ func getCronWorkflowGet(ctx context.Context, cwf *wfv1.CronWorkflow) string {
 		out += fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
 	if len(cwf.Status.Conditions) > 0 {
-		out += cwf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
+		out += cwf.Status.Conditions.DisplayString(fmtStr, map[v1alpha1.ConditionType]string{v1alpha1.ConditionTypeSubmissionError: "✖"})
 	}
 	if len(cwf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")

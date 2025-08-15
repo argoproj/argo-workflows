@@ -1,10 +1,5 @@
 # Metrics
 
-> v2.7 and after
-
-!!! Warning "Metrics changes in 3.6"
-    Please read [this short guide](upgrading.md#metrics-changes) on what you must consider when upgrading to 3.6.
-
 ## Introduction
 
 Argo emits a certain number of controller metrics that inform on the state of the controller at any given time.
@@ -277,10 +272,10 @@ Deprecated features are [explained here](deprecations.md).
 
 `feature` will be one of:
 
-- [`cronworkflow schedule`](deprecations.md#cronworkflow_schedule)
-- [`synchronization mutex`](deprecations.md#synchronization_mutex)
-- [`synchronization semaphore`](deprecations.md#synchronization_semaphore)
-- [`workflow podpriority`](deprecations.md#workflow_podpriority)
+- [`cronworkflow schedule`](deprecations.md#cronworkflow-schedule)
+- [`synchronization mutex`](deprecations.md#synchronization-mutex)
+- [`synchronization semaphore`](deprecations.md#synchronization-semaphore)
+- [`workflow podpriority`](deprecations.md#workflow-podpriority)
 
 #### `error_count`
 

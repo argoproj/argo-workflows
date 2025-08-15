@@ -55,7 +55,7 @@ spec:
 There are a few caveats:
 
 1. You cannot use [enhanced depends logic](enhanced-depends-logic.md).
-1. The ContainerSet uses the sum total of all resource requests, which may cost more than using the same DAG template. This can be problematic if your [resource requests](#️-resource-requests) are already high.
+1. The ContainerSet uses the sum total of all resource requests, which may cost more than using the same DAG template. This can be problematic if your [resource requests](#resource-requests) are already high.
 1. ContainerSet templates can only run container templates.
 
 You can arrange the containers as a graph by specifying dependencies.
@@ -73,9 +73,9 @@ This may not always be practical.
 
 Instead, use a workspace volume and ensure all artifact paths are on that volume.
 
-## ⚠️ Resource Requests
+## Resource Requests
 
-A ContainerSet starts all containers, and the [workflow executor](workflow-executors.md#emissary-emissary) only starts the main container process when the containers it depends on have completed.
+A ContainerSet starts all containers, and the [workflow executor](workflow-executors.md#emissary-executor) only starts the main container process when the containers it depends on have completed.
 
 This means that even though the container is doing no useful work, it still consumes resources and you are still billed for them.
 

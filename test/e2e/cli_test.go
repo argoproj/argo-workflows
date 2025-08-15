@@ -199,7 +199,8 @@ func (s *CLISuite) TestSubmitInvalidWf() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic-invalid.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.Error(t, err)
-			assert.Contains(t, output, "yaml file at index 0 is not valid:")
+			assert.Contains(t, output, "yaml file is not valid")
+			assert.Contains(t, output, "index=0")
 		})
 }
 
@@ -1410,14 +1411,14 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Name Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "basic-cron-wf-overridden-name", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-name")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-name")
 		})
 	})
 
 	s.Run("Create GenerateName Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--generate-name", "basic-cron-wf-overridden-generate-name-", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-generate-name-")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-generate-name-")
 		})
 	})
 

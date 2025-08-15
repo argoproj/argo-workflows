@@ -2,7 +2,6 @@ package s3
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -128,6 +128,8 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 }
 
 func TestOpenStreamS3Artifact(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
 	tests := map[string]struct {
 		s3client  S3Client
 		bucket    string
@@ -138,7 +140,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Success": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -164,7 +166,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"No such key": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -181,7 +183,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Is Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -198,7 +200,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -220,7 +222,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			stream, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
+			stream, err := streamS3Artifact(ctx, tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{
@@ -258,7 +260,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Success": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -286,7 +288,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"No such key": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -304,7 +306,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Is Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -322,7 +324,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Get File Other Transient Error": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -340,7 +342,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -361,7 +363,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		"Get Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art-2.tar.gz",
 					},
 				},
@@ -384,7 +386,8 @@ func TestLoadS3Artifact(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
+			ctx := logging.TestContext(t.Context())
+			success, err := loadS3Artifact(ctx, tc.s3client, &wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					S3: &wfv1.S3Artifact{
 						S3Bucket: wfv1.S3Bucket{
@@ -398,13 +401,15 @@ func TestLoadS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Empty(t, tc.errMsg)
 			}
 		})
 	}
 }
 
 func TestSaveS3Artifact(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
 	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
@@ -435,7 +440,7 @@ func TestSaveS3Artifact(t *testing.T) {
 		"Success as Directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{},
+					"my-bucket": {},
 				},
 				map[string]error{}),
 			bucket:    "my-bucket",
@@ -511,7 +516,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	for name, tc := range tests {
 		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
-			success, err := saveS3Artifact(
+			success, err := saveS3Artifact(ctx,
 				tc.s3client,
 				tc.localPath,
 				&wfv1.Artifact{
@@ -532,14 +537,14 @@ func TestSaveS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, "", tc.errMsg)
+				assert.Empty(t, tc.errMsg)
 			}
 		})
 	}
 }
 
 func TestListObjects(t *testing.T) {
-
+	ctx := logging.TestContext(t.Context())
 	tests := map[string]struct {
 		s3client         S3Client
 		bucket           string
@@ -551,7 +556,7 @@ func TestListObjects(t *testing.T) {
 		"Found objects": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder/hello-art.tar.gz",
 					},
 				},
@@ -564,7 +569,7 @@ func TestListObjects(t *testing.T) {
 		"Empty directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder",
 					},
 				},
@@ -577,7 +582,7 @@ func TestListObjects(t *testing.T) {
 		"Non-existent directory": {
 			s3client: newMockS3Client(
 				map[string][]string{
-					"my-bucket": []string{
+					"my-bucket": {
 						"/folder",
 					},
 				},
@@ -592,7 +597,7 @@ func TestListObjects(t *testing.T) {
 	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, files, err := listObjects(tc.s3client,
+			_, files, err := listObjects(ctx, tc.s3client,
 				&wfv1.Artifact{
 					ArtifactLocation: wfv1.ArtifactLocation{
 						S3: &wfv1.S3Artifact{
@@ -632,9 +637,10 @@ func TestNewS3Client(t *testing.T) {
 		RoleARN:         "",
 		RoleSessionName: "",
 		UseSDKCreds:     false,
-		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyId: "", KmsEncryptionContext: ""},
+		EncryptOpts:     EncryptOpts{Enabled: true, ServerSideCustomerKey: "", KmsKeyID: "", KmsEncryptionContext: ""},
 	}
-	s3If, err := NewS3Client(context.Background(), opts)
+	ctx := logging.TestContext(t.Context())
+	s3If, err := NewS3Client(ctx, opts)
 	require.NoError(t, err)
 	s3cli := s3If.(*s3client)
 	assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -659,7 +665,8 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 		SecretKey:    "secret",
 		SessionToken: "sessionToken",
 	}
-	s3If, err := NewS3Client(context.Background(), opts)
+	ctx := logging.TestContext(t.Context())
+	s3If, err := NewS3Client(ctx, opts)
 	require.NoError(t, err)
 	s3cli := s3If.(*s3client)
 	assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -671,6 +678,7 @@ func TestNewS3ClientEphemeral(t *testing.T) {
 
 // TestNewS3Client tests the s3 constructor
 func TestNewS3ClientWithDiff(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Run("IAMRole", func(t *testing.T) {
 		opts := S3ClientOpts{
 			Endpoint: "foo.com",
@@ -678,7 +686,7 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 			Secure:   false,
 			Trace:    true,
 		}
-		s3If, err := NewS3Client(context.Background(), opts)
+		s3If, err := NewS3Client(ctx, opts)
 		require.NoError(t, err)
 		s3cli := s3If.(*s3client)
 		assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -695,7 +703,7 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 			Trace:    true,
 			RoleARN:  "01234567890123456789",
 		}
-		s3If, err := NewS3Client(context.Background(), opts)
+		s3If, err := NewS3Client(ctx, opts)
 		require.NoError(t, err)
 		s3cli := s3If.(*s3client)
 		assert.Equal(t, opts.Endpoint, s3cli.Endpoint)
@@ -706,15 +714,17 @@ func TestNewS3ClientWithDiff(t *testing.T) {
 }
 
 func TestDisallowedComboOptions(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
 	t.Run("KMS and SSEC", func(t *testing.T) {
 		opts := S3ClientOpts{
 			Endpoint:    "foo.com",
 			Region:      "us-south-3",
 			Secure:      true,
 			Trace:       true,
-			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyId: "00000000-0000-0000-0000-000000000000", KmsEncryptionContext: ""},
+			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyID: "00000000-0000-0000-0000-000000000000", KmsEncryptionContext: ""},
 		}
-		_, err := NewS3Client(context.Background(), opts)
+		_, err := NewS3Client(ctx, opts)
 		assert.Error(t, err)
 	})
 
@@ -724,9 +734,9 @@ func TestDisallowedComboOptions(t *testing.T) {
 			Region:      "us-south-3",
 			Secure:      false,
 			Trace:       true,
-			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyId: "", KmsEncryptionContext: ""},
+			EncryptOpts: EncryptOpts{Enabled: true, ServerSideCustomerKey: "PASSWORD", KmsKeyID: "", KmsEncryptionContext: ""},
 		}
-		_, err := NewS3Client(context.Background(), opts)
+		_, err := NewS3Client(ctx, opts)
 		assert.Error(t, err)
 	})
 }

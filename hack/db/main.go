@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -11,13 +10,13 @@ import (
 	"github.com/upper/db/v4"
 	mysqladp "github.com/upper/db/v4/adapter/mysql"
 	postgresqladp "github.com/upper/db/v4/adapter/postgresql"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var session db.Session
@@ -47,7 +46,7 @@ func NewMigrateCommand() *cobra.Command {
 		Use:   "migrate",
 		Short: "Force DB migration for given cluster/table",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return sqldb.Migrate(context.Background(), session, cluster, table)
+			return sqldb.Migrate(cmd.Context(), session, cluster, table)
 		},
 	}
 	migrationCmd.Flags().StringVar(&cluster, "cluster", "default", "Cluster name")
@@ -69,11 +68,12 @@ func NewFakeDataCommand() *cobra.Command {
 			instanceIDService := instanceid.NewService("")
 			wfTmpl := wfv1.MustUnmarshalWorkflow(template)
 
+			ctx := cmd.Context()
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
 				wfArchive := sqldb.NewWorkflowArchive(session, cluster, "", instanceIDService)
-				if err := wfArchive.ArchiveWorkflow(wf); err != nil {
+				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}
 			}

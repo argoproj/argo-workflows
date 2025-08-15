@@ -1,6 +1,5 @@
-# https://golangci-lint.run/usage/quick-start/
+version: "2"
 run:
-  timeout: 12m
   build-tags:
     - api
     - cli
@@ -9,6 +8,7 @@ run:
     - examples
     - corefunctional
     - functional
+    - metrics
     - plugins
 linters:
   enable:
@@ -16,14 +16,10 @@ linters:
     - bidichk
     - bodyclose
     - copyloopvar
+    - contextcheck
+    - containedctx
     - errcheck
-    - goimports
-    # only minor issues
-    # - errorlint
-    # seems to have bugs in recent version, also slow
-    # - gci
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
@@ -34,34 +30,71 @@ linters:
     - sqlclosecheck
     - staticcheck
     - testifylint
-    - typecheck
     - unparam
     - unused
-linters-settings:
-  goimports:
-    local-prefixes: github.com/argoproj/argo-workflows/
-  gosec:
-    includes:
-      - G304
-      - G307
-    excludes:
-      # G106: Use of ssh InsecureIgnoreHostKey should be audited
-      - G106
-      # G402: TLS InsecureSkipVerify set true
-      - G402
-      # G601: Implicit memory aliasing in for loop.
-      - G601
+  settings:
+    gosec:
+      includes:
+        - G304
+        - G307
+      excludes:
+        # G106: Use of ssh InsecureIgnoreHostKey should be audited
+        - G106
+        # G402: TLS InsecureSkipVerify set true
+        - G402
+    staticcheck:
+      checks:
+        - all
+        # Capitalised error strings
+        - "-ST1005"
+    govet:
+      enable: [nilness]
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: server/artifacts/artifact_server_test.go
+        text: response body must be closed
+    paths:
+      - dist
+      - docs
+      - examples
+      - hack
+      - manifests
+      - pkg/client
+      - sdks
+      - ui
+      - vendor
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/argoproj/argo-workflows/
+  exclusions:
+    generated: lax
+    paths:
+      - dist
+      - docs
+      - examples
+      - hack
+      - manifests
+      - pkg/client
+      - sdks
+      - ui
+      - vendor
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    - path: server/artifacts/artifact_server_test.go
-      text: "response body must be closed"
-  exclude-dirs:
-    - dist
-    - docs
-    - examples
-    - hack
-    - manifests
-    - pkg/client
-    - sdks
-    - ui
-    - vendor
+  max-issues-per-linter: 0  # 0 means unlimited
+  max-same-issues: 0

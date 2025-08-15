@@ -3,10 +3,13 @@ package sync
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,9 +18,11 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 const configMap = `
@@ -86,7 +91,7 @@ status:
       holding:
       - holders:
         - hello-world-prtl9
-        semaphore: default/configmap/my-config/workflow
+        semaphore: default/ConfigMap/my-config/workflow
 `
 
 const wfWithSemaphore = `
@@ -300,18 +305,38 @@ spec:
      args: ["hello world"]
 `
 
+// Workflow with database semaphore
+const wfWithDBSemaphore = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world-db-sem
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   semaphores:
+     - database:
+         key: my-database-sem
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]
+`
+
 var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
 
-func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
-	return func(lockName string) (int, error) {
+func GetSyncLimitFunc(kube *fake.Clientset) func(context.Context, string) (int, error) {
+	return func(ctx context.Context, lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
 		if len(items) < 4 {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
 		}
 
-		ctx := context.Background()
 		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
 		if err != nil {
 			return 0, err
@@ -331,13 +356,13 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -348,7 +373,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
@@ -362,7 +387,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		var nextKey string
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
@@ -440,16 +465,94 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		key = getHolderKey(wf2, "")
 		assert.Equal(t, key, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 
 		sema := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"].(*prioritySemaphore)
 		require.NotNil(t, sema)
 		assert.Len(t, sema.pending.items, 2)
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		assert.Len(t, sema.pending.items, 1)
-		syncManager.ReleaseAll(wf3)
+		syncManager.ReleaseAll(ctx, wf3)
 		assert.Empty(t, sema.pending.items)
+	})
+
+	t.Run("WorkflowLevelSemaphoreAcquireAndReleaseWithMultipleSemaphores", func(t *testing.T) {
+		// Create ConfigMap with multiple semaphore limits
+		cm := v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "multiple-sema-config",
+				Namespace: "default",
+			},
+			Data: map[string]string{
+				"sem1": "1",
+				"sem2": "1",
+				"sem3": "1",
+			},
+		}
+		_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+			// nextKey = key
+		}, WorkflowExistenceFunc)
+
+		// Create two workflows that both need all semaphores
+		wf1 := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf1.Name = "wf1"
+		wf1.Spec.Synchronization.Semaphores = []*wfv1.SemaphoreRef{
+			{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "multiple-sema-config"},
+					Key:                  "sem1",
+				},
+			},
+			{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "multiple-sema-config"},
+					Key:                  "sem2",
+				},
+			},
+			{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "multiple-sema-config"},
+					Key:                  "sem3",
+				},
+			},
+		}
+
+		wf2 := wf1.DeepCopy()
+		wf2.Name = "wf2"
+
+		// First workflow should acquire all semaphores
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		require.NotNil(t, wf1.Status.Synchronization)
+		require.NotNil(t, wf1.Status.Synchronization.Semaphore)
+		require.NotNil(t, wf1.Status.Synchronization.Semaphore.Holding)
+		assert.Len(t, wf1.Status.Synchronization.Semaphore.Holding, 3)
+
+		// Release all semaphores from first workflow
+		syncManager.ReleaseAll(ctx, wf1)
+
+		// Second workflow should now be able to acquire all semaphores
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		require.NotNil(t, wf2.Status.Synchronization)
+		require.NotNil(t, wf2.Status.Synchronization.Semaphore)
+		require.NotNil(t, wf2.Status.Synchronization.Semaphore.Holding)
+		assert.Len(t, wf2.Status.Synchronization.Semaphore.Holding, 3)
+
+		// Clean up
+		syncManager.ReleaseAll(ctx, wf2)
 	})
 }
 
@@ -458,13 +561,13 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -533,14 +636,14 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
@@ -596,13 +699,14 @@ type mockGetSyncLimit struct {
 	outputErr  error
 }
 
-func (m *mockGetSyncLimit) getSyncLimit(s string) (int, error) {
+func (m *mockGetSyncLimit) getSyncLimit(_ context.Context, s string) (int, error) {
 	m.callCount++
 	return m.outputSize, m.outputErr
 }
 
 func TestSemaphoreSizeCache(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewSimpleClientset()
 
 	mockedNow := time.Now()
 	nowFn = func() time.Time {
@@ -615,9 +719,13 @@ func TestSemaphoreSizeCache(t *testing.T) {
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		mock := mockGetSyncLimit{}
 		mock.outputSize = 10
+		config := config.SyncConfig{
+			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+		}
 
-		syncManager := NewLockManager(mock.getSyncLimit, 1, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
 		}, WorkflowExistenceFunc)
+
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 
@@ -630,7 +738,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
@@ -641,10 +749,9 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		mockedNow = mockedNow.Add(1 * time.Second)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
@@ -655,7 +762,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -667,10 +774,9 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -682,7 +788,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now again
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -694,14 +800,18 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 	})
 
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		mock := mockGetSyncLimit{}
 		mock.outputSize = 10
 
-		syncManager := NewLockManager(mock.getSyncLimit, 1, func(key string) {
+		config := config.SyncConfig{
+			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+		}
+
+		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
@@ -715,7 +825,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
@@ -726,10 +836,9 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 1, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		mockedNow = mockedNow.Add(1 * time.Second)
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
@@ -740,7 +849,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -752,10 +861,9 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 2, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit())
+		assert.Equal(t, 10, semaphore.getLimit(ctx))
 
-		// increase semaphore age to force update
-		semaphore.(*prioritySemaphore).limitTimestamp = mockedNow.Add(-1)
+		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -767,7 +875,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 
 		// semaphore age should be updated to now again
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -779,7 +887,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Equal(t, 3, mock.callCount)
 
 		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 20, semaphore.getLimit())
+		assert.Equal(t, 20, semaphore.getLimit(ctx))
 	})
 }
 
@@ -790,14 +898,14 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
 		triggerCount := 0
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			triggerCount++
 		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
@@ -831,12 +939,12 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 }
 
 func TestMutexWfLevel(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -872,27 +980,62 @@ func TestMutexWfLevel(t *testing.T) {
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		require.NotNil(t, mutex)
 		assert.Len(t, mutex.pending.items, 2)
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		assert.Len(t, mutex.pending.items, 1)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Empty(t, mutex.pending.items)
+	})
+
+	t.Run("WorkflowLevelMutexAcquireAndReleaseWithMultipleMutex", func(t *testing.T) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+			// nextKey = key
+		}, WorkflowExistenceFunc)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		mutexes := make([]*wfv1.Mutex, 0, 10)
+		for i := range 10 {
+			mutexes = append(mutexes, &wfv1.Mutex{Name: fmt.Sprintf("mutex%d", i)})
+		}
+		wf.Spec.Synchronization.Mutexes = mutexes
+		wf1 := wf.DeepCopy()
+		wf1.Name = "two"
+
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+		require.NoError(t, err)
+		require.Empty(t, msg)
+		require.Empty(t, failedLockName)
+		require.True(t, status)
+		require.True(t, wfUpdate)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+		syncManager.ReleaseAll(ctx, wf)
+
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+		require.NoError(t, err)
+		require.Empty(t, msg)
+		require.Empty(t, failedLockName)
+		require.True(t, status)
+		require.True(t, wfUpdate)
+		require.NotNil(t, wf1.Status.Synchronization)
+		require.NotNil(t, wf1.Status.Synchronization.Mutex)
+		require.NotNil(t, wf1.Status.Synchronization.Mutex.Holding)
+		syncManager.ReleaseAll(ctx, wf1)
 	})
 }
 
 func TestCheckWorkflowExistence(t *testing.T) {
-	assert := assert.New(t)
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "1"
 
-	ctx := context.Background()
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowDeleted", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
@@ -910,15 +1053,19 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 
-		assert.Len(mutex.getCurrentHolders(), 1)
-		assert.Len(mutex.getCurrentPending(), 1)
-		assert.Len(semaphore.getCurrentHolders(), 1)
-		assert.Len(semaphore.getCurrentPending(), 1)
+		holders, err := mutex.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Len(t, holders, 1)
+		pending, err := mutex.getCurrentPending(ctx)
+		require.NoError(t, err)
+		assert.Len(t, pending, 1)
 		syncManager.CheckWorkflowExistence(ctx)
-		assert.Empty(mutex.getCurrentHolders())
-		assert.Len(mutex.getCurrentPending(), 1)
-		assert.Empty(semaphore.getCurrentHolders())
-		assert.Empty(semaphore.getCurrentPending())
+		holders, err = semaphore.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, holders)
+		pending, err = semaphore.getCurrentPending(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, pending)
 	})
 }
 
@@ -929,7 +1076,7 @@ func TestTriggerWFWithSemaphoreAndMutex(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["test-sem"] = "1"
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
@@ -1058,10 +1205,20 @@ status:
     cpu: 2
     memory: 1
   startedAt: "2022-02-28T18:13:00Z"
+  synchronization:
+    mutex:
+      holding:
+      - holder: synchronization-tmpl-level-sgg6t-928517240
+        mutex: argo/Mutex/workflow
+      waiting:
+      - holder: argo/synchronization-tmpl-level-sgg6t/synchronization-tmpl-level-sgg6t-928517240
+        mutex: argo/Mutex/workflow
+  taskResultsCompletionStatus:
+    synchronization-tmpl-level-sgg6t-928517240: false
 `)
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	syncManager := NewLockManager(syncLimitFunc, 0, func(key string) {
+	syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 		// nextKey = key
 	}, WorkflowExistenceFunc)
 	t.Run("InitializeMutex", func(t *testing.T) {
@@ -1084,7 +1241,7 @@ status:
 		assert.True(status)
 		assert.True(wfUpdate)
 		require.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(wf.Status.Synchronization.Semaphore)
+		require.NotNil(t, wf.Status.Synchronization.Semaphore)
 	})
 
 }
@@ -1319,14 +1476,14 @@ status:
 `
 
 func TestMutexMigration(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	assert := assert.New(t)
 	require := require.New(t)
 	kube := fake.NewSimpleClientset()
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	syncMgr := NewLockManager(syncLimitFunc, 0, func(key string) {
+	syncMgr := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 	}, WorkflowExistenceFunc)
 
 	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -1347,13 +1504,14 @@ func TestMutexMigration(t *testing.T) {
 
 		syncItems, err := allSyncItems(ctx, wfMutex2.Spec.Synchronization)
 		require.NoError(err)
-		lockName, err := getLockName(syncItems[0], wfMutex2.Namespace)
+		lockName, err := syncItems[0].lockName(wfMutex2.Namespace)
 		require.NoError(err)
 
-		sem, found := syncMgr.syncLockMap[lockName.encodeName()]
+		sem, found := syncMgr.syncLockMap[lockName.String(ctx)]
 		require.True(found)
 
-		holders := sem.getCurrentHolders()
+		holders, err := sem.getCurrentHolders(ctx)
+		require.NoError(err)
 		require.Len(holders, 1)
 
 		// PROVE: bug absent
@@ -1366,7 +1524,7 @@ func TestMutexMigration(t *testing.T) {
 		assert.True(status)
 	})
 
-	syncMgr = NewLockManager(syncLimitFunc, 0, func(key string) {
+	syncMgr = NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 	}, WorkflowExistenceFunc)
 
 	t.Run("RunMigrationTemplateLevel", func(t *testing.T) {
@@ -1390,13 +1548,14 @@ func TestMutexMigration(t *testing.T) {
 
 		syncItems, err := allSyncItems(ctx, wfMutex3.Spec.Templates[1].Synchronization)
 		require.NoError(err)
-		lockName, err := getLockName(syncItems[0], wfMutex3.Namespace)
+		lockName, err := syncItems[0].lockName(wfMutex3.Namespace)
 		require.NoError(err)
 
-		sem, found := syncMgr.syncLockMap[lockName.encodeName()]
+		sem, found := syncMgr.syncLockMap[lockName.String(ctx)]
 		require.True(found)
 
-		holders := sem.getCurrentHolders()
+		holders, err := sem.getCurrentHolders(ctx)
+		require.NoError(err)
 		require.Len(holders, 1)
 
 		holderKey := getHolderKey(wfMutex3, foundNodeID)
@@ -1446,5 +1605,217 @@ func TestCheckHolderVersion(t *testing.T) {
 		keyv1 := getHoldingNameV1(key)
 		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
+	})
+}
+
+func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
+
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows platforms")
+	}
+
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			// Create database session and info
+			info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
+			require.NoError(t, err)
+			defer deferfunc()
+
+			// Set up two controllers, one active and one inactive
+			activeController := "activeController"
+			inactiveController := "inactiveController"
+
+			// Insert controller records - one fresh, one stale
+			now := time.Now()
+			staleTime := now.Add(-info.config.inactiveControllerTimeout * 2) // Double the inactive timeout
+
+			_, err = info.session.Collection(info.config.controllerTable).Insert(&controllerHealthRecord{
+				Controller: activeController,
+				Time:       now,
+			})
+			require.NoError(t, err)
+
+			_, err = info.session.Collection(info.config.controllerTable).Insert(&controllerHealthRecord{
+				Controller: inactiveController,
+				Time:       staleTime,
+			})
+			require.NoError(t, err)
+
+			// Create a lock with an active controller and one with an inactive controller
+			lockName1 := "test-lock-active"
+			lockName2 := "test-lock-inactive"
+
+			_, err = info.session.Collection(info.config.lockTable).Insert(&lockRecord{
+				Name:       lockName1,
+				Controller: activeController,
+				Time:       now,
+			})
+			require.NoError(t, err)
+
+			_, err = info.session.Collection(info.config.lockTable).Insert(&lockRecord{
+				Name:       lockName2,
+				Controller: inactiveController,
+				Time:       now, // Time doesn't matter, controller is what matters
+			})
+			require.NoError(t, err)
+
+			_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", "foo/test-semaphore", 100)
+			require.NoError(t, err)
+			// Initialize a semaphore so it gets added to the syncLockMap
+			testsem, err := newDatabaseSemaphore(ctx, "test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
+			require.NoError(t, err)
+			syncLockMap := make(map[string]semaphore)
+			syncLockMap["sem/test-semaphore"] = testsem
+
+			// Verify both lock records exist initially
+			lockCount, err := info.session.Collection(info.config.lockTable).Count()
+			require.NoError(t, err)
+			assert.Equal(t, uint64(2), lockCount, "Should have two lock records initially")
+
+			// Run the background notifier manually once
+			for _, lock := range syncLockMap {
+				lock.probeWaiting(ctx)
+			}
+
+			// Check that only the active controller's lock remains
+			var remainingLocks []lockRecord
+			err = info.session.SQL().Select("*").From(info.config.lockTable).All(&remainingLocks)
+			require.NoError(t, err)
+
+			assert.Len(t, remainingLocks, 1, "Should have one lock record remaining")
+			if len(remainingLocks) > 0 {
+				assert.Equal(t, lockName1, remainingLocks[0].Name, "Active controller's lock should remain")
+				assert.Equal(t, activeController, remainingLocks[0].Controller, "Active controller's lock should remain")
+			}
+		})
+	}
+}
+
+func TestUnconfiguredSemaphores(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewSimpleClientset()
+	t.Run("UnconfiguredConfigMapSemaphore", func(t *testing.T) {
+		// Setup with a fake k8s client but no ConfigMap created
+		syncLimitFunc := GetSyncLimitFunc(kube)
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create a workflow with a semaphore referencing a non-existent ConfigMap
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+
+		// Try to acquire the lock
+		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+		// Assertions - expect an error because ConfigMap doesn't exist
+		require.Error(t, err)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
+		assert.Contains(t, err.Error(), "failed to initialize semaphore")
+	})
+
+	t.Run("UnavailableDatabaseSemaphore", func(t *testing.T) {
+		// Don't use testDBTypes here, as we can test this on windows
+		for _, dbType := range []sqldb.DBType{sqldb.Postgres, sqldb.MySQL} {
+			t.Run(string(dbType), func(t *testing.T) {
+				// Create appropriate invalid config for the database type
+				var syncConfig *config.SyncConfig
+				switch dbType {
+				case sqldb.Postgres:
+					syncConfig = &config.SyncConfig{
+						DBConfig: config.DBConfig{
+							PostgreSQL: &config.PostgreSQLConfig{
+								DatabaseConfig: config.DatabaseConfig{
+									Host:     "non-existent-host",
+									Port:     5432,
+									Database: "non-existent-db",
+								},
+								SSL: false,
+							},
+						},
+					}
+				case sqldb.MySQL:
+					syncConfig = &config.SyncConfig{
+						DBConfig: config.DBConfig{
+							MySQL: &config.MySQLConfig{
+								DatabaseConfig: config.DatabaseConfig{
+									Host:     "non-existent-host",
+									Port:     3306,
+									Database: "non-existent-db",
+								},
+							},
+						},
+					}
+				}
+
+				syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+				}, WorkflowExistenceFunc)
+
+				// Create a workflow with a database semaphore
+				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+				// Try to acquire the lock
+				status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+				// Assertions - expect it to fail because DB connection will fail
+				require.Error(t, err)
+				assert.False(t, status)
+				assert.NotEmpty(t, msg)
+				assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+				assert.Contains(t, err.Error(), "database session is not available")
+			})
+		}
+	})
+
+	t.Run("UnconfiguredDBSemaphore", func(t *testing.T) {
+		// Setup a LockManager with no database configuration. This doesn't need to distinguish between Postgres and MySQL, neither are configured
+		syncConfig := &config.SyncConfig{}
+
+		syncManager := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create a workflow with a database semaphore
+		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+		// Try to acquire the lock
+		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+		// Assertions - expect it to fail because DB is not configured
+		require.Error(t, err)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+		assert.Contains(t, err.Error(), "database session is not available")
+	})
+
+	t.Run("MissingLimitSemaphore", func(t *testing.T) {
+		for _, dbType := range testDBTypes {
+			t.Run(string(dbType), func(t *testing.T) {
+				// Setup test database using helper
+				info, cleanup, syncConfig, err := createTestDBSession(ctx, t, dbType)
+				require.NoError(t, err)
+				defer cleanup()
+
+				// Configure sync manager
+				syncManager := createLockManager(ctx, info.session, &syncConfig, nil, func(key string) {
+				}, WorkflowExistenceFunc)
+				require.NotNil(t, syncManager)
+				require.NotNil(t, syncManager.dbInfo.session)
+
+				// Create a workflow with a database semaphore
+				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+
+				// Try to acquire the lock
+				status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+
+				// Assertions - expect it to fail because limit is not in the table
+				require.Error(t, err)
+				assert.False(t, status)
+				assert.NotEmpty(t, msg)
+				assert.Equal(t, "default/Database/my-database-sem", failedLockName)
+				assert.Contains(t, err.Error(), "failed to initialize semaphore")
+			})
+		}
 	})
 }

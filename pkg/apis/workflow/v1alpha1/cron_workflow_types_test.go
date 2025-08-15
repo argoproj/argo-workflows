@@ -1,11 +1,12 @@
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestCronWorkflowStatus_HasActiveUID(t *testing.T) {
@@ -22,7 +23,7 @@ func TestCronWorkflowSpec_GetScheduleStrings(t *testing.T) {
 		Timezone: "",
 		Schedule: "* * * * *",
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	assert.Equal(t, []string{"* * * * *"}, cwfSpec.GetSchedules(ctx))
 	assert.Equal(t, []string{"* * * * *"}, cwfSpec.GetSchedulesWithTimezone(ctx))
 	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleString())

@@ -1,6 +1,7 @@
 name: Regression report
 description: Create a regression report. Not for support requests.
-labels: [ type/bug, type/regression ]
+type: Bug
+labels: [ type/regression ]
 
 body:
   - type: checkboxes

@@ -2,12 +2,10 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
-	"errors"
-
-	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -17,6 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -26,13 +26,19 @@ var (
 	errUnableToExtract = errors.New("was unable to extract limit")
 )
 
-type updateFunc = func(string, int)
-type resetFunc = func(string)
+type (
+	updateFunc = func(string, int)
+	resetFunc  = func(string)
+)
 
 func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubeclientset kubernetes.Interface) (cache.SharedIndexInformer, error) {
-
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "ns_watcher").InContext(ctx)
+	can, _ := authutil.CanI(ctx, wfc.kubeclientset, []string{"get", "watch", "list"}, "", metav1.NamespaceAll, "namespaces")
+	if !can {
+		log.Warn(ctx, "was unable to get permissions for get/watch/list verbs on the namespace resource, per-namespace parallelism will not work")
+		return nil, nil
+	}
 	c := kubeclientset.CoreV1().Namespaces()
-	logger := logrus.WithField("scope", "ns_watcher")
 
 	labelSelector := labels.NewSelector().
 		Add(*limitReq)
@@ -58,7 +64,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				if err != nil {
 					return
 				}
-				updateNS(logger, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
+				updateNS(ctx, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
 			},
 
 			UpdateFunc: func(old, newVal interface{}) {
@@ -70,7 +76,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				if err == nil && !limitChanged(oldNs, ns) {
 					return
 				}
-				updateNS(logger, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
+				updateNS(ctx, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
 			},
 
 			DeleteFunc: func(obj interface{}) {
@@ -78,7 +84,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				if err != nil {
 					return
 				}
-				deleteNS(logger, ns, wfc.throttler.ResetNamespaceParallelism)
+				deleteNS(ctx, ns, wfc.throttler.ResetNamespaceParallelism)
 			},
 		},
 	)
@@ -88,22 +94,23 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 	return informer, nil
 }
 
-func deleteNS(log *logrus.Entry, ns *apiv1.Namespace, resetFn resetFunc) {
-	log.Infof("reseting the namespace parallelism limits for %s due to deletion event", ns.Name)
+func deleteNS(ctx context.Context, ns *apiv1.Namespace, resetFn resetFunc) {
+	logging.RequireLoggerFromContext(ctx).WithField("namespace", ns.Name).Info(ctx, "reseting the namespace parallelism limits due to deletion event")
 	resetFn(ns.Name)
 }
 
-func updateNS(log *logrus.Entry, ns *apiv1.Namespace, updateFn updateFunc, resetFn resetFunc) {
+func updateNS(ctx context.Context, ns *apiv1.Namespace, updateFn updateFunc, resetFn resetFunc) {
+	log := logging.RequireLoggerFromContext(ctx)
 	limit, err := extractLimit(ns)
 	if errors.Is(err, errUnableToExtract) {
 		resetFn(ns.Name)
-		log.Infof("removing per-namespace parallelism for %s, reverting to default", ns.Name)
+		log.WithField("namespace", ns.Name).Info(ctx, "removing per-namespace parallelism, reverting to default")
 		return
 	} else if err != nil {
-		log.Errorf("was unable to extract the limit due to: %s", err)
+		log.WithField("namespace", ns.Name).WithError(err).Error(ctx, "was unable to extract the limit")
 		return
 	}
-	log.Infof("changing namespace parallelism in %s to %d", ns.Name, limit)
+	log.WithFields(logging.Fields{"namespace": ns.Name, "limit": limit}).Info(ctx, "changing namespace parallelism limit")
 	updateFn(ns.Name, limit)
 }
 
@@ -118,7 +125,7 @@ func nsFromObj(obj interface{}) (*apiv1.Namespace, error) {
 func limitChanged(old *apiv1.Namespace, newNS *apiv1.Namespace) bool {
 	oldLimit := old.GetLabels()[common.LabelParallelismLimit]
 	newLimit := newNS.GetLabels()[common.LabelParallelismLimit]
-	return !(oldLimit == newLimit)
+	return oldLimit != newLimit
 }
 
 func extractLimit(ns *apiv1.Namespace) (int, error) {

@@ -33,11 +33,36 @@ DOCKER_PUSH           ?= false
 TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
 K3D_CLUSTER_NAME      ?= k3s-default # declares which cluster to import to in case it's not the default name
 
+# -- dev container options
+DEVCONTAINER_PUSH     ?= false
+# Extract image name from devcontainer.json
+DEVCONTAINER_IMAGE    ?= $(shell sed --quiet 's/^ *"image": "\([^"]*\)",/\1/p' .devcontainer/devcontainer.json)
+ifeq ($(DEVCONTAINER_PUSH),true)
+# Export both image and cache to the registry using zstd, since that produces much smaller images than gzip.
+# Docs: https://docs.docker.com/build/exporters/image-registry/ and https://docs.docker.com/build/cache/backends/registry/
+DEVCONTAINER_EXPORTER_COMMON_FLAGS ?= type=registry,compression=zstd,force-compression=true,oci-mediatypes=true
+DEVCONTAINER_FLAGS    ?= --output $(DEVCONTAINER_EXPORTER_COMMON_FLAGS) \
+	--cache-to $(DEVCONTAINER_EXPORTER_COMMON_FLAGS),ref=$(DEVCONTAINER_IMAGE):cache,mode=max
+else
+DEVCONTAINER_FLAGS    ?= --output type=cacheonly
+endif
+
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
-E2E_SUITE_TIMEOUT     ?= 15m
-GOTEST                ?= go test -v -p 20
+E2E_SUITE_TIMEOUT     ?= 25m
+TEST_RETRIES          ?= 2
+JSON_TEST_OUTPUT      := test/reports/json
+# gotest function: gotest(packages, name, parameters)
+# packages: passed to gotestsum via --packages parameter
+# name: not used currently
+# parameters: passed to go test after the --
+$(JSON_TEST_OUTPUT):
+	mkdir -p $(JSON_TEST_OUTPUT)
+
+define gotest
+	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
+endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
 
@@ -109,6 +134,7 @@ TOOL_OPENAPI_GEN            := $(GOPATH)/bin/openapi-gen
 TOOL_SWAGGER                := $(GOPATH)/bin/swagger
 TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
 TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
+TOOL_GOTESTSUM              := $(GOPATH)/bin/gotestsum
 
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
@@ -116,6 +142,7 @@ TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
 TOOL_MDSPELL                := $(NVM_BIN)/mdspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
 TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
+TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
 TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
 TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
 
@@ -169,6 +196,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
+GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md
 
 # protoc,my.proto
 define protoc
@@ -264,26 +292,40 @@ else
 endif
 
 argoexec-image:
+argoexec-nonroot-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
+	# Special handling for argoexec-nonroot to create argoexec:VERSION-nonroot instead of argoexec-nonroot:VERSION
+	if [ "$*" = "argoexec-nonroot" ]; then \
+		image_name="$(IMAGE_NAMESPACE)/argoexec:$(VERSION)-nonroot"; \
+	else \
+		image_name="$(IMAGE_NAMESPACE)/$*:$(VERSION)"; \
+	fi; \
 	docker buildx build \
 		--platform $(TARGET_PLATFORM) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg GIT_TAG=$(GIT_TAG) \
 		--build-arg GIT_TREE_STATE=$(GIT_TREE_STATE) \
-		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
+		-t $$image_name \
 		--target $* \
 		--load \
-		 .
-	[ ! -e $* ] || mv $* dist/
-	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
-	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
+		.; \
+	[ ! -e $* ] || mv $* dist/; \
+	docker run --rm -t $$image_name version; \
+	if [ $(K3D) = true ]; then \
+		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
+	fi; \
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then \
+		docker push $$image_name; \
+	fi
 
 .PHONY: codegen
-codegen: types swagger manifests $(TOOL_MOCKERY) docs/fields.md docs/cli/argo.md
+codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS)
 	go generate ./...
+	$(TOOL_MOCKERY) --config .mockery.yaml
+ 	# The generated markdown contains links to nowhere for interfaces, so remove them
+	sed -i.bak 's/\[interface{}\](#interface)/`interface{}`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
@@ -317,12 +359,12 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/vektra/mockery/v2@v2.42.2
+	go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.18.0
 endif
 $(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
@@ -371,6 +413,11 @@ $(TOOL_GOIMPORTS): Makefile
 ifneq ($(USE_NIX), true)
 	go install golang.org/x/tools/cmd/goimports@v0.1.7
 endif
+$(TOOL_GOTESTSUM): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install gotest.tools/gotestsum@v1.12.3
+endif
 
 $(TOOL_CLANG_FORMAT):
 ifeq (, $(shell which clang-format))
@@ -382,7 +429,8 @@ else
 endif
 endif
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
+# go-to-protobuf fails with mysterious errors on code that doesn't compile, hence lint-go as a dependency here
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf lint-go
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
@@ -474,10 +522,11 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.3.0
 
-.PHONY: lint
-lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
+.PHONY: lint lint-go lint-ui
+lint: lint-go lint-ui features-validate
+lint-go: $(TOOL_GOLANGCI_LINT) ui/dist/app/index.html
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -487,6 +536,8 @@ lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 	go mod tidy
 	# Lint Go files
 	$(TOOL_GOLANGCI_LINT) run --fix --verbose
+
+lint-ui: ui/dist/app/index.html
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
@@ -494,9 +545,9 @@ lint: ui/dist/app/index.html $(TOOL_GOLANGCI_LINT)
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go
+test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 	go build ./...
-	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
@@ -618,25 +669,25 @@ mysql-dump:
 
 test-cli: ./dist/argo
 
-test-%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
+test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
-Test%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
-Benchmark%:
-	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .
+Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
 # clean
 
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
@@ -686,7 +737,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.32.2/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.33.1/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
@@ -725,11 +776,12 @@ docs/assets/diagram.png: go-diagrams/diagram.dot
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) ui/dist/app/index.html hack/docs/fields.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs fields
 
+docs/workflow-controller-configmap.md: config/*.go hack/docs/workflow-controller-configmap.md hack/docs/configdoc.go
+	go run ./hack/docs configdoc
+
 # generates several other files
 docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
 	go run ./hack/docs cli
-
-# docs
 
 $(TOOL_MDSPELL): Makefile
 # update this in Nix when upgrading it here
@@ -740,9 +792,9 @@ endif
 .PHONY: docs-spellcheck
 docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md
 	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
-	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
+	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
 
 $(TOOL_MARKDOWN_LINK_CHECK): Makefile
 # update this in Nix when upgrading it here
@@ -760,7 +812,6 @@ $(TOOL_MARKDOWNLINT): Makefile
 ifneq ($(USE_NIX), true)
 	npm list -g markdownlint-cli@0.33.0 > /dev/null || npm i -g markdownlint-cli@0.33.0
 endif
-
 
 .PHONY: docs-lint
 docs-lint: $(TOOL_MARKDOWNLINT) docs/metrics.md
@@ -818,3 +869,57 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
+
+# feature notes
+FEATURE_FILENAME?=$(shell git branch --show-current)
+.PHONY: feature-new
+feature-new: hack/featuregen/featuregen
+	# Create a new feature documentation file in .features/pending/ ready for editing
+	# Uses the current branch name as the filename by default, or specify with FEATURE_FILENAME=name
+	$< new --filename $(FEATURE_FILENAME)
+
+.PHONY: features-validate
+features-validate: hack/featuregen/featuregen
+	# Validate all pending feature documentation files
+	$< validate
+
+.PHONY: features-preview
+features-preview: hack/featuregen/featuregen
+	# Preview how the features will appear in the documentation (dry run)
+	# Output to stdout
+	$< update --dry
+
+.PHONY: features-update
+features-update: hack/featuregen/featuregen
+	# Update the features documentation, but keep the feature files in the pending directory
+	# Updates docs/new-features.md for release-candidates
+	$< update --version $(VERSION)
+
+.PHONY: features-release
+features-release: hack/featuregen/featuregen
+	# Update the features documentation AND move the feature files to the released directory
+	# Use this for the final update when releasing a version
+	$< update --version $(VERSION) --final
+
+hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
+	go test ./hack/featuregen
+	go build -o $@ ./hack/featuregen
+
+# dev container
+
+$(TOOL_DEVCONTAINER): Makefile
+	npm list -g @devcontainers/cli@0.75.0 > /dev/null || npm i -g @devcontainers/cli@0.75.0
+
+.PHONY: devcontainer-build
+devcontainer-build: $(TOOL_DEVCONTAINER)
+	devcontainer build \
+		--workspace-folder . \
+		--config .devcontainer/builder/devcontainer.json \
+		--platform $(TARGET_PLATFORM) \
+		--image-name $(DEVCONTAINER_IMAGE) \
+		--cache-from $(DEVCONTAINER_IMAGE):cache \
+		$(DEVCONTAINER_FLAGS)
+
+.PHONY: devcontainer-up
+devcontainer-up: $(TOOL_DEVCONTAINER)
+	devcontainer up --workspace-folder .

@@ -7,29 +7,27 @@ import (
 )
 
 type executorDataSourceProcessor struct {
-	ctx context.Context
-	we  *WorkflowExecutor
+	we *WorkflowExecutor
 }
 
-func newExecutorDataSourceProcessor(ctx context.Context, we *WorkflowExecutor) *executorDataSourceProcessor {
+func newExecutorDataSourceProcessor(we *WorkflowExecutor) *executorDataSourceProcessor {
 	return &executorDataSourceProcessor{
-		ctx: ctx,
-		we:  we,
+		we: we,
 	}
 }
 
-func (ep *executorDataSourceProcessor) ProcessArtifactPaths(artifacts *wfv1.ArtifactPaths) (interface{}, error) {
+func (ep *executorDataSourceProcessor) ProcessArtifactPaths(ctx context.Context, artifacts *wfv1.ArtifactPaths) (interface{}, error) {
 	driverArt, err := ep.we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
 		return nil, err
 	}
-	artDriver, err := ep.we.InitDriver(ep.ctx, driverArt)
+	artDriver, err := ep.we.InitDriver(ctx, driverArt)
 	if err != nil {
 		return nil, err
 	}
 
 	var files []string
-	files, err = artDriver.ListObjects(&artifacts.Artifact)
+	files, err = artDriver.ListObjects(ctx, &artifacts.Artifact)
 	if err != nil {
 		return nil, err
 	}

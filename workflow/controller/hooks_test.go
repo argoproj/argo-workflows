@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -11,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -138,11 +138,11 @@ status:
   startedAt: "2022-01-26T19:23:48Z"
 `)
 
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-bgsf6.hooks.error")
 	assert.NotNil(t, node)
@@ -258,11 +258,11 @@ status:
   startedAt: "2022-01-26T21:28:33Z"
 `)
 
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("step1.hooks.error")
 	assert.NotNil(t, node)
@@ -545,11 +545,11 @@ status:
     workflowTemplateRef:
       name: workflow-template-whalesay-template
 `)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error")
 	assert.NotNil(t, node)
@@ -770,11 +770,11 @@ status:
           template: echo
 
 `)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
 		fmt.Println(node.DisplayName, node.Phase)
@@ -933,11 +933,11 @@ status:
     workflowTemplateRef:
       name: lifecycle-hook
 `)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Failed")
 	assert.NotNil(t, node)
@@ -979,15 +979,15 @@ spec:
           echo {{ inputs.parameters.message }}
 `)
 
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
@@ -997,7 +997,7 @@ spec:
 	)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	err, _ := woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
@@ -1027,15 +1027,15 @@ spec:
           echo Hi
 `)
 
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	assert.Equal(t, "invalid spec: hooks.failure Expression required", woc.wf.Status.Message)
@@ -1066,15 +1066,15 @@ spec:
           echo Hi
 `)
 
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	assert.Equal(t, "invalid spec: templates.main.steps[0].step-1.foo Expression required", woc.wf.Status.Message)
@@ -1113,15 +1113,15 @@ spec:
 `)
 
 	// Setup
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 
 	// Check if running hook is triggered
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
 	assert.NotNil(t, node)
@@ -1130,7 +1130,7 @@ spec:
 
 	// Make all pods running
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
 	assert.Equal(t, wfv1.NodeRunning, node.Phase)
@@ -1141,9 +1141,9 @@ spec:
 	pod, _ := podcs.Get(ctx, "hook-running", metav1.GetOptions{})
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, pod, metav1.UpdateOptions{})
-	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(pod))
+	woc.wf.Status.MarkTaskResultComplete(ctx, woc.nodeID(pod))
 	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running")
@@ -1156,7 +1156,7 @@ spec:
 
 	// Make all pod completed
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
@@ -1203,15 +1203,15 @@ spec:
 `)
 
 	// Setup
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 
 	// Check if running hook is triggered
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
 	assert.NotNil(t, node)
@@ -1220,7 +1220,7 @@ spec:
 
 	// Make all pods running
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
 	assert.Equal(t, wfv1.NodeRunning, node.Phase)
@@ -1233,8 +1233,8 @@ spec:
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
 	_ = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
-	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(&pod))
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.wf.Status.MarkTaskResultComplete(ctx, woc.nodeID(&pod))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job")
@@ -1247,7 +1247,7 @@ spec:
 
 	// Make all pod completed
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
