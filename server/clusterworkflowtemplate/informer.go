@@ -56,9 +56,9 @@ func (cwti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
 func (cwti *Informer) Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter {
-	if cwti.informer == nil {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Template informer not started")
-		os.Exit(1)
+	if cwti == nil || cwti.informer == nil {
+		logging.RequireLoggerFromContext(ctx).Error(ctx, "Template informer not started")
+		return nil
 	}
 	return templateresolution.WrapClusterWorkflowTemplateLister(cwti.informer.Lister())
 }
