@@ -14,8 +14,60 @@ permissions:
 jobs:
   title-check:
     runs-on: ubuntu-24.04
+    outputs:
+      type: ${{ steps.semantic-pr-check.outputs.type }}
     steps:
       - name: Check PR Title's semantic conformance
-        uses: amannn/action-semantic-pull-request@e9fabac35e210fea40ca5b14c0da95a099eff26f # v5.4.0
+        id: semantic-pr-check
+        uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5.5.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  feature-pr-handling:
+    needs: title-check
+    runs-on: ubuntu-24.04
+    if: needs.title-check.outputs.type == 'feat'
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: "1.24"
+          cache: true
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 50
+
+      - name: Ensure ./.features/pending/*.md addition(s)
+        id: changed-files
+        uses: tj-actions/changed-files@cbda684547adc8c052d50711417fa61b428a9f88 # v41.1.2
+        with:
+          files: |
+            .features/pending/*.md
+
+      - name: No ./.features/*.md addition
+        if: steps.changed-files.outputs.added_files_count == 0
+        run: |
+          echo "No feature description was added to the ./.features/ directory for this feature PR."
+          echo "Please add a .md file to the ./.features/ directory."
+          echo "See docs/running-locally.md for more details."
+          false
+
+      - name: Validate ./.features/*.md changes
+        if: steps.changed-files.outputs.added_files_count > 0
+        run: |
+          echo "A feature description was added to the ./.features/ directory."
+          make features-validate \
+            || { echo "New ./.features/*.md file failed validation."; exit 1; }
+
+      # In order to validate any links in the yaml file, render the config to markdown
+      - name: Render .features/*.md feature descriptions
+        run: make features-preview > features_preview.md
+
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        with:
+          args: "--verbose --no-progress ./features_preview.md"
+          failIfEmpty: false

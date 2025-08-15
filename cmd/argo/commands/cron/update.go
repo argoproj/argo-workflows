@@ -64,7 +64,7 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 		return err
 	}
 
-	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
+	cronWorkflows := generateCronWorkflows(ctx, filePaths, cliOpts.strict)
 
 	for _, cronWf := range cronWorkflows {
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
@@ -73,7 +73,7 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 			return err
 		}
 		if cronWf.Namespace == "" {
-			cronWf.Namespace = client.Namespace()
+			cronWf.Namespace = client.Namespace(ctx)
 		}
 		current, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
 			Name:      cronWf.Name,

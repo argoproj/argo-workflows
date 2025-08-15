@@ -69,12 +69,13 @@ func NewTerminateCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			t.namespace = client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			t.namespace = client.Namespace(ctx)
 
 			var workflows wfv1.Workflows
 

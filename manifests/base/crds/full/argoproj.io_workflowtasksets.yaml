@@ -1219,6 +1219,8 @@ spec:
                                   - port
                                   type: object
                               type: object
+                            stopSignal:
+                              type: string
                           type: object
                         livenessProbe:
                           properties:
@@ -1904,6 +1906,8 @@ spec:
                                         - port
                                         type: object
                                     type: object
+                                  stopSignal:
+                                    type: string
                                 type: object
                               livenessProbe:
                                 properties:
@@ -4617,6 +4621,8 @@ spec:
                                     - port
                                     type: object
                                 type: object
+                              stopSignal:
+                                type: string
                             type: object
                           livenessProbe:
                             properties:
@@ -6433,9 +6439,6 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     podSpecPatch:
                       type: string
-                    priority:
-                      format: int32
-                      type: integer
                     priorityClassName:
                       type: string
                     resource:
@@ -7296,6 +7299,8 @@ spec:
                                   - port
                                   type: object
                               type: object
+                            stopSignal:
+                              type: string
                           type: object
                         livenessProbe:
                           properties:
@@ -7767,6 +7772,8 @@ spec:
                         runAsUser:
                           format: int64
                           type: integer
+                        seLinuxChangePolicy:
+                          type: string
                         seLinuxOptions:
                           properties:
                             level:
@@ -8056,6 +8063,8 @@ spec:
                                     - port
                                     type: object
                                 type: object
+                              stopSignal:
+                                type: string
                             type: object
                           livenessProbe:
                             properties:
@@ -9841,6 +9850,8 @@ spec:
                       properties:
                         mutex:
                           properties:
+                            database:
+                              type: boolean
                             name:
                               type: string
                             namespace:
@@ -9849,6 +9860,8 @@ spec:
                         mutexes:
                           items:
                             properties:
+                              database:
+                                type: boolean
                               name:
                                 type: string
                               namespace:
@@ -9870,6 +9883,13 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            database:
+                              properties:
+                                key:
+                                  type: string
+                              required:
+                              - key
+                              type: object
                             namespace:
                               type: string
                           type: object
@@ -9889,6 +9909,13 @@ spec:
                                 - key
                                 type: object
                                 x-kubernetes-map-type: atomic
+                              database:
+                                properties:
+                                  key:
+                                    type: string
+                                required:
+                                - key
+                                type: object
                               namespace:
                                 type: string
                             type: object

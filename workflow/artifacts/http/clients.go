@@ -24,12 +24,11 @@ func CreateClientWithCertificate(clientCert, clientKey []byte) (*http.Client, er
 	return client, err
 }
 
-func CreateOauth2Client(clientID, clientSecret, tokenURL string, scopes []string, endpointParams []wfv1.OAuth2EndpointParam) *http.Client {
+func CreateOauth2Client(ctx context.Context, clientID, clientSecret, tokenURL string, scopes []string, endpointParams []wfv1.OAuth2EndpointParam) *http.Client {
 	values := url.Values{}
 	for _, endpointParam := range endpointParams {
 		values.Add(endpointParam.Key, endpointParam.Value)
 	}
-	ctx := context.Background()
 	conf := cc.Config{
 		ClientID:       clientID,
 		ClientSecret:   clientSecret,

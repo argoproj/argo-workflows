@@ -8,13 +8,17 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
+
+	kwait "k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -34,15 +38,17 @@ func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) Memoization
 	}
 }
 
-func (c *configMapCache) logError(err error, fields log.Fields, message string) {
-	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).WithError(err).Debug(message)
+func (c *configMapCache) logError(ctx context.Context, err error, fields logging.Fields, message string) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).WithError(err).Debug(ctx, message)
 }
 
-func (c *configMapCache) logInfo(fields log.Fields, message string) {
-	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(message)
+func (c *configMapCache) logInfo(ctx context.Context, fields logging.Fields, message string) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(ctx, message)
 }
 
-func (c *configMapCache) validateConfigmap(cm *apiv1.ConfigMap) error {
+func (c *configMapCache) validateConfigmap(ctx context.Context, cm *apiv1.ConfigMap) error {
 	label, foundLabel := cm.GetLabels()[common.LabelKeyConfigMapType]
 	errString := ""
 	if !foundLabel {
@@ -52,13 +58,31 @@ func (c *configMapCache) validateConfigmap(cm *apiv1.ConfigMap) error {
 	}
 	if errString != "" {
 		err := errors.New(errString)
-		c.logError(err, log.Fields{}, errString)
+		c.logError(ctx, err, logging.Fields{}, errString)
 		return err
 	}
 	return nil
 }
 
 func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
+	var entry *Entry
+	err := retry.OnError(kwait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err) || apierr.IsConflict(err)
+	}, func() error {
+		var innerErr error
+		entry, innerErr = c.load(ctx, key)
+		return innerErr
+	})
+	return entry, err
+}
+
+func (c *configMapCache) load(ctx context.Context, key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("invalid cache key: %s", key)
 	}
@@ -69,23 +93,21 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
-			c.logError(err, log.Fields{}, "config map cache miss: config map does not exist")
+			c.logError(ctx, err, logging.Fields{}, "config map cache miss: config map does not exist")
 			return nil, nil
 		}
-		c.logError(err, log.Fields{}, "Error loading config map cache")
-		return nil, fmt.Errorf("could not load config map cache: %w", err)
-	} else {
-		err := c.validateConfigmap(cm)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
+	err = c.validateConfigmap(ctx, cm)
+	if err != nil {
+		return nil, err
 	}
 
-	c.logInfo(log.Fields{}, "config map cache loaded")
+	c.logInfo(ctx, logging.Fields{}, "config map cache loaded")
 	hitTime := time.Now()
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
-		c.logInfo(log.Fields{}, "config map cache miss: entry does not exist")
+		c.logInfo(ctx, logging.Fields{}, "config map cache miss: entry does not exist")
 		return nil, nil
 	}
 
@@ -98,32 +120,46 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	entry.LastHitTimestamp = metav1.Time{Time: hitTime}
 	entryJSON, err := json.Marshal(entry)
 	if err != nil {
-		c.logError(err, log.Fields{"key": key}, "Unable to marshal cache entry with last hit timestamp")
+		c.logError(ctx, err, logging.Fields{"key": key}, "Unable to marshal cache entry with last hit timestamp")
 		return nil, fmt.Errorf("unable to marshal cache entry with last hit timestamp: %w", err)
 	}
 	cm.Data[key] = string(entryJSON)
 
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cm, metav1.UpdateOptions{})
 	if err != nil {
-		c.logError(err, log.Fields{}, "Error updating last hit timestamp on cache")
-		return nil, fmt.Errorf("error updating last hit timestamp on cache: %w", err)
+		return nil, err
 	}
-
 	return &entry, nil
 }
 
-func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, value *wfv1.Outputs) error {
+func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
+	err := retry.OnError(kwait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err) || apierr.IsConflict(err)
+	}, func() error {
+		innerErr := c.save(ctx, key, nodeID, value)
+		return innerErr
+	})
+	return err
+}
+
+func (c *configMapCache) save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
 		errString := fmt.Sprintf("invalid cache key: %s", key)
 		err := errors.New(errString)
-		c.logError(err, log.Fields{"key": key}, errString)
+		c.logError(ctx, err, logging.Fields{"key": key}, errString)
 		return err
 	}
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.logInfo(log.Fields{"key": key, "nodeId": nodeId}, "Saving ConfigMap cache entry")
+	c.logInfo(ctx, logging.Fields{"key": key, "nodeID": nodeID}, "Saving ConfigMap cache entry")
 
 	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) || cache == nil {
@@ -133,11 +169,11 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
-			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
+			c.logError(ctx, err, logging.Fields{"key": key, "nodeID": nodeID}, "Error saving to ConfigMap cache")
 			return fmt.Errorf("could not save to config map cache: %w", err)
 		}
 	} else {
-		err := c.validateConfigmap(cache)
+		err := c.validateConfigmap(ctx, cache)
 		if err != nil {
 			return err
 		}
@@ -147,7 +183,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	cache.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache})
 
 	newEntry := Entry{
-		NodeID:            nodeId,
+		NodeID:            nodeID,
 		Outputs:           value,
 		CreationTimestamp: metav1.Time{Time: creationTime},
 		LastHitTimestamp:  metav1.Time{Time: creationTime},
@@ -155,7 +191,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 
 	entryJSON, err := json.Marshal(newEntry)
 	if err != nil {
-		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Unable to marshal cache entry")
+		c.logError(ctx, err, logging.Fields{"key": key, "nodeID": nodeID}, "Unable to marshal cache entry")
 		return fmt.Errorf("unable to marshal cache entry: %w", err)
 	}
 
@@ -166,7 +202,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cache, metav1.UpdateOptions{})
 	if err != nil {
-		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
+		c.logError(ctx, err, logging.Fields{"key": key, "nodeID": nodeID}, "Kubernetes error creating new cache entry")
 		return fmt.Errorf("error creating cache entry: %w. Please check out this page for help: https://argo-workflows.readthedocs.io/en/latest/memoization/#faqs", err)
 	}
 	return nil

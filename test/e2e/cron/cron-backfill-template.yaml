@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: job
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  arguments:
+    parameters:
+      - name: date
+        # use "yesterday" is a magic value to tell the script it needs to determine the day to run
+        value: yesterday
+  templates:
+    - name: main
+      metadata:
+        labels:
+          workflows.argoproj.io/test: "true"
+      inputs:
+        parameters:
+          - name: date
+      script:
+        imagePullPolicy: IfNotPresent
+        image: busybox
+        command:
+          - sh
+        source: |
+          date="{{inputs.parameters.date}}"
+          if [ $date = yesterday ]; then
+            date=$(date -d yesterday +%Y-%m-%d)
+          fi
+          echo "run for $date"

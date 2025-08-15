@@ -57,7 +57,7 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		return err
 	}
 
-	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
+	cronWorkflows := generateCronWorkflows(ctx, filePaths, cliOpts.strict)
 
 	for _, cronWf := range cronWorkflows {
 		if cliOpts.schedule != "" {
@@ -73,16 +73,16 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		// We have only copied the workflow spec to the cron workflow but not the metadata
 		// that includes name and generateName. Here we copy the metadata to the cron
 		// workflow's metadata and remove the unnecessary and mutually exclusive part.
-		if generateName := newWf.ObjectMeta.GenerateName; generateName != "" {
-			cronWf.ObjectMeta.GenerateName = generateName
-			cronWf.ObjectMeta.Name = ""
+		if generateName := newWf.GenerateName; generateName != "" {
+			cronWf.GenerateName = generateName
+			cronWf.Name = ""
 		}
-		if name := newWf.ObjectMeta.Name; name != "" {
-			cronWf.ObjectMeta.Name = name
-			cronWf.ObjectMeta.GenerateName = ""
+		if name := newWf.Name; name != "" {
+			cronWf.Name = name
+			cronWf.GenerateName = ""
 		}
 		if cronWf.Namespace == "" {
-			cronWf.Namespace = client.Namespace()
+			cronWf.Namespace = client.Namespace(ctx)
 		}
 		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    cronWf.Namespace,

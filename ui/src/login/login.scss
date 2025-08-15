@@ -1,1 +1,107 @@
 @import 'node_modules/argo-ui/src/styles/config';
+
+$logoPath: '../assets/images/argologo.svg';
+$logoNegativePath: '../assets/images/argo.png';
+
+$contentMinWidth: 560px;
+
+.login {
+    min-height: 100vh;
+    background: linear-gradient(to top left, rgba(122, 139, 207, 0.8) 0%, rgba(46, 50, 90, 0.8) 100%), url('assets/images/stars.gif');
+    display: flex;
+
+    &__content {
+        float: left;
+        margin: auto;
+        width: calc(100% - #{$contentMinWidth});
+        text-align: center;
+    }
+
+    .argo__logo {
+        background-image: url($logoNegativePath);
+        background-repeat: no-repeat;
+        background-size: contain;
+        min-height: 200px;
+        margin: auto;
+        background-position: center;
+        height: 50vh;
+    }
+
+    &__text {
+        position: relative;
+        margin: auto;
+        top: -10vh;
+        color: #fff;
+        font-size: 2.5rem;
+        font-weight: 100;
+    }
+
+    &__box {
+        min-width: $contentMinWidth;
+        width: 40%;
+        margin: 0 auto;
+        padding: 40px;
+        background-color: #fff;
+        position: relative;
+        float: right;
+        min-height: 100vh;
+
+        .width-control {
+            max-width: 200px;
+            margin: auto;
+        }
+
+        .token-input {
+            width: 100%;
+        }
+    }
+
+    &__logo {
+        display: block;
+        background-repeat: no-repeat;
+        background-position: center;
+        text-align: center;
+
+        img.logo-image {
+            max-width: 50%;
+            color: #f77530;
+        }
+    }
+
+    &__box-content {
+        margin-bottom: 30px;
+    }
+
+    &__info-section,
+    &__sso-section,
+    &__token-section,
+    &__logout-section {
+        padding: 20px 30px;
+        &:not(:last-child) {
+            margin-bottom: 20px;
+        }
+    }
+
+    &__footer {
+        color: $argo-color-gray-2;
+        bottom: 20px;
+        position: absolute;
+        width: 90%;
+        text-align: center;
+        left: 20px;
+
+        & a {
+            color: $argo-color-gray-2;
+            img {
+                width: 36px;
+                filter: invert(50%);
+                -webkit-filter: invert(50%);
+            }
+        }
+    }
+
+    ::after {
+        content: '';
+        clear: both;
+    }
+}

@@ -17,7 +17,7 @@ type Instrument struct {
 }
 
 func (m *Metrics) preCreateCheck(name string) error {
-	if _, exists := m.AllInstruments[name]; exists {
+	if inst := m.GetInstrument(name); inst != nil {
 		return fmt.Errorf("Instrument called %s already exists", name)
 	}
 	return nil
@@ -32,8 +32,7 @@ type instrumentType int
 const (
 	Float64ObservableGauge instrumentType = iota
 	Float64Histogram
-	Float64UpDownCounter
-	Float64ObservableUpDownCounter
+	Float64ObservableCounter
 	Int64ObservableGauge
 	Int64UpDownCounter
 	Int64Counter
@@ -69,8 +68,6 @@ func collectOptions(options ...instrumentOption) instrumentOptions {
 
 func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
 	opts := collectOptions(options...)
-	m.Mutex.Lock()
-	defer m.Mutex.Unlock()
 	err := m.preCreateCheck(name)
 	if err != nil {
 		return err
@@ -96,15 +93,8 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 		)
 		instPtr = &inst
 		err = insterr
-	case Float64UpDownCounter:
-		inst, insterr := (*m.otelMeter).Float64UpDownCounter(name,
-			metric.WithDescription(desc),
-			metric.WithUnit(unit),
-		)
-		instPtr = &inst
-		err = insterr
-	case Float64ObservableUpDownCounter:
-		inst, insterr := (*m.otelMeter).Float64ObservableUpDownCounter(name,
+	case Float64ObservableCounter:
+		inst, insterr := (*m.otelMeter).Float64ObservableCounter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
@@ -137,11 +127,11 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 	if err != nil {
 		return err
 	}
-	m.AllInstruments[name] = &Instrument{
+	m.AddInstrument(name, &Instrument{
 		name:        name,
 		description: desc,
 		otel:        instPtr,
-	}
+	})
 	return nil
 }
 

@@ -10,8 +10,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-//go:generate mockery --name=Throttler
-
 // Throttler allows the controller to limit number of items it is processing in parallel.
 // Items are processed in priority order, and one processing starts, other items (including higher-priority items)
 // will be kept pending until the processing is complete.
@@ -23,6 +21,12 @@ type Throttler interface {
 	Admit(key Key) bool
 	// Remove notifies throttler that item processing is no longer needed
 	Remove(key Key)
+	// UpdateParallelism
+	UpdateParallelism(limit int)
+	// UpdateNamespaceParallelism updates the namespace parallelism
+	UpdateNamespaceParallelism(namespace string, limit int)
+	// ResetNamespaceParallelism sets the namespace parallelism to the default value
+	ResetNamespaceParallelism(namespace string)
 }
 
 type Key = string
@@ -133,8 +137,31 @@ func (m *multiThrottler) Remove(key Key) {
 
 	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
 	delete(m.running, key)
-	m.pending[namespace].remove(key)
+	_, ok := m.pending[namespace]
+	if ok {
+		m.pending[namespace].remove(key)
+	}
 	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateParallelism(limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.totalParallelism = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateNamespaceParallelism(namespace string, limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.namespaceParallelism[namespace] = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	delete(m.namespaceParallelism, namespace)
 }
 
 func (m *multiThrottler) queueThrottled() {

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -87,7 +88,7 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
 	}
 }
 
-func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	if art == nil || (art.From == "" && art.FromExpression == "") {
 		return nil, nil
 	}
@@ -128,18 +129,18 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 		// Copy resolved artifact pointer before adding subpath
 		copyArt := valArt.DeepCopy()
 
-		subPathAsJson, err := json.Marshal(art.SubPath)
+		subPathAsJSON, err := json.Marshal(art.SubPath)
 		if err != nil {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to marshal artifact subpath for templating")
 		}
 
-		resolvedSubPathAsJson, err := template.Replace(string(subPathAsJson), s.getParameters(), true)
+		resolvedSubPathAsJSON, err := template.Replace(ctx, string(subPathAsJSON), s.getParameters(), true)
 		if err != nil {
 			return nil, err
 		}
 
 		var resolvedSubPath string
-		err = json.Unmarshal([]byte(resolvedSubPathAsJson), &resolvedSubPath)
+		err = json.Unmarshal([]byte(resolvedSubPathAsJSON), &resolvedSubPath)
 		if err != nil {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to unmarshal artifact subpath for templating")
 		}

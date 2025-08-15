@@ -1,16 +1,10 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
-  "appPort": 8080,
-  "features": {
-    "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.23"
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/python:1": {}
-  },
+  // Dev container definition. Reference: https://containers.dev/implementors/json_reference/
+  "name": "Argo Workflows (pre-built)",
+
+  // This image is built and pushed by .github/workflows/devcontainer.yaml using .devcontainer/builder/devcontainer.json
+  "image": "quay.io/argoproj/argo-workflows-devcontainer",
+
   "forwardPorts": [9000, 9001, 9090, 2746, 8080, 5556, 6060, 9091, 3306, 5432, 10000, 8000],
   "hostRequirements": {
     "cpus": 4
@@ -31,24 +25,29 @@
     "GOPATH": "/home/vscode/go"
   },
   "customizations": {
+    "codespaces": {
+      "openFiles": [
+        "docs/running-locally.md"
+      ]
+    },
     "vscode": {
       "settings": {
         "launch": {
           "configurations": [
-              {
-                  "name": "Attach to argo server",
-                  "type": "go",
-                  "request": "attach",
-                  "mode": "local",
-                  "processId": "argo"
-              },
-              {
-                  "name": "Attach to workflow controller",
-                  "type": "go",
-                  "request": "attach",
-                  "mode": "local",
-                  "processId": "workflow-controller"
-              }
+            {
+              "name": "Attach to argo server",
+              "type": "go",
+              "request": "attach",
+              "mode": "local",
+              "processId": "argo"
+            },
+            {
+              "name": "Attach to workflow controller",
+              "type": "go",
+              "request": "attach",
+              "mode": "local",
+              "processId": "workflow-controller"
+            }
           ]
         }
       }

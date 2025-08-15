@@ -89,6 +89,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             {popupProps && <Popup {...popupProps} />}
             <Router history={history}>
                 <Switch>
+                    <Route exact={true} strict={true} path={loginUrl} component={login.component} />
                     <Route path={uiUrl('widgets')} component={Widgets} />
                     <Layout
                         navBarStyle={{backgroundColor: navBarBackgroundColor}}
@@ -179,7 +180,6 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                                 <Route exact={true} strict={true} path={helpUrl} component={help.component} />
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apiDocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
-                                <Route exact={true} strict={true} path={loginUrl} component={login.component} />
                                 {managedNamespace && <Redirect to={workflowsUrl} />}
                                 {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
                             </Switch>

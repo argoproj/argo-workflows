@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // testScopeName is the name that the metrics running under test will have
@@ -24,7 +26,7 @@ func TestDisablePrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
@@ -44,7 +46,7 @@ func TestPrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
@@ -78,7 +80,7 @@ func TestDummyPrometheusServer(t *testing.T) {
 		Port:    DefaultPrometheusServerPort,
 		Secure:  false,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)

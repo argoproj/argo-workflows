@@ -13,8 +13,7 @@ func NewInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Load artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-			err := loadArtifacts(ctx)
+			err := loadArtifacts(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("%+v", err)
 			}
@@ -25,23 +24,23 @@ func NewInitCommand() *cobra.Command {
 }
 
 func loadArtifacts(ctx context.Context) error {
-	wfExecutor := initExecutor()
+	wfExecutor := initExecutor(ctx)
 	defer wfExecutor.HandleError(ctx)
 	defer stats.LogStats()
 
 	if err := wfExecutor.Init(); err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	// Download input artifacts
-	err := wfExecutor.StageFiles()
+	err := wfExecutor.StageFiles(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	err = wfExecutor.LoadArtifacts(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	return nil

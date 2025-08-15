@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +50,7 @@ spec:
 	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
 	wfClientSet := argofake.NewSimpleClientset()
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, nil, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
@@ -57,6 +59,7 @@ spec:
 
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
 func TestResubmitWorkflowWithOnExit(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfName := "test-wf"
 	onExitName := wfName + ".onExit"
 	wf := wfv1.Workflow{
@@ -73,10 +76,10 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	wf.Status.Nodes.Set(onExitID, onExitNode)
-	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
+	wf.Status.Nodes.Set(ctx, onExitID, onExitNode)
+	newWF, err := FormulateResubmitWorkflow(ctx, &wf, true, nil)
 	require.NoError(t, err)
-	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
+	newWFOnExitName := newWF.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
@@ -112,7 +115,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				}
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
-			assert.Equal(t, len(body), len(filePaths))
+			assert.Len(t, filePaths, len(body))
 			require.NoError(t, err)
 			for i := range body {
 				assert.Equal(t, body[i], []byte(tc.contents[i]))
@@ -246,7 +249,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -266,14 +269,15 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
+		assert.Empty(t, wf.Status.Nodes.FindByDisplayName("approve").Message)
 	})
 
 	t.Run("With user info", func(t *testing.T) {
 		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-		ctx := context.WithValue(context.TODO(), auth.ClaimsKey,
+		ctx := logging.TestContext(t.Context())
+		ctx = context.WithValue(ctx, auth.ClaimsKey,
 			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
 		uim := creator.UserInfoMap(ctx)
 
@@ -304,7 +308,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -349,8 +353,8 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 			},
 		},
 	}
-
-	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+	ctx := logging.TestContext(t.Context())
+	p := AddParamToGlobalScope(ctx, &wf, wfv1.Parameter{
 		Name:       "test",
 		Value:      nil,
 		GlobalName: "test",
@@ -463,7 +467,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
@@ -626,6 +630,7 @@ func TestReadParametersFile(t *testing.T) {
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Run("Labels", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -647,7 +652,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
+		wf, err := FormulateResubmitWorkflow(ctx, wf, false, nil)
 		require.NoError(t, err)
 		assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
@@ -678,7 +683,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		ctx := context.WithValue(context.Background(), auth.ClaimsKey, &types.Claims{
+		ctx := context.WithValue(logging.TestContext(t.Context()), auth.ClaimsKey, &types.Claims{
 			Claims:            jwt.Claims{Subject: "yyyy-yyyy-yyyy-yyyy"},
 			Email:             "bar.at.example.com",
 			PreferredUsername: "bar",
@@ -705,7 +710,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
+		wf, err := FormulateResubmitWorkflow(logging.TestContext(t.Context()), wf, false, nil)
 		require.NoError(t, err)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
@@ -720,7 +725,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			}},
 		}
-		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, []string{"message=modified"})
+		wf, err := FormulateResubmitWorkflow(logging.TestContext(t.Context()), wf, false, []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 	})
@@ -881,7 +886,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
@@ -1011,7 +1016,7 @@ func TestRetryExitHandler(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(exitHandler)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
@@ -1023,7 +1028,7 @@ func TestRetryExitHandler(t *testing.T) {
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1147,7 +1152,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"override-param-wf": {ID: "override-param-wf", Name: "override-param-wf", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeDAG},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		wf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 
@@ -1175,7 +1180,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					}},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		wf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
@@ -1326,7 +1331,8 @@ kind: CronWorkflow
 metadata:
   name: example-integers
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   workflowSpec:
     entrypoint: whalesay
     templates:
@@ -1853,7 +1859,7 @@ status:
 `
 
 func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 
 	// Retry top individual pod node
@@ -2273,7 +2279,7 @@ func TestStepsRetryWorkflow(t *testing.T) {
 			succeeded[node.ID] = true
 		}
 	}
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, true, selectorStr, []string{})
 	require.NoError(err)
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 5)
@@ -2567,7 +2573,7 @@ func TestDAGDiamondRetryWorkflow(t *testing.T) {
 			succeeded[node.ID] = true
 		}
 	}
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, true, selectorStr, []string{})
 
 	require.NoError(err)
 	assert.Len(podsToDelete, 2)
@@ -2994,7 +3000,7 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 	}
 
 	selectorStr := "id=work-avoidance-trkkq-4183398008"
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, true, selectorStr, []string{})
 	require.NoError(err)
 	assert.Len(newWf.Status.Nodes, 6)
 	assert.Len(podsToDelete, 2)
@@ -3147,7 +3153,7 @@ func TestOnExitWorkflow(t *testing.T) {
 	assert := assert.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflow)
 
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{})
 	require.NoError(err)
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 1)
@@ -3897,7 +3903,7 @@ func TestNestedDAG(t *testing.T) {
 		}
 	}
 
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
+	newWf, podsToDelete, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
 	require.NoError(err)
 	assert.Len(podsToDelete, 2)
 
@@ -3910,4 +3916,269 @@ func TestNestedDAG(t *testing.T) {
 		}
 	}
 
+}
+
+const onExitPanic = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-02-11T05:25:47Z"
+  generateName: exit-handlers-
+  generation: 21
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: exit-handlers-n7s4n
+  namespace: argo
+  resourceVersion: "2255"
+  uid: 7b2f1451-9a9a-4f66-a0d9-0364f814d948
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - echo intentional failure; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: intentional-fail
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: notify
+        template: send-email
+      - arguments: {}
+        name: celebrate
+        template: celebrate
+        when: '{{workflow.status}} == Succeeded'
+      - arguments: {}
+        name: cry
+        template: cry
+        when: '{{workflow.status}} != Succeeded'
+  - container:
+      args:
+      - 'echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}.
+        Failed steps {{workflow.failures}}'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: send-email
+    outputs: {}
+  - container:
+      args:
+      - echo hooray!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: celebrate
+    outputs: {}
+  - container:
+      args:
+      - echo boohoo!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: cry
+    outputs: {}
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2025-02-11T05:31:30Z"
+  message: 'main: Error (exit code 1)'
+  nodes:
+    exit-handlers-n7s4n:
+      displayName: exit-handlers-n7s4n
+      finishedAt: "2025-02-11T05:31:18Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n
+      message: 'main: Error (exit code 1)'
+      name: exit-handlers-n7s4n
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 4
+      startedAt: "2025-02-11T05:31:12Z"
+      templateName: intentional-fail
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+    exit-handlers-n7s4n-134905866:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: celebrate
+      finishedAt: "2025-02-11T05:31:21Z"
+      id: exit-handlers-n7s4n-134905866
+      message: when 'Failed == Succeeded' evaluated false
+      name: exit-handlers-n7s4n.onExit[0].celebrate
+      nodeFlag: {}
+      phase: Skipped
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: celebrate
+      templateScope: local/exit-handlers-n7s4n
+      type: Skipped
+    exit-handlers-n7s4n-975057257:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      children:
+      - exit-handlers-n7s4n-3201878844
+      - exit-handlers-n7s4n-134905866
+      - exit-handlers-n7s4n-2699669595
+      displayName: '[0]'
+      finishedAt: "2025-02-11T05:31:30Z"
+      id: exit-handlers-n7s4n-975057257
+      name: exit-handlers-n7s4n.onExit[0]
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-02-11T05:31:21Z"
+      templateScope: local/exit-handlers-n7s4n
+      type: StepGroup
+    exit-handlers-n7s4n-1410405845:
+      children:
+      - exit-handlers-n7s4n-975057257
+      displayName: exit-handlers-n7s4n.onExit
+      finishedAt: "2025-02-11T05:31:30Z"
+      id: exit-handlers-n7s4n-1410405845
+      name: exit-handlers-n7s4n.onExit
+      nodeFlag:
+        hooked: true
+      outboundNodes:
+      - exit-handlers-n7s4n-3201878844
+      - exit-handlers-n7s4n-134905866
+      - exit-handlers-n7s4n-2699669595
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: exit-handler
+      templateScope: local/exit-handlers-n7s4n
+      type: Steps
+    exit-handlers-n7s4n-2699669595:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: cry
+      finishedAt: "2025-02-11T05:31:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n-2699669595
+      name: exit-handlers-n7s4n.onExit[0].cry
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n-cry-2699669595/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: cry
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+    exit-handlers-n7s4n-3201878844:
+      boundaryID: exit-handlers-n7s4n-1410405845
+      displayName: notify
+      finishedAt: "2025-02-11T05:31:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-n7s4n-3201878844
+      name: exit-handlers-n7s4n.onExit[0].notify
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-n7s4n/exit-handlers-n7s4n-send-email-3201878844/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-02-11T05:31:21Z"
+      templateName: send-email
+      templateScope: local/exit-handlers-n7s4n
+      type: Pod
+  phase: Failed
+  progress: 2/3
+  resourcesDuration:
+    cpu: 0
+    memory: 10
+  startedAt: "2025-02-11T05:31:12Z"
+  taskResultsCompletionStatus:
+    exit-handlers-n7s4n: true
+    exit-handlers-n7s4n-2699669595: true
+    exit-handlers-n7s4n-3201878844: true
+`
+
+func TestRegressions(t *testing.T) {
+	t.Run("exit handler", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(onExitPanic)
+		newWf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, true, "id=exit-handlers-n7s4n-975057257", []string{})
+		require.NoError(t, err)
+		// we can't really handle exit handlers granually yet
+		assert.Empty(t, newWf.Status.Nodes)
+	})
 }

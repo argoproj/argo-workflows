@@ -9,7 +9,7 @@ import (
 )
 
 // PodPhaseCallback is the function prototype to provide this gauge with the phase of the pods
-type PodPhaseCallback func() map[string]int64
+type PodPhaseCallback func(ctx context.Context) map[string]int64
 
 type podPhaseGauge struct {
 	callback PodPhaseCallback
@@ -26,17 +26,17 @@ func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
 	if m.callbacks.PodPhase != nil {
 		ppGauge := podPhaseGauge{
 			callback: m.callbacks.PodPhase,
-			gauge:    m.AllInstruments[name],
+			gauge:    m.GetInstrument(name),
 		}
-		return m.AllInstruments[name].RegisterCallback(m.Metrics, ppGauge.update)
+		return ppGauge.gauge.RegisterCallback(m.Metrics, ppGauge.update)
 	}
 	return nil
 }
 
-func (p *podPhaseGauge) update(_ context.Context, o metric.Observer) error {
-	phases := p.callback()
+func (p *podPhaseGauge) update(ctx context.Context, o metric.Observer) error {
+	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
+		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
 	}
 	return nil
 }

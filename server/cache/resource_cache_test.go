@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -74,7 +74,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 			},
 		})
 	cache := NewResourceCache(kubeClient, v1.NamespaceAll)
-	ctx := context.TODO()
+	ctx := logging.TestContext(t.Context())
 	cache.Run(ctx.Done())
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {

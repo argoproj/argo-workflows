@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
@@ -46,10 +46,10 @@ var sampleConfigMapEmptyCacheEntry = apiv1.ConfigMap{
 }
 
 func TestConfigMapCacheLoadHit(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
-	ctx := context.Background()
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	require.NoError(t, err)
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
@@ -59,7 +59,7 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 
 	entry, err := c.Load(ctx, "hi-there-world")
 	require.NoError(t, err)
-	assert.True(t, entry.LastHitTimestamp.Time.After(entry.CreationTimestamp.Time))
+	assert.True(t, entry.LastHitTimestamp.After(entry.CreationTimestamp.Time))
 
 	outputs := entry.Outputs
 	require.NoError(t, err)
@@ -69,10 +69,10 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 }
 
 func TestConfigMapCacheLoadMiss(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
-	ctx := context.Background()
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapEmptyCacheEntry, metav1.CreateOptions{})
 	require.NoError(t, err)
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
@@ -82,16 +82,16 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 }
 
 func TestConfigMapCacheSave(t *testing.T) {
-	var MockParamValue string = "Hello world"
+	var MockParamValue = "Hello world"
 	MockParam := wfv1.Parameter{
 		Name:  "hello",
 		Value: wfv1.AnyStringPtr(MockParamValue),
 	}
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
 
-	ctx := context.Background()
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
 	err := c.Save(ctx, "hi-there-world", "", &outputs)

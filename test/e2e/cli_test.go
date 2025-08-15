@@ -199,7 +199,8 @@ func (s *CLISuite) TestSubmitInvalidWf() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic-invalid.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.Error(t, err)
-			assert.Contains(t, output, "yaml file at index 0 is not valid:")
+			assert.Contains(t, output, "yaml file is not valid")
+			assert.Contains(t, output, "index=0")
 		})
 }
 
@@ -1329,11 +1330,17 @@ func (s *CLISuite) TestCronCommands() {
 
 	// All files in this directory are CronWorkflows, expect success
 	s.Run("AllCron", func() {
+		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 		s.Given().
 			RunCli([]string{"cron", "lint", "cron"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "no linting errors found!")
 			})
+		s.Given().RunCli([]string{"template", "delete", "job"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 	})
 
 	s.Run("Create", func() {
@@ -1404,14 +1411,14 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Name Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "basic-cron-wf-overridden-name", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-name")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-name")
 		})
 	})
 
 	s.Run("Create GenerateName Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--generate-name", "basic-cron-wf-overridden-generate-name-", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-generate-name-")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-generate-name-")
 		})
 	})
 
@@ -1479,6 +1486,43 @@ func (s *CLISuite) TestCronCommands() {
 		s.Given().RunCli([]string{"cron", "create", "cron/multiple-schedules.yaml"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 			assert.Contains(t, output, "Schedules:                     * * * * *,*/2 * * * *")
+		})
+	})
+}
+
+func (s *CLISuite) TestCronWorkflowsBackfillCommands() {
+	s.Run("Backfill", func() {
+		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Name:")
+			assert.Contains(t, output, "Namespace:")
+			assert.Contains(t, output, "Created:")
+		})
+		s.Given().RunCli([]string{"cron", "create", "cron/cron-daily-job.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Schedules:                     0 2 * * *")
+		})
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Wed, 21 Oct 2024 16:28:00 GMT", "--argname", "date"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "There is no suitable scheduling time.")
+		})
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Sat, 24 Oct 2024 15:28:00 GMT", "--argname", "date", "--parallel", "true"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Backfill task for Cronworkflow daily-job")
+			assert.Contains(t, output, "Backfill Period :")
+			assert.Contains(t, output, "Start Time : Wed, 21 Oct 2024 15:28:00 GMT")
+			assert.Contains(t, output, "End Time : Sat, 24 Oct 2024 15:28:00 GMT")
+			assert.Contains(t, output, "Total Backfill Schedule: 3")
+		})
+		s.Given().RunCli([]string{"watch", "@latest"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "2024-10-22 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-23 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-24 02:00:00 +0000 GMT")
+			require.Contains(t, output, "Status:              Succeeded")
+		})
+		s.Given().RunCli([]string{"delete", "--prefix", "backfill-wf"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
 		})
 	})
 }

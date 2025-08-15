@@ -132,6 +132,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":             schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate":               schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SyncDatabaseRef":               schema_pkg_apis_workflow_v1alpha1_SyncDatabaseRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization":               schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus":         schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy":                   schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref),
@@ -3769,8 +3770,16 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"target": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"name", "scope", "url"},
+				Required: []string{"name", "scope", "url", "target"},
 			},
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
@@ -3997,6 +4006,13 @@ func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Namespace is the namespace of the mutex, default: [namespace of workflow]",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Database specifies this is database controlled if this is set true",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -4351,6 +4367,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 						SchemaProps: spec.SchemaProps{
 							Description: "SynchronizationStatus is the synchronization status of the node",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
+						},
+					},
+					"taskResultSynced": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TaskResultSynced is used to determine if the node's output has been received",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -4842,7 +4865,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
+							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5881,7 +5904,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"configMapKeyRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+							Description: "ConfigMapKeyRef is a configmap selector for Semaphore configuration",
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
 						},
 					},
@@ -5892,11 +5915,17 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SyncDatabaseRef is a database reference for Semaphore configuration",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SyncDatabaseRef"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SyncDatabaseRef", "k8s.io/api/core/v1.ConfigMapKeySelector"},
 	}
 }
 
@@ -6171,6 +6200,26 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_SyncDatabaseRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"key"},
 			},
 		},
 	}
@@ -6566,13 +6615,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Description: "PriorityClassName to apply to workflow pods.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
 						},
 					},
 					"serviceAccountName": {
@@ -7865,13 +7907,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Description: "PriorityClassName to apply to workflow pods.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"podPriority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
-							Type:        []string{"integer"},
-							Format:      "int32",
 						},
 					},
 					"hostAliases": {

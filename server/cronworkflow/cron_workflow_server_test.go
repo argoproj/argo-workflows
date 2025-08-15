@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
@@ -30,7 +31,8 @@ metadata:
   labels:
     workflows.argoproj.io/controller-instanceid: my-instanceid
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -58,7 +60,9 @@ metadata:
 	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
+	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	userEmailLabel := "my-sub.at.your.org"
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
@@ -79,6 +83,7 @@ metadata:
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
@@ -99,7 +104,7 @@ metadata:
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
 		t.Run("Invalid", func(t *testing.T) {
 			x := cronWf.DeepCopy()
-			x.Spec.Schedule = "invalid"
+			x.Spec.Schedules = []string{"invalid"}
 			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: x})
 			require.Error(t, err)
 		})
@@ -107,6 +112,7 @@ metadata:
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
 			assert.Contains(t, cronWf.Labels, common.LabelKeyActor)
 			assert.Equal(t, string(creator.ActionUpdate), cronWf.Labels[common.LabelKeyAction])
+			assert.Equal(t, userEmailLabel, cronWf.Labels[common.LabelKeyActorEmail])
 			require.NoError(t, err)
 			assert.NotNil(t, cronWf)
 		})

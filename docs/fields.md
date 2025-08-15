@@ -87,6 +87,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -315,6 +317,8 @@ Workflow is the definition of a workflow resource
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -322,6 +326,14 @@ Workflow is the definition of a workflow resource
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -425,6 +437,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
 
@@ -444,6 +458,8 @@ WorkflowEventBinding is the definition of an event resource
 <summary>Examples (click to open)</summary>
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -453,6 +469,19 @@ WorkflowEventBinding is the definition of an event resource
 |`kind`|`string`|Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds|
 |`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`WorkflowEventBindingSpec`](#workfloweventbindingspec)|_No description available_|
+
+## InfoResponse
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`columns`|`Array<`[`Column`](#column)`>`|_No description available_|
+|`links`|`Array<`[`Link`](#link)`>`|_No description available_|
+|`managedNamespace`|`string`|_No description available_|
+|`modals`|`Map< boolean , string >`|which modals to show|
+|`navColor`|`string`|_No description available_|
 
 ## WorkflowSpec
 
@@ -552,6 +581,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -773,6 +804,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -780,6 +813,14 @@ WorkflowSpec is the specification of a Workflow.
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -814,6 +855,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -859,7 +904,6 @@ WorkflowSpec is the specification of a Workflow.
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when deleting completed pods|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata defines additional metadata that should be applied to workflow pods|
-|~~`podPriority`~~|~~`integer`~~|~~Priority to apply to workflow pods.~~ DEPRECATED: Use PodPriorityClassName instead.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
@@ -1006,6 +1050,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -1226,6 +1272,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -1233,6 +1281,14 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -1267,6 +1323,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -1327,6 +1387,29 @@ _No description available_
 |`event`|[`Event`](#event)|Event is the event to bind to|
 |`submit`|[`Submit`](#submit)|Submit is the workflow template to submit|
 
+## Column
+
+Column is a custom column that will be exposed in the Workflow List View.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|The key of the label or annotation, e.g., "workflows.argoproj.io/completed".|
+|`name`|`string`|The name of this column, e.g., "Workflow Completed".|
+|`type`|`string`|The type of this column, "label" or "annotation".|
+
+## Link
+
+A link to another app.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|The name of the link, E.g. "Workflow Logs" or "Pod Logs"|
+|`scope`|`string`|"workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"|
+|`target`|`string`|Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.|
+|`url`|`string`|The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}"|
+
 ## Arguments
 
 Arguments to a template
@@ -1375,6 +1458,8 @@ Arguments to a template
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -1492,9 +1577,15 @@ Arguments to a template
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -1505,6 +1596,10 @@ Arguments to a template
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -1576,6 +1671,8 @@ _No description available_
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-step-level.yaml)
+
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
@@ -1583,6 +1680,8 @@ _No description available_
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-on-exit.yaml)
 </details>
 
 ### Fields
@@ -1654,6 +1753,8 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -1669,6 +1770,8 @@ RetryStrategy provides controls on how to retry a workflow step
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
@@ -1690,6 +1793,18 @@ Synchronization holds synchronization lock configuration
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -1746,7 +1861,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
-|`priority`|`integer`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
@@ -1821,6 +1935,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 - [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-inline-cronworkflow.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -1904,6 +2020,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |`synchronizationStatus`|[`NodeSynchronizationStatus`](#nodesynchronizationstatus)|SynchronizationStatus is the synchronization status of the node|
+|`taskResultSynced`|`boolean`|TaskResultSynced is used to determine if the node's output has been received|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
@@ -2014,6 +2131,18 @@ SynchronizationStatus stores the status of semaphore and mutex.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
+
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
@@ -2046,6 +2175,8 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -2061,6 +2192,8 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -2227,6 +2360,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -2341,9 +2476,15 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -2354,6 +2495,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -2376,7 +2521,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 |`enum`|`Array< string >`|Enum holds a list of string values to choose from, for the actual value of the parameter|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## TemplateRef
@@ -2469,6 +2614,10 @@ Mutex holds Mutex configuration
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
@@ -2481,6 +2630,7 @@ Mutex holds Mutex configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`database`|`boolean`|Database specifies this is database controlled if this is set true|
 |`name`|`string`|name of the mutex|
 |`namespace`|`string`|Namespace is the namespace of the mutex, default: [namespace of workflow]|
 
@@ -2491,7 +2641,8 @@ SemaphoreRef is a reference of Semaphore
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for Semaphore configuration|
+|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is a configmap selector for Semaphore configuration|
+|`database`|[`SyncDatabaseRef`](#syncdatabaseref)|SyncDatabaseRef is a database reference for Semaphore configuration|
 |`namespace`|`string`|Namespace is the namespace of the configmap, default: [namespace of workflow]|
 
 ## ArtifactLocation
@@ -2571,6 +2722,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -2663,6 +2816,8 @@ _No description available_
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
@@ -2682,6 +2837,8 @@ _No description available_
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -2783,6 +2940,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -2906,6 +3065,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
@@ -2915,6 +3076,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -3220,6 +3383,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -3227,6 +3392,10 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -3247,6 +3416,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -3364,6 +3535,10 @@ MutexStatus contains which objects hold mutex locks, and which objects this work
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -3567,6 +3742,8 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
@@ -3586,6 +3763,8 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -3710,6 +3889,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -3851,6 +4032,27 @@ MetricLabel is a single label for a prometheus metric
 
 RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
 
+## SyncDatabaseRef
+
+_No description available_
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|_No description available_|
+
 ## ContainerNode
 
 _No description available_
@@ -3913,6 +4115,8 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -3928,6 +4132,8 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
@@ -3966,6 +4172,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -4239,9 +4447,13 @@ Sequence expands a workflow step into numeric range
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
@@ -4617,6 +4829,8 @@ _No description available_
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -4780,6 +4994,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -5001,6 +5217,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -5008,6 +5226,14 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -5042,6 +5268,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -5150,7 +5380,7 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 |`maxUnavailable`|[`IntOrString`](#intorstring)|An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
 |`minAvailable`|[`IntOrString`](#intorstring)|An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |`selector`|[`LabelSelector`](#labelselector)|Label query over pods whose evictions are managed by the disruption budget. A null selector will match no pods, while an empty ({}) selector will select all pods within the namespace.|
-|`unhealthyPodEvictionPolicy`|`string`|UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods should be considered for eviction. Current implementation considers healthy pods, as pods that have status.conditions item with type="Ready",status="True". Valid policies are IfHealthyBudget and AlwaysAllow. If no policy is specified, the default behavior will be used, which corresponds to the IfHealthyBudget policy. IfHealthyBudget policy means that running pods (status.phase="Running"), but not yet healthy can be evicted only if the guarded application is not disrupted (status.currentHealthy is at least equal to status.desiredHealthy). Healthy pods will be subject to the PDB for eviction. AlwaysAllow policy means that all running pods (status.phase="Running"), but not yet healthy are considered disrupted and can be evicted regardless of whether the criteria in a PDB is met. This means perspective running pods of a disrupted application might not get a chance to become healthy. Healthy pods will be subject to the PDB for eviction. Additional policies may be added in the future. Clients making eviction decisions should disallow eviction of unhealthy pods if they encounter an unrecognized policy in this field. This field is beta-level. The eviction API uses this field when the feature gate PDBUnhealthyPodEvictionPolicy is enabled (enabled by default).|
+|`unhealthyPodEvictionPolicy`|`string`|UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods should be considered for eviction. Current implementation considers healthy pods, as pods that have status.conditions item with type="Ready",status="True". Valid policies are IfHealthyBudget and AlwaysAllow. If no policy is specified, the default behavior will be used, which corresponds to the IfHealthyBudget policy. IfHealthyBudget policy means that running pods (status.phase="Running"), but not yet healthy can be evicted only if the guarded application is not disrupted (status.currentHealthy is at least equal to status.desiredHealthy). Healthy pods will be subject to the PDB for eviction. AlwaysAllow policy means that all running pods (status.phase="Running"), but not yet healthy are considered disrupted and can be evicted regardless of whether the criteria in a PDB is met. This means perspective running pods of a disrupted application might not get a chance to become healthy. Healthy pods will be subject to the PDB for eviction. Additional policies may be added in the future. Clients making eviction decisions should disallow eviction of unhealthy pods if they encounter an unrecognized policy in this field.|
 
 ## PodSecurityContext
 
@@ -5171,6 +5401,7 @@ PodSecurityContext holds pod-level security attributes and common container sett
 |`runAsGroup`|`integer`|The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.|
 |`runAsNonRoot`|`boolean`|Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
 |`runAsUser`|`integer`|The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.|
+|`seLinuxChangePolicy`|`string`|seLinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod. It has no effect on nodes that do not support SELinux or to volumes does not support SELinux. Valid values are "MountOption" and "Recursive". "Recursive" means relabeling of all files on all Pod volumes by the container runtime. This may be slow for large volumes, but allows mixing privileged and unprivileged Pods sharing the same volume on the same node. "MountOption" mounts all eligible Pod volumes with `-o context` mount option. This requires all Pods that share the same volume to use the same SELinux label. It is not possible to share the same volume among privileged and unprivileged Pods. Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their CSIDriver instance. Other volumes are always re-labelled recursively. "MountOption" value is allowed only when SELinuxMount feature gate is enabled. If not specified and SELinuxMount feature gate is enabled, "MountOption" is used. If not specified and SELinuxMount feature gate is disabled, "MountOption" is used for ReadWriteOncePod volumes and "Recursive" for all other volumes. This field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers. All Pods that use the same volume should use the same seLinuxChangePolicy, otherwise some pods can get stuck in ContainerCreating state. Note that this field cannot be set when spec.os.name is windows.|
 |`seLinuxOptions`|[`SELinuxOptions`](#selinuxoptions)|The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.|
 |`seccompProfile`|[`SeccompProfile`](#seccompprofile)|The seccomp options to use by the containers in this pod. Note that this field cannot be set when spec.os.name is windows.|
 |`supplementalGroups`|`Array< integer >`|A list of groups applied to the first process run in each container, in addition to the container's primary GID and fsGroup (if specified). If the SupplementalGroupsPolicy feature is enabled, the supplementalGroupsPolicy field determines whether these are in addition to or instead of any group memberships defined in the container image. If unspecified, no additional groups are added, though group memberships defined in the container image may still be used, depending on the supplementalGroupsPolicy field. Note that this field cannot be set when spec.os.name is windows.|
@@ -5247,37 +5478,37 @@ Volume represents a named volume in a pod that may be accessed by any container 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`awsElasticBlockStore`|[`AWSElasticBlockStoreVolumeSource`](#awselasticblockstorevolumesource)|awsElasticBlockStore represents an AWS Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore|
-|`azureDisk`|[`AzureDiskVolumeSource`](#azurediskvolumesource)|azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.|
-|`azureFile`|[`AzureFileVolumeSource`](#azurefilevolumesource)|azureFile represents an Azure File Service mount on the host and bind mount to the pod.|
-|`cephfs`|[`CephFSVolumeSource`](#cephfsvolumesource)|cephFS represents a Ceph FS mount on the host that shares a pod's lifetime|
-|`cinder`|[`CinderVolumeSource`](#cindervolumesource)|cinder represents a cinder volume attached and mounted on kubelets host machine. More info: https://examples.k8s.io/mysql-cinder-pd/README.md|
+|`awsElasticBlockStore`|[`AWSElasticBlockStoreVolumeSource`](#awselasticblockstorevolumesource)|awsElasticBlockStore represents an AWS Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore|
+|`azureDisk`|[`AzureDiskVolumeSource`](#azurediskvolumesource)|azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod. Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type are redirected to the disk.csi.azure.com CSI driver.|
+|`azureFile`|[`AzureFileVolumeSource`](#azurefilevolumesource)|azureFile represents an Azure File Service mount on the host and bind mount to the pod. Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type are redirected to the file.csi.azure.com CSI driver.|
+|`cephfs`|[`CephFSVolumeSource`](#cephfsvolumesource)|cephFS represents a Ceph FS mount on the host that shares a pod's lifetime. Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.|
+|`cinder`|[`CinderVolumeSource`](#cindervolumesource)|cinder represents a cinder volume attached and mounted on kubelets host machine. Deprecated: Cinder is deprecated. All operations for the in-tree cinder type are redirected to the cinder.csi.openstack.org CSI driver. More info: https://examples.k8s.io/mysql-cinder-pd/README.md|
 |`configMap`|[`ConfigMapVolumeSource`](#configmapvolumesource)|configMap represents a configMap that should populate this volume|
-|`csi`|[`CSIVolumeSource`](#csivolumesource)|csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).|
+|`csi`|[`CSIVolumeSource`](#csivolumesource)|csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.|
 |`downwardAPI`|[`DownwardAPIVolumeSource`](#downwardapivolumesource)|downwardAPI represents downward API about the pod that should populate this volume|
 |`emptyDir`|[`EmptyDirVolumeSource`](#emptydirvolumesource)|emptyDir represents a temporary directory that shares a pod's lifetime. More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir|
 |`ephemeral`|[`EphemeralVolumeSource`](#ephemeralvolumesource)|ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed. Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity tracking are needed, c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through a PersistentVolumeClaim (see EphemeralVolumeSource for more information on the connection between this volume type and PersistentVolumeClaim). Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod. Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information. A pod can use both types of ephemeral volumes and persistent volumes at the same time.|
 |`fc`|[`FCVolumeSource`](#fcvolumesource)|fc represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.|
-|`flexVolume`|[`FlexVolumeSource`](#flexvolumesource)|flexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.|
-|`flocker`|[`FlockerVolumeSource`](#flockervolumesource)|flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running|
-|`gcePersistentDisk`|[`GCEPersistentDiskVolumeSource`](#gcepersistentdiskvolumesource)|gcePersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
-|~~`gitRepo`~~|~~[`GitRepoVolumeSource`](#gitrepovolumesource)~~|~~gitRepo represents a git repository at a particular revision.~~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.|
-|`glusterfs`|[`GlusterfsVolumeSource`](#glusterfsvolumesource)|glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/glusterfs/README.md|
+|`flexVolume`|[`FlexVolumeSource`](#flexvolumesource)|flexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.|
+|`flocker`|[`FlockerVolumeSource`](#flockervolumesource)|flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running. Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.|
+|`gcePersistentDisk`|[`GCEPersistentDiskVolumeSource`](#gcepersistentdiskvolumesource)|gcePersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
+|`gitRepo`|[`GitRepoVolumeSource`](#gitrepovolumesource)|gitRepo represents a git repository at a particular revision. Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.|
+|`glusterfs`|[`GlusterfsVolumeSource`](#glusterfsvolumesource)|glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported. More info: https://examples.k8s.io/volumes/glusterfs/README.md|
 |`hostPath`|[`HostPathVolumeSource`](#hostpathvolumesource)|hostPath represents a pre-existing file or directory on the host machine that is directly exposed to the container. This is generally used for system agents or other privileged things that are allowed to see the host machine. Most containers will NOT need this. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath|
-|`image`|[`ImageVolumeSource`](#imagevolumesource)|image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine. The volume is resolved at pod startup depending on which PullPolicy value is provided: - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails. The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath). The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.|
+|`image`|[`ImageVolumeSource`](#imagevolumesource)|image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine. The volume is resolved at pod startup depending on which PullPolicy value is provided: - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails. The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.|
 |`iscsi`|[`ISCSIVolumeSource`](#iscsivolumesource)|iscsi represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://examples.k8s.io/volumes/iscsi/README.md|
 |`name`|`string`|name of the volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
 |`nfs`|[`NFSVolumeSource`](#nfsvolumesource)|nfs represents an NFS mount on the host that shares a pod's lifetime More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs|
 |`persistentVolumeClaim`|[`PersistentVolumeClaimVolumeSource`](#persistentvolumeclaimvolumesource)|persistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims|
-|`photonPersistentDisk`|[`PhotonPersistentDiskVolumeSource`](#photonpersistentdiskvolumesource)|photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine|
-|`portworxVolume`|[`PortworxVolumeSource`](#portworxvolumesource)|portworxVolume represents a portworx volume attached and mounted on kubelets host machine|
+|`photonPersistentDisk`|[`PhotonPersistentDiskVolumeSource`](#photonpersistentdiskvolumesource)|photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.|
+|`portworxVolume`|[`PortworxVolumeSource`](#portworxvolumesource)|portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.|
 |`projected`|[`ProjectedVolumeSource`](#projectedvolumesource)|projected items for all in one resources secrets, configmaps, and downward API|
-|`quobyte`|[`QuobyteVolumeSource`](#quobytevolumesource)|quobyte represents a Quobyte mount on the host that shares a pod's lifetime|
-|`rbd`|[`RBDVolumeSource`](#rbdvolumesource)|rbd represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/rbd/README.md|
-|`scaleIO`|[`ScaleIOVolumeSource`](#scaleiovolumesource)|scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.|
+|`quobyte`|[`QuobyteVolumeSource`](#quobytevolumesource)|quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.|
+|`rbd`|[`RBDVolumeSource`](#rbdvolumesource)|rbd represents a Rados Block Device mount on the host that shares a pod's lifetime. Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported. More info: https://examples.k8s.io/volumes/rbd/README.md|
+|`scaleIO`|[`ScaleIOVolumeSource`](#scaleiovolumesource)|scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes. Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.|
 |`secret`|[`SecretVolumeSource`](#secretvolumesource)|secret represents a secret that should populate this volume. More info: https://kubernetes.io/docs/concepts/storage/volumes#secret|
-|`storageos`|[`StorageOSVolumeSource`](#storageosvolumesource)|storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.|
-|`vsphereVolume`|[`VsphereVirtualDiskVolumeSource`](#vspherevirtualdiskvolumesource)|vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine|
+|`storageos`|[`StorageOSVolumeSource`](#storageosvolumesource)|storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes. Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.|
+|`vsphereVolume`|[`VsphereVirtualDiskVolumeSource`](#vspherevirtualdiskvolumesource)|vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine. Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type are redirected to the csi.vsphere.vmware.com CSI driver.|
 
 ## Time
 
@@ -5323,6 +5554,8 @@ _No description available_
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -5336,6 +5569,8 @@ _No description available_
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
@@ -5408,6 +5643,8 @@ A single application container that you want to run within a pod.
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -5599,6 +5836,8 @@ A single application container that you want to run within a pod.
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -5606,6 +5845,14 @@ A single application container that you want to run within a pod.
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -5636,6 +5883,8 @@ A single application container that you want to run within a pod.
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
@@ -5767,13 +6016,13 @@ EnvVar represents an environment variable present in a Container.
 
 ## EnvFromSource
 
-EnvFromSource represents the source of a set of ConfigMaps
+EnvFromSource represents the source of a set of ConfigMaps or Secrets
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`configMapRef`|[`ConfigMapEnvSource`](#configmapenvsource)|The ConfigMap to select from|
-|`prefix`|`string`|An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.|
+|`prefix`|`string`|Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.|
 |`secretRef`|[`SecretEnvSource`](#secretenvsource)|The Secret to select from|
 
 ## Lifecycle
@@ -5785,6 +6034,7 @@ Lifecycle describes actions that the management system should take in response t
 |:----------:|:----------:|---------------|
 |`postStart`|[`LifecycleHandler`](#lifecyclehandler)|PostStart is called immediately after a container is created. If the handler fails, the container is terminated and restarted according to its restart policy. Other management of the container blocks until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks|
 |`preStop`|[`LifecycleHandler`](#lifecyclehandler)|PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks|
+|`stopSignal`|`string`|StopSignal defines which signal will be sent to a container when it is being stopped. If not specified, the default is defined by the container runtime in use. StopSignal can only be set for Pods with a non-empty .spec.os.name|
 
 ## Probe
 
@@ -5793,14 +6043,14 @@ Probe describes a health check to be performed against a container to determine 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`exec`|[`ExecAction`](#execaction)|Exec specifies the action to take.|
+|`exec`|[`ExecAction`](#execaction)|Exec specifies a command to execute in the container.|
 |`failureThreshold`|`integer`|Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.|
-|`grpc`|[`GRPCAction`](#grpcaction)|GRPC specifies an action involving a GRPC port.|
-|`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies the http request to perform.|
+|`grpc`|[`GRPCAction`](#grpcaction)|GRPC specifies a GRPC HealthCheckRequest.|
+|`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies an HTTP GET request to perform.|
 |`initialDelaySeconds`|`integer`|Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`periodSeconds`|`integer`|How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.|
 |`successThreshold`|`integer`|Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.|
-|`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|TCPSocket specifies an action involving a TCP port.|
+|`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|TCPSocket specifies a connection to a TCP port.|
 |`terminationGracePeriodSeconds`|`integer`|Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.|
 |`timeoutSeconds`|`integer`|Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 
@@ -5991,8 +6241,8 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`name`|`string`|Required.|
-|`value`|`string`|_No description available_|
+|`name`|`string`|Name is this DNS resolver option's name. Required.|
+|`value`|`string`|Value is this DNS resolver option's value.|
 
 ## AppArmorProfile
 
@@ -6387,6 +6637,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -6595,6 +6847,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -6602,6 +6856,14 @@ ImageVolumeSource represents a image volume resource.
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template.yaml)
+
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -6634,6 +6896,8 @@ ImageVolumeSource represents a image volume resource.
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
@@ -6879,6 +7143,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -6916,10 +7182,10 @@ LifecycleHandler defines a specific action that should be taken in a lifecycle h
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`exec`|[`ExecAction`](#execaction)|Exec specifies the action to take.|
-|`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies the http request to perform.|
-|`sleep`|[`SleepAction`](#sleepaction)|Sleep represents the duration that the container should sleep before being terminated.|
-|`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.|
+|`exec`|[`ExecAction`](#execaction)|Exec specifies a command to execute in the container.|
+|`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies an HTTP GET request to perform.|
+|`sleep`|[`SleepAction`](#sleepaction)|Sleep represents a duration that the container should sleep.|
+|`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for backward compatibility. There is no validation of this field and lifecycle hooks will fail at runtime when it is specified.|
 
 ## ExecAction
 
@@ -6938,7 +7204,7 @@ ExecAction describes a "run in container" action.
 
 ## GRPCAction
 
-_No description available_
+GRPCAction specifies an action involving a GRPC service.
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -6957,9 +7223,13 @@ HTTPGetAction describes an action based on HTTP Get requests.
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 </details>
 
 ### Fields
@@ -7056,8 +7326,8 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`labelSelector`|[`LabelSelector`](#labelselector)|A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.|
-|`matchLabelKeys`|`Array< string >`|MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn't set. This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).|
-|`mismatchLabelKeys`|`Array< string >`|MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn't set. This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).|
+|`matchLabelKeys`|`Array< string >`|MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn't set.|
+|`mismatchLabelKeys`|`Array< string >`|MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn't set.|
 |`namespaceSelector`|[`LabelSelector`](#labelselector)|A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.|
 |`namespaces`|`Array< string >`|namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".|
 |`topologyKey`|`string`|This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.|
@@ -7075,7 +7345,7 @@ TypedLocalObjectReference contains enough information to let you locate the type
 
 ## TypedObjectReference
 
-_No description available_
+TypedObjectReference contains enough information to let you locate the typed referenced object
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -7132,8 +7402,8 @@ PersistentVolumeClaimCondition contains details about state of pvc
 |`lastTransitionTime`|[`Time`](#time)|lastTransitionTime is the time the condition transitioned from one status to another.|
 |`message`|`string`|message is the human-readable message indicating details about last transition.|
 |`reason`|`string`|reason is a unique, this should be a short, machine understandable string that gives the reason for condition's last transition. If it reports "Resizing" that means the underlying persistent volume is being resized.|
-|`status`|`string`|_No description available_|
-|`type`|`string`|_No description available_|
+|`status`|`string`|Status is the status of the condition. Can be True, False, Unknown. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required|
+|`type`|`string`|Type is the type of the condition. More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about|
 
 ## ModifyVolumeStatus
 

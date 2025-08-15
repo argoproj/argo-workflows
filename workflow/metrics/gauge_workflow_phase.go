@@ -9,7 +9,7 @@ import (
 )
 
 // WorkflowPhaseCallback is the function prototype to provide this gauge with the phase of the pods
-type WorkflowPhaseCallback func() map[string]int64
+type WorkflowPhaseCallback func(ctx context.Context) map[string]int64
 
 type workflowPhaseGauge struct {
 	callback WorkflowPhaseCallback
@@ -26,18 +26,18 @@ func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
 	if m.callbacks.WorkflowPhase != nil {
 		wfpGauge := workflowPhaseGauge{
 			callback: m.callbacks.WorkflowPhase,
-			gauge:    m.AllInstruments[name],
+			gauge:    m.GetInstrument(name),
 		}
-		return m.AllInstruments[name].RegisterCallback(m.Metrics, wfpGauge.update)
+		return wfpGauge.gauge.RegisterCallback(m.Metrics, wfpGauge.update)
 	}
 	return nil
 	// TODO init all phases?
 }
 
-func (p *workflowPhaseGauge) update(_ context.Context, o metric.Observer) error {
-	phases := p.callback()
+func (p *workflowPhaseGauge) update(ctx context.Context, o metric.Observer) error {
+	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(o, val, telemetry.InstAttribs{{Name: telemetry.AttribWorkflowStatus, Value: phase}})
+		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribWorkflowStatus, Value: phase}})
 	}
 	return nil
 }

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var inMemoryDataNode = `
@@ -229,11 +229,10 @@ status:
 // Test that a pod is created when necessary
 func TestDataTemplateCreatesPod(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(inMemoryDataNode, `artifactPaths: {s3: {bucket: "test"}}`))
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("collect-artifact")

@@ -112,10 +112,10 @@ metrics:
     notes: |
       `feature` will be one of:
 
-      - [`cronworkflow schedule`](deprecations.md#cronworkflow_schedule)
-      - [`synchronization mutex`](deprecations.md#synchronization_mutex)
-      - [`synchronization semaphore`](deprecations.md#synchronization_semaphore)
-      - [`workflow podpriority`](deprecations.md#workflow_podpriority)
+      - [`cronworkflow schedule`](deprecations.md#cronworkflow-schedule)
+      - [`synchronization mutex`](deprecations.md#synchronization-mutex)
+      - [`synchronization semaphore`](deprecations.md#synchronization-semaphore)
+      - [`workflow podpriority`](deprecations.md#workflow-podpriority)
     attributes:
       - name: DeprecatedFeature
       - name: WorkflowNamespace
@@ -222,7 +222,7 @@ metrics:
       The `reason` attribute is the value from the Reason message before the `:` in the message.
       This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
     unit: "{pod}"
-    type: Int64ObservableGauge
+    type: Int64Counter
   - name: QueueAddsCount
     description: A counter of additions to the work queues inside the controller
     extendedDescription: The rate of this shows how busy that area of the controller is

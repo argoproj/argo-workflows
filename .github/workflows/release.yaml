@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/amd64, linux/arm64 ]
-        target: [ workflow-controller, argocli, argoexec ]
+        target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -40,7 +40,7 @@ jobs:
           version: v0.10.4
 
       - name: Cache Docker layers
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         id: cache
         with:
           path: /tmp/.buildx-cache
@@ -77,7 +77,13 @@ jobs:
           GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
           GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+
+          # Special handling for argoexec-nonroot to create argoexec:tag-nonroot-platform instead
+          if [ "$TARGET" = "argoexec-nonroot" ]; then
+            image_name="${DOCKERIO_ORG}/argoexec:${tag}-nonroot-${tag_suffix}"
+          else
+            image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+          fi
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
@@ -89,7 +95,6 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --provenance=false \
-            --tag $image_name \
             --tag quay.io/$image_name .
 
   build-windows:
@@ -133,8 +138,6 @@ jobs:
               -t $image_name \
               -f Dockerfile.windows \
               .
-
-            docker push $image_name
 
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
@@ -182,19 +185,20 @@ jobs:
             tag="latest"
           fi
 
-          targets="workflow-controller argoexec argocli"
+          targets="workflow-controller argoexec argoexec-nonroot argocli"
           for target in $targets; do
-            image_name="${docker_org}/${target}:${tag}"
-
-            if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
+            if [ "$target" = "argoexec-nonroot" ]; then
+              # Special handling for argoexec-nonroot: create argoexec:tag-nonroot manifest
+              image_name="${docker_org}/argoexec:${tag}-nonroot"
+              docker manifest create quay.io/$image_name quay.io/${docker_org}/argoexec:${tag}-nonroot-linux-arm64 quay.io/${docker_org}/argoexec:${tag}-nonroot-linux-amd64
+            elif [ "$target" = "argoexec" ]; then
+              image_name="${docker_org}/${target}:${tag}"
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
+              image_name="${docker_org}/${target}:${tag}"
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
-            docker manifest push $image_name
             docker manifest push quay.io/$image_name
 
             cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
@@ -209,7 +213,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/amd64 ]
-        target: [ workflow-controller, argocli, argoexec ]
+        target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
       - name: Docker Login
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
@@ -235,8 +239,11 @@ jobs:
             tag="latest"
           fi
 
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
-          docker pull $image_name
+          if [ "$TARGET" = "argoexec-nonroot" ]; then
+            image_name="${DOCKERIO_ORG}/argoexec:${tag}-nonroot"
+          else
+            image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
+          fi
           docker pull quay.io/$image_name
 
   test-images-windows:
@@ -270,7 +277,6 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
-            docker pull $image_name
             docker pull quay.io/$image_name
           done
 
@@ -291,9 +297,9 @@ jobs:
           node-version: "20" # change in all GH Workflows
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.23"
+          go-version: "1.24"
       - name: Restore node packages cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
@@ -317,6 +323,7 @@ jobs:
       - run: bom generate --image quay.io/argoproj/workflow-controller:$VERSION -o dist/workflow-controller.spdx
       - run: bom generate --image quay.io/argoproj/argocli:$VERSION -o dist/argocli.spdx
       - run: bom generate --image quay.io/argoproj/argoexec:$VERSION -o dist/argoexec.spdx
+      - run: bom generate --image quay.io/argoproj/argoexec:$VERSION-nonroot -o dist/argoexec-nonroot.spdx
       # pack the boms into one file to make it easy to download
       - run: tar -zcf dist/sbom.tar.gz dist/*.spdx
       - run: make release-notes VERSION=$VERSION

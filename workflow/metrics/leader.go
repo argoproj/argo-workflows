@@ -26,16 +26,16 @@ func addIsLeader(ctx context.Context, m *Metrics) error {
 	name := telemetry.InstrumentIsLeader.Name()
 	lGauge := leaderGauge{
 		callback: m.callbacks.IsLeader,
-		gauge:    m.AllInstruments[name],
+		gauge:    m.GetInstrument(name),
 	}
-	return m.AllInstruments[name].RegisterCallback(m.Metrics, lGauge.update)
+	return lGauge.gauge.RegisterCallback(m.Metrics, lGauge.update)
 }
 
-func (l *leaderGauge) update(_ context.Context, o metric.Observer) error {
+func (l *leaderGauge) update(ctx context.Context, o metric.Observer) error {
 	var val int64 = 0
 	if l.callback() {
 		val = 1
 	}
-	l.gauge.ObserveInt(o, val, telemetry.InstAttribs{})
+	l.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{})
 	return nil
 }

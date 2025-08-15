@@ -1,10 +1,11 @@
 package sync
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,7 +74,7 @@ func TestMultiWithParallelismLimitAndPriority(t *testing.T) {
 func TestMultiInitWithWorkflows(t *testing.T) {
 	queuedKey := ""
 	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 
 	wfclientset := fakewfclientset.NewSimpleClientset(
 		wfv1.MustUnmarshalWorkflow(`
@@ -129,7 +130,7 @@ status:
 	assert.False(t, throttler.Admit("default/d"))
 
 	throttler.Remove("default/a")
-	assert.Equal(t, "", queuedKey)
+	assert.Empty(t, queuedKey)
 	assert.False(t, throttler.Admit("default/c"))
 	assert.False(t, throttler.Admit("default/d"))
 
@@ -201,4 +202,36 @@ func TestPriorityAcrossNamespaces(t *testing.T) {
 	throttler.Remove("b/0")
 	assert.True(t, throttler.Admit("b/1"))
 	assert.False(t, throttler.Admit("a/2"))
+}
+
+func TestParallelismUpdate(t *testing.T) {
+	assert := assert.New(t)
+	throttler := NewMultiThrottler(4, 0, func(Key) {})
+	throttler.Add("a/0", 0, time.Now())
+	throttler.Add("b/0", 0, time.Now())
+	throttler.Add("c/0", 0, time.Now())
+	throttler.Add("d/0", 0, time.Now())
+	throttler.Add("e/0", 0, time.Now())
+	throttler.Add("f/0", 0, time.Now())
+
+	assert.True(throttler.Admit("a/0"))
+	assert.True(throttler.Admit("b/0"))
+	assert.True(throttler.Admit("c/0"))
+	assert.True(throttler.Admit("d/0"))
+	assert.False(throttler.Admit("e/0"))
+	assert.False(throttler.Admit("f/0"))
+
+	throttler.UpdateParallelism(5)
+	assert.True(throttler.Admit("e/0"))
+	assert.False(throttler.Admit("f/0"))
+}
+
+func TestNamespaceParallelismUpdate(t *testing.T) {
+	assert := assert.New(t)
+	throttler := NewMultiThrottler(4, 0, func(Key) {})
+	throttler.UpdateNamespaceParallelism("argo", 1)
+	throttler.Add("argo/a", 0, time.Now())
+	throttler.Add("argo/b", 0, time.Now())
+	assert.True(throttler.Admit("argo/a"))
+	assert.False(throttler.Admit("argo/b"))
 }

@@ -3,8 +3,6 @@
 package e2e
 
 import (
-	"context"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -47,8 +44,8 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowPhase("Failed"), status.Phase)
 			assert.Equal(t, "No more retries left", status.Message)
 			assert.Equal(t, v1alpha1.Progress("0/1"), status.Progress)
 		}).
@@ -90,8 +87,8 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(time.Second * 90).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowPhase("Failed"), status.Phase)
 			assert.LessOrEqual(t, len(status.Nodes), 10)
 		})
 	s.Given().
@@ -116,15 +113,13 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(time.Second * 90).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowPhase("Failed"), status.Phase)
 			assert.LessOrEqual(t, len(status.Nodes), 10)
 		})
 }
 
 func (s *RetryTestSuite) TestWorkflowTemplateWithRetryStrategyInContainerSet() {
-	var name string
-	var ns string
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-with-containerset.yaml").
 		Workflow(`
@@ -139,58 +134,28 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
 		}).
-		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return status.Name == "workflow-template-containerset"
-		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-			name = pod.GetName()
-			ns = pod.GetNamespace()
+		// Success, no need retry
+		ExpectContainerLogs("c1", func(t *testing.T, logs string) {
+			count := strings.Count(logs, "capturing logs")
+			assert.Equal(t, 1, count)
+			assert.Contains(t, logs, "hi")
+		}).
+		// Command err. No retry logic is entered.
+		ExpectContainerLogs("c2", func(t *testing.T, logs string) {
+			count := strings.Count(logs, "capturing logs")
+			assert.Equal(t, 0, count)
+			assert.Contains(t, logs, "executable file not found in $PATH")
+		}).
+		// Retry when err.
+		ExpectContainerLogs("c3", func(t *testing.T, logs string) {
+			count := strings.Count(logs, "capturing logs")
+			assert.Equal(t, 2, count)
+			countFailureInfo := strings.Count(logs, "intentional failure")
+			assert.Equal(t, 2, countFailureInfo)
 		})
-	// Success, no need retry
-	s.Run("ContainerLogs", func() {
-		ctx := context.Background()
-		podLogOptions := &apiv1.PodLogOptions{Container: "c1"}
-		stream, err := s.KubeClient.CoreV1().Pods(ns).GetLogs(name, podLogOptions).Stream(ctx)
-		s.Require().NoError(err)
-		defer stream.Close()
-		logBytes, err := io.ReadAll(stream)
-		s.Require().NoError(err)
-		output := string(logBytes)
-		count := strings.Count(output, "capturing logs")
-		s.Equal(1, count)
-		s.Contains(output, "hi")
-	})
-	// Command err. No retry logic is entered.
-	s.Run("ContainerLogs", func() {
-		ctx := context.Background()
-		podLogOptions := &apiv1.PodLogOptions{Container: "c2"}
-		stream, err := s.KubeClient.CoreV1().Pods(ns).GetLogs(name, podLogOptions).Stream(ctx)
-		s.Require().NoError(err)
-		defer stream.Close()
-		logBytes, err := io.ReadAll(stream)
-		s.Require().NoError(err)
-		output := string(logBytes)
-		count := strings.Count(output, "capturing logs")
-		s.Equal(0, count)
-		s.Contains(output, "executable file not found in $PATH")
-	})
-	// Retry when err.
-	s.Run("ContainerLogs", func() {
-		ctx := context.Background()
-		podLogOptions := &apiv1.PodLogOptions{Container: "c3"}
-		stream, err := s.KubeClient.CoreV1().Pods(ns).GetLogs(name, podLogOptions).Stream(ctx)
-		s.Require().NoError(err)
-		defer stream.Close()
-		logBytes, err := io.ReadAll(stream)
-		s.Require().NoError(err)
-		output := string(logBytes)
-		count := strings.Count(output, "capturing logs")
-		s.Equal(2, count)
-		countFailureInfo := strings.Count(output, "intentional failure")
-		s.Equal(2, countFailureInfo)
-	})
 }
 
 func (s *RetryTestSuite) TestRetryNodeAntiAffinity() {
@@ -217,13 +182,13 @@ spec:
 		WaitForWorkflow(fixtures.ToHaveFailedPod).
 		Wait(5 * time.Second).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if status.Phase == wfv1.WorkflowFailed {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			if status.Phase == v1alpha1.WorkflowFailed {
 				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
 				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
 				assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
 			}
-			if status.Phase == wfv1.WorkflowRunning {
+			if status.Phase == v1alpha1.WorkflowRunning {
 				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
 				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
 				assert.Contains(t, nodeStatusRetry.Message, "didn't match Pod's node affinity/selector")

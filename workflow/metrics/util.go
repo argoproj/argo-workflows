@@ -17,7 +17,7 @@ var (
 
 func IsValidMetricName(name string) bool {
 	// Use promtheus's metric name checker, despite perhaps not using prometheus
-	return model.IsValidMetricName(model.LabelValue(name)) && !strings.Contains(name, `:`)
+	return model.IsValidLegacyMetricName(string(model.LabelValue(name))) && !strings.Contains(name, `:`)
 }
 
 func ValidateMetricValues(metric *wfv1.Prometheus) error {

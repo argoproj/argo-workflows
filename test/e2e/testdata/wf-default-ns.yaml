@@ -6,7 +6,8 @@ metadata:
   labels:
     workflows.argoproj.io/test: "true"
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4

@@ -61,12 +61,13 @@ func NewNodeCommand() *cobra.Command {
 				outputParameters = string(res)
 			}
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 
 			selector, err := fields.ParseSelector(setArgs.nodeFieldSelector)
 			if err != nil {
