@@ -1,0 +1,8 @@
+metadata:
+  name: github-webhook
+spec:
+  event:
+    selector: metadata["x-github-event"] == ["push"]
+  submit:
+    workflowTemplateRef:
+      name: github-webhook

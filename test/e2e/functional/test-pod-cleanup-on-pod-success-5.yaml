@@ -1,0 +1,11 @@
+metadata:
+  generateName: test-pod-cleanup-on-pod-success-
+spec:
+  podGC:
+    strategy: OnPodSuccess
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [exit, 1]

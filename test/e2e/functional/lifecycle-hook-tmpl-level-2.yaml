@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-tmpl-level-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: step-1
+            hooks:
+              running:
+                expression: steps["step-1"].status == "Running"
+                template: argosay
+              succeed:
+                expression: steps["step-1"].status == "Succeeded"
+                template: argosay
+            template: argosay
+        - - name: step-2
+            hooks:
+              running:
+                expression: steps["step-2"].status == "Running"
+                template: argosay
+              succeed:
+                expression: steps["step-2"].status == "Succeeded"
+                template: argosay
+            template: argosay
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 1; /argosay"]

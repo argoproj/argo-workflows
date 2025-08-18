@@ -21,24 +21,7 @@ func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
 		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
 		When().CreateClusterWorkflowTemplates().
 		Given().
-		Workflow(`
-metadata:
-  generateName: cwft-wf-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    steps:
-    - - name: call-whalesay-template
-        templateRef:
-          name: cluster-workflow-template-nested-template 
-          template: whalesay-template
-          clusterScope: true
-        arguments:
-          parameters:
-          - name: message
-            value: hello from nested
-`).When().
+		Workflow("@functional/cwft-wf.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }

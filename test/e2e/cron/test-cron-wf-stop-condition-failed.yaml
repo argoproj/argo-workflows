@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-stop-condition-failed
+spec:
+  schedules:
+    - "* * * * *"
+  concurrencyPolicy: "Allow"
+  stopStrategy:
+    expression: "cronworkflow.failed >= 1"
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]

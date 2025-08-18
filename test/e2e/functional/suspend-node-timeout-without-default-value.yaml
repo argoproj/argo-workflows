@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-node-timeout-without-default-value
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+    - - name: release
+        template: whalesay
+        arguments:
+          parameters:
+            - name: message
+              value: "{{steps.approve.outputs.parameters.message}}"
+  - name: approve
+    suspend:
+      duration: 5s
+    outputs:
+      parameters:
+        - name: message
+          valueFrom:
+            supplied: {}
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]

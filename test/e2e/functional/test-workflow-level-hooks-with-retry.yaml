@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-workflow-level-hooks-with-retry
+spec:
+  templates:
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - /bin/sh
+          - '-c'
+        args:
+          - /bin/sleep 1; exit 1
+      retryStrategy:
+        limit: 1
+    - name: hook
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - /bin/sh
+          - '-c'
+        args:
+          - /argosay
+  entrypoint: argosay
+  hooks:
+    failed:
+      template: hook
+      expression: workflow.status == "Failed"
+    running:
+      template: hook
+      expression: workflow.status == "Running"

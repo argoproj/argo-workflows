@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-template-par-
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: one
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
+          - name: two
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
+          - name: three
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
+          - name: four
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+        url: "{{inputs.parameters.url}}"

@@ -1,0 +1,14 @@
+metadata:
+  generateName: test-pod-cleanup-on-workflow-completion-label-not-match-
+spec:
+  podGC:
+    strategy: OnWorkflowCompletion
+    labelSelector:
+      matchLabels:
+        evicted: true
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [exit, 1]

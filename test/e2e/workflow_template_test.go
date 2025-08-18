@@ -26,24 +26,7 @@ func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 		When().
 		CreateWorkflowTemplates().
 		Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-nested-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    steps:
-      - - name: call-whalesay-template
-          templateRef:
-            name: workflow-template-nested-template
-            template: whalesay-template
-          arguments:
-            parameters:
-            - name: message
-              value: "hello from nested"
-`).When().
+		Workflow("@functional/workflow-template-nested.yaml").When().
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
@@ -115,13 +98,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithParallelStepsRequi
 func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidOnExit() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml").
-		Workflow(`
-metadata:
-  generateName: workflow-template-invalid-onexit-
-spec:
-  workflowTemplateRef:
-    name: workflow-template-invalid-onexit
-`).
+		Workflow("@functional/workflow-template-invalid-onexit.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
@@ -137,13 +114,7 @@ spec:
 func (s *WorkflowTemplateSuite) TestWorkflowTemplateWithHook() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-templates/success-hook.yaml").
-		Workflow(`
-metadata:
-  generateName: workflow-template-hook-
-spec:
-  workflowTemplateRef:
-    name: hook
-`).
+		Workflow("@functional/workflow-template-hook.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
@@ -167,13 +138,7 @@ spec:
 func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidEntryPoint() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml").
-		Workflow(`
-metadata:
-  generateName: workflow-template-invalid-entrypoint-
-spec:
-  workflowTemplateRef:
-    name: workflow-template-invalid-entrypoint
-`).
+		Workflow("@functional/workflow-template-invalid-entrypoint.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().

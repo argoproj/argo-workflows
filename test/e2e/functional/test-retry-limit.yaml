@@ -1,0 +1,16 @@
+metadata:
+  name: test-retry-limit
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      retryStrategy:
+        limit: 0
+        backoff:
+          duration: 2s
+          factor: 2
+          maxDuration: 5m
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        args: [ exit, "1" ]
