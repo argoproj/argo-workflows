@@ -26,7 +26,6 @@ type ParseResult struct {
 }
 
 func ParseObjects(ctx context.Context, body []byte, strict bool) []ParseResult {
-	log := logging.RequireLoggerFromContext(ctx)
 	var res []ParseResult
 	if jsonpkg.IsJSON(body) {
 		un := &unstructured.Unstructured{}
@@ -119,7 +118,6 @@ func toWorkflowTypeJSON(body []byte, kind string, strict bool) (metav1.Object, e
 
 // SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
 func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.Workflow, error) {
-	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.Workflow, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
@@ -132,7 +130,7 @@ func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv
 		}
 		v, ok := obj.(*wfv1.Workflow)
 		if !ok {
-			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind Workflow. Ignoring...")
+			logging.RequireLoggerFromContext(ctx).WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind Workflow. Ignoring...")
 			continue
 		}
 		manifests = append(manifests, *v)
@@ -142,7 +140,6 @@ func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv
 
 // SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
 func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
-	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.WorkflowTemplate, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
@@ -155,7 +152,7 @@ func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool
 		}
 		v, ok := obj.(*wfv1.WorkflowTemplate)
 		if !ok {
-			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind WorkflowTemplate. Ignoring...")
+			logging.RequireLoggerFromContext(ctx).WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind WorkflowTemplate. Ignoring...")
 			continue
 		}
 		manifests = append(manifests, *v)
@@ -165,7 +162,6 @@ func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool
 
 // SplitCronWorkflowYAMLFile is a helper to split a body into multiple workflow template objects
 func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.CronWorkflow, error) {
-	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.CronWorkflow, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
@@ -178,7 +174,7 @@ func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([
 		}
 		v, ok := obj.(*wfv1.CronWorkflow)
 		if !ok {
-			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind CronWorkflow. Ignoring...")
+			logging.RequireLoggerFromContext(ctx).WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind CronWorkflow. Ignoring...")
 			continue
 		}
 		manifests = append(manifests, *v)
@@ -188,7 +184,6 @@ func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([
 
 // SplitClusterWorkflowTemplateYAMLFile is a helper to split a body into multiple cluster workflow template objects
 func SplitClusterWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
-	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
@@ -201,7 +196,7 @@ func SplitClusterWorkflowTemplateYAMLFile(ctx context.Context, body []byte, stri
 		}
 		v, ok := obj.(*wfv1.ClusterWorkflowTemplate)
 		if !ok {
-			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind ClusterWorkflowTemplate. Ignoring...")
+			logging.RequireLoggerFromContext(ctx).WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind ClusterWorkflowTemplate. Ignoring...")
 			continue
 		}
 		manifests = append(manifests, *v)

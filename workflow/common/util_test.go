@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -111,7 +112,7 @@ func TestParseObjects(t *testing.T) {
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	results := ParseObjects(invalidObj, false)
+	results := ParseObjects(ctx, invalidObj, false)
 	// Results should contain one entry with a nil object and an error
 	assert.Len(t, results, 1)
 	assert.Nil(t, results[0].Object)
@@ -119,9 +120,10 @@ func TestParseObjects(t *testing.T) {
 }
 
 func TestSplitWorkflowYAMLFileWithInvalidYAML(t *testing.T) {
+	ctx := context.Background()
 	// This should handle invalid YAML without panicking
 	invalidObj := []byte(`invalid-yaml-content`)
-	wfs, err := SplitWorkflowYAMLFile(invalidObj, false)
+	wfs, err := SplitWorkflowYAMLFile(ctx, invalidObj, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "yaml file at index 0 is not valid")
 	assert.Empty(t, wfs)
