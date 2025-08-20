@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -295,7 +295,7 @@ spec:
 		assert.False(t, fatal, "should not have exited")
 	})
 
-	t.Run("linting an invalid YAML file with offline mode logs once", func(t *testing.T) {
+	t.Run("linting an invalid YAML file with offline mode reports the parse error once", func(t *testing.T) {
 		invalidYAMLPath := filepath.Join(subdir, "invalid-yaml.yaml")
 		err = os.WriteFile(invalidYAMLPath, []byte(`
 apiVersion: argoproj.io/v1alpha1
@@ -318,25 +318,26 @@ spec:
 `), 0644)
 		require.NoError(t, err)
 
-		hook := logging.NewTestHook()
-		ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text, hook))
-
 		originalExitFunc := logging.GetExitFunc()
 		var fatal bool
 		logging.SetExitFunc(func(int) { fatal = true })
 		defer logging.SetExitFunc(originalExitFunc)
 
-		err = runLint(ctx, []string{invalidYAMLPath}, true, nil, "pretty", true)
+		oldStdout := os.Stdout
+		r, w, pipeErr := os.Pipe()
+		require.NoError(t, pipeErr)
+		os.Stdout = w
+		defer func() { os.Stdout = oldStdout }()
+
+		ctx := logging.TestContext(t.Context())
+		err = runLint(ctx, []string{invalidYAMLPath}, true, nil, "simple", true)
 		require.NoError(t, err)
+		require.NoError(t, w.Close())
 
-		yamlErrCount := 0
-		for _, entry := range hook.AllEntries() {
-			if entry.Level == logging.Error && strings.Contains(entry.Msg, "yaml file at index 0 is not valid") {
-				yamlErrCount++
-			}
-		}
+		output, readErr := io.ReadAll(r)
+		require.NoError(t, readErr)
 
-		assert.Equal(t, 1, yamlErrCount, "parse errors should only be logged once in offline mode")
+		assert.Equal(t, 1, strings.Count(string(output), "yaml file at index 0 is not valid"), "parse errors should only be reported once in offline mode")
 		assert.True(t, fatal, "Should have exited with error code for parse error")
 	})
 }
