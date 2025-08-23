@@ -76,7 +76,7 @@ func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
 	case "short", "wide", "":
 		fmt.Print(common.PrintWorkflowHelper(wf, getArgs))
 	default:
-		return fmt.Errorf("Unknown output format: %s", getArgs.Output)
+		return fmt.Errorf("unknown output format: %s", getArgs.Output)
 	}
 	return nil
 }
