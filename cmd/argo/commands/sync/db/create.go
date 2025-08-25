@@ -49,7 +49,7 @@ func CreateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliCreateO
 	}
 
 	req := &syncpkg.CreateSyncLimitRequest{
-		Name:      key,
+		Key:       key,
 		Namespace: client.Namespace(ctx),
 		SizeLimit: cliOpts.sizeLimit,
 		Type:      syncpkg.SyncConfigType_DATABASE,

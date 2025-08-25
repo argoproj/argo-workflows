@@ -36,7 +36,7 @@ func GetSyncLimitCommand(ctx context.Context, key string) error {
 
 	req := &syncpkg.GetSyncLimitRequest{
 		Type:      syncpkg.SyncConfigType_DATABASE,
-		Name:      key,
+		Key:       key,
 		Namespace: client.Namespace(ctx),
 	}
 

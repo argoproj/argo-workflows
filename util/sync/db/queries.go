@@ -109,11 +109,25 @@ func (q *syncQueries) CreateSemaphoreLimit(ctx context.Context, name string, siz
 }
 
 func (q *syncQueries) UpdateSemaphoreLimit(ctx context.Context, name string, sizeLimit int) error {
-	_, err := q.session.SQL().Update(q.config.LimitTable).
+	resp, err := q.session.SQL().Update(q.config.LimitTable).
 		Set(LimitSizeField, sizeLimit).
 		Where(db.Cond{LimitNameField: name}).
 		Exec()
-	return err
+
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := resp.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows == 0 {
+		return db.ErrNoMoreRows
+	}
+
+	return nil
 }
 
 func (q *syncQueries) DeleteSemaphoreLimit(ctx context.Context, name string) error {

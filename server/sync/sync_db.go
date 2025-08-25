@@ -30,7 +30,7 @@ func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.Creat
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to create database sync limit in namespace \"%s\".", req.Namespace))
 	}
 
-	name := fmt.Sprintf("%s/%s", req.Namespace, req.Name)
+	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	_, err = s.db.GetSemaphoreLimit(ctx, name)
 	if err == nil {
 		return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("Database sync limit already exists in namespace \"%s\".", req.Namespace))
@@ -42,7 +42,7 @@ func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.Creat
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return &syncpkg.SyncLimitResponse{Name: req.Name, Namespace: req.Namespace, SizeLimit: req.SizeLimit}, nil
+	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, SizeLimit: req.SizeLimit}, nil
 }
 
 func (s *dbSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
@@ -54,7 +54,7 @@ func (s *dbSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncL
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to get database sync limit in namespace \"%s\".", req.Namespace))
 	}
 
-	name := fmt.Sprintf("%s/%s", req.Namespace, req.Name)
+	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	limit, err := s.db.GetSemaphoreLimit(ctx, name)
 	if err != nil {
 		if err == db.ErrNoMoreRows {
@@ -62,7 +62,7 @@ func (s *dbSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncL
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return &syncpkg.SyncLimitResponse{Name: req.Name, Namespace: req.Namespace, SizeLimit: int32(limit.SizeLimit)}, nil
+	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, SizeLimit: int32(limit.SizeLimit)}, nil
 }
 
 func (s *dbSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
@@ -74,7 +74,7 @@ func (s *dbSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.Updat
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to update database sync limit in namespace \"%s\".", req.Namespace))
 	}
 
-	name := fmt.Sprintf("%s/%s", req.Namespace, req.Name)
+	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	err = s.db.UpdateSemaphoreLimit(ctx, name, int(req.SizeLimit))
 	if err != nil {
 		if err == db.ErrNoMoreRows {
@@ -82,7 +82,7 @@ func (s *dbSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.Updat
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return &syncpkg.SyncLimitResponse{Name: req.Name, Namespace: req.Namespace, SizeLimit: req.SizeLimit}, nil
+	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, SizeLimit: req.SizeLimit}, nil
 }
 
 func (s *dbSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpkg.DeleteSyncLimitRequest) (*syncpkg.DeleteSyncLimitResponse, error) {
@@ -96,7 +96,7 @@ func (s *dbSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpkg.Delet
 
 	// we don't care if semaphore is in use
 	// wc should be able to recover
-	name := fmt.Sprintf("%s/%s", req.Namespace, req.Name)
+	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	err = s.db.DeleteSemaphoreLimit(ctx, name)
 	if err != nil {
 		if err == db.ErrNoMoreRows {

@@ -2712,7 +2712,102 @@ func (s *ArgoServerSuite) TestSyncConfigmapService() {
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
 				Name:      configmapName,
 				SizeLimit: 200,
-				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+			}).Expect().
+			Status(404)
+	})
+}
+
+func (s *ArgoServerSuite) TestSyncDatabaseService() {
+	syncNamespace := "argo"
+	syncKey := "test-sync-db"
+
+	s.Run("CreateSyncLimitDatabase", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:       syncKey,
+				SizeLimit: 100,
+				Type:      syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("sizeLimit", 100)
+	})
+
+	s.Run("CreateSyncLimitDatabaseAgain", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:       syncKey,
+				SizeLimit: 100,
+				Type:      syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(409)
+	})
+
+	s.Run("GetSyncLimitDatabase", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("sizeLimit", 100)
+	})
+
+	s.Run("UpdateSyncLimitDatabase", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				SizeLimit: 200,
+				Type:      syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("sizeLimit", 200)
+	})
+
+	s.Run("InvalidSizeLimitDatabase", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:       syncKey + "-invalid",
+				SizeLimit: 0,
+				Type:      syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(400)
+	})
+
+	s.Run("KeyDoesNotExistDatabase", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("DeleteSyncLimitDatabase", func() {
+		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(200)
+
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("UpdateNonExistentLimitDatabase", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				SizeLimit: 200,
+				Type:      syncpkg.SyncConfigType_DATABASE,
 			}).Expect().
 			Status(404)
 	})
