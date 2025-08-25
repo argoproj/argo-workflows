@@ -45,7 +45,7 @@ func GetSyncLimitCommand(ctx context.Context, key string) error {
 		return fmt.Errorf("failed to get sync limit: %v", err)
 	}
 
-	fmt.Printf("Database sync limit %s in namespace %s is %d\n", resp.Name, resp.Namespace, resp.SizeLimit)
+	fmt.Printf("Database sync limit %s in namespace %s is %d\n", resp.Key, resp.Namespace, resp.SizeLimit)
 
 	return nil
 }

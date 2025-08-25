@@ -59,7 +59,7 @@ func UpdateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliUpdateO
 		return fmt.Errorf("failed to update sync limit: %v", err)
 	}
 
-	fmt.Printf("Updated database sync limit %s in namespace %s to size limit %d\n", resp.Name, resp.Namespace, resp.SizeLimit)
+	fmt.Printf("Updated database sync limit %s in namespace %s to size limit %d\n", resp.Key, resp.Namespace, resp.SizeLimit)
 
 	return nil
 }
