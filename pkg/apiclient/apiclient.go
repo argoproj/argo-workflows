@@ -24,7 +24,7 @@ type Client interface {
 	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)
 	NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error)
 	NewInfoServiceClient() (infopkg.InfoServiceClient, error)
-	NewSyncServiceClient() (syncpkg.SyncServiceClient, error)
+	NewSyncServiceClient(ctx context.Context) (syncpkg.SyncServiceClient, error)
 }
 
 type Opts struct {

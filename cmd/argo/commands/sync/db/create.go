@@ -1,4 +1,4 @@
-package configmap
+package db
 
 import (
 	"context"
@@ -12,8 +12,7 @@ import (
 )
 
 type cliCreateOpts struct {
-	key       string // --key
-	sizeLimit int32  // --size-limit
+	sizeLimit int32 // --size-limit
 }
 
 func NewCreateCommand() *cobra.Command {
@@ -22,28 +21,24 @@ func NewCreateCommand() *cobra.Command {
 
 	command := &cobra.Command{
 		Use:     "create",
-		Short:   "Create a configmap sync limit",
+		Short:   "create a db sync limit",
 		Args:    cobra.ExactArgs(1),
-		Example: `argo sync configmap create my-cm --key my-key --size-limit 10`,
+		Example: `argo sync db create my-key --size-limit 10`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return CreateSyncLimitCommand(cmd.Context(), args[0], &cliCreateOpts)
 		},
 	}
 
-	command.Flags().StringVar(&cliCreateOpts.key, "key", "", "Key of the sync limit")
 	command.Flags().Int32Var(&cliCreateOpts.sizeLimit, "size-limit", 0, "Size limit of the sync limit")
 
 	ctx := command.Context()
-	err := command.MarkFlagRequired("key")
-	errors.CheckError(ctx, err)
-
-	err = command.MarkFlagRequired("size-limit")
+	err := command.MarkFlagRequired("size-limit")
 	errors.CheckError(ctx, err)
 
 	return command
 }
 
-func CreateSyncLimitCommand(ctx context.Context, cmName string, cliOpts *cliCreateOpts) error {
+func CreateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliCreateOpts) error {
 	ctx, apiClient, err := client.NewAPIClient(ctx)
 	if err != nil {
 		return err
@@ -54,11 +49,10 @@ func CreateSyncLimitCommand(ctx context.Context, cmName string, cliOpts *cliCrea
 	}
 
 	req := &syncpkg.CreateSyncLimitRequest{
-		Name:      cmName,
+		Name:      key,
 		Namespace: client.Namespace(ctx),
-		Key:       cliOpts.key,
 		SizeLimit: cliOpts.sizeLimit,
-		Type:      syncpkg.SyncConfigType_CONFIG_MAP,
+		Type:      syncpkg.SyncConfigType_DATABASE,
 	}
 
 	resp, err := serviceClient.CreateSyncLimit(ctx, req)
@@ -66,7 +60,7 @@ func CreateSyncLimitCommand(ctx context.Context, cmName string, cliOpts *cliCrea
 		return fmt.Errorf("failed to create sync limit: %v", err)
 	}
 
-	fmt.Printf("Configmap sync limit created: %s/%s with key %s and size limit %d\n", resp.Namespace, resp.Name, resp.Key, resp.SizeLimit)
+	fmt.Printf("Database sync limit %s created in namespace %s with size limit %d\n", resp.Name, resp.Namespace, resp.SizeLimit)
 
 	return nil
 }
