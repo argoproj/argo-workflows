@@ -60,7 +60,7 @@ func CreateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliCreateO
 		return fmt.Errorf("failed to create sync limit: %v", err)
 	}
 
-	fmt.Printf("Database sync limit %s created in namespace %s with size limit %d\n", resp.Name, resp.Namespace, resp.SizeLimit)
+	fmt.Printf("Database sync limit %s created in namespace %s with size limit %d\n", resp.Key, resp.Namespace, resp.SizeLimit)
 
 	return nil
 }
