@@ -1518,12 +1518,24 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 
 	// If the node template has outputs Parameters/Artifacts/Result, we should not change the phase to Succeeded until the outputs are set.
-	if tmpl != nil && tmpl.Outputs.HasOutputs() && new.Outputs != nil && new.Phase == wfv1.NodeSucceeded &&
-		((tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil) ||
-			(tmpl.Outputs.Artifacts != nil && new.Outputs.Artifacts == nil) ||
-			(tmpl.Outputs.Result != nil && new.Outputs.Result == nil)) {
-		woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: outputs are not yet set")
-		new.Phase = old.Phase
+	if tmpl != nil && tmpl.Outputs.HasOutputs() && new.Outputs != nil && new.Phase == wfv1.NodeSucceeded {
+		outputsNotReady := false
+		// Check Parameters - all parameters are considered required
+		if tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil {
+			outputsNotReady = true
+		}
+		// Check Artifacts - only check if there are required (non-optional) artifacts
+		if hasRequiredArtifacts(tmpl.Outputs.Artifacts) && new.Outputs.Artifacts == nil {
+			outputsNotReady = true
+		}
+		// Check Result
+		if tmpl.Outputs.Result != nil && new.Outputs.Result == nil {
+			outputsNotReady = true
+		}
+		if outputsNotReady {
+			woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: required outputs are not yet set")
+			new.Phase = old.Phase
+		}
 	}
 
 	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
@@ -1550,6 +1562,19 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	woc.log.WithField("nodeID", old.ID).
 		Debug(ctx, "node unchanged")
 	return nil
+}
+
+// hasRequiredArtifacts checks if there are any required (non-optional) artifacts
+func hasRequiredArtifacts(artifacts []wfv1.Artifact) bool {
+	if artifacts == nil {
+		return false
+	}
+	for _, artifact := range artifacts {
+		if !artifact.Optional {
+			return true
+		}
+	}
+	return false
 }
 
 func getExitCode(pod *apiv1.Pod) *int32 {
