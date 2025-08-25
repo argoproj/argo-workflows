@@ -48,7 +48,7 @@ func UpdateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliUpdateO
 	}
 
 	req := &syncpkg.UpdateSyncLimitRequest{
-		Name:      key,
+		Key:       key,
 		Namespace: client.Namespace(ctx),
 		SizeLimit: cliOpts.sizeLimit,
 		Type:      syncpkg.SyncConfigType_DATABASE,

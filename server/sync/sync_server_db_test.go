@@ -59,7 +59,7 @@ func TestDBSyncProvider(t *testing.T) {
 		req := &syncpkg.CreateSyncLimitRequest{
 			Type:      syncpkg.SyncConfigType_DATABASE,
 			Namespace: "test-ns",
-			Name:      "test-name",
+			Key:       "test-name",
 			SizeLimit: 5,
 		}
 
@@ -71,6 +71,7 @@ func TestDBSyncProvider(t *testing.T) {
 		require.Equal(t, codes.PermissionDenied, status.Code(err))
 
 		allowed = true
+
 		mockSyncQueries.On("GetSemaphoreLimit", mock.Anything, "test-ns/test-name").Return(nil, assert.AnError).Once()
 		resp, err = provider.createSyncLimit(ctx, req)
 
@@ -107,7 +108,7 @@ func TestDBSyncProvider(t *testing.T) {
 		req := &syncpkg.GetSyncLimitRequest{
 			Type:      syncpkg.SyncConfigType_DATABASE,
 			Namespace: "test-ns",
-			Name:      "test-name",
+			Key:       "test-name",
 		}
 
 		allowed = false
@@ -152,7 +153,7 @@ func TestDBSyncProvider(t *testing.T) {
 		req := &syncpkg.UpdateSyncLimitRequest{
 			Type:      syncpkg.SyncConfigType_DATABASE,
 			Namespace: "test-ns",
-			Name:      "test-name",
+			Key:       "test-name",
 			SizeLimit: 10,
 		}
 		resp, err := provider.updateSyncLimit(ctx, req)
@@ -193,7 +194,7 @@ func TestDBSyncProvider(t *testing.T) {
 		req := &syncpkg.DeleteSyncLimitRequest{
 			Type:      syncpkg.SyncConfigType_DATABASE,
 			Namespace: "test-ns",
-			Name:      "test-name",
+			Key:       "test-name",
 		}
 		resp, err := provider.deleteSyncLimit(ctx, req)
 

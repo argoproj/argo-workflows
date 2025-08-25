@@ -37,7 +37,7 @@ func DeleteSyncLimitCommand(ctx context.Context, key string) error {
 	namespace := client.Namespace(ctx)
 	req := &syncpkg.DeleteSyncLimitRequest{
 		Type:      syncpkg.SyncConfigType_DATABASE,
-		Name:      key,
+		Key:       key,
 		Namespace: namespace,
 	}
 
