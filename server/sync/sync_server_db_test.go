@@ -71,7 +71,6 @@ func TestDBSyncProvider(t *testing.T) {
 		require.Equal(t, codes.PermissionDenied, status.Code(err))
 
 		allowed = true
-
 		mockSyncQueries.On("GetSemaphoreLimit", mock.Anything, "test-ns/test-name").Return(nil, assert.AnError).Once()
 		resp, err = provider.createSyncLimit(ctx, req)
 
