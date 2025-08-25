@@ -2613,12 +2613,12 @@ spec:
 
 }
 
-func (s *ArgoServerSuite) TestSyncService() {
+func (s *ArgoServerSuite) TestSyncConfigmapService() {
 	syncNamespace := "argo"
 	configmapName := "test-sync-cm"
 	syncKey := "test-key"
 
-	s.Run("CreateSyncLimit", func() {
+	s.Run("CreateSyncLimitConfigmap", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
 			WithJSON(syncpkg.CreateSyncLimitRequest{
 				Name:      configmapName,
@@ -2640,6 +2640,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 				Name:      configmapName,
 				Key:       syncKey + "-exist",
 				SizeLimit: 100,
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
 			}).
 			Expect().
 			Status(200).
@@ -2649,7 +2650,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 			HasValue("sizeLimit", 100)
 	})
 
-	s.Run("GetSyncLimit", func() {
+	s.Run("GetSyncLimitConfigmap", func() {
 		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
 			WithQuery("name", configmapName).
 			Expect().
@@ -2660,7 +2661,7 @@ func (s *ArgoServerSuite) TestSyncService() {
 			HasValue("sizeLimit", 100)
 	})
 
-	s.Run("UpdateSyncLimit", func() {
+	s.Run("UpdateSyncLimitConfigmap", func() {
 		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
 				Name:      configmapName,
@@ -2687,14 +2688,14 @@ func (s *ArgoServerSuite) TestSyncService() {
 			Status(400)
 	})
 
-	s.Run("KeyDoesNotExist", func() {
+	s.Run("KeyDoesNotExistConfigmap", func() {
 		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
 			WithQuery("name", configmapName).
 			Expect().
 			Status(404)
 	})
 
-	s.Run("DeleteSyncLimit", func() {
+	s.Run("DeleteSyncLimitConfigmap", func() {
 		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
 			WithQuery("name", configmapName).
 			Expect().

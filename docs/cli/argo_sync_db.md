@@ -1,15 +1,15 @@
-## argo sync
+## argo sync db
 
-manage sync limits
+manage db sync limits
 
 ```
-argo sync [flags]
+argo sync db [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for sync
+  -h, --help   help for db
 ```
 
 ### Options inherited from parent commands
@@ -50,7 +50,9 @@ argo sync [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo sync configmap](argo_sync_configmap.md)	 - manage configmap sync limits
-* [argo sync db](argo_sync_db.md)	 - manage db sync limits
+* [argo sync](argo_sync.md)	 - manage sync limits
+* [argo sync db create](argo_sync_db_create.md)	 - create a db sync limit
+* [argo sync db delete](argo_sync_db_delete.md)	 - delete a db sync limit
+* [argo sync db get](argo_sync_db_get.md)	 - get a db sync limit
+* [argo sync db update](argo_sync_db_update.md)	 - update a db sync limit
 

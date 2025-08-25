@@ -1,15 +1,22 @@
-## argo sync
+## argo sync db create
 
-manage sync limits
+create a db sync limit
 
 ```
-argo sync [flags]
+argo sync db create [flags]
+```
+
+### Examples
+
+```
+argo sync db create my-key --size-limit 10
 ```
 
 ### Options
 
 ```
-  -h, --help   help for sync
+  -h, --help               help for create
+      --size-limit int32   Size limit of the sync limit
 ```
 
 ### Options inherited from parent commands
@@ -50,7 +57,5 @@ argo sync [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo sync configmap](argo_sync_configmap.md)	 - manage configmap sync limits
 * [argo sync db](argo_sync_db.md)	 - manage db sync limits
 
