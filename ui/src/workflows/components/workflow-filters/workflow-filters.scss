@@ -37,3 +37,24 @@
 #top-bar__filter-list {
     column-count: 1;
 }
+
+.select__option {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+}
+
+.select__option:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 0;
+    top: -30px;
+    background: #333;
+    color: white;
+    padding: 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 1000;
+    font-size: 12px;
+}
