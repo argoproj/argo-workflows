@@ -37,7 +37,7 @@ spec:
         args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
     - name: check-status
       script:
-        image: bitnami/kubectl:1.15.3-ol-7-r165
+        image: bitnamilegacy/kubectl:1.15.3-ol-7-r165
         command: [bash]
         source: |
           host=`hostname`;
@@ -55,7 +55,7 @@ spec:
         parameters:
           - name: pod
       container:
-        image: bitnami/kubectl:1.15.3-ol-7-r165
+        image: bitnamilegacy/kubectl:1.15.3-ol-7-r165
         command: [bash, -c]
         args: ["kubectl delete po {{inputs.parameters.pod}}"]
 
