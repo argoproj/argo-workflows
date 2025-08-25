@@ -99,7 +99,7 @@ func TestDBSyncProvider(t *testing.T) {
 		resp, err = server.CreateSyncLimit(ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
-		require.Equal(t, "test-name", resp.Name)
+		require.Equal(t, "test-name", resp.Key)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, int32(5), resp.SizeLimit)
 	})
@@ -142,7 +142,7 @@ func TestDBSyncProvider(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, resp)
-		require.Equal(t, "test-name", resp.Name)
+		require.Equal(t, "test-name", resp.Key)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, int32(5), resp.SizeLimit)
 	})
@@ -183,7 +183,7 @@ func TestDBSyncProvider(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, resp)
-		require.Equal(t, "test-name", resp.Name)
+		require.Equal(t, "test-name", resp.Key)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, int32(10), resp.SizeLimit)
 	})
