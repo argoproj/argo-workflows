@@ -22,5 +22,6 @@ from argo_workflows.api.event_service_api import EventServiceApi
 from argo_workflows.api.event_source_service_api import EventSourceServiceApi
 from argo_workflows.api.info_service_api import InfoServiceApi
 from argo_workflows.api.sensor_service_api import SensorServiceApi
+from argo_workflows.api.sync_service_api import SyncServiceApi
 from argo_workflows.api.workflow_service_api import WorkflowServiceApi
 from argo_workflows.api.workflow_template_service_api import WorkflowTemplateServiceApi

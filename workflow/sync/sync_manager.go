@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
 )
 
 type (
@@ -31,7 +32,8 @@ type Manager struct {
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
 	isWFDeleted       IsWorkflowDeleted
-	dbInfo            dbInfo
+	dbInfo            syncdb.DBInfo
+	queries           syncdb.SyncQueries
 	log               logging.Logger
 }
 
@@ -43,7 +45,7 @@ const (
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
-	return createLockManager(ctx, dbSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
+	return createLockManager(ctx, syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
 }
 
 func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
@@ -54,6 +56,10 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
+	dbInfo := syncdb.DBInfo{
+		Session: dbSession,
+		Config:  syncdb.DBConfigFromConfig(config),
+	}
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
 		lock:              &sync.RWMutex{},
@@ -61,16 +67,14 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 		getSyncLimit:      getSyncLimit,
 		syncLimitCacheTTL: syncLimitCacheTTL,
 		isWFDeleted:       isWFDeleted,
-		dbInfo: dbInfo{
-			session: dbSession,
-			config:  dbConfigFromConfig(config),
-		},
-		log: log,
+		dbInfo:            dbInfo,
+		queries:           syncdb.NewSyncQueries(dbSession, dbInfo.Config),
+		log:               log,
 	}
-	log.WithField("dbConfigured", sm.dbInfo.session != nil).Info(ctx, "Sync manager initialized")
-	sm.dbInfo.migrate(ctx)
+	log.WithField("dbConfigured", sm.dbInfo.Session != nil).Info(ctx, "Sync manager initialized")
+	sm.dbInfo.Migrate(ctx)
 
-	if sm.dbInfo.session != nil {
+	if sm.dbInfo.Session != nil {
 		sm.backgroundNotifier(ctx, config.PollSeconds)
 		sm.dbControllerHeartbeat(ctx, config.HeartbeatSeconds)
 	}
@@ -228,7 +232,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						continue
 					}
 					key := getUpgradedKey(&wf, holders, level)
-					tx := &transaction{db: &sm.dbInfo.session}
+					tx := &transaction{db: &sm.dbInfo.Session}
 					if semaphore != nil && semaphore.acquire(ctx, key, tx) {
 						sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
 					}
@@ -253,7 +257,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 							continue
 						}
 						key := getUpgradedKey(&wf, holding.Holder, level)
-						tx := &transaction{db: &sm.dbInfo.session}
+						tx := &transaction{db: &sm.dbInfo.Session}
 						mutex.acquire(ctx, key, tx)
 					}
 					sm.syncLockMap[holding.Mutex] = mutex
@@ -299,7 +303,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	if err != nil {
 		return false, false, "", failedLockName, fmt.Errorf("couldn't decode locks for session: %w", err)
 	}
-	if needDB && sm.dbInfo.session == nil {
+	if needDB && sm.dbInfo.Session == nil {
 		return false, false, "", failedLockName, fmt.Errorf("synchronization database session is not available")
 	}
 	if needDB {
@@ -309,7 +313,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var failedLockName string
 		var lastErr error
 		for retryCounter := range 5 {
-			err := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
+			err := sm.dbInfo.Session.TxContext(ctx, func(sess db.Session) error {
 				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   retryCounter + 1,
@@ -611,7 +615,7 @@ func (sm *Manager) initializeSemaphore(ctx context.Context, semaphoreName string
 	case lockKindConfigMap:
 		return newInternalSemaphore(ctx, semaphoreName, sm.nextWorkflow, sm.getSyncLimit, sm.syncLimitCacheTTL)
 	case lockKindDatabase:
-		if sm.dbInfo.session == nil {
+		if sm.dbInfo.Session == nil {
 			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
 		}
 		return newDatabaseSemaphore(ctx, semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
@@ -629,7 +633,7 @@ func (sm *Manager) initializeMutex(ctx context.Context, mutexName string) (semap
 	case lockKindMutex:
 		return newInternalMutex(mutexName, sm.nextWorkflow), nil
 	case lockKindDatabase:
-		if sm.dbInfo.session == nil {
+		if sm.dbInfo.Session == nil {
 			return nil, fmt.Errorf("database session is not available for mutex %s", mutexName)
 		}
 		return newDatabaseMutex(mutexName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
@@ -639,7 +643,7 @@ func (sm *Manager) initializeMutex(ctx context.Context, mutexName string) (semap
 }
 
 func (sm *Manager) backgroundNotifier(ctx context.Context, period *int) {
-	sm.log.WithField("pollInterval", secondsToDurationWithDefault(period, defaultDBPollSeconds)).
+	sm.log.WithField("pollInterval", syncdb.SecondsToDurationWithDefault(period, syncdb.DefaultDBHeartbeatSeconds)).
 		Info(ctx, "Starting background notification for sync locks")
 	go wait.UntilWithContext(ctx, func(_ context.Context) {
 		sm.lock.Lock()
@@ -648,7 +652,7 @@ func (sm *Manager) backgroundNotifier(ctx context.Context, period *int) {
 		}
 		sm.lock.Unlock()
 	},
-		secondsToDurationWithDefault(period, defaultDBPollSeconds),
+		syncdb.SecondsToDurationWithDefault(period, syncdb.DefaultDBPollSeconds),
 	)
 }
 
@@ -659,23 +663,19 @@ func (sm *Manager) dbControllerHeartbeat(ctx context.Context, period *int) {
 	// Failure here is not critical, so we don't check errors, we may already be in the table
 	ll := db.LC().Level()
 	db.LC().SetLevel(db.LogLevelError)
-	_, _ = sm.dbInfo.session.Collection(sm.dbInfo.config.controllerTable).
-		Insert(&controllerHealthRecord{
-			Controller: sm.dbInfo.config.controllerName,
-			Time:       time.Now(),
-		})
+	_ = sm.queries.InsertControllerHealth(ctx, &syncdb.ControllerHealthRecord{
+		Controller: sm.dbInfo.Config.ControllerName,
+		Time:       time.Now(),
+	})
 	db.LC().SetLevel(ll)
 
 	sm.dbControllerUpdate(ctx)
 	go wait.UntilWithContext(ctx, func(_ context.Context) { sm.dbControllerUpdate(ctx) },
-		secondsToDurationWithDefault(period, defaultDBHeartbeatSeconds))
+		syncdb.SecondsToDurationWithDefault(period, syncdb.DefaultDBHeartbeatSeconds))
 }
 
 func (sm *Manager) dbControllerUpdate(ctx context.Context) {
-	_, err := sm.dbInfo.session.SQL().Update(sm.dbInfo.config.controllerTable).
-		Set(controllerTimeField, time.Now()).
-		Where(db.Cond{controllerNameField: sm.dbInfo.config.controllerName}).
-		Exec()
+	err := sm.queries.UpdateControllerTimestamp(ctx, sm.dbInfo.Config.ControllerName, time.Now())
 	if err != nil {
 		sm.log.WithError(err).Error(ctx, "Failed to update sync controller timestamp")
 	}
