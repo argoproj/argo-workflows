@@ -20,6 +20,11 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
+type ClusterWorkflowTemplateInformer interface {
+	Run(ctx context.Context, stopCh <-chan struct{})
+	Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter
+}
+
 var _ types.ClusterWorkflowTemplateStore = &Informer{}
 
 type Informer struct {
