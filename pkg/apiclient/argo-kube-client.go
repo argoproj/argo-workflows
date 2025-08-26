@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
 var (
@@ -134,6 +135,12 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 	return ctx, client, nil
 }
 
+type NullClusterWorkflowTemplateStore struct{}
+
+func (NullClusterWorkflowTemplateStore) Getter(context.Context) templateresolution.ClusterWorkflowTemplateGetter {
+	return &templateresolution.NullClusterWorkflowTemplateGetter{}
+}
+
 func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient.Config) error {
 	if a.opts.CacheWorkflows {
 		wfStore, err := store.NewSQLiteStore(a.instanceIDService)
@@ -168,6 +175,8 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 		} else {
 			a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
 		}
+	} else {
+		a.cwfTmplStore = NullClusterWorkflowTemplateStore{}
 	}
 
 	return nil
