@@ -131,24 +131,24 @@ func (m *Metrics) matchExistingMetric(metricSpec *wfv1.Prometheus) (*telemetry.I
 	key := metricSpec.Name
 	if inst := m.GetInstrument(key); inst != nil {
 		if inst.GetDescription() != metricSpec.Help {
-			return nil, fmt.Errorf("Help for metric %s is already set to %s, it cannot be changed", metricSpec.Name, inst.GetDescription())
+			return nil, fmt.Errorf("help for metric %s is already set to %s, it cannot be changed", metricSpec.Name, inst.GetDescription())
 		}
 		wantedType := metricSpec.GetMetricType()
 		switch inst.GetOtel().(type) {
 		case *metric.Float64ObservableGauge:
 			if wantedType != wfv1.MetricTypeGauge && !metricSpec.IsRealtime() {
-				return nil, fmt.Errorf("Found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		case *metric.Float64ObservableCounter:
 			if wantedType != wfv1.MetricTypeCounter {
-				return nil, fmt.Errorf("Found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		case *metric.Float64Histogram:
 			if wantedType != wfv1.MetricTypeHistogram {
-				return nil, fmt.Errorf("Found existing histogram for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing histogram for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		default:
-			return nil, fmt.Errorf("Found unwanted type %s for custom metric %s of type %s", reflect.TypeOf(inst.GetOtel()), metricSpec.Name, wantedType)
+			return nil, fmt.Errorf("found unwanted type %s for custom metric %s of type %s", reflect.TypeOf(inst.GetOtel()), metricSpec.Name, wantedType)
 		}
 		return inst, nil
 	}
@@ -171,7 +171,7 @@ func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string)
 	m.attachCustomMetricToWorkflow(metricSpec, ownerKey)
 	inst := m.GetInstrument(metricSpec.Name)
 	if inst == nil {
-		return nil, fmt.Errorf("Failed to create new metric %s", metricSpec.Name)
+		return nil, fmt.Errorf("failed to create new metric %s", metricSpec.Name)
 	}
 	inst.SetUserdata(newUserData())
 	return inst, nil
