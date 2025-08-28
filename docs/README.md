@@ -32,6 +32,7 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 * Argo Workflows is the most popular workflow execution engine for Kubernetes.
 * Light-weight, scalable, and easier to use.
+    * Including for Python users through [the Hera Python SDK for Argo Workflows](https://hera.readthedocs.io/en/stable/).
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
 
