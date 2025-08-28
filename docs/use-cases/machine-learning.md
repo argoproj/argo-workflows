@@ -15,7 +15,7 @@
 * [CI/CD for Machine Learning at MLB using Argo Workflows - Eric Meadows](https://youtu.be/fccWoYlwZKc?t=184&utm_source=argo-docs)
 * [Dynamic, Event-Driven Machine Learning Pipelines with Argo Workflows](https://youtu.be/ei4r0a7eAV0)
 * [Engineering Cloud Native AI Platform](https://github.com/terrytangyuan/public-talks/tree/main/talks/platform-con-2024-engineering-cloud-native-ai-platform)
-* [How to Train an LLM with Argo Workflows and Hera - JP Zivalich & Flaviu Vadan](https://www.youtube.com/watch?v=nRYf3GkKpss)
+* [How to Train an LLM with Argo Workflows and Hera](https://www.youtube.com/watch?v=nRYf3GkKpss)
 * [Machine Learning as Code: GitOps for ML with Kubeflow and Argo CD](https://www.youtube.com/watch?v=VXrGp5er1ZE&t=0s&index=135&list=PLj6h78yzYM2PZf9eA7bhWnIh_mK1vyOfU)
 * [Machine Learning with Argo and Ploomber](https://www.youtube.com/watch?v=FnpXyg-5W_c&list=PLGHfqDpnXFXK4E8XzasScagiJk-8BPgva&utm_source=argo-docs)
 * [Making Complex R Forecast Applications Into Production Using Argo Workflows](https://www.youtube.com/watch?v=fPjztsUXHcg)

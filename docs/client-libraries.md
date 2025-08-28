@@ -46,4 +46,4 @@ with Workflow(
 w.create()
 ```
 
-Learn more in the [Hera Walkthrough](https://hera.readthedocs.io/en/stable/walk-through/quick-start/).
+Learn more in the [Hera walk-through](https://hera.readthedocs.io/en/stable/walk-through/quick-start/).
