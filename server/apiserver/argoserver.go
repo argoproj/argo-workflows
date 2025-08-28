@@ -239,12 +239,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		log.WithFatal().Error(ctx, err.Error())
 	}
 	kubeclientset := kubernetes.NewForConfigOrDie(as.restConfig)
-	var cwftmplInformer *clusterworkflowtemplate.Informer
+	var cwftmplInformer clusterworkflowtemplate.ClusterWorkflowTemplateInformer
 	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, resourceCacheNamespace) {
 		cwftmplInformer, err = clusterworkflowtemplate.NewInformer(as.restConfig)
 		if err != nil {
 			log.WithFatal().Error(ctx, err.Error())
 		}
+	} else {
+		cwftmplInformer = clusterworkflowtemplate.NewNullClusterWorkflowTemplate()
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
