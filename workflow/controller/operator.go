@@ -3043,7 +3043,8 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	}
 
 	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "template": tmpl.Name}).Debug(ctx, "Executing node with container template")
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{
+	ctr := tmpl.Container.DeepCopy()
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*ctr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
@@ -3260,13 +3261,13 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := tmpl.Script.Container
+	mainCtr := tmpl.Script.Container.DeepCopy()
 	if len(tmpl.Script.Source) == 0 {
 		woc.log.Warn(ctx, "'script.source' is empty, suggest change template into 'container'")
 	} else {
 		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	}
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
