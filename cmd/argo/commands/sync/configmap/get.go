@@ -21,7 +21,7 @@ func NewGetCommand() *cobra.Command {
 		Use:     "get",
 		Short:   "Get a configmap sync limit",
 		Args:    cobra.ExactArgs(1),
-		Example: `argo sync get configmap my-cm --key my-key`,
+		Example: `argo sync configmap get my-cm --key my-key`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return GetSyncLimitCommand(cmd.Context(), args[0], &cliGetOpts)
 		},
