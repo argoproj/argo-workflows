@@ -42,8 +42,8 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.InvalidArgument, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "size limit must be greater than zero")
+		require.Equal(t, codes.InvalidArgument, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "size limit must be greater than zero")
 	})
 
 	t.Run("Error creating ConfigMap", func(t *testing.T) {
@@ -72,8 +72,8 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.PermissionDenied, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "namespace not found")
+		require.Equal(t, codes.PermissionDenied, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "namespace not found")
 	})
 
 	t.Run("Create new ConfigMap", func(t *testing.T) {
@@ -91,10 +91,10 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		resp, err := server.CreateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		assert.Equal(t, "test-cm", resp.Name)
-		assert.Equal(t, "test-ns", resp.Namespace)
-		assert.Equal(t, "test-key", resp.Key)
-		assert.Equal(t, int32(100), resp.SizeLimit)
+		require.Equal(t, "test-cm", resp.Name)
+		require.Equal(t, "test-ns", resp.Namespace)
+		require.Equal(t, "test-key", resp.Key)
+		require.Equal(t, int32(100), resp.SizeLimit)
 	})
 
 	t.Run("ConfigMap already exists", func(t *testing.T) {
@@ -122,10 +122,10 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		resp, err := server.CreateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		assert.Equal(t, "existing-cm", resp.Name)
-		assert.Equal(t, "test-ns", resp.Namespace)
-		assert.Equal(t, "new-key", resp.Key)
-		assert.Equal(t, int32(200), resp.SizeLimit)
+		require.Equal(t, "existing-cm", resp.Name)
+		require.Equal(t, "test-ns", resp.Namespace)
+		require.Equal(t, "new-key", resp.Key)
+		require.Equal(t, int32(200), resp.SizeLimit)
 	})
 
 	t.Run("ConfigMap exists with nil Data", func(t *testing.T) {
@@ -151,9 +151,9 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		resp, err := server.CreateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		assert.Equal(t, "nil-data-cm", resp.Name)
-		assert.Equal(t, "test-key", resp.Key)
-		assert.Equal(t, int32(300), resp.SizeLimit)
+		require.Equal(t, "nil-data-cm", resp.Name)
+		require.Equal(t, "test-key", resp.Key)
+		require.Equal(t, int32(300), resp.SizeLimit)
 	})
 }
 
@@ -174,8 +174,8 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.NotFound, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "not found")
+		require.Equal(t, codes.NotFound, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "not found")
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
@@ -204,8 +204,8 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.NotFound, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "key non-existent-key not found")
+		require.Equal(t, codes.NotFound, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "key non-existent-key not found")
 	})
 
 	t.Run("Invalid size limit format", func(t *testing.T) {
@@ -234,8 +234,8 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.InvalidArgument, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "invalid size limit format")
+		require.Equal(t, codes.InvalidArgument, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "invalid size limit format")
 	})
 
 	t.Run("Successfully get sync limit", func(t *testing.T) {
@@ -262,10 +262,10 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		resp, err := server.GetSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		assert.Equal(t, "existing-cm", resp.Name)
-		assert.Equal(t, "test-ns", resp.Namespace)
-		assert.Equal(t, "valid-key", resp.Key)
-		assert.Equal(t, int32(500), resp.SizeLimit)
+		require.Equal(t, "existing-cm", resp.Name)
+		require.Equal(t, "test-ns", resp.Namespace)
+		require.Equal(t, "valid-key", resp.Key)
+		require.Equal(t, int32(500), resp.SizeLimit)
 	})
 }
 
@@ -286,8 +286,8 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.InvalidArgument, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "size limit must be greater than zero")
+		require.Equal(t, codes.InvalidArgument, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "size limit must be greater than zero")
 	})
 
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
@@ -307,8 +307,8 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.NotFound, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "not found")
+		require.Equal(t, codes.NotFound, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "not found")
 	})
 
 	t.Run("ConfigMap with nil Data", func(t *testing.T) {
@@ -336,8 +336,8 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.NotFound, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "please create it first")
+		require.Equal(t, codes.NotFound, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "please create it first")
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
@@ -367,8 +367,8 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.NotFound, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "please create it first")
+		require.Equal(t, codes.NotFound, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "please create it first")
 	})
 
 	t.Run("Error updating ConfigMap", func(t *testing.T) {
@@ -403,8 +403,8 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.Internal, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "update error")
+		require.Equal(t, codes.Internal, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "update error")
 	})
 
 	t.Run("Successfully update sync limit", func(t *testing.T) {
@@ -432,10 +432,10 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		resp, err := server.UpdateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		assert.Equal(t, "existing-cm", resp.Name)
-		assert.Equal(t, "test-ns", resp.Namespace)
-		assert.Equal(t, "existing-key", resp.Key)
-		assert.Equal(t, int32(300), resp.SizeLimit)
+		require.Equal(t, "existing-cm", resp.Name)
+		require.Equal(t, "test-ns", resp.Namespace)
+		require.Equal(t, "existing-key", resp.Key)
+		require.Equal(t, int32(300), resp.SizeLimit)
 	})
 }
 
@@ -456,8 +456,8 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.NotFound, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "not found")
+		require.Equal(t, codes.NotFound, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "not found")
 	})
 
 	t.Run("ConfigMap with nil Data", func(t *testing.T) {
@@ -539,8 +539,8 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		assert.Equal(t, codes.Internal, statusErr.Code())
-		assert.Contains(t, statusErr.Message(), "update error")
+		require.Equal(t, codes.Internal, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "update error")
 	})
 
 	t.Run("Successfully delete sync limit", func(t *testing.T) {

@@ -9,7 +9,7 @@ argo sync configmap get [flags]
 ### Examples
 
 ```
-argo sync get configmap my-cm --key my-key
+argo sync configmap get my-cm --key my-key
 ```
 
 ### Options
