@@ -64,10 +64,7 @@ export function SubmitWorkflowPanel(props: Props) {
         try {
             const submitted = await services.workflows.submit(props.kind, props.name, props.namespace, {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
-                parameters: [
-                    ...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p)),
-                    ...parameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))
-                ],
+                parameters: [...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))],
                 labels: labels.join(',')
             });
             navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`));
