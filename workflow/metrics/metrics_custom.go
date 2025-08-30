@@ -336,7 +336,7 @@ func (m *Metrics) handleRealtimeMetricsForWfUID(key string, op operation) {
 		ud.mutex.Lock()
 		switch op {
 		case Complete:
-			for _, value := range ud.values {
+			if value, ok := ud.values[metric.key]; ok && value != nil {
 				value.completed = true
 			}
 		case Delete:
