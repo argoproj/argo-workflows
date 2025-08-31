@@ -1357,3 +1357,51 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	require.NotNil(t, mainContainer)
 	assert.Equal(t, "25Mi", mainContainer.Resources.Requests.Memory().String())
 }
+
+const podMetadataPatchTemplateLevelWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-
+spec:
+  entrypoint: wf
+  templates:
+  - name: wf
+    steps:
+
+    - - name: run-task1
+        template: run-task
+  - name: run-task
+    podMetadataPatch: |
+      annotations:
+        test-annotation: annotation-value
+      labels:
+        test-label: label-value
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+`
+
+func TestPodMetadataPatchTemplateLevel(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(podMetadataPatchTemplateLevelWf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	podcs := (woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()))
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	pod := pods.Items[0]
+	annotations := pod.GetObjectMeta().GetAnnotations()
+	labels := pod.GetObjectMeta().GetLabels()
+	assert.Equal(t, "annotation-value", annotations["test-annotation"])
+	assert.Equal(t, "label-value", labels["test-label"])
+
+}
