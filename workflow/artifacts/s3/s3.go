@@ -412,7 +412,7 @@ func getAWSCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Cre
 
 // GetAssumeRoleCredentials gets Assumed role credentials
 func getAssumeRoleCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
 		return nil, err
 	}

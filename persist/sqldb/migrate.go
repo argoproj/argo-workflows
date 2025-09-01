@@ -23,7 +23,7 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
     workflow text,
     startedat timestamp default CURRENT_TIMESTAMP,
     finishedat timestamp default CURRENT_TIMESTAMP,
-
+    creationtimestamp timestamp default CURRENT_TIMESTAMP,
     primary key (id, namespace)
 )`),
 		sqldb.AnsiSQLChange(`create unique index idx_name on ` + tableName + ` (name)`),
@@ -217,5 +217,14 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
 			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i4`),
 		}),
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (clustername, startedat)`),
+		// add creationtimestamp column to argo_archived_workflows table
+		sqldb.AnsiSQLChange(`alter table argo_archived_workflows add column creationtimestamp timestamp`),
+		sqldb.AnsiSQLChange(`update argo_archived_workflows set creationtimestamp = startedat where creationtimestamp is null`),
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`alter table argo_archived_workflows modify column creationtimestamp timestamp not null default CURRENT_TIMESTAMP`),
+			sqldb.Postgres: sqldb.AnsiSQLChange(`alter table argo_archived_workflows alter column creationtimestamp set default CURRENT_TIMESTAMP`),
+		}),
+		// add index on creationtimestamp column
+		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i5 on argo_archived_workflows (creationtimestamp)`),
 	})
 }
