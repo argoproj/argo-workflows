@@ -18,4 +18,4 @@ Start with [Argo CLI](argo-cli.md).
 ## Hera SDK for Python Users
 
 If you would prefer to write Workflows using Python instead of YAML, check out the walk through for
-[Hera Python SDK for Argo Workflows](https://hera.readthedocs.io/en/stable/walk-through/quick-start/).
+[Hera, the Python SDK for Argo Workflows](https://hera.readthedocs.io/en/stable/walk-through/quick-start/).
