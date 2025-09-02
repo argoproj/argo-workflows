@@ -575,7 +575,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		for n, f := range md.LabelsFrom {
 			program, err := expr.Compile(f.Expression, expr.Env(env))
 			if err != nil {
-				return fmt.Errorf("Failed to compile function for expression %q: %w", f.Expression, err)
+				return fmt.Errorf("failed to compile function for expression %q: %w", f.Expression, err)
 			}
 			r, err := expr.Run(program, env)
 			if err != nil {
@@ -2822,7 +2822,7 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 
 func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, error) {
 	if node.Type != wfv1.NodeTypePod {
-		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
+		return nil, fmt.Errorf("expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
