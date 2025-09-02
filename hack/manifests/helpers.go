@@ -15,6 +15,27 @@ func (o *obj) RemoveNestedField(fields ...string) {
 	unstructured.RemoveNestedField(*o, fields...)
 }
 
+func (o *obj) RecursiveRemoveDescriptions(fields ...string) {
+	startField := nestedFieldNoCopy[map[string]interface{}](o, fields...)
+	description := startField["description"].(string)
+	startField["description"] = description + ".\nAll nested field descriptions have been dropped due to Kubernetes size limitations."
+
+	var rec func(field *map[string]interface{})
+	rec = func(field *map[string]interface{}) {
+		if _, ok := (*field)["description"].(string); ok {
+			delete(*field, "description")
+		}
+		for _, value := range *field {
+			if nested, ok := value.(map[string]interface{}); ok {
+				rec(&nested)
+			}
+		}
+	}
+
+	properties := startField["properties"].(map[string]interface{})
+	rec(&properties)
+}
+
 func (o *obj) SetNestedField(value interface{}, fields ...string) {
 	parentField := nestedFieldNoCopy[map[string]interface{}](o, fields[:len(fields)-1]...)
 	parentField[fields[len(fields)-1]] = value
