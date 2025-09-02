@@ -575,7 +575,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		for n, f := range md.LabelsFrom {
 			program, err := expr.Compile(f.Expression, expr.Env(env))
 			if err != nil {
-				return fmt.Errorf("Failed to compile function for expression %q: %w", f.Expression, err)
+				return fmt.Errorf("failed to compile function for expression %q: %w", f.Expression, err)
 			}
 			r, err := expr.Run(program, env)
 			if err != nil {
@@ -2203,7 +2203,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
 		// The retry node might have completed by now.
-		if retryParentNode.Fulfilled() && woc.childrenFulfilled(retryParentNode) { // if retry node is daemoned we want to check those explicitly
+		if retryParentNode.Fulfilled() && (woc.childrenFulfilled(retryParentNode) || (retryParentNode.IsDaemoned() && retryParentNode.FailedOrError())) { // if retry node is daemoned we want to check those explicitly
 			// If retry node has completed, set the output of the last child node to its output.
 			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
@@ -2822,7 +2822,7 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 
 func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, error) {
 	if node.Type != wfv1.NodeTypePod {
-		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
+		return nil, fmt.Errorf("expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))

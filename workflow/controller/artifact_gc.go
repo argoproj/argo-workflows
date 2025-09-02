@@ -596,7 +596,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 
 	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
 	if !found {
-		return fmt.Errorf("Artifact GC Pod %q doesn't have annotation %q?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
+		return fmt.Errorf("artifact gc pod %q missing annotation %q", pod.Name, common.AnnotationKeyArtifactGCStrategy)
 	}
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
