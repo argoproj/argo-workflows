@@ -908,7 +908,9 @@ hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go 
 # dev container
 
 $(TOOL_DEVCONTAINER): Makefile
+ifeq (, $(shell command -v devcontainer 2>/dev/null))
 	npm list -g @devcontainers/cli@0.75.0 > /dev/null || npm i -g @devcontainers/cli@0.75.0
+endif
 
 .PHONY: devcontainer-build
 devcontainer-build: $(TOOL_DEVCONTAINER)
