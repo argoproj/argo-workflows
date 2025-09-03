@@ -469,12 +469,12 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 
 	if newTmpl.Timeout != "" {
 		if !newTmpl.IsLeaf() {
-			return fmt.Errorf("%s template doesn't support timeout field.", newTmpl.GetType())
+			return fmt.Errorf("%s template doesn't support timeout field", newTmpl.GetType())
 		}
 		// Check timeout should not be a whole number
 		_, err := strconv.Atoi(newTmpl.Timeout)
 		if err == nil {
-			return fmt.Errorf("%s has invalid duration format in timeout.", newTmpl.Name)
+			return fmt.Errorf("%s has invalid duration format in timeout", newTmpl.Name)
 		}
 
 	}

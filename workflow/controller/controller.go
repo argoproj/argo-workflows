@@ -831,12 +831,12 @@ func reconciliationNeeded(wf metav1.Object) bool {
 // enqueue workflow for processing
 func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
 	if pod.Labels == nil {
-		return fmt.Errorf("Pod did not have labels")
+		return fmt.Errorf("pod did not have labels")
 	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		return fmt.Errorf("Watch returned pod unrelated to any workflow")
+		return fmt.Errorf("watch returned pod unrelated to any workflow")
 	}
 	wfc.wfQueue.AddRateLimited(pod.Namespace + "/" + workflowName)
 	return nil
