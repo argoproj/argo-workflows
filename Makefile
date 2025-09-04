@@ -835,9 +835,7 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs
-docs: $(TOOL_MKDOCS) \ ## Build docs
-	docs-spellcheck \
-	docs-lint \
+docs: $(TOOL_MKDOCS) docs-spellcheck docs-lint ## Build docs
 	# TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
 	# copy README.md to docs/README.md
