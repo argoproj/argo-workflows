@@ -1,7 +1,5 @@
 # Synchronization
 
-> v2.10 and after
-
 You can limit the parallel execution of Workflows or Templates:
 
 - You can use mutexes to restrict Workflows or Templates to only having a single concurrent execution.
