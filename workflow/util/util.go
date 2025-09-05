@@ -1070,7 +1070,7 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 				return nil, nil, err
 			}
 			continue
-		case curr.n.Type == wfv1.NodeTypeRetry:
+		case curr.n.Type == wfv1.NodeTypeRetry && curr.n.FailedOrError():
 			addToReset(curr.n.ID)
 		case curr.n.Type == wfv1.NodeTypeContainer:
 			curr, err = resetPod(curr, addToReset, addToDelete)
