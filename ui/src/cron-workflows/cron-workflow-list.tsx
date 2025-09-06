@@ -1,23 +1,20 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
-import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {useContext, useEffect, useRef, useState} from 'react';
+import {RouteComponentProps} from 'react-router-dom';
 
-import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
-import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
+import {TimestampSwitch} from '../shared/components/timestamp';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
-import {getNextScheduledTime} from '../shared/cron';
 import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
-import {CronWorkflow, CronWorkflowSpec} from '../shared/models';
+import {CronWorkflow} from '../shared/models';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
@@ -25,7 +22,7 @@ import {useQueryParams} from '../shared/use-query-params';
 import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {CronWorkflowCreator} from './cron-workflow-creator';
 import {CronWorkflowFilters} from './cron-workflow-filters';
-import {PrettySchedule} from './pretty-schedule';
+import {CronWorkflowRow} from './cron-workflow-row';
 
 import './cron-workflow-list.scss';
 
@@ -36,6 +33,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
@@ -52,16 +50,18 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     );
 
     // save history
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace,
-                    sidePanel
-                })
-            ),
-        [namespace, sidePanel]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace,
+                sidePanel
+            })
+        );
+    }, [namespace, sidePanel]);
 
     // internal state
     const [error, setError] = useState<Error>();
@@ -156,56 +156,16 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         />
                                     </div>
                                 </div>
-                                {cronWorkflows.map(w => (
-                                    <Link
-                                        className='row argo-table-list__row'
-                                        key={`${w.metadata.namespace}/${w.metadata.name}`}
-                                        to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
-                                        <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
-                                        <div className='columns small-2'>
-                                            {w.metadata.annotations?.[ANNOTATION_TITLE] ?? w.metadata.name}
-                                            {w.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? <p>{w.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
-                                        </div>
-                                        <div className='columns small-1'>{w.metadata.namespace}</div>
-                                        <div className='columns small-1'>{w.spec.timezone}</div>
-                                        <div className='columns small-1'>
-                                            {w.spec.schedule
-                                                ? w.spec.schedule
-                                                : w.spec.schedules.map(schedule => (
-                                                      <>
-                                                          {schedule}
-                                                          <br />
-                                                      </>
-                                                  ))}
-                                        </div>
-                                        <div className='columns small-2'>
-                                            {w.spec.schedule ? (
-                                                <PrettySchedule schedule={w.spec.schedule} />
-                                            ) : (
-                                                <>
-                                                    {w.spec.schedules.map(schedule => (
-                                                        <>
-                                                            <PrettySchedule schedule={schedule} />
-                                                            <br />
-                                                        </>
-                                                    ))}
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className='columns small-2'>
-                                            <Timestamp date={w.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormatCreation} />
-                                        </div>
-                                        <div className='columns small-2'>
-                                            {w.spec.suspend ? (
-                                                ''
-                                            ) : (
-                                                <Ticker intervalMs={1000}>
-                                                    {() => <Timestamp date={getSpecNextScheduledTime(w.spec)} displayISOFormat={storedDisplayISOFormatNextScheduled} />}
-                                                </Ticker>
-                                            )}
-                                        </div>
-                                    </Link>
-                                ))}
+                                {cronWorkflows.map(w => {
+                                    return (
+                                        <CronWorkflowRow
+                                            workflow={w}
+                                            displayISOFormatCreation={storedDisplayISOFormatCreation}
+                                            displayISOFormatNextScheduled={storedDisplayISOFormatNextScheduled}
+                                            key={`{w.metadata.namespace}/${w.metadata.name}`}
+                                        />
+                                    );
+                                })}
                             </div>
                             <Footnote>
                                 <InfoIcon /> Cron workflows are workflows that run on a preset schedule. Next scheduled run assumes workflow-controller is in UTC.{' '}
@@ -220,19 +180,4 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
             </SlidingPanel>
         </Page>
     );
-}
-
-function getSpecNextScheduledTime(spec: CronWorkflowSpec): Date {
-    if (spec.schedule) {
-        return getNextScheduledTime(spec.schedule, spec.timezone);
-    }
-
-    let out: Date;
-    spec.schedules.forEach(schedule => {
-        const next = getNextScheduledTime(schedule, spec.timezone);
-        if (!out || next.getTime() < out.getTime()) {
-            out = next;
-        }
-    });
-    return out;
 }

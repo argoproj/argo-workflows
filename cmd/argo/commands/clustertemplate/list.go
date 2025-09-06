@@ -48,10 +48,10 @@ func NewListCommand() *cobra.Command {
 				printTable(cwftmplList.Items)
 			case "name":
 				for _, cwftmp := range cwftmplList.Items {
-					fmt.Println(cwftmp.ObjectMeta.Name)
+					fmt.Println(cwftmp.Name)
 				}
 			default:
-				return fmt.Errorf("Unknown output mode: %s", output.String())
+				return fmt.Errorf("unknown output mode: %s", output.String())
 			}
 			return nil
 		},
@@ -65,7 +65,7 @@ func printTable(wfList []wfv1.ClusterWorkflowTemplate) {
 	_, _ = fmt.Fprint(w, "NAME")
 	_, _ = fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
-		_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Name)
+		_, _ = fmt.Fprintf(w, "%s\t", wf.Name)
 		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

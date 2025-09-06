@@ -1,9 +1,10 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,11 +39,11 @@ func templatedWorkflow(name string, syncBlock string) *wfv1.Workflow {
 }
 
 func TestMultipleMutexLock(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MultipleMutex", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfall := templatedWorkflow("all",
 			`    mutexes:
@@ -94,7 +95,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
+		syncManager.ReleaseAll(ctx, wf1)
 		// Fail to acquire because two locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -103,7 +104,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		// Fail to acquire because three locked
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -112,7 +113,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf3)
+		syncManager.ReleaseAll(ctx, wf3)
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
 		require.NoError(t, err)
@@ -122,7 +123,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 	})
 	t.Run("MultipleMutexOrdering", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfall := templatedWorkflow("all",
 			`    mutexes:
@@ -171,8 +172,8 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(ctx, wf2)
 
 		// Now lock
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfall, "", wfall.Spec.Synchronization)
@@ -198,13 +199,13 @@ func TestMutexAndSemaphore(t *testing.T) {
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(multipleConfigMap), &cm)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MutexSemaphore", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfmands1 := templatedWorkflow("mands1",
 			`    mutexes:
@@ -216,12 +217,12 @@ func TestMutexAndSemaphore(t *testing.T) {
 `)
 		wfmands1copy := wfmands1.DeepCopy()
 		wfmands2 := templatedWorkflow("mands2",
-			`    mutex:
-       name: two
-    semaphore:
-       configMapKeyRef:
-         key: double
-         name: my-config
+			`    mutexes:
+       - name: two
+    semaphores:
+       - configMapKeyRef:
+           key: double
+           name: my-config
 `)
 		wf1 := templatedWorkflow("one",
 			`    mutexes:
@@ -278,7 +279,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release 1 and sem
-		syncManager.ReleaseAll(wfmands1)
+		syncManager.ReleaseAll(ctx, wfmands1)
 
 		// Succeed 1
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -304,8 +305,8 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.ReleaseAll(wf1)
-		syncManager.ReleaseAll(wfsem)
+		syncManager.ReleaseAll(ctx, wf1)
+		syncManager.ReleaseAll(ctx, wfsem)
 
 		// And reacquire in a sem+mutex wf
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfmands1copy, "", wfmands1copy.Spec.Synchronization)
@@ -318,11 +319,11 @@ func TestMutexAndSemaphore(t *testing.T) {
 	})
 }
 func TestPriority(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Priority", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wflow := templatedWorkflow("prioritylow",
 			`    mutexes:
@@ -374,7 +375,7 @@ func TestPriority(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Release locks
-		syncManager.ReleaseAll(wflow)
+		syncManager.ReleaseAll(ctx, wflow)
 
 		// Attempt to acquire 2 again, but priority blocks
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
@@ -395,11 +396,11 @@ func TestPriority(t *testing.T) {
 }
 
 func TestDuplicates(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Mutex", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfdupmutex := templatedWorkflow("mutex",
 			`    mutexes:
@@ -410,7 +411,7 @@ func TestDuplicates(t *testing.T) {
 		assert.Error(t, err)
 	})
 	t.Run("Semaphore", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {},
+		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc)
 		wfdupsemaphore := templatedWorkflow("semaphore",
 			`    semaphores:

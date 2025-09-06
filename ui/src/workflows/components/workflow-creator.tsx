@@ -1,4 +1,5 @@
 import {Select} from 'argo-ui/src/components/select/select';
+import {History} from 'history';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
@@ -10,16 +11,17 @@ import {exampleWorkflow} from '../../shared/examples';
 import {Workflow, WorkflowTemplate} from '../../shared/models';
 import * as nsUtils from '../../shared/namespaces';
 import {services} from '../../shared/services';
+import {useEditableObject} from '../../shared/use-editable-object';
 import {SubmitWorkflowPanel} from './submit-workflow-panel';
 import {WorkflowEditor} from './workflow-editor';
 
 type Stage = 'choose-method' | 'submit-workflow' | 'full-editor';
 
-export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) {
+export function WorkflowCreator({namespace, onCreate, history}: {namespace: string; onCreate: (workflow: Workflow) => void; history: History}) {
     const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
     const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
     const [stage, setStage] = useState<Stage>('choose-method');
-    const [workflow, setWorkflow] = useState<Workflow>();
+    const {object: workflow, setObject: setWorkflow, serialization, lang, setLang} = useEditableObject<Workflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(() => {
@@ -61,6 +63,12 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
         }
     }, [workflowTemplate]);
 
+    useEffect(() => {
+        const queryParams = new URLSearchParams(history.location.search);
+        const template = queryParams.get('template');
+        setWorkflowTemplate((workflowTemplates || []).find(tpl => tpl.metadata.name === template));
+    }, [workflowTemplates, setWorkflowTemplate, history]);
+
     return (
         <>
             {stage === 'choose-method' && (
@@ -92,6 +100,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                         entrypoint={workflowTemplate.spec.entrypoint}
                         templates={workflowTemplate.spec.templates || []}
                         workflowParameters={workflowTemplate.spec.arguments.parameters || []}
+                        history={history}
                     />
                     <a onClick={() => setStage('full-editor')}>
                         Edit using full workflow options <i className='fa fa-caret-right' />
@@ -116,7 +125,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                         </Button>
                     </div>
                     <ErrorNotice error={error} />
-                    <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
+                    <WorkflowEditor workflow={workflow} serialization={serialization} lang={lang} onLangChange={setLang} onChange={setWorkflow} onError={setError} />
                     <div>
                         <ExampleManifests />.
                     </div>

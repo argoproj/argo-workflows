@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **active_deadline_seconds** | **str** |  | [optional] 
 **affinity** | [**Affinity**](Affinity.md) |  | [optional] 
+**annotations** | **{str: (str,)}** | Annotations is a list of annotations to add to the template at runtime | [optional] 
 **archive_location** | [**IoArgoprojWorkflowV1alpha1ArtifactLocation**](IoArgoprojWorkflowV1alpha1ArtifactLocation.md) |  | [optional] 
 **automount_service_account_token** | **bool** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. | [optional] 
 **container** | [**Container**](Container.md) |  | [optional] 
@@ -29,7 +30,6 @@ Name | Type | Description | Notes
 **parallelism** | **int** | Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total. | [optional] 
 **plugin** | **bool, date, datetime, dict, float, int, list, str, none_type** | Plugin is an Object with exactly one key | [optional] 
 **pod_spec_patch** | **str** | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | [optional] 
-**priority** | **int** | Priority to apply to workflow pods. | [optional] 
 **priority_class_name** | **str** | PriorityClassName to apply to workflow pods. | [optional] 
 **resource** | [**IoArgoprojWorkflowV1alpha1ResourceTemplate**](IoArgoprojWorkflowV1alpha1ResourceTemplate.md) |  | [optional] 
 **retry_strategy** | [**IoArgoprojWorkflowV1alpha1RetryStrategy**](IoArgoprojWorkflowV1alpha1RetryStrategy.md) |  | [optional] 

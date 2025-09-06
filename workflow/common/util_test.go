@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -48,54 +49,6 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 
-`
-	validConfigMapRefWf = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-configmapkeyselector-substitution
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: name
-      value: simple-parameters
-    - name: key
-      value: msg
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: "{{ workflow.parameters.name }}"
-            key: "{{ workflow.parameters.key }}"
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - echo
-        - "{{inputs.parameters.message}}"
-`
-	invalidConfigMapRefWf = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-configmapkeyselector-substitution
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: "{{ workflow.parameters.name }}"
-            key: "{{ workflow.parameters.key }}"
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - echo
-        - "{{inputs.parameters.message}}"
 `
 )
 
@@ -140,23 +93,25 @@ func TestFindOverlappingVolume(t *testing.T) {
 }
 
 func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
-	_, err := SplitWorkflowYAMLFile([]byte(validWf), false)
+	ctx := logging.TestContext(t.Context())
+	_, err := SplitWorkflowYAMLFile(ctx, []byte(validWf), false)
 	require.NoError(t, err)
 
-	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
+	_, err = SplitWorkflowYAMLFile(ctx, []byte(invalidWf), false)
 	require.EqualError(t, err, `json: unknown field "doesNotExist"`)
 }
 
 func TestParseObjects(t *testing.T) {
-	assert.Len(t, ParseObjects([]byte(validWf), false), 1)
+	ctx := logging.TestContext(t.Context())
+	assert.Len(t, ParseObjects(ctx, []byte(validWf), false), 1)
 
-	res := ParseObjects([]byte(invalidWf), false)
+	res := ParseObjects(ctx, []byte(invalidWf), false)
 	assert.Len(t, res, 1)
 	assert.NotNil(t, res[0].Object)
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(invalidObj, false))
+	assert.Empty(t, ParseObjects(ctx, invalidObj, false))
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
@@ -194,49 +149,76 @@ func TestIsDone(t *testing.T) {
 }
 
 func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
-	res := ParseObjects([]byte(validConfigMapRefWf), false)
-	assert.Len(t, res, 1)
-
-	obj, ok := res[0].Object.(*wfv1.Workflow)
-	assert.True(t, ok)
-	assert.NotNil(t, obj)
-
-	globalParams := Parameters{
+	globalParams := map[string]interface{}{
 		"workflow.parameters.name": "simple-parameters",
 		"workflow.parameters.key":  "msg",
 	}
-
-	for _, inParam := range obj.GetTemplateByName("whalesay").Inputs.Parameters {
-		cmName, _ := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
-		assert.Equal(t, "simple-parameters", cmName, "it should be equal")
-
-		cmKey, _ := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
-		assert.Equal(t, "msg", cmKey, "it should be equal")
+	tests := []struct {
+		name                 string
+		configMapKeyRefParam string
+		expected             string
+		expectedErr          string
+	}{
+		{
+			name:                 "No string templating",
+			configMapKeyRefParam: "simple-parameters",
+			expected:             "simple-parameters",
+			expectedErr:          "",
+		},
+		{
+			name:                 "Simple template",
+			configMapKeyRefParam: "{{ workflow.parameters.name }}",
+			expected:             "simple-parameters",
+			expectedErr:          "",
+		},
+		{
+			name:                 "Simple template with prefix and suffix",
+			configMapKeyRefParam: "prefix-{{ workflow.parameters.name }}-suffix",
+			expected:             "prefix-simple-parameters-suffix",
+			expectedErr:          "",
+		},
+		{
+			name:                 "Expression template",
+			configMapKeyRefParam: "{{=upper(workflow.parameters.key)}}",
+			expected:             "MSG",
+			expectedErr:          "",
+		},
+		{
+			name:                 "Simple template referencing nonexistent param",
+			configMapKeyRefParam: "prefix-{{ workflow.parameters.bad }}",
+			expected:             "",
+			expectedErr:          "failed to substitute configMapKeyRef: failed to resolve {{ workflow.parameters.bad }}",
+		},
+		{
+			name:                 "Expression template with invalid expression",
+			configMapKeyRefParam: "{{=!}}",
+			expected:             "",
+			expectedErr:          "failed to substitute configMapKeyRef: failed to evaluate expression: unexpected token EOF (1:1)\n | !\n | ^",
+		},
+		{
+			name:                 "Malformed template",
+			configMapKeyRefParam: "{{ workflow.parameters.bad",
+			expected:             "",
+			expectedErr:          "Cannot find end tag=\"}}\" in the template=\"{{ workflow.parameters.bad\" starting from \" workflow.parameters.bad\"",
+		},
 	}
-}
 
-func TestSubstituteConfigMapKeyRefParamWithNoParamsDefined(t *testing.T) {
-	res := ParseObjects([]byte(invalidConfigMapRefWf), false)
-	assert.Len(t, res, 1)
-
-	obj, ok := res[0].Object.(*wfv1.Workflow)
-	assert.True(t, ok)
-	assert.NotNil(t, obj)
-
-	globalParams := Parameters{}
-
-	for _, inParam := range obj.GetTemplateByName("whalesay").Inputs.Parameters {
-		cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
-		require.EqualError(t, err, "parameter workflow.parameters.name not found")
-		assert.Equal(t, "", cmName)
-
-		cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
-		require.EqualError(t, err, "parameter workflow.parameters.key not found")
-		assert.Equal(t, "", cmKey)
+	ctx := logging.TestContext(t.Context())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := substituteConfigMapKeyRefParam(ctx, tt.configMapKeyRefParam, globalParams)
+			assert.Equal(t, tt.expected, result)
+			if tt.expectedErr != "" {
+				require.EqualError(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }
 
 func TestOverridableDefaultInputArts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	tmpl := wfv1.Template{}
 	tmpl.Name = "artifact-printing"
 
@@ -260,13 +242,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err := ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, "", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
-	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err = ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, "", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
@@ -281,6 +263,7 @@ func (cs mockConfigMapStore) GetByKey(key string) (interface{}, bool, error) {
 }
 
 func TestOverridableTemplateInputParamsValue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	tmpl := wfv1.Template{}
 	tmpl.Name = "artifact-printing"
 
@@ -311,18 +294,19 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }
 
 func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	tmpl := wfv1.Template{}
 	tmpl.Name = "artifact-printing"
 
@@ -369,12 +353,12 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	globalParams := map[string]string{paramName: "overrideValue"}
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)

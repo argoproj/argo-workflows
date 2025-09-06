@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react';
 
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Loading} from '../../../shared/components/loading';
+import {SuspenseReactMarkdownGfm} from '../../../shared/components/suspense-react-markdown-gfm';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
 import {formatDuration} from '../../../shared/duration';
 import {Workflow} from '../../../shared/models';
@@ -14,8 +15,11 @@ import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 import './workflow-drawer.scss';
 
 interface WorkflowDrawerProps {
+    description: string;
+    hasAnnotation: boolean;
     name: string;
     namespace: string;
+    title: string;
     onChange: (key: string) => void;
 }
 
@@ -44,6 +48,17 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
             <div className='workflow-drawer__section'>
                 <div className='workflow-drawer__title'>NAME</div>
                 <div className='workflow-drawer__labels'>{wf.metadata.name}</div>
+                {!props.hasAnnotation ? null : (
+                    <div className='workflow-drawer__section'>
+                        <div className='workflow-drawer__title'>DESCRIPTION</div>
+                        <div className='workflow-drawer__description'>
+                            <SuspenseReactMarkdownGfm markdown={props.title} aria-valuetext={props.title} />
+                            <div className='workflow-drawer__description--content'>
+                                <SuspenseReactMarkdownGfm markdown={props.description} aria-valuetext={props.description} />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
             {!wf.status || !wf.status.conditions ? null : (
                 <div className='workflow-drawer__section'>

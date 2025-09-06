@@ -85,7 +85,7 @@ metadata:
     # Details of the expression language are available in
     # https://expr-lang.org/docs/language-definition.
     workflows.argoproj.io/rbac-rule: "'admin' in groups"
-    # The precedence is used to determine which service account to use whe
+    # The precedence is used to determine which service account to use when
     # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
     # Numerically higher values have higher precedence (not lower, which maybe
     # counter-intuitive to you).

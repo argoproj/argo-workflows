@@ -1,19 +1,22 @@
 # Core Concepts
 
-This page serves as an introduction to the core concepts of Argo.
+This page serves as an introduction to the core concepts of Argo Workflows.
 
 ## The `Workflow`
 
-The [`Workflow`](fields.md#workflow) is the most important resource in Argo and serves two important functions:
+The [`Workflow`](fields.md#workflow) is the most important resource in Argo Workflows and serves two important functions:
 
 1. It defines the workflow to be executed.
 1. It stores the state of the workflow.
 
-Because of these dual responsibilities, a `Workflow` should be treated as a "live" object. It is not only a static definition, but is also an "instance" of said definition. (If it isn't clear what this means, it will be explained below).
+Because of these dual responsibilities, a `Workflow` should be treated as a "live" object.
+It is not only a static definition, but is also an "instance" of said definition.
+(If it isn't clear what this means, it will be explained below).
 
 ### Workflow Spec
 
-The workflow to be executed is defined in the [`Workflow.spec`](fields.md#workflowspec) field. The core structure of a Workflow spec is a list of [`templates`](fields.md#template) and an `entrypoint`.
+The workflow to be executed is defined in the [`Workflow.spec`](fields.md#workflowspec) field.
+The core structure of a Workflow spec is a list of [`templates`](fields.md#template) and an `entrypoint`.
 
 [`templates`](fields.md#template) can be loosely thought of as "functions": they define instructions to be executed.
 The `entrypoint` field defines what the "main" function will be – that is, the template that will be executed first.
@@ -37,7 +40,7 @@ spec:
 
 ### `template` Types
 
-There are 6 types of templates, divided into two different categories.
+There are 9 types of templates, divided into two different categories.
 
 #### Template Definitions
 
@@ -45,7 +48,9 @@ These templates _define_ work to be done, usually in a Container.
 
 ##### [Container](fields.md#container)
 
-Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [Kubernetes container spec](https://v1-26.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container), so you can define a container here the same way you do anywhere else in Kubernetes.
+Perhaps the most common template type, it will schedule a Container.
+The spec of the template is the same as the [Kubernetes container spec](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container), so you can define a container here the same way you do anywhere else in Kubernetes.
+The standard output of the container is automatically exported into an [Argo variable](./variables.md) either `{{tasks.<NAME>.outputs.result}}` or `{{steps.<NAME>.outputs.result}}`, depending how it was called.
 
 Example:
 
@@ -59,8 +64,10 @@ Example:
 
 ##### [Script](fields.md#scripttemplate)
 
-A convenience wrapper around a `container`. The spec is the same as a container, but adds the `source:` field which allows you to define a script in-place.
-The script will be saved into a file and executed for you. The result of the script is automatically exported into an [Argo variable](./variables.md) either `{{tasks.<NAME>.outputs.result}}` or `{{steps.<NAME>.outputs.result}}`, depending how it was called.
+A convenience wrapper around a `container`.
+The spec is the same as a container, but adds the `source:` field which allows you to define a script in-place.
+The script will be saved into a file and executed for you.
+The standard output of the script is automatically exported into an [Argo variable](./variables.md) in the same way as a Container Template.
 
 Example:
 
@@ -77,7 +84,8 @@ Example:
 
 ##### [Resource](fields.md#resourcetemplate)
 
-Performs operations on cluster Resources directly. It can be used to get, create, apply, delete, replace, or patch resources on your cluster.
+Performs operations on cluster Resources directly.
+It can be used to get, create, apply, delete, replace, or patch resources on your cluster.
 
 This example creates a `ConfigMap` resource on the cluster:
 
@@ -96,7 +104,8 @@ This example creates a `ConfigMap` resource on the cluster:
 
 ##### [Suspend](fields.md#suspendtemplate)
 
-A suspend template will suspend execution, either for a duration or until it is resumed manually. Suspend templates can be resumed from the CLI (with `argo resume`), the API endpoint<!-- TODO: LINK -->, or the UI.
+A suspend template will suspend execution, either for a duration or until it is resumed manually.
+Suspend templates can be resumed from the CLI (with `argo resume`), the [API endpoint](swagger.md), or the UI.
 
 Example:
 
@@ -106,13 +115,37 @@ Example:
       duration: "20s"
 ```
 
+##### [Plugin](fields.md#plugin)
+
+A [Plugin Template](plugins.md) allows you to reference an executor plugin.
+
+Example:
+
+```yaml
+  - name: main
+    plugin:
+      slack:
+        text: "{{workflow.name}} finished!"
+```
+
+##### [Container Set](fields.md#containersettemplate)
+
+A [container set template](container-set-template.md) is similar to a normal container or script template, but allows you to specify multiple containers to run within a single pod.
+
+##### [HTTP](fields.md#http)
+
+An [HTTP Template](http-template.md) is a type of template which can execute HTTP Requests. The body of the response is automatically exported into the result output parameter.
+
 #### Template Invocators
 
 These templates are used to invoke/call other templates and provide execution control.
 
 ##### [Steps](fields.md#workflowstep)
 
-A steps template allows you to define your tasks in a series of steps. The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel. If you want to run inner lists one by one, use the [Synchronization](fields.md#synchronization) feature. You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/coinflip.yaml).
+A steps template allows you to define your tasks in a series of steps.
+The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel.
+If you want to run inner lists one by one, use the [Synchronization](fields.md#synchronization) feature.
+You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/coinflip.yaml).
 
 In this example `step1` runs first. Once it is completed, `step2a` and `step2b` will run in parallel:
 
@@ -129,7 +162,9 @@ In this example `step1` runs first. Once it is completed, `step2a` and `step2b` 
 
 ##### [DAG](fields.md#dagtemplate)
 
-A dag template allows you to define your tasks as a graph of dependencies. In a DAG, you list all your tasks and set which other tasks must complete before a particular task can begin. Tasks without any dependencies will be run immediately.
+A dag template allows you to define your tasks as a graph of dependencies.
+In a DAG, you list all your tasks and set which other tasks must complete before a particular task can begin.
+Tasks without any dependencies will be run immediately.
 
 In this example `A` runs first. Once it is completed, `B` and `C` will run in parallel and once they both complete, `D` will run:
 
@@ -152,4 +187,4 @@ In this example `A` runs first. Once it is completed, `B` and `C` will run in pa
 
 ## Architecture
 
-If you are interested in Argo's underlying architecture, see [Architecture](architecture.md).
+If you are interested in Argo Workflows' underlying architecture, see [Architecture](architecture.md).

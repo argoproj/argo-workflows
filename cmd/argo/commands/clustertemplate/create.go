@@ -26,7 +26,7 @@ func NewCreateCommand() *cobra.Command {
 	
 # Create a Cluster Workflow Template and print it as YAML:
   argo cluster-template create FILE1 --output yaml
-  
+	
 # Create a Cluster Workflow Template with relaxed validation:
   argo cluster-template create FILE1 --strict false
 `,
@@ -54,14 +54,14 @@ func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
 		return err
 	}
 
-	clusterWorkflowTemplates := generateClusterWorkflowTemplates(filePaths, cliOpts.strict)
+	clusterWorkflowTemplates := generateClusterWorkflowTemplates(ctx, filePaths, cliOpts.strict)
 
 	for _, wftmpl := range clusterWorkflowTemplates {
 		created, err := serviceClient.CreateClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest{
 			Template: &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
+			return fmt.Errorf("failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
 		}
 		printClusterWorkflowTemplate(created, cliOpts.output.String())
 	}

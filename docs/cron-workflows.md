@@ -16,7 +16,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Replace"
   startingDeadlineSeconds: 0
   workflowSpec:
@@ -149,8 +150,8 @@ The second will not run because of the `when` expression, which prevents this wo
 
 > v3.6 and after
 
-You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.condition`.
-You can use the [variables](variables.md#cronworkflows) `cronworkflow.failed` and `cronworkflow.succeede2d`.
+You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.expression`.
+You can use the [variables](variables.md#cronworkflows) `cronworkflow.failed` and `cronworkflow.succeeded`.
 
 For example, if you want to stop scheduling new workflows after one success:
 

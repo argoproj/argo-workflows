@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"context"
+	"sync"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -12,7 +14,9 @@ type Metrics struct {
 	*telemetry.Metrics
 
 	callbacks         Callbacks
+	realtimeMutex     sync.Mutex
 	realtimeWorkflows map[string][]realtimeTracker
+	fallbackLogger    logging.Logger // use a logger from context if available
 }
 
 func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.Config, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
@@ -33,6 +37,7 @@ func New(ctx context.Context, serviceName, prometheusName string, config *teleme
 		Metrics:           m,
 		callbacks:         callbacks,
 		realtimeWorkflows: make(map[string][]realtimeTracker),
+		fallbackLogger:    logging.RequireLoggerFromContext(ctx),
 	}
 
 	err = metrics.populate(ctx,

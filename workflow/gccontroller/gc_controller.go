@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,6 +20,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	commonutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -31,29 +31,33 @@ var ticker *time.Ticker = time.NewTicker(50 * time.Millisecond)
 type Controller struct {
 	wfclientset      wfclientset.Interface
 	wfInformer       cache.SharedIndexInformer
-	workqueue        workqueue.DelayingInterface
+	workqueue        workqueue.TypedDelayingInterface[string]
 	clock            clock.WithTickerAndDelayedExecution
 	metrics          *metrics.Metrics
 	orderedQueueLock sync.Mutex
 	orderedQueue     map[wfv1.WorkflowPhase]*gcHeap
 	retentionPolicy  *config.RetentionPolicy
+	log              logging.Logger
 }
 
 // NewController returns a new workflow ttl controller
 func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "gc_controller").InContext(ctx)
 	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
 		wfv1.WorkflowSucceeded: NewHeap(),
 	}
+
 	controller := &Controller{
 		wfclientset:     wfClientset,
 		wfInformer:      wfInformer,
-		workqueue:       metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		workqueue:       metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_ttl_queue"),
 		clock:           clock.RealClock{},
 		metrics:         metrics,
 		orderedQueue:    orderedQueue,
 		retentionPolicy: retentionPolicy,
+		log:             log,
 	}
 
 	_, err := wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -62,14 +66,16 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 			return ok && common.IsDone(un)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: controller.enqueueWF,
+			AddFunc: func(obj interface{}) {
+				controller.enqueueWF(ctx, obj)
+			},
 			UpdateFunc: func(old, new interface{}) {
-				controller.enqueueWF(new)
+				controller.enqueueWF(ctx, new)
 			},
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).WithFatal().Error(ctx, "Failed to add queue event handler")
 	}
 
 	_, err = wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -79,20 +85,20 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
-				controller.retentionEnqueue(new)
+				controller.retentionEnqueue(ctx, new)
 			},
 			AddFunc: func(obj interface{}) {
-				controller.retentionEnqueue(obj)
+				controller.retentionEnqueue(ctx, obj)
 			},
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).WithFatal().Error(ctx, "Failed to add retention event handler")
 	}
 	return controller
 }
 
-func (c *Controller) retentionEnqueue(obj interface{}) {
+func (c *Controller) retentionEnqueue(ctx context.Context, obj interface{}) {
 	// No need to queue the workflow if the retention policy is not set
 	if c.retentionPolicy == nil {
 		return
@@ -100,7 +106,7 @@ func (c *Controller) retentionEnqueue(obj interface{}) {
 
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.Warnf("'%v' is not an unstructured", obj)
+		c.log.WithField("obj", obj).Warn(ctx, "is not an unstructured")
 		return
 	}
 
@@ -108,42 +114,43 @@ func (c *Controller) retentionEnqueue(obj interface{}) {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		c.orderedQueueLock.Lock()
 		heap.Push(c.orderedQueue[phase], un)
-		c.runGC(phase)
+		c.runGC(ctx, phase)
 		c.orderedQueueLock.Unlock()
 	}
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}, workflowGCWorkers int) error {
+func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {
 	defer runtimeutil.HandleCrash()
 	defer c.workqueue.ShutDown()
 	defer ticker.Stop()
-	log.Infof("Starting workflow garbage collector controller (retentionWorkers %d)", workflowGCWorkers)
+
+	stopCh := ctx.Done()
+	c.log.WithField("workers", workflowGCWorkers).Info(ctx, "Starting workflow garbage collector controller")
 	go c.wfInformer.Run(stopCh)
 	if ok := cache.WaitForCacheSync(stopCh, c.wfInformer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
 	for i := 0; i < workflowGCWorkers; i++ {
-		go wait.Until(c.runWorker, time.Second, stopCh)
+		go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 	}
-	log.Info("Started workflow garbage collection")
+	c.log.Info(ctx, "Started workflow garbage collection")
 	<-stopCh
-	log.Info("Shutting workflow garbage collection")
+	c.log.Info(ctx, "Shutting workflow garbage collection")
 	return nil
 }
 
 // runWorker is a long-running function that will continually call the
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
-func (c *Controller) runWorker() {
-	ctx := context.Background()
+func (c *Controller) runWorker(ctx context.Context) {
 	for c.processNextWorkItem(ctx) {
 	}
 }
 
 // retentionGC queues workflows for deletion based upon the retention policy.
-func (c *Controller) runGC(phase wfv1.WorkflowPhase) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	var maxWorkflows int
 	switch phase {
 	case wfv1.WorkflowSucceeded:
@@ -158,7 +165,7 @@ func (c *Controller) runGC(phase wfv1.WorkflowPhase) {
 
 	for c.orderedQueue[phase].Len() > maxWorkflows {
 		key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
-		log.Infof("Queueing %v workflow %s for delete due to max rention(%d workflows)", phase, key, maxWorkflows)
+		c.log.WithFields(logging.Fields{"phase": phase, "key": key, "maxWorkflows": maxWorkflows}).Info(ctx, "Queueing workflow for delete due to max retention")
 		c.workqueue.Add(key)
 		<-ticker.C
 	}
@@ -172,22 +179,22 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 		return false
 	}
 	defer c.workqueue.Done(key)
-	runtimeutil.HandleError(c.deleteWorkflow(ctx, key.(string)))
+	runtimeutil.HandleError(c.deleteWorkflow(ctx, key))
 
 	return true
 }
 
 // enqueueWF conditionally queues a workflow to the ttl queue if it is within the deletion period
-func (c *Controller) enqueueWF(obj interface{}) {
+func (c *Controller) enqueueWF(ctx context.Context, obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.Warnf("'%v' is not an unstructured", obj)
+		c.log.WithField("obj", obj).Warn(ctx, "is not an unstructured")
 		return
 	}
 
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.Warnf("Failed to unmarshal workflow %v object: %v", obj, err)
+		c.log.WithField("obj", obj).WithError(err).Warn(ctx, "Failed to unmarshal workflow object")
 		return
 	}
 	remaining, ok := c.expiresIn(wf)
@@ -201,7 +208,7 @@ func (c *Controller) enqueueWF(obj interface{}) {
 	// truly works.
 	addAfter := remaining + time.Second
 	key, _ := cache.MetaNamespaceKeyFunc(obj)
-	log.Infof("Queueing %v workflow %s for delete in %v due to TTL", wf.Status.Phase, key, addAfter.Truncate(time.Second))
+	c.log.WithFields(logging.Fields{"phase": wf.Status.Phase, "workflow": key, "addAfter": addAfter.Truncate(time.Second)}).Info(ctx, "Queueing workflow for delete due to TTL")
 	c.workqueue.AddAfter(key, addAfter)
 }
 
@@ -217,22 +224,22 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	if exists {
 		un, ok := obj.(*unstructured.Unstructured)
 		if ok && !common.IsDone(un) {
-			log.Infof("Workflow '%s' is not completed due to a retry operation, ignore deletion", key)
+			c.log.WithField("workflow", key).Info(ctx, "Workflow is not completed due to a retry operation, ignore deletion")
 			return nil
 		}
 	}
 
 	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
-	log.Infof("Deleting garbage collected workflow '%s'", key)
+	c.log.WithField("workflow", key).Info(ctx, "Deleting garbage collected workflow")
 	err = c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
 		if apierr.IsNotFound(err) {
-			log.Infof("Workflow already deleted '%s'", key)
+			c.log.WithField("workflow", key).Info(ctx, "Workflow already deleted")
 		} else {
 			return err
 		}
 	} else {
-		log.Infof("Successfully request '%s' to be deleted", key)
+		c.log.WithField("workflow", key).Info(ctx, "Successful request to be deleted")
 	}
 	return nil
 }

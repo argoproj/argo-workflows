@@ -9,10 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/pkg/cli"
-	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -31,6 +28,8 @@ import (
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -70,21 +69,24 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
-			defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
+			ctx, log, err := cmdutil.CmdContextWithLogger(c, logLevel, logFormat)
+			if err != nil {
+				logging.InitLogger().WithError(err).WithFatal().Error(c.Context(), "Failed to create workflow-controller cmd logger")
+				return err
+			}
 
-			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
-			cmdutil.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init()
+			pprofutil.Init(c.Context())
 
 			config, err := clientConfig.ClientConfig()
 			if err != nil {
 				return err
 			}
 			// start a controller on instances of our custom resource
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
 			version := argo.GetVersion()
@@ -92,7 +94,7 @@ func NewRootCommand() *cobra.Command {
 			config.Burst = burst
 			config.QPS = qps
 
-			logs.AddK8SLogTransportWrapper(config)
+			logs.AddK8SLogTransportWrapper(ctx, config)
 			metrics.AddMetricsTransportWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
@@ -104,7 +106,7 @@ func NewRootCommand() *cobra.Command {
 			wfclientset := wfclientset.NewForConfigOrDie(config)
 
 			if !namespaced && managedNamespace != "" {
-				log.Warn("ignoring --managed-namespace because --namespaced is false")
+				log.Warn(ctx, "ignoring --managed-namespace because --namespaced is false")
 				managedNamespace = ""
 			}
 			if namespaced && managedNamespace == "" {
@@ -118,15 +120,15 @@ func NewRootCommand() *cobra.Command {
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {
-				log.Info("Leader election is turned off. Running in single-instance mode")
-				log.WithField("id", "single-instance").Info("starting leading")
+				log.Info(ctx, "Leader election is turned off. Running in single-instance mode")
+				log.WithField("id", "single-instance").Info(ctx, "starting leading")
 
 				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
 				go wfController.RunPrometheusServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
-					log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+					log.WithFatal().Error(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
 				}
 
 				leaderName := "workflow-controller"
@@ -136,7 +138,7 @@ func NewRootCommand() *cobra.Command {
 
 				// for controlling the dummy metrics server
 				var wg sync.WaitGroup
-				dummyCtx, dummyCancel := context.WithCancel(context.Background())
+				dummyCtx, dummyCancel := context.WithCancel(ctx)
 				defer dummyCancel()
 
 				wg.Add(1)
@@ -148,12 +150,12 @@ func NewRootCommand() *cobra.Command {
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
 						LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: namespace}, Client: kubeclientset.CoordinationV1(),
-						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManager(kubeclientset).Get(namespace)},
+						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManager(kubeclientset).Get(ctx, namespace)},
 					},
 					ReleaseOnCancel: false,
-					LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
-					RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
-					RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
+					LeaseDuration:   env.LookupEnvDurationOr(ctx, "LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+					RenewDeadline:   env.LookupEnvDurationOr(ctx, "LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+					RetryPeriod:     env.LookupEnvDurationOr(ctx, "LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
@@ -166,22 +168,21 @@ func NewRootCommand() *cobra.Command {
 							}()
 						},
 						OnStoppedLeading: func() {
-							log.WithField("id", nodeID).Info("stopped leading")
+							log.WithField("id", nodeID).Info(ctx, "stopped leading")
 							cancel()
 							wg.Wait()
 							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
-							log.WithField("leader", identity).Info("new leader")
+							log.WithField("leader", identity).Info(ctx, "new leader")
 						},
 					},
 				})
 			}
-
-			http.HandleFunc("/healthz", wfController.Healthz)
+			http.Handle("/healthz", controller.LogMiddleware(log, http.HandlerFunc(wfController.Healthz)))
 
 			go func() {
-				log.Println(http.ListenAndServe(":6060", nil))
+				log.Error(ctx, http.ListenAndServe(":6060", nil).Error())
 			}()
 
 			<-ctx.Done()
@@ -207,6 +208,11 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
+	ctx, log, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	if err != nil {
+		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
+		os.Exit(1)
+	}
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
@@ -214,30 +220,19 @@ func NewRootCommand() *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.Flags()); err != nil {
-		log.Fatal(err)
+		log.WithFatal().WithError(err).Error(ctx, "failed to bind flags to env vars")
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(err)
+				log.WithFatal().WithError(err).WithFields(logging.Fields{"flag": f.Name, "value": val}).Error(ctx, "failed to set flag")
 			}
 		}
 	})
 
 	return &command
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-}
-
-func initConfig() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "2006-01-02T15:04:05.000Z",
-		FullTimestamp:   true,
-	})
 }
 
 func main() {

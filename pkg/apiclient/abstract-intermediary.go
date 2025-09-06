@@ -6,6 +6,7 @@ import (
 
 type abstractIntermediary struct {
 	panicIntermediary
+	// nolint: containedctx
 	ctx    context.Context
 	cancel context.CancelFunc
 	// if anything is on this channel, then then we must be done - the error maybe io.EOF - which just means stop

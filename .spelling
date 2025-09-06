@@ -1,6 +1,7 @@
 # markdown-spellcheck dictionary
 000s
 0s
+100Gi
 100Mi
 100s
 10h
@@ -11,6 +12,7 @@
 1Mi
 1h
 1m
+200Ki
 2Gi
 2h
 30s
@@ -38,12 +40,15 @@ CloudSQL
 ClusterRoleBinding
 ClusterRoles
 ClusterWorkflowTemplate
+ClusterWorkflowTemplates
 Codespaces
 ConfigMap
 ConfigMaps
+ContainerSet
 Couler
 CronWorkflow
 CronWorkflows
+CustomResource
 DataDog
 Dataflow
 DevOps
@@ -74,6 +79,7 @@ Kaniko
 Katacoda
 Katib
 Kerberos
+KeyValueEditor
 Killercoda
 KubectlExec
 Kubeflow
@@ -100,8 +106,11 @@ PDBs
 PProf
 PVCs
 Peixuan
+PersistentVolumeClaims
 Ploomber
+PostgreSQL
 Postgres
+Pre-fill
 PriorityClass
 RCs
 Risc-V
@@ -123,6 +132,7 @@ VSCode
 Valasek
 Webhooks
 Welch
+WorkflowEventBinding
 WorkflowTemplate
 WorkflowTemplates
 a.m.
@@ -130,16 +140,19 @@ anded
 apis
 architecting
 argo
+argoexec
 argoproj
 args
 async
 auth
 backend
+backoff
 backported
 boolean
 booleans
 buildkit
 changelog
+codebase
 config
 cpu
 cron
@@ -183,6 +196,7 @@ liveness
 localhost
 maxFailures
 maxSuccess
+md
 memoization
 memoized
 memoizing
@@ -200,8 +214,12 @@ parameterizing
 params
 pprof
 pre-commit
+pytorch
+qps
+ray
 rc2
 repo
+retryStrategy
 roadmap
 runtime
 runtimes
@@ -249,6 +267,11 @@ v3.4.
 v3.4.4
 v3.5
 v3.6
+v3.6.0
+v3.6.1
+v3.6.5
+v3.7
+v3.7.0
 validator
 vendored
 versioned

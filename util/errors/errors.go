@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -10,10 +11,10 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func IgnoreContainerNotFoundErr(err error) error {
@@ -24,19 +25,19 @@ func IgnoreContainerNotFoundErr(err error) error {
 }
 
 // IsTransientErr reports whether the error is transient and logs it.
-func IsTransientErr(err error) bool {
-	isTransient := IsTransientErrQuiet(err)
-	if !isTransient {
-		log.Warnf("Non-transient error: %v", err)
+func IsTransientErr(ctx context.Context, err error) bool {
+	isTransient := IsTransientErrQuiet(ctx, err)
+	if err != nil && !isTransient {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Non-transient error")
 	}
 	return isTransient
 }
 
 // IsTransientErrQuiet reports whether the error is transient and logs only if it is.
-func IsTransientErrQuiet(err error) bool {
+func IsTransientErrQuiet(ctx context.Context, err error) bool {
 	isTransient := isTransientErr(err)
 	if isTransient {
-		log.Infof("Transient error: %v", err)
+		logging.RequireLoggerFromContext(ctx).WithError(err).Info(ctx, "Transient error")
 	}
 	return isTransient
 }
@@ -89,6 +90,8 @@ func isTransientEtcdErr(err error) bool {
 		return true
 	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
 		return true
+	} else if strings.Contains(err.Error(), "etcdserver: too many requests") {
+		return true
 	}
 	return false
 }
@@ -122,6 +125,8 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "http2: client connection lost") {
 		// If err is http2 transport ping timeout, retry.
 		return true
+	} else if strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection") {
+		return true
 	} else if strings.Contains(errorString, "connect: connection refused") {
 		// If err is connection refused, retry.
 		return true
@@ -143,4 +148,12 @@ func generateErrorString(err error) string {
 
 func isTransientSqbErr(err error) bool {
 	return strings.Contains(err.Error(), "upper: no more rows in")
+}
+
+// CheckError is a convenience function to fatally log an exit if the supplied error is non-nil
+func CheckError(ctx context.Context, err error) {
+	if err != nil {
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.WithError(err).WithFatal().Error(ctx, "An error occurred during execution")
+	}
 }

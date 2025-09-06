@@ -16,7 +16,7 @@
         "node": ">=20"
     },
     "dependencies": {
-        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#6de6bfedc0ec0625122dd5162371fc1932f8d428",
+        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#54f36c723d9a0e5d3386689298cbb9c27767fa00",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.5.1",
@@ -44,6 +44,9 @@
         "@babel/preset-env": "^7.22.10",
         "@fortawesome/fontawesome-free": "^6.5.1",
         "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+        "@testing-library/dom": "^10.4.0",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.3.0",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.3.1",
         "@types/dagre": "^0.7.52",

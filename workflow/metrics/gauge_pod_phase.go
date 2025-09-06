@@ -9,7 +9,7 @@ import (
 )
 
 // PodPhaseCallback is the function prototype to provide this gauge with the phase of the pods
-type PodPhaseCallback func() map[string]int64
+type PodPhaseCallback func(ctx context.Context) map[string]int64
 
 type podPhaseGauge struct {
 	callback PodPhaseCallback
@@ -17,31 +17,26 @@ type podPhaseGauge struct {
 }
 
 func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
-	const namePodsPhase = `pods_gauge`
-	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
-		namePodsPhase,
-		"Number of Pods from Workflows currently accessible by the controller by status.",
-		"{pod}",
-		telemetry.WithAsBuiltIn(),
-	)
+	err := m.CreateBuiltinInstrument(telemetry.InstrumentPodsGauge)
 	if err != nil {
 		return err
 	}
 
+	name := telemetry.InstrumentPodsGauge.Name()
 	if m.callbacks.PodPhase != nil {
 		ppGauge := podPhaseGauge{
 			callback: m.callbacks.PodPhase,
-			gauge:    m.AllInstruments[namePodsPhase],
+			gauge:    m.GetInstrument(name),
 		}
-		return m.AllInstruments[namePodsPhase].RegisterCallback(m.Metrics, ppGauge.update)
+		return ppGauge.gauge.RegisterCallback(m.Metrics, ppGauge.update)
 	}
 	return nil
 }
 
-func (p *podPhaseGauge) update(_ context.Context, o metric.Observer) error {
-	phases := p.callback()
+func (p *podPhaseGauge) update(ctx context.Context, o metric.Observer) error {
+	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
+		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
 	}
 	return nil
 }

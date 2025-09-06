@@ -73,8 +73,15 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubsti
 		SubmitWorkflowsFromWorkflowTemplates().
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+		ExpectWorkflowNode(v1alpha1.SucceededPodNode, func(t *testing.T, n *v1alpha1.NodeStatus, p *apiv1.Pod) {
+			for _, c := range p.Spec.Containers {
+				if c.Name == "main" {
+					assert.Len(t, c.Args, 3)
+					assert.Equal(t, "echo", c.Args[0])
+					assert.Equal(t, "myLabelArg", c.Args[1])
+					assert.Equal(t, "thisLabelIsFromWorkflowDefaults", c.Args[2])
+				}
+			}
 		})
 }
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/humanize"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -70,8 +70,8 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 		fmt.Println(string(output))
 	default:
 		const fmtStr = "%-20s %v\n"
-		fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-		fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
+		fmt.Printf(fmtStr, "Name:", wf.Name)
+		fmt.Printf(fmtStr, "Namespace:", wf.Namespace)
 		serviceAccount := wf.GetExecSpec().ServiceAccountName
 		if serviceAccount == "" {
 			// if serviceAccountName was not specified in a submitted Workflow, we will
@@ -85,7 +85,7 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 		if wf.Status.Message != "" {
 			fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 		}
-		fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+		fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.CreationTimestamp.Time))
 		if !wf.Status.StartedAt.IsZero() {
 			fmt.Printf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
 		}

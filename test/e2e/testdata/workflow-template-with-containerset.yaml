@@ -14,19 +14,14 @@ spec:
           retries: "2"
         containers:
           - name: c1
-            image: python:alpine3.6
-            command:
-              - python
-              - -c
-            args:
-              - |
-                print("hi")
+            image: argoproj/argosay:v2
+            args: ["echo", "hi"]
           - name: c2
-            image: python:alpine3.6
+            image: argoproj/argosay:v2
             command:
               - invalid
               - command
           - name: c3
-            image: alpine:latest
+            image: argoproj/argosay:v2
             command: [ sh, -c ]
             args: [ "echo intentional failure; exit 1" ]

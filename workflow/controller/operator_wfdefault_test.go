@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +8,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var wfDefaults = `
@@ -62,7 +62,7 @@ spec:
       args: ["hello world"]
 `
 
-var wf_wfdefaultResult = `
+var wfDefaultResult = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
@@ -199,20 +199,20 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
 	wf := wfv1.MustUnmarshalWorkflow(simpleWf)
 	wf1 := wf.DeepCopy()
-	wfResult := wfv1.MustUnmarshalWorkflow(wf_wfdefaultResult)
-	cancel, controller := newControllerWithDefaults()
+	wfResult := wfv1.MustUnmarshalWorkflow(wfDefaultResult)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newControllerWithDefaults(ctx)
 	defer cancel()
 
-	ctx := context.Background()
 	controller.Config.WorkflowDefaults = wfDefault
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(woc.wf.Spec, wfResult.Spec)
 	assert.Contains(woc.wf.Labels, "testLabel")
 	assert.Contains(woc.wf.Annotations, "testAnnotation")
 
 	wf1.Spec.Entrypoint = ""
-	woc = newWorkflowOperationCtx(wf1, controller)
+	woc = newWorkflowOperationCtx(ctx, wf1, controller)
 	woc.operate(ctx)
 	assert.Equal(woc.wf.Spec, wfResult.Spec)
 	assert.Contains(woc.wf.Labels, "testLabel")
@@ -226,14 +226,14 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	var resultSpec wfv1.WorkflowSpec
 	wfv1.MustUnmarshal([]byte(storedSpecResult), &resultSpec)
 
-	ctx := context.Background()
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
-		cancel, controller := newController(wft)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wft)
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 
 		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"}, Spec: wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}}}
-		woc := newWorkflowOperationCtx(&wf, controller)
+		woc := newWorkflowOperationCtx(ctx, &wf, controller)
 		woc.operate(ctx)
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 		assert.Equal(resultSpec, woc.execWf.Spec)
@@ -241,7 +241,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	})
 
 	t.Run("SubmitComplexWorkflowRef", func(t *testing.T) {
-		cancel, controller := newController(wft)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wft)
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 
@@ -261,14 +262,15 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		resultSpec.TTLStrategy = &ttlStrategy
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 
-		woc := newWorkflowOperationCtx(&wf, controller)
+		woc := newWorkflowOperationCtx(ctx, &wf, controller)
 		woc.operate(ctx)
 		assert.Equal(resultSpec, woc.execWf.Spec)
 		assert.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
 	})
 
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
-		cancel, controller := newController(wft)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wft)
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 
@@ -304,7 +306,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, param)
 		resultSpec.Arguments.Artifacts = append(resultSpec.Arguments.Artifacts, art)
 
-		woc := newWorkflowOperationCtx(&wf, controller)
+		woc := newWorkflowOperationCtx(ctx, &wf, controller)
 		woc.operate(ctx)
 		assert.Contains(woc.execWf.Spec.Arguments.Parameters, param)
 		assert.Contains(woc.wf.Status.StoredWorkflowSpec.Arguments.Artifacts, art)

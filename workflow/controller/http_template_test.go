@@ -7,9 +7,11 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestNodeRequiresHttpReconciliation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	woc := &wfOperationCtx{
 		wf: &v1alpha1.Workflow{
 			ObjectMeta: v1.ObjectMeta{
@@ -35,7 +37,7 @@ func TestNodeRequiresHttpReconciliation(t *testing.T) {
 		},
 	}
 
-	assert.False(t, woc.nodeRequiresTaskSetReconciliation("not-needed"))
-	assert.True(t, woc.nodeRequiresTaskSetReconciliation("child-http"))
-	assert.True(t, woc.nodeRequiresTaskSetReconciliation("parent"))
+	assert.False(t, woc.nodeRequiresTaskSetReconciliation(ctx, "not-needed"))
+	assert.True(t, woc.nodeRequiresTaskSetReconciliation(ctx, "child-http"))
+	assert.True(t, woc.nodeRequiresTaskSetReconciliation(ctx, "parent"))
 }

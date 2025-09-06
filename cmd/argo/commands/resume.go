@@ -44,16 +44,17 @@ func NewResumeCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 
 			selector, err := fields.ParseSelector(resumeArgs.nodeFieldSelector)
 			if err != nil {
-				return fmt.Errorf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
+				return fmt.Errorf("unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
 			for _, wfName := range args {
@@ -63,7 +64,7 @@ func NewResumeCommand() *cobra.Command {
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
-					return fmt.Errorf("Failed to resume %s: %+v", wfName, err)
+					return fmt.Errorf("failed to resume %s: %+v", wfName, err)
 				}
 				fmt.Printf("workflow %s resumed\n", wfName)
 			}

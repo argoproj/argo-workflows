@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl} from '../shared/base';
@@ -28,14 +28,14 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
+    const isFirstRender = useRef(true);
     const namespace = match.params.namespace;
     const name = match.params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
-
-    const [template, edited, setTemplate, resetTemplate] = useEditableObject<WorkflowTemplate>();
+    const {object: template, setObject: setTemplate, resetObject: resetTemplate, serialization, edited, lang, setLang} = useEditableObject<WorkflowTemplate>();
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -46,18 +46,20 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('workflow-templates/{namespace}/{name}', {
-                    namespace,
-                    name,
-                    sidePanel,
-                    tab
-                })
-            ),
-        [namespace, name, sidePanel, tab]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('workflow-templates/{namespace}/{name}', {
+                namespace,
+                name,
+                sidePanel,
+                tab
+            })
+        );
+    }, [namespace, name, sidePanel, tab]);
 
     useEffect(() => {
         services.workflowTemplate
@@ -133,7 +135,20 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
             }}>
             <>
                 <ErrorNotice error={error} />
-                {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
+                {!template ? (
+                    <Loading />
+                ) : (
+                    <WorkflowTemplateEditor
+                        template={template}
+                        serialization={serialization}
+                        lang={lang}
+                        onLangChange={setLang}
+                        onChange={setTemplate}
+                        onError={setError}
+                        onTabSelected={setTab}
+                        selectedTabKey={tab}
+                    />
+                )}
             </>
             {template && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={sidePanel === 'submit'}>
@@ -145,6 +160,7 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                             entrypoint={template.spec.entrypoint}
                             templates={template.spec.templates || []}
                             workflowParameters={template.spec.arguments.parameters || []}
+                            history={history}
                         />
                     )}
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}

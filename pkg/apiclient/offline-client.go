@@ -35,21 +35,20 @@ type offlineClient struct {
 	namespacedWorkflowTemplateGetterMap offlineWorkflowTemplateGetterMap
 }
 
-var OfflineErr = fmt.Errorf("not supported when you are in offline mode")
+var ErrOffline = fmt.Errorf("not supported when you are in offline mode")
 
 var _ Client = &offlineClient{}
 
 // newOfflineClient creates a client that keeps all files (or files recursively contained within a path) given to it in memory.
 // It is useful for linting a set of files without having to connect to a cluster.
-func newOfflineClient(paths []string) (context.Context, Client, error) {
+func newOfflineClient(ctx context.Context, paths []string) (context.Context, Client, error) {
 	clusterWorkflowTemplateGetter := &offlineClusterWorkflowTemplateGetter{
 		clusterWorkflowTemplates: map[string]*wfv1.ClusterWorkflowTemplate{},
 	}
 	workflowTemplateGetters := offlineWorkflowTemplateGetterMap{}
-
 	for _, basePath := range paths {
-		err := file.WalkManifests(basePath, func(path string, bytes []byte) error {
-			for _, pr := range common.ParseObjects(bytes, false) {
+		err := file.WalkManifests(ctx, basePath, func(path string, bytes []byte) error {
+			for _, pr := range common.ParseObjects(ctx, bytes, false) {
 				obj, err := pr.Object, pr.Err
 				if err != nil {
 					return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
@@ -94,13 +93,13 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 		}
 	}
 
-	return context.Background(), &offlineClient{
+	return ctx, &offlineClient{
 		clusterWorkflowTemplateGetter:       clusterWorkflowTemplateGetter,
 		namespacedWorkflowTemplateGetterMap: workflowTemplateGetters,
 	}, nil
 }
 
-func (c *offlineClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
+func (c *offlineClient) NewWorkflowServiceClient(_ context.Context) workflowpkg.WorkflowServiceClient {
 	return &errorTranslatingWorkflowServiceClient{OfflineWorkflowServiceClient{
 		clusterWorkflowTemplateGetter:       c.clusterWorkflowTemplateGetter,
 		namespacedWorkflowTemplateGetterMap: c.namespacedWorkflowTemplateGetterMap,
@@ -129,11 +128,11 @@ func (c *offlineClient) NewClusterWorkflowTemplateServiceClient() (clusterworkfl
 }
 
 func (c *offlineClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 func (c *offlineClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
-	return nil, NoArgoServerErr
+	return nil, ErrNoArgoServer
 }
 
 type offlineWorkflowTemplateNamespacedGetter struct {
@@ -141,7 +140,7 @@ type offlineWorkflowTemplateNamespacedGetter struct {
 	workflowTemplates map[string]*wfv1.WorkflowTemplate
 }
 
-func (w offlineWorkflowTemplateNamespacedGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+func (w offlineWorkflowTemplateNamespacedGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
 	if v, ok := w.workflowTemplates[name]; ok {
 		return v, nil
 	}
@@ -152,7 +151,7 @@ type offlineClusterWorkflowTemplateGetter struct {
 	clusterWorkflowTemplates map[string]*wfv1.ClusterWorkflowTemplate
 }
 
-func (o offlineClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+func (o offlineClusterWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	if v, ok := o.clusterWorkflowTemplates[name]; ok {
 		return v, nil
 	}

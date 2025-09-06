@@ -81,16 +81,22 @@ type StopStrategy struct {
 // CronWorkflowStatus is the status of a CronWorkflow
 type CronWorkflowStatus struct {
 	// Active is a list of active workflows stemming from this CronWorkflow
+	// +optional
 	Active []v1.ObjectReference `json:"active" protobuf:"bytes,1,rep,name=active"`
 	// LastScheduleTime is the last time the CronWorkflow was scheduled
+	// +optional
 	LastScheduledTime *metav1.Time `json:"lastScheduledTime" protobuf:"bytes,2,opt,name=lastScheduledTime"`
 	// Conditions is a list of conditions the CronWorkflow may have
+	// +optional
 	Conditions Conditions `json:"conditions" protobuf:"bytes,3,rep,name=conditions"`
 	// v3.6 and after: Succeeded counts how many times child workflows succeeded
+	// +optional
 	Succeeded int64 `json:"succeeded" protobuf:"varint,4,rep,name=succeeded"`
 	// v3.6 and after: Failed counts how many times child workflows failed
+	// +optional
 	Failed int64 `json:"failed" protobuf:"varint,5,rep,name=failed"`
-	// v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
+	// v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
+	// +optional
 	Phase CronWorkflowPhase `json:"phase" protobuf:"varint,6,rep,name=phase"`
 }
 

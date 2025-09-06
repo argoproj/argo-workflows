@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	argoJson "github.com/argoproj/pkg/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -16,6 +15,9 @@ import (
 	common "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -62,12 +64,18 @@ func NewSubmitCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.Priority = &priority
 			}
 
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
+			}
+
 			if !cliSubmitOpts.Watch && len(cliSubmitOpts.GetArgs.Status) > 0 {
-				log.Warn("--status should only be used with --watch")
+				logging.RequireLoggerFromContext(ctx).Warn(ctx, "--status should only be used with --watch")
 			}
 
 			if parametersFile != "" {
@@ -76,12 +84,8 @@ func NewSubmitCommand() *cobra.Command {
 				}
 			}
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			if from != "" {
 				return submitWorkflowFromResource(ctx, serviceClient, namespace, from, &submitOpts, &cliSubmitOpts)
 			} else {
@@ -102,9 +106,16 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&cliSubmitOpts.ScheduledTime, "scheduled-time", "", "Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339")
 
 	// Only complete files with appropriate extension.
-	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
+	ctx, _, err := cmdutil.CmdContextWithLogger(command, string(logging.Info), string(logging.Text))
 	if err != nil {
-		log.Fatal(err)
+		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create submit logger")
+		os.Exit(1)
+	}
+	logger := logging.RequireLoggerFromContext(ctx)
+	err = command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
+	if err != nil {
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to set annotation")
+		os.Exit(1)
 	}
 	return command
 }
@@ -117,7 +128,7 @@ func submitWorkflowsFromFile(ctx context.Context, serviceClient workflowpkg.Work
 
 	var workflows []wfv1.Workflow
 	for _, body := range fileContents {
-		wfs := unmarshalWorkflows(body, cliOpts.Strict)
+		wfs := unmarshalWorkflows(ctx, body, cliOpts.Strict)
 		workflows = append(workflows, wfs...)
 	}
 
@@ -127,7 +138,7 @@ func submitWorkflowsFromFile(ctx context.Context, serviceClient workflowpkg.Work
 func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *common.CliSubmitOpts) error {
 	if cliOpts.Watch {
 		if len(workflows) > 1 {
-			return errors.New("Cannot watch more than one workflow")
+			return errors.New("cannot watch more than one workflow")
 		}
 		if cliOpts.Wait {
 			return errors.New("--wait cannot be combined with --watch")
@@ -194,7 +205,7 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 		SubmitOptions: submitOpts,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to submit workflow: %v", err)
+		return fmt.Errorf("failed to submit workflow: %v", err)
 	}
 
 	if err = printWorkflow(created, common.GetFlags{Output: cliOpts.Output}); err != nil {
@@ -210,7 +221,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 	}
 
 	if len(workflows) == 0 {
-		return errors.New("No Workflow found in given files")
+		return errors.New("no workflow found in given files")
 	}
 
 	var workflowNames []string
@@ -238,7 +249,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 			CreateOptions: options,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to submit workflow: %v", err)
+			return fmt.Errorf("failed to submit workflow: %v", err)
 		}
 
 		if err = printWorkflow(created, common.GetFlags{Output: cliOpts.Output, Status: cliOpts.GetArgs.Status}); err != nil {
@@ -251,7 +262,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
+func unmarshalWorkflows(ctx context.Context, wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
 	var jsonOpts []argoJson.JSONOpt
 	if strict {
@@ -261,10 +272,11 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
-	yamlWfs, err := wfcommon.SplitWorkflowYAMLFile(wfBytes, strict)
+	yamlWfs, err := wfcommon.SplitWorkflowYAMLFile(ctx, wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}
-	log.Fatalf("Failed to parse workflow: %v", err)
+	logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to parse workflow")
+	os.Exit(1)
 	return nil
 }

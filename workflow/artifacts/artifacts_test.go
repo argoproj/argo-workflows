@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -54,7 +56,7 @@ func TestNewDriverS3(t *testing.T) {
 		}},
 	}
 
-	got, err := newDriver(context.TODO(), art, &mockResourceInterface{})
+	got, err := newDriver(logging.TestContext(t.Context()), art, &mockResourceInterface{})
 	require.NoError(t, err)
 
 	artDriver := got.(*s3.ArtifactDriver)

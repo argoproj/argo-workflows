@@ -1,0 +1,33 @@
+dir: '{{.InterfaceDir}}/mocks'
+structname: '{{.InterfaceName}}'
+filename: "{{.InterfaceName}}.go"
+pkgname: mocks
+
+template-data:
+  unroll-variadic: true
+
+packages:
+  github.com/argoproj/argo-workflows/v3/persist/sqldb:
+    interfaces:
+      WorkflowArchive: {}
+  github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow:
+    interfaces:
+      WorkflowServiceClient: {}
+  github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate:
+    interfaces:
+      WorkflowTemplateServiceClient: {}
+  github.com/argoproj/argo-workflows/v3/server/auth:
+    interfaces:
+      Gatekeeper: {}
+  github.com/argoproj/argo-workflows/v3/server/auth/sso:
+    interfaces:
+      Interface: {}
+  github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories:
+    interfaces:
+      Interface: {}
+  github.com/argoproj/argo-workflows/v3/workflow/executor:
+    interfaces:
+      ContainerRuntimeExecutor: {}
+  github.com/argoproj/argo-workflows/v3/workflow/sync:
+    interfaces:
+      Throttler: {}

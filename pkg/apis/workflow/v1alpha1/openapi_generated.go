@@ -132,6 +132,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":             schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate":               schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SyncDatabaseRef":               schema_pkg_apis_workflow_v1alpha1_SyncDatabaseRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization":               schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus":         schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy":                   schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref),
@@ -1417,6 +1418,13 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"cap": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -2384,14 +2392,13 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "phase"},
 			},
 		},
 		Dependencies: []string{
@@ -2423,7 +2430,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa).",
+							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
@@ -2457,7 +2464,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"withItems": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithItems expands a task into multiple parallel tasks from the items in the list",
+							Description: "WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -3763,8 +3770,16 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"target": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"name", "scope", "url"},
+				Required: []string{"name", "scope", "url", "target"},
 			},
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
@@ -3991,6 +4006,13 @@ func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Namespace is the namespace of the mutex, default: [namespace of workflow]",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Database specifies this is database controlled if this is set true",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -4345,6 +4367,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 						SchemaProps: spec.SchemaProps{
 							Description: "SynchronizationStatus is the synchronization status of the node",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
+						},
+					},
+					"taskResultSynced": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TaskResultSynced is used to determine if the node's output has been received",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -4780,7 +4809,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 					},
 					"result": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Result holds the result (stdout) of a script template",
+							Description: "Result holds the result (stdout) of a script or container template, or the response body of an HTTP template",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4804,8 +4833,9 @@ func schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type:   ParallelSteps{}.OpenAPISchemaType(),
-				Format: ParallelSteps{}.OpenAPISchemaFormat(),
+				Description: "swagger:ignore",
+				Type:        ParallelSteps{}.OpenAPISchemaType(),
+				Format:      ParallelSteps{}.OpenAPISchemaFormat(),
 			},
 		},
 	}
@@ -4835,7 +4865,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
+							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5818,7 +5848,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"name", "source"},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
@@ -5874,7 +5904,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"configMapKeyRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+							Description: "ConfigMapKeyRef is a configmap selector for Semaphore configuration",
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
 						},
 					},
@@ -5885,11 +5915,17 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SyncDatabaseRef is a database reference for Semaphore configuration",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SyncDatabaseRef"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SyncDatabaseRef", "k8s.io/api/core/v1.ConfigMapKeySelector"},
 	}
 }
 
@@ -6169,6 +6205,26 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_SyncDatabaseRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"key"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6431,7 +6487,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"plugin": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Plugin is a plugin template",
+							Description: "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Plugin"),
 						},
 					},
@@ -6561,13 +6617,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"serviceAccountName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountName to apply to workflow pods",
@@ -6644,6 +6693,22 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Description: "Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"annotations": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Annotations is a list of annotations to add to the template at runtime",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -7844,13 +7909,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
-					"podPriority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"hostAliases": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -8194,7 +8252,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa).",
+							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an \"inline\" field. Kubernetes doesn't allow recursive types, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
@@ -8213,7 +8271,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"withItems": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithItems expands a step into multiple parallel steps from the items in the list",
+							Description: "WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

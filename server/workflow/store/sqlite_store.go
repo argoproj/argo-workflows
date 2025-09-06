@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"zombiezen.com/go/sqlite"
@@ -14,9 +13,11 @@ import (
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -88,8 +89,8 @@ func NewSQLiteStore(instanceService instanceid.Service) (*SQLiteStore, error) {
 	return &SQLiteStore{conn: conn, instanceService: instanceService}, nil
 }
 
-func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
-	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter)
+func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, nameFilter, createdAfter, finishedBefore string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter, createdAfter, finishedBefore)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err = sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
+	query, args, err = persist.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ where instanceid = ?
 			w := wfv1.Workflow{}
 			err := json.Unmarshal([]byte(wf), &w)
 			if err != nil {
-				log.WithFields(log.Fields{"workflow": wf}).Errorln("unable to unmarshal workflow from database")
+				logging.RequireLoggerFromContext(ctx).WithError(err).WithField("workflow", wf).Error(ctx, "unable to unmarshal workflow from database")
 			} else {
 				workflows = append(workflows, w)
 			}
@@ -129,8 +130,8 @@ where instanceid = ?
 	}, nil
 }
 
-func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (int64, error) {
-	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter)
+func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, nameFilter, createdAfter, finishedBefore string, listOptions metav1.ListOptions) (int64, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter, createdAfter, finishedBefore)
 	if err != nil {
 		return 0, err
 	}
@@ -141,7 +142,7 @@ where instanceid = ?
 
 	options.Limit = 0
 	options.Offset = 0
-	query, args, err = sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
+	query, args, err = persist.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
 	if err != nil {
 		return 0, err
 	}

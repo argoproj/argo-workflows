@@ -12,24 +12,22 @@ import (
 
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
-	"github.com/argoproj/argo-workflows/v3"
+	argo "github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
@@ -58,9 +56,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/ui"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/json"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -92,6 +94,7 @@ type argoServer struct {
 	apiRateLimiter           limiter.Store
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
+	restConfig               *rest.Config
 }
 
 type ArgoServerOpts struct {
@@ -120,7 +123,7 @@ func init() {
 	var err error
 	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
 	if err != nil {
-		log.WithError(err).Fatal("GRPC_MESSAGE_SIZE environment variable must be set as an integer")
+		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
 	}
 }
 
@@ -133,6 +136,7 @@ func getResourceCacheNamespace(managedNamespace string) string {
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
+	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
@@ -140,7 +144,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(ctx, c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -149,9 +153,9 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
 			resourceCache.Run(ctx.Done())
 		}
-		log.Info("SSO enabled")
+		log.Info(ctx, "SSO enabled")
 	} else {
-		log.Info("SSO disabled")
+		log.Info(ctx, "SSO disabled")
 	}
 	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
@@ -162,7 +166,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		Interval: time.Second,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.WithFatal().Error(ctx, err.Error())
 	}
 
 	return &argoServer{
@@ -184,6 +188,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		apiRateLimiter:           store,
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
+		restConfig:               opts.RestConfig,
 	}, nil
 }
 
@@ -195,50 +200,65 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
+	log := logging.RequireLoggerFromContext(ctx)
 	config, err := as.configController.Get(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFatal().Error(ctx, err.Error())
 	}
 	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFatal().Error(ctx, err.Error())
 	}
-	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
+	log.WithFields(argo.GetVersion().Fields()).WithField("instanceID", config.InstanceID).Info(ctx, "Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
-	offloadRepo := sqldb.ExplosiveOffloadNodeStatusRepo
-	wfArchive := sqldb.NullWorkflowArchive
+	offloadRepo := persist.ExplosiveOffloadNodeStatusRepo
+	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, err := sqldb.CreateDBSession(as.clients.Kubernetes, as.namespace, persistence)
+		session, err := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
 		if err != nil {
-			log.Fatal(err)
+			log.WithFatal().Error(ctx, err.Error())
 		}
-		tableName, err := sqldb.GetTableName(persistence)
+		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
-			log.Fatal(err)
+			log.WithFatal().Error(ctx, err.Error())
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
 		if err != nil {
-			log.WithError(err).Fatal(err.Error())
+			log.WithError(err).WithFatal().Error(ctx, err.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
+		wfArchive = persist.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
+	}
+	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
+	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
+	if err != nil {
+		log.WithFatal().Error(ctx, err.Error())
+	}
+	kubeclientset := kubernetes.NewForConfigOrDie(as.restConfig)
+	var cwftmplInformer clusterworkflowtemplate.ClusterWorkflowTemplateInformer
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, resourceCacheNamespace) {
+		cwftmplInformer, err = clusterworkflowtemplate.NewInformer(as.restConfig)
+		if err != nil {
+			log.WithFatal().Error(ctx, err.Error())
+		}
+	} else {
+		cwftmplInformer = clusterworkflowtemplate.NewNullClusterWorkflowTemplate()
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
-	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
-	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo)
+	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
+	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFatal().Error(ctx, err.Error())
 	}
-	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, &resourceCacheNamespace)
-	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
+	workflowServer := workflow.NewWorkflowServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
+	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -248,13 +268,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
-			log.WithError(err).Warn("failed to listen")
+			log.WithError(err).Warn(ctx, "failed to listen")
 			return false, nil
 		}
 		return true, nil
 	})
 	if err != nil {
-		log.Error(err)
+		log.Error(ctx, err.Error())
 		return
 	}
 
@@ -262,31 +282,30 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		conn = tls.NewListener(conn, as.tlsConfig)
 	}
 
-	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
-	tcpm := cmux.New(conn)
-	httpL := tcpm.Match(cmux.HTTP1Fast())
-	grpcL := tcpm.Match(cmux.Any())
+	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
-	go eventServer.Run(as.stopCh)
+	wftmplStore.Run(ctx, as.stopCh)
+	if cwftmplInformer != nil {
+		cwftmplInformer.Run(ctx, as.stopCh)
+	}
+	go eventServer.Run(ctx, as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
-	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
-	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
+	go func() { as.checkServeErr(ctx, "httpServer", http.Serve(conn, handler)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
 	}
-	log.WithFields(log.Fields{
+	log.WithFields(logging.Fields{
 		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
-	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
-	log.WithFields(log.Fields{"url": url}).Infof("Argo Server started successfully on %s", url)
+	}).Info(ctx, "GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
+	log.WithField("url", url).Info(ctx, "Argo Server started successfully")
 	browserOpenFunc(url)
 
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string) *grpc.Server {
-	serverLog := log.NewEntry(log.StandardLogger())
+func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wftmplStore types.WorkflowTemplateStore, cwftmplStore types.ClusterWorkflowTemplateStore, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string, wfDefaults *v1alpha1.Workflow) *grpc.Server {
+	serverLog := logging.RequireLoggerFromContext(ctx)
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
 	grpc_prometheus.EnableHandlingTimeHistogram()
@@ -300,7 +319,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_prometheus.UnaryServerInterceptor,
-			grpc_logrus.UnaryServerInterceptor(serverLog),
+			grpcutil.LoggerUnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
@@ -309,7 +328,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
-			grpc_logrus.StreamServerInterceptor(serverLog),
+			grpcutil.LoggerStreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.gatekeeper.StreamServerInterceptor(),
@@ -324,17 +343,18 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
-	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
+	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService, wftmplStore, cwftmplStore))
+	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService, wftmplStore, cwftmplStore, wfDefaults))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, wfArchiveServer)
-	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService))
+	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService, cwftmplStore, wfDefaults))
 	grpc_prometheus.Register(grpcServer)
 	return grpcServer
 }
 
-// newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
+// newHTTPServer returns the HTTP handler to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) http.Handler {
+	log := logging.RequireLoggerFromContext(ctx)
 	endpoint := fmt.Sprintf("localhost:%d", port)
 	ipKeyFunc := httplimit.IPKeyFunc()
 	if ipKeyFuncHeadersStr := env.GetString("IP_KEY_FUNC_HEADERS", ""); ipKeyFuncHeadersStr != "" {
@@ -344,15 +364,12 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	rateLimitMiddleware, err := httplimit.NewMiddleware(as.apiRateLimiter, ipKeyFunc)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFatal().Error(ctx, err.Error())
 	}
 
 	mux := http.NewServeMux()
-	httpServer := http.Server{
-		Addr:      endpoint,
-		Handler:   rateLimitMiddleware.Handle(accesslog.Interceptor(mux)),
-		TLSConfig: as.tlsConfig,
-	}
+	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
+	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
@@ -365,7 +382,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	webhookInterceptor := webhook.Interceptor(as.clients.Kubernetes)
+	webhookInterceptor := webhook.NewWebhookInterceptor(log).Interceptor(as.clients.Kubernetes)
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
@@ -375,7 +392,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts,
-		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }),
+		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
 		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
 	)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -412,19 +429,18 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 					md.Append("cookie", c.Value)
 				}
 			}
-			ctx := metadata.NewIncomingContext(context.Background(), md)
+			ctx = metadata.NewIncomingContext(ctx, md)
 			if _, err := as.gatekeeper.Context(ctx); err != nil {
-				log.WithError(err).Error("failed to authenticate /metrics endpoint")
+				log.WithError(err).Error(ctx, "failed to authenticate /metrics endpoint")
 				w.WriteHeader(403)
 				return
 			}
 		}
 		promhttp.Handler().ServeHTTP(w, r)
-
 	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin).ServerFiles)
-	return &httpServer
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
+	return handler
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
@@ -438,16 +454,17 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 }
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown
-func (as *argoServer) checkServeErr(name string, err error) {
-	nameField := log.Fields{"name": name}
+func (as *argoServer) checkServeErr(ctx context.Context, name string, err error) {
+	log := logging.RequireLoggerFromContext(ctx)
+	nameField := logging.Fields{"name": name}
 	if err != nil {
 		if as.stopCh == nil {
 			// a nil stopCh indicates a graceful shutdown
-			log.WithFields(nameField).WithError(err).Info("graceful shutdown with error")
+			log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
 		} else {
-			log.WithFields(nameField).WithError(err).Fatalf("%s: %v", name, err)
+			log.WithFields(nameField).WithError(err).WithFatal().Error(ctx, "server failure")
 		}
 	} else {
-		log.WithFields(nameField).Info("graceful shutdown")
+		log.WithFields(nameField).Info(ctx, "graceful shutdown")
 	}
 }

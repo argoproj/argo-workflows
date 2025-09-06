@@ -9,6 +9,7 @@ import (
 // authorizingServerStream is a thin wrapper around grpc.ServerStream that allows modifying context and do RBAC via gatekeeper.
 type authorizingServerStream struct {
 	grpc.ServerStream
+	// nolint: containedctx
 	ctx context.Context
 	Gatekeeper
 }
@@ -35,7 +36,7 @@ func (l *authorizingServerStream) RecvMsg(m interface{}) error {
 	if err != nil {
 		return err
 	}
-	ctx, err := l.Gatekeeper.ContextWithRequest(l.ctx, m)
+	ctx, err := l.ContextWithRequest(l.ctx, m)
 	if err != nil {
 		return err
 	}

@@ -11,34 +11,19 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
-const (
-	nameK8sRequestTotal    = `k8s_request_total`
-	nameK8sRequestDuration = `k8s_request_duration`
-)
-
 func addK8sRequests(_ context.Context, m *Metrics) error {
-	err := m.CreateInstrument(telemetry.Int64Counter,
-		nameK8sRequestTotal,
-		"Number of kubernetes requests executed.",
-		"{request}",
-		telemetry.WithAsBuiltIn(),
-	)
+	err := m.CreateBuiltinInstrument(telemetry.InstrumentK8sRequestTotal)
 	if err != nil {
 		return err
 	}
-	err = m.CreateInstrument(telemetry.Float64Histogram,
-		nameK8sRequestDuration,
-		"Duration of kubernetes requests executed.",
-		"s",
-		telemetry.WithDefaultBuckets([]float64{0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 60.0, 180.0}),
-		telemetry.WithAsBuiltIn(),
-	)
+	err = m.CreateBuiltinInstrument(telemetry.InstrumentK8sRequestDuration)
 	// Register this metrics with the global
 	k8sMetrics.metrics = m
 	return err
 }
 
 type metricsRoundTripperContext struct {
+	// nolint: containedctx
 	ctx     context.Context
 	metrics *Metrics
 }
@@ -63,8 +48,8 @@ func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 			{Name: telemetry.AttribRequestVerb, Value: verb},
 			{Name: telemetry.AttribRequestCode, Value: x.StatusCode},
 		}
-		(*m.metrics).AddInt(m.ctx, nameK8sRequestTotal, 1, attribs)
-		(*m.metrics).Record(m.ctx, nameK8sRequestDuration, duration.Seconds(), attribs)
+		(*m.metrics).AddInt(m.ctx, telemetry.InstrumentK8sRequestTotal.Name(), 1, attribs)
+		(*m.metrics).Record(m.ctx, telemetry.InstrumentK8sRequestDuration.Name(), duration.Seconds(), attribs)
 	}
 	return x, err
 }

@@ -10,8 +10,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func tempFile(dir, prefix, suffix string) (*os.File, error) {
@@ -69,9 +70,9 @@ func TestTarDirectory(t *testing.T) {
 			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
 			require.NoError(t, err)
 
-			log.Infof("Taring to %s", f.Name())
+			ctx := logging.TestContext(t.Context())
 
-			err = TarGzToWriter(tt.src, tt.level, bufio.NewWriter(f))
+			err = TarGzToWriter(ctx, tt.src, tt.level, bufio.NewWriter(f))
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -122,9 +123,9 @@ func TestTarFile(t *testing.T) {
 			f, err := os.Create(dataTarPath)
 			require.NoError(t, err)
 
-			log.Infof("Taring to %s", f.Name())
+			ctx := logging.TestContext(t.Context())
 
-			err = TarGzToWriter(data.Name(), tt.level, bufio.NewWriter(f))
+			err = TarGzToWriter(ctx, data.Name(), tt.level, bufio.NewWriter(f))
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -163,9 +164,9 @@ func TestZipDirectory(t *testing.T) {
 			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
 			require.NoError(t, err)
 
-			log.Infof("Zipping to %s", f.Name())
+			ctx := logging.TestContext(t.Context())
 
-			err = ZipToWriter(tt.src, zip.NewWriter(f))
+			err = ZipToWriter(ctx, tt.src, zip.NewWriter(f))
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -194,7 +195,9 @@ func TestZipFile(t *testing.T) {
 		f, err := os.Create(dataZipPath)
 		require.NoError(t, err)
 
-		err = ZipToWriter(data.Name(), zip.NewWriter(f))
+		ctx := logging.TestContext(t.Context())
+
+		err = ZipToWriter(ctx, data.Name(), zip.NewWriter(f))
 		require.NoError(t, err)
 
 		err = os.Remove(data.Name())

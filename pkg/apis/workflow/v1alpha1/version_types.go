@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"errors"
 	"regexp"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type Version struct {
@@ -24,7 +26,18 @@ var verRe = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)`)
 func (v Version) MajorMinorPatch() (string, string, string, error) {
 	matches := verRe.FindStringSubmatch(v.Version)
 	if matches == nil || matches[1] == "0" {
-		return ``, ``, ``, errors.New("Not a formal release")
+		return ``, ``, ``, errors.New("not a formal release")
 	}
 	return matches[1], matches[2], matches[3], nil
+}
+
+func (v Version) Fields() logging.Fields {
+	return logging.Fields{
+		"version":      v.Version,
+		"buildDate":    v.BuildDate,
+		"gitCommit":    v.GitCommit,
+		"gitTag":       v.GitTag,
+		"gitTreeState": v.GitTreeState,
+		"goVersion":    v.GoVersion,
+	}
 }

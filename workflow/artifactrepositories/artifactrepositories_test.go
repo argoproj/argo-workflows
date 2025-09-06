@@ -1,7 +1,6 @@
 package artifactrepositories
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +10,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestArtifactRepositories(t *testing.T) {
@@ -24,7 +24,7 @@ func TestArtifactRepositories(t *testing.T) {
 	k := kubefake.NewSimpleClientset()
 	i := New(k, "my-ctrl-ns", defaultArtifactRepository)
 	t.Run("Explicit.WorkflowNamespace", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
 			Data: map[string]string{"my-key": `
@@ -50,7 +50,7 @@ s3:
 		require.NoError(t, err)
 	})
 	t.Run("Explicit.ControllerNamespace", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := k.CoreV1().ConfigMaps("my-ctrl-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
 			Data: map[string]string{"my-key": `
@@ -76,12 +76,12 @@ s3:
 		require.NoError(t, err)
 	})
 	t.Run("Explicit.ConfigMapNotFound", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{}, "my-wf-ns")
 		require.Error(t, err)
 	})
 	t.Run("Explicit.ConfigMapMissingKey", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := k.CoreV1().ConfigMaps("my-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
 		}, metav1.CreateOptions{})
@@ -94,7 +94,7 @@ s3:
 		require.NoError(t, err)
 	})
 	t.Run("WorkflowNamespaceDefault", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "artifact-repositories",
@@ -123,7 +123,7 @@ s3:
 		require.NoError(t, err)
 	})
 	t.Run("DefaultWithNamespace", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "artifact-repositories",
@@ -139,7 +139,7 @@ s3:
 		require.NoError(t, err)
 	})
 	t.Run("Default", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := logging.TestContext(t.Context())
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		require.NoError(t, err)
 		assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)

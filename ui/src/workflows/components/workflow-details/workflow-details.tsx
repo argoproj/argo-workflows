@@ -98,6 +98,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const namespace = match.params.namespace;
     const name = match.params.name;
 
+    const isFirstRender = useRef(true);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -163,6 +164,10 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
@@ -429,7 +434,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        openLinkWithKey(processURL(link.url, object));
+        openLinkWithKey(processURL(link.url, object), link.target);
     }
 
     function setParameter(key: string, value: string) {

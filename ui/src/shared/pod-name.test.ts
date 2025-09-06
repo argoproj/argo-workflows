@@ -1,12 +1,23 @@
+import {TextEncoder} from 'util';
+
 import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
 import {NodeStatus, Workflow} from './models';
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
+
+global.TextEncoder = TextEncoder;
 
 describe('pod names', () => {
     test('createFNVHash', () => {
         expect(createFNVHash('hello')).toEqual(1335831723);
         expect(createFNVHash('world')).toEqual(933488787);
         expect(createFNVHash('You cannot alter your fate. However, you can rise to meet it.')).toEqual(827171719);
+    });
+
+    test('createFNVHash with multibyte characters', () => {
+        expect(createFNVHash('こんにちは')).toEqual(486186189);
+        expect(createFNVHash('ワークフロー')).toEqual(1626941668);
+        expect(createFNVHash('テスト用の日本語文字列')).toEqual(1519251954);
+        expect(createFNVHash('🚀✨🔥')).toEqual(2133319838); // Emoji test
     });
 
     // note: the below is intended to be equivalent to the server-side Go code in workflow/util/pod_name_test.go
@@ -24,6 +35,24 @@ describe('pod names', () => {
         expected = `${longWfName}-${longTemplateName}`;
         const actual = ensurePodNamePrefixLength(expected);
         expect(actual.length).toEqual(maxK8sResourceNameLength - k8sNamingHashLength - 1);
+    });
+
+    test('ensurePodNamePrefixLength with multibyte characters', () => {
+        const multibyteWfName = '日本語ワークフロー名';
+        const multibyteTemplateName = 'テンプレート名サンプル';
+
+        let expected = `${multibyteWfName}-${multibyteTemplateName}`;
+        expect(ensurePodNamePrefixLength(expected)).toEqual(expected);
+
+        const longMultibyteWfName = '非常に長い日本語のワークフロー名で色々な文字を含んでいます例えば記号や絵文字なども含まれています🚀✨🔥';
+        const longMultibyteTemplateName = 'こちらも非常に長いテンプレート名でマルチバイト文字をたくさん使っています全角スペースも　含まれています';
+
+        expected = `${longMultibyteWfName}-${longMultibyteTemplateName}`;
+        const actual = ensurePodNamePrefixLength(expected);
+        expect(actual.length).toBeLessThanOrEqual(maxK8sResourceNameLength - k8sNamingHashLength - 1);
+        if (expected.length > maxK8sResourceNameLength - k8sNamingHashLength - 1) {
+            expect(actual.length).toBeLessThanOrEqual(maxK8sResourceNameLength - k8sNamingHashLength - 1);
+        }
     });
 
     test('getPodName', () => {
@@ -57,6 +86,44 @@ describe('pod names', () => {
         node.templateName = longTemplateName;
         const name = getPodName(wf, node);
         expect(name.length).toEqual(maxK8sResourceNameLength);
+    });
+
+    test('getPodName with multibyte characters', () => {
+        const multibyteWfName = '日本語ワークフロー';
+        const multibyteTemplateName = 'テンプレート名';
+        const multibyteNodeName = 'ノード名サンプル';
+
+        const node = {
+            name: multibyteNodeName,
+            id: '1',
+            templateName: multibyteTemplateName
+        } as unknown as NodeStatus;
+
+        const wf = {
+            metadata: {
+                name: multibyteWfName,
+                annotations: {
+                    [ANNOTATION_KEY_POD_NAME_VERSION]: POD_NAME_V2
+                }
+            }
+        } as unknown as Workflow;
+
+        const expectedPodName = `${multibyteWfName}-${multibyteTemplateName}-${createFNVHash(multibyteNodeName)}`;
+        expect(getPodName(wf, node)).toEqual(expectedPodName);
+
+        const longMultibyteWfName = '非常に長い日本語のワークフロー名で色々な文字を含んでいます例えば記号や絵文字なども含まれています🚀✨🔥';
+        const longMultibyteTemplateName = 'こちらも非常に長いテンプレート名でマルチバイト文字をたくさん使っています全角スペースも　含まれています';
+
+        wf.metadata.name = longMultibyteWfName;
+        node.templateName = longMultibyteTemplateName;
+
+        const name = getPodName(wf, node);
+        expect(name.length).toBeLessThanOrEqual(maxK8sResourceNameLength);
+
+        const containerSetNodeName = `${multibyteNodeName}.コンテナ名`;
+        expect(getPodName(wf, {...node, name: containerSetNodeName, type: 'Container'})).toEqual(
+            `${ensurePodNamePrefixLength(`${longMultibyteWfName}-${longMultibyteTemplateName}`)}-${createFNVHash(multibyteNodeName)}`
+        );
     });
 
     test('getTemplateNameFromNode', () => {
