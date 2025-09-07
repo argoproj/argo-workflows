@@ -2,19 +2,18 @@ package events
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/v2"
 )
 
 // by default, allow a source to send 10000 events about an object
@@ -60,17 +59,6 @@ func customEventAggregatorFuncWithAnnotations(event *apiv1.Event) (string, strin
 		""), event.Message
 }
 
-type debugfAdapter struct {
-	logger logging.Logger
-}
-
-// debugfAdapter adapts the logging system to the signature expected by StartLogging.
-func (a *debugfAdapter) Debugf(format string, args ...interface{}) {
-	// nolint:contextcheck
-	msg := fmt.Sprintf(format, args...)
-	a.logger.Debug(context.Background(), msg)
-}
-
 func (m *eventRecorderManager) Get(ctx context.Context, namespace string) record.EventRecorder {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -78,10 +66,13 @@ func (m *eventRecorderManager) Get(ctx context.Context, namespace string) record
 	if ok {
 		return eventRecorder
 	}
+
+	setupKlogAdapter(ctx)
+
 	eventCorrelationOption := record.CorrelatorOptions{BurstSize: defaultSpamBurst, KeyFunc: customEventAggregatorFuncWithAnnotations}
 	eventBroadcaster := record.NewBroadcasterWithCorrelatorOptions(eventCorrelationOption)
-	adapter := &debugfAdapter{logger: logging.RequireLoggerFromContext(ctx)}
-	eventBroadcaster.StartLogging(adapter.Debugf)
+
+	eventBroadcaster.StartStructuredLogging(klog.Level(0)) // Info level
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: m.kubernetes.CoreV1().Events(namespace)})
 	m.eventRecorders[namespace] = eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: "workflow-controller"})
 	return m.eventRecorders[namespace]
