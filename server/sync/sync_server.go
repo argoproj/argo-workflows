@@ -31,17 +31,26 @@ func (s *syncServer) CreateSyncLimit(ctx context.Context, req *syncpkg.CreateSyn
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
 
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      req.Name,
-			Namespace: req.Namespace,
-		},
-		Data: map[string]string{
-			req.Key: fmt.Sprint(req.SizeLimit),
-		},
+	cm, err := configmapGetter.Get(ctx, req.Name, metav1.GetOptions{})
+	if err == nil {
+		_, has := cm.Data[req.Key]
+		if !has {
+			return nil, fmt.Errorf("sync limit cannot be created as it already exists")
+		}
+		cm.Data[req.Key] = fmt.Sprint(req.SizeLimit)
+	} else {
+		cm = &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      req.Name,
+				Namespace: req.Namespace,
+			},
+			Data: map[string]string{
+				req.Key: fmt.Sprint(req.SizeLimit),
+			},
+		}
 	}
 
-	cm, err := configmapGetter.Create(ctx, cm, metav1.CreateOptions{})
+	cm, err = configmapGetter.Create(ctx, cm, metav1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			return s.updateSyncLimit(ctx, &syncpkg.UpdateSyncLimitRequest{
