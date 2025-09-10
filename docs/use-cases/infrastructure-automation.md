@@ -2,7 +2,6 @@
 
 ## Docs
 
-* [Quick start](../quick-start.md) and [training](../training.md)
 * Head to the [Argo Events](https://argoproj.github.io/argo-events/) docs.
 
 ## Videos
