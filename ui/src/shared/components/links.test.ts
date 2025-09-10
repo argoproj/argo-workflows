@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import {processURL} from './links';
 
 describe('process URL', () => {

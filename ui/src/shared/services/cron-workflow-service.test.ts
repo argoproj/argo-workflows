@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import {exampleCronWorkflow} from '../examples';
 import {CronWorkflowService} from './cron-workflow-service';
 import requests from './requests';
