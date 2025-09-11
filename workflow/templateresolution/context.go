@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	listers "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -55,6 +56,18 @@ type NullClusterWorkflowTemplateGetter struct{}
 func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	return nil, errors.Errorf("", "invalid spec: clusterworkflowtemplates.argoproj.io `%s` is "+
 		"forbidden: User cannot get resource 'clusterworkflowtemplates' in API group argoproj.io at the cluster scope", name)
+}
+
+type clusterWorkflowTemplateListerWrapper struct {
+	lister listers.ClusterWorkflowTemplateLister
+}
+
+func WrapClusterWorkflowTemplateLister(lister listers.ClusterWorkflowTemplateLister) ClusterWorkflowTemplateGetter {
+	return &clusterWorkflowTemplateListerWrapper{lister: lister}
+}
+
+func (w *clusterWorkflowTemplateListerWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return w.lister.Get(name)
 }
 
 // Get retrieves the WorkflowTemplate of a given name.
