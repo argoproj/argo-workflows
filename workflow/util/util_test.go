@@ -4180,7 +4180,7 @@ func TestRegressions(t *testing.T) {
 
 func TestFormulateRetryWorkflowWithParams(t *testing.T) {
 	// Test from issue #14769
-	ctx := logging.TestContext(t.Context())
+	ctx := context.Background()
 	wfClientSet := argofake.NewSimpleClientset()
 
 	// Use the workflow from out.yaml as test input
