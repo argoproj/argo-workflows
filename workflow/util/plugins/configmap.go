@@ -34,8 +34,9 @@ func ToConfigMap(p *spec.Plugin) (*apiv1.ConfigMap, error) {
 			Namespace: p.Namespace,
 		},
 		Data: map[string]string{
-			"sidecar.automountServiceAccountToken": fmt.Sprint(p.Spec.Sidecar.AutomountServiceAccountToken),
-			"sidecar.container":                    string(data),
+			"sidecar.automountServiceAccountToken":         fmt.Sprint(p.Spec.Sidecar.AutomountServiceAccountToken),
+			"sidecar.container":                            string(data),
+			"sidecar.automountWorkflowServiceAccountToken": fmt.Sprint(p.Spec.Sidecar.AutomountWorkflowServiceAccountToken),
 		},
 	}
 	for k, v := range p.Annotations {
@@ -66,6 +67,7 @@ func FromConfigMap(cm *apiv1.ConfigMap) (*spec.Plugin, error) {
 	}
 	delete(p.Labels, common.LabelKeyConfigMapType)
 	p.Spec.Sidecar.AutomountServiceAccountToken = cm.Data["sidecar.automountServiceAccountToken"] == "true"
+	p.Spec.Sidecar.AutomountWorkflowServiceAccountToken = cm.Data["sidecar.automountWorkflowServiceAccountToken"] == "true"
 	if err := yaml.UnmarshalStrict([]byte(cm.Data["sidecar.container"]), &p.Spec.Sidecar.Container); err != nil {
 		return nil, err
 	}
