@@ -904,6 +904,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when deleting completed pods|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata defines additional metadata that should be applied to workflow pods|
+|`podMetadataPatch`|`string`|PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
@@ -1860,6 +1861,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
+|`podMetadataPatch`|`string`|PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|

@@ -3772,6 +3772,8 @@ spec:
                       type: string
                     type: object
                 type: object
+              podMetadataPatch:
+                type: string
               podPriorityClassName:
                 description: PriorityClassName to apply to workflow pods.
                 type: string
@@ -16931,6 +16933,8 @@ spec:
                       "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
+                  podMetadataPatch:
+                    type: string
                   podSpecPatch:
                     description: |-
                       PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -38650,6 +38654,8 @@ spec:
                         "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                    podMetadataPatch:
+                      type: string
                     podSpecPatch:
                       description: |-
                         PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
