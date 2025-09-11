@@ -995,6 +995,9 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
 			resetFunc(curr.parent.n.ID)
 		}
+		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeTaskGroup {
+			resetFunc(curr.parent.n.ID)
+		}
 		seekingBoundaryID := curr.n.BoundaryID
 		if seekingBoundaryID == "" {
 			return curr.parent, nil
