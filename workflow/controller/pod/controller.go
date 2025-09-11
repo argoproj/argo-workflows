@@ -58,7 +58,7 @@ type Controller struct {
 
 // NewController creates a pod controller
 func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
-	log := logrus.New()
+	log := logrus.StandardLogger()
 	podController := &Controller{
 		config:        config,
 		kubeclientset: clientSet,
