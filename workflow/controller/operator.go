@@ -443,6 +443,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
+	// Update global parameters from workflow outputs before running onExit handler
+	// This ensures that onExit handlers can access DAG task outputs via workflow.outputs.parameters
+	if woc.wf.Status.Outputs != nil {
+		for _, param := range woc.wf.Status.Outputs.Parameters {
+			if param.HasValue() {
+				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+			}
+		}
+	}
+
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.HasExitHook() {
 		woc.log.WithField("onExit", woc.execWf.Spec.OnExit).Info(ctx, "Running OnExit handler")
@@ -662,13 +672,6 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			}
 		} else {
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
-		}
-	}
-	if woc.wf.Status.Outputs != nil {
-		for _, param := range woc.wf.Status.Outputs.Parameters {
-			if param.HasValue() {
-				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
-			}
 		}
 	}
 
