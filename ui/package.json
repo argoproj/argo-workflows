@@ -36,7 +36,7 @@
         "react-monaco-editor": "^0.50.1",
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
-        "superagent": "^8.1.2",
+        "superagent": "^10.2.3",
         "yaml": "^2.5.1"
     },
     "devDependencies": {
