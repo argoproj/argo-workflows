@@ -7,6 +7,7 @@ export const labels = {
     creatorEmail: 'workflows.argoproj.io/creator-email',
     creatorPreferredUsername: 'workflows.argoproj.io/creator-preferred-username',
     cronWorkflow: 'workflows.argoproj.io/cron-workflow',
+    sensor: 'workflows.argoproj.io/sensor',
     workflowTemplate: 'workflows.argoproj.io/workflow-template'
 };
 
