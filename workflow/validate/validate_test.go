@@ -3365,3 +3365,73 @@ func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
 	// Do not allow leading or trailing spaces in parameters
 	require.ErrorContains(t, err, "failed to resolve {{  workflow.thisdoesnotexist  }}")
 }
+
+var dynamicWorkflowTemplateARefB = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-a
+spec:
+  templates:
+  - name: template-a
+    inputs:
+      parameters:
+        - name: message
+    steps:
+      - - name: step-a
+          templateRef:
+            name: workflow-template-b
+            template: "{{ inputs.parameters.message }}"
+`
+
+var dynamicWorkflowTemplateRefB = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-b
+spec:
+  templates:
+  - name: template-b
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello from template"]
+`
+
+var dynamicTemplateRefWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dynamic-workflow-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    steps:
+      - - name: whalesay
+          templateRef:
+            name: workflow-template-a
+            template: template-a
+          arguments:
+            parameters:
+              - name: message
+                value: "template-b"
+`
+
+func TestDynamicWorkflowTemplateRef(t *testing.T) {
+  ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dynamicTemplateRefWorkflow)
+	wftmplA := wfv1.MustUnmarshalWorkflowTemplate(dynamicWorkflowTemplateARefB)
+	wftmplB := wfv1.MustUnmarshalWorkflowTemplate(dynamicWorkflowTemplateRefB)
+
+	err := createWorkflowTemplate(ctx, wftmplA)
+	require.NoError(t, err)
+	err = createWorkflowTemplate(ctx, wftmplB)
+	require.NoError(t, err)
+
+	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	require.NoError(t, err)
+
+	_ = deleteWorkflowTemplate(ctx, wftmplA.Name)
+	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
+}
