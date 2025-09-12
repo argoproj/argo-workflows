@@ -1212,7 +1212,7 @@ spec:
 `
 
 func TestDynamicWorkflowTemplateRefCC(t *testing.T) {
-  ctx := logging.TestContext(t.Context())
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(dagWithItemTemplateRefWf)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(dagWithItemTemplateRefTmpl)
 
