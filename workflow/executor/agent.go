@@ -250,18 +250,11 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		return 0, nil
 	}
 
-	response, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
+	response, bodyString, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
 	if err != nil {
 		return 0, err
 	}
-	defer response.Body.Close()
-
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, err
-	}
-
-	outputs := wfv1.Outputs{Result: ptr.To(string(bodyBytes))}
+	outputs := wfv1.Outputs{Result: ptr.To(bodyString)}
 	phase := wfv1.NodeSucceeded
 	message := ""
 	if tmpl.HTTP.SuccessCondition == "" {
@@ -282,7 +275,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 			},
 			"response": map[string]interface{}{
 				"statusCode": response.StatusCode,
-				"body":       string(bodyBytes),
+				"body":       bodyString,
 				"headers":    response.Header,
 			},
 		}
@@ -313,7 +306,9 @@ var httpClients = map[bool]*http.Client{
 	true:  httpClientSkip,
 }
 
-func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
+// Return response.Body in string directly for sometimes read after call cancel() return a context canceled error
+// For more detail  https://groups.google.com/g/golang-nuts/c/2FKwG6oEvos
+func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, string, error) {
 	var (
 		request *http.Request
 		err     error
@@ -326,7 +321,7 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		request, err = http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	}
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if httpTemplate.TimeoutSeconds != nil {
@@ -342,7 +337,7 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
 			secret, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
 			value = string(secret)
 		}
@@ -356,9 +351,16 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 
 	response, err := httpClients[httpTemplate.InsecureSkipVerify].Do(request)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return response, nil
+
+	defer response.Body.Close()
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	return response, string(bodyBytes), nil
 }
 
 func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
