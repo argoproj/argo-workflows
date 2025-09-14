@@ -927,6 +927,9 @@ func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
 func (wfc *WorkflowController) recordWorkflowResourceVersion(key string, resourceVersion string) {
 	wfc.workflowRecentResourceVersion.mutex.Lock()
 	defer wfc.workflowRecentResourceVersion.mutex.Unlock()
+	if wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap == nil {
+		wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap = make(map[string]string)
+	}
 	wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap[key] = resourceVersion
 }
 
