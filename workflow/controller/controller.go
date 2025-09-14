@@ -235,6 +235,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		return nil, err
 	}
 
+	wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap = make(map[string]string)
+
 	deprecation.Initialize(wfc.metrics.DeprecatedFeature)
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
