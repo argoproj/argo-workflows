@@ -82,6 +82,11 @@ type recentCompletions struct {
 	mutex       gosync.RWMutex
 }
 
+type workflowRecentResourceVersion struct {
+	workflowRecentResourceVersionMap map[string]string
+	mutex                            gosync.RWMutex
+}
+
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -153,6 +158,8 @@ type WorkflowController struct {
 	recentCompletions recentCompletions
 	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
 	lastUnreconciledWorkflows map[string]*wfv1.Workflow
+	// workflowRecentResourceVersion is a struct that store the latest resource version of the controller update
+	workflowRecentResourceVersion workflowRecentResourceVersion
 }
 
 const (
@@ -740,6 +747,12 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	latestResourceVersion := wfc.getWorkflowResourceVersion(key)
+	if latestResourceVersion != "" && wf.GetResourceVersion() != "" && util.OutDateResourceVersion(wf.GetResourceVersion(), latestResourceVersion) {
+		logger.WithField("key", key).Info(ctx, "Workflow is outdated, waiting new event to update informer.")
+		return true
+	}
+
 	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.Name) {
 		logger.WithField("name", wf.ObjectMeta.Name).Warn(ctx, "Cache: Rejecting recently deleted")
 		return true
@@ -909,6 +922,24 @@ func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
 	}
 }
 
+func (wfc *WorkflowController) recordWorkflowResourceVersion(key string, resourceVersion string) {
+	wfc.workflowRecentResourceVersion.mutex.Lock()
+	defer wfc.workflowRecentResourceVersion.mutex.Unlock()
+	wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap[key] = resourceVersion
+}
+
+func (wfc *WorkflowController) getWorkflowResourceVersion(key string) string {
+	wfc.workflowRecentResourceVersion.mutex.RLock()
+	defer wfc.workflowRecentResourceVersion.mutex.RUnlock()
+	return wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap[key]
+}
+
+func (wfc *WorkflowController) deleteWorkflowResourceVersion(key string) {
+	wfc.workflowRecentResourceVersion.mutex.Lock()
+	defer wfc.workflowRecentResourceVersion.mutex.Unlock()
+	delete(wfc.workflowRecentResourceVersion.workflowRecentResourceVersionMap, key)
+}
+
 // Returns true if the workflow given by key is in the recently completed
 // list. Will perform expiry cleanup before checking.
 func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
@@ -999,6 +1030,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
+						// delete the workflow resource version
+						wfc.deleteWorkflowResourceVersion(key)
 					}
 				},
 			},
