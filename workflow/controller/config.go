@@ -115,7 +115,7 @@ func (wfc *WorkflowController) executorImage() string {
 	if v := wfc.Config.GetExecutor().Image; v != "" {
 		return v
 	}
-	return fmt.Sprintf("artifactory-ha.mlp.com/in-publiccloud-docker-virtual/argoproj/argoexec:%s", argo.ImageTag())
+	return fmt.Sprintf("quay.io/argoproj/argoexec:%s", argo.ImageTag())
 }
 
 func (wfc *WorkflowController) executorLogFormat() string {
