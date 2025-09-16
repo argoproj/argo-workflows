@@ -209,6 +209,53 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
+func TestExpandTaskWithParam(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	task := wfv1.DAGTask{
+		Name:     "fanout-param",
+		Template: "tmpl",
+		Arguments: wfv1.Arguments{
+			Parameters: []wfv1.Parameter{{
+				Name:  "msg",
+				Value: wfv1.AnyStringPtr("{{item}}"),
+			}},
+		},
+		WithParam: `[1234, "foo\tbar", true, []]`,
+	}
+
+	expanded, err := expandTask(ctx, task, map[string]string{})
+	require.NoError(t, err)
+	require.Len(t, expanded, 4)
+
+	expectedExpandedTasks := []struct {
+		Name      string
+		Parameter string
+	}{
+		{
+			Name:      "fanout-param(0:1234)",
+			Parameter: "1234",
+		},
+		{
+			Name:      `fanout-param(1:foo\tbar)`,
+			Parameter: "foo\tbar",
+		},
+		{
+			Name:      "fanout-param(2:true)",
+			Parameter: "true",
+		},
+		{
+			Name:      "fanout-param(3:[])",
+			Parameter: "[]",
+		},
+	}
+
+	for i, expected := range expectedExpandedTasks {
+		assert.Equal(t, expected.Name, expanded[i].Name)
+		assert.Equal(t, "tmpl", expanded[i].Template)
+		assert.Equal(t, expected.Parameter, expanded[i].Arguments.Parameters[0].Value.String())
+	}
+}
+
 func TestEvaluateDependsLogic(t *testing.T) {
 	testTasks := []wfv1.DAGTask{
 		{
