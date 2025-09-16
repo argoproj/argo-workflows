@@ -64,3 +64,4 @@ func TestNewDriverS3(t *testing.T) {
 	assert.Equal(t, art.S3.SecretKeySecret.Key+"-secret", artDriver.SecretKey)
 	assert.Equal(t, art.S3.SessionTokenSecret.Key+"-secret", artDriver.SessionToken)
 }
+
