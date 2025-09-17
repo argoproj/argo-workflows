@@ -808,6 +808,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
+	key := wf.Namespace + "/" + wf.Name
+	// Record the latest workflow resource version
+	woc.controller.recordWorkflowResourceVersion(key, woc.wf.ResourceVersion)
+
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
 		woc.controller.metrics.CompleteRealtimeMetricsForWfUID(string(woc.wf.GetUID()))

@@ -1614,3 +1614,22 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 	}
 	return waitCtrIndex, nil
 }
+
+// OutDateResourceVersion checks whether the resourceVersion is outdated
+func OutDateResourceVersion(currentRV, cachedRV string) bool {
+	// Parse both resourceVersions as integers
+	current, err2 := strconv.ParseInt(currentRV, 10, 64)
+	cached, err1 := strconv.ParseInt(cachedRV, 10, 64)
+
+	// If either is invalid, assume currentRV is outdated
+	if err1 != nil || err2 != nil {
+		return false
+	}
+
+	// If cached RV is much larger than current, then current is old
+	if current < cached {
+		return true
+	}
+
+	return false
+}
