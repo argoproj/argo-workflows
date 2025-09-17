@@ -13,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
 )
 
 // semaphoreFactory is a function that creates a semaphore for testing
@@ -27,13 +28,13 @@ func createTestInternalSemaphore(ctx context.Context, t *testing.T, name, namesp
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
-func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, dbInfo, func()) {
+func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, syncdb.DBInfo, func()) {
 	t.Helper()
 	info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
 	require.NoError(t, err)
 
 	dbKey := fmt.Sprintf("%s/%s", namespace, name)
-	_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
+	_, err = info.Session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
 	require.NoError(t, err)
 
 	s, err := newDatabaseSemaphore(ctx, name, dbKey, nextWorkflow, info, cacheTTL)
@@ -47,14 +48,14 @@ func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namesp
 func createTestDatabaseSemaphorePostgres(ctx context.Context, t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
 	s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, name, namespace, limit, 0, nextWorkflow, sqldb.Postgres)
-	return s, info.session, deferfunc
+	return s, info.Session, deferfunc
 }
 
 // createTestDatabaseSemaphoreMySQL creates a database-backed semaphore that conforms to the factory
 func createTestDatabaseSemaphoreMySQL(ctx context.Context, t *testing.T, name, namespace string, limit int, nextWorkflow NextWorkflow) (semaphore, db.Session, func()) {
 	t.Helper()
 	s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, name, namespace, limit, 0, nextWorkflow, sqldb.MySQL)
-	return s, info.session, deferfunc
+	return s, info.Session, deferfunc
 }
 
 // semaphoreFactories defines the available semaphore implementations for testing

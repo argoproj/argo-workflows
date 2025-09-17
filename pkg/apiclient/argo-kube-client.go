@@ -15,6 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -22,6 +23,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	clusterworkflowtmplserver "github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	cronworkflowserver "github.com/argoproj/argo-workflows/v3/server/cronworkflow"
+	syncserver "github.com/argoproj/argo-workflows/v3/server/sync"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	workflowserver "github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
@@ -200,4 +202,8 @@ func (a *argoKubeClient) NewInfoServiceClient() (infopkg.InfoServiceClient, erro
 
 func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, error) {
 	return &errorTranslatingWorkflowClusterTemplateServiceClient{&argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer(a.instanceIDService, a.cwfTmplStore, nil)}}, nil
+}
+
+func (a *argoKubeClient) NewSyncServiceClient(ctx context.Context) (syncpkg.SyncServiceClient, error) {
+	return &errorTranslatingArgoKubeSyncServiceClient{&argoKubeSyncServiceClient{syncserver.NewSyncServer(ctx, nil, "", nil)}}, nil
 }

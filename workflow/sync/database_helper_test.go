@@ -14,6 +14,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
 )
 
 const (
@@ -23,7 +24,7 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (dbInfo, func(), config.SyncConfig, error) {
+func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.DBInfo, func(), config.SyncConfig, error) {
 	t.Helper()
 
 	var cfg config.SyncConfig
@@ -40,28 +41,28 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 		t.Fatalf("failed to start container: %s", err)
 	}
 
-	info := dbInfo{
-		config:  dbConfigFromConfig(&cfg),
-		session: dbSessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
+	info := syncdb.DBInfo{
+		Config:  syncdb.DBConfigFromConfig(&cfg),
+		Session: syncdb.DBSessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
 	}
-	require.NotNil(t, info.session, "failed to create database session")
+	require.NotNil(t, info.Session, "failed to create database session")
 	deferfn := func() {
-		info.session.Close()
+		info.Session.Close()
 		termContainerFn()
 	}
 
-	info.migrate(ctx)
-	require.NotNil(t, info.session, "failed to migrate database")
+	info.Migrate(ctx)
+	require.NotNil(t, info.Session, "failed to migrate database")
 
 	// Mark this controller as alive immediately
-	_, err = info.session.Collection(info.config.controllerTable).
-		Insert(&controllerHealthRecord{
-			Controller: info.config.controllerName,
+	_, err = info.Session.Collection(info.Config.ControllerTable).
+		Insert(&syncdb.ControllerHealthRecord{
+			Controller: info.Config.ControllerName,
 			Time:       time.Now(),
 		})
 	if err != nil {
-		info.session.Close()
-		info.session = nil
+		info.Session.Close()
+		info.Session = nil
 		return info, deferfn, cfg, err
 	}
 

@@ -1,6 +1,10 @@
 package sync
 
-func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo) *databaseSemaphore {
+import (
+	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+)
+
+func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info syncdb.DBInfo) *databaseSemaphore {
 	logger := syncLogger{
 		name:     name,
 		lockType: lockTypeMutex,
@@ -12,6 +16,7 @@ func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 		info:         info,
+		queries:      syncdb.NewSyncQueries(info.Session, info.Config),
 		isMutex:      true,
 	}
 }
