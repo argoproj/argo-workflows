@@ -774,6 +774,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
 		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
+			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
 			return
 		}

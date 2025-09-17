@@ -83,6 +83,8 @@ const (
 	// * `Persisted` - has been archived and retrieved from db
 	// See also `LabelKeyCompleted`.
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
+	// LabelKeyReApplyFailed is the pod metadata label to indicate if the pod re-apply failed
+	LabelKeyReApplyFailed = workflow.WorkflowFullName + "/reapply"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.

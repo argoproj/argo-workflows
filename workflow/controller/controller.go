@@ -763,7 +763,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if !reconciliationNeeded(woc.wf) {
+		if !reconciliationNeeded(woc.wf) && !reapplyFailed(woc.wf) {
 			wfc.throttler.Remove(key)
 		}
 	}()
@@ -825,6 +825,10 @@ func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string)
 
 func reconciliationNeeded(wf metav1.Object) bool {
 	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
+}
+
+func reapplyFailed(wf metav1.Object) bool {
+	return wf.GetLabels()[common.LabelKeyReApplyFailed] == "true"
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
