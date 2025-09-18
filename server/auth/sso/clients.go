@@ -12,7 +12,8 @@ type HttpClientConfig struct {
 	ClientCert         string
 	ClientKey          string
 	InsecureSkipVerify bool
-	CACert             string
+	RootCA             string
+	RootCAFile         string	
 }
 
 func createHttpClient(config HttpClientConfig) (*http.Client, error) {
@@ -29,17 +30,29 @@ func createHttpClient(config HttpClientConfig) (*http.Client, error) {
 	tlsConfig.InsecureSkipVerify = config.InsecureSkipVerify
 
 	// Set RootCAs if provided
-	if config.CACert != "" {
-		// Load the CA certificate(s)
+	// Load root CA certificates from both string and file if defined
+	if config.RootCA != "" || config.RootCAFile != "" {
 		rootCAs := x509.NewCertPool()
-		caCert, err := os.ReadFile(config.CACert)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read CA certificate: %w", err)
+		
+		// Add certificates from PEM string if provided
+		if config.RootCA != "" {
+			if ok := rootCAs.AppendCertsFromPEM([]byte(config.RootCA)); !ok {
+				return nil, fmt.Errorf("failed to append certificates from PEM string")
+			}
 		}
-
-		if ok := rootCAs.AppendCertsFromPEM(caCert); !ok {
-			return nil, fmt.Errorf("failed to append CA certificate")
+		
+		// Add certificates from file if provided
+		if config.RootCAFile != "" {
+			rootCAFile, err := os.ReadFile(config.RootCAFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read CA certificate file: %w", err)
+			}
+			
+			if ok := rootCAs.AppendCertsFromPEM(rootCAFile); !ok {
+				return nil, fmt.Errorf("failed to append CA certificate from file")
+			}
 		}
+		
 		tlsConfig.RootCAs = rootCAs
 	}
 
