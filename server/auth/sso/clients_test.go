@@ -47,7 +47,8 @@ func TestCreateHttpClient_Success(t *testing.T) {
 		ClientCert:         certFilePath,
 		ClientKey:          keyFilePath,
 		InsecureSkipVerify: false,
-		CACert:             certFilePath,
+		RootCA:             certContent,
+		RootCAFile:         certFilePath,
 	}
 
 	httpClient, err := createHttpClient(config)
