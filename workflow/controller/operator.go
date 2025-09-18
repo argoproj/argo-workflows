@@ -3617,21 +3617,6 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
-	// attach the labels for better tracking
-	labels := obj.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-	labels[common.LabelKeyResourceParentPodName] = wfutil.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, node.ID, wfutil.GetWorkflowPodNameVersion(woc.wf))
-	labels[common.LabelKeyResourceParentWorkflowName] = woc.wf.Name
-	obj.SetLabels(labels)
-
-	bytes, err := yaml.Marshal(obj.Object)
-	if err != nil {
-		return node, err
-	}
-	tmpl.Resource.Manifest = string(bytes)
-
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts(ctx)...)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
