@@ -123,7 +123,7 @@ func newSso(
 	// Create http client
 	httpClient, err := createHttpClient(httpClientConfig)
 	if err != nil {
-		log.Fatalf("failed to create HTTP client: %v", err)
+		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
 	oidcContext := oidc.ClientContext(ctx, httpClient)
