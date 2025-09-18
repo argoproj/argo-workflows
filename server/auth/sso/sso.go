@@ -117,7 +117,8 @@ func newSso(
 		ClientCert:         c.ClientCert,
 		ClientKey:          c.ClientKey,
 		InsecureSkipVerify: c.InsecureSkipVerify,
-		CACert:             c.CACert,
+		RootCA:             c.RootCA,
+		RootCAFile:         c.RootCAFile,		
 	}
 
 	// Create http client
