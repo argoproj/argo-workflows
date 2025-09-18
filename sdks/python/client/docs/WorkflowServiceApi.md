@@ -11823,6 +11823,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
+                        is_parent=True,
                         memoization_status=IoArgoprojWorkflowV1alpha1MemoizationStatus(
                             cache_name="cache_name_example",
                             hit=True,
@@ -40986,6 +40987,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
+                        is_parent=True,
                         memoization_status=IoArgoprojWorkflowV1alpha1MemoizationStatus(
                             cache_name="cache_name_example",
                             hit=True,

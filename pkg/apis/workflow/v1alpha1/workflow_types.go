@@ -2412,6 +2412,9 @@ type NodeStatus struct {
 
 	// TaskResultSynced is used to determine if the node's output has been received
 	TaskResultSynced *bool `json:"taskResultSynced,omitempty" protobuf:"bytes,28,opt,name=taskResultSynced"`
+
+	// IsParent indicates whether this node has created children workflows
+	IsParent bool `json:"isParent,omitempty" protobuf:"varint,29,opt,name=isParent"`
 }
 
 // Completed is used to determine if this node can proceed

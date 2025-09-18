@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **hostNodeName** | **String** | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable |  [optional]
 **id** | **String** | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | 
 **inputs** | [**IoArgoprojWorkflowV1alpha1Inputs**](IoArgoprojWorkflowV1alpha1Inputs.md) |  |  [optional]
+**isParent** | **Boolean** | IsParent indicates whether this node has created children workflows |  [optional]
 **memoizationStatus** | [**IoArgoprojWorkflowV1alpha1MemoizationStatus**](IoArgoprojWorkflowV1alpha1MemoizationStatus.md) |  |  [optional]
 **message** | **String** | A human readable message indicating details about why the node is in this condition. |  [optional]
 **name** | **String** | Name is unique name in the node tree used to generate the node ID | 

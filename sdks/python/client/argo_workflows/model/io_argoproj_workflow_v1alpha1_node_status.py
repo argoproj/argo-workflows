@@ -108,6 +108,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'finished_at': (datetime,),  # noqa: E501
             'host_node_name': (str,),  # noqa: E501
             'inputs': (IoArgoprojWorkflowV1alpha1Inputs,),  # noqa: E501
+            'is_parent': (bool,),  # noqa: E501
             'memoization_status': (IoArgoprojWorkflowV1alpha1MemoizationStatus,),  # noqa: E501
             'message': (str,),  # noqa: E501
             'node_flag': (IoArgoprojWorkflowV1alpha1NodeFlag,),  # noqa: E501
@@ -142,6 +143,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'finished_at': 'finishedAt',  # noqa: E501
         'host_node_name': 'hostNodeName',  # noqa: E501
         'inputs': 'inputs',  # noqa: E501
+        'is_parent': 'isParent',  # noqa: E501
         'memoization_status': 'memoizationStatus',  # noqa: E501
         'message': 'message',  # noqa: E501
         'node_flag': 'nodeFlag',  # noqa: E501
@@ -213,6 +215,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             host_node_name (str): HostNodeName name of the Kubernetes node on which the Pod is running, if applicable. [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
+            is_parent (bool): IsParent indicates whether this node has created children workflows. [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
             node_flag (IoArgoprojWorkflowV1alpha1NodeFlag): [optional]  # noqa: E501
@@ -325,6 +328,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             host_node_name (str): HostNodeName name of the Kubernetes node on which the Pod is running, if applicable. [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
+            is_parent (bool): IsParent indicates whether this node has created children workflows. [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
             node_flag (IoArgoprojWorkflowV1alpha1NodeFlag): [optional]  # noqa: E501

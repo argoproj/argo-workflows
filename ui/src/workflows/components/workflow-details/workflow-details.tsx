@@ -259,6 +259,16 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 });
         }
 
+        if (workflow?.metadata?.labels?.['workflows.argoproj.io/resource-parent-workflow-name']) {
+            const namespace = workflow?.metadata?.namespace;
+            const parentName = workflow?.metadata?.labels?.['workflows.argoproj.io/resource-parent-workflow-name'];
+            items.push({
+                title: 'Parent Workflow',
+                iconClassName: 'fa fa-level-up-alt',
+                action: () => navigation.goto(uiUrl(`workflows/${namespace}/${parentName}`))
+            });
+        }
+
         // we only want one link, and we have a preference
         for (const k of [
             'workflows.argoproj.io/workflow-template',

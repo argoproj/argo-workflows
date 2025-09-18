@@ -690,6 +690,11 @@ export interface NodeStatus {
      * Memoization
      */
     memoizationStatus: MemoizationStatus;
+
+    /**
+     * IsParent indicates whether this node has children nodes (i.e. is a parent node).
+     */
+    isParent: boolean;
 }
 
 export interface TemplateRef {
