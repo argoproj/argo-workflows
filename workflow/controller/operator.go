@@ -3588,12 +3588,12 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	tmpl = tmpl.DeepCopy()
 
-	obj := unstructured.Unstructured{}
-	err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-	if err != nil {
-		return node, err
-	}
 	if tmpl.Resource.SetOwnerReference {
+		obj := unstructured.Unstructured{}
+		err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+		if err != nil {
+			return node, err
+		}
 		ownerReferences := obj.GetOwnerReferences()
 		obj.SetOwnerReferences(append(ownerReferences, *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
 
