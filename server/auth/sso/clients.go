@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-type HttpClientConfig struct {
+type HTTPClientConfig struct {
 	ClientCert         string
 	ClientKey          string
 	InsecureSkipVerify bool
@@ -16,7 +16,7 @@ type HttpClientConfig struct {
 	RootCAFile         string	
 }
 
-func createHttpClient(config HttpClientConfig) (*http.Client, error) {
+func createHTTPClient(config HTTPClientConfig) (*http.Client, error) {
 	var tlsConfig tls.Config
 	// Only set certificates if both ClientCert and ClientKey are provided
 	if config.ClientCert != "" && config.ClientKey != "" {
