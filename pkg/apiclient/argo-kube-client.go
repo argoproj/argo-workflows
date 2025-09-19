@@ -170,6 +170,8 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 		} else {
 			a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
 		}
+	} else {
+		a.cwfTmplStore = clusterworkflowtmplserver.NewNullClusterWorkflowTemplate()
 	}
 
 	return nil

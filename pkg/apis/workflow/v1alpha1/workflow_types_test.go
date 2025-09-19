@@ -441,7 +441,7 @@ func TestArtifactLocation_Get(t *testing.T) {
 
 	v, err = (&ArtifactLocation{}).Get()
 	assert.Nil(t, v)
-	require.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
+	require.EqualError(t, err, "artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 
 	v, _ = (&ArtifactLocation{Azure: &AzureArtifact{}}).Get()
 	assert.IsType(t, &AzureArtifact{}, v)
