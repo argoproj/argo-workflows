@@ -113,7 +113,7 @@ func newSso(
 		return nil, err
 	}
 
-	httpClientConfig := HttpClientConfig{
+	httpClientConfig := HTTPClientConfig{
 		ClientCert:         c.ClientCert,
 		ClientKey:          c.ClientKey,
 		InsecureSkipVerify: c.InsecureSkipVerify,
@@ -122,7 +122,7 @@ func newSso(
 	}
 
 	// Create http client
-	httpClient, err := createHttpClient(httpClientConfig)
+	httpClient, err := createHTTPClient(httpClientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
 	}
