@@ -575,7 +575,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		for n, f := range md.LabelsFrom {
 			program, err := expr.Compile(f.Expression, expr.Env(env))
 			if err != nil {
-				return fmt.Errorf("Failed to compile function for expression %q: %w", f.Expression, err)
+				return fmt.Errorf("failed to compile function for expression %q: %w", f.Expression, err)
 			}
 			r, err := expr.Run(program, env)
 			if err != nil {
@@ -1518,12 +1518,24 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 
 	// If the node template has outputs Parameters/Artifacts/Result, we should not change the phase to Succeeded until the outputs are set.
-	if tmpl != nil && tmpl.Outputs.HasOutputs() && new.Outputs != nil && new.Phase == wfv1.NodeSucceeded &&
-		((tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil) ||
-			(tmpl.Outputs.Artifacts != nil && new.Outputs.Artifacts == nil) ||
-			(tmpl.Outputs.Result != nil && new.Outputs.Result == nil)) {
-		woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: outputs are not yet set")
-		new.Phase = old.Phase
+	if tmpl != nil && tmpl.Outputs.HasOutputs() && new.Outputs != nil && new.Phase == wfv1.NodeSucceeded {
+		outputsNotReady := false
+		// Check Parameters - all parameters are considered required
+		if tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil {
+			outputsNotReady = true
+		}
+		// Check Artifacts - only check if there are required (non-optional) artifacts
+		if hasRequiredArtifacts(tmpl.Outputs.Artifacts) && new.Outputs.Artifacts == nil {
+			outputsNotReady = true
+		}
+		// Check Result
+		if tmpl.Outputs.Result != nil && new.Outputs.Result == nil {
+			outputsNotReady = true
+		}
+		if outputsNotReady {
+			woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: required outputs are not yet set")
+			new.Phase = old.Phase
+		}
 	}
 
 	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
@@ -1550,6 +1562,19 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	woc.log.WithField("nodeID", old.ID).
 		Debug(ctx, "node unchanged")
 	return nil
+}
+
+// hasRequiredArtifacts checks if there are any required (non-optional) artifacts
+func hasRequiredArtifacts(artifacts []wfv1.Artifact) bool {
+	if artifacts == nil {
+		return false
+	}
+	for _, artifact := range artifacts {
+		if !artifact.Optional {
+			return true
+		}
+	}
+	return false
 }
 
 func getExitCode(pod *apiv1.Pod) *int32 {
@@ -2178,7 +2203,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
 		// The retry node might have completed by now.
-		if retryParentNode.Fulfilled() && woc.childrenFulfilled(retryParentNode) { // if retry node is daemoned we want to check those explicitly
+		if retryParentNode.Fulfilled() && (woc.childrenFulfilled(retryParentNode) || (retryParentNode.IsDaemoned() && retryParentNode.FailedOrError())) { // if retry node is daemoned we want to check those explicitly
 			// If retry node has completed, set the output of the last child node to its output.
 			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
@@ -2797,7 +2822,7 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 
 func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, error) {
 	if node.Type != wfv1.NodeTypePod {
-		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
+		return nil, fmt.Errorf("expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
@@ -3018,7 +3043,8 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	}
 
 	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "template": tmpl.Name}).Debug(ctx, "Executing node with container template")
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{
+	ctr := tmpl.Container.DeepCopy()
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*ctr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
@@ -3235,13 +3261,13 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := tmpl.Script.Container
+	mainCtr := tmpl.Script.Container.DeepCopy()
 	if len(tmpl.Script.Source) == 0 {
 		woc.log.Warn(ctx, "'script.source' is empty, suggest change template into 'container'")
 	} else {
 		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	}
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,

@@ -1,6 +1,13 @@
 export SHELL:=bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
+.PHONY: help
+help: ## Showcase the help instructions for all documented `make` commands (not an exhaustive list)
+	@echo "Find more help on how to contribute at docs/contributing.md and running locally at docs/running-locally.md"
+	@echo ""
+	@echo "Documented make targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
 # NOTE: Please ensure dependencies are synced with the flake.nix file in dev/nix/flake.nix before upgrading
 # any external dependency. There is documentation on how to do this under the Developer Guide
 
@@ -146,9 +153,11 @@ TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
 TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
 TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
 
-$(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
-$(info KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
-$(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
+.PHONY: print-variables
+print-variables: ## Print Makefile variables
+	@echo GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION)
+	@echo KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM)
+	@echo RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED)
 
 override LDFLAGS += \
   -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
@@ -220,7 +229,7 @@ endef
 # cli
 
 .PHONY: cli
-cli: dist/argo
+cli: dist/argo ## Build the CLI
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 ifeq ($(STATIC_FILES),true)
@@ -270,7 +279,7 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 # controller
 
 .PHONY: controller
-controller: dist/workflow-controller
+controller: dist/workflow-controller ## Build the workflow controller
 
 dist/workflow-controller: $(CONTROLLER_PKG_FILES) go.sum
 ifeq ($(shell uname -s),Darwin)
@@ -291,7 +300,7 @@ else
 	CGO_ENABLED=0 go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
 
-argoexec-image:
+argoexec-image: ## Build the executor image
 argoexec-nonroot-image:
 
 %-image:
@@ -321,7 +330,7 @@ argoexec-nonroot-image:
 	fi
 
 .PHONY: codegen
-codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS)
+codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS) ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
 	$(TOOL_MOCKERY) --config .mockery.yaml
  	# The generated markdown contains links to nowhere for interfaces, so remove them
@@ -525,7 +534,7 @@ $(TOOL_GOLANGCI_LINT): Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.3.0
 
 .PHONY: lint lint-go lint-ui
-lint: lint-go lint-ui features-validate
+lint: lint-go lint-ui features-validate ## Lint the project
 lint-go: $(TOOL_GOLANGCI_LINT) ui/dist/app/index.html
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
@@ -545,7 +554,7 @@ lint-ui: ui/dist/app/index.html
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) ## Run tests
 	go build ./...
 	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
@@ -553,7 +562,7 @@ test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attri
 	touch dist/test
 
 .PHONY: install
-install: githooks
+install: githooks ## Install Argo to the current Kubernetes cluster
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
@@ -609,9 +618,9 @@ kit: Makefile
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-start: kit
+start: print-variables kit ## Start the Argo server
 else
-start: install kit
+start: print-variables install kit
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
 ifneq ($(API),true)
@@ -685,7 +694,7 @@ Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 # clean
 
 .PHONY: clean
-clean:
+clean: ## Clean the directory of build files
 	go clean
 	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
@@ -790,7 +799,7 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs-spellcheck
-docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md
+docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md ## Spell check docs
 	# check docs for spelling mistakes
 	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
@@ -826,9 +835,7 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs
-docs: $(TOOL_MKDOCS) \
-	docs-spellcheck \
-	docs-lint \
+docs: $(TOOL_MKDOCS) docs-spellcheck docs-lint ## Build docs
 	# TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
 	# copy README.md to docs/README.md
@@ -844,7 +851,7 @@ endif
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
 .PHONY: docs-serve
-docs-serve: docs
+docs-serve: docs ## Build and serve the docs on localhost
 	$(TOOL_MKDOCS) serve
 
 # pre-commit checks
@@ -857,7 +864,7 @@ docs-serve: docs
 githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
-pre-commit: codegen lint docs
+pre-commit: codegen lint docs  ## Run the pre-commit hooks
 	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/pre-commit
 
@@ -908,7 +915,9 @@ hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go 
 # dev container
 
 $(TOOL_DEVCONTAINER): Makefile
+ifeq (, $(shell command -v devcontainer 2>/dev/null))
 	npm list -g @devcontainers/cli@0.75.0 > /dev/null || npm i -g @devcontainers/cli@0.75.0
+endif
 
 .PHONY: devcontainer-build
 devcontainer-build: $(TOOL_DEVCONTAINER)

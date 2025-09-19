@@ -1001,6 +1001,9 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
 			resetFunc(curr.parent.n.ID)
 		}
+		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeTaskGroup {
+			resetFunc(curr.parent.n.ID)
+		}
 		seekingBoundaryID := curr.n.BoundaryID
 		if seekingBoundaryID == "" {
 			return curr.parent, nil
@@ -1070,7 +1073,7 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 				return nil, nil, err
 			}
 			continue
-		case curr.n.Type == wfv1.NodeTypeRetry:
+		case curr.n.Type == wfv1.NodeTypeRetry && curr.n.FailedOrError():
 			addToReset(curr.n.ID)
 		case curr.n.Type == wfv1.NodeTypeContainer:
 			curr, err = resetPod(curr, addToReset, addToDelete)
