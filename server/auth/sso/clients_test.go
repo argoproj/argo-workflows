@@ -2,7 +2,6 @@ package sso
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
 )
