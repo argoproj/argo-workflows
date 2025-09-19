@@ -43,7 +43,7 @@ func TestCreateHttpClient_Success(t *testing.T) {
 	}
 	defer cleanupKey()
 
-	config := HttpClientConfig{
+	config := HTTPClientConfig{
 		ClientCert:         certFilePath,
 		ClientKey:          keyFilePath,
 		InsecureSkipVerify: false,
@@ -51,7 +51,7 @@ func TestCreateHttpClient_Success(t *testing.T) {
 		RootCAFile:         certFilePath,
 	}
 
-	httpClient, err := createHttpClient(config)
+	httpClient, err := createHTTPClient(config)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -85,13 +85,13 @@ func TestCreateHttpClient_Success(t *testing.T) {
 // Mock for certificate loading failure
 func TestCreateHttpClient_LoadCertError(t *testing.T) {
 	// Provide invalid paths for certificates to simulate an error
-	config := HttpClientConfig{
+	config := HTTPClientConfig{
 		ClientCert:         "invalid_cert.pem",
 		ClientKey:          "invalid_key.pem",
 		InsecureSkipVerify: false,
 	}
 
-	_, err := createHttpClient(config)
+	_, err := createHTTPClient(config)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -103,13 +103,13 @@ func TestCreateHttpClient_LoadCertError(t *testing.T) {
 
 // Mock for using default settings
 func TestCreateHttpClient_DefaultSettings(t *testing.T) {
-	config := HttpClientConfig{
+	config := HTTPClientConfig{
 		ClientCert:         "",
 		ClientKey:          "",
 		InsecureSkipVerify: false,
 	}
 
-	httpClient, err := createHttpClient(config)
+	httpClient, err := createHTTPClient(config)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
