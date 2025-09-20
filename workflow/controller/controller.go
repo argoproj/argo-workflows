@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"slices"
 	"strconv"
 	gosync "sync"
@@ -980,14 +981,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// key function.
 
 					// Remove finalizers from Pods if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
+					podObjs, err := wfc.PodController.GetPodsByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(wfc.GetManagedNamespace(), obj.(*unstructured.Unstructured).GetName()))
 					if err != nil {
-						logger.WithError(err).Error(ctx, "Failed to list pods")
+						logger.WithError(err).Error(ctx, "Failed to get pods by index")
 					}
-					for _, p := range podList.Items {
+					for _, podObj := range podObjs {
+						p, ok := podObj.(*apiv1.Pod)
+						if !ok {
+							logger.WithError(err).Error(ctx, "expected \"*apiv1.Pod\", got "+reflect.TypeOf(podObj).String())
+							continue
+						}
 						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
 							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
 						}
