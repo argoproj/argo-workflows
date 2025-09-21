@@ -340,6 +340,25 @@ of a single workflow step, which the executor will use as a default location to 
 
 
 
+### <span id="artifact-repository-ref"></span> ArtifactRepositoryRef
+
+
+> +protobuf.options.(gogoproto.goproto_stringer)=false
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configMap | string| `string` |  | | The name of the config map. Defaults to "artifact-repositories". |  |
+| key | string| `string` |  | | The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation. |  |
+
+
+
 ### <span id="artifactory-artifact"></span> ArtifactoryArtifact
 
 
@@ -1826,6 +1845,8 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| artifactLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
+| artifactRepositoryRef | [ArtifactRepositoryRef](#artifact-repository-ref)| `ArtifactRepositoryRef` |  | |  |  |
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
 | parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters are a list of parameters passed as inputs</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
 
@@ -2485,6 +2506,8 @@ save/load the directory appropriately.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| artifactLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
+| artifactRepositoryRef | [ArtifactRepositoryRef](#artifact-repository-ref)| `ArtifactRepositoryRef` |  | |  |  |
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
 | exitCode | string| `string` |  | | ExitCode holds the exit code of a script template |  |
 | parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters holds the list of output parameters produced by a step</br>+patchStrategy=merge</br>+patchMergeKey=name |  |

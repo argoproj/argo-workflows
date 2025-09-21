@@ -5691,6 +5691,14 @@
     "io.argoproj.workflow.v1alpha1.Inputs": {
       "description": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
       "properties": {
+        "artifactLocation": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
+          "description": "Location in which all files related to the input will be stored."
+        },
+        "artifactRepositoryRef": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef",
+          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config for input artifacts."
+        },
         "artifacts": {
           "description": "Artifact are a list of artifacts passed as inputs",
           "items": {
@@ -6285,6 +6293,14 @@
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
       "properties": {
+        "artifactLocation": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
+          "description": "Location in which all files related to the output will be stored."
+        },
+        "artifactRepositoryRef": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef",
+          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config for output artifacts."
+        },
         "artifacts": {
           "description": "Artifacts holds the list of output artifacts produced by a step",
           "items": {
