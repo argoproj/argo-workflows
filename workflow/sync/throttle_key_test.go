@@ -3,6 +3,8 @@ package sync
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewThrottleKey(t *testing.T) {
@@ -13,9 +15,7 @@ func TestNewThrottleKey(t *testing.T) {
 
 	throttleKey := NewThrottleKey(key, priority, creation, action)
 	expected := "test-namespace/test-workflow/5/2023-01-01T12:00:00Z/add"
-	if throttleKey != expected {
-		t.Errorf("Expected %s, got %s", expected, throttleKey)
-	}
+	assert.Equal(t, expected, throttleKey, "Throttle key should match expected format")
 }
 
 func TestParseThrottleKey(t *testing.T) {
@@ -27,22 +27,14 @@ func TestParseThrottleKey(t *testing.T) {
 	expectedCreation := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 	expectedAction := ThrottleActionAdd
 
-	if key != expectedKey {
-		t.Errorf("Expected key %s, got %s", expectedKey, key)
-	}
-	if priority != expectedPriority {
-		t.Errorf("Expected priority %d, got %d", expectedPriority, priority)
-	}
-	if !creation.Equal(expectedCreation) {
-		t.Errorf("Expected creation %v, got %v", expectedCreation, creation)
-	}
-	if action != expectedAction {
-		t.Errorf("Expected action %s, got %s", expectedAction, action)
-	}
+	assert.Equal(t, expectedKey, key, "Parsed key should match expected")
+	assert.Equal(t, expectedPriority, priority, "Parsed priority should match expected")
+	assert.Equal(t, expectedCreation, creation, "Parsed creation time should match expected")
+	assert.Equal(t, expectedAction, action, "Parsed action should match expected")
 }
 
 func TestParseThrottleKeyInvalid(t *testing.T) {
-	testCases := []struct {
+	tests := []struct {
 		name        string
 		throttleKey string
 	}{
@@ -53,13 +45,13 @@ func TestParseThrottleKeyInvalid(t *testing.T) {
 		{"invalid time", "test-namespace/test-workflow/5/invalid-time/add"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			key, priority, creation, action := ParseThrottleKey(tc.throttleKey)
-			if key != "" || priority != 0 || !creation.IsZero() || action != "" {
-				t.Errorf("Expected empty values for invalid throttle key, got key=%s, priority=%d, creation=%v, action=%s",
-					key, priority, creation, action)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key, priority, creation, action := ParseThrottleKey(tt.throttleKey)
+			assert.Empty(t, key, "Key should be empty for invalid throttle key")
+			assert.Equal(t, int32(0), priority, "Priority should be 0 for invalid throttle key")
+			assert.True(t, creation.IsZero(), "Creation time should be zero for invalid throttle key")
+			assert.Empty(t, action, "Action should be empty for invalid throttle key")
 		})
 	}
 }
@@ -67,22 +59,14 @@ func TestParseThrottleKeyInvalid(t *testing.T) {
 func TestThrottleKeyRoundTrip(t *testing.T) {
 	originalKey := "test-namespace/test-workflow"
 	originalPriority := int32(10)
-	originalCreation := time.Now().UTC()
+	originalCreation := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	originalAction := ThrottleActionUpdate
 
 	throttleKey := NewThrottleKey(originalKey, originalPriority, originalCreation, originalAction)
 	parsedKey, parsedPriority, parsedCreation, parsedAction := ParseThrottleKey(throttleKey)
 
-	if parsedKey != originalKey {
-		t.Errorf("Key mismatch: expected %s, got %s", originalKey, parsedKey)
-	}
-	if parsedPriority != originalPriority {
-		t.Errorf("Priority mismatch: expected %d, got %d", originalPriority, parsedPriority)
-	}
-	if !parsedCreation.Equal(originalCreation) {
-		t.Errorf("Creation time mismatch: expected %v, got %v", originalCreation, parsedCreation)
-	}
-	if parsedAction != originalAction {
-		t.Errorf("Action mismatch: expected %s, got %s", originalAction, parsedAction)
-	}
+	assert.Equal(t, originalKey, parsedKey, "Round-trip key should match original")
+	assert.Equal(t, originalPriority, parsedPriority, "Round-trip priority should match original")
+	assert.True(t, originalCreation.Equal(parsedCreation), "Round-trip creation time should match original")
+	assert.Equal(t, originalAction, parsedAction, "Round-trip action should match original")
 }
