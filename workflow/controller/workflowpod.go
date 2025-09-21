@@ -233,6 +233,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	woc.addArchiveLocation(ctx, tmpl)
+	woc.addInputArtifactLocation(ctx, tmpl)
+	woc.addOutputArtifactLocation(ctx, tmpl)
 
 	err = woc.setupServiceAccount(ctx, pod, tmpl)
 	if err != nil {
@@ -314,9 +316,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	// simplify template by clearing useless `inputs.parameters` and preserving `inputs.artifacts`.
+	// preserving `inputs.artifactLocation` too.
 	simplifiedTmpl := tmpl.DeepCopy()
 	simplifiedTmpl.Inputs = wfv1.Inputs{
-		Artifacts: simplifiedTmpl.Inputs.Artifacts,
+		Artifacts:        simplifiedTmpl.Inputs.Artifacts,
+		ArtifactLocation: simplifiedTmpl.Inputs.ArtifactLocation,
 	}
 	envVarTemplateValue := wfv1.MustMarshallJSON(simplifiedTmpl)
 
@@ -1111,6 +1115,46 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
 }
 
+func (woc *wfOperationCtx) addInputArtifactLocation(ctx context.Context, tmpl *wfv1.Template) {
+	if tmpl.Inputs.ArtifactLocation.HasLocation() {
+		return
+	}
+	if tmpl.Inputs.ArtifactRepositoryRef == nil {
+		return
+	}
+	ref, err := woc.controller.artifactRepositories.Resolve(ctx, tmpl.Inputs.ArtifactRepositoryRef, woc.wf.Namespace)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithField("error", err).Error(ctx, "failed to resolve artifact repository")
+		return
+	}
+	repo, err := woc.controller.artifactRepositories.Get(ctx, ref)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithField("error", err).Error(ctx, "failed to get artifact repository")
+		return
+	}
+	tmpl.Inputs.ArtifactLocation = repo.ToArtifactLocation()
+}
+
+func (woc *wfOperationCtx) addOutputArtifactLocation(ctx context.Context, tmpl *wfv1.Template) {
+	if tmpl.Outputs.ArtifactLocation.HasLocation() {
+		return
+	}
+	if tmpl.Outputs.ArtifactRepositoryRef == nil {
+		return
+	}
+	ref, err := woc.controller.artifactRepositories.Resolve(ctx, tmpl.Outputs.ArtifactRepositoryRef, woc.wf.Namespace)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithField("error", err).Error(ctx, "failed to resolve artifact repository")
+		return
+	}
+	repo, err := woc.controller.artifactRepositories.Get(ctx, ref)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithField("error", err).Error(ctx, "failed to get artifact repository")
+		return
+	}
+	tmpl.Outputs.ArtifactLocation = repo.ToArtifactLocation()
+}
+
 // IsArchiveLogs determines if container should archive logs
 // priorities: controller(on) > template > workflow > controller(off)
 func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
@@ -1244,6 +1288,8 @@ func createSecretVolumesAndMounts(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.
 	var secretVolMounts []apiv1.VolumeMount
 
 	createArchiveLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
+	createInputArtifactLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
+	createOutputArtifactLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
 
 	for _, art := range tmpl.Outputs.Artifacts {
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
@@ -1275,6 +1321,20 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		return
 	}
 	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{tmpl.ArchiveLocation}, uniqueKeyMap)
+}
+
+func createInputArtifactLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+	if tmpl.Inputs.ArtifactLocation == nil {
+		return
+	}
+	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{tmpl.Inputs.ArtifactLocation}, uniqueKeyMap)
+}
+
+func createOutputArtifactLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+	if tmpl.Outputs.ArtifactLocation == nil {
+		return
+	}
+	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{tmpl.Outputs.ArtifactLocation}, uniqueKeyMap)
 }
 
 func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {

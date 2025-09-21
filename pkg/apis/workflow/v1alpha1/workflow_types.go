@@ -871,6 +871,12 @@ type Inputs struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
+
+	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config for input artifacts.
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,3,opt,name=artifactRepositoryRef"`
+
+	// Location in which all files related to the input will be stored.
+	ArtifactLocation *ArtifactLocation `json:"artifactLocation,omitempty" protobuf:"bytes,4,opt,name=artifactLocation"`
 }
 
 func (in Inputs) IsEmpty() bool {
@@ -1509,6 +1515,12 @@ type Outputs struct {
 
 	// ExitCode holds the exit code of a script template
 	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
+
+	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config for output artifacts.
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,5,opt,name=artifactRepositoryRef"`
+
+	// Location in which all files related to the output will be stored.
+	ArtifactLocation *ArtifactLocation `json:"artifactLocation,omitempty" protobuf:"bytes,6,opt,name=artifactLocation"`
 }
 
 func (out *Outputs) GetArtifacts() Artifacts {

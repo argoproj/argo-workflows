@@ -589,3 +589,228 @@ func TestReportOutputs(t *testing.T) {
 	})
 
 }
+
+func TestInputArtifactLocation(t *testing.T) {
+	complateArtifact := wfv1.Artifact{
+		Name: "foo",
+		Path: "/tmp/foo.txt",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{
+				S3Bucket: wfv1.S3Bucket{
+					Bucket:   "my-bucket",
+					Endpoint: "my-endpoint",
+					AccessKeySecret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+						Key:                  "accessKey",
+					},
+				},
+				Key: "my-key",
+			},
+		},
+	}
+	keyOnlyArtifact := wfv1.Artifact{
+		Name: "foo",
+		Path: "/tmp/foo.txt",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{
+				Key: "my-key",
+			},
+		},
+	}
+	artifactLocation := wfv1.ArtifactLocation{
+		S3: &wfv1.S3Artifact{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket:   "my-bucket",
+				Endpoint: "my-endpoint",
+				AccessKeySecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "accessKey2",
+				},
+			},
+		},
+	}
+	archiveLocation := wfv1.ArtifactLocation{
+		S3: &wfv1.S3Artifact{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket:   "my-bucket",
+				Endpoint: "my-endpoint",
+				AccessKeySecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "accessKey3",
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name    string
+		inputs  wfv1.Inputs
+		archive bool
+		error   string
+	}{
+		{"CompleteArtifactWithoutArtifactLocation", wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{complateArtifact},
+		}, false, "open /argo/secret/my-secret/accessKey: no such file or directory"},
+		{"CompleteArtifactWithArtifactLocation", wfv1.Inputs{
+			Artifacts:        []wfv1.Artifact{complateArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, false, "open /argo/secret/my-secret/accessKey: no such file or directory"},
+		{"CompleteArtifactWithArchiveLocation", wfv1.Inputs{
+			Artifacts:        []wfv1.Artifact{complateArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, true, "open /argo/secret/my-secret/accessKey: no such file or directory"},
+		{"KeyOnlyArtifactWithoutArtifactLocation", wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{keyOnlyArtifact},
+		}, false, "failed to load artifact 'foo': template artifact location not set"},
+		{"KeyOnlyArtifactWithArtifactLocation", wfv1.Inputs{
+			Artifacts:        []wfv1.Artifact{keyOnlyArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, false, "open /argo/secret/my-secret/accessKey2: no such file or directory"},
+		{"KeyOnlyArtifactWithArchiveLocation", wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{keyOnlyArtifact},
+		}, true, "open /argo/secret/my-secret/accessKey3: no such file or directory"},
+		{"KeyOnlyArtifactWithBothLocation", wfv1.Inputs{
+			Artifacts:        []wfv1.Artifact{keyOnlyArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, true, "open /argo/secret/my-secret/accessKey2: no such file or directory"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			var al *wfv1.ArtifactLocation
+			if test.archive {
+				al = &archiveLocation
+			}
+			we := WorkflowExecutor{
+				Template: wfv1.Template{
+					Inputs:          test.inputs,
+					ArchiveLocation: al,
+				},
+			}
+			err := we.LoadArtifacts(ctx)
+			require.EqualError(t, err, test.error)
+		})
+	}
+}
+
+func TestOutputArtifactLocation(t *testing.T) {
+	fakeClientset := fake.NewSimpleClientset()
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockRuntimeExecutor.On("CopyFile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockRuntimeExecutor.On("GetFileContents", mock.Anything, mock.Anything).Return("", nil)
+	err := os.WriteFile("/tmp/argo/outputs/artifacts/foo.tgz", []byte{}, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("/tmp/argo/outputs/artifacts/foo.tgz")
+	complateArtifact := wfv1.Artifact{
+		Name: "foo",
+		Path: "/tmp/foo.txt",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{
+				S3Bucket: wfv1.S3Bucket{
+					Bucket:   "my-bucket",
+					Endpoint: "my-endpoint",
+					AccessKeySecret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+						Key:                  "accessKey",
+					},
+				},
+				Key: "my-key",
+			},
+		},
+		Archive: &wfv1.ArchiveStrategy{
+			Tar: &wfv1.TarStrategy{},
+		},
+	}
+	keyOnlyArtifact := wfv1.Artifact{
+		Name: "foo",
+		Path: "/tmp/foo.txt",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{
+				Key: "my-key",
+			},
+		},
+		Archive: &wfv1.ArchiveStrategy{
+			Tar: &wfv1.TarStrategy{},
+		},
+	}
+	artifactLocation := wfv1.ArtifactLocation{
+		S3: &wfv1.S3Artifact{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket:   "my-bucket",
+				Endpoint: "my-endpoint",
+				AccessKeySecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "accessKey2",
+				},
+			},
+		},
+	}
+	archiveLocation := wfv1.ArtifactLocation{
+		S3: &wfv1.S3Artifact{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket:   "my-bucket",
+				Endpoint: "my-endpoint",
+				AccessKeySecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+					Key:                  "accessKey3",
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name    string
+		outputs wfv1.Outputs
+		archive bool
+		error   string
+	}{
+		{"CompleteArtifactWithoutArtifactLocation", wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{complateArtifact},
+		}, false, "open /argo/secret/my-secret/accessKey: no such file or directory; "},
+		{"CompleteArtifactWithArtifactLocation", wfv1.Outputs{
+			Artifacts:        []wfv1.Artifact{complateArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, false, "open /argo/secret/my-secret/accessKey: no such file or directory; "},
+		{"CompleteArtifactWithArchiveLocation", wfv1.Outputs{
+			Artifacts:        []wfv1.Artifact{complateArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, true, "open /argo/secret/my-secret/accessKey: no such file or directory; "},
+		{"KeyOnlyArtifactWithoutArtifactLocation", wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{keyOnlyArtifact},
+		}, false, "template artifact location not set; "},
+		{"KeyOnlyArtifactWithArtifactLocation", wfv1.Outputs{
+			Artifacts:        []wfv1.Artifact{keyOnlyArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, false, "open /argo/secret/my-secret/accessKey2: no such file or directory; "},
+		{"KeyOnlyArtifactWithArchiveLocation", wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{keyOnlyArtifact},
+		}, true, "open /argo/secret/my-secret/accessKey3: no such file or directory; "},
+		{"KeyOnlyArtifactWithBothLocation", wfv1.Outputs{
+			Artifacts:        []wfv1.Artifact{keyOnlyArtifact},
+			ArtifactLocation: &artifactLocation,
+		}, true, "open /argo/secret/my-secret/accessKey2: no such file or directory; "},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			var al *wfv1.ArtifactLocation
+			if test.archive {
+				al = &archiveLocation
+			}
+			we := WorkflowExecutor{
+				PodName:          fakePodName,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
+				Template: wfv1.Template{
+					Outputs:         test.outputs,
+					ArchiveLocation: al,
+				},
+			}
+			_, err := we.SaveArtifacts(ctx)
+			require.EqualError(t, err, test.error)
+		})
+	}
+}
