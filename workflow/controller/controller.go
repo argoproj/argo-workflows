@@ -981,7 +981,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// key function.
 
 					// Remove finalizers from Pods if they exist before deletion
-					podObjs, err := wfc.PodController.GetPodsByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(wfc.GetManagedNamespace(), obj.(*unstructured.Unstructured).GetName()))
+					wf := obj.(*unstructured.Unstructured)
+					podObjs, err := wfc.PodController.GetPodsByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(wf.GetNamespace(), wf.GetName()))
 					if err != nil {
 						logger.WithError(err).Error(ctx, "Failed to get pods by index")
 					}
