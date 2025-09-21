@@ -8,50 +8,88 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	workflowcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // ArtifactDriver is the artifact driver for artifactory and http URLs
 type ArtifactDriver struct {
-	Username string
-	Password string
-	Client   *http.Client
+	Username  string
+	Password  string
+	Client    *http.Client
+	ClientSet kubernetes.Interface
+	Namespace string
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Response, error) {
+func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv1.Artifact) (http.Response, error) {
 	var req *http.Request
 	var url string
 	var err error
+	var auth *wfv1.HTTPAuth
+
 	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
 		url = inputArtifact.Artifactory.URL
 		req, err = http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
-		req.SetBasicAuth(h.Username, h.Password)
+		// For backward compatibility, use Username/Password for Artifactory
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
 	} else if inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil {
 		url = inputArtifact.HTTP.URL
 		req, err = http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
-		for _, h := range inputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
+
+		// Add headers
+		for _, header := range inputArtifact.HTTP.Headers {
+			req.Header.Add(header.Name, header.Value)
 		}
-		if h.Username != "" && h.Password != "" {
+
+		// Use new unified auth if available
+		if inputArtifact.HTTP.Auth != nil {
+			auth = inputArtifact.HTTP.Auth
+		} else if h.Username != "" && h.Password != "" {
+			// Backward compatibility: use driver-level username/password
 			req.SetBasicAuth(h.Username, h.Password)
 		}
 	} else {
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
 
+	// Apply unified authentication if configured
+	if auth != nil && h.ClientSet != nil {
+		if err := workflowcommon.ApplyHTTPAuth(ctx, req, auth, h.ClientSet, h.Namespace); err != nil {
+			return http.Response{}, fmt.Errorf("failed to apply HTTP authentication: %w", err)
+		}
+	}
+
+	// Use appropriate HTTP client
+	client := h.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	// Create client with auth if needed
+	if auth != nil && h.ClientSet != nil {
+		client, err = workflowcommon.CreateHTTPClientWithAuth(ctx, auth, false, h.ClientSet, h.Namespace)
+		if err != nil {
+			return http.Response{}, fmt.Errorf("failed to create authenticated HTTP client: %w", err)
+		}
+	}
+
 	// Note that we will close the response body in either `Load()`
 	// or `ArtifactServer.returnArtifact()`, which is the caller of `OpenStream()`.
-	res, err := h.Client.Do(req) //nolint:bodyclose
+	res, err := client.Do(req) //nolint:bodyclose
 	if err != nil {
 		return http.Response{}, err
 	}
@@ -73,7 +111,7 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	defer func() {
 		_ = lf.Close()
 	}()
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return err
 	}
@@ -85,7 +123,7 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 }
 
 func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return nil, err
 	}
@@ -101,32 +139,66 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	}
 	var req *http.Request
 	var url string
+	var auth *wfv1.HTTPAuth
+
 	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
 		url = outputArtifact.Artifactory.URL
 		req, err = http.NewRequest(http.MethodPut, url, f)
 		if err != nil {
 			return err
 		}
-		req.SetBasicAuth(h.Username, h.Password)
+		// For backward compatibility, use Username/Password for Artifactory
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
 	} else {
 		url = outputArtifact.HTTP.URL
 		req, err = http.NewRequest(http.MethodPut, url, f)
 		if err != nil {
 			return err
 		}
-		for _, h := range outputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
+
+		// Add headers
+		for _, header := range outputArtifact.HTTP.Headers {
+			req.Header.Add(header.Name, header.Value)
 		}
-		if h.Username != "" && h.Password != "" {
+
+		// Use new unified auth if available
+		if outputArtifact.HTTP.Auth != nil {
+			auth = outputArtifact.HTTP.Auth
+		} else if h.Username != "" && h.Password != "" {
+			// Backward compatibility: use driver-level username/password
 			req.SetBasicAuth(h.Username, h.Password)
 		}
 	}
+
+	// Apply unified authentication if configured
+	if auth != nil && h.ClientSet != nil {
+		if err := workflowcommon.ApplyHTTPAuth(ctx, req, auth, h.ClientSet, h.Namespace); err != nil {
+			return fmt.Errorf("failed to apply HTTP authentication: %w", err)
+		}
+	}
+
 	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
 	req.GetBody = func() (io.ReadCloser, error) {
 		return os.Open(cleanPath)
 	}
 
-	res, err := h.Client.Do(req)
+	// Use appropriate HTTP client
+	client := h.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	// Create client with auth if needed
+	if auth != nil && h.ClientSet != nil {
+		client, err = workflowcommon.CreateHTTPClientWithAuth(ctx, auth, false, h.ClientSet, h.Namespace)
+		if err != nil {
+			return fmt.Errorf("failed to create authenticated HTTP client: %w", err)
+		}
+	}
+
+	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}
