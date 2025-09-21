@@ -126,6 +126,7 @@ type WorkflowController struct {
 	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.TypedRateLimitingInterface[string]
 	wfArchiveQueue        workqueue.TypedRateLimitingInterface[string]
+	wfThrottleQueue       workqueue.TypedRateLimitingInterface[string]
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
@@ -234,13 +235,16 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we create the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
+	wfc.wfThrottleQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_throttle_queue")
 	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_archive_queue")
 
 	return &wfc, nil
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	f := func(key string) { wfc.wfQueue.Add(key) }
+	f := func(key string) {
+		wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, 0, time.Now(), sync.ThrottleActionAdd))
+	}
 	return sync.NewMultiThrottler(wfc.Config.Parallelism, wfc.Config.NamespaceParallelism, f)
 }
 
@@ -279,7 +283,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts a Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers, wfThrottleWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -303,6 +307,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		"podCleanup":          podCleanupWorkers,
 		"cronWorkflowWorkers": cronWorkflowWorkers,
 		"workflowArchive":     wfArchiveWorkers,
+		"workflowThrottle":    wfThrottleWorkers,
 	}).Info(ctx, "Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
@@ -389,6 +394,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	for i := 0; i < wfArchiveWorkers; i++ {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
+
+	throttleCtx, _ := logger.WithField("component", "throttle_worker").InContext(ctx)
+	for i := 0; i < wfThrottleWorkers; i++ {
+		go wait.UntilWithContext(throttleCtx, wfc.runThrottleWorker, time.Second)
+	}
+
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
@@ -700,6 +711,13 @@ func (wfc *WorkflowController) runArchiveWorker(ctx context.Context) {
 	}
 }
 
+func (wfc *WorkflowController) runThrottleWorker(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+
+	for wfc.processNextThrottleItem(ctx) {
+	}
+}
+
 // processNextItem is the worker logic for handling workflow updates
 func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	key, quit := wfc.wfQueue.Get()
@@ -805,6 +823,40 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	}
 
 	wfc.archiveWorkflow(ctx, obj)
+	return true
+}
+
+func (wfc *WorkflowController) processNextThrottleItem(ctx context.Context) bool {
+	throttleKey, quit := wfc.wfThrottleQueue.Get()
+	if quit {
+		return false
+	}
+	defer wfc.wfThrottleQueue.Done(throttleKey)
+
+	logger := logging.RequireLoggerFromContext(ctx)
+	key, priority, creation, action := sync.ParseThrottleKey(throttleKey)
+	if key == "" {
+		logger.WithField("throttleKey", throttleKey).Warn(ctx, "Failed to parse throttle key")
+		return true
+	}
+
+	logger.WithField("key", key).
+		WithField("action", action).
+		WithField("priority", priority).
+		WithField("creation", creation).
+		Debug(ctx, "Processing throttle item")
+
+	switch action {
+	case sync.ThrottleActionAdd, sync.ThrottleActionUpdate:
+		wfc.throttler.Add(key, priority, creation)
+	case sync.ThrottleActionDelete:
+		wfc.throttler.Remove(key)
+	default:
+		logger.WithField("action", action).Warn(ctx, "Unknown throttle action")
+	}
+
+	// Add the workflow to the main queue for processing
+	wfc.wfQueue.Add(key)
 	return true
 }
 
@@ -953,9 +1005,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
 						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
-						wfc.throttler.Add(key, priority, creation)
+						wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, priority, creation, sync.ThrottleActionAdd))
 					}
 				},
 				// This function is called when an updated (we already know about this object)
@@ -968,9 +1019,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
 					if err == nil {
-						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(new)
-						wfc.throttler.Add(key, priority, creation)
+						wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, priority, creation, sync.ThrottleActionUpdate))
 					}
 				},
 				// This function is called when an object is to be removed
@@ -997,8 +1047,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(ctx, obj)
 						wfc.recordCompletedWorkflow(key)
-						// no need to add to the queue - this workflow is done
-						wfc.throttler.Remove(key)
+						wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, 0, time.Now(), sync.ThrottleActionDelete))
 					}
 				},
 			},
