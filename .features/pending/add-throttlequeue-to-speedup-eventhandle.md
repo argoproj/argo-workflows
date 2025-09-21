@@ -1,16 +1,10 @@
-<!-- Required: All of these fields are required, including at least one issue -->
-Description: <!-- A brief one line description of the feature -->
-Author: <!-- Author name and GitHub link in markdown format e.g. [Alan Clucas](https://github.com/Joibel) -->
-Component: <!-- component name here, see hack/featuregen/components.go for the list -->
-Issues: <!-- Space separated list of issues 1234 5678 -->
+Component: General
+Issues: 14791
+Description: Add wfThrottleQueue to accelerate event handling.
+Author: [Shuangkun Tian](https://github.com/shuangkun)
 
-<!--
-Optional
-Additional details about the feature written in markdown, aimed at users who want to learn about it
-* Explain when you would want to use the feature
-* Include code examples if applicable
-  * Provide working examples
-  * Format code using back-ticks
-* Use Kubernetes style
-* One sentence per line of markdown
--->
+In large-scale scenarios, the throttler's concurrent count calculation can become a bottleneck.
+This feature improves performance by decoupling event reception from processing.
+The new `wfThrottleQueue` allows the controller to handle workflow events more efficiently by separating throttle operations from the main workflow processing queue.
+This reduces contention and improves throughput under high load conditions.
+The feature is automatically enabled and can be configured using the `--workflow-throttle-workers` parameter. 
