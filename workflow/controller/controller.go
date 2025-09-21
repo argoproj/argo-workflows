@@ -242,9 +242,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	f := func(key string) {
-		wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, 0, time.Now(), sync.ThrottleActionAdd))
-	}
+	f := func(key string) { wfc.wfQueue.Add(key) }
 	return sync.NewMultiThrottler(wfc.Config.Parallelism, wfc.Config.NamespaceParallelism, f)
 }
 
@@ -855,8 +853,6 @@ func (wfc *WorkflowController) processNextThrottleItem(ctx context.Context) bool
 		logger.WithField("action", action).Warn(ctx, "Unknown throttle action")
 	}
 
-	// Add the workflow to the main queue for processing
-	wfc.wfQueue.Add(key)
 	return true
 }
 
@@ -1005,6 +1001,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
 						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, priority, creation, sync.ThrottleActionAdd))
 					}
@@ -1019,6 +1016,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
 					if err == nil {
+						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(new)
 						wfc.wfThrottleQueue.Add(sync.NewThrottleKey(key, priority, creation, sync.ThrottleActionUpdate))
 					}
