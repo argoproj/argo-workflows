@@ -28,20 +28,20 @@ func NewThrottleKey(key string, priority int32, creation time.Time, action Throt
 
 // ParseThrottleKey parses a throttle key back to its components
 func ParseThrottleKey(throttleKey workflowThrottleKey) (key string, priority int32, creation time.Time, action ThrottleAction) {
-	parts := strings.SplitN(throttleKey, "/", 4)
-	if len(parts) != 4 {
+	parts := strings.Split(throttleKey, "/")
+	if len(parts) != 5 {
 		return "", 0, time.Time{}, ""
 	}
-	key = parts[0]
-	priority64, err := strconv.ParseInt(parts[1], 10, 32)
+	key = fmt.Sprintf("%s/%s", parts[0], parts[1])
+	priority64, err := strconv.ParseInt(parts[2], 10, 32)
 	if err != nil {
 		return "", 0, time.Time{}, ""
 	}
 	priority = int32(priority64)
-	creation, err = time.Parse(time.RFC3339, parts[2])
+	creation, err = time.Parse(time.RFC3339, parts[3])
 	if err != nil {
 		return "", 0, time.Time{}, ""
 	}
-	action = ThrottleAction(parts[3])
+	action = ThrottleAction(parts[4])
 	return key, priority, creation, action
 }
