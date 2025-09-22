@@ -12,6 +12,7 @@ import (
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -60,6 +61,10 @@ func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() (clusterwor
 
 func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return infopkg.NewInfoServiceClient(a.ClientConn), nil
+}
+
+func (a *argoServerClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
+	return syncpkg.NewSyncServiceClient(a.ClientConn), nil
 }
 
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
