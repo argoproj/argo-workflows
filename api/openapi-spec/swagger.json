@@ -2318,6 +2318,186 @@
         }
       }
     },
+    "/api/v1/sync/{namespace}": {
+      "post": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_CreateSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sync.CreateSyncLimitRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.SyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/{namespace}/{key}": {
+      "get": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_GetSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "CONFIG_MAP",
+              "DATABASE"
+            ],
+            "type": "string",
+            "default": "CONFIG_MAP",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.SyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_UpdateSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sync.UpdateSyncLimitRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.SyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_DeleteSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "CONFIG_MAP",
+              "DATABASE"
+            ],
+            "type": "string",
+            "default": "CONFIG_MAP",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.DeleteSyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tracking/event": {
       "post": {
         "tags": [
@@ -15780,6 +15960,77 @@
         },
         "sensor": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+        }
+      }
+    },
+    "sync.CreateSyncLimitRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      }
+    },
+    "sync.DeleteSyncLimitResponse": {
+      "type": "object"
+    },
+    "sync.SyncConfigType": {
+      "type": "string",
+      "default": "CONFIG_MAP",
+      "enum": [
+        "CONFIG_MAP",
+        "DATABASE"
+      ]
+    },
+    "sync.SyncLimitResponse": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      }
+    },
+    "sync.UpdateSyncLimitRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
         }
       }
     }

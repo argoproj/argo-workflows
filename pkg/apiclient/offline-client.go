@@ -7,6 +7,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -132,6 +133,10 @@ func (c *offlineClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.A
 }
 
 func (c *offlineClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
+	return nil, ErrNoArgoServer
+}
+
+func (c *offlineClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
 	return nil, ErrNoArgoServer
 }
 
