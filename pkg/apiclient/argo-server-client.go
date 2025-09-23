@@ -63,7 +63,7 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 	return infopkg.NewInfoServiceClient(a.ClientConn), nil
 }
 
-func (a *argoServerClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
+func (a *argoServerClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
 	return syncpkg.NewSyncServiceClient(a.ClientConn), nil
 }
 

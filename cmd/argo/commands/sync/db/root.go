@@ -1,14 +1,11 @@
-package configmap
+package db
 
-import (
-	"github.com/spf13/cobra"
-)
+import "github.com/spf13/cobra"
 
-func NewConfigmapCommand() *cobra.Command {
+func NewDBCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:     "configmap",
-		Aliases: []string{"cm"},
-		Short:   "manage configmap sync limits",
+		Use:   "db",
+		Short: "manage db sync limits",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},

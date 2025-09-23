@@ -42,7 +42,7 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
 }
 
-func (h httpClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
+func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
 	return http1.SyncServiceClient(h), nil
 }
 
