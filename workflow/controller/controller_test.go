@@ -315,6 +315,7 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics(ctx)
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+		wfc.wfThrottleQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
