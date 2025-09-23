@@ -5204,6 +5204,8 @@ rules:
   - get
   - watch
   - list
+  - create
+  - update
 - apiGroups:
   - ""
   resources:
