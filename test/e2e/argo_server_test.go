@@ -2666,7 +2666,7 @@ func (s *ArgoServerSuite) TestSyncConfigmapService() {
 			WithJSON(syncpkg.UpdateSyncLimitRequest{
 				Name:      configmapName,
 				SizeLimit: 200,
-				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
 			}).
 			Expect().
 			Status(200).
@@ -2682,7 +2682,7 @@ func (s *ArgoServerSuite) TestSyncConfigmapService() {
 				Name:      configmapName + "-invalid",
 				Key:       syncKey,
 				SizeLimit: 0,
-				Type: syncpkg.SyncConfigType_CONFIG_MAP,
+				Type:      syncpkg.SyncConfigType_CONFIG_MAP,
 			}).
 			Expect().
 			Status(400)
