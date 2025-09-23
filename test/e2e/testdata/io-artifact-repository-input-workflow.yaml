@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-repository-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: io-artifact-repositories
+    key: default-v1
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: ["cat", "/tmp/hello_world.txt"]
+      inputs:
+        artifactRepositoryRef:
+          configMap: io-artifact-repositories
+          key: my-bucket-2
+        artifacts:
+          - name: hello-art
+            path: /tmp/hello_world.txt
+            s3:
+              key: input-artifact-repository-hello.txt

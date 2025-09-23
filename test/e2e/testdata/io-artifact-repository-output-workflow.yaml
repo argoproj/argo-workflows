@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-repository-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: io-artifact-repositories
+    key: default-v1
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+      outputs:
+        artifactRepositoryRef:
+          configMap: io-artifact-repositories
+          key: my-bucket-3
+        artifacts:
+          - name: hello-art
+            path: /tmp/hello_world.txt
+            s3:
+              key: output-artifact-repository-hello.txt
+            archive:
+              none: {}

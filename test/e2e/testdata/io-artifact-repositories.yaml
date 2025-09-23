@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: io-artifact-repositories
+  annotations:
+    workflows.argoproj.io/default-artifact-repository: default-v1
+data:
+  default-v1: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  my-bucket-2: |
+    archiveLogs: false
+    s3:
+      bucket: my-bucket-2
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  my-bucket-3: |
+    archiveLogs: false
+    s3:
+      bucket: my-bucket-3
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
