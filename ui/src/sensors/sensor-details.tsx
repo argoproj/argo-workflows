@@ -9,13 +9,16 @@ import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
+import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
-import {Sensor} from '../shared/models';
+import * as models from '../shared/models';
+import {Sensor, Workflow} from '../shared/models';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {useEditableObject} from '../shared/use-editable-object';
 import {useQueryParams} from '../shared/use-query-params';
+import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {SensorEditor} from './sensor-editor';
 import {SensorSidePanel} from './sensor-side-panel';
 
@@ -30,6 +33,8 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [namespace] = useState(match.params.namespace);
     const [name] = useState(match.params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
+    const [columns, setColumns] = useState<models.Column[]>([]);
 
     const {object: sensor, setObject: setSensor, resetObject: resetSensor, serialization, edited, lang, setLang} = useEditableObject<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
@@ -64,6 +69,16 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
             .then(resetSensor)
             .then(() => setError(null))
             .catch(setError);
+    }, [namespace, name]);
+
+    useEffect(() => {
+        (async () => {
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.sensor}=${name}`], {limit: 50});
+            const workflowsInfo = await services.info.getInfo();
+
+            setWorkflows(workflowList.items);
+            setColumns(workflowsInfo.columns);
+        })();
     }, [namespace, name]);
 
     useCollectEvent('openedSensorDetails');
@@ -142,6 +157,15 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
                         onTabSelected={setTab}
                     />
                 )}
+                <>
+                    {!workflows || workflows.length === 0 ? (
+                        <ZeroState title='No previous runs'>
+                            <p>No workflows have been triggered by this sensor yet.</p>
+                        </ZeroState>
+                    ) : (
+                        <WorkflowDetailsList workflows={workflows} columns={columns} />
+                    )}
+                </>
             </>
             {!!selectedLogNode && (
                 <SensorSidePanel
