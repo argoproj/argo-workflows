@@ -7247,6 +7247,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin",
           "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
         },
+        "podMetadataPatch": {
+          "description": "PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.",
+          "type": "string"
+        },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
@@ -8034,6 +8038,10 @@
         "podMetadata": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
           "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
+        },
+        "podMetadataPatch": {
+          "description": "PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of metadata fields Labels and Annotations, which are not strings.",
+          "type": "string"
         },
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
