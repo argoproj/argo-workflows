@@ -117,4 +117,4 @@ spec:
               # run for the 19th to the 21st
               start: "19"
               end: "21"
-              format: "2020-05-%02X"
+              format: "2020-05-%02d"
