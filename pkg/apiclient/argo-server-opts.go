@@ -9,7 +9,7 @@ type ArgoServerOpts struct {
 	// argo server host port, must be `host:port`, e.g. localhost:2746
 	URL string
 	// root path prefix for API requests
-	RootPath           string
+	RootPath string
 	// base href for UI access
 	BaseHRef           string
 	Secure             bool

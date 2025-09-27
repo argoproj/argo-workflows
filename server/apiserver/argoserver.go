@@ -386,7 +386,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 			mux.Handle(pattern, handler)
 		}
 	}
-	
+
 	addRouteFunc := func(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 		addRoute(pattern, http.HandlerFunc(handler))
 	}
@@ -466,12 +466,12 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	addRouteFunc("/", staticServerFiles)
 
-	if  as.baseHRef != as.rootPath {
+	if as.baseHRef != as.rootPath {
 		if as.baseHRef == "" || as.baseHRef == "/" {
 			mux.Handle("/", http.HandlerFunc(staticServerFiles))
 		} else {
 			basePath := strings.TrimSuffix(as.baseHRef, "/")
-			mux.Handle(basePath + "/", http.StripPrefix(basePath, http.HandlerFunc(staticServerFiles)))
+			mux.Handle(basePath+"/", http.StripPrefix(basePath, http.HandlerFunc(staticServerFiles)))
 		}
 	}
 
