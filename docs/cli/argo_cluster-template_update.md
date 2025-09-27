@@ -33,6 +33,7 @@ argo cluster-template update FILE1 FILE2... [flags]
 ```
       --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
+      --argo-root-path string          API path prefix when Argo Server is behind ingress/proxy. Defaults to the ARGO_ROOT_PATH environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.

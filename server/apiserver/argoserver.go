@@ -78,6 +78,7 @@ var MaxGRPCMessageSize int
 
 type argoServer struct {
 	baseHRef string
+	rootPath string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig                *tls.Config
 	hsts                     bool
@@ -101,6 +102,7 @@ type argoServer struct {
 
 type ArgoServerOpts struct {
 	BaseHRef   string
+	RootPath   string
 	TLSConfig  *tls.Config
 	Namespaced bool
 	Namespace  string
@@ -191,6 +193,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 		restConfig:               opts.RestConfig,
+		rootPath:                 opts.RootPath,
 	}, nil
 }
 
@@ -374,6 +377,20 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux := http.NewServeMux()
 	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
 	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
+
+	addRoute := func(pattern string, handler http.Handler) {
+		if as.rootPath != "" && as.rootPath != "/" {
+			rootPath := strings.TrimSuffix(as.rootPath, "/")
+			mux.Handle(rootPath+pattern, http.StripPrefix(rootPath, handler))
+		} else {
+			mux.Handle(pattern, handler)
+		}
+	}
+
+	addRouteFunc := func(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+		addRoute(pattern, http.HandlerFunc(handler))
+	}
+
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
@@ -410,7 +427,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(syncpkg.RegisterSyncServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+	addRouteFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// we must delete this header for API request to prevent "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR" error
 		r.Header.Del("Connection")
 		webhookInterceptor(w, r, gwmux)
@@ -418,15 +435,15 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	// emergency environment variable that allows you to disable the artifact service in case of problems
 	if os.Getenv("ARGO_ARTIFACT_SERVER") != "false" {
-		mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
-		mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
-		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
-		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
-		mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+		addRouteFunc("/artifacts/", artifactServer.GetOutputArtifact)
+		addRouteFunc("/input-artifacts/", artifactServer.GetInputArtifact)
+		addRouteFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
+		addRouteFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+		addRouteFunc("/artifact-files/", artifactServer.GetArtifactFile)
 	}
-	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
-	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
-	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+	addRoute("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
+	addRoute("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	addRouteFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
 			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
 			for _, c := range r.Cookies() {
@@ -443,8 +460,21 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		}
 		promhttp.Handler().ServeHTTP(w, r)
 	})
+
+	staticServerFiles := static.NewFilesServer(as.baseHRef, as.rootPath, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles
+
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
+	addRouteFunc("/", staticServerFiles)
+
+	if as.baseHRef != as.rootPath {
+		if as.baseHRef == "" || as.baseHRef == "/" {
+			mux.Handle("/", http.HandlerFunc(staticServerFiles))
+		} else {
+			basePath := strings.TrimSuffix(as.baseHRef, "/")
+			mux.Handle(basePath+"/", http.StripPrefix(basePath, http.HandlerFunc(staticServerFiles)))
+		}
+	}
+
 	return handler
 }
 

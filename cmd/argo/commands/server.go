@@ -42,6 +42,7 @@ func NewServerCommand() *cobra.Command {
 		configMap                string
 		port                     int
 		baseHRef                 string
+		rootPath                 string
 		secure                   bool
 		tlsCertificateSecretName string
 		hsts                     bool
@@ -113,6 +114,7 @@ See %s`, help.ArgoServer()),
 				"managedNamespace": managedNamespace,
 				"ssoNamespace":     ssoNamespace,
 				"baseHRef":         baseHRef,
+				"rootPath":         rootPath,
 				"secure":           secure,
 			}).Info(ctx, "Starting Argo Server")
 
@@ -155,6 +157,7 @@ See %s`, help.ArgoServer()),
 
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
+				RootPath:                 rootPath,
 				TLSConfig:                tlsConfig,
 				HSTS:                     hsts,
 				Namespaced:               namespaced,
@@ -196,6 +199,7 @@ See %s`, help.ArgoServer()),
 
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
 	command.Flags().StringVar(&baseHRef, "base-href", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /.")
+	command.Flags().StringVar(&rootPath, "root-path", "/", "API path prefix when Argo Server is behind ingress/proxy (e.g. '/api/v1'). Used to prefix all API endpoints.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
