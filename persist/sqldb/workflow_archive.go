@@ -279,7 +279,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 
 func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error) {
 	if options.Limit > 0 && options.Offset > 0 {
-		return r.countWorkflowsOptimized(ctx, options)
+		return r.countWorkflowsOptimized(options)
 	}
 
 	total := &archivedWorkflowCount{}
@@ -336,7 +336,7 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 	return int64(total.Total), nil
 }
 
-func (r *workflowArchive) countWorkflowsOptimized(ctx context.Context, options sutils.ListOptions) (int64, error) {
+func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (int64, error) {
 	sampleSelector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
