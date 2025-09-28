@@ -1,4 +1,4 @@
-Component: Server
+Component: UI
 Issues: 13948
 Description: Optimize pagination performance when counting workflows in archive.
 Author: [Shuangkun Tian](https://github.com/shuangkun)
