@@ -1,16 +1,6 @@
-<!-- Required: All of these fields are required, including at least one issue -->
-Description: <!-- A brief one line description of the feature -->
-Author: <!-- Author name and GitHub link in markdown format e.g. [Alan Clucas](https://github.com/Joibel) -->
-Component: <!-- component name here, see hack/featuregen/components.go for the list -->
-Issues: <!-- Space separated list of issues 1234 5678 -->
+Component: Server
+Issues: 13948
+Description: Optimize pagination performance when counting workflows in archive.
+Author: [Shuangkun Tian](https://github.com/shuangkun)
 
-<!--
-Optional
-Additional details about the feature written in markdown, aimed at users who want to learn about it
-* Explain when you would want to use the feature
-* Include code examples if applicable
-  * Provide working examples
-  * Format code using back-ticks
-* Use Kubernetes style
-* One sentence per line of markdown
--->
+When querying archived workflows with pagination, the system now uses more efficient methods to check if there are more items available. Instead of performing expensive full table scans, the new implementation uses LIMIT queries to check if there are items beyond the current offset+limit, significantly improving performance for large datasets.
