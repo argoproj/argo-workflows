@@ -52,6 +52,8 @@ type HTTP struct {
 	BodyFrom *HTTPBodySource `json:"bodyFrom,omitempty" protobuf:"bytes,8,opt,name=bodyFrom"`
 	// InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty" protobuf:"bytes,7,opt,name=insecureSkipVerify"`
+	// Auth contains information for client authentication
+	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,9,opt,name=auth"`
 }
 
 func (h *HTTP) GetBodyBytes() []byte {
