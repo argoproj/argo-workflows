@@ -4376,6 +4376,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"isParent": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IsParent indicates whether this node has created children workflows",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
