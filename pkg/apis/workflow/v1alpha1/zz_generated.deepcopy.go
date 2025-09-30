@@ -1748,6 +1748,16 @@ func (in *Inputs) DeepCopyInto(out *Inputs) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.ArtifactRepositoryRef != nil {
+		in, out := &in.ArtifactRepositoryRef, &out.ArtifactRepositoryRef
+		*out = new(ArtifactRepositoryRef)
+		**out = **in
+	}
+	if in.ArtifactLocation != nil {
+		in, out := &in.ArtifactLocation, &out.ArtifactLocation
+		*out = new(ArtifactLocation)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -2429,6 +2439,16 @@ func (in *Outputs) DeepCopyInto(out *Outputs) {
 		in, out := &in.ExitCode, &out.ExitCode
 		*out = new(string)
 		**out = **in
+	}
+	if in.ArtifactRepositoryRef != nil {
+		in, out := &in.ArtifactRepositoryRef, &out.ArtifactRepositoryRef
+		*out = new(ArtifactRepositoryRef)
+		**out = **in
+	}
+	if in.ArtifactLocation != nil {
+		in, out := &in.ArtifactLocation, &out.ArtifactLocation
+		*out = new(ArtifactLocation)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

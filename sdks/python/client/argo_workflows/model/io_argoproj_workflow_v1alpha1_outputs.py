@@ -31,8 +31,12 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact import IoArgoprojWorkflowV1alpha1Artifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_location import IoArgoprojWorkflowV1alpha1ArtifactLocation
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_parameter import IoArgoprojWorkflowV1alpha1Parameter
     globals()['IoArgoprojWorkflowV1alpha1Artifact'] = IoArgoprojWorkflowV1alpha1Artifact
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactLocation'] = IoArgoprojWorkflowV1alpha1ArtifactLocation
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     globals()['IoArgoprojWorkflowV1alpha1Parameter'] = IoArgoprojWorkflowV1alpha1Parameter
 
 
@@ -89,6 +93,8 @@ class IoArgoprojWorkflowV1alpha1Outputs(ModelNormal):
         """
         lazy_import()
         return {
+            'artifact_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
+            'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef,),  # noqa: E501
             'artifacts': ([IoArgoprojWorkflowV1alpha1Artifact],),  # noqa: E501
             'exit_code': (str,),  # noqa: E501
             'parameters': ([IoArgoprojWorkflowV1alpha1Parameter],),  # noqa: E501
@@ -101,6 +107,8 @@ class IoArgoprojWorkflowV1alpha1Outputs(ModelNormal):
 
 
     attribute_map = {
+        'artifact_location': 'artifactLocation',  # noqa: E501
+        'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
         'artifacts': 'artifacts',  # noqa: E501
         'exit_code': 'exitCode',  # noqa: E501
         'parameters': 'parameters',  # noqa: E501
@@ -148,6 +156,8 @@ class IoArgoprojWorkflowV1alpha1Outputs(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            artifact_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
+            artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             artifacts ([IoArgoprojWorkflowV1alpha1Artifact]): Artifacts holds the list of output artifacts produced by a step. [optional]  # noqa: E501
             exit_code (str): ExitCode holds the exit code of a script template. [optional]  # noqa: E501
             parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters holds the list of output parameters produced by a step. [optional]  # noqa: E501
@@ -233,6 +243,8 @@ class IoArgoprojWorkflowV1alpha1Outputs(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            artifact_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
+            artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             artifacts ([IoArgoprojWorkflowV1alpha1Artifact]): Artifacts holds the list of output artifacts produced by a step. [optional]  # noqa: E501
             exit_code (str): ExitCode holds the exit code of a script template. [optional]  # noqa: E501
             parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters holds the list of output parameters produced by a step. [optional]  # noqa: E501
