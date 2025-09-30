@@ -3597,11 +3597,22 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 		ownerReferences := obj.GetOwnerReferences()
 		obj.SetOwnerReferences(append(ownerReferences, *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
+
+		// attach the labels for better tracking
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels[common.LabelKeyResourceParentPodName] = wfutil.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, node.ID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		labels[common.LabelKeyResourceParentWorkflowName] = woc.wf.Name
+		obj.SetLabels(labels)
+
 		bytes, err := yaml.Marshal(obj.Object)
 		if err != nil {
 			return node, err
 		}
 		tmpl.Resource.Manifest = string(bytes)
+
 	}
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
