@@ -201,11 +201,22 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	archivedCount, err := s.wfArchive.CountWorkflows(ctx, options)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
+
+	// Only calculate archivedCount when it's actually needed
+	// This avoids expensive COUNT queries when not necessary
+	var archivedCount int64
+	var totalCount int64
+	if options.ShowRemainingItemCount {
+		archivedCount, err = s.wfArchive.CountWorkflows(ctx, options)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		totalCount = liveWfCount + archivedCount
+	} else {
+		// For pagination without remaining count, we can use a more efficient approach
+		// Just check if there are more items beyond the current page
+		totalCount = liveWfCount // Start with live count, will be updated if needed
 	}
-	totalCount := liveWfCount + archivedCount
 
 	// first fetch live workflows
 	liveWfList := &wfv1.WorkflowList{}
@@ -236,15 +247,30 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if s.wfReflector != nil {
 		meta.ResourceVersion = s.wfReflector.LastSyncResourceVersion()
 	}
-	remainCount := totalCount - int64(options.Offset) - int64(len(wfs))
-	if remainCount < 0 {
-		remainCount = 0
+	var remainCount int64
+	if options.ShowRemainingItemCount {
+		// Calculate exact remaining count when requested
+		remainCount = totalCount - int64(options.Offset) - int64(len(wfs))
+		if remainCount < 0 {
+			remainCount = 0
+		}
+		meta.RemainingItemCount = &remainCount
+	} else {
+		// For pagination without remaining count, use the efficient HasMoreWorkflows method
+		// This avoids expensive COUNT queries
+		hasMore, err := s.wfArchive.HasMoreWorkflows(ctx, options)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		if hasMore {
+			remainCount = 1 // There are more items
+		} else {
+			remainCount = 0 // No more items
+		}
 	}
+
 	if remainCount > 0 {
 		meta.Continue = fmt.Sprintf("%v", options.Offset+len(wfs))
-	}
-	if options.ShowRemainingItemCount {
-		meta.RemainingItemCount = &remainCount
 	}
 
 	cleaner := fields.NewCleaner(req.Fields)

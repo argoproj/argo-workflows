@@ -72,6 +72,9 @@ type WorkflowArchive interface {
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
 	ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error)
 	CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error)
+	// HasMoreWorkflows efficiently checks if there are more workflows beyond the current offset+limit
+	// This is much faster than counting all workflows for pagination purposes
+	HasMoreWorkflows(ctx context.Context, options sutils.ListOptions) (bool, error)
 	GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error)
 	GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error)
 	DeleteWorkflow(ctx context.Context, uid string) error
@@ -275,7 +278,46 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 }
 
 func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error) {
+	if options.Limit > 0 && options.Offset > 0 {
+		return r.countWorkflowsOptimized(options)
+	}
+
 	total := &archivedWorkflowCount{}
+
+	if len(options.LabelRequirements) == 0 {
+		selector := r.session.SQL().
+			Select(db.Raw("count(*) as total")).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(namespaceEqual(options.Namespace)).
+			And(namePrefixClause(options.NamePrefix)).
+			And(startedAtFromClause(options.MinStartedAt)).
+			And(startedAtToClause(options.MaxStartedAt)).
+			And(createdAfterClause(options.CreatedAfter)).
+			And(finishedBeforeClause(options.FinishedBefore))
+
+		if options.Name != "" {
+			nameFilter := options.NameFilter
+			if nameFilter == "" {
+				nameFilter = "Exact"
+			}
+			if nameFilter == "Exact" {
+				selector = selector.And(nameEqual(options.Name))
+			}
+			if nameFilter == "Contains" {
+				selector = selector.And(nameContainsClause(options.Name))
+			}
+			if nameFilter == "Prefix" {
+				selector = selector.And(namePrefixClause(options.Name))
+			}
+		}
+
+		err := selector.One(total)
+		if err != nil {
+			return 0, err
+		}
+		return int64(total.Total), nil
+	}
 
 	selector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
@@ -292,6 +334,107 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 	}
 
 	return int64(total.Total), nil
+}
+
+func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (int64, error) {
+	sampleSelector := r.session.SQL().
+		Select(db.Raw("count(*) as total")).
+		From(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(namespaceEqual(options.Namespace)).
+		And(namePrefixClause(options.NamePrefix)).
+		And(startedAtFromClause(options.MinStartedAt)).
+		And(startedAtToClause(options.MaxStartedAt)).
+		And(createdAfterClause(options.CreatedAfter)).
+		And(finishedBeforeClause(options.FinishedBefore))
+
+	if options.Name != "" {
+		nameFilter := options.NameFilter
+		if nameFilter == "" {
+			nameFilter = "Exact"
+		}
+		if nameFilter == "Exact" {
+			sampleSelector = sampleSelector.And(nameEqual(options.Name))
+		}
+		if nameFilter == "Contains" {
+			sampleSelector = sampleSelector.And(nameContainsClause(options.Name))
+		}
+		if nameFilter == "Prefix" {
+			sampleSelector = sampleSelector.And(namePrefixClause(options.Name))
+		}
+	}
+
+	if options.Offset < 1000 {
+		total := &archivedWorkflowCount{}
+		err := sampleSelector.One(total)
+		if err != nil {
+			return 0, err
+		}
+		return int64(total.Total), nil
+	}
+
+	sampleSize := 1000
+	sampleSelector = sampleSelector.Limit(sampleSize)
+
+	sampleTotal := &archivedWorkflowCount{}
+	err := sampleSelector.One(sampleTotal)
+	if err != nil {
+		return 0, err
+	}
+
+	if int64(sampleTotal.Total) < int64(sampleSize) {
+		return int64(sampleTotal.Total), nil
+	}
+
+	estimatedTotal := int64(options.Offset) + int64(sampleTotal.Total) + int64(options.Limit)
+	return estimatedTotal, nil
+}
+
+func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.ListOptions) (bool, error) {
+	selector := r.session.SQL().
+		Select("uid").
+		From(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(namespaceEqual(options.Namespace)).
+		And(namePrefixClause(options.NamePrefix)).
+		And(startedAtFromClause(options.MinStartedAt)).
+		And(startedAtToClause(options.MaxStartedAt)).
+		And(createdAfterClause(options.CreatedAfter)).
+		And(finishedBeforeClause(options.FinishedBefore))
+
+	if options.Name != "" {
+		nameFilter := options.NameFilter
+		if nameFilter == "" {
+			nameFilter = "Exact"
+		}
+		if nameFilter == "Exact" {
+			selector = selector.And(nameEqual(options.Name))
+		}
+		if nameFilter == "Contains" {
+			selector = selector.And(nameContainsClause(options.Name))
+		}
+		if nameFilter == "Prefix" {
+			selector = selector.And(namePrefixClause(options.Name))
+		}
+	}
+
+	if len(options.LabelRequirements) > 0 {
+		var err error
+		selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	selector = selector.Limit(1).Offset(options.Offset + options.Limit)
+
+	var result []struct{ UID string }
+	err := selector.All(&result)
+	if err != nil {
+		return false, err
+	}
+
+	return len(result) > 0, nil
 }
 
 func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
