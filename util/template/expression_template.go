@@ -26,6 +26,11 @@ func init() {
 func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
 	for _, variable := range variables {
 		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
+			// Special handling for workflow.outputs.* variables - let them proceed to expr evaluation
+			// where they can be properly resolved even if the base key doesn't exist in env
+			if strings.HasPrefix(variable, "workflow.outputs.") {
+				continue
+			}
 			return true
 		}
 	}
@@ -60,24 +65,53 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
-	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
-	// when `workflow.status` and `workflow.failures` don't exist in the env.
+	// This is to make sure expressions which contains `workflow.status`, `workflow.failures`
+	// don't get resolved to nil when they don't exist in the env.
+	// Note: workflow.outputs.* variables are handled specially below with minimal structure
 	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
+	// This issue doesn't happen to other template parameters since these workflow-level variables only exist in the env
 	// when the exit handlers complete.
-	if anyVarNotInEnv(unmarshalledExpression, []string{"workflow.status", "workflow.failures"}, env) && allowUnresolved {
+	workflowVariables := []string{"workflow.status", "workflow.failures"}
+	if anyVarNotInEnv(unmarshalledExpression, workflowVariables, env) && allowUnresolved {
 		log.WithError(err).Debug(ctx, "workflow.status or workflow.failures are present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
-	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
+	// Special handling: if the expression contains workflow.outputs.* but workflow doesn't exist in env,
+	// create a minimal workflow structure to prevent "unknown name workflow" errors
+	envForCompilation := env
+	if strings.Contains(unmarshalledExpression, "workflow.outputs.") {
+		if _, hasWorkflow := env["workflow"]; !hasWorkflow {
+			// Create a copy of env with minimal workflow structure
+			envForCompilation = make(map[string]interface{})
+			for k, v := range env {
+				envForCompilation[k] = v
+			}
+			envForCompilation["workflow"] = map[string]interface{}{
+				"outputs": map[string]interface{}{
+					"artifacts":  map[string]interface{}{},
+					"parameters": map[string]interface{}{},
+				},
+			}
+		}
+	}
+
+	program, err := expr.Compile(unmarshalledExpression, expr.Env(envForCompilation))
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
 	if err != nil && !allowUnresolved {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
-	result, err := expr.Run(program, env)
+	result, err := expr.Run(program, envForCompilation)
+
+	// Special handling for workflow.outputs.* expressions that evaluate to null
+	// In exit handler context, this is expected and should remain unresolved rather than error
+	if result == nil && strings.Contains(unmarshalledExpression, "workflow.outputs.") && allowUnresolved {
+		log.Debug(ctx, "workflow.outputs expression evaluated to null, leaving unresolved")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
+	}
+
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug(ctx, "Result and error are unresolved")
