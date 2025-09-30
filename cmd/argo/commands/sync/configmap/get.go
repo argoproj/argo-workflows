@@ -1,4 +1,4 @@
-package sync
+package configmap
 
 import (
 	"context"
@@ -40,7 +40,7 @@ func GetSyncLimitCommand(ctx context.Context, cmName string, cliGetOpts *cliGetO
 	if err != nil {
 		return err
 	}
-	serviceClient, err := apiClient.NewSyncServiceClient()
+	serviceClient, err := apiClient.NewSyncServiceClient(ctx)
 	if err != nil {
 		return err
 	}
