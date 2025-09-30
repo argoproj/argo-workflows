@@ -117,13 +117,13 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 	ctx.log.Debugf("Getting the template by name: %s", name)
 
 	tmpl := ctx.tmplBase.GetTemplateByName(name)
+	if tmpl == nil {
+		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
+	}
 
 	podMetadata := ctx.tmplBase.GetPodMetadata()
 	ctx.addPodMetadata(podMetadata, tmpl)
 
-	if tmpl == nil {
-		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
-	}
 	return tmpl.DeepCopy(), nil
 }
 
