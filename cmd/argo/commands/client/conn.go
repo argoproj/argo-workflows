@@ -45,7 +45,8 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&instanceID, "instanceid", os.Getenv("ARGO_INSTANCEID"), "submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.")
 	// "-s" like kubectl
 	cmd.PersistentFlags().StringVarP(&ArgoServerOpts.URL, "argo-server", "s", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
-	cmd.PersistentFlags().StringVar(&ArgoServerOpts.Path, "argo-base-href", os.Getenv("ARGO_BASE_HREF"), "Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.")
+	cmd.PersistentFlags().StringVar(&ArgoServerOpts.BaseHRef, "argo-base-href", os.Getenv("ARGO_BASE_HREF"), "Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.")
+	cmd.PersistentFlags().StringVar(&ArgoServerOpts.RootPath, "argo-root-path", os.Getenv("ARGO_ROOT_PATH"), "API path prefix when Argo Server is behind ingress/proxy. Defaults to the ARGO_ROOT_PATH environment variable.")
 	cmd.PersistentFlags().BoolVar(&ArgoServerOpts.HTTP1, "argo-http1", os.Getenv("ARGO_HTTP1") == "true", "If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.")
 	cmd.PersistentFlags().StringSliceVarP(&ArgoServerOpts.Headers, "header", "H", []string{}, "Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.")
 	// "-e" for encrypted - like zip

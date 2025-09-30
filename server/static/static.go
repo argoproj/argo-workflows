@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"net/http"
 	"regexp"
@@ -16,6 +17,7 @@ import (
 
 type FilesServer struct {
 	baseHRef        string
+	rootPath        string
 	hsts            bool
 	xframeOpts      string
 	corsAllowOrigin string
@@ -24,8 +26,8 @@ type FilesServer struct {
 
 var baseHRefRegex = regexp.MustCompile(`<base href="(.*?)">`)
 
-func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string, staticAssets embed.FS) *FilesServer {
-	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin, staticAssets}
+func NewFilesServer(baseHRef string, rootPath string, hsts bool, xframeOpts string, corsAllowOrigin string, staticAssets embed.FS) *FilesServer {
+	return &FilesServer{baseHRef, rootPath, hsts, xframeOpts, corsAllowOrigin, staticAssets}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +78,11 @@ func (s *FilesServer) getIndexData() ([]byte, error) {
 	}
 	if s.baseHRef != "/" && s.baseHRef != "" {
 		data = []byte(replaceBaseHRef(string(data), fmt.Sprintf(`<base href="/%s/">`, strings.Trim(s.baseHRef, "/"))))
+	}
+	if s.rootPath != "" && s.rootPath != "/" {
+		safe := template.HTMLEscapeString(s.rootPath)
+		tag := fmt.Sprintf(`<meta name="argo-root-path" content="%s">`, safe)
+		data = []byte(strings.Replace(string(data), "</head>", tag+"\n</head>", 1))
 	}
 
 	return data, nil
