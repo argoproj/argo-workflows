@@ -706,6 +706,12 @@ func (s *CLISuite) TestWorkflowLint() {
 			assert.Contains(t, output, "no linting errors found")
 		})
 	})
+	s.Run("LintFileEmptyTemplateSteps", func() {
+		s.Given().RunCli([]string{"lint", "smoke/empty-template-steps.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "no linting errors found")
+		})
+	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
@@ -716,6 +722,12 @@ func (s *CLISuite) TestWorkflowLint() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
 			assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
+		})
+	})
+	s.Run("LintFileMisreferenceTemplate", func() {
+		s.Given().RunCli([]string{"lint", "expectedfailures/misreference-template-name.yaml"}, func(t *testing.T, output string, err error) {
+			require.EqualError(t, err, "exit status 1")
+			assert.Contains(t, output, "templates.steps-with-misreference.steps[1].hello2 template name 'hell0' undefined")
 		})
 	})
 	s.Run("LintFileWithTemplate", func() {
