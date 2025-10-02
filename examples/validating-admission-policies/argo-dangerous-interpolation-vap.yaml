@@ -1,0 +1,43 @@
+# This admission policy (https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/)
+# can be used to block workflows that use string interpolation inside the fields "command",
+# "args", or "source".
+#
+# Interpolating untrusted user input into this fields can lead to command
+# injection vulnerabilities (https://owasp.org/www-community/attacks/Command_Injection).
+#
+# This policy will only work when using the full CRDs (https://argo-workflows.readthedocs.io/en/latest/installation/#full-crds).
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: "argo-dangerous-interpolation-vap"
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   ["argoproj.io"]
+      apiVersions: ["v1alpha1"]
+      operations:  ["CREATE", "UPDATE"]
+      resources:   ["workflows"]
+  validations:
+    - expression: |
+        !object.spec.templates.exists(template,
+          // Aggregate all command/args/source fields for all containers into a 2D array,
+          // since CEL doesn't support array flattening.
+          // For "container" and "script" templates, there's only one container,
+          // so the first array will have a single entry.
+          // For "containerSet" templates, the first array could have many entries.
+          (
+            [ template.?container.command.orValue([])
+              + template.?container.args.orValue([])
+              + template.?script.command.orValue([])
+              + [template.?script.source.orValue("")]
+            ] + template.?containerSet.optMap(containerSet,
+              containerSet.containers.map(c,
+                c.?command.orValue([]) + c.?args.orValue([])
+              )
+            ).orValue([])
+          ).exists(containerValues,
+            containerValues.exists(value, value.matches('\\{\\{[^\\}]*\\}\\}'))
+          )
+        )
+      message: "Dangerous interpolation detected"
