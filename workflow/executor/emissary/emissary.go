@@ -15,6 +15,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
@@ -115,22 +116,33 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if e.isComplete(containerNames) {
-				return nil
+			complete, err := e.checkCompletion(containerNames)
+			if complete {
+				return err
 			}
 			time.Sleep(time.Second)
 		}
 	}
 }
 
-func (e emissary) isComplete(containerNames []string) bool {
+func (e emissary) checkCompletion(containerNames []string) (bool, error) {
 	for _, containerName := range containerNames {
-		_, err := os.Stat(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "exitcode"))
+		data, err := os.ReadFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "exitcode"))
 		if os.IsNotExist(err) {
-			return false
+			return false, nil
+		}
+		if err != nil {
+			return true, err
+		}
+		exitCode, err := strconv.Atoi(string(data))
+		if err != nil {
+			return true, err
+		}
+		if exitCode != 0 {
+			return true, errorsutil.NewExitErr(exitCode)
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (e emissary) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
