@@ -206,6 +206,24 @@ A count of log messages emitted by the controller by log level: `error`, `warn` 
 |-----------|------------------------------|
 | `level`   | The log level of the message |
 
+#### `mutex_released_total`
+
+A counter of the number of mutexes released.
+
+|     attribute     |        explanation         |
+|-------------------|----------------------------|
+| `name`            | The name of the mutex      |
+| `mutex_namespace` | The namespace of the mutex |
+
+#### `mutex_taken_total`
+
+A counter of the number of mutexes taken.
+
+|     attribute     |        explanation         |
+|-------------------|----------------------------|
+| `name`            | The name of the mutex      |
+| `mutex_namespace` | The namespace of the mutex |
+
 #### `operation_duration_seconds`
 
 A histogram of durations of operations.
@@ -427,6 +445,26 @@ This rate limiter is not on by default
 This metric has no attributes.
 
 Default bucket sizes: 0, 0.1, 0.5, 1, 5, 10, 30, 60, 180
+
+#### `semaphore_released_total`
+
+A counter of the number of semaphores released.
+
+|    attribute     |                         explanation                         |
+|------------------|-------------------------------------------------------------|
+| `configmap_name` | The name of the ConfigMap used to store the semaphore state |
+| `name`           | The name of the semaphore                                   |
+| `namespace`      | The namespace of the semaphore                              |
+
+#### `semaphore_taken_total`
+
+A counter of the number of semaphores taken.
+
+|    attribute     |                         explanation                         |
+|------------------|-------------------------------------------------------------|
+| `configmap_name` | The name of the ConfigMap used to store the semaphore state |
+| `name`           | The name of the semaphore                                   |
+| `namespace`      | The namespace of the semaphore                              |
 
 #### `total_count`
 
