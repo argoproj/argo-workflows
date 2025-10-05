@@ -141,6 +141,21 @@ var InstrumentLogMessages = BuiltinInstrument{
 	},
 }
 
+var InstrumentMutexTotal = BuiltinInstrument{
+	name:        "mutex_total",
+	description: "A counter of the number of mutexes",
+	unit:        "{mutex}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribMutexName,
+		},
+		{
+			name: AttribMutexNamespace,
+		},
+	},
+}
+
 var InstrumentOperationDurationSeconds = BuiltinInstrument{
 	name:        "operation_duration_seconds",
 	description: "A histogram of durations of operations",
@@ -304,6 +319,24 @@ var InstrumentQueueUnfinishedWork = BuiltinInstrument{
 	attributes: []BuiltinAttribute{
 		{
 			name: AttribQueueName,
+		},
+	},
+}
+
+var InstrumentSemaphoreTotal = BuiltinInstrument{
+	name:        "semaphore_total",
+	description: "A counter of the number of semaphores",
+	unit:        "{semaphore}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribSemaphoreConfigMapName,
+		},
+		{
+			name: AttribSemaphoreName,
+		},
+		{
+			name: AttribSemaphoreNamespace,
 		},
 	},
 }
