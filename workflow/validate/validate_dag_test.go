@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var dagCycle = `
@@ -1119,4 +1121,102 @@ spec:
 func TestFailDAGArgParamValueFromPathInTask(t *testing.T) {
 	err := validate(failDagArgParamValueFromPathInTask)
 	require.ErrorContains(t, err, "valueFrom only allows: default, configMapKeyRef and supplied")
+}
+
+var dagWithItemTemplateRefTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: 363-test-tmp
+  namespace: default
+spec:
+  templates:
+    - name: 363-test-tmp
+      nodeSelector:
+        nodegroup: arm-spot
+      inputs:
+        parameters:
+          - name: path
+          - name: service
+          - name: build_arg
+          - name: run_on
+          - name: arch
+          - name: docker_org
+      container:
+        image: alpine
+        command:
+          - sh
+          - -c
+          - |
+            echo "path: {{inputs.parameters.path}}"
+            echo "service: {{inputs.parameters.service}}"
+            echo "build_arg: {{inputs.parameters.build_arg}}"
+            echo "run_on: {{inputs.parameters.run_on}}"
+            echo "arch: {{inputs.parameters.arch}}"
+            echo "docker_org: {{inputs.parameters.docker_org}}"
+`
+
+var dagWithItemTemplateRefWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: 363-test-
+  namespace: default
+spec:
+  activeDeadlineSeconds: 10800
+  entrypoint: main
+  serviceAccountName: ci
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: withitems
+            templateRef:
+              name: 363-test-tmp
+              template: 363-test-tmp
+            arguments:
+              parameters:
+                - name: path
+                  value: "{{item.path}}"
+                - name: service
+                  value: "{{item.service}}"
+                - name: build_arg
+                  value: "{{item.arg}}"
+                - name: run_on
+                  value: "{{item.run_on}}"
+                - name: arch
+                  value: "{{item.arch}}"
+                - name: docker_org
+                  value: "{{item.docker_org}}"
+            withItems:
+              - {
+                  path: "services",
+                  service: "id",
+                  arg: "",
+                  run_on: "arm-spot",
+                  arch: "arm64",
+                  docker_org: "pipekit13",
+                }
+              - {
+                  path: "services",
+                  service: "events-handler",
+                  arg: "",
+                  run_on: "arm-spot",
+                  arch: "arm64",
+                  docker_org: "pipekit13",
+                }
+`
+
+func TestDagWithItemTemplateRefTmpl(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagWithItemTemplateRefWf)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(dagWithItemTemplateRefTmpl)
+
+	err := createWorkflowTemplate(wftmpl)
+	require.NoError(t, err)
+
+	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	require.NoError(t, err)
+
+	_ = deleteWorkflowTemplate(wftmpl.Name)
 }
