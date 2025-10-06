@@ -3778,7 +3778,7 @@
       "type": "object"
     },
     "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.URLArtifact": {
-      "description": "URLArtifact contains information about an artifact at an http endpoint.",
+      "description": "URLArtifact contains information about an artifact at an HTTP endpoint.",
       "properties": {
         "path": {
           "title": "Path is the complete URL",
