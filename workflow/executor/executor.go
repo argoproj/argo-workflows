@@ -186,6 +186,12 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
 		}
+		// use input specific artifact location
+		_err := art.Relocate(we.Template.Inputs.ArtifactLocation)
+		if _err != nil {
+			// ignore error
+			logger.WithField("error", _err).Info(ctx, "No artifact location")
+		}
 		err := art.CleanPath()
 		if err != nil {
 			return err
@@ -323,6 +329,12 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 
 	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
+		// use output specific artifact location
+		_err := art.Relocate(we.Template.Outputs.ArtifactLocation)
+		if _err != nil {
+			// ignore error
+			logger.WithField("error", _err).Info(ctx, "No artifact location")
+		}
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
 			aggregateError += err.Error() + "; "
