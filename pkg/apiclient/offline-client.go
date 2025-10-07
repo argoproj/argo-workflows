@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
@@ -52,7 +54,10 @@ func newOfflineClient(ctx context.Context, paths []string) (context.Context, Cli
 			for _, pr := range common.ParseObjects(ctx, bytes, false) {
 				obj, err := pr.Object, pr.Err
 				if err != nil {
-					return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
+					// Skip validation error here since lintData will catch and report it
+					// This prevents duplicate error messages when using argo lint with --offline
+					log.Infof("Skipping validation error in offline client - will be handled by lint: %v", err)
+					continue
 				}
 
 				if obj == nil {
