@@ -19,35 +19,35 @@ type configMapSyncProvider struct{}
 var _ SyncConfigProvider = &configMapSyncProvider{}
 
 func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
-	if req.SizeLimit <= 0 {
-		return nil, sutils.ToStatusError(fmt.Errorf("size limit must be greater than zero"), codes.InvalidArgument)
+	if req.Limit <= 0 {
+		return nil, sutils.ToStatusError(fmt.Errorf("limit must be greater than zero"), codes.InvalidArgument)
 	}
 
 	kubeClient := auth.GetKubeClient(ctx)
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
 
-	cm, err := configmapGetter.Get(ctx, req.Name, metav1.GetOptions{})
+	cm, err := configmapGetter.Get(ctx, req.CmName, metav1.GetOptions{})
 	if err == nil {
 		_, has := cm.Data[req.Key]
 		if has {
-			return nil, fmt.Errorf("sync limit cannot be created as it already exists")
+			return nil, sutils.ToStatusError(fmt.Errorf("sync limit cannot be created as it already exists"), codes.AlreadyExists)
 		}
 		return s.handleUpdateSyncLimit(ctx, &syncpkg.UpdateSyncLimitRequest{
-			Name:      req.Name,
+			CmName:    req.CmName,
 			Namespace: req.Namespace,
 			Key:       req.Key,
-			SizeLimit: req.SizeLimit,
+			Limit:     req.Limit,
 		}, false)
 	}
 
 	cm = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      req.Name,
+			Name:      req.CmName,
 			Namespace: req.Namespace,
 		},
 		Data: map[string]string{
-			req.Key: fmt.Sprint(req.SizeLimit),
+			req.Key: fmt.Sprint(req.Limit),
 		},
 	}
 
@@ -57,10 +57,10 @@ func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpk
 	}
 
 	return &syncpkg.SyncLimitResponse{
-		Name:      cm.Name,
+		CmName:    cm.Name,
 		Namespace: cm.Namespace,
 		Key:       req.Key,
-		SizeLimit: req.SizeLimit,
+		Limit:     req.Limit,
 	}, nil
 }
 
@@ -69,32 +69,32 @@ func (s *configMapSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.G
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
 
-	cm, err := configmapGetter.Get(ctx, req.Name, metav1.GetOptions{})
+	cm, err := configmapGetter.Get(ctx, req.CmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	sizeLimit, ok := cm.Data[req.Key]
+	limit, ok := cm.Data[req.Key]
 	if !ok {
 		return nil, sutils.ToStatusError(fmt.Errorf("key %s not found in configmap %s/%s", req.Key, cm.Namespace, cm.Name), codes.NotFound)
 	}
 
-	parsedSizeLimit, err := strconv.Atoi(sizeLimit)
+	parsedLimit, err := strconv.Atoi(limit)
 	if err != nil {
-		return nil, sutils.ToStatusError(fmt.Errorf("invalid size limit format for key %s in configmap %s/%s", req.Key, cm.Namespace, cm.Name), codes.InvalidArgument)
+		return nil, sutils.ToStatusError(fmt.Errorf("invalid limit format for key %s in configmap %s/%s", req.Key, cm.Namespace, cm.Name), codes.InvalidArgument)
 	}
 
 	return &syncpkg.SyncLimitResponse{
-		Name:      cm.Name,
+		CmName:    cm.Name,
 		Namespace: cm.Namespace,
 		Key:       req.Key,
-		SizeLimit: int32(parsedSizeLimit),
+		Limit:     int32(parsedLimit),
 	}, nil
 }
 
 func (s *configMapSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
-	if req.SizeLimit <= 0 {
-		return nil, sutils.ToStatusError(fmt.Errorf("size limit must be greater than zero"), codes.InvalidArgument)
+	if req.Limit <= 0 {
+		return nil, sutils.ToStatusError(fmt.Errorf("limit must be greater than zero"), codes.InvalidArgument)
 	}
 
 	return s.handleUpdateSyncLimit(ctx, req, true)
@@ -105,7 +105,7 @@ func (s *configMapSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpk
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
 
-	cm, err := configmapGetter.Get(ctx, req.Name, metav1.GetOptions{})
+	cm, err := configmapGetter.Get(ctx, req.CmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -125,7 +125,7 @@ func (s *configMapSyncProvider) handleUpdateSyncLimit(ctx context.Context, req *
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
 
-	cm, err := configmapGetter.Get(ctx, req.Name, metav1.GetOptions{})
+	cm, err := configmapGetter.Get(ctx, req.CmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -138,7 +138,7 @@ func (s *configMapSyncProvider) handleUpdateSyncLimit(ctx context.Context, req *
 		return nil, sutils.ToStatusError(fmt.Errorf("key %s not found in configmap %s/%s - please create it first", req.Key, cm.Namespace, cm.Name), codes.NotFound)
 	}
 
-	cm.Data[req.Key] = strconv.Itoa(int(req.SizeLimit))
+	cm.Data[req.Key] = strconv.Itoa(int(req.Limit))
 
 	cm, err = configmapGetter.Update(ctx, cm, metav1.UpdateOptions{})
 	if err != nil {
@@ -146,9 +146,9 @@ func (s *configMapSyncProvider) handleUpdateSyncLimit(ctx context.Context, req *
 	}
 
 	return &syncpkg.SyncLimitResponse{
-		Name:      cm.Name,
+		CmName:    cm.Name,
 		Namespace: cm.Namespace,
 		Key:       req.Key,
-		SizeLimit: req.SizeLimit,
+		Limit:     req.Limit,
 	}, nil
 }

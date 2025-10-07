@@ -60,7 +60,7 @@ func TestDBSyncProvider(t *testing.T) {
 			Type:      syncpkg.SyncConfigType_DATABASE,
 			Namespace: "test-ns",
 			Key:       "test-name",
-			SizeLimit: 5,
+			Limit:     5,
 		}
 
 		allowed = false
@@ -100,7 +100,7 @@ func TestDBSyncProvider(t *testing.T) {
 		require.NotNil(t, resp)
 		require.Equal(t, "test-name", resp.Key)
 		require.Equal(t, "test-ns", resp.Namespace)
-		require.Equal(t, int32(5), resp.SizeLimit)
+		require.Equal(t, int32(5), resp.Limit)
 	})
 
 	t.Run("GetSyncLimit", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestDBSyncProvider(t *testing.T) {
 		require.NotNil(t, resp)
 		require.Equal(t, "test-name", resp.Key)
 		require.Equal(t, "test-ns", resp.Namespace)
-		require.Equal(t, int32(5), resp.SizeLimit)
+		require.Equal(t, int32(5), resp.Limit)
 	})
 
 	t.Run("UpdateSyncLimit", func(t *testing.T) {
@@ -153,7 +153,7 @@ func TestDBSyncProvider(t *testing.T) {
 			Type:      syncpkg.SyncConfigType_DATABASE,
 			Namespace: "test-ns",
 			Key:       "test-name",
-			SizeLimit: 10,
+			Limit:     10,
 		}
 		resp, err := provider.updateSyncLimit(ctx, req)
 
@@ -184,7 +184,7 @@ func TestDBSyncProvider(t *testing.T) {
 		require.NotNil(t, resp)
 		require.Equal(t, "test-name", resp.Key)
 		require.Equal(t, "test-ns", resp.Namespace)
-		require.Equal(t, int32(10), resp.SizeLimit)
+		require.Equal(t, int32(10), resp.Limit)
 	})
 
 	t.Run("DeleteSyncLimit", func(t *testing.T) {

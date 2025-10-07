@@ -30,7 +30,7 @@ func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, name
 		providers: make(map[syncpkg.SyncConfigType]SyncConfigProvider),
 	}
 
-	server.providers[syncpkg.SyncConfigType_CONFIG_MAP] = &configMapSyncProvider{}
+	server.providers[syncpkg.SyncConfigType_CONFIGMAP] = &configMapSyncProvider{}
 
 	if dbConfig != nil && (dbConfig.MySQL != nil || dbConfig.PostgreSQL != nil) {
 		session := syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, dbConfig)
@@ -41,8 +41,8 @@ func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, name
 }
 
 func (s *syncServer) CreateSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
-	if req.SizeLimit <= 0 {
-		return nil, sutils.ToStatusError(fmt.Errorf("size limit must be greater than zero"), codes.InvalidArgument)
+	if req.Limit <= 0 {
+		return nil, sutils.ToStatusError(fmt.Errorf("limit must be greater than zero"), codes.InvalidArgument)
 	}
 
 	provider, ok := s.providers[req.Type]
@@ -61,8 +61,8 @@ func (s *syncServer) GetSyncLimit(ctx context.Context, req *syncpkg.GetSyncLimit
 }
 
 func (s *syncServer) UpdateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
-	if req.SizeLimit <= 0 {
-		return nil, sutils.ToStatusError(fmt.Errorf("size limit must be greater than zero"), codes.InvalidArgument)
+	if req.Limit <= 0 {
+		return nil, sutils.ToStatusError(fmt.Errorf("limit must be greater than zero"), codes.InvalidArgument)
 	}
 
 	provider, ok := s.providers[req.Type]

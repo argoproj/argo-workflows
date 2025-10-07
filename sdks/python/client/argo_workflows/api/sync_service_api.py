@@ -112,7 +112,7 @@ class SyncServiceApi(object):
                     'namespace',
                     'key',
                     'type',
-                    'name',
+                    'cm_name',
                 ],
                 'required': [
                     'namespace',
@@ -132,7 +132,7 @@ class SyncServiceApi(object):
                 'allowed_values': {
                     ('type',): {
 
-                        "CONFIG_MAP": "CONFIG_MAP",
+                        "CONFIGMAP": "CONFIGMAP",
                         "DATABASE": "DATABASE"
                     },
                 },
@@ -143,20 +143,20 @@ class SyncServiceApi(object):
                         (str,),
                     'type':
                         (str,),
-                    'name':
+                    'cm_name':
                         (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
                     'key': 'key',
                     'type': 'type',
-                    'name': 'name',
+                    'cm_name': 'cmName',
                 },
                 'location_map': {
                     'namespace': 'path',
                     'key': 'path',
                     'type': 'query',
-                    'name': 'query',
+                    'cm_name': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -185,7 +185,7 @@ class SyncServiceApi(object):
                     'namespace',
                     'key',
                     'type',
-                    'name',
+                    'cm_name',
                 ],
                 'required': [
                     'namespace',
@@ -205,7 +205,7 @@ class SyncServiceApi(object):
                 'allowed_values': {
                     ('type',): {
 
-                        "CONFIG_MAP": "CONFIG_MAP",
+                        "CONFIGMAP": "CONFIGMAP",
                         "DATABASE": "DATABASE"
                     },
                 },
@@ -216,20 +216,20 @@ class SyncServiceApi(object):
                         (str,),
                     'type':
                         (str,),
-                    'name':
+                    'cm_name':
                         (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
                     'key': 'key',
                     'type': 'type',
-                    'name': 'name',
+                    'cm_name': 'cmName',
                 },
                 'location_map': {
                     'namespace': 'path',
                     'key': 'path',
                     'type': 'query',
-                    'name': 'query',
+                    'cm_name': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -407,8 +407,8 @@ class SyncServiceApi(object):
             key (str):
 
         Keyword Args:
-            type (str): [optional] if omitted the server will use the default value of "CONFIG_MAP"
-            name (str): [optional]
+            type (str): [optional] if omitted the server will use the default value of "CONFIGMAP"
+            cm_name (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -490,8 +490,8 @@ class SyncServiceApi(object):
             key (str):
 
         Keyword Args:
-            type (str): [optional] if omitted the server will use the default value of "CONFIG_MAP"
-            name (str): [optional]
+            type (str): [optional] if omitted the server will use the default value of "CONFIGMAP"
+            cm_name (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

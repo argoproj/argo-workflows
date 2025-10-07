@@ -2,9 +2,6 @@ package sync
 
 import (
 	"github.com/spf13/cobra"
-
-	configmap "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/sync/configmap"
-	db "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/sync/db"
 )
 
 func NewSyncCommand() *cobra.Command {
@@ -16,8 +13,10 @@ func NewSyncCommand() *cobra.Command {
 		},
 	}
 
-	command.AddCommand(configmap.NewConfigmapCommand())
-	command.AddCommand(db.NewDBCommand())
+	command.AddCommand(NewCreateCommand())
+	command.AddCommand(NewUpdateCommand())
+	command.AddCommand(NewDeleteCommand())
+	command.AddCommand(NewGetCommand())
 
 	return command
 }

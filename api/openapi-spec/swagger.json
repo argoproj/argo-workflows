@@ -2377,17 +2377,17 @@
           },
           {
             "enum": [
-              "CONFIG_MAP",
+              "CONFIGMAP",
               "DATABASE"
             ],
             "type": "string",
-            "default": "CONFIG_MAP",
+            "default": "CONFIGMAP",
             "name": "type",
             "in": "query"
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "cmName",
             "in": "query"
           }
         ],
@@ -2468,17 +2468,17 @@
           },
           {
             "enum": [
-              "CONFIG_MAP",
+              "CONFIGMAP",
               "DATABASE"
             ],
             "type": "string",
-            "default": "CONFIG_MAP",
+            "default": "CONFIGMAP",
             "name": "type",
             "in": "query"
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "cmName",
             "in": "query"
           }
         ],
@@ -15950,17 +15950,17 @@
     "sync.CreateSyncLimitRequest": {
       "type": "object",
       "properties": {
+        "cmName": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "limit": {
+          "type": "integer"
         },
         "namespace": {
           "type": "string"
-        },
-        "sizeLimit": {
-          "type": "integer"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"
@@ -15972,26 +15972,26 @@
     },
     "sync.SyncConfigType": {
       "type": "string",
-      "default": "CONFIG_MAP",
+      "default": "CONFIGMAP",
       "enum": [
-        "CONFIG_MAP",
+        "CONFIGMAP",
         "DATABASE"
       ]
     },
     "sync.SyncLimitResponse": {
       "type": "object",
       "properties": {
+        "cmName": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "limit": {
+          "type": "integer"
         },
         "namespace": {
           "type": "string"
-        },
-        "sizeLimit": {
-          "type": "integer"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"
@@ -16001,17 +16001,17 @@
     "sync.UpdateSyncLimitRequest": {
       "type": "object",
       "properties": {
+        "cmName": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "limit": {
+          "type": "integer"
         },
         "namespace": {
           "type": "string"
-        },
-        "sizeLimit": {
-          "type": "integer"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"

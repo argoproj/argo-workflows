@@ -38,11 +38,11 @@ func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.Creat
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	err = s.db.CreateSemaphoreLimit(ctx, name, int(req.SizeLimit))
+	err = s.db.CreateSemaphoreLimit(ctx, name, int(req.Limit))
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, SizeLimit: req.SizeLimit}, nil
+	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, Limit: req.Limit}, nil
 }
 
 func (s *dbSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
@@ -62,7 +62,7 @@ func (s *dbSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncL
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, SizeLimit: int32(limit.SizeLimit)}, nil
+	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, Limit: int32(limit.SizeLimit)}, nil
 }
 
 func (s *dbSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
@@ -75,14 +75,14 @@ func (s *dbSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.Updat
 	}
 
 	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
-	err = s.db.UpdateSemaphoreLimit(ctx, name, int(req.SizeLimit))
+	err = s.db.UpdateSemaphoreLimit(ctx, name, int(req.Limit))
 	if err != nil {
 		if err == db.ErrNoMoreRows {
 			return nil, status.Error(codes.NotFound, fmt.Sprintf("Database sync limit not found in namespace \"%s\".", req.Namespace))
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, SizeLimit: req.SizeLimit}, nil
+	return &syncpkg.SyncLimitResponse{Key: req.Key, Namespace: req.Namespace, Limit: req.Limit}, nil
 }
 
 func (s *dbSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpkg.DeleteSyncLimitRequest) (*syncpkg.DeleteSyncLimitResponse, error) {

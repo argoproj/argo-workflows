@@ -229,16 +229,10 @@ nav:
           - argo submit: cli/argo_submit.md
           - argo suspend: cli/argo_suspend.md
           - argo sync: cli/argo_sync.md
-          - argo sync configmap: cli/argo_sync_configmap.md
-          - argo sync configmap create: cli/argo_sync_configmap_create.md
-          - argo sync configmap delete: cli/argo_sync_configmap_delete.md
-          - argo sync configmap get: cli/argo_sync_configmap_get.md
-          - argo sync configmap update: cli/argo_sync_configmap_update.md
-          - argo sync db: cli/argo_sync_db.md
-          - argo sync db create: cli/argo_sync_db_create.md
-          - argo sync db delete: cli/argo_sync_db_delete.md
-          - argo sync db get: cli/argo_sync_db_get.md
-          - argo sync db update: cli/argo_sync_db_update.md
+          - argo sync create: cli/argo_sync_create.md
+          - argo sync delete: cli/argo_sync_delete.md
+          - argo sync get: cli/argo_sync_get.md
+          - argo sync update: cli/argo_sync_update.md
           - argo template: cli/argo_template.md
           - argo template create: cli/argo_template_create.md
           - argo template delete: cli/argo_template_delete.md
