@@ -71,7 +71,7 @@ func UpdateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliUpdateO
 		Namespace: client.Namespace(ctx),
 		Key:       key,
 		Limit:     cliOpts.limit,
-		Type:      syncpkg.SyncConfigType_CONFIGMAP,
+		Type:      syncpkg.SyncConfigType(syncpkg.SyncConfigType_value[cliOpts.syncType]),
 	}
 
 	resp, err := serviceClient.UpdateSyncLimit(ctx, req)

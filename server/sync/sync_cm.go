@@ -38,6 +38,7 @@ func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpk
 			Namespace: req.Namespace,
 			Key:       req.Key,
 			Limit:     req.Limit,
+			Type:      syncpkg.SyncConfigType_CONFIGMAP,
 		}, false)
 	}
 
@@ -61,6 +62,7 @@ func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpk
 		Namespace: cm.Namespace,
 		Key:       req.Key,
 		Limit:     req.Limit,
+		Type:      syncpkg.SyncConfigType_CONFIGMAP,
 	}, nil
 }
 
@@ -89,6 +91,7 @@ func (s *configMapSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.G
 		Namespace: cm.Namespace,
 		Key:       req.Key,
 		Limit:     int32(parsedLimit),
+		Type:      syncpkg.SyncConfigType_CONFIGMAP,
 	}, nil
 }
 
@@ -150,5 +153,6 @@ func (s *configMapSyncProvider) handleUpdateSyncLimit(ctx context.Context, req *
 		Namespace: cm.Namespace,
 		Key:       req.Key,
 		Limit:     req.Limit,
+		Type:      syncpkg.SyncConfigType_CONFIGMAP,
 	}, nil
 }

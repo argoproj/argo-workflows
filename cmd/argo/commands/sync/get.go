@@ -32,8 +32,8 @@ func NewGetCommand() *cobra.Command {
 `,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			syncType := strings.ToUpper(cliGetOpts.syncType)
-			return validateFlags(syncType, cliGetOpts.cmName)
+			cliGetOpts.syncType = strings.ToUpper(cliGetOpts.syncType)
+			return validateFlags(cliGetOpts.syncType, cliGetOpts.cmName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return GetSyncLimitCommand(cmd.Context(), args[0], &cliGetOpts)
@@ -43,12 +43,8 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVar(&cliGetOpts.syncType, "type", "", "Type of sync limit (database or configmap)")
 	command.Flags().StringVar(&cliGetOpts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
 
-	ctx := command.Context()
 	err := command.MarkFlagRequired("type")
-	errors.CheckError(ctx, err)
-
-	err = command.MarkFlagRequired("cm-name")
-	errors.CheckError(ctx, err)
+	errors.CheckError(command.Context(), err)
 
 	return command
 }
@@ -70,6 +66,7 @@ func GetSyncLimitCommand(ctx context.Context, key string, cliGetOpts *cliGetOpts
 		Type:      syncpkg.SyncConfigType(syncpkg.SyncConfigType_value[cliGetOpts.syncType]),
 	}
 
+	fmt.Printf("Request: %+v\n", req)
 	resp, err := serviceClient.GetSyncLimit(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to get sync limit: %v", err)

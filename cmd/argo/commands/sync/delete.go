@@ -44,12 +44,8 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().StringVar(&cliDeleteOpts.syncType, "type", "", "Type of sync limit (database or configmap)")
 	command.Flags().StringVar(&cliDeleteOpts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
 
-	ctx := command.Context()
 	err := command.MarkFlagRequired("type")
-	errors.CheckError(ctx, err)
-
-	err = command.MarkFlagRequired("cm-name")
-	errors.CheckError(ctx, err)
+	errors.CheckError(command.Context(), err)
 
 	return command
 }
