@@ -22,8 +22,8 @@ type dbSyncProvider struct {
 var _ SyncConfigProvider = &dbSyncProvider{}
 
 func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
-	// since there's no permission system for db sync limits, we use the k8s RBAC check if the request is reasonable
-	// configmap version is relying on the k8s RBAC so we don
+	// since there's no permission system for db sync limits, we use the k8s RBAC check to see if the request is reasonable
+	// configmap version is relying on the k8s RBAC so we don't need to check permissions
 	allowed, err := auth.CanI(ctx, "create", workflow.WorkflowPlural, req.Namespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
