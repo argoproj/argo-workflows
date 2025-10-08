@@ -266,6 +266,7 @@ nav:
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md
+          - synchronization-config.md
           - parallelism.md
       - Argo Server:
           - argo-server.md

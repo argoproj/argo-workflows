@@ -25,16 +25,16 @@ type syncServer struct {
 	providers map[syncpkg.SyncConfigType]SyncConfigProvider
 }
 
-func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig *config.SyncConfig) *syncServer {
+func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) *syncServer {
 	server := &syncServer{
 		providers: make(map[syncpkg.SyncConfigType]SyncConfigProvider),
 	}
 
 	server.providers[syncpkg.SyncConfigType_CONFIGMAP] = &configMapSyncProvider{}
 
-	if dbConfig != nil && (dbConfig.MySQL != nil || dbConfig.PostgreSQL != nil) {
-		session := syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, dbConfig)
-		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(session, syncdb.DBConfigFromConfig(dbConfig))}
+	if syncConfig != nil && syncConfig.EnableAPI {
+		session := syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, syncConfig)
+		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(session, syncdb.DBConfigFromConfig(syncConfig))}
 	}
 
 	return server

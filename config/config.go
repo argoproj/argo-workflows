@@ -238,6 +238,8 @@ func (c PersistConfig) GetClusterName() string {
 // SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)
 type SyncConfig struct {
 	DBConfig
+	// EnableAPI enables the database synchronization API
+	EnableAPI bool `json:"enableAPI,omitempty"`
 	// ControllerName sets a unique name for this controller instance
 	ControllerName string `json:"controllerName"`
 	// SkipMigration skips database migration if needed
