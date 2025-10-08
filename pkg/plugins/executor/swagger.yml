@@ -289,7 +289,7 @@ definitions:
             $ref: '#/definitions/Artifact'
         type: array
     AzureArtifact:
-        description: AzureArtifact is the location of a an Azure Storage artifact
+        description: AzureArtifact is the location of an Azure Storage artifact
         properties:
             accountKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
@@ -1627,7 +1627,7 @@ definitions:
         title: A GaugeOperation is the set of operations that can be used in a gauge metric.
         type: string
     GitArtifact:
-        description: GitArtifact is the location of an git artifact
+        description: GitArtifact is the location of a git artifact
         properties:
             branch:
                 description: Branch is the branch to fetch when `SingleBranch` is enabled

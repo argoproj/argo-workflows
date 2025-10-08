@@ -120,7 +120,7 @@ WorkflowEvents configures how workflow events are emitted
 
 ## KubeConfig
 
-KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method, it is used when the workflow controller is in a different cluster with the workflow workloads
+KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method; it is used when the workflow controller is in a different cluster from the workflow workloads
 
 ### Fields
 

@@ -8675,7 +8675,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.AzureArtifact": {
-      "description": "AzureArtifact is the location of a an Azure Storage artifact",
+      "description": "AzureArtifact is the location of an Azure Storage artifact",
       "type": "object",
       "required": [
         "endpoint",
@@ -9615,7 +9615,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
-      "description": "GitArtifact is the location of an git artifact",
+      "description": "GitArtifact is the location of a git artifact",
       "type": "object",
       "required": [
         "repo"
