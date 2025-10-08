@@ -10326,6 +10326,10 @@
           "description": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
         },
+        "isParent": {
+          "description": "IsParent indicates whether this node has created children workflows",
+          "type": "boolean"
+        },
         "memoizationStatus": {
           "description": "MemoizationStatus holds information about cached nodes",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MemoizationStatus"
