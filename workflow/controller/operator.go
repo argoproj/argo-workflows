@@ -2606,12 +2606,12 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 	if len(node.Children) == 0 {
 		return node.Fulfilled()
 	}
+	m := make(map[string]bool)
 	for _, childID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childID)
 		if err != nil {
 			continue
 		}
-		m := make(map[string]bool)
 		if !woc.childrenFulfilledHelper(childNode, m) {
 			return false
 		}
