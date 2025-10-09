@@ -2573,6 +2573,34 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
+func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache map[string]bool) bool {
+
+	res, has := cache[node.ID]
+	if has {
+		return res
+	}
+
+	if len(node.Children) == 0 {
+		cache[node.ID] = node.Fulfilled()
+		return node.Fulfilled()
+	}
+
+	for _, childID := range node.Children {
+		childNode, err := woc.wf.Status.Nodes.Get(childID)
+		if err != nil {
+			continue
+		}
+		callResult := woc.childrenFulfilledHelper(childNode, cache)
+		if !callResult {
+			cache[node.ID] = false
+			return false
+		}
+	}
+
+	cache[node.ID] = true
+	return true
+}
+
 // check if all of the nodes children are fulffilled
 func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 	if len(node.Children) == 0 {
@@ -2583,7 +2611,8 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 		if err != nil {
 			continue
 		}
-		if !woc.childrenFulfilled(childNode) {
+		m := make(map[string]bool)
+		if !woc.childrenFulfilledHelper(childNode, m) {
 			return false
 		}
 	}
