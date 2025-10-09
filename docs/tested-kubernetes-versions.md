@@ -1,1 +1,1 @@
-This section is only populated for released Argo Workflows versions.
+This version is tested under Kubernetes v1.31.9 and v1.33.1.
