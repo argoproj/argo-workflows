@@ -2590,8 +2590,8 @@ func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache 
 		if err != nil {
 			continue
 		}
-		callResult := woc.childrenFulfilledHelper(childNode, cache)
-		if !callResult {
+		isChildrenFulfilled := woc.childrenFulfilledHelper(childNode, cache)
+		if !isChildrenFulfilled {
 			cache[node.ID] = false
 			return false
 		}
