@@ -65,6 +65,7 @@ These take the form of `3.6.0-rc1` and the final digit increases for each RC.
 ### Documentation
 
 Before or after the first release candidate you should ensure that [`new-features.md`](new-features.md) and [`upgrading.md`](upgrading.md) are updated.
+Also ensure `ui/src/modals/new-version-modal.tsx` is updated with a short summary of new features.
 A post should be made on a blog site (we usually use medium) announcing the release, and the new features.
 This post should celebrate the new features and thank the contributors, including statistics from the release.
 
@@ -77,6 +78,9 @@ Update these three items ([`new-features.md`](new-features.md), [`upgrading.md`]
 There should be no changes between the final release candidate and the actual release.
 For the final release you should create a tag at the same place as the final release candidate.
 You must also create a `release/<version>` branch from that same point.
+
+Ensure you've run `make docs` and that docs/tested-kubernetes-versions.md is updated with some versions.
+This must be done on the new branch (otherwise it won't generate a file) but can be pushed after the release is generated.
 
 Now you can add the branch to ["Read the Docs"](https://app.readthedocs.org/projects/argo-workflows/) and then the new branch should be built and published.
 Close the release candidate GitHub issue and unpin it, and create a new issue for patches to this branch.
