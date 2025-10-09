@@ -8,8 +8,10 @@ import (
 type ArgoServerOpts struct {
 	// argo server host port, must be `host:port`, e.g. localhost:2746
 	URL string
-	// any base path needed (e.g. due to being behind an ingress)
-	Path               string
+	// root path prefix for API requests
+	RootPath string
+	// base href for UI access
+	BaseHRef           string
 	Secure             bool
 	InsecureSkipVerify bool
 	// whether or not to use HTTP1
@@ -21,11 +23,11 @@ type ArgoServerOpts struct {
 
 func (o ArgoServerOpts) GetURL() string {
 	if o.Secure {
-		return "https://" + o.URL + o.Path
+		return "https://" + o.URL + o.RootPath
 	}
-	return "http://" + o.URL + o.Path
+	return "http://" + o.URL + o.RootPath
 }
 
 func (o ArgoServerOpts) String() string {
-	return fmt.Sprintf("(url=%s,path=%s,secure=%v,insecureSkipVerify=%v,http=%v)", o.URL, o.Path, o.Secure, o.InsecureSkipVerify, o.HTTP1)
+	return fmt.Sprintf("(url=%s,rootPath=%s,baseHRef=%s,secure=%v,insecureSkipVerify=%v,http=%v)", o.URL, o.RootPath, o.BaseHRef, o.Secure, o.InsecureSkipVerify, o.HTTP1)
 }
