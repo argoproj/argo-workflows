@@ -153,6 +153,7 @@ type WorkflowController struct {
 	recentCompletions recentCompletions
 	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
 	lastUnreconciledWorkflows map[string]*wfv1.Workflow
+	workflowVersionChecker    *workflowVersionChecker
 }
 
 const (
@@ -175,6 +176,10 @@ var (
 	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
 	// updates, and the next workflow will see the updated availability.
 	semaphoreNotifyDelay = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "SEMAPHORE_NOTIFY_DELAY", time.Second)
+
+	// processedWorfklowVersionsTTL is the ttl of the processed workflow versions cache. The controller
+	// will make sure versions in the cache won't be processed multiple times even with informer delay.
+	processedWorfklowVersionsTTL = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "PROCESSED_WORKFLOW_VERSIONS_TTL", 10*time.Second)
 )
 
 func init() {
@@ -305,6 +310,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		"workflowArchive":     wfArchiveWorkers,
 	}).Info(ctx, "Current Worker Numbers")
 
+	wfc.workflowVersionChecker = NewWorkflowVersionChecker(processedWorfklowVersionsTTL)
 	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
@@ -722,6 +728,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		logger.WithField("key", key).Warn(ctx, "Index is not an unstructured")
+		return true
+	}
+
+	if wfc.workflowVersionChecker.IsOutdated(un) {
+		logger.WithFields(logging.Fields{"key": key, "version": un.GetResourceVersion()}).Info(ctx, "Won't process Workflow since current status is outdated")
 		return true
 	}
 
