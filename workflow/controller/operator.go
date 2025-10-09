@@ -2603,20 +2603,8 @@ func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache 
 
 // check if all of the nodes children are fulffilled
 func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
-	if len(node.Children) == 0 {
-		return node.Fulfilled()
-	}
 	m := make(map[string]bool)
-	for _, childID := range node.Children {
-		childNode, err := woc.wf.Status.Nodes.Get(childID)
-		if err != nil {
-			continue
-		}
-		if !woc.childrenFulfilledHelper(childNode, m) {
-			return false
-		}
-	}
-	return true
+	return woc.childrenFulfilledHelper(node, m)
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
