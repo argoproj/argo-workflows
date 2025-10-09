@@ -157,6 +157,19 @@ To test SSO integration, use `PROFILE=sso`:
 make start UI=true PROFILE=sso
 ```
 
+### Proxying
+
+When using `UI=true`, `make start` will start [webpack-dev-server](https://github.com/webpack/webpack-dev-server) to serve requests to <http://localhost:8080>, while proxying API requests to the Argo Server at <http://localhost:2746>.
+
+Use `BASE_HREF` to customize the [base HREF](argo-server.md#base-href), which will cause webpack-dev-server to strip out the provided path when proxying requests to the Argo Server.
+For example, to make the UI accessible at <http://localhost:8080/argo/>:
+
+```bash
+make start UI=true BASE_HREF=/argo/
+```
+
+Note that if you're using `PROFILE=sso`, you may need to run `kubectl rollout restart deploy dex` to restart Dex after changing the base HREF.
+
 ### TLS
 
 By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
