@@ -7,10 +7,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**cmName** | **String** |  |  [optional]
 **key** | **String** |  |  [optional]
-**name** | **String** |  |  [optional]
+**limit** | **Integer** |  |  [optional]
 **namespace** | **String** |  |  [optional]
-**sizeLimit** | **Integer** |  |  [optional]
 **type** | **SyncSyncConfigType** |  |  [optional]
 
 

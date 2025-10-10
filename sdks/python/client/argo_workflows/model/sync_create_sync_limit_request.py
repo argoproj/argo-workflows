@@ -87,10 +87,10 @@ class SyncCreateSyncLimitRequest(ModelNormal):
         """
         lazy_import()
         return {
+            'cm_name': (str,),  # noqa: E501
             'key': (str,),  # noqa: E501
-            'name': (str,),  # noqa: E501
+            'limit': (int,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
-            'size_limit': (int,),  # noqa: E501
             'type': (SyncSyncConfigType,),  # noqa: E501
         }
 
@@ -100,10 +100,10 @@ class SyncCreateSyncLimitRequest(ModelNormal):
 
 
     attribute_map = {
+        'cm_name': 'cmName',  # noqa: E501
         'key': 'key',  # noqa: E501
-        'name': 'name',  # noqa: E501
+        'limit': 'limit',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
-        'size_limit': 'sizeLimit',  # noqa: E501
         'type': 'type',  # noqa: E501
     }
 
@@ -148,10 +148,10 @@ class SyncCreateSyncLimitRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cm_name (str): [optional]  # noqa: E501
             key (str): [optional]  # noqa: E501
-            name (str): [optional]  # noqa: E501
+            limit (int): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
-            size_limit (int): [optional]  # noqa: E501
             type (SyncSyncConfigType): [optional]  # noqa: E501
         """
 
@@ -234,10 +234,10 @@ class SyncCreateSyncLimitRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cm_name (str): [optional]  # noqa: E501
             key (str): [optional]  # noqa: E501
-            name (str): [optional]  # noqa: E501
+            limit (int): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
-            size_limit (int): [optional]  # noqa: E501
             type (SyncSyncConfigType): [optional]  # noqa: E501
         """
 

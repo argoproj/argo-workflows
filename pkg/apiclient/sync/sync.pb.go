@@ -30,18 +30,18 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type SyncConfigType int32
 
 const (
-	SyncConfigType_CONFIG_MAP SyncConfigType = 0
-	SyncConfigType_DATABASE   SyncConfigType = 1
+	SyncConfigType_CONFIGMAP SyncConfigType = 0
+	SyncConfigType_DATABASE  SyncConfigType = 1
 )
 
 var SyncConfigType_name = map[int32]string{
-	0: "CONFIG_MAP",
+	0: "CONFIGMAP",
 	1: "DATABASE",
 }
 
 var SyncConfigType_value = map[string]int32{
-	"CONFIG_MAP": 0,
-	"DATABASE":   1,
+	"CONFIGMAP": 0,
+	"DATABASE":  1,
 }
 
 func (x SyncConfigType) String() string {
@@ -55,9 +55,9 @@ func (SyncConfigType) EnumDescriptor() ([]byte, []int) {
 type CreateSyncLimitRequest struct {
 	Type                 SyncConfigType `protobuf:"varint,1,opt,name=type,proto3,enum=sync.SyncConfigType" json:"type,omitempty"`
 	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Name                 string         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	CmName               string         `protobuf:"bytes,3,opt,name=cmName,proto3" json:"cmName,omitempty"`
 	Key                  string         `protobuf:"bytes,4,opt,name=key,proto3" json:"key,omitempty"`
-	SizeLimit            int32          `protobuf:"varint,5,opt,name=sizeLimit,proto3" json:"sizeLimit,omitempty"`
+	Limit                int32          `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -100,7 +100,7 @@ func (m *CreateSyncLimitRequest) GetType() SyncConfigType {
 	if m != nil {
 		return m.Type
 	}
-	return SyncConfigType_CONFIG_MAP
+	return SyncConfigType_CONFIGMAP
 }
 
 func (m *CreateSyncLimitRequest) GetNamespace() string {
@@ -110,9 +110,9 @@ func (m *CreateSyncLimitRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *CreateSyncLimitRequest) GetName() string {
+func (m *CreateSyncLimitRequest) GetCmName() string {
 	if m != nil {
-		return m.Name
+		return m.CmName
 	}
 	return ""
 }
@@ -124,9 +124,9 @@ func (m *CreateSyncLimitRequest) GetKey() string {
 	return ""
 }
 
-func (m *CreateSyncLimitRequest) GetSizeLimit() int32 {
+func (m *CreateSyncLimitRequest) GetLimit() int32 {
 	if m != nil {
-		return m.SizeLimit
+		return m.Limit
 	}
 	return 0
 }
@@ -134,9 +134,9 @@ func (m *CreateSyncLimitRequest) GetSizeLimit() int32 {
 type SyncLimitResponse struct {
 	Type                 SyncConfigType `protobuf:"varint,1,opt,name=type,proto3,enum=sync.SyncConfigType" json:"type,omitempty"`
 	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Name                 string         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	CmName               string         `protobuf:"bytes,3,opt,name=cmName,proto3" json:"cmName,omitempty"`
 	Key                  string         `protobuf:"bytes,4,opt,name=key,proto3" json:"key,omitempty"`
-	SizeLimit            int32          `protobuf:"varint,5,opt,name=sizeLimit,proto3" json:"sizeLimit,omitempty"`
+	Limit                int32          `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -179,7 +179,7 @@ func (m *SyncLimitResponse) GetType() SyncConfigType {
 	if m != nil {
 		return m.Type
 	}
-	return SyncConfigType_CONFIG_MAP
+	return SyncConfigType_CONFIGMAP
 }
 
 func (m *SyncLimitResponse) GetNamespace() string {
@@ -189,9 +189,9 @@ func (m *SyncLimitResponse) GetNamespace() string {
 	return ""
 }
 
-func (m *SyncLimitResponse) GetName() string {
+func (m *SyncLimitResponse) GetCmName() string {
 	if m != nil {
-		return m.Name
+		return m.CmName
 	}
 	return ""
 }
@@ -203,9 +203,9 @@ func (m *SyncLimitResponse) GetKey() string {
 	return ""
 }
 
-func (m *SyncLimitResponse) GetSizeLimit() int32 {
+func (m *SyncLimitResponse) GetLimit() int32 {
 	if m != nil {
-		return m.SizeLimit
+		return m.Limit
 	}
 	return 0
 }
@@ -213,7 +213,7 @@ func (m *SyncLimitResponse) GetSizeLimit() int32 {
 type GetSyncLimitRequest struct {
 	Type                 SyncConfigType `protobuf:"varint,1,opt,name=type,proto3,enum=sync.SyncConfigType" json:"type,omitempty"`
 	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Name                 string         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	CmName               string         `protobuf:"bytes,3,opt,name=cmName,proto3" json:"cmName,omitempty"`
 	Key                  string         `protobuf:"bytes,4,opt,name=key,proto3" json:"key,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
@@ -257,7 +257,7 @@ func (m *GetSyncLimitRequest) GetType() SyncConfigType {
 	if m != nil {
 		return m.Type
 	}
-	return SyncConfigType_CONFIG_MAP
+	return SyncConfigType_CONFIGMAP
 }
 
 func (m *GetSyncLimitRequest) GetNamespace() string {
@@ -267,9 +267,9 @@ func (m *GetSyncLimitRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *GetSyncLimitRequest) GetName() string {
+func (m *GetSyncLimitRequest) GetCmName() string {
 	if m != nil {
-		return m.Name
+		return m.CmName
 	}
 	return ""
 }
@@ -284,9 +284,9 @@ func (m *GetSyncLimitRequest) GetKey() string {
 type UpdateSyncLimitRequest struct {
 	Type                 SyncConfigType `protobuf:"varint,1,opt,name=type,proto3,enum=sync.SyncConfigType" json:"type,omitempty"`
 	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Name                 string         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	CmName               string         `protobuf:"bytes,3,opt,name=cmName,proto3" json:"cmName,omitempty"`
 	Key                  string         `protobuf:"bytes,4,opt,name=key,proto3" json:"key,omitempty"`
-	SizeLimit            int32          `protobuf:"varint,5,opt,name=sizeLimit,proto3" json:"sizeLimit,omitempty"`
+	Limit                int32          `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -329,7 +329,7 @@ func (m *UpdateSyncLimitRequest) GetType() SyncConfigType {
 	if m != nil {
 		return m.Type
 	}
-	return SyncConfigType_CONFIG_MAP
+	return SyncConfigType_CONFIGMAP
 }
 
 func (m *UpdateSyncLimitRequest) GetNamespace() string {
@@ -339,9 +339,9 @@ func (m *UpdateSyncLimitRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *UpdateSyncLimitRequest) GetName() string {
+func (m *UpdateSyncLimitRequest) GetCmName() string {
 	if m != nil {
-		return m.Name
+		return m.CmName
 	}
 	return ""
 }
@@ -353,9 +353,9 @@ func (m *UpdateSyncLimitRequest) GetKey() string {
 	return ""
 }
 
-func (m *UpdateSyncLimitRequest) GetSizeLimit() int32 {
+func (m *UpdateSyncLimitRequest) GetLimit() int32 {
 	if m != nil {
-		return m.SizeLimit
+		return m.Limit
 	}
 	return 0
 }
@@ -363,7 +363,7 @@ func (m *UpdateSyncLimitRequest) GetSizeLimit() int32 {
 type DeleteSyncLimitRequest struct {
 	Type                 SyncConfigType `protobuf:"varint,1,opt,name=type,proto3,enum=sync.SyncConfigType" json:"type,omitempty"`
 	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Name                 string         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	CmName               string         `protobuf:"bytes,3,opt,name=cmName,proto3" json:"cmName,omitempty"`
 	Key                  string         `protobuf:"bytes,4,opt,name=key,proto3" json:"key,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
@@ -407,7 +407,7 @@ func (m *DeleteSyncLimitRequest) GetType() SyncConfigType {
 	if m != nil {
 		return m.Type
 	}
-	return SyncConfigType_CONFIG_MAP
+	return SyncConfigType_CONFIGMAP
 }
 
 func (m *DeleteSyncLimitRequest) GetNamespace() string {
@@ -417,9 +417,9 @@ func (m *DeleteSyncLimitRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *DeleteSyncLimitRequest) GetName() string {
+func (m *DeleteSyncLimitRequest) GetCmName() string {
 	if m != nil {
-		return m.Name
+		return m.CmName
 	}
 	return ""
 }
@@ -484,36 +484,36 @@ func init() { proto.RegisterFile("pkg/apiclient/sync/sync.proto", fileDescriptor
 
 var fileDescriptor_74ab334b2e266b46 = []byte{
 	// 483 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0x66, 0x9b, 0x14, 0xd1, 0xa1, 0x4a, 0xc2, 0x82, 0x5a, 0x37, 0x4a, 0xa2, 0xc8, 0x95, 0x50,
-	0x88, 0x44, 0x2c, 0x8a, 0xb8, 0x70, 0x4b, 0x53, 0xa8, 0x90, 0xf8, 0x53, 0x52, 0x2e, 0x5c, 0x90,
-	0x6b, 0xa6, 0x66, 0x9b, 0x78, 0x77, 0xf1, 0x6e, 0x53, 0x99, 0xaa, 0x17, 0x90, 0x78, 0x01, 0x1e,
-	0x80, 0x0b, 0x0f, 0xc3, 0x11, 0x09, 0x71, 0x47, 0x11, 0x0f, 0x82, 0x76, 0xad, 0x36, 0x4d, 0x6a,
-	0xab, 0xc7, 0xf6, 0x62, 0x8d, 0x67, 0xc7, 0xf3, 0x7d, 0x9f, 0xe7, 0x9b, 0x85, 0xba, 0x1c, 0x86,
-	0x9e, 0x2f, 0x59, 0x30, 0x62, 0xc8, 0xb5, 0xa7, 0x12, 0x1e, 0xd8, 0x47, 0x47, 0xc6, 0x42, 0x0b,
-	0x5a, 0x34, 0x71, 0xb5, 0x16, 0x0a, 0x11, 0x8e, 0xd0, 0xd4, 0x79, 0x3e, 0xe7, 0x42, 0xfb, 0x9a,
-	0x09, 0xae, 0xd2, 0x1a, 0xf7, 0x07, 0x81, 0x95, 0x5e, 0x8c, 0xbe, 0xc6, 0x41, 0xc2, 0x83, 0xe7,
-	0x2c, 0x62, 0xba, 0x8f, 0x1f, 0x0f, 0x50, 0x69, 0xda, 0x82, 0xa2, 0x4e, 0x24, 0x3a, 0xa4, 0x49,
-	0x5a, 0xa5, 0x8d, 0x3b, 0x1d, 0xdb, 0xd9, 0x54, 0xf5, 0x04, 0xdf, 0x63, 0xe1, 0x4e, 0x22, 0xb1,
-	0x6f, 0x2b, 0x68, 0x0d, 0x96, 0xb8, 0x1f, 0xa1, 0x92, 0x7e, 0x80, 0xce, 0x42, 0x93, 0xb4, 0x96,
-	0xfa, 0xd3, 0x04, 0xa5, 0x50, 0x34, 0x2f, 0x4e, 0xc1, 0x1e, 0xd8, 0x98, 0x56, 0xa0, 0x30, 0xc4,
-	0xc4, 0x29, 0xda, 0x94, 0x09, 0x4d, 0x0f, 0xc5, 0x3e, 0xa1, 0x65, 0xe0, 0x2c, 0x36, 0x49, 0x6b,
-	0xb1, 0x3f, 0x4d, 0xb8, 0xdf, 0x09, 0xdc, 0x3a, 0x43, 0x50, 0x49, 0xc1, 0x15, 0x5e, 0x29, 0x86,
-	0x5f, 0x08, 0xdc, 0xde, 0x46, 0x7d, 0xb9, 0x7f, 0xd1, 0x8e, 0xf3, 0x8d, 0x7c, 0x7f, 0xd5, 0xc7,
-	0xf9, 0x95, 0xc0, 0xca, 0x16, 0x8e, 0xf0, 0xb2, 0x69, 0xba, 0x6b, 0xb0, 0x7a, 0x8e, 0x47, 0x6a,
-	0xae, 0x76, 0x07, 0x4a, 0xb3, 0xb0, 0xb4, 0x04, 0xd0, 0x7b, 0xf5, 0xf2, 0xe9, 0xb3, 0xed, 0x77,
-	0x2f, 0xba, 0xaf, 0x2b, 0xd7, 0xe8, 0x32, 0xdc, 0xd8, 0xea, 0xee, 0x74, 0x37, 0xbb, 0x83, 0x27,
-	0x15, 0xb2, 0xf1, 0xa7, 0x00, 0x37, 0xcd, 0x07, 0x03, 0x8c, 0xc7, 0x2c, 0x40, 0x1a, 0x41, 0x79,
-	0x6e, 0xb1, 0x68, 0x2d, 0x55, 0x93, 0xbd, 0x6f, 0xd5, 0xd5, 0xa9, 0xd6, 0x19, 0x26, 0xee, 0xfa,
-	0xe7, 0xdf, 0xff, 0xbe, 0x2d, 0xd4, 0x5d, 0xc7, 0xee, 0xf0, 0xf8, 0x41, 0xba, 0xe8, 0x47, 0xa7,
-	0x5a, 0x8f, 0x1f, 0x93, 0x36, 0xdd, 0x87, 0xe5, 0xb3, 0xf6, 0xa3, 0x6b, 0x69, 0xb7, 0x0c, 0x4b,
-	0xe6, 0x03, 0xdd, 0xb5, 0x40, 0x4d, 0xda, 0xc8, 0x03, 0xf2, 0x8e, 0x86, 0x98, 0x1c, 0x53, 0x05,
-	0xe5, 0x39, 0x93, 0x9d, 0x48, 0xcb, 0xf6, 0x5e, 0x3e, 0xe2, 0x3d, 0x8b, 0xb8, 0x5e, 0xbd, 0x00,
-	0xd1, 0x08, 0x1c, 0x43, 0x79, 0x6e, 0x54, 0x27, 0xa0, 0xd9, 0x4e, 0xaa, 0xd6, 0x73, 0x4e, 0x67,
-	0xc5, 0xb6, 0x2f, 0x80, 0xde, 0xec, 0xfd, 0x9c, 0x34, 0xc8, 0xaf, 0x49, 0x83, 0xfc, 0x9d, 0x34,
-	0xc8, 0xdb, 0x47, 0x21, 0xd3, 0x1f, 0x0e, 0x76, 0x3b, 0x81, 0x88, 0x3c, 0x3f, 0x0e, 0x85, 0x8c,
-	0xc5, 0xbe, 0x0d, 0xee, 0x1f, 0x8a, 0x78, 0xb8, 0x37, 0x12, 0x87, 0xca, 0x3b, 0x7f, 0x2b, 0xef,
-	0x5e, 0xb7, 0xb7, 0xed, 0xc3, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0xce, 0x5f, 0xda, 0xd4, 0xb2,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0x41, 0x6b, 0x13, 0x41,
+	0x14, 0x76, 0x9a, 0xa4, 0x98, 0x67, 0x6d, 0xe2, 0x58, 0xd2, 0x6d, 0x48, 0x42, 0xd8, 0x82, 0xc4,
+	0x40, 0xb3, 0x58, 0xf1, 0xe2, 0x2d, 0x4d, 0xb5, 0x08, 0x5a, 0x25, 0xa9, 0x17, 0x6f, 0xdb, 0xf5,
+	0x75, 0x9d, 0x66, 0x77, 0x66, 0xdc, 0x99, 0xa6, 0x2c, 0xa5, 0x17, 0x2f, 0x82, 0x57, 0x8f, 0x5e,
+	0xfc, 0x39, 0x1e, 0x05, 0xf1, 0x2e, 0xc1, 0x1f, 0x22, 0x3b, 0x6b, 0x6d, 0x93, 0x66, 0xc9, 0xd1,
+	0x5c, 0x96, 0x37, 0x33, 0x1f, 0xf3, 0x7d, 0xdf, 0xbe, 0xef, 0x0d, 0xd4, 0xe5, 0xd0, 0x77, 0x5c,
+	0xc9, 0xbc, 0x80, 0x21, 0xd7, 0x8e, 0x8a, 0xb9, 0x67, 0x3e, 0x1d, 0x19, 0x09, 0x2d, 0x68, 0x3e,
+	0xa9, 0xab, 0x35, 0x5f, 0x08, 0x3f, 0xc0, 0x04, 0xe7, 0xb8, 0x9c, 0x0b, 0xed, 0x6a, 0x26, 0xb8,
+	0x4a, 0x31, 0xf6, 0x57, 0x02, 0x95, 0x5e, 0x84, 0xae, 0xc6, 0x41, 0xcc, 0xbd, 0xe7, 0x2c, 0x64,
+	0xba, 0x8f, 0xef, 0x4f, 0x50, 0x69, 0xda, 0x82, 0xbc, 0x8e, 0x25, 0x5a, 0xa4, 0x49, 0x5a, 0xab,
+	0xdb, 0x6b, 0x1d, 0x73, 0x73, 0x82, 0xea, 0x09, 0x7e, 0xc4, 0xfc, 0x83, 0x58, 0x62, 0xdf, 0x20,
+	0x68, 0x0d, 0x8a, 0xdc, 0x0d, 0x51, 0x49, 0xd7, 0x43, 0x6b, 0xa9, 0x49, 0x5a, 0xc5, 0xfe, 0xe5,
+	0x06, 0xad, 0xc0, 0xb2, 0x17, 0xee, 0xbb, 0x21, 0x5a, 0x39, 0x73, 0xf4, 0x77, 0x45, 0xcb, 0x90,
+	0x1b, 0x62, 0x6c, 0xe5, 0xcd, 0x66, 0x52, 0xd2, 0x35, 0x28, 0x04, 0x89, 0x02, 0xab, 0xd0, 0x24,
+	0xad, 0x42, 0x3f, 0x5d, 0xd8, 0x5f, 0x08, 0xdc, 0xb9, 0x22, 0x4e, 0x49, 0xc1, 0x15, 0x2e, 0x8c,
+	0xba, 0x8f, 0x04, 0xee, 0xee, 0xa1, 0xfe, 0xff, 0x7f, 0xcf, 0xb4, 0xf2, 0xb5, 0x7c, 0xbb, 0xc8,
+	0xad, 0xfc, 0x44, 0xa0, 0xb2, 0x8b, 0x01, 0x2e, 0x82, 0x44, 0x7b, 0x03, 0xd6, 0xaf, 0x69, 0x49,
+	0xc3, 0xd5, 0xde, 0x82, 0xd5, 0x49, 0x6a, 0x7a, 0x1b, 0x8a, 0xbd, 0x97, 0xfb, 0x4f, 0x9f, 0xed,
+	0xbd, 0xe8, 0xbe, 0x2a, 0xdf, 0xa0, 0x2b, 0x70, 0x73, 0xb7, 0x7b, 0xd0, 0xdd, 0xe9, 0x0e, 0x9e,
+	0x94, 0xc9, 0xf6, 0xcf, 0x1c, 0xdc, 0x4a, 0xf0, 0x03, 0x8c, 0x46, 0xcc, 0x43, 0x1a, 0x42, 0x69,
+	0x6a, 0xa6, 0x68, 0x2d, 0x35, 0x34, 0x7b, 0xd4, 0xaa, 0xeb, 0x97, 0x76, 0x27, 0x84, 0xd8, 0x9b,
+	0x1f, 0x7e, 0xfc, 0xfe, 0xbc, 0x54, 0xb7, 0x2d, 0x33, 0xbe, 0xa3, 0x07, 0xe9, 0x8c, 0x9f, 0xfd,
+	0xb3, 0x7b, 0xfe, 0x98, 0xb4, 0xe9, 0x31, 0xac, 0x5c, 0x4d, 0x20, 0xdd, 0x48, 0x6f, 0x9b, 0x91,
+	0xca, 0x6c, 0xa2, 0x7b, 0x86, 0xa8, 0x49, 0x1b, 0x59, 0x44, 0xce, 0xd9, 0x10, 0xe3, 0x73, 0xaa,
+	0xa0, 0x34, 0x95, 0xb1, 0x0b, 0x6b, 0xb3, 0xa3, 0x97, 0xcd, 0x78, 0xdf, 0x30, 0x6e, 0x56, 0xe7,
+	0x30, 0x26, 0x06, 0x47, 0x50, 0x9a, 0xea, 0xd4, 0x05, 0xe9, 0xec, 0x30, 0x55, 0xeb, 0x19, 0xa7,
+	0x93, 0x66, 0xdb, 0x73, 0xa8, 0x77, 0x7a, 0xdf, 0xc6, 0x0d, 0xf2, 0x7d, 0xdc, 0x20, 0xbf, 0xc6,
+	0x0d, 0xf2, 0xe6, 0x91, 0xcf, 0xf4, 0xbb, 0x93, 0xc3, 0x8e, 0x27, 0x42, 0xc7, 0x8d, 0x7c, 0x21,
+	0x23, 0x71, 0x6c, 0x8a, 0xad, 0x53, 0x11, 0x0d, 0x8f, 0x02, 0x71, 0xaa, 0x9c, 0xeb, 0x0f, 0xf2,
+	0xe1, 0xb2, 0x79, 0x68, 0x1f, 0xfe, 0x09, 0x00, 0x00, 0xff, 0xff, 0x53, 0x03, 0x44, 0xf3, 0xad,
 	0x05, 0x00, 0x00,
 }
 
@@ -729,8 +729,8 @@ func (m *CreateSyncLimitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.SizeLimit != 0 {
-		i = encodeVarintSync(dAtA, i, uint64(m.SizeLimit))
+	if m.Limit != 0 {
+		i = encodeVarintSync(dAtA, i, uint64(m.Limit))
 		i--
 		dAtA[i] = 0x28
 	}
@@ -741,10 +741,10 @@ func (m *CreateSyncLimitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintSync(dAtA, i, uint64(len(m.Name)))
+	if len(m.CmName) > 0 {
+		i -= len(m.CmName)
+		copy(dAtA[i:], m.CmName)
+		i = encodeVarintSync(dAtA, i, uint64(len(m.CmName)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -787,8 +787,8 @@ func (m *SyncLimitResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.SizeLimit != 0 {
-		i = encodeVarintSync(dAtA, i, uint64(m.SizeLimit))
+	if m.Limit != 0 {
+		i = encodeVarintSync(dAtA, i, uint64(m.Limit))
 		i--
 		dAtA[i] = 0x28
 	}
@@ -799,10 +799,10 @@ func (m *SyncLimitResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintSync(dAtA, i, uint64(len(m.Name)))
+	if len(m.CmName) > 0 {
+		i -= len(m.CmName)
+		copy(dAtA[i:], m.CmName)
+		i = encodeVarintSync(dAtA, i, uint64(len(m.CmName)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -852,10 +852,10 @@ func (m *GetSyncLimitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintSync(dAtA, i, uint64(len(m.Name)))
+	if len(m.CmName) > 0 {
+		i -= len(m.CmName)
+		copy(dAtA[i:], m.CmName)
+		i = encodeVarintSync(dAtA, i, uint64(len(m.CmName)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -898,8 +898,8 @@ func (m *UpdateSyncLimitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.SizeLimit != 0 {
-		i = encodeVarintSync(dAtA, i, uint64(m.SizeLimit))
+	if m.Limit != 0 {
+		i = encodeVarintSync(dAtA, i, uint64(m.Limit))
 		i--
 		dAtA[i] = 0x28
 	}
@@ -910,10 +910,10 @@ func (m *UpdateSyncLimitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintSync(dAtA, i, uint64(len(m.Name)))
+	if len(m.CmName) > 0 {
+		i -= len(m.CmName)
+		copy(dAtA[i:], m.CmName)
+		i = encodeVarintSync(dAtA, i, uint64(len(m.CmName)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -963,10 +963,10 @@ func (m *DeleteSyncLimitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintSync(dAtA, i, uint64(len(m.Name)))
+	if len(m.CmName) > 0 {
+		i -= len(m.CmName)
+		copy(dAtA[i:], m.CmName)
+		i = encodeVarintSync(dAtA, i, uint64(len(m.CmName)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -1036,7 +1036,7 @@ func (m *CreateSyncLimitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	l = len(m.Name)
+	l = len(m.CmName)
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
@@ -1044,8 +1044,8 @@ func (m *CreateSyncLimitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	if m.SizeLimit != 0 {
-		n += 1 + sovSync(uint64(m.SizeLimit))
+	if m.Limit != 0 {
+		n += 1 + sovSync(uint64(m.Limit))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1066,7 +1066,7 @@ func (m *SyncLimitResponse) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	l = len(m.Name)
+	l = len(m.CmName)
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
@@ -1074,8 +1074,8 @@ func (m *SyncLimitResponse) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	if m.SizeLimit != 0 {
-		n += 1 + sovSync(uint64(m.SizeLimit))
+	if m.Limit != 0 {
+		n += 1 + sovSync(uint64(m.Limit))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1096,7 +1096,7 @@ func (m *GetSyncLimitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	l = len(m.Name)
+	l = len(m.CmName)
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
@@ -1123,7 +1123,7 @@ func (m *UpdateSyncLimitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	l = len(m.Name)
+	l = len(m.CmName)
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
@@ -1131,8 +1131,8 @@ func (m *UpdateSyncLimitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	if m.SizeLimit != 0 {
-		n += 1 + sovSync(uint64(m.SizeLimit))
+	if m.Limit != 0 {
+		n += 1 + sovSync(uint64(m.Limit))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1153,7 +1153,7 @@ func (m *DeleteSyncLimitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
-	l = len(m.Name)
+	l = len(m.CmName)
 	if l > 0 {
 		n += 1 + l + sovSync(uint64(l))
 	}
@@ -1267,7 +1267,7 @@ func (m *CreateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CmName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1295,7 +1295,7 @@ func (m *CreateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(dAtA[iNdEx:postIndex])
+			m.CmName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -1331,9 +1331,9 @@ func (m *CreateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SizeLimit", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
 			}
-			m.SizeLimit = 0
+			m.Limit = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSync
@@ -1343,7 +1343,7 @@ func (m *CreateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SizeLimit |= int32(b&0x7F) << shift
+				m.Limit |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1452,7 +1452,7 @@ func (m *SyncLimitResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CmName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1480,7 +1480,7 @@ func (m *SyncLimitResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(dAtA[iNdEx:postIndex])
+			m.CmName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -1516,9 +1516,9 @@ func (m *SyncLimitResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SizeLimit", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
 			}
-			m.SizeLimit = 0
+			m.Limit = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSync
@@ -1528,7 +1528,7 @@ func (m *SyncLimitResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SizeLimit |= int32(b&0x7F) << shift
+				m.Limit |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1637,7 +1637,7 @@ func (m *GetSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CmName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1665,7 +1665,7 @@ func (m *GetSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(dAtA[iNdEx:postIndex])
+			m.CmName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -1803,7 +1803,7 @@ func (m *UpdateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CmName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1831,7 +1831,7 @@ func (m *UpdateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(dAtA[iNdEx:postIndex])
+			m.CmName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -1867,9 +1867,9 @@ func (m *UpdateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SizeLimit", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
 			}
-			m.SizeLimit = 0
+			m.Limit = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSync
@@ -1879,7 +1879,7 @@ func (m *UpdateSyncLimitRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SizeLimit |= int32(b&0x7F) << shift
+				m.Limit |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1988,7 +1988,7 @@ func (m *DeleteSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CmName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2016,7 +2016,7 @@ func (m *DeleteSyncLimitRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(dAtA[iNdEx:postIndex])
+			m.CmName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
