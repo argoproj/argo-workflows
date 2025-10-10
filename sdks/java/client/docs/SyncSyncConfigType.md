@@ -5,7 +5,7 @@
 ## Enum
 
 
-* `CONFIG_MAP` (value: `"CONFIG_MAP"`)
+* `CONFIGMAP` (value: `"CONFIGMAP"`)
 
 * `DATABASE` (value: `"DATABASE"`)
 

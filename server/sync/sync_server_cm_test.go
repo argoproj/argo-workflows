@@ -25,15 +25,15 @@ func withKubeClient(kubeClient *fake.Clientset) context.Context {
 }
 
 func Test_syncServer_CreateSyncLimit(t *testing.T) {
-	t.Run("SizeLimit <= 0", func(t *testing.T) {
-		server := NewSyncServer()
+	t.Run("Limit <= 0", func(t *testing.T) {
 		ctx := context.Background()
+		server := NewSyncServer(ctx, &fake.Clientset{}, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
-			Name:      "test-cm",
+			CmName:    "test-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
-			SizeLimit: 0,
+			Limit:     0,
 		}
 
 		_, err := server.CreateSyncLimit(ctx, req)
@@ -42,11 +42,10 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
 		require.Equal(t, codes.InvalidArgument, statusErr.Code())
-		require.Contains(t, statusErr.Message(), "size limit must be greater than zero")
+		require.Contains(t, statusErr.Message(), "limit must be greater than zero")
 	})
 
 	t.Run("Error creating ConfigMap", func(t *testing.T) {
-		server := NewSyncServer()
 		kubeClient := fake.NewSimpleClientset()
 
 		kubeClient.PrependReactor("create", "configmaps", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -58,12 +57,13 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		})
 
 		ctx := context.WithValue(context.Background(), auth.KubeKey, kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
-			Name:      "test-cm",
+			CmName:    "test-cm",
 			Namespace: "non-existent-ns",
 			Key:       "test-key",
-			SizeLimit: 100,
+			Limit:     100,
 		}
 
 		_, err := server.CreateSyncLimit(ctx, req)
@@ -76,29 +76,27 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Create new ConfigMap", func(t *testing.T) {
-		server := NewSyncServer()
 		kubeClient := fake.NewSimpleClientset()
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
-			Name:      "test-cm",
+			CmName:    "test-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
-			SizeLimit: 100,
+			Limit:     100,
 		}
 
 		resp, err := server.CreateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		require.Equal(t, "test-cm", resp.Name)
+		require.Equal(t, "test-cm", resp.CmName)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, "test-key", resp.Key)
-		require.Equal(t, int32(100), resp.SizeLimit)
+		require.Equal(t, int32(100), resp.Limit)
 	})
 
 	t.Run("ConfigMap already exists", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -110,25 +108,25 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "new-key",
-			SizeLimit: 200,
+			Limit:     200,
 		}
 
 		resp, err := server.CreateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		require.Equal(t, "existing-cm", resp.Name)
+		require.Equal(t, "existing-cm", resp.CmName)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, "new-key", resp.Key)
-		require.Equal(t, int32(200), resp.SizeLimit)
+		require.Equal(t, int32(200), resp.Limit)
 	})
 
 	t.Run("ConfigMap exists with nil Data", func(t *testing.T) {
-		server := NewSyncServer()
 
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -139,31 +137,62 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
-			Name:      "nil-data-cm",
+			CmName:    "nil-data-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
-			SizeLimit: 300,
+			Limit:     300,
 		}
 
 		resp, err := server.CreateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		require.Equal(t, "nil-data-cm", resp.Name)
+		require.Equal(t, "nil-data-cm", resp.CmName)
 		require.Equal(t, "test-key", resp.Key)
-		require.Equal(t, int32(300), resp.SizeLimit)
+		require.Equal(t, int32(300), resp.Limit)
+	})
+
+	t.Run("ConfigMap exists with existing key", func(t *testing.T) {
+		existingCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "existing-cm",
+				Namespace: "test-ns",
+			},
+			Data: map[string]string{
+				"existing-key": "50",
+			},
+		}
+		kubeClient := fake.NewSimpleClientset(existingCM)
+		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
+
+		req := &syncpkg.CreateSyncLimitRequest{
+			CmName:    "existing-cm",
+			Namespace: "test-ns",
+			Key:       "existing-key",
+			Limit:     400,
+		}
+
+		_, err := server.CreateSyncLimit(ctx, req)
+
+		require.Error(t, err)
+		statusErr, ok := status.FromError(err)
+		require.True(t, ok)
+		require.Equal(t, codes.AlreadyExists, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "sync limit cannot be created as it already exists")
 	})
 }
 
 func Test_syncServer_GetSyncLimit(t *testing.T) {
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
-		server := NewSyncServer()
 		kubeClient := fake.NewSimpleClientset()
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
-			Name:      "non-existent-cm",
+			CmName:    "non-existent-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
 		}
@@ -178,7 +207,6 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
-		server := NewSyncServer()
 
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -191,9 +219,10 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "non-existent-key",
 		}
@@ -208,7 +237,6 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Invalid size limit format", func(t *testing.T) {
-		server := NewSyncServer()
 
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -221,9 +249,10 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "invalid-key",
 		}
@@ -234,12 +263,10 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
 		require.Equal(t, codes.InvalidArgument, statusErr.Code())
-		require.Contains(t, statusErr.Message(), "invalid size limit format")
+		require.Contains(t, statusErr.Message(), "invalid limit format")
 	})
 
 	t.Run("Successfully get sync limit", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -251,9 +278,10 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "valid-key",
 		}
@@ -261,23 +289,23 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 		resp, err := server.GetSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		require.Equal(t, "existing-cm", resp.Name)
+		require.Equal(t, "existing-cm", resp.CmName)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, "valid-key", resp.Key)
-		require.Equal(t, int32(500), resp.SizeLimit)
+		require.Equal(t, int32(500), resp.Limit)
 	})
 }
 
 func Test_syncServer_UpdateSyncLimit(t *testing.T) {
-	t.Run("SizeLimit <= 0", func(t *testing.T) {
-		server := NewSyncServer()
+	t.Run("Limit <= 0", func(t *testing.T) {
 		ctx := context.Background()
+		server := NewSyncServer(ctx, fake.NewClientset(), "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
-			Name:      "test-cm",
+			CmName:    "test-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
-			SizeLimit: 0,
+			Limit:     0,
 		}
 
 		_, err := server.UpdateSyncLimit(ctx, req)
@@ -286,19 +314,19 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
 		require.Equal(t, codes.InvalidArgument, statusErr.Code())
-		require.Contains(t, statusErr.Message(), "size limit must be greater than zero")
+		require.Contains(t, statusErr.Message(), "limit must be greater than zero")
 	})
 
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
-		server := NewSyncServer()
 		kubeClient := fake.NewSimpleClientset()
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
-			Name:      "non-existent-cm",
+			CmName:    "non-existent-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
-			SizeLimit: 100,
+			Limit:     100,
 		}
 
 		_, err := server.UpdateSyncLimit(ctx, req)
@@ -311,8 +339,6 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("ConfigMap with nil Data", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "nil-data-cm",
@@ -322,12 +348,13 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
-			Name:      "nil-data-cm",
+			CmName:    "nil-data-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
-			SizeLimit: 200,
+			Limit:     200,
 		}
 
 		_, err := server.UpdateSyncLimit(ctx, req)
@@ -340,7 +367,6 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
-		server := NewSyncServer()
 
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -353,12 +379,13 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "non-existent-key",
-			SizeLimit: 200,
+			Limit:     200,
 		}
 
 		_, err := server.UpdateSyncLimit(ctx, req)
@@ -371,8 +398,6 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Error updating ConfigMap", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -389,12 +414,13 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		})
 
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "existing-key",
-			SizeLimit: 200,
+			Limit:     200,
 		}
 
 		_, err := server.UpdateSyncLimit(ctx, req)
@@ -407,8 +433,6 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Successfully update sync limit", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -420,32 +444,33 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "existing-key",
-			SizeLimit: 300,
+			Limit:     300,
 		}
 
 		resp, err := server.UpdateSyncLimit(ctx, req)
 
 		require.NoError(t, err)
-		require.Equal(t, "existing-cm", resp.Name)
+		require.Equal(t, "existing-cm", resp.CmName)
 		require.Equal(t, "test-ns", resp.Namespace)
 		require.Equal(t, "existing-key", resp.Key)
-		require.Equal(t, int32(300), resp.SizeLimit)
+		require.Equal(t, int32(300), resp.Limit)
 	})
 }
 
 func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
-		server := NewSyncServer()
 		kubeClient := fake.NewSimpleClientset()
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
-			Name:      "non-existent-cm",
+			CmName:    "non-existent-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
 		}
@@ -460,8 +485,6 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 	})
 
 	t.Run("ConfigMap with nil Data", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "nil-data-cm",
@@ -471,9 +494,10 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
-			Name:      "nil-data-cm",
+			CmName:    "nil-data-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
 		}
@@ -484,8 +508,6 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 	})
 
 	t.Run("ConfigMap with empty Data", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "empty-data-cm",
@@ -495,9 +517,10 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
-			Name:      "empty-data-cm",
+			CmName:    "empty-data-cm",
 			Namespace: "test-ns",
 			Key:       "test-key",
 		}
@@ -508,8 +531,6 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Error updating ConfigMap", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -526,9 +547,10 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 		})
 
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "existing-key",
 		}
@@ -543,8 +565,6 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Successfully delete sync limit", func(t *testing.T) {
-		server := NewSyncServer()
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -557,9 +577,10 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 		}
 		kubeClient := fake.NewSimpleClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
-			Name:      "existing-cm",
+			CmName:    "existing-cm",
 			Namespace: "test-ns",
 			Key:       "key1",
 		}
