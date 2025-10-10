@@ -90,6 +90,18 @@ func (woc *wfOperationCtx) HasArtifactGC() bool {
 				return true
 			}
 		}
+		for _, steps := range template.Steps {
+			for _, step := range steps.Steps {
+				if step.Inline != nil {
+					for _, artifact := range step.Inline.Outputs.Artifacts {
+						strategy := woc.execWf.GetArtifactGCStrategy(&artifact)
+						if strategy != wfv1.ArtifactGCStrategyUndefined && strategy != wfv1.ArtifactGCNever {
+							return true
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// need to go to woc.wf.Status.StoredTemplates in the case of a Step referencing a WorkflowTemplate

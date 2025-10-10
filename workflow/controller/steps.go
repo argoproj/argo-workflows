@@ -70,7 +70,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		{
 			sgNode, err := woc.wf.GetNodeByName(sgNodeName)
 			if err != nil {
-				_ = woc.initializeNode(ctx, sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+				_ = woc.initializeNode(ctx, sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{Template: tmpl.Name}, stepsCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 			} else if !sgNode.Fulfilled() {
 				_ = woc.markNodePhase(ctx, sgNodeName, wfv1.NodeRunning)
 			}
@@ -107,7 +107,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			}
 		}
 
-		sgNode, err := woc.executeStepGroup(ctx, stepGroup.Steps, sgNodeName, &stepsCtx)
+		sgNode, err := woc.executeStepGroup(ctx, stepGroup.Steps, sgNodeName, &stepsCtx, tmpl.Name)
 		if err != nil {
 			return woc.markNodeError(ctx, sgNodeName, err), nil
 		}
@@ -229,7 +229,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(ctx context.Context, nodeName str
 
 // executeStepGroup examines a list of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext, tmplName string) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(sgNodeName)
 	if err != nil {
 		return nil, err
@@ -259,6 +259,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
+		if step.Template == "" && step.TemplateRef == nil {
+			step.Template = tmplName
+		}
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 
 		// Check the step's when clause to decide if it should execute
