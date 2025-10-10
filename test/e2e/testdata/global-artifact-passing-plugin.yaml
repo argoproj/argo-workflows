@@ -1,0 +1,101 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-artifact-passing-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    key: plugin-v1
+  templates:
+    - name: main
+      outputs: {}
+      steps:
+        - - name: create-global-artifact
+            template: create-global-artifact
+        - - name: add-0
+            template: add-to-global-artifact
+            arguments:
+              artifacts:
+                - name: input
+                  from: '{{workflow.outputs.artifacts.globalArtifact}}'
+              parameters:
+                - name: value
+                  value: '0'
+        - - name: add-1
+            template: add-to-global-artifact
+            arguments:
+              artifacts:
+                - name: input
+                  from: '{{workflow.outputs.artifacts.globalArtifact}}'
+              parameters:
+                - name: value
+                  value: '1'
+        - - name: save-artifact
+            template: save-artifact
+            arguments:
+              artifacts:
+                - name: input
+                  from: '{{workflow.outputs.artifacts.globalArtifact}}'
+    - name: create-global-artifact
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["touch /tmp/artifact.txt"]
+      outputs:
+        artifacts:
+          - globalName: globalArtifact
+            name: artifact
+            path: /tmp/artifact.txt
+            archive:
+              none: {}
+    - name: add-to-global-artifact
+      inputs:
+        parameters:
+          - name: value
+        artifacts:
+          - name: input
+            path: /tmp/artifact.txt
+      outputs:
+        artifacts:
+          - globalName: globalArtifact
+            name: artifact
+            path: /tmp/artifact.txt
+            archive:
+              none: {}
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["sleep 10; echo -n {{inputs.parameters.value}} >> /tmp/artifact.txt;"]
+      # We need to run as the same user as the artifact-plugin due to subPath
+      # bind mounts behaving unexpectedly - they may appear writable but won't
+      # be unless the user matches
+      securityContext:
+        runAsUser: 8737
+    - name: save-artifact
+      container:
+        image: argoproj/argosay:v2
+      inputs:
+        artifacts:
+          - name: input
+            path: /tmp/artifact.txt
+      outputs:
+        artifacts:
+          - name: globalArtifact
+            path: /tmp/artifact.txt
+            archive:
+              none: {}
+            plugin:
+              name: test
+              configuration: |
+                bucket: my-bucket-3
+                endpoint: minio:9000
+                insecure: true
+                accessKeySecret:
+                  name: my-minio-cred
+                  key: accesskey
+                secretKeySecret:
+                  name: my-minio-cred
+                  key: secretkey
+              key: globalArtifactPlugin
+            artifactGC:
+              strategy: OnWorkflowDeletion

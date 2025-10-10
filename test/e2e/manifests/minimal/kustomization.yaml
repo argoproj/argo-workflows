@@ -8,6 +8,7 @@ resources:
 - argo-workflows-agent-ca-certificates.yaml
 - argo.service-account-token-secret.yaml
 - get-cm-rbac.yaml
+- e2e-secrets-rbac.yaml
 
 components:
 - ../components/base

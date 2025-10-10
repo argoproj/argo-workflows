@@ -14,3 +14,9 @@ Each running workflow uses only one Agent pod, which can improve performance whe
 The same Agent pod also runs any [HTTP templates](http-template.md) that are part of the Workflow, offering additional performance advantages.
 
 You define [Executor plugin configuration](executor_plugins.md) as an `ExecutorPlugin` CustomResource. Both users and admins can write and install them.
+
+## Other Plugin Types
+
+In addition to Executor Plugins, Argo Workflows also supports:
+
+- **[Artifact Plugins](artifact-plugin.md)**: Extend artifact storage capabilities with custom storage drivers

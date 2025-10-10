@@ -37,6 +37,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_artifact import IoArgoprojWorkflowV1alpha1HDFSArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_http_artifact import IoArgoprojWorkflowV1alpha1HTTPArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact import IoArgoprojWorkflowV1alpha1OSSArtifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_plugin_artifact import IoArgoprojWorkflowV1alpha1PluginArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_raw_artifact import IoArgoprojWorkflowV1alpha1RawArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact import IoArgoprojWorkflowV1alpha1S3Artifact
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifact'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
@@ -46,6 +47,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1HDFSArtifact'] = IoArgoprojWorkflowV1alpha1HDFSArtifact
     globals()['IoArgoprojWorkflowV1alpha1HTTPArtifact'] = IoArgoprojWorkflowV1alpha1HTTPArtifact
     globals()['IoArgoprojWorkflowV1alpha1OSSArtifact'] = IoArgoprojWorkflowV1alpha1OSSArtifact
+    globals()['IoArgoprojWorkflowV1alpha1PluginArtifact'] = IoArgoprojWorkflowV1alpha1PluginArtifact
     globals()['IoArgoprojWorkflowV1alpha1RawArtifact'] = IoArgoprojWorkflowV1alpha1RawArtifact
     globals()['IoArgoprojWorkflowV1alpha1S3Artifact'] = IoArgoprojWorkflowV1alpha1S3Artifact
 
@@ -111,6 +113,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
             'hdfs': (IoArgoprojWorkflowV1alpha1HDFSArtifact,),  # noqa: E501
             'http': (IoArgoprojWorkflowV1alpha1HTTPArtifact,),  # noqa: E501
             'oss': (IoArgoprojWorkflowV1alpha1OSSArtifact,),  # noqa: E501
+            'plugin': (IoArgoprojWorkflowV1alpha1PluginArtifact,),  # noqa: E501
             'raw': (IoArgoprojWorkflowV1alpha1RawArtifact,),  # noqa: E501
             's3': (IoArgoprojWorkflowV1alpha1S3Artifact,),  # noqa: E501
         }
@@ -129,6 +132,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
         'hdfs': 'hdfs',  # noqa: E501
         'http': 'http',  # noqa: E501
         'oss': 'oss',  # noqa: E501
+        'plugin': 'plugin',  # noqa: E501
         'raw': 'raw',  # noqa: E501
         's3': 's3',  # noqa: E501
     }
@@ -182,6 +186,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
+            plugin (IoArgoprojWorkflowV1alpha1PluginArtifact): [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
         """
@@ -273,6 +278,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
+            plugin (IoArgoprojWorkflowV1alpha1PluginArtifact): [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
         """

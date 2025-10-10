@@ -155,6 +155,8 @@ definitions:
             path:
                 description: Path is the container path to the artifact
                 type: string
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             recurseMode:
@@ -203,6 +205,8 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             oss:
                 $ref: '#/definitions/OSSArtifact'
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             s3:
@@ -262,6 +266,8 @@ definitions:
             path:
                 description: Path is the container path to the artifact
                 type: string
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             recurseMode:
@@ -273,6 +279,9 @@ definitions:
                 description: SubPath allows an artifact to be sourced from a subpath within the specified source
                 type: string
         type: object
+    ArtifactPluginName:
+        description: ArtifactPluginName is the name of an artifact plugin
+        type: string
     ArtifactoryArtifact:
         description: ArtifactoryArtifact is the location of an artifactory artifact
         properties:
@@ -2899,6 +2908,22 @@ definitions:
         type: object
     Plugin:
         description: Plugin is an Object with exactly one key
+        type: object
+    PluginArtifact:
+        description: PluginArtifact is the location of a plugin artifact
+        properties:
+            configuration:
+                description: Configuration is the plugin defined configuration for the artifact driver plugin
+                type: string
+            connectionTimeoutSeconds:
+                description: ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+                format: int32
+                type: integer
+            key:
+                description: Key is the path in the artifact repository where the artifact resides
+                type: string
+            name:
+                $ref: '#/definitions/ArtifactPluginName'
         type: object
     PodAffinity:
         properties:
