@@ -344,6 +344,15 @@ A count of log messages emitted by the controller by log level: `error`, `warn` 
 |-----------|------------------------------|
 | `level`   | The log level of the message |
 
+#### `mutex_total`
+
+A counter of the number of mutexes.
+
+|     attribute     |        explanation         |
+|-------------------|----------------------------|
+| `name`            | The name of the mutex      |
+| `mutex_namespace` | The namespace of the mutex |
+
 #### `operation_duration_seconds`
 
 A histogram of durations of operations.
@@ -528,6 +537,16 @@ Queues:
 - `workflow_archive_queue`: workflows which are queued for archiving
 
 This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+
+#### `semaphore_total`
+
+A counter of the number of semaphores.
+
+|    attribute     |                         explanation                         |
+|------------------|-------------------------------------------------------------|
+| `configmap_name` | The name of the ConfigMap used to store the semaphore state |
+| `name`           | The name of the semaphore                                   |
+| `namespace`      | The namespace of the semaphore                              |
 
 #### `total_count`
 
