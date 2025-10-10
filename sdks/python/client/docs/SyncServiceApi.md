@@ -50,11 +50,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
     body = SyncCreateSyncLimitRequest(
+        cm_name="cm_name_example",
         key="key_example",
-        name="name_example",
+        limit=1,
         namespace="namespace_example",
-        size_limit=1,
-        type=SyncSyncConfigType("CONFIG_MAP"),
+        type=SyncSyncConfigType("CONFIGMAP"),
     ) # SyncCreateSyncLimitRequest | 
 
     # example passing only required values which don't have defaults set
@@ -134,8 +134,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
     key = "key_example" # str | 
-    type = "CONFIG_MAP" # str |  (optional) if omitted the server will use the default value of "CONFIG_MAP"
-    name = "name_example" # str |  (optional)
+    type = "CONFIGMAP" # str |  (optional) if omitted the server will use the default value of "CONFIGMAP"
+    cm_name = "cmName_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -147,7 +147,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.delete_sync_limit(namespace, key, type=type, name=name)
+        api_response = api_instance.delete_sync_limit(namespace, key, type=type, cm_name=cm_name)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->delete_sync_limit: %s\n" % e)
@@ -160,8 +160,8 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
  **key** | **str**|  |
- **type** | **str**|  | [optional] if omitted the server will use the default value of "CONFIG_MAP"
- **name** | **str**|  | [optional]
+ **type** | **str**|  | [optional] if omitted the server will use the default value of "CONFIGMAP"
+ **cm_name** | **str**|  | [optional]
 
 ### Return type
 
@@ -225,8 +225,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     api_instance = sync_service_api.SyncServiceApi(api_client)
     namespace = "namespace_example" # str | 
     key = "key_example" # str | 
-    type = "CONFIG_MAP" # str |  (optional) if omitted the server will use the default value of "CONFIG_MAP"
-    name = "name_example" # str |  (optional)
+    type = "CONFIGMAP" # str |  (optional) if omitted the server will use the default value of "CONFIGMAP"
+    cm_name = "cmName_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -238,7 +238,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.get_sync_limit(namespace, key, type=type, name=name)
+        api_response = api_instance.get_sync_limit(namespace, key, type=type, cm_name=cm_name)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling SyncServiceApi->get_sync_limit: %s\n" % e)
@@ -251,8 +251,8 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
  **key** | **str**|  |
- **type** | **str**|  | [optional] if omitted the server will use the default value of "CONFIG_MAP"
- **name** | **str**|  | [optional]
+ **type** | **str**|  | [optional] if omitted the server will use the default value of "CONFIGMAP"
+ **cm_name** | **str**|  | [optional]
 
 ### Return type
 
@@ -318,11 +318,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
     namespace = "namespace_example" # str | 
     key = "key_example" # str | 
     body = SyncUpdateSyncLimitRequest(
+        cm_name="cm_name_example",
         key="key_example",
-        name="name_example",
+        limit=1,
         namespace="namespace_example",
-        size_limit=1,
-        type=SyncSyncConfigType("CONFIG_MAP"),
+        type=SyncSyncConfigType("CONFIGMAP"),
     ) # SyncUpdateSyncLimitRequest | 
 
     # example passing only required values which don't have defaults set

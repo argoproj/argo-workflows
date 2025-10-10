@@ -51,5 +51,8 @@ argo sync [flags]
 ### SEE ALSO
 
 * [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo sync configmap](argo_sync_configmap.md)	 - manage configmap sync limits
+* [argo sync create](argo_sync_create.md)	 - Create a sync limit
+* [argo sync delete](argo_sync_delete.md)	 - Delete a sync limit
+* [argo sync get](argo_sync_get.md)	 - Get a sync limit
+* [argo sync update](argo_sync_update.md)	 - Update a configmap sync limit
 

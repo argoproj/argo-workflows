@@ -6,45 +6,45 @@ import "google/api/annotations.proto";
 package sync;
 
 enum SyncConfigType {
-  CONFIG_MAP = 0;
+  CONFIGMAP = 0;
   DATABASE = 1;
 }
 
 message CreateSyncLimitRequest {
   SyncConfigType type = 1;
   string namespace = 2;
-  string name = 3;
+  string cmName = 3;
   string key = 4;
-  int32 sizeLimit = 5;
+  int32 limit = 5;
 }
 
 message SyncLimitResponse {
   SyncConfigType type = 1;
   string namespace = 2;
-  string name = 3;
+  string cmName = 3;
   string key = 4;
-  int32 sizeLimit = 5;
+  int32 limit = 5;
 }
 
 message GetSyncLimitRequest {
   SyncConfigType type = 1;
   string namespace = 2;
-  string name = 3;
+  string cmName = 3;
   string key = 4;
 }
 
 message UpdateSyncLimitRequest {
   SyncConfigType type = 1;
   string namespace = 2;
-  string name = 3;
+  string cmName = 3;
   string key = 4;
-  int32 sizeLimit = 5;
+  int32 limit = 5;
 }
 
 message DeleteSyncLimitRequest {
   SyncConfigType type = 1;
   string namespace = 2;
-  string name = 3;
+  string cmName = 3;
   string key = 4;
 }
 
