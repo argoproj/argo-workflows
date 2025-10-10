@@ -1,6 +1,6 @@
 # Managing Synchronization Limits via API
 
-This page explains how to manage synchronization limits (mutexes and semaphores) using the Argo Server API and CLI.
+This page explains how to manage synchronization limits (semaphores) using the Argo Server API and CLI.
 
 ## Overview
 
