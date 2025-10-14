@@ -18,11 +18,12 @@ import (
 )
 
 func (wfc *WorkflowController) updateConfig() error {
-	bytes, err := yaml.Marshal(wfc.Config)
+	_, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
-	log.Info("Configuration:\n" + string(bytes))
+	log.Info("Configuration updated")
+
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
