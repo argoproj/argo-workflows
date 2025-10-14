@@ -1219,7 +1219,7 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	} else if a.S3 != nil {
 		return a.S3, nil
 	}
-	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
+	return nil, fmt.Errorf("artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -2695,7 +2695,7 @@ func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 type GitArtifact struct {
 	// Repo is the git repository
 	Repo string `json:"repo" protobuf:"bytes,1,opt,name=repo"`
@@ -2810,7 +2810,7 @@ type AzureBlobContainer struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,4,opt,name=useSDKCreds"`
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 type AzureArtifact struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
 

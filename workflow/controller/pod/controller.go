@@ -328,7 +328,7 @@ func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID
 func podFromObj(obj interface{}) (*apiv1.Pod, error) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		return nil, fmt.Errorf("Object is not a pod")
+		return nil, fmt.Errorf("object is not a pod")
 	}
 	return pod, nil
 }

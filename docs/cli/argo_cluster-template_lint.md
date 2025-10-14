@@ -6,6 +6,26 @@ validate files or directories of cluster workflow template manifests
 argo cluster-template lint FILE... [flags]
 ```
 
+### Examples
+
+```
+# Lint a single cluster workflow template:
+  argo cluster-template lint my-cluster-template.yaml
+
+# Lint multiple files:
+  argo cluster-template lint template1.yaml template2.yaml
+
+# Lint all templates in a directory:
+  argo cluster-template lint ./cluster-templates/
+
+# Lint with simple output format:
+  argo cluster-template lint -o simple my-cluster-template.yaml
+
+# Lint without strict validation:
+  argo cluster-template lint --strict=false my-cluster-template.yaml
+
+```
+
 ### Options
 
 ```

@@ -54,7 +54,7 @@ func NewResumeCommand() *cobra.Command {
 
 			selector, err := fields.ParseSelector(resumeArgs.nodeFieldSelector)
 			if err != nil {
-				return fmt.Errorf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
+				return fmt.Errorf("unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
 			for _, wfName := range args {
@@ -64,7 +64,7 @@ func NewResumeCommand() *cobra.Command {
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
-					return fmt.Errorf("Failed to resume %s: %+v", wfName, err)
+					return fmt.Errorf("failed to resume %s: %+v", wfName, err)
 				}
 				fmt.Printf("workflow %s resumed\n", wfName)
 			}

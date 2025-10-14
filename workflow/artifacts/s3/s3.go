@@ -412,7 +412,7 @@ func getAWSCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Cre
 
 // GetAssumeRoleCredentials gets Assumed role credentials
 func getAssumeRoleCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +495,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	}
 
 	if opts.EncryptOpts.ServerSideCustomerKey != "" && !opts.Secure {
-		return nil, fmt.Errorf("Secure must be set if EncryptOpts.SSECPassword is set")
+		return nil, fmt.Errorf("secure must be set if EncryptOpts.SSECPassword is set")
 	}
 
 	s3cli.ctx = ctx

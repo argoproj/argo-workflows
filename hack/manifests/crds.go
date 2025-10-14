@@ -21,11 +21,28 @@ func cleanCRD(filename string) {
 		patchWorkflowSpecTemplateFields(&schema, "status", "properties", "storedWorkflowTemplateSpec", "properties")
 		patchTemplateFields(&schema, "status", "properties", "storedTemplates", "additionalProperties", "properties")
 		patchEphemeralVolumeFields(&schema, "status", "properties", "persistentVolumeClaims", "items", "properties")
+		// Even with server-side apply, trying to apply
+		// "manifests/base/crds/full/argoproj.io_workflows.yaml" results in
+		// either the error "Request entity too large: limit is 3145728" or the
+		// error "Error from server: rpc error: code = ResourceExhausted desc =
+		// trying to send message larger than max (2163613 vs. 2097152)".
+		//
+		// The former error is from the value of "MaxRequestBodyBytes" in the
+		// Kubernetes API server, which defaults to 3MB:
+		// https://github.com/kubernetes/kubernetes/blob/f47e9696d7237f1011d23c9b55f6947e60526179/staging/src/k8s.io/apiserver/pkg/server/config.go#L456-L465
+		//
+		// The latter error is from the gRPC client, which defaults to 2MB:
+		// https://github.com/kubernetes/kubernetes/blob/f47e9696d7237f1011d23c9b55f6947e60526179/vendor/google.golang.org/grpc/clientconn.go#L102
+		//
+		// To workaround that, remove the "description" attribute from every
+		// field under "status" and "spec.properties.templateDefaults", since
+		// those contain a lot of fields that are rarely referenced.
+		schema.RecursiveRemoveDescriptions("status")
+		schema.RecursiveRemoveDescriptions("spec", "properties", "templateDefaults")
 	case "workfloweventbindings.argoproj.io":
 		patchMetadata(&schema, "spec", "properties", "submit", "properties", "metadata", "properties")
 	case "workflowtasksets.argoproj.io":
 		patchVolumeFields(&schema, "spec", "properties", "tasks", "additionalProperties", "properties")
-
 	}
 	crd.WriteYaml(filename)
 }

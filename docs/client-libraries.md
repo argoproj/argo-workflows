@@ -16,13 +16,34 @@ Please expect very minimal support from the Argo team.
 |----------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/main/cmd/argo/commands/submit.go)                           |
 | Java     | [Java](https://github.com/argoproj/argo-workflows/blob/main/sdks/java)                            |                                                                                                                       |
-| Python   | ⚠️ deprecated [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)           | Use one of the [community-maintained](#community-maintained-client-libraries) instead. Will be removed in version 3.7 |
+| Python   | ⚠️ deprecated [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)           | Use [Hera](#hera-python-sdk) instead. Will be removed in version 3.7 |
 
-## Community-maintained client libraries
+## Hera Python SDK
 
-The following client libraries are provided and maintained by their authors, not the Argo team.
+Hera is the go-to Python SDK to make Argo Workflows simple and intuitive. It goes beyond a basic REST interface,
+allowing you to easily turn Python functions into script templates, and write whole Workflows in Python:
 
-| Language | Client Library                                          | Examples/Docs                                                            |
-|----------|---------------------------------------------------------|--------------------------------------------------------------------------|
-| Python   | [Hera](https://github.com/argoproj-labs/hera-workflows) | Easy and accessible Argo workflows construction and submission in Python |
-| Python   | [Couler](https://github.com/couler-proj/couler)         | Multi-workflow engine support Python SDK. May be unmaintained.           |
+```py
+from hera.workflows import DAG, Workflow, script
+
+
+@script()
+def echo(message: str):
+    print(message)
+
+
+with Workflow(
+    generate_name="dag-diamond-",
+    entrypoint="diamond",
+) as w:
+    with DAG(name="diamond"):
+        A = echo(name="A", arguments={"message": "A"})
+        B = echo(name="B", arguments={"message": "B"})
+        C = echo(name="C", arguments={"message": "C"})
+        D = echo(name="D", arguments={"message": "D"})
+        A >> [B, C] >> D  # Define execution order
+
+w.create()
+```
+
+Learn more in the [Hera walk-through](https://hera.readthedocs.io/en/stable/walk-through/quick-start/).

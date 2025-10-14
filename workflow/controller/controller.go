@@ -44,11 +44,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
-	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -337,7 +337,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wfc.runConfigMapWatcher(ctx)
 	}
 
-	go wfc.nsInformer.Run(ctx.Done())
+	// namespace informer only works if has RBAC access
+	var nsInformerHasSynced func() bool
+	if wfc.nsInformer != nil {
+		go wfc.nsInformer.Run(ctx.Done())
+		nsInformerHasSynced = wfc.nsInformer.HasSynced
+	} else {
+		nsInformerHasSynced = func() bool {
+			return true
+		}
+	}
+
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
@@ -351,7 +361,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
-		wfc.nsInformer.HasSynced,
+		nsInformerHasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.PodController.HasSynced(),
 		wfc.configMapInformer.HasSynced,
@@ -455,29 +465,44 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "configmap_watcher").InContext(ctx)
-	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
+	controllerConfigWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
+		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.configController.GetNamespace()).Watch(ctx, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", wfc.configController.GetName()),
+			})
 		},
 	})
 	if err != nil {
 		panic(err)
 	}
-	defer retryWatcher.Stop()
+	defer controllerConfigWatcher.Stop()
+	semaphoreConfigWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
+		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.GetManagedNamespace()).Watch(ctx, metav1.ListOptions{})
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer semaphoreConfigWatcher.Stop()
 
 	for {
 		select {
-		case event := <-retryWatcher.ResultChan():
+		case event := <-controllerConfigWatcher.ResultChan():
 			cm, ok := event.Object.(*apiv1.ConfigMap)
 			if !ok {
 				logger.Error(ctx, "invalid config map object received in config watcher. Ignored processing")
 				continue
 			}
-			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Debug(ctx, "received config map update")
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Info(ctx, "Received Workflow Controller config map update")
-				wfc.UpdateConfig(ctx)
+			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Info(ctx, "Received Workflow Controller config map update")
+			wfc.UpdateConfig(ctx)
+		case event := <-semaphoreConfigWatcher.ResultChan():
+			cm, ok := event.Object.(*apiv1.ConfigMap)
+			if !ok {
+				logger.Error(ctx, "invalid config map object received in semaphore config watcher. Ignored processing")
+				continue
 			}
+			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Debug(ctx, "received config map update")
 			wfc.notifySemaphoreConfigUpdate(ctx, cm)
 		case <-ctx.Done():
 			return
@@ -506,15 +531,8 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(ctx, err)
-	cwftListAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(ctx, err)
-	cwftWatchAllowed, err := authutil.CanIArgo(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(ctx, err)
-
 	logger := logging.RequireLoggerFromContext(ctx)
-	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset, wfc.namespace) {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
@@ -745,7 +763,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if !reconciliationNeeded(woc.wf) {
+		if !reconciliationNeeded(woc.wf) && !reapplyFailed(woc.wf) {
 			wfc.throttler.Remove(key)
 		}
 	}()
@@ -809,16 +827,20 @@ func reconciliationNeeded(wf metav1.Object) bool {
 	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
 }
 
+func reapplyFailed(wf metav1.Object) bool {
+	return wf.GetLabels()[common.LabelKeyReApplyFailed] == "true"
+}
+
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
 // enqueue workflow for processing
 func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
 	if pod.Labels == nil {
-		return fmt.Errorf("Pod did not have labels")
+		return fmt.Errorf("pod did not have labels")
 	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		return fmt.Errorf("Watch returned pod unrelated to any workflow")
+		return fmt.Errorf("watch returned pod unrelated to any workflow")
 	}
 	wfc.wfQueue.AddRateLimited(pod.Namespace + "/" + workflowName)
 	return nil

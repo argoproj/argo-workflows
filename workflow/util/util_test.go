@@ -4182,3 +4182,494 @@ func TestRegressions(t *testing.T) {
 		assert.Empty(t, newWf.Status.Nodes)
 	})
 }
+
+func TestFormulateRetryWorkflowWithParams(t *testing.T) {
+	// Test from issue #14769
+	ctx := logging.TestContext(t.Context())
+	wfClientSet := argofake.NewSimpleClientset()
+
+	// Use the workflow from out.yaml as test input
+	workflowYaml := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-09-11T01:49:53Z"
+  generateName: subdag-iterate-
+  generation: 11
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: subdag-iterate-jrfch
+  namespace: argo
+  resourceVersion: "23615"
+  uid: cb4f47aa-0433-47a9-be7f-0df86e723441
+spec:
+  activeDeadlineSeconds: 300
+  arguments:
+    parameters:
+    - name: msgs
+      value: '["foo","bar","baz"]'
+  entrypoint: main
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        name: echo-group
+        template: echo-subdag
+        withParam: '{{workflow.parameters.msgs}}'
+    inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.msg}}'
+        name: echo-param
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: bye
+        dependencies:
+        - echo-param
+        name: echo-bye
+        template: echo
+    inputs:
+      parameters:
+      - name: msg
+    metadata: {}
+    name: echo-subdag
+    outputs: {}
+  - container:
+      args:
+      - echo {{inputs.parameters.message}}
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: echo
+    outputs: {}
+  ttlStrategy:
+    secondsAfterCompletion: 7200
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2025-09-11T01:51:08Z"
+  nodes:
+    subdag-iterate-jrfch:
+      children:
+      - subdag-iterate-jrfch-1869003913
+      displayName: subdag-iterate-jrfch
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch
+      name: subdag-iterate-jrfch
+      outboundNodes:
+      - subdag-iterate-jrfch-1786915540
+      - subdag-iterate-jrfch-2240770818
+      - subdag-iterate-jrfch-656740947
+      phase: Succeeded
+      progress: 6/6
+      resourcesDuration:
+        cpu: 0
+        memory: 18
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: main
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-656740947:
+      boundaryID: subdag-iterate-jrfch-851163487
+      displayName: echo-bye
+      finishedAt: "2025-09-11T01:51:05Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-656740947
+      inputs:
+        parameters:
+        - name: message
+          value: bye
+      name: subdag-iterate-jrfch.echo-group(2:baz).echo-bye
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-656740947/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:50:59Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-682257755:
+      boundaryID: subdag-iterate-jrfch-4005883592
+      children:
+      - subdag-iterate-jrfch-2240770818
+      displayName: echo-param
+      finishedAt: "2025-09-11T01:50:56Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-682257755
+      inputs:
+        parameters:
+        - name: message
+          value: bar
+      name: subdag-iterate-jrfch.echo-group(1:bar).echo-param
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-682257755/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:49:53Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-851163487:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-4188005058
+      displayName: echo-group(2:baz)
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-851163487
+      inputs:
+        parameters:
+        - name: msg
+          value: baz
+      name: subdag-iterate-jrfch.echo-group(2:baz)
+      outboundNodes:
+      - subdag-iterate-jrfch-656740947
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-1295605062:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-3231869949
+      displayName: echo-group(0:foo)
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-1295605062
+      inputs:
+        parameters:
+        - name: msg
+          value: foo
+      name: subdag-iterate-jrfch.echo-group(0:foo)
+      outboundNodes:
+      - subdag-iterate-jrfch-1786915540
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-1786915540:
+      boundaryID: subdag-iterate-jrfch-1295605062
+      displayName: echo-bye
+      finishedAt: "2025-09-11T01:51:05Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-1786915540
+      inputs:
+        parameters:
+        - name: message
+          value: bye
+      name: subdag-iterate-jrfch.echo-group(0:foo).echo-bye
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-1786915540/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:50:59Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-1869003913:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-1295605062
+      - subdag-iterate-jrfch-4005883592
+      - subdag-iterate-jrfch-851163487
+      displayName: echo-group
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-1869003913
+      name: subdag-iterate-jrfch.echo-group
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 6/6
+      resourcesDuration:
+        cpu: 0
+        memory: 18
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: TaskGroup
+    subdag-iterate-jrfch-2240770818:
+      boundaryID: subdag-iterate-jrfch-4005883592
+      displayName: echo-bye
+      finishedAt: "2025-09-11T01:51:05Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-2240770818
+      inputs:
+        parameters:
+        - name: message
+          value: bye
+      name: subdag-iterate-jrfch.echo-group(1:bar).echo-bye
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-2240770818/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:50:59Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-3231869949:
+      boundaryID: subdag-iterate-jrfch-1295605062
+      children:
+      - subdag-iterate-jrfch-1786915540
+      displayName: echo-param
+      finishedAt: "2025-09-11T01:50:56Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-3231869949
+      inputs:
+        parameters:
+        - name: message
+          value: foo
+      name: subdag-iterate-jrfch.echo-group(0:foo).echo-param
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-3231869949/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:49:53Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-4005883592:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-682257755
+      displayName: echo-group(1:bar)
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-4005883592
+      inputs:
+        parameters:
+        - name: msg
+          value: bar
+      name: subdag-iterate-jrfch.echo-group(1:bar)
+      outboundNodes:
+      - subdag-iterate-jrfch-2240770818
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-4188005058:
+      boundaryID: subdag-iterate-jrfch-851163487
+      children:
+      - subdag-iterate-jrfch-656740947
+      displayName: echo-param
+      finishedAt: "2025-09-11T01:50:56Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-4188005058
+      inputs:
+        parameters:
+        - name: message
+          value: baz
+      name: subdag-iterate-jrfch.echo-group(2:baz).echo-param
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-4188005058/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:49:53Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+  phase: Succeeded
+  progress: 6/6
+  resourcesDuration:
+    cpu: 0
+    memory: 18
+  startedAt: "2025-09-11T01:49:53Z"`
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
+
+	// Create the workflow in the fake clientset
+	_, err := wfClientSet.ArgoprojV1alpha1().Workflows("argo").Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Test parameters
+	nodeFieldSelector := "id=subdag-iterate-jrfch-1786915540"
+	restartSuccessful := true
+	parameters := []string{}
+
+	// Call FormulateRetryWorkflow
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, restartSuccessful, nodeFieldSelector, parameters)
+
+	// Key assertion: FormulateRetryWorkflow should succeed
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+	require.NotNil(t, podsToDelete)
+
+	// Assertion 1: The targeted node "subdag-iterate-jrfch-1786915540" no longer exists in the workflow
+	_, targetNodeExists := retryWf.Status.Nodes["subdag-iterate-jrfch-1786915540"]
+	assert.False(t, targetNodeExists,
+		"Target node should be deleted from retry workflow")
+
+	// Assertion 2: The parent task group node should be in Running state
+	// The target node's parent task group is "subdag-iterate-jrfch-1295605062" (echo-group(0:foo))
+	parentTaskGroupNode := retryWf.Status.Nodes["subdag-iterate-jrfch-1295605062"]
+	require.NotNil(t, parentTaskGroupNode, "Parent task group node should exist")
+	assert.Equal(t, wfv1.NodeRunning, parentTaskGroupNode.Phase,
+		"Parent task group node should be in Running state")
+
+	// Assertion 3: Other nodes in different iterations should remain unchanged
+	// Check nodes from other iterations (bar and baz) remain succeeded
+	barIterationNode := retryWf.Status.Nodes["subdag-iterate-jrfch-4005883592"] // echo-group(1:bar)
+	require.NotNil(t, barIterationNode, "Bar iteration node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, barIterationNode.Phase,
+		"Bar iteration node should remain succeeded")
+
+	bazIterationNode := retryWf.Status.Nodes["subdag-iterate-jrfch-851163487"] // echo-group(2:baz)
+	require.NotNil(t, bazIterationNode, "Baz iteration node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, bazIterationNode.Phase,
+		"Baz iteration node should remain succeeded")
+
+	// Check that nodes from other iterations' pods remain succeeded
+	barPodNode := retryWf.Status.Nodes["subdag-iterate-jrfch-2240770818"] // bar echo-bye pod
+	require.NotNil(t, barPodNode, "Bar pod node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, barPodNode.Phase,
+		"Bar pod node should remain succeeded")
+
+	bazPodNode := retryWf.Status.Nodes["subdag-iterate-jrfch-656740947"] // baz echo-bye pod
+	require.NotNil(t, bazPodNode, "Baz pod node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, bazPodNode.Phase,
+		"Baz pod node should remain succeeded")
+
+	// Assertion 4: The returned pod deletion list should include the target node
+	assert.Contains(t, podsToDelete, "subdag-iterate-jrfch-echo-1786915540",
+		"Pod deletion list should contain the target node's pod")
+
+	// Assertion 5: Verify workflow integrity is maintained
+	// Check that the root workflow node is in Running state
+	rootNode := retryWf.Status.Nodes["subdag-iterate-jrfch"]
+	require.NotNil(t, rootNode, "Root workflow node should exist")
+	assert.Equal(t, wfv1.NodeRunning, rootNode.Phase,
+		"Root workflow node should be in Running state")
+
+	// Check that the main task group is in Running state
+	mainTaskGroupNode := retryWf.Status.Nodes["subdag-iterate-jrfch-1869003913"]
+	require.NotNil(t, mainTaskGroupNode, "Main task group node should exist")
+	assert.Equal(t, wfv1.NodeRunning, mainTaskGroupNode.Phase,
+		"Main task group node should be in Running state")
+
+	// Verify that the workflow phase is set to Running
+	assert.Equal(t, wfv1.WorkflowUnknown, retryWf.Status.Phase,
+		"Retry workflow should be in Running phase")
+
+	// Verify that completion labels are removed
+	assert.NotContains(t, retryWf.Labels, "workflows.argoproj.io/completed",
+		"Completed label should be removed from retry workflow")
+
+	// Additional verification: Check that the target node's sibling (echo-param) is NOT deleted
+	// since retrying echo-bye should only affect that specific node, not its siblings
+	siblingNode := retryWf.Status.Nodes["subdag-iterate-jrfch-3231869949"] // foo echo-param pod
+	require.NotNil(t, siblingNode, "Sibling node should remain in the workflow")
+	assert.Equal(t, wfv1.NodeSucceeded, siblingNode.Phase,
+		"Sibling node should remain succeeded")
+
+	// Verify that the pod deletion list has the correct number of entries
+	// Should include only the target node
+	assert.Len(t, podsToDelete, 1,
+		"Pod deletion list should contain 1 pod (only the target)")
+	assert.Contains(t, podsToDelete, "subdag-iterate-jrfch-echo-1786915540",
+		"Pod deletion list should contain the target node's pod")
+}

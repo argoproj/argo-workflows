@@ -131,24 +131,24 @@ func (m *Metrics) matchExistingMetric(metricSpec *wfv1.Prometheus) (*telemetry.I
 	key := metricSpec.Name
 	if inst := m.GetInstrument(key); inst != nil {
 		if inst.GetDescription() != metricSpec.Help {
-			return nil, fmt.Errorf("Help for metric %s is already set to %s, it cannot be changed", metricSpec.Name, inst.GetDescription())
+			return nil, fmt.Errorf("help for metric %s is already set to %s, it cannot be changed", metricSpec.Name, inst.GetDescription())
 		}
 		wantedType := metricSpec.GetMetricType()
 		switch inst.GetOtel().(type) {
 		case *metric.Float64ObservableGauge:
 			if wantedType != wfv1.MetricTypeGauge && !metricSpec.IsRealtime() {
-				return nil, fmt.Errorf("Found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
-		case *metric.Float64ObservableUpDownCounter:
+		case *metric.Float64ObservableCounter:
 			if wantedType != wfv1.MetricTypeCounter {
-				return nil, fmt.Errorf("Found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		case *metric.Float64Histogram:
 			if wantedType != wfv1.MetricTypeHistogram {
-				return nil, fmt.Errorf("Found existing histogram for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing histogram for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		default:
-			return nil, fmt.Errorf("Found unwanted type %s for custom metric %s of type %s", reflect.TypeOf(inst.GetOtel()), metricSpec.Name, wantedType)
+			return nil, fmt.Errorf("found unwanted type %s for custom metric %s of type %s", reflect.TypeOf(inst.GetOtel()), metricSpec.Name, wantedType)
 		}
 		return inst, nil
 	}
@@ -171,7 +171,7 @@ func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string)
 	m.attachCustomMetricToWorkflow(metricSpec, ownerKey)
 	inst := m.GetInstrument(metricSpec.Name)
 	if inst == nil {
-		return nil, fmt.Errorf("Failed to create new metric %s", metricSpec.Name)
+		return nil, fmt.Errorf("failed to create new metric %s", metricSpec.Name)
 	}
 	inst.SetUserdata(newUserData())
 	return inst, nil
@@ -257,7 +257,7 @@ func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
 	case metricType == wfv1.MetricTypeHistogram:
 		return m.CreateInstrument(telemetry.Float64Histogram, metricSpec.Name, metricSpec.Help, "{item}", telemetry.WithDefaultBuckets(metricSpec.Histogram.GetBuckets()))
 	case metricType == wfv1.MetricTypeCounter:
-		err := m.CreateInstrument(telemetry.Float64ObservableUpDownCounter, metricSpec.Name, metricSpec.Help, "{item}")
+		err := m.CreateInstrument(telemetry.Float64ObservableCounter, metricSpec.Name, metricSpec.Help, "{item}")
 		if err != nil {
 			return err
 		}
@@ -336,7 +336,7 @@ func (m *Metrics) handleRealtimeMetricsForWfUID(key string, op operation) {
 		ud.mutex.Lock()
 		switch op {
 		case Complete:
-			for _, value := range ud.values {
+			if value, ok := ud.values[metric.key]; ok && value != nil {
 				value.completed = true
 			}
 		case Delete:
