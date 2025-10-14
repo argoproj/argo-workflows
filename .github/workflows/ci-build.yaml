@@ -243,12 +243,20 @@ jobs:
           - test: test-api
             profile: postgres
             use-api: true
+          - test: test-metrics
+            profile: mysql
+            use-api: true
+          - test: test-metrics
+            profile: postgres
+            use-api: true
           - test: test-cli
             profile: mysql
             use-api: true
+          # Cron tests are not retryable withou a controller restart
           - test: test-cron
             profile: minimal
             use-api: false
+            retries: 0
           - test: test-examples
             profile: minimal
             use-api: false
@@ -317,6 +325,7 @@ jobs:
       - name: Install and start K3S
         env:
           K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
+          TEST_RETRIES: ${{ matrix.retries || '2' }}
         run: |
           . hack/k8s-versions.sh
           export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
@@ -380,13 +389,13 @@ jobs:
       - name: Failure debug - k3s logs
         if: ${{ failure() }}
         run: journalctl -u k3s
-      - name: Failure debug - describe MinIO/MySQL deployment
+      - name: Failure debug - describe MinIO/Database deployment
         if: ${{ failure() }}
         run: |
           set -eux
           kubectl get deploy
           kubectl describe deploy
-      - name: Failure debug - describe MinIO/MySQL pods
+      - name: Failure debug - describe MinIO/Database pods
         if: ${{ failure() }}
         run: |
           set -eux

@@ -11,7 +11,6 @@ import (
 	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
 	"github.com/pkg/browser"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -21,13 +20,15 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
+	"os"
+
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/apiserver"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/cmd"
+	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
@@ -57,6 +58,7 @@ func NewServerCommand() *cobra.Command {
 		kubeAPIBurst             int
 		allowedLinkProtocol      []string
 		logFormat                string // --log-format
+		logLevel                 string // --loglevel
 	)
 
 	command := cobra.Command{
@@ -65,11 +67,9 @@ func NewServerCommand() *cobra.Command {
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoServer()),
 		RunE: func(c *cobra.Command, args []string) error {
-			cmd.SetLogFormatter(logFormat)
-			ctx := c.Context()
-			if ctx == nil {
-				ctx = logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-				c.SetContext(ctx)
+			ctx, logger, err := cmdutil.CmdContextWithLogger(c, logLevel, logFormat)
+			if err != nil {
+				return err
 			}
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
@@ -84,7 +84,7 @@ See %s`, help.ArgoServer()),
 			config.Burst = kubeAPIBurst
 			config.QPS = kubeAPIQPS
 
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			clients := &types.Clients{
 				Dynamic:    dynamic.NewForConfigOrDie(config),
 				Events:     events.NewForConfigOrDie(config),
@@ -95,7 +95,7 @@ See %s`, help.ArgoServer()),
 			defer cancel()
 
 			if !namespaced && managedNamespace != "" {
-				log.Warn("ignoring --managed-namespace because --namespaced is false")
+				logger.Warn(ctx, "ignoring --managed-namespace because --namespaced is false")
 				managedNamespace = ""
 			}
 			if namespaced && managedNamespace == "" {
@@ -107,14 +107,14 @@ See %s`, help.ArgoServer()),
 				ssoNamespace = managedNamespace
 			}
 
-			log.WithFields(log.Fields{
+			logger.WithFields(logging.Fields{
 				"authModes":        authModes,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"ssoNamespace":     ssoNamespace,
 				"baseHRef":         baseHRef,
 				"secure":           secure,
-			}).Info()
+			}).Info(ctx, "Starting Argo Server")
 
 			var tlsConfig *tls.Config
 			if secure {
@@ -124,14 +124,14 @@ See %s`, help.ArgoServer()),
 				}
 
 				if tlsCertificateSecretName != "" {
-					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
+					logger.WithField("secretName", tlsCertificateSecretName).Info(ctx, "Getting contents of Kubernetes secret for TLS Certificates")
 					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(ctx, clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
 					if err != nil {
 						return err
 					}
-					log.Infof("Successfully loaded TLS config from Kubernetes secret %s", tlsCertificateSecretName)
+					logger.WithField("secretName", tlsCertificateSecretName).Info(ctx, "Successfully loaded TLS config from Kubernetes secret")
 				} else {
-					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
+					logger.Info(ctx, "Generating Self Signed TLS Certificates for Secure Mode")
 					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
 					if err != nil {
 						return err
@@ -139,7 +139,7 @@ See %s`, help.ArgoServer()),
 				}
 
 			} else {
-				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
+				logger.Warn(ctx, "You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
 			}
 
 			modes := auth.Modes{}
@@ -150,7 +150,7 @@ See %s`, help.ArgoServer()),
 				}
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
+				logger.Warn(ctx, "You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
 			}
 
 			opts := apiserver.ArgoServerOpts{
@@ -176,10 +176,10 @@ See %s`, help.ArgoServer()),
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
-					log.Infof("Argo UI is available at %s", url)
+					logger.WithField("url", url).Info(ctx, "Argo UI is available")
 					err := browser.OpenURL(url)
 					if err != nil {
-						log.Warnf("Unable to open the browser. %v", err)
+						logger.WithError(err).Warn(ctx, "Unable to open the browser")
 					}
 				}
 			}
@@ -215,21 +215,28 @@ See %s`, help.ArgoServer()),
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
 	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
+	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
+	ctx, logger, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	if err != nil {
+		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create server logger")
+	}
 	if err := viper.BindPFlags(command.Flags()); err != nil {
-		log.Fatal(err)
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to bind flags to env vars")
+		os.Exit(1)
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(err)
+				logger.WithError(err).WithFatal().Error(ctx, "Failed to set flag")
+				os.Exit(1)
 			}
 		}
 	})

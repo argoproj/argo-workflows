@@ -32,12 +32,13 @@ func NewGetCommand() *cobra.Command {
 `,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 					Name:      name,
@@ -75,7 +76,7 @@ func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
 	case "short", "wide", "":
 		fmt.Print(common.PrintWorkflowHelper(wf, getArgs))
 	default:
-		return fmt.Errorf("Unknown output format: %s", getArgs.Output)
+		return fmt.Errorf("unknown output format: %s", getArgs.Output)
 	}
 	return nil
 }

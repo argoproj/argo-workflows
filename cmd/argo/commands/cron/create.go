@@ -57,7 +57,7 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		return err
 	}
 
-	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
+	cronWorkflows := generateCronWorkflows(ctx, filePaths, cliOpts.strict)
 
 	for _, cronWf := range cronWorkflows {
 		if cliOpts.schedule != "" {
@@ -82,14 +82,14 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 			cronWf.GenerateName = ""
 		}
 		if cronWf.Namespace == "" {
-			cronWf.Namespace = client.Namespace()
+			cronWf.Namespace = client.Namespace(ctx)
 		}
 		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    cronWf.Namespace,
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to create cron workflow: %v", err)
+			return fmt.Errorf("failed to create cron workflow: %v", err)
 		}
 		fmt.Print(getCronWorkflowGet(ctx, created))
 	}

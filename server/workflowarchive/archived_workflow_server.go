@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"sort"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -20,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -179,7 +179,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		return nil, sutils.ToStatusError(fmt.Errorf("operation %v is not supported", requirement.Operator()), codes.InvalidArgument)
 	}
 	if matchLabelKeyPattern(key) {
-		log.WithFields(log.Fields{"labelKey": key}).Info("Skipping retrieving the list of values for label key")
+		logging.RequireLoggerFromContext(ctx).WithField("labelKey", key).Info(ctx, "Skipping retrieving the list of values for label key")
 		return &wfv1.LabelValues{Items: []string{}}, nil
 	}
 
@@ -233,15 +233,16 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
+		logger := logging.RequireLoggerFromContext(ctx)
 		for _, podName := range podsToDelete {
-			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+			logger.WithField("podDeleted", podName).Info(ctx, "Deleting pod")
 			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}
 		}
 
-		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
+		logger.WithField("Dehydrate workflow uid=", wf.UID).Info(ctx, "RetryArchivedWorkflow")
 		// If the Workflow needs to be dehydrated in order to capture and retain all of the previous state for the subsequent workflow, then do so
 		err = w.hydrator.Dehydrate(ctx, wf)
 		if err != nil {

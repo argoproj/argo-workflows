@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -51,12 +50,10 @@ spec:
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -74,12 +71,10 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 // TestPersistErrorWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -96,12 +91,10 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 // TestPersistWithLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -126,12 +119,10 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 // TestPersistErrorWithLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})

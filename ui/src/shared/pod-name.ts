@@ -48,9 +48,12 @@ export function ensurePodNamePrefixLength(prefix: string): string {
 export function createFNVHash(input: string): number {
     let hashint = 2166136261;
 
-    for (let i = 0; i < input.length; i++) {
-        const character = input.charCodeAt(i);
-        hashint = hashint ^ character;
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(input);
+
+    for (let i = 0; i < bytes.length; i++) {
+        const byte = bytes[i];
+        hashint = hashint ^ byte;
         hashint += (hashint << 1) + (hashint << 4) + (hashint << 7) + (hashint << 8) + (hashint << 24);
     }
 

@@ -42,7 +42,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BasicAuthScheme))
 		username, password, ok := decodeBasicAuthToken(token)
 		if !ok {
-			return nil, errors.New("Error parsing Basic Authentication")
+			return nil, errors.New("error parsing basic authentication")
 		}
 		return GetBasicRestConfig(username, password)
 	}
@@ -50,7 +50,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BearerAuthScheme))
 		return GetBearerRestConfig(token)
 	}
-	return nil, errors.New("Unsupported authentication scheme")
+	return nil, errors.New("unsupported authentication scheme")
 }
 
 // convert a basic token (username, password) into a REST config
@@ -280,7 +280,7 @@ func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentTo
 		if timestr != "" {
 			t, err := time.Parse(time.RFC3339, timestr)
 			if err != nil {
-				return "", fmt.Errorf("Invalid expiry date in Kubeconfig. %v", err)
+				return "", fmt.Errorf("invalid expiry date in Kubeconfig. %v", err)
 			}
 			if time.Now().After(t) {
 				err = RefreshAuthToken(restConfig)

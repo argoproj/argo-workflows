@@ -58,9 +58,7 @@ type Controller struct {
 
 // NewController creates a pod controller
 func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
-	log := logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-	log = log.WithField("component", "pod_controller")
-	ctx = logging.WithLogger(ctx, log)
+	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "pod_controller").InContext(ctx)
 	podController := &Controller{
 		config:        config,
 		kubeclientset: clientSet,
@@ -133,7 +131,7 @@ func (c *Controller) GetPodPhaseMetrics(ctx context.Context) map[string]int64 {
 		for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
 			objs, err := c.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 			if err != nil {
-				c.log.WithError(err).Errorf(ctx, "failed to  list pods in phase %s", phase)
+				c.log.WithField("phase", phase).WithError(err).Error(ctx, "failed to list pods in phase")
 			} else {
 				result[string(phase)] = int64(len(objs))
 			}
@@ -151,22 +149,22 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 		return false
 	}
 	wfOwnerKey := fmt.Sprintf("%s/%s", pod.Namespace, controllerRef.Name)
-	logCtx := c.log.WithFields(logging.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "podName": pod.Name})
+	ctx, log := c.log.WithFields(logging.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "pod": pod.Name}).InContext(ctx)
 	obj, wfExists, err := c.wfInformer.GetIndexer().GetByKey(wfOwnerKey)
 	if err != nil {
-		logCtx.Warn(ctx, "failed to get workflow from informer")
+		log.Warn(ctx, "failed to get workflow from informer")
 	}
 	if !wfExists {
 		return true
 	}
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		c.log.WithField("pod", pod.Name).Warn(ctx, "workflow is not an unstructured")
+		log.Warn(ctx, "workflow is not an unstructured")
 		return true
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		c.log.WithField("pod", pod.Name).Warn(ctx, "workflow unstructured can't be converted to a workflow")
+		log.Warn(ctx, "workflow unstructured can't be converted to a workflow")
 		return true
 	}
 	return wf.DeletionTimestamp != nil
@@ -228,7 +226,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 		if !lastTransition.IsZero() && delayDuration > 0 {
 			delay = time.Until(lastTransition.Add(delayDuration))
 		}
-		c.log.WithFields(logging.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC}).Infof(ctx, "queuing pod delay: %s", delay)
+		c.log.WithFields(logging.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC, "delay": delay}).Info(ctx, "queuing pod delay")
 		switch {
 		case delay > 0:
 			c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
@@ -330,7 +328,7 @@ func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID
 func podFromObj(obj interface{}) (*apiv1.Pod, error) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		return nil, fmt.Errorf("Object is not a pod")
+		return nil, fmt.Errorf("object is not a pod")
 	}
 	return pod, nil
 }

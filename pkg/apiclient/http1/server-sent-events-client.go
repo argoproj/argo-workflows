@@ -14,6 +14,7 @@ import (
 // serverSentEventsClient provides a RecvEvent func to make getting Server-Sent Events (SSE)
 // simple and consistent
 type serverSentEventsClient struct {
+	// nolint: containedctx
 	ctx    context.Context
 	reader *bufio.Reader
 }
@@ -45,7 +46,7 @@ func (c serverSentEventsClient) RecvMsg(interface{}) error {
 const prefixLength = len("data: ")
 
 func (c serverSentEventsClient) RecvEvent(v interface{}) error {
-	log := logging.GetLoggerFromContext(c.ctx)
+	log := logging.RequireLoggerFromContext(c.ctx)
 	for {
 		line, err := c.reader.ReadBytes('\n')
 		if err != nil {

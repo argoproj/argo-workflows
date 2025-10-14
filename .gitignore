@@ -22,6 +22,7 @@ git-ask-pass.sh
 /workflow-controller
 /.scannerwork/
 /test-results/
+/test/reports/
 /package-lock.json
 /pkg/apiclient/_.secondary.swagger.json
 /pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json
@@ -34,6 +35,7 @@ git-ask-pass.sh
 /pkg/apiclient/workflow/workflow.swagger.json
 /pkg/apiclient/workflowarchive/workflow-archive.swagger.json
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+/pkg/apiclient/sync/sync.swagger.json
 /site/
 /.brew_home
 /go-diagrams/

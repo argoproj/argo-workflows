@@ -48,8 +48,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	require.NoError(t, err)
 
@@ -145,8 +144,7 @@ func TestWaitForTermination(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := WaitForTermination(ctx, mock, []string{"container-name"}, time.Duration(10)*time.Second)
 	require.NoError(t, err)
 
@@ -182,8 +180,7 @@ func TestKillGracefully(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := KillGracefully(ctx, mock, []string{"container-name"}, time.Second)
 	require.EqualError(t, err, "timeout after 1s")
 }

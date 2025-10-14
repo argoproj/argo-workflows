@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"context"
 	"testing"
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
@@ -24,8 +23,7 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 	// Uncomment the following line to log queries to stdout
 	//db.LC().SetLevel(db.LogLevelDebug)
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(b.Context())
 
 	b.Run("ListWorkflows", func(b *testing.B) {
 		for range b.N {

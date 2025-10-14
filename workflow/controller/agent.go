@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -48,18 +47,19 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Info(ctx, "updateAgentPodStatus")
-	newPhase, message := assessAgentPodStatus(pod)
+	newPhase, message := assessAgentPodStatus(ctx, pod)
 	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
 		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
 	}
 }
 
-func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
+func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	var newPhase wfv1.NodePhase
 	var message string
-	log.WithField("namespace", pod.Namespace).
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("namespace", pod.Namespace).
 		WithField("podName", pod.Name).
-		Info("assessAgentPodStatus")
+		Info(ctx, "assessAgentPodStatus")
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
@@ -111,7 +111,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
-	log := woc.log.WithField("podName", podName)
+	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
@@ -187,11 +187,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts()...)
+	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts()...)
+	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts(ctx)...)
 
 	pod = &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -243,7 +243,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
-	log.Debugf(ctx, "Creating Agent pod")
+	log.Debug(ctx, "Creating Agent pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
@@ -254,9 +254,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				return existing, nil
 			}
 		}
-		bgCtx := context.Background()
-		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		if errorsutil.IsTransientErr(bgCtx, err) {
+		if errorsutil.IsTransientErr(ctx, err) {
 			woc.requeue()
 			return created, nil
 		}

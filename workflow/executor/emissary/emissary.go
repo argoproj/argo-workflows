@@ -11,12 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 )
@@ -74,12 +73,12 @@ func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
 	return string(data), err
 }
 
-func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) error {
+func (e emissary) CopyFile(ctx context.Context, containerName string, sourcePath string, destPath string, _ int) error {
 	// this implementation is very different, because we expect the emissary binary has already compressed the file
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression?
 	sourceFile := filepath.Join(common.VarRunArgoPath, "outputs", "artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
-	log.Infof("%s -> %s", sourceFile, destPath)
+	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"source": sourceFile, "dest": destPath}).Info(ctx, "Copying file")
 	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
 		// If compressed file does not exist then the source artifact did not exist

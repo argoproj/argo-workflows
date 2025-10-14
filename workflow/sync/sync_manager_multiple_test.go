@@ -55,12 +55,9 @@ func checkCannotAcquire(ctx context.Context, t *testing.T, syncMgr *Manager, wf 
 }
 
 func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize int) (context.Context, func(), *Manager, *Manager) {
-	ctx, cancel := context.WithCancel(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	// Create a database session for the semaphore
-	info, deferfn, cfg, err := createTestDBSession(t, dbType)
+	info, deferfn, cfg, err := createTestDBSession(ctx, t, dbType)
 	deferfn2 := func() {
 		deferfn()
 		cancel()
@@ -69,18 +66,18 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 
 	// Set up the semaphore limit in the database
 	dbKey := "default/my-db-semaphore"
-	_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
+	_, err = info.Session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
-	require.NotNil(t, syncMgr1.dbInfo.session)
+	require.NotNil(t, syncMgr1.dbInfo.Session)
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.session, &cfg, func(string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
-	require.NotNil(t, syncMgr2.dbInfo.session)
+	require.NotNil(t, syncMgr2.dbInfo.Session)
 	return ctx, deferfn2, syncMgr1, syncMgr2
 }
 

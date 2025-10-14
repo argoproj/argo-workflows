@@ -108,7 +108,8 @@ type S3ClientOpts struct {
 type s3client struct {
 	S3ClientOpts
 	minioClient *minio.Client
-	ctx         context.Context
+	// nolint: containedctx
+	ctx context.Context
 }
 
 var _ S3Client = &s3client{}
@@ -124,7 +125,6 @@ type ArtifactDriver struct {
 	SessionToken          string
 	RoleARN               string
 	UseSDKCreds           bool
-	Context               context.Context
 	KmsKeyID              string
 	KmsEncryptionContext  string
 	EnableEncryption      bool
@@ -171,10 +171,10 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 func (s3Driver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
-			log.Infof(ctx, "S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
+			log.WithFields(logging.Fields{"path": path, "key": inputArtifact.S3.Key}).Info(ctx, "S3 Load")
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
@@ -214,11 +214,10 @@ func loadS3Artifact(ctx context.Context, s3cli S3Client, inputArtifact *wfv1.Art
 
 // OpenStream opens a stream reader for an artifact from S3 compliant storage
 func (s3Driver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	log := logging.GetLoggerFromContext(ctx)
-	log.Infof(ctx, "S3 OpenStream: key: %s", inputArtifact.S3.Key)
-	todoCtx := logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	todoCtx = logging.WithLogger(todoCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	s3cli, err := s3Driver.newS3Client(todoCtx)
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithField("key", inputArtifact.S3.Key).Info(ctx, "S3 OpenStream")
+	// nolint:contextcheck
+	s3cli, err := s3Driver.newS3Client(log.NewBackgroundContext())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new S3 client: %v", err)
 	}
@@ -252,10 +251,10 @@ func streamS3Artifact(_ context.Context, s3cli S3Client, inputArtifact *wfv1.Art
 func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
-			log.Infof(ctx, "S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
+			log.WithFields(logging.Fields{"path": path, "key": outputArtifact.S3.Key}).Info(ctx, "S3 Save")
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
@@ -269,11 +268,11 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 func (s3Driver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		return isTransientS3Err(ctx, err)
 	}, func() error {
-		log.Infof(ctx, "S3 Delete artifact: key: %s", artifact.S3.Key)
+		log.WithField("key", artifact.S3.Key).Info(ctx, "S3 Delete")
 		s3cli, err := s3Driver.newS3Client(ctx)
 		if err != nil {
 			return err
@@ -308,7 +307,7 @@ func saveS3Artifact(ctx context.Context, s3cli S3Client, path string, outputArti
 	if err != nil {
 		return true, fmt.Errorf("failed to test if %s is a directory: %v", path, err)
 	}
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
 	if createBucketIfNotPresent != nil {
 		log.WithField("bucket", outputArtifact.S3.Bucket).Info(ctx, "creating bucket")
@@ -374,8 +373,8 @@ func listObjects(ctx context.Context, s3cli S3Client, artifact *wfv1.Artifact) (
 	if err != nil {
 		return !isTransientS3Err(ctx, err), files, fmt.Errorf("failed to list directory: %v", err)
 	}
-	log := logging.GetLoggerFromContext(ctx)
-	log.Debugf(ctx, "successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithFields(logging.Fields{"bucket": artifact.S3.Bucket, "key": artifact.S3.Key, "files": files}).Debug(ctx, "successfully listing S3 directory")
 
 	if len(files) == 0 {
 		directoryExists, err := s3cli.KeyExists(artifact.S3.Bucket, artifact.S3.Key)
@@ -398,10 +397,7 @@ func (s3Driver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.
 }
 
 // Get AWS credentials based on default order from aws SDK
-func GetAWSCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+func getAWSCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
 		return nil, err
@@ -415,11 +411,8 @@ func GetAWSCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
 }
 
 // GetAssumeRoleCredentials gets Assumed role credentials
-func GetAssumeRoleCredentials(opts S3ClientOpts) (*credentials.Credentials, error) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	cfg, err := config.LoadDefaultConfig(ctx)
+func getAssumeRoleCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +430,7 @@ func GetAssumeRoleCredentials(opts S3ClientOpts) (*credentials.Credentials, erro
 }
 
 func GetCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Credentials, error) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	if opts.AccessKey != "" && opts.SecretKey != "" {
 		if opts.SessionToken != "" {
 			log.WithField("endpoint", opts.Endpoint).Info(ctx, "Creating minio client using ephemeral credentials")
@@ -448,10 +441,10 @@ func GetCredentials(ctx context.Context, opts S3ClientOpts) (*credentials.Creden
 		}
 	} else if opts.RoleARN != "" {
 		log.WithField("roleArn", opts.RoleARN).Info(ctx, "Creating minio client using assumed-role credentials")
-		return GetAssumeRoleCredentials(opts)
+		return getAssumeRoleCredentials(ctx, opts)
 	} else if opts.UseSDKCreds {
 		log.Info(ctx, "Creating minio client using AWS SDK credentials")
-		return GetAWSCredentials(opts)
+		return getAWSCredentials(ctx, opts)
 	} else {
 		log.Info(ctx, "Creating minio client using IAM role")
 		return credentials.NewIAM(nullIAMEndpoint), nil
@@ -465,9 +458,7 @@ func GetDefaultTransport(opts S3ClientOpts) (*http.Transport, error) {
 
 // NewS3Client instantiates a new S3 client object backed
 func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
-	log := logging.GetLoggerFromContext(ctx)
-	log = log.WithField("component", "s3_client")
-	ctx = logging.WithLogger(ctx, log)
+	ctx, _ = logging.RequireLoggerFromContext(ctx).WithField("component", "s3_client").InContext(ctx)
 	s3cli := s3client{
 		S3ClientOpts: opts,
 	}
@@ -504,7 +495,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	}
 
 	if opts.EncryptOpts.ServerSideCustomerKey != "" && !opts.Secure {
-		return nil, fmt.Errorf("Secure must be set if EncryptOpts.SSECPassword is set")
+		return nil, fmt.Errorf("secure must be set if EncryptOpts.SSECPassword is set")
 	}
 
 	s3cli.ctx = ctx
@@ -515,8 +506,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 
 // PutFile puts a single file to a bucket at the specified key
 func (s *s3client) PutFile(bucket, key, path string) error {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Saving file to s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Saving file to s3")
 	// NOTE: minio will detect proper mime-type based on file extension
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
@@ -532,15 +522,13 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 }
 
 func (s *s3client) BucketExists(bucketName string) (bool, error) {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithField("bucket", bucketName).Info(s.ctx, "Checking if bucket exists")
+	logging.RequireLoggerFromContext(s.ctx).WithField("bucket", bucketName).Info(s.ctx, "Checking if bucket exists")
 	result, err := s.minioClient.BucketExists(s.ctx, bucketName)
 	return result, err
 }
 
 func (s *s3client) MakeBucket(bucketName string, opts minio.MakeBucketOptions) error {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"bucket": bucketName, "region": opts.Region, "objectLocking": opts.ObjectLocking}).Info(s.ctx, "Creating bucket")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"bucket": bucketName, "region": opts.Region, "objectLocking": opts.ObjectLocking}).Info(s.ctx, "Creating bucket")
 	err := s.minioClient.MakeBucket(s.ctx, bucketName, opts)
 	if err != nil {
 		return err
@@ -559,10 +547,10 @@ func generatePutTasks(ctx context.Context, keyPrefix, rootPath string) chan uplo
 	rootPath = filepath.Clean(rootPath) + string(os.PathSeparator)
 	uploadTasks := make(chan uploadTask)
 	go func() {
-		log := logging.GetLoggerFromContext(ctx)
+		log := logging.RequireLoggerFromContext(ctx)
 		_ = filepath.Walk(rootPath, func(localPath string, fi os.FileInfo, err error) error {
 			if err != nil {
-				log.WithFields(logging.Fields{"localPath": localPath}).Errorf(ctx, "Failed to walk artifacts path %s", err.Error())
+				log.WithFields(logging.Fields{"localPath": localPath}).WithError(err).Error(ctx, "Failed to walk artifacts path")
 				return err
 			}
 			relPath := strings.TrimPrefix(localPath, rootPath)
@@ -598,8 +586,7 @@ func (s *s3client) PutDirectory(bucket, key, path string) error {
 
 // GetFile downloads a file to a local file path
 func (s *s3client) GetFile(bucket, key, path string) error {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Getting file from s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Getting file from s3")
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
 	if err != nil {
@@ -615,8 +602,7 @@ func (s *s3client) GetFile(bucket, key, path string) error {
 
 // OpenFile opens a file for reading
 func (s *s3client) OpenFile(bucket, key string) (io.ReadCloser, error) {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Opening file from s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Opening file from s3")
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
 	if err != nil {
@@ -636,8 +622,7 @@ func (s *s3client) OpenFile(bucket, key string) (io.ReadCloser, error) {
 
 // checks if object exists (and if we have permission to access)
 func (s *s3client) KeyExists(bucket, key string) (bool, error) {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Checking key exists from s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Checking key exists from s3")
 
 	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
 	if err != nil {
@@ -656,15 +641,13 @@ func (s *s3client) KeyExists(bucket, key string) (bool, error) {
 }
 
 func (s *s3client) Delete(bucket, key string) error {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Deleting object from s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Deleting object from s3")
 	return s.minioClient.RemoveObject(s.ctx, bucket, key, minio.RemoveObjectOptions{})
 }
 
 // GetDirectory downloads a s3 directory to a local path
 func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info(s.ctx, "Getting directory from s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info(s.ctx, "Getting directory from s3")
 	keys, err := s.ListDirectory(bucket, keyPrefix)
 	if err != nil {
 		return err
@@ -716,8 +699,7 @@ func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
 }
 
 func (s *s3client) ListDirectory(bucket, keyPrefix string) ([]string, error) {
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix}).Info(s.ctx, "Listing directory from s3")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix}).Info(s.ctx, "Listing directory from s3")
 
 	if keyPrefix != "" {
 		keyPrefix = filepath.Clean(keyPrefix) + "/"
@@ -774,8 +756,7 @@ func (s *s3client) setBucketEnc(bucketName string) error {
 		config = sse.NewConfigurationSSES3()
 	}
 
-	log := logging.GetLoggerFromContext(s.ctx)
-	log.WithFields(logging.Fields{"KmsKeyID": s.EncryptOpts.KmsKeyID, "bucketName": bucketName}).Info(s.ctx, "Setting Bucket Encryption")
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"KmsKeyID": s.EncryptOpts.KmsKeyID, "bucketName": bucketName}).Info(s.ctx, "Setting Bucket Encryption")
 	err := s.minioClient.SetBucketEncryption(s.ctx, bucketName, config)
 	return err
 }

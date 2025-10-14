@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -23,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -81,6 +81,29 @@ func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
+}
+
+// Readiness probe is defined in the base manifest:
+// https://github.com/argoproj/argo-workflows/blob/1e2a87f2afdebbcd0e55069df5a945f5faca9d45/manifests/base/argo-server/argo-server-deployment.yaml#L30-L36
+func (s *ArgoServerSuite) TestReadinessProbe() {
+	s.Run("HTTP/1.1 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/1.1").
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/1.1", response.Raw().Proto) //nolint:bodyclose
+	})
+
+	s.Run("HTTP/2 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/2.0").
+			WithClient(http2Client).
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/2.0", response.Raw().Proto) //nolint:bodyclose
+	})
 }
 
 func (s *ArgoServerSuite) TestInfo() {
@@ -401,8 +424,7 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 }
 
 func (s *ArgoServerSuite) createServiceAccount(name string) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(s.T().Context())
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
@@ -414,8 +436,7 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(s.T().Context())
 	nsName := fixtures.Namespace
 	goodSaName := "argotestgood"
 	s.createServiceAccount(goodSaName)
@@ -1685,9 +1706,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	log := logging.GetLoggerFromContext(ctx)
+	ctx := logging.TestContext(s.T().Context())
+	log := logging.RequireLoggerFromContext(ctx)
 	t := s.T()
 	req, err := http.NewRequest("GET", baseURL+url, nil)
 	s.Require().NoError(err)
@@ -1778,6 +1798,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
 	var name string
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
 	s.Given().
 		Workflow(`
 metadata:
@@ -2583,6 +2611,206 @@ spec:
 		Path("$.spec.templates[0].container.args[1]").
 		IsEqual("hello \u0000")
 
+}
+
+func (s *ArgoServerSuite) TestSyncConfigmapService() {
+	syncNamespace := "argo"
+	configmapName := "test-sync-cm"
+	syncKey := "test-key"
+
+	s.Run("CreateSyncLimitConfigmap", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				CmName: configmapName,
+				Key:    syncKey,
+				Limit:  100,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey).
+			HasValue("limit", 100)
+	})
+
+	s.Run("CreateSyncLimit-cm-exist", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				CmName: configmapName,
+				Key:    syncKey + "-exist",
+				Limit:  100,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey+"-exist").
+			HasValue("limit", 100)
+	})
+
+	s.Run("GetSyncLimitConfigmap", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey).
+			HasValue("limit", 100)
+	})
+
+	s.Run("UpdateSyncLimitConfigmap", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				CmName: configmapName,
+				Limit:  200,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey).
+			HasValue("limit", 200)
+	})
+
+	s.Run("InvalidSizeLimit", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				CmName: configmapName + "-invalid",
+				Key:    syncKey,
+				Limit:  0,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(400)
+	})
+
+	s.Run("KeyDoesNotExistConfigmap", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("DeleteSyncLimitConfigmap", func() {
+		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(200)
+
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("UpdateNonExistentLimit", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				CmName: configmapName,
+				Limit:  200,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).Expect().
+			Status(404)
+	})
+}
+
+func (s *ArgoServerSuite) TestSyncDatabaseService() {
+	syncNamespace := "argo"
+	syncKey := "test-sync-db"
+
+	s.Run("CreateSyncLimitDatabase", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:   syncKey,
+				Limit: 100,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("limit", 100)
+	})
+
+	s.Run("CreateSyncLimitDatabaseAgain", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:   syncKey,
+				Limit: 100,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(409)
+	})
+
+	s.Run("GetSyncLimitDatabase", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("limit", 100)
+	})
+
+	s.Run("UpdateSyncLimitDatabase", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				Limit: 200,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("limit", 200)
+	})
+
+	s.Run("InvalidSizeLimitDatabase", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:   syncKey + "-invalid",
+				Limit: 0,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(400)
+	})
+
+	s.Run("KeyDoesNotExistDatabase", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("DeleteSyncLimitDatabase", func() {
+		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(200)
+
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("UpdateNonExistentLimitDatabase", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				Limit: 200,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).Expect().
+			Status(404)
+	})
 }
 
 func TestArgoServerSuite(t *testing.T) {

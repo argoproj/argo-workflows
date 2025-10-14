@@ -27,6 +27,7 @@ type customMetricValue struct {
 	lastUpdated     time.Time
 	labels          []*wfv1.MetricLabel
 	key             string
+	completed       bool
 }
 
 type customMetricUserData struct {
@@ -98,15 +99,15 @@ type customInstrument struct {
 // For realtime this acts as a thunk to the calling convention
 // For non-realtime we have to fake observability as prometheus provides
 // up/down and set on the same gauge type, which otel forbids.
-func (i *customInstrument) customCallback(_ context.Context, o metric.Observer) error {
+func (i *customInstrument) customCallback(ctx context.Context, o metric.Observer) error {
 	ud := customUserData(i.Instrument, true)
 	ud.mutex.RLock()
 	defer ud.mutex.RUnlock()
 	for _, value := range ud.values {
 		if value.rtValueFunc != nil {
-			i.ObserveFloat(o, value.rtValueFunc(), value.getLabels())
+			i.ObserveFloat(ctx, o, value.rtValueFunc(), value.getLabels())
 		} else {
-			i.ObserveFloat(o, value.prometheusValue, value.getLabels())
+			i.ObserveFloat(ctx, o, value.prometheusValue, value.getLabels())
 		}
 	}
 	return nil
@@ -130,24 +131,24 @@ func (m *Metrics) matchExistingMetric(metricSpec *wfv1.Prometheus) (*telemetry.I
 	key := metricSpec.Name
 	if inst := m.GetInstrument(key); inst != nil {
 		if inst.GetDescription() != metricSpec.Help {
-			return nil, fmt.Errorf("Help for metric %s is already set to %s, it cannot be changed", metricSpec.Name, inst.GetDescription())
+			return nil, fmt.Errorf("help for metric %s is already set to %s, it cannot be changed", metricSpec.Name, inst.GetDescription())
 		}
 		wantedType := metricSpec.GetMetricType()
 		switch inst.GetOtel().(type) {
 		case *metric.Float64ObservableGauge:
 			if wantedType != wfv1.MetricTypeGauge && !metricSpec.IsRealtime() {
-				return nil, fmt.Errorf("Found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
-		case *metric.Float64ObservableUpDownCounter:
+		case *metric.Float64ObservableCounter:
 			if wantedType != wfv1.MetricTypeCounter {
-				return nil, fmt.Errorf("Found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		case *metric.Float64Histogram:
 			if wantedType != wfv1.MetricTypeHistogram {
-				return nil, fmt.Errorf("Found existing histogram for custom metric %s of type %s", metricSpec.Name, wantedType)
+				return nil, fmt.Errorf("found existing histogram for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
 		default:
-			return nil, fmt.Errorf("Found unwanted type %s for custom metric %s of type %s", reflect.TypeOf(inst.GetOtel()), metricSpec.Name, wantedType)
+			return nil, fmt.Errorf("found unwanted type %s for custom metric %s of type %s", reflect.TypeOf(inst.GetOtel()), metricSpec.Name, wantedType)
 		}
 		return inst, nil
 	}
@@ -170,7 +171,7 @@ func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string)
 	m.attachCustomMetricToWorkflow(metricSpec, ownerKey)
 	inst := m.GetInstrument(metricSpec.Name)
 	if inst == nil {
-		return nil, fmt.Errorf("Failed to create new metric %s", metricSpec.Name)
+		return nil, fmt.Errorf("failed to create new metric %s", metricSpec.Name)
 	}
 	inst.SetUserdata(newUserData())
 	return inst, nil
@@ -256,7 +257,7 @@ func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
 	case metricType == wfv1.MetricTypeHistogram:
 		return m.CreateInstrument(telemetry.Float64Histogram, metricSpec.Name, metricSpec.Help, "{item}", telemetry.WithDefaultBuckets(metricSpec.Histogram.GetBuckets()))
 	case metricType == wfv1.MetricTypeCounter:
-		err := m.CreateInstrument(telemetry.Float64ObservableUpDownCounter, metricSpec.Name, metricSpec.Help, "{item}")
+		err := m.CreateInstrument(telemetry.Float64ObservableCounter, metricSpec.Name, metricSpec.Help, "{item}")
 		if err != nil {
 			return err
 		}
@@ -287,7 +288,12 @@ func (m *Metrics) runCustomGC(ttl time.Duration) {
 		ud.mutex.Lock()
 		for key, value := range ud.values {
 			if time.Since(value.lastUpdated) > ttl {
-				delete(ud.values, key)
+				switch {
+				case value.rtValueFunc != nil && value.completed:
+					delete(ud.values, key)
+				case value.rtValueFunc == nil:
+					delete(ud.values, key)
+				}
 			}
 		}
 		ud.mutex.Unlock()
@@ -311,20 +317,42 @@ func (m *Metrics) customMetricsGC(ctx context.Context, ttl time.Duration) {
 	}
 }
 
-func (m *Metrics) StopRealtimeMetricsForWfUID(key string) {
+type operation int
+
+const (
+	Complete operation = iota
+	Delete
+)
+
+func (m *Metrics) handleRealtimeMetricsForWfUID(key string, op operation) {
 	m.realtimeMutex.Lock()
 	defer m.realtimeMutex.Unlock()
 	if _, exists := m.realtimeWorkflows[key]; !exists {
 		return
 	}
-
 	realtimeMetrics := m.realtimeWorkflows[key]
 	for _, metric := range realtimeMetrics {
 		ud := customUserData(metric.inst, true)
 		ud.mutex.Lock()
-		delete(ud.values, metric.key)
+		switch op {
+		case Complete:
+			if value, ok := ud.values[metric.key]; ok && value != nil {
+				value.completed = true
+			}
+		case Delete:
+			delete(ud.values, metric.key)
+		}
 		ud.mutex.Unlock()
 	}
+	if op == Delete {
+		delete(m.realtimeWorkflows, key)
+	}
+}
 
-	delete(m.realtimeWorkflows, key)
+func (m *Metrics) CompleteRealtimeMetricsForWfUID(key string) {
+	m.handleRealtimeMetricsForWfUID(key, Complete)
+}
+
+func (m *Metrics) DeleteRealtimeMetricsForWfUID(key string) {
+	m.handleRealtimeMetricsForWfUID(key, Delete)
 }

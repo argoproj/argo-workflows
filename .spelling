@@ -176,7 +176,6 @@ gitops
 goroutine
 goroutines
 govaluate
-grpc
 gzipped
 i.e.
 idempotence
@@ -215,6 +214,7 @@ parameterizing
 params
 pprof
 pre-commit
+programmatically
 pytorch
 qps
 ray

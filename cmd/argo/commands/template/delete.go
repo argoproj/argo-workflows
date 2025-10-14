@@ -17,6 +17,13 @@ func NewDeleteCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "delete WORKFLOW_TEMPLATE",
 		Short: "delete a workflow template",
+		Example: `
+# Delete a workflow template by its name:
+    argo template delete <my-template>
+
+# Delete all workflow templates:
+    argo template delete --all
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return apiServerDeleteWorkflowTemplates(cmd.Context(), all, args)
 		},
@@ -35,7 +42,7 @@ func apiServerDeleteWorkflowTemplates(ctx context.Context, allWFs bool, wfTmplNa
 	if err != nil {
 		return err
 	}
-	namespace := client.Namespace()
+	namespace := client.Namespace(ctx)
 	var delWFTmplNames []string
 	if allWFs {
 		wftmplList, err := serviceClient.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{

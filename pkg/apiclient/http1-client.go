@@ -4,12 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/http1"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -23,7 +22,7 @@ func (h httpClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.Archi
 	return http1.ArchivedWorkflowsServiceClient(h), nil
 }
 
-func (h httpClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
+func (h httpClient) NewWorkflowServiceClient(_ context.Context) workflowpkg.WorkflowServiceClient {
 	return http1.WorkflowServiceClient(h)
 }
 
@@ -43,6 +42,10 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
 }
 
-func newHTTP1Client(baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
-	return logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient)), nil
+func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
+	return http1.SyncServiceClient(h), nil
+}
+
+func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
+	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient)), nil
 }

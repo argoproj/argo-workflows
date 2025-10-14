@@ -42,7 +42,7 @@ export function SubmitWorkflowPanel(props: Props) {
         const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
         // Get the user arguments from the query params
         const updatedParams = workflowParameters.map(param => ({
-            name: param.name,
+            ...param,
             value: templatePropertiesInQuery[param.name] || param.value
         }));
         setWorkflowParameters(updatedParams);

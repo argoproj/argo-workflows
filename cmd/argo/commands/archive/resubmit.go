@@ -75,12 +75,12 @@ func NewResubmitCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient() // needed for wait watch or log flags
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx) // needed for wait watch or log flags
 			archiveServiceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			if err != nil {
 				return err
 			}
-			resubmitOpts.namespace = client.Namespace()
+			resubmitOpts.namespace = client.Namespace(ctx)
 			return resubmitArchivedWorkflows(ctx, archiveServiceClient, serviceClient, resubmitOpts, cliSubmitOpts, args)
 		},
 	}

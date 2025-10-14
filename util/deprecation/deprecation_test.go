@@ -11,9 +11,7 @@ import (
 
 func TestUninitalized(t *testing.T) {
 	metricsF = nil
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	Record(ctx, Schedule)
 }
 
@@ -31,9 +29,7 @@ func TestInitalized(t *testing.T) {
 		}
 	}
 	Initialize(fn)
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	Record(ctx, Schedule)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, countSchedule)

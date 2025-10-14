@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -114,11 +113,9 @@ spec:
 `
 
 func TestSetTemplateDefault(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
 			TemplateDefaults: &wfv1.Template{

@@ -1,7 +1,6 @@
 package progress
 
 import (
-	"context"
 	"testing"
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
@@ -13,8 +12,7 @@ import (
 )
 
 func TestUpdater(t *testing.T) {
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	ns := "my-ns"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},

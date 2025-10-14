@@ -24,13 +24,16 @@ var (
 )
 
 func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context) cache.SharedIndexInformer {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	labelSelector := labels.NewSelector().
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
 		String()
 	log.WithField("labelSelector", labelSelector).
 		Info(ctx, "Watching task results")
+
+	// This is a generated function, so we can't change the context.
+	// nolint:contextcheck
 	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		wfc.wfclientset,
 		wfc.GetManagedNamespace(),
@@ -62,8 +65,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 	return informer
 }
 
-func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr(context.Background(), "RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
+func recentlyDeleted(ctx context.Context, node *wfv1.NodeStatus) bool {
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr(ctx, "RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func recentlyCompleted(ctx context.Context, node *wfv1.NodeStatus) bool {
@@ -78,17 +81,17 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		resultName := result.GetName()
 
-		woc.log.Debugf(ctx, "task result:\n%+v", result)
-		woc.log.Debugf(ctx, "task result name:\n%+v", resultName)
+		woc.log.WithField("result", result).Debug(ctx, "task result")
+		woc.log.WithField("resultName", resultName).Debug(ctx, "task result name")
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
 		// If the task result is completed, set the state to true.
 		switch label {
 		case "true":
-			woc.log.Debugf(ctx, "Marking task result complete %s", resultName)
+			woc.log.WithField("resultName", resultName).Debug(ctx, "Marking task result complete")
 			woc.wf.Status.MarkTaskResultComplete(ctx, resultName)
 		case "false":
-			woc.log.Debugf(ctx, "Marking task result incomplete %s", resultName)
+			woc.log.WithField("resultName", resultName).Debug(ctx, "Marking task result incomplete")
 			woc.wf.Status.MarkTaskResultIncomplete(ctx, resultName)
 		}
 
@@ -99,7 +102,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		}
 		// Mark task result as completed if it has no chance to be completed, we use phase here to avoid caring about the sync status.
 		if label == "false" && old.Completed() {
-			if (!woc.nodePodExist(*old) && recentlyDeleted(old)) || recentlyCompleted(ctx, old) {
+			if (!woc.nodePodExist(*old) && recentlyDeleted(ctx, old)) || recentlyCompleted(ctx, old) {
 				woc.log.WithField("nodeID", nodeID).Debug(ctx, "Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means

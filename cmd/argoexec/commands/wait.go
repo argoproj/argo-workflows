@@ -16,8 +16,7 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			err := waitContainer(ctx)
+			err := waitContainer(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("%+v", err)
 			}
@@ -27,12 +26,13 @@ func NewWaitCommand() *cobra.Command {
 	return &command
 }
 
+// nolint: contextcheck
 func waitContainer(ctx context.Context) error {
-	wfExecutor := initExecutor()
+	wfExecutor := initExecutor(ctx)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	bgCtx := context.Background()
-	bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	// nolint:contextcheck
+	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 
 	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
@@ -45,14 +45,14 @@ func waitContainer(ctx context.Context) error {
 	// Wait for main container to complete
 	err := wfExecutor.Wait(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 	}
 
 	if wfExecutor.Template.Resource != nil {
 		// Save log artifacts for resource template
 		err = wfExecutor.ReportOutputsLogs(bgCtx)
 		if err != nil {
-			wfExecutor.AddError(err)
+			wfExecutor.AddError(ctx, err)
 		}
 		return wfExecutor.HasError()
 	}
@@ -60,19 +60,19 @@ func waitContainer(ctx context.Context) error {
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult(bgCtx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 	}
 
 	// Saving output parameters
 	err = wfExecutor.SaveParameters(bgCtx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 	}
 
 	// Saving output artifacts
 	artifacts, err := wfExecutor.SaveArtifacts(bgCtx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 	}
 
 	// Save log artifacts
@@ -82,7 +82,7 @@ func waitContainer(ctx context.Context) error {
 	// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
 	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 	}
 
 	return wfExecutor.HasError()

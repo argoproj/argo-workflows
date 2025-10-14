@@ -17,13 +17,13 @@ data:
   namespace: my-namespace
 
   # Parallelism limits the max total parallel workflows that can execute at the same time
-  # (available since Argo v2.3). Controller must be restarted to take effect.
+  # Workflows that are executing but restricted from running more nodes due to other mechanisms will still count toward parallelism limits.
   parallelism: "10"
 
   # Limit the maximum number of incomplete workflows in a namespace.
+  # Workflows that are executing but restricted from running more nodes due to other mechanisms will still count toward parallelism limits.
   # Intended for cluster installs that are multi-tenancy environments, to prevent too many workflows in one
   # namespace impacting others.
-  # >= v3.2
   namespaceParallelism: "10"
 
   # Globally limits the rate at which pods are created.
@@ -315,35 +315,38 @@ data:
   # This enables coordination between multiple argo controller instances or across clusters
   # Shares a similar structure with persistence configuration
   synchronization: |
+    # Enable or disable database synchronization API (default: false)
+    enableAPI: false
+    
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
-    
+
     # Required - sets a unique name for this controller instance
     # Must be different for each controller instance to properly coordinate lock ownership
     controllerName: controller-1
-    
+
     # Optional - customize the table names for the lock mechanism
     # These table names are created and managed by the controller
     limitTableName: sync_limit           # Stores semaphore limits (default: sync_limit)
     stateTableName: sync_state           # Stores current lock state (default: sync_state)
     controllerTableName: sync_controller # Stores controller heartbeats (default: sync_controller)
     lockTableName: sync_lock             # Stores lock coordination data (default: sync_lock)
-    
-    # Optional timing configurations 
+
+    # Optional timing configurations
     pollSeconds: 5                  # How often to check for lock changes (default: 5)
     heartbeatSeconds: 60            # How often to update controller heartbeat (default: 60)
     inactiveControllerSeconds: 300  # When to consider a controller dead (default: 300)
-    
+
     # Time in seconds to cache semaphore limits to reduce database queries (default: 0)
     # 0 means check the limit on every access
     semaphoreLimitCacheSeconds: 0
-    
+
     # Skip database migration if needed (default: false)
     # skipMigration: true
-    
+
     # PostgreSQL database configuration - similar to persistence config
     postgresql:
       host: localhost
@@ -358,7 +361,7 @@ data:
         key: password
       ssl: true
       sslMode: require
-    
+
     # MySQL database configuration (alternative to PostgreSQL)
     # mysql:
     #   host: localhost

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -63,11 +62,10 @@ spec:
 
 func TestStepsOnExitTmpl(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmpl)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
@@ -132,11 +130,10 @@ spec:
 
 func TestDAGOnExitTmpl(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
@@ -193,11 +190,10 @@ spec:
 
 func TestStepsOnExitTmplWithArt(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmplWithArt)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -269,11 +265,10 @@ spec:
 
 func TestDAGOnExitTmplWithArt(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmplWithArt)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -355,11 +350,10 @@ spec:
 
 func TestStepsTmplOnExit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsTmplOnExit)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -461,11 +455,10 @@ spec:
 
 func TestDAGOnExit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExit)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -699,11 +692,10 @@ status:
 
 func TestDagOnExitAndRetryStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOnExitAndRetryStrategy)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -752,11 +744,10 @@ status:
 
 func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitHTTPReconciliation)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
@@ -851,11 +842,10 @@ status:
 
 func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitStepsHTTPReconciliation)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
@@ -995,11 +985,10 @@ status:
   phase: Running
   progress: 2/2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
@@ -1045,11 +1034,10 @@ spec:
         command: [sh, -c]
         args: ["echo {{inputs.parameters.status}}"]
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 

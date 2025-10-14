@@ -1219,7 +1219,7 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	} else if a.S3 != nil {
 		return a.S3, nil
 	}
-	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
+	return nil, fmt.Errorf("artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -1824,12 +1824,12 @@ func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 
 // Set the status of a node by key
 func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	if status.Name == "" {
-		log.Warnf(ctx, "Name was not set for key %s", key)
+		log.WithField("key", key).Warn(ctx, "Name was not set for key")
 	}
 	if status.ID == "" {
-		log.Warnf(ctx, "ID was not set for key %s", key)
+		log.WithField("key", key).Warn(ctx, "ID was not set for key")
 	}
 	_, ok := n[key]
 	if ok {
@@ -1843,10 +1843,10 @@ func (n Nodes) Set(ctx context.Context, key string, status NodeStatus) {
 
 // Delete a node from the Nodes by key
 func (n Nodes) Delete(ctx context.Context, key string) {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	has := n.Has(key)
 	if !has {
-		log.Warnf(ctx, "Trying to delete non existent key %s", key)
+		log.WithField("key", key).Warn(ctx, "Trying to delete non existent key")
 		return
 	}
 	delete(n, key)
@@ -2508,7 +2508,7 @@ func (n NodeStatus) IsDaemoned() bool {
 
 // IsPartOfExitHandler returns whether node is part of exit handler.
 func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool {
-	log := logging.GetLoggerFromContext(ctx)
+	log := logging.RequireLoggerFromContext(ctx)
 	currentNode := n
 	for !currentNode.IsExitNode() {
 		if currentNode.BoundaryID == "" {
@@ -2516,7 +2516,7 @@ func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool 
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
-			log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", currentNode.BoundaryID)
+			log.WithField("boundaryID", currentNode.BoundaryID).WithPanic().Error(ctx, "was unable to obtain node for boundaryID")
 		}
 		currentNode = boundaryNode
 	}
@@ -2695,7 +2695,7 @@ func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 type GitArtifact struct {
 	// Repo is the git repository
 	Repo string `json:"repo" protobuf:"bytes,1,opt,name=repo"`
@@ -2810,7 +2810,7 @@ type AzureBlobContainer struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,4,opt,name=useSDKCreds"`
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 type AzureArtifact struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
 

@@ -1,5 +1,101 @@
 # Changelog
 
+## v3.7.2 (2025-09-11)
+
+Full Changelog: [v3.7.1...v3.7.2](https://github.com/argoproj/argo-workflows/compare/v3.7.1...v3.7.2)
+
+### Selected Changes
+
+* [cf605b548](https://github.com/argoproj/argo-workflows/commit/cf605b548f1b0137836dde2032517707ba87c6ae) fix: cluster workflow template store is not initialized in namespace mode. Fixes #14763 (cherry-pick release-3.7) (#14826)
+* [ea660143b](https://github.com/argoproj/argo-workflows/commit/ea660143bc10981b1b6f0d67c7ff90e871511c47) fix: reset the taskgroup. fixes #14769 (cherry-pick release-3.7) (#14848)
+* [34d8c7031](https://github.com/argoproj/argo-workflows/commit/34d8c70312058e13782aeb345386d5ca88dde746) fix: Makefile refers to lint-go
+* [20df38afa](https://github.com/argoproj/argo-workflows/commit/20df38afaab40aeec453c9c0b6d893d1a7d04cb1) fix: ensure pod used container templates are copies (cherry-pick release-3.7) (#14829)
+* [4d507951d](https://github.com/argoproj/argo-workflows/commit/4d507951d59e7071a85f480e6639913b15b6fca4) fix: pod controller log (#14841)
+* [80cd73980](https://github.com/argoproj/argo-workflows/commit/80cd739804149216abbe865ff08163801949a94a) chore(deps): bump superagent to 10.2.3 (cherry-pick release-3.7) (#14845)
+* [913346747](https://github.com/argoproj/argo-workflows/commit/913346747cae68b0f6a9d8a1ea9806d2fb165c25) fix(controller): check optional artifacts in node output validation (cherry-pick release-3.7) (#14837)
+* [74f14d244](https://github.com/argoproj/argo-workflows/commit/74f14d244330a9c9a602e61116675ffb1a53a6c9) fix: retry strategy being ignored by daemoned nodes. Fix #14715 (cherry-pick release-3.7) (#14835)
+* [8aac93371](https://github.com/argoproj/argo-workflows/commit/8aac9337150dac43ac77181ebe5e4f39342beb53) fix: ci step titles MySQL->Database (cherry-pick release-3.7) (#14817)
+* [026c6b738](https://github.com/argoproj/argo-workflows/commit/026c6b738786461c55fbabece47bcbedd4b2a825) fix: Fixes git over azure devops Fixes #11705 (cherry-pick release-3.7) (#14828)
+* [0a05502f9](https://github.com/argoproj/argo-workflows/commit/0a05502f97f6d07482ebca468be31c50cc8ccc6e) fix: only reset failed or error retry node. Fixes #14796 (cherry-pick release-3.7) (#14834)
+* [78cfddda5](https://github.com/argoproj/argo-workflows/commit/78cfddda5ecdc5651c7b1f7bb91e4d3d631e32c0) fix: Add default value for creationtimestamp column addition. Fixes #… (cherry-pick release-3.7) (#14824)
+* [9e49e90a0](https://github.com/argoproj/argo-workflows/commit/9e49e90a06ba2cb43a1179bb1d8c9c0f50233ce1) fix: moved off deprecated bitnami Docker images. Fixes 14785 (cherry-pick release-3.7) (#14822)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* chenrui
+* Eduardo Rodrigues
+* Isitha Subasinghe
+* jswxstw
+* Marcus Weiner
+* okzw999
+* Tim Collins
+* tooptoop4
+* Xavier Hardy
+* Yuan Tang
+
+</details>
+
+## v3.7.1 (2025-08-12)
+
+Full Changelog: [v3.7.0...v3.7.1](https://github.com/argoproj/argo-workflows/compare/v3.7.0...v3.7.1)
+
+### Selected Changes
+
+* [a7cd8a49b](https://github.com/argoproj/argo-workflows/commit/a7cd8a49bf184ad864275acc1bf3189ebefa118c) fix: S3 artifacts failing with missing region when using roleARN (#14761)
+* [38f643306](https://github.com/argoproj/argo-workflows/commit/38f64330691e6d82ffc139993adfe3e79b90c74b) fix: added createdAfter/finishedBefore query support. Fixes #14722 (#14721)
+* [79004c48d](https://github.com/argoproj/argo-workflows/commit/79004c48d6c228456e203ea907f4416b6fc82438) fix: allow query parameters for DELETE method and disable body marshaling. Fixes #14753 (#14754)
+* [505de66d1](https://github.com/argoproj/argo-workflows/commit/505de66d1b99413779f4c74944acde912ebdd709) fix: cronworkfow update via UI when parameter is using valueFrom. Fixes #14550 (#14745)
+* [a596da4b7](https://github.com/argoproj/argo-workflows/commit/a596da4b78a8642d777686f859e72fe54e8bd414) fix: submit workflow template with enum. Fix #14704 (#14748)
+* [5bd9dcd20](https://github.com/argoproj/argo-workflows/commit/5bd9dcd2004bdebbb1cfaf6dea4120812eb24526) fix: only init Informers if SA has apropriate RBAC access. Fixes #14688 (#14731)
+* [3748e29f2](https://github.com/argoproj/argo-workflows/commit/3748e29f26cd5c426f002badd2c567dc5fa8286f) fix(ui): Add multibyte character support tests for pod name generation (#14653)
+* [40988d305](https://github.com/argoproj/argo-workflows/commit/40988d30523369e4439a3614af21d118e8debebb) fix: Make codegen easier to understand when it fails (#14619)
+* [12660448a](https://github.com/argoproj/argo-workflows/commit/12660448a67f7fbb59e21d81057de99c5aa148fd) fix: Make the phase of the node unchange when the pod is completed and outputs are not set in the status.node (#14625)
+* [befe381c1](https://github.com/argoproj/argo-workflows/commit/befe381c1671375de1cf7623a0c9bd8323b1de68) fix: retry when the server is temporarily unavailable.  (#14637)
+* [5617b3f5b](https://github.com/argoproj/argo-workflows/commit/5617b3f5b8a7054986dc6897c5fbe4661e2aa859) fix: ensure task results sync when calling fullfilled. Fixes #14568 (#14536)
+* [86177c5dd](https://github.com/argoproj/argo-workflows/commit/86177c5dd4459a396ad38656ff921b2da15188bc) fix: avoid healthz check restart controller. Fixes: #14526 (#14613)
+* [c66114e8b](https://github.com/argoproj/argo-workflows/commit/c66114e8b51e0f3e6062eef880d62b846c12e2f0) fix: correct finding the closest ancestor retry node. Fixes #14517 (#14576)
+* [3f21bda65](https://github.com/argoproj/argo-workflows/commit/3f21bda65e0c0105dad3627a078f7b0dd72f7d62) fix: create task results only once. Fixes: #14617 (#14618)
+* [13b8ee9b1](https://github.com/argoproj/argo-workflows/commit/13b8ee9b1ee64f74454d365ffa85fbb6af0e16df) fix: add etcd too many requests transient. (#14621)
+* [ae4d57abb](https://github.com/argoproj/argo-workflows/commit/ae4d57abb5179a4c47b5614be1156a85dc882fc8) fix: set creator when use X509 client certificates. Fixes: #14578 (#14579)
+* [6e9ef1eb9](https://github.com/argoproj/argo-workflows/commit/6e9ef1eb923e682a203f04ad182f26f1dfb8e57e) fix: prevent running workflow throttle by parallelism (#14606)
+* [b8a7ec1f8](https://github.com/argoproj/argo-workflows/commit/b8a7ec1f89e29161d64b3e1f0d1e72eacb4cd8b8) fix: executor workflowtaskresult retry should use the default retry and configurable (#14598)
+* [2cc78cb8e](https://github.com/argoproj/argo-workflows/commit/2cc78cb8e27d6081038172c3d89db650be944d8e) fix: watch for dynamic changes to the Controller ConfigMap in its installation namespace. Fixes #14673 (#14675) (release-3.7) (#14752)
+* [14afbba5d](https://github.com/argoproj/argo-workflows/commit/14afbba5df6395040f9e1e48f9cc903d51a6205d) fix: support ALPN and H2C with gRPC. Fixes #14627 (#14567) (cherry-pick 3.7) (#14741)
+* [450504430](https://github.com/argoproj/argo-workflows/commit/45050443017aa7d2ce90889205280b0aee19deba) fix: use Float64ObservableCounter for counter metrics. Fixes #14425 (#14700) (#14738)
+* [d78f1e092](https://github.com/argoproj/argo-workflows/commit/d78f1e09261187ddb7e5037b4dce3153c394995a) fix: prevent thundering herd on cache save/load. Fixes #14701 (#14703) (#14736)
+* [2494a28d3](https://github.com/argoproj/argo-workflows/commit/2494a28d357e8e938a8cf626e1bbd1fc733538ca) fix: cron patch use defaultRetry. Fixes #14712 (#14713) (#14735)
+* [b35dd7d2d](https://github.com/argoproj/argo-workflows/commit/b35dd7d2db9b87da7dfcd3c4f7b9f8d51933f59c) fix: GC realtime metrics after workflow completed. Fixes #14694 (cherry-pick #14696) (#14698)
+* [a7e670496](https://github.com/argoproj/argo-workflows/commit/a7e6704963aca9eda845a7452a9d9681e23cad00) fix: Sidecar terminates itself after the main container is finished. Closes #10612 (cherry-pick #14633) (#14685)
+* [b3bb26f99](https://github.com/argoproj/argo-workflows/commit/b3bb26f99dc499c10f8c519073b4abc53975eb9f) fix: only remove when pending namespace queue exists. Fixes:#14669 (cherry-pick #14670) (#14684)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* akash khamkar
+* Alan Clucas
+* antoinetran
+* chenrui
+* chenrui7
+* Darko Janjic
+* downfa11
+* Eduardo Rodrigues
+* edward
+* garireo2549
+* Isitha Subasinghe
+* Jose M. Abuin
+* J.P. Zivalich
+* jswxstw
+* Mason Malone
+* oninowang
+* shuangkun tian
+* Tianchu Zhao
+
+</details>
+
+## v3.7.0 (2025-07-15)
+
+Full Changelog: [v3.7.0-rc4...v3.7.0](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc4...v3.7.0)
+
 ## v3.7.0-rc4 (2025-07-15)
 
 Full Changelog: [v3.7.0-rc3...v3.7.0-rc4](https://github.com/argoproj/argo-workflows/compare/v3.7.0-rc3...v3.7.0-rc4)
@@ -59,7 +155,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.10...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.10...v3.7.0-rc1)
+Full Changelog: [v3.6.11...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.11...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -266,6 +362,56 @@ Full Changelog: [v3.6.10...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.11 (2025-09-11)
+
+Full Changelog: [v3.6.10...v3.6.11](https://github.com/argoproj/argo-workflows/compare/v3.6.10...v3.6.11)
+
+### Selected Changes
+
+* [522392471](https://github.com/argoproj/argo-workflows/commit/5223924713319cfb6be8b50aa3cb2e9a28b06322) fix: pod controller log (#14841) (release-3.6) (#14847)
+* [954e41c2d](https://github.com/argoproj/argo-workflows/commit/954e41c2d90d2b51a442b4458ab344c617b73289) fix(controller): check optional artifacts in node output validation (cherry-pick release-3.6) (#14836)
+* [9e6df792d](https://github.com/argoproj/argo-workflows/commit/9e6df792df6e14d049288a144cc5202db6a51ae3) fix: ensure pod used container templates are copies (cherry-pick release-3.6) (#14830)
+* [f65b6d77d](https://github.com/argoproj/argo-workflows/commit/f65b6d77d543f752b4b17be31d272506afe0f5c9) chore(deps): bump superagent to 10.2.3 (cherry-pick release-3.6) (#14846)
+* [9a667cc1e](https://github.com/argoproj/argo-workflows/commit/9a667cc1e403f7f1719071bd909d7f52584d5502) fix: Fixes git over azure devops Fixes #11705 (cherry-pick release-3.6) (#14827)
+* [21eaef187](https://github.com/argoproj/argo-workflows/commit/21eaef18753dc82701df31c25a095e73402e43ce) fix: moved off deprecated bitnami Docker images. Fixes 14785 (cherry-pick release-3.6) (#14823)
+* [e0087045b](https://github.com/argoproj/argo-workflows/commit/e0087045b262ce5d5ceee6864ab522cb1e1fd6b5) fix: process aggregate outputs for steps node with retries. Fixes #14647 (#14651) (release-3.6) (#14746)
+* [bef1cf5e1](https://github.com/argoproj/argo-workflows/commit/bef1cf5e1400489e0d1863a9e271a4608a21b541) fix: watch for dynamic changes to the Controller ConfigMap in its installation namespace. Fixes #14673 (#14675) (release-3.6) (#14751)
+* [3e983d4ed](https://github.com/argoproj/argo-workflows/commit/3e983d4ed6b535a501d4c1c6044d4446734f3bb9) fix: support ALPN and H2C with gRPC. Fixes #14627 (#14567) (cherry-pick release-3.6) (#14742)
+* [62eb9ceb1](https://github.com/argoproj/argo-workflows/commit/62eb9ceb148d8071883e4da149e97bd1e312f8de) fix: use Float64ObservableCounter for counter metrics. Fixes #14425 (… (#14740)
+* [bac42f187](https://github.com/argoproj/argo-workflows/commit/bac42f187881abd01f8e6c527961fb29f5e021ab) fix: prevent thundering herd on cache save/load. Fixes #14701 (#14703) (#14739)
+* [d0d25f592](https://github.com/argoproj/argo-workflows/commit/d0d25f592bc045d9ee1f27cac81dc469b8827ed2) fix: cron patch use defaultRetry. Fixes #14712 (#14713) (#14737)
+* [ef7a8cfa2](https://github.com/argoproj/argo-workflows/commit/ef7a8cfa241497b7cef772cfcf99deb363b5e351) fix: GC realtime metrics after workflow completed. Fixes #14694 (cherry-pick #14696) (#14697)
+* [1e7fac04c](https://github.com/argoproj/argo-workflows/commit/1e7fac04c987c0d2940670fdba84fa712242acf2) fix: Sidecar terminates itself after the main container is finished. Closes #10612 (cherry-pick #14633) (#14686)
+* [86631c584](https://github.com/argoproj/argo-workflows/commit/86631c58414bef2f5b12478a2a74700c04a0d17b) fix: only remove when pending namespace queue exists. Fixes:#14669 (cherry-pick #14670) (#14674)
+* [d77c09e6f](https://github.com/argoproj/argo-workflows/commit/d77c09e6fde524ac5aa10835a08a7a7fc17a696e) fix: create task results only once. Fixes: #14617 (cherry-pick #14618) (#14622)
+* [a4e167081](https://github.com/argoproj/argo-workflows/commit/a4e16708177fbd533028716695493c734f760337) chore(deps): bump golang version (cherry-pick #14596) (#14616)
+* [8c8a3ad6e](https://github.com/argoproj/argo-workflows/commit/8c8a3ad6e33b53939dea05a205a09fa720e84f59) fix: prevent running workflow throttle by parallelism (cherry-pick #14606) (#14609)
+* [94246fdc8](https://github.com/argoproj/argo-workflows/commit/94246fdc8e11b2b234f67bd205ceefdb3bdf9318) fix: merge template defaults before processing. Fixes #13691 (cherry-pick #14298) (#14575)
+* [270777b9a](https://github.com/argoproj/argo-workflows/commit/270777b9acb5215ff3c9386594e52983c59dff4e) fix: remove unnecessary init container status checks. Fixes #14495  (cherry-pick #14510) (#14582)
+* [bdb3a0e8f](https://github.com/argoproj/argo-workflows/commit/bdb3a0e8fec9672907c1539dc9a2d3a59ea52d76) fix: process aggregate outputs for nodes with retries. Fixes #14228 (cherry-pick #14299) (#14581)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* antoinetran
+* chenrui
+* Darko Janjic
+* downfa11
+* Eduardo Rodrigues
+* edward
+* Isitha Subasinghe
+* Jose M. Abuin
+* jswxstw
+* Mason Malone
+* shuangkun tian
+* Tianchu Zhao
+* Tim Collins
+* tooptoop4
+* Xavier Hardy
+* Yuan Tang
 
 </details>
 

@@ -58,10 +58,8 @@ func TestListSensors(t *testing.T) {
 
 	mockClient := &MockSensorClient{ctrl: ctrl}
 
-	ctx := context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), auth.EventsKey, mockClient)
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(ctx, auth.EventsKey, mockClient)
 
 	server := &mockSensorServer{
 		sensorClient: mockClient.ArgoprojV1alpha1Sensor(),
@@ -85,10 +83,8 @@ func TestListSensors_SensorClientNotSet(t *testing.T) {
 
 	mockClient := &MockSensorClient{ctrl: ctrl}
 
-	ctx := context.WithValue(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), auth.EventsKey, mockClient)
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(ctx, auth.EventsKey, mockClient)
 
 	server := &mockSensorServer{
 		sensorClient: mockClient.ArgoprojV1alpha1Sensor(),

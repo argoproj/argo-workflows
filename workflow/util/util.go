@@ -18,7 +18,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -62,13 +61,14 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo-workflows/issues/632
-func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListRequestListOptions internalinterfaces.TweakListOptionsFunc, tweakWatchRequestListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewWorkflowInformer(ctx context.Context, dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListRequestListOptions internalinterfaces.TweakListOptionsFunc, tweakWatchRequestListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
 		Resource: workflow.WorkflowPlural,
 	}
 	informer := unstructutil.NewFilteredUnstructuredInformer(
+		ctx,
 		resource,
 		dclient,
 		ns,
@@ -103,6 +103,7 @@ type WorkflowLister interface {
 
 type workflowLister struct {
 	informer cache.SharedIndexInformer
+	log      logging.Logger
 }
 
 func (l *workflowLister) List() ([]*wfv1.Workflow, error) {
@@ -110,7 +111,7 @@ func (l *workflowLister) List() ([]*wfv1.Workflow, error) {
 	for _, m := range l.informer.GetStore().List() {
 		wf, err := FromUnstructured(m.(*unstructured.Unstructured))
 		if err != nil {
-			log.Warnf("Failed to unmarshal workflow %v object: %v", m, err)
+			l.log.WithField("workflow", m).WithError(err).Warn(context.Background(), "Failed to unmarshal workflow object")
 			continue
 		}
 		workflows = append(workflows, wf)
@@ -119,9 +120,10 @@ func (l *workflowLister) List() ([]*wfv1.Workflow, error) {
 }
 
 // NewWorkflowLister returns a new workflow lister
-func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
+func NewWorkflowLister(ctx context.Context, informer cache.SharedIndexInformer) WorkflowLister {
 	return &workflowLister{
 		informer: informer,
+		log:      logging.RequireLoggerFromContext(ctx),
 	}
 }
 
@@ -183,7 +185,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, wfDefaults, validate.ValidateOpts{Submit: true})
+	err = validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, wfDefaults, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +498,8 @@ type SetOperationValues struct {
 	OutputParameters map[string]string
 }
 
-func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, log logging.Logger, param wfv1.Parameter) bool {
+func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Parameter) bool {
+	log := logging.RequireLoggerFromContext(ctx)
 	wfUpdated := false
 	if param.GlobalName == "" {
 		return wfUpdated
@@ -514,14 +517,14 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, log logging.L
 	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 	if index == -1 {
-		log.Infof(ctx, "setting %s: '%s'", paramName, param.Value)
+		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
 		wf.Status.Outputs.Parameters = append(wf.Status.Outputs.Parameters, gParam)
 		wfUpdated = true
 	} else {
 		prevVal := wf.Status.Outputs.Parameters[index].Value
 		if prevVal == nil || (param.Value != nil && *prevVal != *param.Value) {
-			log.Infof(ctx, "overwriting %s: '%s' -> '%s'", paramName, wf.Status.Outputs.Parameters[index].Value, param.Value)
+			log.WithFields(logging.Fields{"paramName": paramName, "prevValue": prevVal, "newValue": param.Value}).Info(ctx, "overwriting param")
 			wf.Status.Outputs.Parameters[index].Value = param.Value
 			wfUpdated = true
 		}
@@ -581,11 +584,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true
-									log := logging.GetLoggerFromContext(ctx)
-									if log == nil {
-										log = logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())
-									}
-									AddParamToGlobalScope(ctx, wf, log, node.Outputs.Parameters[i])
+									AddParamToGlobalScope(ctx, wf, node.Outputs.Parameters[i])
 									break
 								}
 							}
@@ -640,6 +639,7 @@ func RandSuffix() string {
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
 func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
+	log := logging.RequireLoggerFromContext(ctx)
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
 
@@ -703,7 +703,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	// Override parameters
 	if parameters != nil {
 		if _, ok := wf.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
-			log.Warnln("Overriding parameters on memoized or resubmitted workflows may have unexpected results")
+			log.Warn(ctx, "Overriding parameters on memoized or resubmitted workflows may have unexpected results")
 		}
 		err := overrideParameters(&newWF, parameters)
 		if err != nil {
@@ -721,7 +721,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	onExitNodeName := wf.Name + ".onExit"
 	var err = packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
-		log.Panic(err)
+		log.WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
 	}
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
@@ -755,7 +755,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
-		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(wf, node, make(map[string]bool)) {
+		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)) {
 			newWF.Status.Nodes.Delete(ctx, newNode.ID)
 			continue
 		} else {
@@ -783,14 +783,14 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	return newWf.NodeID(newNodeName)
 }
 
-func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
+func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
 	for _, child := range node.Children {
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
-			log.Panicf("Coudn't obtain child for %s, panicking", child)
+			logging.RequireLoggerFromContext(ctx).WithField("child", child).WithError(err).Error(ctx, "Coudn't obtain child, panicking")
 		}
 		_, present := nodeIDsToReset[child]
-		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {
+		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(ctx, wf, *childStatus, nodeIDsToReset) {
 			return true
 		}
 	}
@@ -808,15 +808,15 @@ func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, d
 	return deletedPods, podsToDelete
 }
 
-func createNewRetryWorkflow(wf *wfv1.Workflow, parameters []string) (*wfv1.Workflow, error) {
+func createNewRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, parameters []string) (*wfv1.Workflow, error) {
+	log := logging.RequireLoggerFromContext(ctx)
 	newWF := wf.DeepCopy()
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
-	newWF.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
-	newWF.Status.Phase = wfv1.WorkflowRunning
+	newWF.Status.Phase = wfv1.WorkflowUnknown
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
 	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
@@ -833,7 +833,7 @@ func createNewRetryWorkflow(wf *wfv1.Workflow, parameters []string) (*wfv1.Workf
 	// Override parameters
 	if parameters != nil {
 		if _, ok := wf.Labels[common.LabelKeyPreviousWorkflowName]; ok {
-			log.Warnln("Overriding parameters on resubmitted workflows may have unexpected results")
+			log.Warn(ctx, "Overriding parameters on resubmitted workflows may have unexpected results")
 		}
 		err := overrideParameters(newWF, parameters)
 		if err != nil {
@@ -1000,6 +1000,9 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
 			resetFunc(curr.parent.n.ID)
 		}
+		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeTaskGroup {
+			resetFunc(curr.parent.n.ID)
+		}
 		seekingBoundaryID := curr.n.BoundaryID
 		if seekingBoundaryID == "" {
 			return curr.parent, nil
@@ -1069,7 +1072,7 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 				return nil, nil, err
 			}
 			continue
-		case curr.n.Type == wfv1.NodeTypeRetry:
+		case curr.n.Type == wfv1.NodeTypeRetry && curr.n.FailedOrError():
 			addToReset(curr.n.ID)
 		case curr.n.Type == wfv1.NodeTypeContainer:
 			curr, err = resetPod(curr, addToReset, addToDelete)
@@ -1161,10 +1164,10 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	var err error
 	err = packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
-		log.Panic(err)
+		logging.RequireLoggerFromContext(ctx).WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
 	}
 
-	newWf, err := createNewRetryWorkflow(wf, parameters)
+	newWf, err := createNewRetryWorkflow(ctx, wf, parameters)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1181,7 +1184,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
 				node = *wf.Status.Nodes.FindByChild(nodeID)
 			}
-			if !isDescendantNodeSucceeded(wf, node, deleteNodesMap) {
+			if !isDescendantNodeSucceeded(ctx, wf, node, deleteNodesMap) {
 				failed[nodeID] = true
 			}
 		}

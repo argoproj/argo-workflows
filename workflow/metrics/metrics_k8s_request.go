@@ -23,6 +23,7 @@ func addK8sRequests(_ context.Context, m *Metrics) error {
 }
 
 type metricsRoundTripperContext struct {
+	// nolint: containedctx
 	ctx     context.Context
 	metrics *Metrics
 }

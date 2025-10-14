@@ -2,10 +2,9 @@
 
 ## Docs
 
-* [Quick start](../quick-start.md) and [training](../training.md)
-* Try out the updated [Python and Java SDKs](../client-libraries.md).
-* [Authoring and Submitting Argo Workflows using Python](https://blog.argoproj.io/authoring-and-submitting-argo-workflows-using-python-aff9a070d95f)
-* Head to the [Kubeflow docs](https://www.kubeflow.org/docs/components/pipelines/).
+* Try out [Hera](https://hera.readthedocs.io/en/stable/) for writing Workflows in Python.
+    * Also read: [How To Get the Most out of Hera for Data Science](https://pipekit.io/blog/how-to-get-the-most-out-of-hera-for-data-science)
+* Try out the [Go and Java SDKs](../client-libraries.md).
 
 ## Videos
 
@@ -16,6 +15,7 @@
 * [CI/CD for Machine Learning at MLB using Argo Workflows - Eric Meadows](https://youtu.be/fccWoYlwZKc?t=184&utm_source=argo-docs)
 * [Dynamic, Event-Driven Machine Learning Pipelines with Argo Workflows](https://youtu.be/ei4r0a7eAV0)
 * [Engineering Cloud Native AI Platform](https://github.com/terrytangyuan/public-talks/tree/main/talks/platform-con-2024-engineering-cloud-native-ai-platform)
+* [How to Train an LLM with Argo Workflows and Hera](https://www.youtube.com/watch?v=nRYf3GkKpss)
 * [Machine Learning as Code: GitOps for ML with Kubeflow and Argo CD](https://www.youtube.com/watch?v=VXrGp5er1ZE&t=0s&index=135&list=PLj6h78yzYM2PZf9eA7bhWnIh_mK1vyOfU)
 * [Machine Learning with Argo and Ploomber](https://www.youtube.com/watch?v=FnpXyg-5W_c&list=PLGHfqDpnXFXK4E8XzasScagiJk-8BPgva&utm_source=argo-docs)
 * [Making Complex R Forecast Applications Into Production Using Argo Workflows](https://www.youtube.com/watch?v=fPjztsUXHcg)

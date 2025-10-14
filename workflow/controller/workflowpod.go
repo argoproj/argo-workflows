@@ -11,7 +11,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +57,8 @@ func (woc *wfOperationCtx) scheduleOnDifferentHost(ctx context.Context, node *wf
 	if node != nil && pod != nil {
 		if retryNode := FindRetryNode(woc.wf.Status.Nodes, node.ID); retryNode != nil {
 			// recover template for the retry node
-			tmplCtx, err := woc.createTemplateContext(retryNode.GetTemplateScope())
+			scope, name := retryNode.GetTemplateScope()
+			tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) processPodSpecPatch(tmpl *wfv1.Template, pod *apiv1.Pod) ([]string, error) {
+func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.Template, pod *apiv1.Pod) ([]string, error) {
 	podSpecPatches := []string{}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
@@ -97,7 +97,7 @@ func (woc *wfOperationCtx) processPodSpecPatch(tmpl *wfv1.Template, pod *apiv1.P
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = patch
-		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -119,7 +119,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	if exists {
-		woc.log.WithField("podPhase", existing.Status.Phase).Debugf(ctx, "Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+		woc.log.WithFields(logging.Fields{"podPhase": existing.Status.Phase, "nodeName": nodeName, "nodeID": nodeID}).Debug(ctx, "Skipped pod creation: already exists")
 		return existing, nil
 	}
 
@@ -244,7 +244,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
 		// for resource template, add a wait container to collect logs.
-		waitCtr := woc.newWaitContainer(tmpl)
+		waitCtr := woc.newWaitContainer(ctx, tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 	// NOTE: the order of the container list is significant. kubelet will pull, create, and start
@@ -270,7 +270,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	initCtr := woc.newInitContainer(tmpl)
+	initCtr := woc.newInitContainer(ctx, tmpl)
 	pod.Spec.InitContainers = []apiv1.Container{initCtr}
 
 	woc.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, nodeName)
@@ -281,7 +281,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if p, ok := wfv1.ParseProgress(x); ok {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.WithPanic().Errorf(ctx, "was unable to obtain node for %s", nodeID)
+				woc.log.WithField("nodeID", nodeID).WithPanic().Error(ctx, "was unable to obtain node")
 			}
 			node.Progress = p
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
@@ -304,9 +304,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// addInitContainers, addSidecars and addOutputArtifactsVolumes should be called after all
 	// volumes have been manipulated in the main container since volumeMounts are mirrored
-	addInitContainers(pod, tmpl)
-	addSidecars(pod, tmpl)
-	addOutputArtifactsVolumes(pod, tmpl)
+	addInitContainers(ctx, pod, tmpl)
+	addSidecars(ctx, pod, tmpl)
+	addOutputArtifactsVolumes(ctx, pod, tmpl)
 
 	for i, c := range pod.Spec.InitContainers {
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
@@ -361,7 +361,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
 	// in executeTemplate.
-	pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
+	pod, err = substitutePodParams(ctx, pod, woc.globalParams, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +389,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Apply the patch string from workflow and template
 	var podSpecPatchs []string
-	podSpecPatchs, err = woc.processPodSpecPatch(tmpl, pod)
+	podSpecPatchs, err = woc.processPodSpecPatch(ctx, tmpl, pod)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +416,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					c.Args = x.Cmd
 				}
 			}
-			execCmd := append(append([]string{common.VarRunArgoPath + "/argoexec", "emissary"}, woc.getExecutorLogOpts()...), "--")
+			execCmd := append(append([]string{common.VarRunArgoPath + "/argoexec", "emissary"}, woc.getExecutorLogOpts(ctx)...), "--")
 			c.Command = append(execCmd, c.Command...)
 		}
 		if c.Image == woc.controller.executorImage() {
@@ -428,7 +428,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			})
 		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
+		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil {
 			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
 		}
 		pod.Spec.Containers[i] = c
@@ -472,9 +472,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if !apierr.IsAlreadyExists(err) {
 				return nil, err
 			}
-			woc.log.Infof(ctx, "Configmap already exists: %s", cm.Name)
+			woc.log.WithField("name", cm.Name).Info(ctx, "Configmap already exists")
 		} else {
-			woc.log.Infof(ctx, "Created configmap: %s", created.Name)
+			woc.log.WithField("name", created.Name).Info(ctx, "Created configmap")
 		}
 
 		volumeConfig := apiv1.Volume{
@@ -508,7 +508,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
 	}
 	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
 	if err != nil {
@@ -524,7 +524,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		woc.log.Debugf(ctx, "Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
+		woc.log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
@@ -532,28 +532,26 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	woc.log.Debugf(ctx, "Creating Pod: %s (%s)", nodeName, pod.Name)
+	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": pod.Name}).Debug(ctx, "Creating Pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof(ctx, "Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
+			woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": pod.Name}).Info(ctx, "Failed pod creation: already exists")
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
 			}
 		}
-		bgCtx := context.Background()
-		bgCtx = logging.WithLogger(bgCtx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		if errorsutil.IsTransientErr(bgCtx, err) {
+		if errorsutil.IsTransientErr(ctx, err) {
 			return nil, err
 		}
-		woc.log.Infof(ctx, "Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
+		woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": pod.Name, "error": err}).Info(ctx, "Failed to create pod")
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof(ctx, "Created pod: %s (%s)", nodeName, created.Name)
+	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "podName": created.Name}).Info(ctx, "Created pod")
 	woc.activePods++
 	return created, nil
 }
@@ -595,7 +593,7 @@ func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
-func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
+func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
 		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
@@ -605,7 +603,7 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	if err != nil {
 		return nil, err
 	}
-	newSpecBytes, err := template.Replace(string(specBytes), podParams, true)
+	newSpecBytes, err := template.Replace(ctx, string(specBytes), podParams, true)
 	if err != nil {
 		return nil, err
 	}
@@ -617,20 +615,22 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	return &newSpec, nil
 }
 
-func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
+func (woc *wfOperationCtx) newInitContainer(ctx context.Context, tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = append([]string{"argoexec", "init"}, woc.getExecutorLogOpts()...)
+	ctr.Command = append([]string{"argoexec", "init"}, woc.getExecutorLogOpts(ctx)...)
 	return *ctr
 }
 
-func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
+func (woc *wfOperationCtx) newWaitContainer(ctx context.Context, tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = append([]string{"argoexec", "wait"}, woc.getExecutorLogOpts()...)
+	ctr.Command = append([]string{"argoexec", "wait"}, woc.getExecutorLogOpts(ctx)...)
 	return ctr
 }
 
-func (woc *wfOperationCtx) getExecutorLogOpts() []string {
-	return []string{"--loglevel", log.GetLevel().String(), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
+func (woc *wfOperationCtx) getExecutorLogOpts(ctx context.Context) []string {
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithField("loglevel", string(log.Level())).Info(ctx, "getExecutorLogOpts")
+	return []string{"--loglevel", string(log.Level()), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
@@ -784,7 +784,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 	// Get boundaryNode Template (if specified)
 	boundaryTemplate, err := woc.GetBoundaryTemplate(ctx, nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't get boundaryTemplate through nodeName %s", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't get boundaryTemplate")
 	}
 	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
@@ -840,7 +840,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 func (woc *wfOperationCtx) GetBoundaryTemplate(ctx context.Context, nodeName string) (*wfv1.Template, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		woc.log.Warnf(ctx, "couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
 		return nil, err
 	}
 	boundaryTmpl, _, err := woc.GetTemplateByBoundaryID(ctx, node.BoundaryID)
@@ -856,7 +856,8 @@ func (woc *wfOperationCtx) GetTemplateByBoundaryID(ctx context.Context, boundary
 	if err != nil {
 		return nil, false, err
 	}
-	tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
+	scope, name := boundaryNode.GetTemplateScope()
+	tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1029,8 +1030,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				return errors.Errorf(errors.CodeBadRequest, "error in inputs.artifacts.%s: %s", art.Name, err.Error())
 			}
 			if !art.HasLocationOrKey() && art.Optional {
-				woc.log.Infof(ctx, "skip volume mount of %s (%s): optional artifact was not provided",
-					art.Name, art.Path)
+				woc.log.WithFields(logging.Fields{"name": art.Name, "path": art.Path}).Info(ctx, "skip volume mount")
 				continue
 			}
 			overlap := common.FindOverlappingVolume(tmpl, art.Path)
@@ -1038,8 +1038,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				// artifact path overlaps with a mounted volume. do not mount the
 				// artifacts emptydir to the main container. init would have copied
 				// the artifact to the user's volume instead
-				woc.log.Debugf(ctx, "skip volume mount of %s (%s): overlaps with mount %s at %s",
-					art.Name, art.Path, overlap.Name, overlap.MountPath)
+				woc.log.WithFields(logging.Fields{"name": art.Name, "path": art.Path, "overlapName": overlap.Name, "overlapMountPath": overlap.MountPath}).Debug(ctx, "skip volume mount")
 				continue
 			}
 			volMount := apiv1.VolumeMount{
@@ -1059,14 +1058,14 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 // wait container will collect the artifacts directly from volumeMount instead of `docker cp`-ing
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
-func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func addOutputArtifactsVolumes(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if tmpl.GetType() == wfv1.TemplateTypeResource || tmpl.GetType() == wfv1.TemplateTypeData {
 		return
 	}
 
 	waitCtrIndex, err := util.FindWaitCtrIndex(pod)
 	if err != nil {
-		log.Info("Could not find wait container in pod spec")
+		logging.RequireLoggerFromContext(ctx).Info(ctx, "Could not find wait container in pod spec")
 		return
 	}
 	waitCtr := &pod.Spec.Containers[waitCtrIndex]
@@ -1104,7 +1103,7 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 			needLocation = true
 		}
 	}
-	woc.log.WithField("needLocation", needLocation).Debug(ctx, "")
+	logging.RequireLoggerFromContext(ctx).WithField("needLocation", needLocation).Debug(ctx, "addArchiveLocation")
 	if !needLocation {
 		return
 	}
@@ -1213,12 +1212,12 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 
 // addInitContainers adds all init containers to the pod spec of the step
 // Optionally volume mounts from the main container to the init containers
-func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func addInitContainers(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) {
 	mainCtr := findMainContainer(pod)
 	for _, ctr := range tmpl.InitContainers {
-		log.Debugf("Adding init container %s", ctr.Name)
+		logging.RequireLoggerFromContext(ctx).WithField("name", ctr.Name).Debug(ctx, "Adding init container")
 		if mainCtr != nil && ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
-			mirrorVolumeMounts(mainCtr, &ctr.Container)
+			mirrorVolumeMounts(ctx, mainCtr, &ctr.Container)
 		}
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
 	}
@@ -1226,12 +1225,12 @@ func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
 
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
-func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func addSidecars(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) {
 	mainCtr := findMainContainer(pod)
 	for _, sidecar := range tmpl.Sidecars {
-		log.Debugf("Adding sidecar container %s", sidecar.Name)
+		logging.RequireLoggerFromContext(ctx).WithField("name", sidecar.Name).Debug(ctx, "Adding sidecar container")
 		if mainCtr != nil && sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
-			mirrorVolumeMounts(mainCtr, &sidecar.Container)
+			mirrorVolumeMounts(ctx, mainCtr, &sidecar.Container)
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
@@ -1393,12 +1392,12 @@ func findMainContainer(pod *apiv1.Pod) *apiv1.Container {
 }
 
 // mirrorVolumeMounts mirrors volumeMounts of source container to target container
-func mirrorVolumeMounts(sourceContainer, targetContainer *apiv1.Container) {
+func mirrorVolumeMounts(ctx context.Context, sourceContainer, targetContainer *apiv1.Container) {
 	for _, volMnt := range sourceContainer.VolumeMounts {
 		if targetContainer.VolumeMounts == nil {
 			targetContainer.VolumeMounts = make([]apiv1.VolumeMount, 0)
 		}
-		log.Debugf("Adding volume mount %v to container %v", volMnt.Name, targetContainer.Name)
+		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"name": volMnt.Name, "containerName": targetContainer.Name}).Debug(ctx, "Adding volume mount")
 		targetContainer.VolumeMounts = append(targetContainer.VolumeMounts, volMnt)
 
 	}

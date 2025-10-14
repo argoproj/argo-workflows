@@ -70,8 +70,8 @@ func (o OfflineWorkflowServiceClient) SetWorkflow(context.Context, *workflowpkg.
 	return nil, ErrOffline
 }
 
-func (o OfflineWorkflowServiceClient) LintWorkflow(_ context.Context, req *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
-	err := validate.ValidateWorkflow(o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Workflow, nil, validate.ValidateOpts{Lint: true})
+func (o OfflineWorkflowServiceClient) LintWorkflow(ctx context.Context, req *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
+	err := validate.ValidateWorkflow(ctx, o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Workflow, nil, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}

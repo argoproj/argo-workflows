@@ -3,6 +3,7 @@
 package osspecific
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,9 +14,12 @@ import (
 
 	"github.com/creack/pty"
 	"golang.org/x/term"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func StartCommand(cmd *exec.Cmd) (func(), error) {
+func StartCommand(ctx context.Context, cmd *exec.Cmd) (func(), error) {
+	logger := logging.RequireLoggerFromContext(ctx).WithField("argo", true)
 	closer := func() {}
 
 	if cmd.Stdin == nil {
@@ -38,7 +42,7 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	stdin, ok := cmd.Stdin.(*os.File)
 	if !ok {
 		// should never happen when stdin is a tty
-		return nil, fmt.Errorf("Cannot convert stdin to os.File, it was %T", cmd.Stdin)
+		return nil, fmt.Errorf("cannot convert stdin to os.File, it was %T", cmd.Stdin)
 	}
 
 	stdout := cmd.Stdout
@@ -60,7 +64,7 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	go func() {
 		for range sigWinchCh {
 			if err := pty.InheritSize(stdin, ptmx); err != nil {
-				logger.WithError(err).Warn("Cannot resize pty")
+				logger.WithError(err).Warn(ctx, "Cannot resize pty")
 			}
 		}
 	}()

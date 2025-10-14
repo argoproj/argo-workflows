@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,11 +15,10 @@ import (
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
-	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(wfWithTmplRef), wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	cancel, controller := newController(logging.TestContext(t.Context()), wfv1.MustUnmarshalWorkflow(wfWithTmplRef), wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(wfWithTmplRef), controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.Templates, woc.execWf.Spec.Templates)
@@ -36,8 +34,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wfTmpl)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
@@ -46,7 +43,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
-		cancel, controller := newController(wf, wftmpl)
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
@@ -58,8 +55,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wfTmpl)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
@@ -68,7 +64,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
-		cancel, controller := newController(wf, wftmpl)
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
@@ -77,7 +73,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 
 	t.Run("CheckMergingWFDefaults", func(t *testing.T) {
 		wfDefaultActiveS := int64(5)
-		cancel, controller := newController(wf, wftmpl)
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
@@ -94,7 +90,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		wfDefaultActiveS := int64(5)
 
 		wftmpl.Spec.ActiveDeadlineSeconds = &wftActiveS
-		cancel, controller := newController(wf, wftmpl)
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
@@ -128,10 +124,9 @@ spec:
 func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(invalidWF)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
@@ -212,10 +207,9 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithParam)
 
 	t.Run("CheckArgumentFromWF", func(t *testing.T) {
-		cancel, controller := newController(wf, wftmpl)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
@@ -266,10 +260,9 @@ func TestWorkflowTemplateRefValueFromParamOverwrite(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithValueParamOverride)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueFromParam)
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		cancel, controller := newController(wf, wftmpl)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.execWf.Spec.Arguments.Parameters)
@@ -332,10 +325,9 @@ func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithValueFromParamOverride)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueParameter)
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		cancel, controller := newController(wf, wftmpl)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		var cm apiv1.ConfigMap
 		wfv1.MustUnmarshal([]byte(configMapMessage), &cm)
 		_, err := controller.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, &cm, metav1.CreateOptions{})
@@ -407,10 +399,9 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithArtifact)
 
 	t.Run("CheckArtifactArgumentFromWF", func(t *testing.T) {
-		cancel, controller := newController(wf, wftmpl)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Len(t, woc.execWf.Spec.Arguments.Artifacts, 3)
@@ -424,10 +415,9 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	t.Run("EntryPointMissingInStoredWfSpec", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
-		cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
@@ -443,10 +433,9 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 
 	t.Run("WorkflowTemplateRefWithSuspend", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
-		cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
@@ -461,10 +450,9 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	})
 	t.Run("WorkflowTemplateRefWithShutdownTerminate", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
-		cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
@@ -484,10 +472,9 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	})
 	t.Run("WorkflowTemplateRefWithShutdownStop", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
-		cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
@@ -562,10 +549,9 @@ status:
 
 func TestSuspendResumeWorkflowTemplateRef(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(suspendwf)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.True(t, *woc.wf.Status.StoredWorkflowSpec.Suspend)
@@ -611,22 +597,17 @@ spec:
 func TestWorkflowTemplateUpdateScenario(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec)
 	assert.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec.Templates[0].Container)
 
-	cancel, controller = newController(woc.wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmplUpt))
+	cancel, controller = newController(ctx, woc.wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmplUpt))
 	defer cancel()
-	ctx = func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}()
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+
 	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc1.operate(ctx)
 	assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec)
@@ -661,10 +642,9 @@ spec:
 
 func TestWFTWithVol(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfTmplWithVol)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	pvc, err := controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
@@ -695,10 +675,9 @@ spec:
 
 func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfTmp)
-	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.controller.cwftmplInformer = nil
 	woc.operate(ctx)
@@ -756,15 +735,14 @@ spec:
 `
 
 func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
-	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), wfv1.MustUnmarshalWorkflowTemplate(wfTemplateHello))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), wfv1.MustUnmarshalWorkflowTemplate(wfTemplateHello))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 	pod := pods.Items[0]
@@ -832,15 +810,14 @@ spec:
                   value: Hello Bug`
 
 func TestWorkflowTemplateWithPodMetadata(t *testing.T) {
-	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), wfv1.MustUnmarshalClusterWorkflowTemplate(wfTemplateWithPodMetadata))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), wfv1.MustUnmarshalClusterWorkflowTemplate(wfTemplateWithPodMetadata))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	ctx = logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, len(pods.Items) > 0, "pod was not created successfully")
 	pod := pods.Items[0]

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,12 +50,12 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 			t.Fail()
 		}
 	}()
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	// intentionally set clientset to nil to induce panic
 	controller.kubeclientset = nil
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -65,13 +64,13 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 }
 
 func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	t.Run("Success", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
 			Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
 		}
-		cancel, controller := newController(wf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf)
 		defer cancel()
 		controller.hydrator = hydratorfake.Always
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -96,7 +95,8 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		}
 		currWf := wf.DeepCopy()
 		currWf.Status.Phase = wfv1.WorkflowSucceeded
-		cancel, controller := newController(currWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, currWf)
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wfv1.Nodes{})
@@ -109,7 +109,8 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		}
 		currWf := wf.DeepCopy()
 		currWf.Status.Nodes = wfv1.Nodes{"my-node": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}}
-		cancel, controller := newController(currWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, currWf)
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wf.Status.Nodes)
@@ -134,10 +135,10 @@ spec:
      container:
        image: my-image
 `)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -168,10 +169,10 @@ spec:
      container:
        image: my-image
 `)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "0.000000", woc.globalParams[common.GlobalVarWorkflowDuration])
@@ -201,7 +202,7 @@ spec:
      container:
        image: my-image
 `)
-	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(`
+	cancel, controller := newController(logging.TestContext(t.Context()), wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-baseline-wf
   namespace: my-ns
@@ -215,7 +216,7 @@ status:
 `), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -246,10 +247,10 @@ spec:
      container:
        image: my-image
 `)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -286,10 +287,10 @@ spec:
      container:
        image: my-image
 `)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -355,10 +356,10 @@ spec:
 
 func TestGlobalParams(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	require.Contains(t, woc.globalParams, "workflow.creationTimestamp")
@@ -387,14 +388,14 @@ func TestGlobalParams(t *testing.T) {
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(sidecarWithVol)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 	pod := pods.Items[0]
@@ -502,10 +503,10 @@ func TestVolumeGCStrategy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(makeVolumeGcStrategyTemplate(tt.strategy, tt.phase))
-			cancel, controller := newController(wf)
+			cancel, controller := newController(logging.TestContext(t.Context()), wf)
 			defer cancel()
 
-			ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx := logging.TestContext(t.Context())
 			wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			woc.operate(ctx)
@@ -518,12 +519,12 @@ func TestVolumeGCStrategy(t *testing.T) {
 
 // TestProcessNodeRetries tests the processNodeRetries() method.
 func TestProcessNodeRetries(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -601,12 +602,12 @@ func TestProcessNodeRetries(t *testing.T) {
 
 // TestProcessNodeRetries tests retrying when RetryOn.Error is enabled
 func TestProcessNodeRetriesOnErrors(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -674,12 +675,12 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 
 // TestProcessNodeRetries tests retrying when RetryOnTransientError is enabled
 func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -750,13 +751,13 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 }
 
 func TestProcessNodeRetriesWithBackoff(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -807,12 +808,12 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require := require.New(t)
 
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	require.NotNil(controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	require.NotNil(wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	require.NotNil(woc)
 
@@ -898,12 +899,12 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 
 // TestProcessNodeRetries tests retrying with Expression
 func TestProcessNodeRetriesWithExpression(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -981,12 +982,12 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 }
 
 func TestProcessNodeRetriesMessageOrder(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -1116,12 +1117,12 @@ func parseRetryMessage(message string) (int, error) {
 
 // TestProcessNodesNoRetryWithError tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
@@ -1305,12 +1306,12 @@ status:
 `
 
 func TestBackoffMessage(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(backoffMessage)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
 	retryNode, err := woc.wf.GetNodeByName("retry-backoff-s69z6")
@@ -1379,9 +1380,9 @@ spec:
 
 func TestRetriesVariable(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retriesVariableTemplate)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	iterations := 5
 	var woc *wfOperationCtx
 	for i := 1; i <= iterations; i++ {
@@ -1393,7 +1394,7 @@ func TestRetriesVariable(t *testing.T) {
 		wf = woc.wf
 	}
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
@@ -1433,9 +1434,9 @@ spec:
 // updated before each retry
 func TestRetriesVariableInPodSpecPatch(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retriesVariableInPodSpecPatchTemplate)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	iterations := 5
 	var woc *wfOperationCtx
 	for i := 1; i <= iterations; i++ {
@@ -1447,7 +1448,7 @@ func TestRetriesVariableInPodSpecPatch(t *testing.T) {
 		wf = woc.wf
 	}
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
@@ -1490,9 +1491,9 @@ spec:
 
 func TestRetriesVariableWithGlobalVariableInPodSpecPatch(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retriesVariableWithGlobalVariablesInPodSpecPatchTemplate)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	iterations := 5
 	var woc *wfOperationCtx
 	for i := 1; i <= iterations; i++ {
@@ -1504,7 +1505,7 @@ func TestRetriesVariableWithGlobalVariableInPodSpecPatch(t *testing.T) {
 		wf = woc.wf
 	}
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
@@ -1543,9 +1544,9 @@ spec:
 
 func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(lastretryVariableInPodSpecPatchTemplate)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	iterations := 5
 	var woc *wfOperationCtx
 	for i := 1; i <= iterations; i++ {
@@ -1557,7 +1558,7 @@ func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
 		wf = woc.wf
 	}
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
@@ -1602,9 +1603,9 @@ spec:
 
 func TestStepsRetriesVariable(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsRetriesVariableTemplate)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	iterations := 5
 	var woc *wfOperationCtx
 	for i := 1; i <= iterations; i++ {
@@ -1617,7 +1618,7 @@ func TestStepsRetriesVariable(t *testing.T) {
 		wf = woc.wf
 	}
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, iterations)
 
@@ -1875,7 +1876,7 @@ func TestAssessNodeStatus(t *testing.T) {
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	daemonWf := wfv1.MustUnmarshalWorkflow(helloDaemonWf)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wf := nonDaemonWf
@@ -1883,10 +1884,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				wf = daemonWf
 			}
 			assert.Equal(t, tt.daemon, wf.GetTemplateByName(tt.node.TemplateName).IsDaemon(), "check the test case is valid")
-			cancel, controller := newController()
+			cancel, controller := newController(ctx, wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
-			got := woc.assessNodeStatus(logging.WithLogger(context.TODO(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat())), tt.pod, tt.node)
+			got := woc.assessNodeStatus(ctx, tt.pod, tt.node)
 			assert.Equal(t, tt.wantPhase, got.Phase)
 			assert.Equal(t, tt.wantMessage, got.Message)
 		})
@@ -2077,9 +2078,9 @@ spec:
 
 // TestWorkflowStepRetry verifies that steps retry will restart from the 0th step
 func TestWorkflowStepRetry(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(workflowStepRetry)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -2088,7 +2089,7 @@ func TestWorkflowStepRetry(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
@@ -2107,7 +2108,7 @@ func TestWorkflowStepRetry(t *testing.T) {
 	require.NoError(t, err)
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	require.Len(t, pods.Items, 3)
 	assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
@@ -2150,14 +2151,14 @@ spec:
 
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowParallelismLimit(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 
@@ -2166,7 +2167,7 @@ func TestWorkflowParallelismLimit(t *testing.T) {
 	// operate again and make sure we don't schedule any more pods
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 }
@@ -2204,11 +2205,11 @@ spec:
 
 // TestStepsTemplateParallelismLimit verifies parallelism at a steps level is honored.
 func TestStepsTemplateParallelismLimit(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(stepsTemplateParallelismLimit)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -2217,7 +2218,7 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 
@@ -2229,7 +2230,7 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 	// log.Printf("%s", wfBytes)
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 }
@@ -2265,12 +2266,12 @@ spec:
 // TestDAGTemplateParallelismLimit verifies parallelism at a dag level is honored.
 func TestDAGTemplateParallelismLimit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagTemplateParallelismLimit)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 
@@ -2278,7 +2279,7 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 }
@@ -2350,9 +2351,9 @@ spec:
 `
 
 func TestNestedTemplateParallelismLimit(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(nestedParallelism)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -2361,14 +2362,14 @@ func TestNestedTemplateParallelismLimit(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 }
 
 // TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
 func TestSidecarResourceLimits(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	controller.Config.Executor = &apiv1.Container{
 		Resources: apiv1.ResourceRequirements{
@@ -2382,13 +2383,13 @@ func TestSidecarResourceLimits(t *testing.T) {
 			},
 		},
 	}
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pod, err := getPod(woc, "hello-world")
+	pod, err := getPod(ctx, woc, "hello-world")
 	require.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
@@ -2406,12 +2407,12 @@ func TestSidecarResourceLimits(t *testing.T) {
 // TestSuspendResume tests the suspend and resume feature
 func TestSuspendResume(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsTemplateParallelismLimit)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// suspend the workflow
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	err := util.SuspendWorkflow(ctx, wfcset, wf.Name)
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -2421,7 +2422,7 @@ func TestSuspendResume(t *testing.T) {
 	// operate should not result in no workflows being created since it is suspended
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -2433,7 +2434,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Nil(t, wf.Spec.Suspend)
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 }
@@ -2452,12 +2453,12 @@ spec:
 `
 
 func TestSuspendWithDeadline(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateWithDeadline)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2503,10 +2504,10 @@ spec:
 `
 
 func TestSuspendInputsResolution(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateInputResolution)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
@@ -2557,11 +2558,11 @@ spec:
 `
 
 func TestSequence(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(sequence)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2621,11 +2622,11 @@ spec:
 `
 
 func TestInputParametersAsJson(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(inputParametersAsJSON)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2678,21 +2679,21 @@ spec:
 `
 
 func TestExpandWithItems(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(expandWithItems)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0])
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 5)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 5)
 }
@@ -2729,16 +2730,16 @@ spec:
 `
 
 func TestExpandWithItemsMap(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(expandWithItemsMap)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0])
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 3)
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
@@ -2777,12 +2778,12 @@ spec:
 `
 
 func TestSuspendTemplate(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2795,7 +2796,7 @@ func TestSuspendTemplate(t *testing.T) {
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -2809,18 +2810,18 @@ func TestSuspendTemplate(t *testing.T) {
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
 
 func TestSuspendTemplateWithFailedResume(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2833,7 +2834,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -2848,18 +2849,18 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 }
 
 func TestSuspendTemplateWithFilteredResume(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2872,7 +2873,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -2883,7 +2884,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	// operate the workflow. nothing should have happened
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 	assert.True(t, util.IsWorkflowSuspended(wf))
@@ -2898,7 +2899,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
@@ -2930,12 +2931,12 @@ spec:
 `
 
 func TestSuspendResumeAfterTemplate(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendResumeAfterTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2948,7 +2949,7 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -2958,18 +2959,18 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
 
 func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(suspendResumeAfterTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -2982,7 +2983,7 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -2991,7 +2992,7 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	// operate the workflow. it should have not reached the second step since not enough time passed
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 }
@@ -3031,18 +3032,18 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestWorkflowSpecParam(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(volumeWithParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
-	pod, err := getPod(woc, wf.Name)
+	pod, err := getPod(ctx, woc, wf.Name)
 	require.NoError(t, err)
 	found := false
 	for _, vol := range pod.Spec.Volumes {
@@ -3194,13 +3195,13 @@ spec:
 func TestWokflowSchedulingConstraintsDAG(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowSchedulingConstraintsTemplateDAG)
 	wf := wfv1.MustUnmarshalWorkflow(workflowSchedulingConstraintsDAG)
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 	for _, pod := range pods.Items {
@@ -3224,13 +3225,13 @@ func TestWokflowSchedulingConstraintsDAG(t *testing.T) {
 func TestWokflowSchedulingConstraintsSteps(t *testing.T) {
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowSchedulingConstraintsTemplateSteps)
 	wf := wfv1.MustUnmarshalWorkflow(workflowSchedulingConstraintsSteps)
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 	for _, pod := range pods.Items {
@@ -3252,7 +3253,7 @@ func TestWokflowSchedulingConstraintsSteps(t *testing.T) {
 }
 
 func TestAddGlobalParamToScope(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	woc.globalParams = make(map[string]string)
 	testVal := wfv1.AnyStringPtr("test-value")
@@ -3291,7 +3292,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 }
 
 func TestAddGlobalArtifactToScope(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	art := wfv1.Artifact{
 		Name: "test-art",
@@ -3333,26 +3334,26 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 
 func TestParamSubstitutionWithArtifact(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/param-sub-with-artifacts.yaml")
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
 
 func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-param-sub-with-artifacts.yaml")
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
@@ -3455,9 +3456,9 @@ spec:
 `
 
 func TestMetadataPassing(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(metadataTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -3467,7 +3468,7 @@ func TestMetadataPassing(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
@@ -3534,16 +3535,16 @@ spec:
 `
 
 func TestResolveIOPathPlaceholders(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(ioPathPlaceholders)
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
-	assert.Equal(t, append(append([]string{"/var/run/argo/argoexec", "emissary"}, woc.getExecutorLogOpts()...),
+	assert.Equal(t, append(append([]string{"/var/run/argo/argoexec", "emissary"}, woc.getExecutorLogOpts(ctx)...),
 		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
 	), pods.Items[0].Spec.Containers[1].Command)
 }
@@ -3566,12 +3567,12 @@ spec:
 `
 
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(outputValuePlaceholders)
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
@@ -3611,7 +3612,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Setenv("POD_NAMES", tt.podNameVersion)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
 		woc := newWoc(ctx, *wf)
 		woc.operate(ctx)
@@ -3667,12 +3668,12 @@ spec:
 `
 
 func TestResolveStatuses(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(outputStatuses)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -3702,12 +3703,12 @@ spec:
 `
 
 func TestResourceTemplate(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(resourceTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -3717,7 +3718,7 @@ func TestResourceTemplate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 
-	pod, err := getPod(woc, "resource-template")
+	pod, err := getPod(ctx, woc, "resource-template")
 	require.NoError(t, err)
 	tmpl, err := getPodTemplate(pod)
 	require.NoError(t, err)
@@ -3785,12 +3786,12 @@ spec:
 `
 
 func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(resourceWithOwnerReferenceTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -3800,7 +3801,7 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	objectMetas := map[string]metav1.ObjectMeta{}
 	for _, pod := range pods.Items {
@@ -3895,18 +3896,18 @@ spec:
         cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'`
 
 func TestStepWFGetNodeName(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(stepScriptTmpl)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	assert.True(t, hasOutputResultRef("generate", &wf.Spec.Templates[0]))
-	assert.False(t, hasOutputResultRef("print-message", &wf.Spec.Templates[0]))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	assert.True(t, woc.hasOutputResultRef(ctx, "generate", &wf.Spec.Templates[0]))
+	assert.False(t, woc.hasOutputResultRef(ctx, "print-message", &wf.Spec.Templates[0]))
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -3920,18 +3921,18 @@ func TestStepWFGetNodeName(t *testing.T) {
 }
 
 func TestDAGWFGetNodeName(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(dagScriptTmpl)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	assert.True(t, hasOutputResultRef("A", &wf.Spec.Templates[0]))
-	assert.False(t, hasOutputResultRef("B", &wf.Spec.Templates[0]))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	assert.True(t, woc.hasOutputResultRef(ctx, "A", &wf.Spec.Templates[0]))
+	assert.False(t, woc.hasOutputResultRef(ctx, "B", &wf.Spec.Templates[0]))
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -3977,18 +3978,18 @@ spec:
 `
 
 func TestWithParamAsJsonList(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(withParamAsJSONList)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 }
@@ -4025,10 +4026,10 @@ spec:
 
 func TestStepsOnExit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsOnExit)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
@@ -4066,11 +4067,11 @@ spec:
 
 func TestStepsOnExitFailures(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(onExitFailures)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	// Test list expansion
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
@@ -4104,12 +4105,12 @@ spec:
 `
 
 func TestStepsOnExitTimeout(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(onExitTimeout)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -4206,9 +4207,9 @@ spec:
 		},
 	} {
 		wf := wfv1.MustUnmarshalWorkflow(manifest)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		t.Run(wf.Name, func(t *testing.T) {
-			cancel, controller := newController(wf)
+			cancel, controller := newController(ctx, wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			woc.operate(ctx)
@@ -4300,9 +4301,9 @@ spec:
 		},
 	} {
 		wf := wfv1.MustUnmarshalWorkflow(manifest)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		t.Run(wf.Name, func(t *testing.T) {
-			cancel, controller := newController(wf)
+			cancel, controller := newController(ctx, wf)
 			defer cancel()
 			controller.Config.NodeEvents = config.NodeEvents{SendAsPod: true}
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -4352,8 +4353,8 @@ spec:
 `
 	wf := wfv1.MustUnmarshalWorkflow(workflowText)
 	wf.Namespace = "argo"
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	createRunningPods(ctx, woc)
@@ -4395,9 +4396,9 @@ spec:
 
 func TestPDBCreation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pdbwf)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
@@ -4431,10 +4432,10 @@ func TestPDBCreation(t *testing.T) {
 
 func TestPDBCreationRaceDelete(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pdbwf)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -4447,10 +4448,10 @@ func TestPDBCreationRaceDelete(t *testing.T) {
 
 func TestStatusConditions(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pdbwf)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Empty(t, woc.wf.Status.Conditions)
@@ -4501,12 +4502,12 @@ spec:
 `
 
 func TestNestedOptionalOutputArtifacts(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(nestedOptionalOutputArtifacts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -4523,10 +4524,10 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 // TestPodSpecLogForFailedPods tests PodSpec logging configuration
 func TestPodSpecLogForFailedPods(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.Config.PodSpecLogStrategy.FailedPod = true
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
@@ -4540,10 +4541,10 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 
 // TestPodSpecLogForAllPods tests  PodSpec logging configuration
 func TestPodSpecLogForAllPods(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	assert.NotNil(t, controller)
 	controller.Config.PodSpecLogStrategy.AllPods = true
 	wf := wfv1.MustUnmarshalWorkflow(nestedOptionalOutputArtifacts)
@@ -4657,9 +4658,9 @@ status:
 
 // This tests to see if the outputs of the last child node of a retry node are added correctly to the scope
 func TestRetryNodeOutputs(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(retryNodeOutputs)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -4745,9 +4746,9 @@ func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 	assert := assert.New(t)
 
 	wf := wfv1.MustUnmarshalWorkflow(workflowWithPVCAndFailingStep)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "1 PVC before operating")
@@ -4797,20 +4798,19 @@ spec:
 `
 
 func TestContainerOutputsResult(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(containerOutputsResult)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	assert.True(t, hasOutputResultRef("hello1", &wf.Spec.Templates[0]))
-	assert.False(t, hasOutputResultRef("hello2", &wf.Spec.Templates[0]))
-
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	assert.True(t, woc.hasOutputResultRef(ctx, "hello1", &wf.Spec.Templates[0]))
+	assert.False(t, woc.hasOutputResultRef(ctx, "hello2", &wf.Spec.Templates[0]))
 	woc.operate(ctx)
 
 	for _, node := range wf.Status.Nodes {
@@ -4952,10 +4952,10 @@ status:
 
 func TestNestedStepGroupGlobalParams(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(nestedStepGroupGlobalParams)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -4993,12 +4993,12 @@ spec:
 `
 
 func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(globalVariablePlaceholders)
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
@@ -5040,10 +5040,10 @@ spec:
 
 func TestUnsuppliedArgValue(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(unsuppliedArgValue)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
@@ -5074,10 +5074,10 @@ spec:
 // TestSuppliedArgValue ensures that supplied workflow parameters are correctly set in the global parameters
 func TestSuppliedArgValue(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(suppliedArgValue)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -5165,7 +5165,7 @@ func TestMaxDurationOnErroredFirstNode(t *testing.T) {
 	node.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	wf.Status.Nodes["echo-wngc4-1641470511"] = node
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -5263,7 +5263,7 @@ func TestBackoffExceedsMaxDuration(t *testing.T) {
 	node.FinishedAt = metav1.Time{Time: time.Now()}
 	wf.Status.Nodes["echo-r6v49-3721138751"] = node
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -5431,7 +5431,7 @@ status:
 func TestNoOnExitWhenSkipped(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(noOnExitWhenSkipped)
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	_, err := woc.wf.GetNodeByName("B.onExit")
@@ -5452,7 +5452,7 @@ func TestGenerateNodeName(t *testing.T) {
 // This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
 func TestPanicMetric(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(noOnExitWhenSkipped)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 
 	// This should make the call to "operate" panic
@@ -5460,7 +5460,7 @@ func TestPanicMetric(t *testing.T) {
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("cause", "OperationPanic"))
-	val, err := testExporter.GetInt64CounterValue("error_count", &attribs)
+	val, err := testExporter.GetInt64CounterValue(ctx, "error_count", &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
@@ -5468,10 +5468,10 @@ func TestPanicMetric(t *testing.T) {
 // Assert Workflows cannot be run without using workflowTemplateRef in reference mode
 func TestControllerReferenceMode(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(globalVariablePlaceholders)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -5494,10 +5494,10 @@ func TestControllerReferenceMode(t *testing.T) {
 func TestValidReferenceMode(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflow-template-ref.yaml")
 	wfTmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-submittable.yaml")
-	cancel, controller := newController(wf, wfTmpl)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wfTmpl)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -5624,7 +5624,7 @@ status:
 `
 
 func TestWorkflowStatusMetric(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(workflowStatusMetric)
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
@@ -5633,7 +5633,7 @@ func TestWorkflowStatusMetric(t *testing.T) {
 }
 
 func TestWorkflowConditions(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf
@@ -5645,7 +5645,7 @@ spec:
       image: docker/whalesay:latest
     name: main
 `)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -5729,10 +5729,10 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
@@ -5801,10 +5801,10 @@ func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCachedNoOutputs)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
@@ -5916,10 +5916,10 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 	}
 
 	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInSteps)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &myConfigMapCacheEntry, metav1.CreateOptions{})
@@ -5963,10 +5963,10 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 	}
 
 	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInDAG)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &myConfigMapCacheEntry, metav1.CreateOptions{})
@@ -6045,9 +6045,9 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 		}
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCachedMaxAge)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -6067,7 +6067,7 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 
 	cancel()
-	cancel, controller = newController()
+	cancel, controller = newController(logging.TestContext(t.Context()))
 	defer cancel()
 
 	expiredEntry := getEntryCreatedAtTime(time.Now().Add(-15 * time.Second))
@@ -6255,10 +6255,10 @@ spec:
 
 func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(workflowStepCachedWithRetryStrategy)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -6275,10 +6275,10 @@ func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
 
 func TestDAGConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(workflowDagCachedWithRetryStrategy)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -6308,10 +6308,10 @@ func TestConfigMapCacheLoadNoLabels(t *testing.T) {
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
@@ -6349,10 +6349,10 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
@@ -6374,10 +6374,10 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	sampleOutputs := wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
@@ -6387,7 +6387,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	}
 
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withOutputs(sampleOutputs))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withOutputs(ctx, sampleOutputs))
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
@@ -6426,18 +6426,15 @@ spec:
 `
 
 func TestPropagateMaxDurationProcess(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
 	wf := wfv1.MustUnmarshalWorkflow(propagate)
 	assert.NotNil(t, wf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotNil(t, woc)
-	err := woc.setExecWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}())
+	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, woc.wf.Status.Nodes)
 
@@ -6510,10 +6507,10 @@ status:
 `
 
 func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wf := wfv1.MustUnmarshalWorkflow(resubmitPendingWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
@@ -6549,10 +6546,10 @@ status:
       name: my-wf
       phase: Failed
 `)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, nil)
 	require.NoError(t, err)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -6569,7 +6566,7 @@ status:
 			assert.Fail(t, "invalid template")
 		}
 	}
-	list, err := listPods(woc)
+	list, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, list.Items, 1)
 }
@@ -6596,10 +6593,10 @@ status:
       name: my-wf
       phase: Failed
 `)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, []string{"message=modified"})
 	require.NoError(t, err)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -6633,15 +6630,13 @@ status:
       name: my-wf
       phase: Failed
 `)
-	wf, _, err := util.FormulateRetryWorkflow(func() context.Context {
-		ctx := context.Background()
-		return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	}(), wf, false, "", []string{"message=modified"})
+
+	ctx := logging.TestContext(t.Context())
+	wf, _, err := util.FormulateRetryWorkflow(ctx, wf, false, "", []string{"message=modified"})
 	require.NoError(t, err)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
@@ -6669,9 +6664,9 @@ spec:
         valueFrom:
           path: /my-path
 `)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -6827,9 +6822,9 @@ spec:
 func TestGlobalVarsOnExit(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(globalVarsOnExit)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftmplGlobalVarsOnExit)
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -6915,10 +6910,10 @@ status:
 func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(deadlineWf)
 	wf.Status.StartedAt = metav1.Now()
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	t.Run("Before Deadline", func(t *testing.T) {
 		woc.operate(ctx)
@@ -6938,10 +6933,10 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(deadlineWf)
 	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	t.Run("After Shutdown", func(t *testing.T) {
 		woc.operate(ctx)
@@ -6953,6 +6948,7 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 }
 
 func Test_processItem(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	task := wfv1.DAGTask{
 		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
 	}
@@ -6963,7 +6959,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "")
+	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "")
 	require.NoError(t, err)
 	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 }
@@ -7026,10 +7022,10 @@ spec:
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -7041,10 +7037,10 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(dagTimeoutWf)
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -7061,10 +7057,10 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		tmpl := wf.Spec.Templates[1]
 		tmpl.Timeout = "23"
 		wf.Spec.Templates[1] = tmpl
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -7078,10 +7074,10 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		tmpl := wf.Spec.Templates[0]
 		tmpl.Timeout = "23"
 		wf.Spec.Templates[0] = tmpl
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -7116,14 +7112,14 @@ spec:
 func TestStorageQuota(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithPVC)
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
 	})
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowPending, woc.wf.Status.Phase)
@@ -7185,8 +7181,8 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
 	wfv1.MustUnmarshal(podWithFailed, &pod)
 	assert.NotNil(t, pod)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-	nodeStatus, msg := newWoc(ctx).inferFailedReason(&pod, nil)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Equal(t, "Pod failed before main container starts due to ContainerCreating: Container is creating", msg)
 }
@@ -7300,8 +7296,8 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	for _, tt := range tests {
 		wfv1.MustUnmarshal(tt.podDetail, &pod)
 		assert.NotNil(t, pod)
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-		nodeStatus, msg := newWoc(ctx).inferFailedReason(&pod, nil)
+		ctx := logging.TestContext(t.Context())
+		nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 		assert.Equal(t, tt.phase, nodeStatus)
 		assert.Contains(t, msg, "OOMKilled")
 	}
@@ -7322,10 +7318,10 @@ spec:
       image: my-image
 `)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftmplGlobalVarsOnExit)
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -7415,13 +7411,13 @@ spec:
 func TestWFWithRetryAndWithParam(t *testing.T) {
 	t.Run("IncludeScriptOutputInRetryAndWithParam", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfRetryWithParam)
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
-		pods, err := listPods(woc)
+		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		require.Len(t, pods.Items, 3)
@@ -7616,10 +7612,10 @@ status:
 
 func TestParamAggregation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(paramAggregation)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -7710,10 +7706,10 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 }
 
 func TestRetryOnDiffHost(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	// Verify that there are no nodes in the wf status.
 	assert.Empty(t, woc.wf.Status.Nodes)
@@ -7810,14 +7806,14 @@ spec:
 
 func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityWorkflow)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
@@ -7834,7 +7830,7 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 	assert.Equal(t, "node0", node.HostNodeName)
 
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 2)
 
@@ -7866,7 +7862,7 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, node1.Phase)
 	assert.Equal(t, "node1", node1.HostNodeName)
 
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 3)
 
@@ -7904,10 +7900,10 @@ spec:
 
 func TestNoPodsWhenShutdown(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(noPodsWhenShutdown)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -7937,10 +7933,10 @@ spec:
 
 func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfscheVariable)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
@@ -7964,10 +7960,10 @@ spec:
 
 func TestWorkflowMainEntrypointVariable(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfMainEntrypointVariable)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "whalesay", woc.globalParams[common.GlobalVarWorkflowMainEntrypoint])
@@ -8006,10 +8002,10 @@ spec:
 
 func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfNodeNameField)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -8042,10 +8038,10 @@ spec:
 
 	wf1 := wf.DeepCopy()
 	wf1.Name = "whalesay-1"
-	cancel, controller := newController(wf, wf1)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wf1)
 	defer cancel()
 	t.Run("StopStrategy", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 
@@ -8067,7 +8063,7 @@ spec:
 	})
 
 	t.Run("TerminateStrategy", func(t *testing.T) {
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf1, controller)
 		woc.operate(ctx)
 
@@ -8134,8 +8130,13 @@ spec:
 
 func TestHasOutputResultRef(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(resultVarRefWf)
-	assert.True(t, hasOutputResultRef("generate-random", &wf.Spec.Templates[0]))
-	assert.True(t, hasOutputResultRef("generate-random-1", &wf.Spec.Templates[0]))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	assert.True(t, woc.hasOutputResultRef(ctx, "generate-random", &wf.Spec.Templates[0]))
+	assert.True(t, woc.hasOutputResultRef(ctx, "generate-random-1", &wf.Spec.Templates[0]))
 }
 
 const stepsFailFast = `
@@ -8317,10 +8318,10 @@ status:
 
 func TestStepsFailFast(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsFailFast)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -8410,10 +8411,10 @@ status:
 
 func TestRootRetryStrategyCompletes(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(rootRetryStrategyCompletes)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -8448,10 +8449,10 @@ spec:
 
 func TestSubstituteGlobalVariables(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testGlobalParamSubstitute)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -8532,15 +8533,12 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
 			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
-			cancel, controller := newController(wf, wftmpl)
+			cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 			defer cancel()
-			ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+			ctx := logging.TestContext(t.Context())
 
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
-			err := woc.setExecWorkflow(func() context.Context {
-				ctx := context.Background()
-				return logging.WithLogger(ctx, logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
-			}())
+			err := woc.setExecWorkflow(ctx)
 
 			require.NoError(t, err)
 			assert.NotNil(t, woc.execWf)
@@ -8596,14 +8594,14 @@ status:
 
 func TestWfPendingWithNoPod(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfPending)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
@@ -8659,9 +8657,9 @@ status:
 
 func TestMutexWfPendingWithNoPod(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfPendingWithSync)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 
@@ -8751,10 +8749,10 @@ spec:
 
 func TestWFGlobalArtifactNil(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfGlobalArtifactNil)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
@@ -8870,10 +8868,10 @@ status:
 
 func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testDagTwoChildrenWithNonExpectedNodeType)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -8929,10 +8927,10 @@ status:
 // and "main" should be the outbound node.
 func TestDagTwoChildrenContainerSet(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testDagTwoChildrenContainerSet)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -9105,10 +9103,10 @@ status:
 // last exit code is NOT 2. We expect the retryStrategy to fail (even though it has 8 tries remainng).
 func TestOperatorRetryExpression(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -9297,9 +9295,9 @@ status:
 // we are proving that the policy applied was Always not OnFailure
 func TestOperatorRetryExpressionError(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionError)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -9470,9 +9468,9 @@ status:
 // OnFailure by having no expression and no explicit retryPolicy
 func TestOperatorRetryExpressionErrorNoExpr(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionErrorNoExpr)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -9649,10 +9647,10 @@ status:
 
 func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -9684,10 +9682,10 @@ spec:
 `)
 	wf.Status.Phase = wfv1.WorkflowError
 	wf.Status.FinishedAt = metav1.Now()
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.NotPanics(t, func() { woc.operate(ctx) })
 }
@@ -9704,10 +9702,10 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 		t.Setenv("POD_NAMES", tt.podNameVersion)
 
 		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 		woc.operate(ctx)
@@ -10151,10 +10149,10 @@ status:
 
 func TestRetryLoopWithOutputParam(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(RetryLoopWithOutputParam)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -10259,9 +10257,9 @@ status:
 `
 
 func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	t.Run("Shutdown", func(t *testing.T) {
 		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
@@ -10345,10 +10343,10 @@ spec:
     name: workflow-template-invalid-onexit
 `)
 	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml")
-	cancel, controller := newController(wf, wft)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wft)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	t.Log(woc.wf)
@@ -10368,10 +10366,10 @@ spec:
     name: workflow-template-invalid-entrypoint
 `)
 	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml")
-	cancel, controller := newController(wf, wft)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wft)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	t.Log(woc.wf)
@@ -10423,10 +10421,10 @@ func nodeWithTemplateName(name string) func(n wfv1.NodeStatus) bool {
 func TestMemoizationTemplateLevelCacheWithStepWithoutCache(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
@@ -10468,10 +10466,10 @@ func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
 		},
 	}
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -10532,10 +10530,10 @@ spec:
 func TestMemoizationTemplateLevelCacheWithDagWithoutCache(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
@@ -10574,10 +10572,10 @@ func TestMemoizationTemplateLevelCacheWithDagWithCache(t *testing.T) {
 		},
 	}
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -10640,12 +10638,12 @@ spec:
 
 func TestMaxDepth(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(maxDepth)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	// Max depth is too small, error expected
 	controller.maxStackDepth = 2
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
@@ -10678,12 +10676,12 @@ func TestMaxDepth(t *testing.T) {
 
 func TestMaxDepthEnvVariable(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(maxDepth)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
 	// Max depth is disabled, no error expected
 	controller.maxStackDepth = 2
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	t.Setenv("DISABLE_MAX_RECURSION", "true")
 
@@ -10705,9 +10703,9 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 
 func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 	nodeName := "test-node"
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	setup := func() *wfOperationCtx {
-		cancel, controller := newController()
+		cancel, controller := newController(ctx)
 		defer cancel()
 		assert.NotNil(t, controller)
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -10887,10 +10885,10 @@ status:
     notSpecified: true
 `)
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 
 	controller.kubeclientset.(*fake.Clientset).CoreV1().(*corefake.FakeCoreV1).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		createAction, ok := action.(k8stesting.CreateAction)
@@ -10971,9 +10969,9 @@ spec:
 
 // TestWorkflowNeedReconcile test whether a workflow need reconcile taskresults.
 func TestWorkflowNeedReconcile(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(needReconcileWorklfow)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -10982,7 +10980,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
@@ -11023,7 +11021,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	require.NoError(t, err)
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	require.Len(t, pods.Items, 2)
 	assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
@@ -11232,10 +11230,10 @@ status:
     wf-retry-stopped-pn6mm-4140492335: true
 `)
 
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	reconceilNeeded := reconciliationNeeded(wf)
 	assert.False(t, reconceilNeeded)
 
@@ -11313,9 +11311,9 @@ func TestContainerSetWhenPodDeleted(t *testing.T) {
 	// use local-scoped env vars in test to avoid long waits
 	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSet)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -11324,7 +11322,7 @@ func TestContainerSetWhenPodDeleted(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
@@ -11340,7 +11338,7 @@ func TestContainerSetWhenPodDeleted(t *testing.T) {
 
 	// delete pod
 	deletePods(ctx, woc)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -11397,9 +11395,9 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 	// use local-scoped env vars in test to avoid long waits
 	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSetWithDependencies)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -11408,7 +11406,7 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(woc)
+	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
@@ -11424,7 +11422,7 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 
 	// delete pod
 	deletePods(ctx, woc)
-	pods, err = listPods(woc)
+	pods, err = listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
@@ -11572,10 +11570,10 @@ status:
 
 func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagContainersetWf)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -11620,7 +11618,7 @@ spec:
           - name: message
             optional: true
             path: /tmp/hello_world
-          
+
 
     - name: print-message
       inputs:
@@ -11635,10 +11633,10 @@ spec:
 
 func TestWithItemsOptionalArtStepsWF(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtStepsWF)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -11681,7 +11679,7 @@ spec:
           - name: message
             optional: true
             path: /tmp/hello_world
-           
+
 
     - name: print-message
       inputs:
@@ -11696,10 +11694,10 @@ spec:
 
 func TestWithItemsOptionalArtDAGWF(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtDAGWF)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -11736,9 +11734,9 @@ spec:
 func TestSetGlobalParametersOverriding(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithValueOverriding)
 	t.Run("CheckArgumentFromWF", func(t *testing.T) {
-		cancel, controller := newController(wf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
-		ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.GetGlobalLevel(), logging.GetGlobalFormat()))
+		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
@@ -12148,10 +12146,10 @@ status:
 
 func TestMarksWFSucceeded(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(marksWFSucceeded)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)

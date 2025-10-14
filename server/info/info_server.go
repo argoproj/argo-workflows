@@ -4,12 +4,11 @@ import (
 	"context"
 	"os"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/argoproj/argo-workflows/v3"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 type infoServer struct {
@@ -57,7 +56,9 @@ func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*w
 }
 
 func (i *infoServer) CollectEvent(ctx context.Context, req *infopkg.CollectEventRequest) (*infopkg.CollectEventResponse, error) {
-	logFields := log.Fields{}
+	logger := logging.RequireLoggerFromContext(ctx)
+
+	logFields := logging.Fields{}
 
 	claims := auth.GetClaims(ctx)
 	if claims != nil {
@@ -67,7 +68,7 @@ func (i *infoServer) CollectEvent(ctx context.Context, req *infopkg.CollectEvent
 
 	logFields["name"] = req.Name
 
-	log.WithFields(logFields).Info("tracking UI usage️️")
+	logger.WithFields(logFields).Info(ctx, "tracking UI usage️️")
 
 	return &infopkg.CollectEventResponse{}, nil
 }

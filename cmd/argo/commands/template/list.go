@@ -28,7 +28,8 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflow templates",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
@@ -36,7 +37,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			if listArgs.allNamespaces {
 				namespace = apiv1.NamespaceAll
 			}
@@ -62,7 +63,7 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(wftmp.Name)
 				}
 			default:
-				return fmt.Errorf("Unknown output mode: %s", listArgs.output)
+				return fmt.Errorf("unknown output mode: %s", listArgs.output)
 			}
 			return nil
 		},
