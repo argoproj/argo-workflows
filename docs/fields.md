@@ -3628,7 +3628,7 @@ ArtifactoryArtifact is the location of an artifactory artifact
 
 ## AzureArtifact
 
-AzureArtifact is the location of a an Azure Storage artifact
+AzureArtifact is the location of an Azure Storage artifact
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -3668,7 +3668,7 @@ GCSArtifact is the location of a GCS artifact
 
 ## GitArtifact
 
-GitArtifact is the location of an git artifact
+GitArtifact is the location of a git artifact
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>

@@ -1,22 +1,30 @@
-## argo sync configmap delete
+## argo sync create
 
-Delete a configmap sync limit
+Create a sync limit
 
 ```
-argo sync configmap delete [flags]
+argo sync create [flags]
 ```
 
 ### Examples
 
 ```
-argo sync configmap delete my-cm --key my-key
+
+# Create a database sync limit:
+	argo sync create my-key --type database --limit 10
+		
+# Create a configmap sync limit:
+	argo sync create my-key --type configmap --cm-name my-configmap --limit 10
+
 ```
 
 ### Options
 
 ```
-  -h, --help         help for delete
-      --key string   Key of the sync limit
+      --cm-name string   ConfigMap name (required if type is configmap)
+  -h, --help             help for create
+      --limit int32      Sync limit
+      --type string      Type of sync limit (database or configmap)
 ```
 
 ### Options inherited from parent commands
@@ -57,5 +65,5 @@ argo sync configmap delete my-cm --key my-key
 
 ### SEE ALSO
 
-* [argo sync configmap](argo_sync_configmap.md)	 - manage configmap sync limits
+* [argo sync](argo_sync.md)	 - manage sync limits
 

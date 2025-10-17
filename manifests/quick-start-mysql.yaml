@@ -5489,6 +5489,7 @@ data:
     failed: 3
     errored: 3
   synchronization: |
+    enableAPI: true
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0

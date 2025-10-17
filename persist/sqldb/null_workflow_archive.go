@@ -31,6 +31,10 @@ func (r *nullWorkflowArchive) CountWorkflows(ctx context.Context, options sutils
 	return 0, nil
 }
 
+func (r *nullWorkflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.ListOptions) (bool, error) {
+	return false, nil
+}
+
 func (r *nullWorkflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
 }

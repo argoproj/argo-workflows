@@ -370,7 +370,7 @@ of a single workflow step, which the executor will use as a default location to 
 ### <span id="azure-artifact"></span> AzureArtifact
 
 
-> AzureArtifact is the location of a an Azure Storage artifact
+> AzureArtifact is the location of an Azure Storage artifact
   
 
 
@@ -1448,7 +1448,7 @@ PDs support ownership management and SELinux relabeling.
 ### <span id="git-artifact"></span> GitArtifact
 
 
-> GitArtifact is the location of an git artifact
+> GitArtifact is the location of a git artifact
   
 
 

@@ -1245,7 +1245,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureArtifact(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AzureArtifact is the location of a an Azure Storage artifact",
+				Description: "AzureArtifact is the location of an Azure Storage artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"endpoint": {
@@ -2829,7 +2829,7 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "GitArtifact is the location of an git artifact",
+				Description: "GitArtifact is the location of a git artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"repo": {

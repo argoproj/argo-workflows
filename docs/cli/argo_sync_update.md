@@ -1,15 +1,30 @@
-## argo sync configmap
+## argo sync update
 
-manage configmap sync limits
+Update a configmap sync limit
 
 ```
-argo sync configmap [flags]
+argo sync update [flags]
+```
+
+### Examples
+
+```
+ 
+# Update a database sync limit
+	argo sync update my-key --type database --size-limit 20
+		
+# Update a configmap sync limit
+	argo sync update my-key --type configmap --cm-name my-configmap --size-limit 20
+
 ```
 
 ### Options
 
 ```
-  -h, --help   help for configmap
+      --cm-name string   ConfigMap name (required if type is configmap)
+  -h, --help             help for update
+      --limit int32      Limit of the sync limit
+      --type string      Type of sync limit (database or configmap)
 ```
 
 ### Options inherited from parent commands
@@ -51,8 +66,4 @@ argo sync configmap [flags]
 ### SEE ALSO
 
 * [argo sync](argo_sync.md)	 - manage sync limits
-* [argo sync configmap create](argo_sync_configmap_create.md)	 - Create a configmap sync limit
-* [argo sync configmap delete](argo_sync_configmap_delete.md)	 - Delete a configmap sync limit
-* [argo sync configmap get](argo_sync_configmap_get.md)	 - Get a configmap sync limit
-* [argo sync configmap update](argo_sync_configmap_update.md)	 - Update a configmap sync limit
 

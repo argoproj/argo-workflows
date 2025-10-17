@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -404,10 +405,8 @@ func isTransientOSSErr(ctx context.Context, err error) bool {
 		return true
 	}
 	if ossErr, ok := err.(oss.ServiceError); ok {
-		for _, transientErrCode := range ossTransientErrorCodes {
-			if ossErr.Code == transientErrCode {
-				return true
-			}
+		if slices.Contains(ossTransientErrorCodes, ossErr.Code) {
+			return true
 		}
 	}
 	return false
