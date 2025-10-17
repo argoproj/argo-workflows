@@ -987,6 +987,47 @@ func (s *CLISuite) TestRetryWorkflowWithFailedExitHandler() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowRetryWithTTLExpired() {
+	var workflowName string
+	var retryTime metav1.Time
+	var opts metav1.ListOptions
+	s.Given().
+		Workflow("@testdata/retry-with-ttl-expired.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+			workflowName = wf.Name
+			nodeStatus := wf.Status.Nodes.FindByDisplayName("A")
+			return nodeStatus != nil && nodeStatus.Message == "Error (exit code 36)",
+				"Node A should failed"
+		})).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+			retryTime = wf.Status.FinishedAt
+			return wf.Status.Failed(), "Workflow failed, while be deleted after 3s"
+		})).
+		RunCli([]string{"retry", workflowName, "-p", "fail=false"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err, output) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+			time.Sleep(5 * time.Second) // wait 5s for pod deletion
+			opts = metav1.ListOptions{LabelSelector: fixtures.Label, FieldSelector: "metadata.name=" + workflowName}
+		}).
+		WaitForWorkflowList(opts, func(list []wfv1.Workflow) bool {
+			assert.Len(s.T(), list, 1)
+			//"Node A sleep 5s, should not be deleted after retry"
+			return true
+		}).
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.True(t, status.Successful())
+			nodeB := status.Nodes.FindByDisplayName("B")
+			assert.True(t, retryTime.Before(&nodeB.FinishedAt))
+		})
+}
+
 func (s *CLISuite) TestWorkflowStop() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
