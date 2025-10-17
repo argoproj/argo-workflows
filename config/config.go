@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"slices"
 	"time"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -146,10 +147,8 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
-	for _, protocol := range allowedProtocol {
-		if inputProtocol == protocol {
-			return nil
-		}
+	if slices.Contains(allowedProtocol, inputProtocol) {
+		return nil
 	}
 	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
