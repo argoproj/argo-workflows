@@ -1792,6 +1792,10 @@ message Template {
 
   // Annotations is a list of annotations to add to the template at runtime
   map<string, string> annotations = 44;
+
+  // PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of
+  // metadata fields Labels and Annotations, which are not strings.
+  optional string podMetadataPatch = 45;
 }
 
 // TemplateRef is a reference of template resource.
@@ -2138,6 +2142,10 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // PodMetadataPatch holds strategic merge patch to apply against the pod metadata. Allows parameterization of
+  // metadata fields Labels and Annotations, which are not strings.
+  optional string podMetadataPatch = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow

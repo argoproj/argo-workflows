@@ -12820,6 +12820,8 @@ spec:
                         "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                    podMetadataPatch:
+                      type: string
                     podSpecPatch:
                       description: |-
                         PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of

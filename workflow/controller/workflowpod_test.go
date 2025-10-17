@@ -689,6 +689,21 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		assert.Equal(t, cmd, pod.Spec.Containers[1].Command)
 		assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 	})
+	t.Run("CommandFromPodMetadataPatch", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc := newWoc(ctx)
+		podMetadata := &metav1.ObjectMeta{
+			Annotations: map[string]string{"test-annotation": "test-annotation-value"},
+			Labels:      map[string]string{"test-label": "test-label-value"},
+		}
+		podMetadataPatch, err := json.Marshal(podMetadata)
+		require.NoError(t, err)
+		pod, err := woc.createWorkflowPod(ctx, "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodMetadataPatch: string(podMetadataPatch)}, &createWorkflowPodOpts{})
+		require.NoError(t, err)
+		assert.Equal(t, "test-annotation-value", pod.Annotations["test-annotation"])
+		assert.Equal(t, "test-label-value", pod.Labels["test-label"])
+
+	})
 	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
@@ -1341,7 +1356,7 @@ func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
 	}
 }
 
-var helloWorldWfWithPatch = `
+var helloWorldWfWithPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1361,7 +1376,23 @@ spec:
         value: "{{pod.name}}"
 `
 
-var helloWorldWfWithWFPatch = `
+var helloWorldWfWithPodMetadataPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint:
+  templates:
+  - name: whalesay
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var helloWorldWfWithWFPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1377,7 +1408,23 @@ spec:
       args: ["hello world"]
 `
 
-var helloWorldWfWithWFYAMLPatch = `
+var helloWorldWfWithWFPodMetadataPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
+  templates:
+  - name: whalesay
+    container: 
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var helloWorldWfWithWFYAMLPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1399,7 +1446,23 @@ spec:
       args: ["hello world"]
 `
 
-var helloWorldWfWithTmplAndWFPatch = `
+var helloWorldWfWithWFYAMLPodMetadataPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var helloWorldWfWithTmplAndWFPodSpecPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1423,7 +1486,23 @@ spec:
       args: ["hello world"]
 `
 
-var helloWorldWfWithInvalidPatchFormat = `
+var helloWorldWfWithTmplAndWFPodMetadataPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var helloWorldWfWithInvalidPodSpecPatchFormat = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1439,28 +1518,87 @@ spec:
       args: ["hello world"]
 `
 
+var helloWorldWfWithInvalidPodMetadataPatchFormat = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podMetadataPatch: '{"annotations"}' # not a valid JSON here
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestPodMetadataPatch(t *testing.T) {
+	// validate pod metadata with template-level priority
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPodMetadataPatch)
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
+
+	// validate pod metadata with workflow-level priority
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPodMetadataPatch)
+	woc = newWoc(ctx, *wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
+
+	// validate pod metadata set at the template level in YAML format (as opposed to string json)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPodMetadataPatch)
+	woc = newWoc(ctx, *wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
+
+	// validate pod metadata with both template and workflow-level priority (should use two separate and an override, check all)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFPodMetadataPatch)
+	woc = newWoc(ctx, *wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "value", pod.Annotations["test-annotation"])
+	assert.Equal(t, "value", pod.Labels["test-label"])
+
+	// validate error is thrown when invalid pod metadata patch is set.
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPodMetadataPatchFormat)
+	woc = newWoc(ctx, *wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	require.EqualError(t, err, "Error applying PodMetadataPatch")
+	require.EqualError(t, errors.Cause(err), "invalid character '}' after object key")
+}
+
 func TestPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPodSpecPatch)
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPodSpecPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPodSpecPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFPodSpecPatch)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1468,7 +1606,7 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, apiv1.Capability("ALL"), pod.Spec.Containers[1].SecurityContext.Capabilities.Add[0])
 	assert.Equal(t, []apiv1.Capability(nil), pod.Spec.Containers[1].SecurityContext.Capabilities.Drop)
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPatchFormat)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPodSpecPatchFormat)
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1490,6 +1628,7 @@ spec:
         template: whalesay
   - name: whalesay
     podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
+    podMetadataPatch: '{"annotations": {"test-annotation": "value"},"labels": {"test-label": "value"}}'
     container:
       image: docker/whalesay:latest
       command: [cowsay]
@@ -1506,8 +1645,8 @@ func TestPodSpecPatchPodName(t *testing.T) {
 		wantPodName    string
 		workflowYaml   string
 	}{
-		{"v1", "hello-world", helloWorldWfWithPatch},
-		{"v2", "hello-world", helloWorldWfWithPatch},
+		{"v1", "hello-world", helloWorldWfWithPodSpecPatch},
+		{"v2", "hello-world", helloWorldWfWithPodSpecPatch},
 		{"v1", "hello-world-3731220306", helloWorldStepWfWithPatch},
 		{"v2", "hello-world-whalesay-3731220306", helloWorldStepWfWithPatch},
 	}
@@ -1544,7 +1683,7 @@ func TestMainContainerCustomization(t *testing.T) {
 	// podSpecPatch in workflow spec takes precedence over the main container's
 	// configuration in controller so here we respect what's specified in podSpecPatch.
 	t.Run("PodSpecPatchPrecedence", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPodSpecPatch)
 		woc := newWoc(ctx, *wf)
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := woc.execWf.Spec.Templates[0].Container

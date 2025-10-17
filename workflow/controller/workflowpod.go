@@ -107,6 +107,32 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 
 }
 
+func (woc *wfOperationCtx) processPodMetadataPatch(ctx context.Context, tmpl *wfv1.Template, pod *apiv1.Pod) ([]string, error) {
+	podMetadataPatches := []string{}
+	localParams := make(map[string]string)
+	if tmpl.IsPodType() {
+		localParams[common.LocalVarPodName] = pod.Name
+	}
+	toProcess := []string{}
+	if woc.execWf.Spec.HasPodMetadataPatch() {
+		toProcess = append(toProcess, woc.execWf.Spec.PodMetadataPatch)
+	}
+	if tmpl.HasPodMetadataPatch() {
+		toProcess = append(toProcess, tmpl.PodMetadataPatch)
+	}
+
+	for _, patch := range toProcess {
+		newTmpl := tmpl.DeepCopy()
+		newTmpl.PodMetadataPatch = patch
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to substitute the PodMetadataPatch variables")
+		}
+		podMetadataPatches = append(podMetadataPatches, processedTmpl.PodMetadataPatch)
+	}
+	return podMetadataPatches, nil
+}
+
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
@@ -399,6 +425,20 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
 		}
 		pod.Spec = *patchedPodSpec
+	}
+
+	// Apply the patch string from workflow and template
+	var podMetadataPatchs []string
+	podMetadataPatchs, err = woc.processPodMetadataPatch(ctx, tmpl, pod)
+	if err != nil {
+		return nil, err
+	}
+	if len(podMetadataPatchs) > 0 {
+		patchedPodMetadata, err := util.ApplyPodMetadataPatch(pod.ObjectMeta, podMetadataPatchs...)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error applying PodMetadataPatch")
+		}
+		pod.ObjectMeta = *patchedPodMetadata
 	}
 
 	for i, c := range pod.Spec.Containers {

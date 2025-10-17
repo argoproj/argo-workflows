@@ -1569,6 +1569,37 @@ func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*api
 	return &newPodSpec, nil
 }
 
+func ApplyPodMetadataPatch(podMetadata metav1.ObjectMeta, podMetaDataPatchYamls ...string) (*metav1.ObjectMeta, error) {
+	podMetadataJSON, err := json.Marshal(podMetadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to marshal the Pod metadata")
+	}
+
+	for _, podMetadataPatchYaml := range podMetaDataPatchYamls {
+		podMetadataPatchJSON, err := ConvertYAMLToJSON(podMetadataPatchYaml)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to convert the PodMetadataPatch yaml to json")
+		}
+
+		// validate the patch to be a PodSpec
+		if err := json.Unmarshal([]byte(podMetadataPatchJSON), &metav1.ObjectMeta{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podMetadataPatchYaml, err)
+		}
+
+		podMetadataJSON, err = strategicpatch.StrategicMergePatch(podMetadataJSON, []byte(podMetadataPatchJSON), metav1.ObjectMeta{})
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
+	}
+
+	var newPodMetadata metav1.ObjectMeta
+	err = json.Unmarshal(podMetadataJSON, &newPodMetadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+	}
+	return &newPodMetadata, nil
+}
+
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 	return tmpl.GetNodeType()
 }
