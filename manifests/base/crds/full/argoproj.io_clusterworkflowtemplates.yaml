@@ -1801,6 +1801,32 @@ spec:
                         path:
                           description: Path is the container path to the artifact
                           type: string
+                        plugin:
+                          description: Plugin contains plugin artifact location details
+                          properties:
+                            configuration:
+                              description: Configuration is the plugin defined configuration
+                                for the artifact driver plugin
+                              type: string
+                            connectionTimeoutSeconds:
+                              description: ConnectionTimeoutSeconds is the timeout
+                                for the artifact driver connection, 5 seconds if not
+                                set
+                              format: int32
+                              type: integer
+                            key:
+                              description: Key is the path in the artifact repository
+                                where the artifact resides
+                              type: string
+                            name:
+                              description: Name is the name of the artifact driver
+                                plugin
+                              type: string
+                          required:
+                          - configuration
+                          - key
+                          - name
+                          type: object
                         raw:
                           description: Raw contains raw artifact location details
                           properties:
@@ -3092,6 +3118,33 @@ spec:
                               path:
                                 description: Path is the container path to the artifact
                                 type: string
+                              plugin:
+                                description: Plugin contains plugin artifact location
+                                  details
+                                properties:
+                                  configuration:
+                                    description: Configuration is the plugin defined
+                                      configuration for the artifact driver plugin
+                                    type: string
+                                  connectionTimeoutSeconds:
+                                    description: ConnectionTimeoutSeconds is the timeout
+                                      for the artifact driver connection, 5 seconds
+                                      if not set
+                                    format: int32
+                                    type: integer
+                                  key:
+                                    description: Key is the path in the artifact repository
+                                      where the artifact resides
+                                    type: string
+                                  name:
+                                    description: Name is the name of the artifact
+                                      driver plugin
+                                    type: string
+                                required:
+                                - configuration
+                                - key
+                                - name
+                                type: object
                               raw:
                                 description: Raw contains raw artifact location details
                                 properties:
@@ -5901,6 +5954,30 @@ spec:
                             type: boolean
                         required:
                         - key
+                        type: object
+                      plugin:
+                        description: Plugin contains plugin artifact location details
+                        properties:
+                          configuration:
+                            description: Configuration is the plugin defined configuration
+                              for the artifact driver plugin
+                            type: string
+                          connectionTimeoutSeconds:
+                            description: ConnectionTimeoutSeconds is the timeout for
+                              the artifact driver connection, 5 seconds if not set
+                            format: int32
+                            type: integer
+                          key:
+                            description: Key is the path in the artifact repository
+                              where the artifact resides
+                            type: string
+                          name:
+                            description: Name is the name of the artifact driver plugin
+                            type: string
+                        required:
+                        - configuration
+                        - key
+                        - name
                         type: object
                       raw:
                         description: Raw contains raw artifact location details
@@ -9995,6 +10072,34 @@ spec:
                                         description: Path is the container path to
                                           the artifact
                                         type: string
+                                      plugin:
+                                        description: Plugin contains plugin artifact
+                                          location details
+                                        properties:
+                                          configuration:
+                                            description: Configuration is the plugin
+                                              defined configuration for the artifact
+                                              driver plugin
+                                            type: string
+                                          connectionTimeoutSeconds:
+                                            description: ConnectionTimeoutSeconds
+                                              is the timeout for the artifact driver
+                                              connection, 5 seconds if not set
+                                            format: int32
+                                            type: integer
+                                          key:
+                                            description: Key is the path in the artifact
+                                              repository where the artifact resides
+                                            type: string
+                                          name:
+                                            description: Name is the name of the artifact
+                                              driver plugin
+                                            type: string
+                                        required:
+                                        - configuration
+                                        - key
+                                        - name
+                                        type: object
                                       raw:
                                         description: Raw contains raw artifact location
                                           details
@@ -11308,6 +11413,36 @@ spec:
                                               description: Path is the container path
                                                 to the artifact
                                               type: string
+                                            plugin:
+                                              description: Plugin contains plugin
+                                                artifact location details
+                                              properties:
+                                                configuration:
+                                                  description: Configuration is the
+                                                    plugin defined configuration for
+                                                    the artifact driver plugin
+                                                  type: string
+                                                connectionTimeoutSeconds:
+                                                  description: ConnectionTimeoutSeconds
+                                                    is the timeout for the artifact
+                                                    driver connection, 5 seconds if
+                                                    not set
+                                                  format: int32
+                                                  type: integer
+                                                key:
+                                                  description: Key is the path in
+                                                    the artifact repository where
+                                                    the artifact resides
+                                                  type: string
+                                                name:
+                                                  description: Name is the name of
+                                                    the artifact driver plugin
+                                                  type: string
+                                              required:
+                                              - configuration
+                                              - key
+                                              - name
+                                              type: object
                                             raw:
                                               description: Raw contains raw artifact
                                                 location details
@@ -12639,6 +12774,33 @@ spec:
                               path:
                                 description: Path is the container path to the artifact
                                 type: string
+                              plugin:
+                                description: Plugin contains plugin artifact location
+                                  details
+                                properties:
+                                  configuration:
+                                    description: Configuration is the plugin defined
+                                      configuration for the artifact driver plugin
+                                    type: string
+                                  connectionTimeoutSeconds:
+                                    description: ConnectionTimeoutSeconds is the timeout
+                                      for the artifact driver connection, 5 seconds
+                                      if not set
+                                    format: int32
+                                    type: integer
+                                  key:
+                                    description: Key is the path in the artifact repository
+                                      where the artifact resides
+                                    type: string
+                                  name:
+                                    description: Name is the name of the artifact
+                                      driver plugin
+                                    type: string
+                                required:
+                                - configuration
+                                - key
+                                - name
+                                type: object
                               raw:
                                 description: Raw contains raw artifact location details
                                 properties:
@@ -15270,6 +15432,33 @@ spec:
                             path:
                               description: Path is the container path to the artifact
                               type: string
+                            plugin:
+                              description: Plugin contains plugin artifact location
+                                details
+                              properties:
+                                configuration:
+                                  description: Configuration is the plugin defined
+                                    configuration for the artifact driver plugin
+                                  type: string
+                                connectionTimeoutSeconds:
+                                  description: ConnectionTimeoutSeconds is the timeout
+                                    for the artifact driver connection, 5 seconds
+                                    if not set
+                                  format: int32
+                                  type: integer
+                                key:
+                                  description: Key is the path in the artifact repository
+                                    where the artifact resides
+                                  type: string
+                                name:
+                                  description: Name is the name of the artifact driver
+                                    plugin
+                                  type: string
+                              required:
+                              - configuration
+                              - key
+                              - name
+                              type: object
                             raw:
                               description: Raw contains raw artifact location details
                               properties:
@@ -16591,6 +16780,33 @@ spec:
                             path:
                               description: Path is the container path to the artifact
                               type: string
+                            plugin:
+                              description: Plugin contains plugin artifact location
+                                details
+                              properties:
+                                configuration:
+                                  description: Configuration is the plugin defined
+                                    configuration for the artifact driver plugin
+                                  type: string
+                                connectionTimeoutSeconds:
+                                  description: ConnectionTimeoutSeconds is the timeout
+                                    for the artifact driver connection, 5 seconds
+                                    if not set
+                                  format: int32
+                                  type: integer
+                                key:
+                                  description: Key is the path in the artifact repository
+                                    where the artifact resides
+                                  type: string
+                                name:
+                                  description: Name is the name of the artifact driver
+                                    plugin
+                                  type: string
+                              required:
+                              - configuration
+                              - key
+                              - name
+                              type: object
                             raw:
                               description: Raw contains raw artifact location details
                               properties:
@@ -17810,6 +18026,33 @@ spec:
                               path:
                                 description: Path is the container path to the artifact
                                 type: string
+                              plugin:
+                                description: Plugin contains plugin artifact location
+                                  details
+                                properties:
+                                  configuration:
+                                    description: Configuration is the plugin defined
+                                      configuration for the artifact driver plugin
+                                    type: string
+                                  connectionTimeoutSeconds:
+                                    description: ConnectionTimeoutSeconds is the timeout
+                                      for the artifact driver connection, 5 seconds
+                                      if not set
+                                    format: int32
+                                    type: integer
+                                  key:
+                                    description: Key is the path in the artifact repository
+                                      where the artifact resides
+                                    type: string
+                                  name:
+                                    description: Name is the name of the artifact
+                                      driver plugin
+                                    type: string
+                                required:
+                                - configuration
+                                - key
+                                - name
+                                type: object
                               raw:
                                 description: Raw contains raw artifact location details
                                 properties:
@@ -22133,6 +22376,34 @@ spec:
                                       description: Path is the container path to the
                                         artifact
                                       type: string
+                                    plugin:
+                                      description: Plugin contains plugin artifact
+                                        location details
+                                      properties:
+                                        configuration:
+                                          description: Configuration is the plugin
+                                            defined configuration for the artifact
+                                            driver plugin
+                                          type: string
+                                        connectionTimeoutSeconds:
+                                          description: ConnectionTimeoutSeconds is
+                                            the timeout for the artifact driver connection,
+                                            5 seconds if not set
+                                          format: int32
+                                          type: integer
+                                        key:
+                                          description: Key is the path in the artifact
+                                            repository where the artifact resides
+                                          type: string
+                                        name:
+                                          description: Name is the name of the artifact
+                                            driver plugin
+                                          type: string
+                                      required:
+                                      - configuration
+                                      - key
+                                      - name
+                                      type: object
                                     raw:
                                       description: Raw contains raw artifact location
                                         details
@@ -23405,6 +23676,36 @@ spec:
                                             description: Path is the container path
                                               to the artifact
                                             type: string
+                                          plugin:
+                                            description: Plugin contains plugin artifact
+                                              location details
+                                            properties:
+                                              configuration:
+                                                description: Configuration is the
+                                                  plugin defined configuration for
+                                                  the artifact driver plugin
+                                                type: string
+                                              connectionTimeoutSeconds:
+                                                description: ConnectionTimeoutSeconds
+                                                  is the timeout for the artifact
+                                                  driver connection, 5 seconds if
+                                                  not set
+                                                format: int32
+                                                type: integer
+                                              key:
+                                                description: Key is the path in the
+                                                  artifact repository where the artifact
+                                                  resides
+                                                type: string
+                                              name:
+                                                description: Name is the name of the
+                                                  artifact driver plugin
+                                                type: string
+                                            required:
+                                            - configuration
+                                            - key
+                                            - name
+                                            type: object
                                           raw:
                                             description: Raw contains raw artifact
                                               location details
@@ -27550,6 +27851,32 @@ spec:
                           required:
                           - key
                           type: object
+                        plugin:
+                          description: Plugin contains plugin artifact location details
+                          properties:
+                            configuration:
+                              description: Configuration is the plugin defined configuration
+                                for the artifact driver plugin
+                              type: string
+                            connectionTimeoutSeconds:
+                              description: ConnectionTimeoutSeconds is the timeout
+                                for the artifact driver connection, 5 seconds if not
+                                set
+                              format: int32
+                              type: integer
+                            key:
+                              description: Key is the path in the artifact repository
+                                where the artifact resides
+                              type: string
+                            name:
+                              description: Name is the name of the artifact driver
+                                plugin
+                              type: string
+                          required:
+                          - configuration
+                          - key
+                          - name
+                          type: object
                         raw:
                           description: Raw contains raw artifact location details
                           properties:
@@ -31652,6 +31979,35 @@ spec:
                                           description: Path is the container path
                                             to the artifact
                                           type: string
+                                        plugin:
+                                          description: Plugin contains plugin artifact
+                                            location details
+                                          properties:
+                                            configuration:
+                                              description: Configuration is the plugin
+                                                defined configuration for the artifact
+                                                driver plugin
+                                              type: string
+                                            connectionTimeoutSeconds:
+                                              description: ConnectionTimeoutSeconds
+                                                is the timeout for the artifact driver
+                                                connection, 5 seconds if not set
+                                              format: int32
+                                              type: integer
+                                            key:
+                                              description: Key is the path in the
+                                                artifact repository where the artifact
+                                                resides
+                                              type: string
+                                            name:
+                                              description: Name is the name of the
+                                                artifact driver plugin
+                                              type: string
+                                          required:
+                                          - configuration
+                                          - key
+                                          - name
+                                          type: object
                                         raw:
                                           description: Raw contains raw artifact location
                                             details
@@ -32990,6 +33346,36 @@ spec:
                                                 description: Path is the container
                                                   path to the artifact
                                                 type: string
+                                              plugin:
+                                                description: Plugin contains plugin
+                                                  artifact location details
+                                                properties:
+                                                  configuration:
+                                                    description: Configuration is
+                                                      the plugin defined configuration
+                                                      for the artifact driver plugin
+                                                    type: string
+                                                  connectionTimeoutSeconds:
+                                                    description: ConnectionTimeoutSeconds
+                                                      is the timeout for the artifact
+                                                      driver connection, 5 seconds
+                                                      if not set
+                                                    format: int32
+                                                    type: integer
+                                                  key:
+                                                    description: Key is the path in
+                                                      the artifact repository where
+                                                      the artifact resides
+                                                    type: string
+                                                  name:
+                                                    description: Name is the name
+                                                      of the artifact driver plugin
+                                                    type: string
+                                                required:
+                                                - configuration
+                                                - key
+                                                - name
+                                                type: object
                                               raw:
                                                 description: Raw contains raw artifact
                                                   location details
@@ -34334,6 +34720,33 @@ spec:
                                 path:
                                   description: Path is the container path to the artifact
                                   type: string
+                                plugin:
+                                  description: Plugin contains plugin artifact location
+                                    details
+                                  properties:
+                                    configuration:
+                                      description: Configuration is the plugin defined
+                                        configuration for the artifact driver plugin
+                                      type: string
+                                    connectionTimeoutSeconds:
+                                      description: ConnectionTimeoutSeconds is the
+                                        timeout for the artifact driver connection,
+                                        5 seconds if not set
+                                      format: int32
+                                      type: integer
+                                    key:
+                                      description: Key is the path in the artifact
+                                        repository where the artifact resides
+                                      type: string
+                                    name:
+                                      description: Name is the name of the artifact
+                                        driver plugin
+                                      type: string
+                                  required:
+                                  - configuration
+                                  - key
+                                  - name
+                                  type: object
                                 raw:
                                   description: Raw contains raw artifact location
                                     details
@@ -36976,6 +37389,33 @@ spec:
                               path:
                                 description: Path is the container path to the artifact
                                 type: string
+                              plugin:
+                                description: Plugin contains plugin artifact location
+                                  details
+                                properties:
+                                  configuration:
+                                    description: Configuration is the plugin defined
+                                      configuration for the artifact driver plugin
+                                    type: string
+                                  connectionTimeoutSeconds:
+                                    description: ConnectionTimeoutSeconds is the timeout
+                                      for the artifact driver connection, 5 seconds
+                                      if not set
+                                    format: int32
+                                    type: integer
+                                  key:
+                                    description: Key is the path in the artifact repository
+                                      where the artifact resides
+                                    type: string
+                                  name:
+                                    description: Name is the name of the artifact
+                                      driver plugin
+                                    type: string
+                                required:
+                                - configuration
+                                - key
+                                - name
+                                type: object
                               raw:
                                 description: Raw contains raw artifact location details
                                 properties:
@@ -38306,6 +38746,33 @@ spec:
                               path:
                                 description: Path is the container path to the artifact
                                 type: string
+                              plugin:
+                                description: Plugin contains plugin artifact location
+                                  details
+                                properties:
+                                  configuration:
+                                    description: Configuration is the plugin defined
+                                      configuration for the artifact driver plugin
+                                    type: string
+                                  connectionTimeoutSeconds:
+                                    description: ConnectionTimeoutSeconds is the timeout
+                                      for the artifact driver connection, 5 seconds
+                                      if not set
+                                    format: int32
+                                    type: integer
+                                  key:
+                                    description: Key is the path in the artifact repository
+                                      where the artifact resides
+                                    type: string
+                                  name:
+                                    description: Name is the name of the artifact
+                                      driver plugin
+                                    type: string
+                                required:
+                                - configuration
+                                - key
+                                - name
+                                type: object
                               raw:
                                 description: Raw contains raw artifact location details
                                 properties:
@@ -39536,6 +40003,33 @@ spec:
                                 path:
                                   description: Path is the container path to the artifact
                                   type: string
+                                plugin:
+                                  description: Plugin contains plugin artifact location
+                                    details
+                                  properties:
+                                    configuration:
+                                      description: Configuration is the plugin defined
+                                        configuration for the artifact driver plugin
+                                      type: string
+                                    connectionTimeoutSeconds:
+                                      description: ConnectionTimeoutSeconds is the
+                                        timeout for the artifact driver connection,
+                                        5 seconds if not set
+                                      format: int32
+                                      type: integer
+                                    key:
+                                      description: Key is the path in the artifact
+                                        repository where the artifact resides
+                                      type: string
+                                    name:
+                                      description: Name is the name of the artifact
+                                        driver plugin
+                                      type: string
+                                  required:
+                                  - configuration
+                                  - key
+                                  - name
+                                  type: object
                                 raw:
                                   description: Raw contains raw artifact location
                                     details
@@ -43869,6 +44363,34 @@ spec:
                                         description: Path is the container path to
                                           the artifact
                                         type: string
+                                      plugin:
+                                        description: Plugin contains plugin artifact
+                                          location details
+                                        properties:
+                                          configuration:
+                                            description: Configuration is the plugin
+                                              defined configuration for the artifact
+                                              driver plugin
+                                            type: string
+                                          connectionTimeoutSeconds:
+                                            description: ConnectionTimeoutSeconds
+                                              is the timeout for the artifact driver
+                                              connection, 5 seconds if not set
+                                            format: int32
+                                            type: integer
+                                          key:
+                                            description: Key is the path in the artifact
+                                              repository where the artifact resides
+                                            type: string
+                                          name:
+                                            description: Name is the name of the artifact
+                                              driver plugin
+                                            type: string
+                                        required:
+                                        - configuration
+                                        - key
+                                        - name
+                                        type: object
                                       raw:
                                         description: Raw contains raw artifact location
                                           details
@@ -45172,6 +45694,36 @@ spec:
                                               description: Path is the container path
                                                 to the artifact
                                               type: string
+                                            plugin:
+                                              description: Plugin contains plugin
+                                                artifact location details
+                                              properties:
+                                                configuration:
+                                                  description: Configuration is the
+                                                    plugin defined configuration for
+                                                    the artifact driver plugin
+                                                  type: string
+                                                connectionTimeoutSeconds:
+                                                  description: ConnectionTimeoutSeconds
+                                                    is the timeout for the artifact
+                                                    driver connection, 5 seconds if
+                                                    not set
+                                                  format: int32
+                                                  type: integer
+                                                key:
+                                                  description: Key is the path in
+                                                    the artifact repository where
+                                                    the artifact resides
+                                                  type: string
+                                                name:
+                                                  description: Name is the name of
+                                                    the artifact driver plugin
+                                                  type: string
+                                              required:
+                                              - configuration
+                                              - key
+                                              - name
+                                              type: object
                                             raw:
                                               description: Raw contains raw artifact
                                                 location details

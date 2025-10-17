@@ -8380,6 +8380,10 @@
           "description": "Path is the container path to the artifact",
           "type": "string"
         },
+        "plugin": {
+          "description": "Plugin contains plugin artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact"
+        },
         "raw": {
           "description": "Raw contains raw artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
@@ -8451,6 +8455,10 @@
         "oss": {
           "description": "OSS contains OSS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact"
+        },
+        "plugin": {
+          "description": "Plugin contains plugin artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact"
         },
         "raw": {
           "description": "Raw contains raw artifact location details",
@@ -8541,6 +8549,10 @@
           "description": "Path is the container path to the artifact",
           "type": "string"
         },
+        "plugin": {
+          "description": "Plugin contains plugin artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact"
+        },
         "raw": {
           "description": "Raw contains raw artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
@@ -8586,6 +8598,10 @@
         "oss": {
           "description": "OSS stores artifact in a OSS-compliant object store",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifactRepository"
+        },
+        "plugin": {
+          "description": "Plugin stores artifact in a plugin-specific artifact repository",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifactRepository"
         },
         "s3": {
           "description": "S3 stores artifact in a S3-compliant object store",
@@ -10643,6 +10659,52 @@
     "io.argoproj.workflow.v1alpha1.Plugin": {
       "description": "Plugin is an Object with exactly one key",
       "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.PluginArtifact": {
+      "description": "PluginArtifact is the location of a plugin artifact",
+      "type": "object",
+      "required": [
+        "name",
+        "configuration",
+        "key"
+      ],
+      "properties": {
+        "configuration": {
+          "description": "Configuration is the plugin defined configuration for the artifact driver plugin",
+          "type": "string"
+        },
+        "connectionTimeoutSeconds": {
+          "description": "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set",
+          "type": "integer"
+        },
+        "key": {
+          "description": "Key is the path in the artifact repository where the artifact resides",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the name of the artifact driver plugin",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.PluginArtifactRepository": {
+      "description": "PluginArtifactRepository defines the controller configuration for a plugin artifact repository",
+      "type": "object",
+      "required": [
+        "name",
+        "configuration"
+      ],
+      "properties": {
+        "configuration": {
+          "type": "string"
+        },
+        "keyFormat": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",

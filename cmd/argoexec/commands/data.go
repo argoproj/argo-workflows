@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
@@ -26,7 +27,7 @@ func NewDataCommand() *cobra.Command {
 
 // nolint: contextcheck
 func execData(ctx context.Context) error {
-	wfExecutor := initExecutor(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	// nolint:contextcheck
