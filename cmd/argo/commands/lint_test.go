@@ -1,10 +1,14 @@
 package commands
 
 import (
+	"context"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -293,4 +297,90 @@ spec:
 		assert.False(t, fatal, "should not have exited")
 	})
 
+	t.Run("linting an invalid YAML file with offline mode", func(t *testing.T) {
+		invalidYAMLPath := filepath.Join(subdir, "invalid-yaml.yaml")
+		err = os.WriteFile(invalidYAMLPath, []byte(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+	 generateName: hello-world-
+	 labels:
+	   workflows.argoproj.io/archive-strategy: "false"
+	 annotations:
+	   workflows.argoproj.io/description: |
+	     This is a simple hello world example.
+spec:
+	 entrypoint: hello-world
+	 templates:
+	 - name: hello-world
+	   container:
+	     image: busybox
+	command: [echo]
+	args: ["hello world"]
+`), 0644)
+		require.NoError(t, err)
+
+		var hook testLogHook
+		logrus.AddHook(&hook)
+		defer func() {
+			logrus.StandardLogger().Hooks = make(logrus.LevelHooks)
+		}()
+
+		// Set debug level to ensure we capture all log entries
+		previousLevel := logrus.GetLevel()
+		logrus.SetLevel(logrus.DebugLevel)
+		defer logrus.SetLevel(previousLevel)
+
+		originalExitFunc := logrus.StandardLogger().ExitFunc
+		var fatal bool
+		logrus.StandardLogger().ExitFunc = func(int) {
+			// This test may exit with error code as designed
+			fatal = true
+		}
+		defer func() { logrus.StandardLogger().ExitFunc = originalExitFunc }()
+
+		// Temporarily redirect standard logger output to prevent test failure messages
+		oldOut := logrus.StandardLogger().Out
+		logrus.StandardLogger().Out = io.Discard
+		defer func() { logrus.StandardLogger().Out = oldOut }()
+
+		err = runLint(context.Background(), []string{invalidYAMLPath}, true, nil, "pretty", true)
+		require.NoError(t, err)
+
+		yamlErrCount := 0
+		debugCount := 0
+
+		// Count both error messages and debug messages for "Skipping validation"
+		for _, entry := range hook.entries {
+			if entry.Level == logrus.ErrorLevel {
+				if strings.Contains(entry.Message, "yaml file at index 0 is not valid") {
+					yamlErrCount++
+				}
+			}
+			if entry.Level == logrus.DebugLevel || entry.Level == logrus.InfoLevel {
+				if strings.Contains(entry.Message, "Skipping validation error in offline client") {
+					debugCount++
+				}
+			}
+		}
+
+		assert.Equal(t, 0, yamlErrCount, "Error logs should not appear for parse errors in offline mode")
+		assert.GreaterOrEqual(t, debugCount, 1, "Debug logs for skipping validation errors should appear")
+
+		assert.True(t, fatal, "Should have exited with error code for parse error")
+	})
+}
+
+// testLogHook is a simple hook to capture log entries
+type testLogHook struct {
+	entries []logrus.Entry
+}
+
+func (h *testLogHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *testLogHook) Fire(entry *logrus.Entry) error {
+	h.entries = append(h.entries, *entry)
+	return nil
 }
