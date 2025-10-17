@@ -2607,12 +2607,7 @@ func (n NodeStatus) GetDuration() time.Duration {
 }
 
 func (n NodeStatus) HasChild(childID string) bool {
-	for _, nodeID := range n.Children {
-		if childID == nodeID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(n.Children, childID)
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -3215,12 +3210,7 @@ func (tmpl *Template) IsLeaf() bool {
 }
 
 func (tmpl *Template) IsMainContainerName(containerName string) bool {
-	for _, c := range tmpl.GetMainContainerNames() {
-		if c == containerName {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(tmpl.GetMainContainerNames(), containerName)
 }
 
 func (tmpl *Template) GetMainContainerNames() []string {

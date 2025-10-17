@@ -3583,11 +3583,9 @@ func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, chil
 	if err != nil {
 		woc.log.WithPanic().WithField("nodeID", parentID).Error(ctx, "was unable to obtain node for nodeID")
 	}
-	for _, nodeID := range node.Children {
-		if childID == nodeID {
-			// already exists
-			return
-		}
+	if slices.Contains(node.Children, childID) {
+		// already exists
+		return
 	}
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes.Set(ctx, parentID, *node)
