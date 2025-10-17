@@ -4,5 +4,5 @@ Component: General
 Issues: 5862
 
 Artifact Drivers can now be added via a plugin mechanism.
-You can write a GRPC server which acts as an artifact driver to upload and download artifacts to a repository, and supply that as a docker image.
+You can write a GRPC server which acts as an artifact driver to upload and download artifacts to a repository, and supply that as a container image.
 Argo workflows can then use that as a driver.
