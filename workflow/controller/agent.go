@@ -126,7 +126,13 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
-	pluginSidecars, pluginVolumes, err := woc.getExecutorPlugins(ctx)
+	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token volumes: %w", err)
+	}
+
+	pluginSidecars, pluginVolumes, err := woc.getExecutorPlugins(ctx, tokenVolumeMount)
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +151,6 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Name:  common.EnvAgentTaskWorkers,
 			Value: taskWorkers,
 		})
-	}
-
-	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
 	podVolumes := append(
@@ -264,7 +264,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, error) {
+func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context, defaultSATokenMount *apiv1.VolumeMount) ([]apiv1.Container, []apiv1.Volume, error) {
 	var sidecars []apiv1.Container
 	var volumes []apiv1.Volume
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
@@ -281,6 +281,9 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 				// only mount the token for this plugin, not others
 				SubPath: c.Name,
 			})
+			if s.AutomountServiceAccountToken && s.AutomountWorkflowServiceAccountToken {
+				return nil, nil, fmt.Errorf("the flags AutomountWorkflowServiceAccountToken and AutomountServiceAccountToken cannot be used together. Check the parameters for plugin %s", plug.Name)
+			}
 			if s.AutomountServiceAccountToken {
 				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
 				if err != nil {
@@ -288,6 +291,9 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 				}
 				volumes = append(volumes, *volume)
 				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+			}
+			if s.AutomountWorkflowServiceAccountToken {
+				c.VolumeMounts = append(c.VolumeMounts, *defaultSATokenMount)
 			}
 			sidecars = append(sidecars, *c)
 		}
