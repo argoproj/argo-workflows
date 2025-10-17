@@ -57,6 +57,7 @@ func isTransientErr(err error) bool {
 		apierr.IsTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
+		isTransientPodRejectedErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
 		isTransientSqbErr(err)
@@ -95,6 +96,11 @@ func isTransientEtcdErr(err error) bool {
 		return true
 	}
 	return false
+}
+
+func isTransientPodRejectedErr(err error) bool {
+	// This type of eviction happens before Pod could ever start
+	return strings.Contains(err.Error(), "Pod was rejected:")
 }
 
 func isTransientNetworkErr(err error) bool {
