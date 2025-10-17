@@ -1142,6 +1142,9 @@ message NodeStatus {
 
   // TaskResultSynced is used to determine if the node's output has been received
   optional bool taskResultSynced = 28;
+
+  // IsParent indicates whether this node has created children workflows
+  optional bool isParent = 29;
 }
 
 // NodeSynchronizationStatus stores the status of a node
