@@ -883,6 +883,12 @@ message Inputs {
   // +patchStrategy=merge
   // +patchMergeKey=name
   repeated Artifact artifacts = 2;
+
+  // ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config for input artifacts.
+  optional ArtifactRepositoryRef artifactRepositoryRef = 3;
+
+  // Location in which all files related to the input will be stored.
+  optional ArtifactLocation artifactLocation = 4;
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -1252,6 +1258,12 @@ message Outputs {
 
   // ExitCode holds the exit code of a script template
   optional string exitCode = 4;
+
+  // ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config for output artifacts.
+  optional ArtifactRepositoryRef artifactRepositoryRef = 5;
+
+  // Location in which all files related to the output will be stored.
+  optional ArtifactLocation artifactLocation = 6;
 }
 
 // swagger:ignore
