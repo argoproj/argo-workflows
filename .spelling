@@ -85,7 +85,6 @@ KubectlExec
 Kubeflow
 Kustomize
 LDFlags
-LegacyValidation
 Lifecycle-Hook
 LitmusChaos
 MLOps
