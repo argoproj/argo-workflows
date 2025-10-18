@@ -39,6 +39,11 @@ attributes:
   - name: LogLevel
     displayName: level
     description: The log level of the message
+  - name: MutexName
+    displayName: name
+    description: The name of the mutex
+  - name: MutexNamespace
+    description: The namespace of the mutex
   - name: NodePhase
     description: "The phase that the pod's node was in"
   - name: PodNamespace
@@ -63,6 +68,15 @@ attributes:
   - name: RequestVerb
     displayName: verb
     description: "The verb of the request, such as `Get` or `List`"
+  - name: SemaphoreConfigMapName
+    displayName: configmap_name
+    description: The name of the ConfigMap used to store the semaphore state
+  - name: SemaphoreName
+    displayName: name
+    description: The name of the semaphore
+  - name: SemaphoreNamespace
+    displayName: namespace
+    description: The namespace of the semaphore
   - name: TemplateCluster
     displayName: cluster_scope
     description: A boolean set true if this is a ClusterWorkflowTemplate
@@ -176,6 +190,13 @@ metrics:
     attributes:
       - name: LogLevel
     unit: "{message}"
+    type: Int64Counter
+  - name: MutexTotal
+    description: A counter of the number of mutexes
+    attributes:
+      - name: MutexName
+      - name: MutexNamespace
+    unit: "{mutex}"
     type: Int64Counter
   - name: OperationDurationSeconds
     description: A histogram of durations of operations
@@ -339,6 +360,14 @@ metrics:
       - name: QueueName
     unit: "{item}"
     type: Float64ObservableGauge
+  - name: SemaphoreTotal
+    description: A counter of the number of semaphores
+    attributes:
+      - name: SemaphoreConfigMapName
+      - name: SemaphoreName
+      - name: SemaphoreNamespace
+    unit: "{semaphore}"
+    type: Int64Counter
   - name: TotalCount
     description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
     attributes:
