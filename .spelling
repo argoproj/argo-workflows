@@ -94,6 +94,7 @@ MinIO
 Minikube
 MySQL
 Nagal
+NameValidationScheme
 Nano
 Nginx
 Node.JS.
@@ -128,6 +129,8 @@ Traefik
 Triaging
 TripAdvisor
 UI
+UTF-8
+UTF8Validation
 VSCode
 Valasek
 Webhooks
