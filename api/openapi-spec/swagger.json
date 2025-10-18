@@ -2377,17 +2377,17 @@
           },
           {
             "enum": [
-              "CONFIG_MAP",
+              "CONFIGMAP",
               "DATABASE"
             ],
             "type": "string",
-            "default": "CONFIG_MAP",
+            "default": "CONFIGMAP",
             "name": "type",
             "in": "query"
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "cmName",
             "in": "query"
           }
         ],
@@ -2468,17 +2468,17 @@
           },
           {
             "enum": [
-              "CONFIG_MAP",
+              "CONFIGMAP",
               "DATABASE"
             ],
             "type": "string",
-            "default": "CONFIG_MAP",
+            "default": "CONFIGMAP",
             "name": "type",
             "in": "query"
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "cmName",
             "in": "query"
           }
         ],
@@ -8675,7 +8675,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.AzureArtifact": {
-      "description": "AzureArtifact is the location of a an Azure Storage artifact",
+      "description": "AzureArtifact is the location of an Azure Storage artifact",
       "type": "object",
       "required": [
         "endpoint",
@@ -9615,7 +9615,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
-      "description": "GitArtifact is the location of an git artifact",
+      "description": "GitArtifact is the location of a git artifact",
       "type": "object",
       "required": [
         "repo"
@@ -15950,17 +15950,17 @@
     "sync.CreateSyncLimitRequest": {
       "type": "object",
       "properties": {
+        "cmName": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "limit": {
+          "type": "integer"
         },
         "namespace": {
           "type": "string"
-        },
-        "sizeLimit": {
-          "type": "integer"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"
@@ -15972,26 +15972,26 @@
     },
     "sync.SyncConfigType": {
       "type": "string",
-      "default": "CONFIG_MAP",
+      "default": "CONFIGMAP",
       "enum": [
-        "CONFIG_MAP",
+        "CONFIGMAP",
         "DATABASE"
       ]
     },
     "sync.SyncLimitResponse": {
       "type": "object",
       "properties": {
+        "cmName": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "limit": {
+          "type": "integer"
         },
         "namespace": {
           "type": "string"
-        },
-        "sizeLimit": {
-          "type": "integer"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"
@@ -16001,17 +16001,17 @@
     "sync.UpdateSyncLimitRequest": {
       "type": "object",
       "properties": {
+        "cmName": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "limit": {
+          "type": "integer"
         },
         "namespace": {
           "type": "string"
-        },
-        "sizeLimit": {
-          "type": "integer"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"

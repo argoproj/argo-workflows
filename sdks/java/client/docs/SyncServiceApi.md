@@ -82,7 +82,7 @@ Name | Type | Description  | Notes
 
 <a name="syncServiceDeleteSyncLimit"></a>
 # **syncServiceDeleteSyncLimit**
-> Object syncServiceDeleteSyncLimit(namespace, key, type, name)
+> Object syncServiceDeleteSyncLimit(namespace, key, type, cmName)
 
 
 
@@ -110,10 +110,10 @@ public class Example {
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
     String key = "key_example"; // String | 
-    String type = "CONFIG_MAP"; // String | 
-    String name = "name_example"; // String | 
+    String type = "CONFIGMAP"; // String | 
+    String cmName = "cmName_example"; // String | 
     try {
-      Object result = apiInstance.syncServiceDeleteSyncLimit(namespace, key, type, name);
+      Object result = apiInstance.syncServiceDeleteSyncLimit(namespace, key, type, cmName);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling SyncServiceApi#syncServiceDeleteSyncLimit");
@@ -132,8 +132,8 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
  **key** | **String**|  |
- **type** | **String**|  | [optional] [default to CONFIG_MAP] [enum: CONFIG_MAP, DATABASE]
- **name** | **String**|  | [optional]
+ **type** | **String**|  | [optional] [default to CONFIGMAP] [enum: CONFIGMAP, DATABASE]
+ **cmName** | **String**|  | [optional]
 
 ### Return type
 
@@ -156,7 +156,7 @@ Name | Type | Description  | Notes
 
 <a name="syncServiceGetSyncLimit"></a>
 # **syncServiceGetSyncLimit**
-> SyncSyncLimitResponse syncServiceGetSyncLimit(namespace, key, type, name)
+> SyncSyncLimitResponse syncServiceGetSyncLimit(namespace, key, type, cmName)
 
 
 
@@ -184,10 +184,10 @@ public class Example {
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
     String key = "key_example"; // String | 
-    String type = "CONFIG_MAP"; // String | 
-    String name = "name_example"; // String | 
+    String type = "CONFIGMAP"; // String | 
+    String cmName = "cmName_example"; // String | 
     try {
-      SyncSyncLimitResponse result = apiInstance.syncServiceGetSyncLimit(namespace, key, type, name);
+      SyncSyncLimitResponse result = apiInstance.syncServiceGetSyncLimit(namespace, key, type, cmName);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling SyncServiceApi#syncServiceGetSyncLimit");
@@ -206,8 +206,8 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
  **key** | **String**|  |
- **type** | **String**|  | [optional] [default to CONFIG_MAP] [enum: CONFIG_MAP, DATABASE]
- **name** | **String**|  | [optional]
+ **type** | **String**|  | [optional] [default to CONFIGMAP] [enum: CONFIGMAP, DATABASE]
+ **cmName** | **String**|  | [optional]
 
 ### Return type
 

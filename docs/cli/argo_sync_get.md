@@ -1,22 +1,29 @@
-## argo sync configmap get
+## argo sync get
 
-Get a configmap sync limit
+Get a sync limit
 
 ```
-argo sync configmap get [flags]
+argo sync get [flags]
 ```
 
 ### Examples
 
 ```
-argo sync configmap get my-cm --key my-key
+ 
+# Get a database sync limit
+	argo sync get my-key --type database
+		
+# Get a configmap sync limit
+	argo sync get my-key --type configmap --cm-name my-configmap
+
 ```
 
 ### Options
 
 ```
-  -h, --help         help for get
-      --key string   Key of the sync limit
+      --cm-name string   ConfigMap name (required if type is configmap)
+  -h, --help             help for get
+      --type string      Type of sync limit (database or configmap)
 ```
 
 ### Options inherited from parent commands
@@ -57,5 +64,5 @@ argo sync configmap get my-cm --key my-key
 
 ### SEE ALSO
 
-* [argo sync configmap](argo_sync_configmap.md)	 - manage configmap sync limits
+* [argo sync](argo_sync.md)	 - manage sync limits
 

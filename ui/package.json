@@ -34,9 +34,12 @@
         "react-dom": "^18.3.1",
         "react-markdown": "^8.0.7",
         "react-monaco-editor": "^0.50.1",
+        "react-router": "^4.3.1",
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
+        "rxjs": "^7.8.1",
         "superagent": "^10.2.3",
+        "xterm": "^4.19.0",
         "yaml": "^2.5.1"
     },
     "devDependencies": {

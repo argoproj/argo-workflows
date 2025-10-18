@@ -706,6 +706,12 @@ func (s *CLISuite) TestWorkflowLint() {
 			assert.Contains(t, output, "no linting errors found")
 		})
 	})
+	s.Run("LintFileEmptyTemplateSteps", func() {
+		s.Given().RunCli([]string{"lint", "smoke/empty-template-steps.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "no linting errors found")
+		})
+	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
@@ -716,6 +722,12 @@ func (s *CLISuite) TestWorkflowLint() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
 			assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
+		})
+	})
+	s.Run("LintFileMisreferenceTemplate", func() {
+		s.Given().RunCli([]string{"lint", "expectedfailures/misreference-template-name.yaml"}, func(t *testing.T, output string, err error) {
+			require.EqualError(t, err, "exit status 1")
+			assert.Contains(t, output, "templates.steps-with-misreference.steps[1].hello2 template name 'hell0' undefined")
 		})
 	})
 	s.Run("LintFileWithTemplate", func() {
@@ -1805,42 +1817,91 @@ func (s *CLISuite) TestArchive() {
 	})
 }
 
-func (s *CLISuite) TestSyncCLI() {
+func (s *CLISuite) TestConfigMapSyncCLI() {
 	s.Given().
-		RunCli([]string{"sync", "configmap", "create", "test-sync-configmap", "--key", "test-key", "--size-limit", "1000"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"sync", "create", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap", "--limit", "1000"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, output, "Configmap sync limit created")
-			assert.Contains(t, output, "key test-key")
-			assert.Contains(t, output, "size limit 1000")
+			assert.Contains(t, output, "Sync limit created")
+			assert.Contains(t, output, "Key: test-key")
+			assert.Contains(t, output, "Type: configmap")
+			assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+			assert.Contains(t, output, "Namespace: argo")
+			assert.Contains(t, output, "Limit: 1000")
 		})
 
 	s.Run("Get ConfigMap sync config", func() {
 		s.Given().
-			RunCli([]string{"sync", "configmap", "get", "test-sync-configmap", "--key", "test-key"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"sync", "get", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				assert.Contains(t, output, "Sync Configmap name: test-sync-configmap")
+				assert.Contains(t, output, "Key: test-key")
+				assert.Contains(t, output, "Type: configmap")
+				assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
 				assert.Contains(t, output, "Namespace: argo")
-				assert.Contains(t, output, "Size Limit: 1000")
+				assert.Contains(t, output, "Limit: 1000")
 			})
 	})
 
 	s.Run("Update ConfigMap sync configs", func() {
 		s.Given().
-			RunCli([]string{"sync", "configmap", "update", "test-sync-configmap", "--key", "test-key", "--size-limit", "2000"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"sync", "update", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap", "--limit", "2000"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				assert.Contains(t, output, "Updated sync limit for ConfigMap test-sync-configmap")
-				assert.Contains(t, output, "key test-key")
-				assert.Contains(t, output, "size limit 2000")
+				assert.Contains(t, output, "Key: test-key")
+				assert.Contains(t, output, "Type: configmap")
+				assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 2000")
 			})
 	})
 
 	s.Run("Delete ConfigMap sync config", func() {
 		s.Given().
-			RunCli([]string{"sync", "configmap", "delete", "test-sync-configmap", "--key", "test-key"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"sync", "delete", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				assert.Contains(t, output, "Deleted sync limit for ConfigMap test-sync-configmap")
-				assert.Contains(t, output, "argo namespace")
-				assert.Contains(t, output, "key test-key")
+				assert.Contains(t, output, "Sync limit deleted")
+			})
+	})
+
+}
+
+func (s *CLISuite) TestDBSyncCLI() {
+	s.Given().
+		RunCli([]string{"sync", "create", "test-db-limit-key", "--type", "database", "--limit", "1000"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Sync limit created")
+			assert.Contains(t, output, "Key: test-db-limit-key")
+			assert.Contains(t, output, "Type: database")
+			assert.Contains(t, output, "Namespace: argo")
+			assert.Contains(t, output, "Limit: 1000")
+		})
+
+	s.Run("Get Database sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "get", "test-db-limit-key", "--type", "database"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-db-limit-key")
+				assert.Contains(t, output, "Type: database")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 1000")
+			})
+	})
+
+	s.Run("Update Database sync configs", func() {
+		s.Given().
+			RunCli([]string{"sync", "update", "test-db-limit-key", "--type", "database", "--limit", "2000"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit updated")
+				assert.Contains(t, output, "Key: test-db-limit-key")
+				assert.Contains(t, output, "Type: database")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 2000")
+			})
+	})
+
+	s.Run("Delete Database sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "delete", "test-db-limit-key", "--type", "database"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit deleted")
 			})
 	})
 

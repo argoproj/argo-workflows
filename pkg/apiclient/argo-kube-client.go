@@ -204,6 +204,6 @@ func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() (clusterworkf
 	return &errorTranslatingWorkflowClusterTemplateServiceClient{&argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer(a.instanceIDService, a.cwfTmplStore, nil)}}, nil
 }
 
-func (a *argoKubeClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
-	return &errorTranslatingArgoKubeSyncServiceClient{&argoKubeSyncServiceClient{syncserver.NewSyncServer()}}, nil
+func (a *argoKubeClient) NewSyncServiceClient(ctx context.Context) (syncpkg.SyncServiceClient, error) {
+	return &errorTranslatingArgoKubeSyncServiceClient{&argoKubeSyncServiceClient{syncserver.NewSyncServer(ctx, nil, "", nil)}}, nil
 }

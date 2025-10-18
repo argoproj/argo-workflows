@@ -20,11 +20,11 @@ import (
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	bytes, err := yaml.Marshal(wfc.Config)
+	_, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
-	logger.WithField("config", string(bytes)).Info(ctx, "Configuration")
+	logger.Info(ctx, "Configuration updated")
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive

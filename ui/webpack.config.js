@@ -1,4 +1,4 @@
-'use strict;' /* eslint-env node */ /* eslint-disable @typescript-eslint/no-var-requires */;
+'use strict;' /* eslint-env node */
 
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -7,6 +7,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
 const isProd = process.env.NODE_ENV === 'production';
+const base = process.env.ARGO_BASE_HREF || '/';
 let proxyTarget = '';
 if (!isProd) {
     const isSecure = process.env.ARGO_SECURE === 'true';
@@ -22,7 +23,8 @@ const config = {
     },
     output: {
         filename: '[name].[contenthash].js',
-        path: __dirname + '/dist/app'
+        path: __dirname + '/dist/app',
+        publicPath: base,
     },
 
     devtool: isProd ? 'source-map' : 'eval',
@@ -70,7 +72,11 @@ const config = {
                 version: process.env.VERSION || 'latest'
             })
         }),
-        new HtmlWebpackPlugin({template: 'src/index.html'}),
+        new HtmlWebpackPlugin({
+            template: 'src/index.html',
+            // Inject <base href="..."> tag into <head> to support non-root base using "--base-href" or "ARGO_BASE_HREF"
+            base,
+        }),
         new CopyWebpackPlugin({
             patterns: [
                 {
@@ -107,17 +113,25 @@ const config = {
         server: process.env.ARGO_UI_SECURE === 'true' ? 'https' : 'http',
         // this needs to be disabled to allow EventSource to work
         compress: false,
+        // Docs: https://github.com/bripkens/connect-history-api-fallback
         historyApiFallback: {
-            disableDotRule: true
+            disableDotRule: true,
+            // Needed to fix 404s: https://github.com/webpack/webpack-dev-server/issues/1457#issuecomment-415527819
+            index: base
         },
         headers: {
             'X-Frame-Options': 'SAMEORIGIN'
         },
         proxy: [
             {
-                context: ['/api/v1', '/artifact-files', '/artifacts', '/input-artifacts', '/artifacts-by-uid', '/input-artifacts-by-uid', '/oauth2'],
+                // Proxy paths handled by the API server defined at https://github.com/argoproj/argo-workflows/blob/cb7ebd9393f3322abf455d906e39a3a976421b30/server/apiserver/argoserver.go#L413-L428
+                context: ['api/v1', 'artifact-files', 'artifacts', 'input-artifacts', 'artifacts-by-uid', 'input-artifacts-by-uid', 'oauth2']
+                    .map(path => `${base}${path}`),
                 target: proxyTarget,
                 secure: false,
+                // Rewrite the base href for non-root paths
+                // Docs: https://github.com/chimurai/http-proxy-middleware?tab=readme-ov-file#pathrewrite-objectfunction
+                pathRewrite: { [`^${base}`]: '' },
                 xfwd: true // add x-forwarded-* headers to simulate real-world reverse proxy servers
             }
         ]
