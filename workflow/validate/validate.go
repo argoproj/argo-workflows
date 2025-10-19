@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -574,6 +575,10 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(ctx, tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
+			if tmplRef != nil && strings.Contains(tmplRef.Template, "placeholder") {
+				// placeholder indicate this is a dynamic template, skip validation
+				return nil, nil
+			}
 			if tmplRef != nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "template reference %s.%s not found", tmplRef.Name, tmplRef.Template)
 			}
@@ -910,14 +915,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 				}
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 			}
-			valueSpecifiedInEnumList := false
-			for _, enum := range param.Enum {
-				if enum == *param.Value {
-					valueSpecifiedInEnumList = true
-					break
-				}
-			}
-			if !valueSpecifiedInEnumList {
+			if !slices.Contains(param.Enum, *param.Value) {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
 			}
 		}

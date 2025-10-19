@@ -144,7 +144,7 @@ when: "{{= cronworkflow.lastScheduledTime == nil || (now() - cronworkflow.lastSc
 ```
 
 This will schedule at the first 01:30 on a skip backwards change.
-The second will not run because of the `when` expression, which prevents this workflow running more often than once every 2 hours..
+The second will not run because of the `when` expression, which prevents this workflow running more often than once every 2 hours.
 
 ### Automatically Stopping a `CronWorkflow`
 

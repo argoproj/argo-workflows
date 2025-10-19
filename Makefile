@@ -97,6 +97,23 @@ endif
 ifeq ($(UI),true)
 TASKS                 := controller server ui
 endif
+
+# -- SSO options
+# Need to rewrite the SSO redirect URL referenced in ConfigMaps when UI_SECURE and/or BASE_HREF is set.
+# Can't use "kustomize" or "kubectl patch" because the SSO config is a YAML string in those ConfigMaps.
+SSO_REDIRECT_URL   := http
+ifeq ($(UI_SECURE),true)
+SSO_REDIRECT_URL   := https
+endif
+ifeq ($(BASE_HREF),)
+BASE_HREF          := /
+else
+# Ensure base URL has a single trailing/leading slash to match the logic in getIndexData() in server/static/static.go
+override BASE_HREF := /$(BASE_HREF:/%=%)
+override BASE_HREF := $(BASE_HREF:%/=%)/
+endif
+SSO_REDIRECT_URL   := $(SSO_REDIRECT_URL)://localhost:8080$(BASE_HREF)oauth2/callback
+
 # Which mode to run in:
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
@@ -157,7 +174,7 @@ TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
 print-variables: ## Print Makefile variables
 	@echo GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION)
 	@echo KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM)
-	@echo RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED)
+	@echo RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) BASE_HREF=$(BASE_HREF)
 
 override LDFLAGS += \
   -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
@@ -203,7 +220,8 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
-	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
+	pkg/apiclient/sync/sync.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
 GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md
 
@@ -359,6 +377,7 @@ swagger: \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
+	pkg/apiclient/sync/sync.swagger.json \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests \
 	api/openapi-spec/swagger.json \
@@ -483,6 +502,9 @@ pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) $
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
+pkg/apiclient/sync/sync.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/sync/sync.proto
+	$(call protoc,pkg/apiclient/sync/sync.proto)
+
 # generate other files for other CRDs
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(TOOL_CONTROLLER_GEN) $(TYPES) ./hack/manifests/crdgen.sh ./hack/manifests/crds.go
 	./hack/manifests/crdgen.sh
@@ -569,12 +591,10 @@ install: githooks ## Install Argo to the current Kubernetes cluster
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) \
 		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
 		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
+		| sed 's|http://localhost:8080/oauth2/callback|$(SSO_REDIRECT_URL)|' \
 		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-endif
-ifeq ($(UI_SECURE)$(PROFILE),truesso)
-	KUBE_NAMESPACE=$(KUBE_NAMESPACE) ./hack/update-sso-redirect-url.sh
 endif
 
 .PHONY: argosay
@@ -641,7 +661,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) ARGO_BASE_HREF=$(BASE_HREF) PROFILE=$(PROFILE) kit $(TASKS)
 endif
 
 .PHONY: wait

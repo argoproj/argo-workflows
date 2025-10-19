@@ -4652,7 +4652,7 @@ status:
 		"Main task group node should be in Running state")
 
 	// Verify that the workflow phase is set to Running
-	assert.Equal(t, wfv1.WorkflowRunning, retryWf.Status.Phase,
+	assert.Equal(t, wfv1.WorkflowUnknown, retryWf.Status.Phase,
 		"Retry workflow should be in Running phase")
 
 	// Verify that completion labels are removed

@@ -9,6 +9,7 @@ import (
 	"github.com/upper/db/v4"
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
 )
 
 type databaseSemaphore struct {
@@ -17,57 +18,14 @@ type databaseSemaphore struct {
 	shortDBKey   string
 	nextWorkflow NextWorkflow
 	logger       loggerFn
-	info         dbInfo
+	info         syncdb.DBInfo
+	queries      syncdb.SyncQueries
 	isMutex      bool
 }
 
-type limitRecord struct {
-	Name      string `db:"name"`
-	SizeLimit int    `db:"sizelimit"`
-}
-
-type stateRecord struct {
-	Name       string    `db:"name"`        // semaphore name identifier
-	Key        string    `db:"workflowkey"` // workflow key holding or waiting for the lock of the form <namespace>/<name>
-	Controller string    `db:"controller"`  // controller where the workflow is running
-	Held       bool      `db:"held"`
-	Priority   int32     `db:"priority"` // higher number = higher priority in queue
-	Time       time.Time `db:"time"`     // timestamp of creation or last update
-}
-
-type controllerHealthRecord struct {
-	Controller string    `db:"controller"` // controller where the workflow is running
-	Time       time.Time `db:"time"`       // timestamp of creation or last update
-}
-
-type lockRecord struct {
-	Name       string    `db:"name"`       // semaphore name identifier
-	Controller string    `db:"controller"` // controller where the workflow is running
-	Time       time.Time `db:"time"`       // timestamp of creation
-}
-
-const (
-	limitNameField = "name"
-	limitSizeField = "sizelimit"
-
-	stateNameField       = "name"
-	stateKeyField        = "workflowkey"
-	stateControllerField = "controller"
-	stateHeldField       = "held"
-	statePriorityField   = "priority"
-	stateTimeField       = "time"
-
-	controllerNameField = "controller"
-	controllerTimeField = "time"
-
-	lockNameField       = "name"
-	lockControllerField = "controller"
-	lockTimeField       = "time"
-)
-
 var _ semaphore = &databaseSemaphore{}
 
-func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWorkflow NextWorkflow, info dbInfo, syncLimitCacheTTL time.Duration) (*databaseSemaphore, error) {
+func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWorkflow NextWorkflow, info syncdb.DBInfo, syncLimitCacheTTL time.Duration) (*databaseSemaphore, error) {
 	logger := syncLogger{
 		name:     name,
 		lockType: lockTypeSemaphore,
@@ -79,6 +37,7 @@ func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWo
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 		info:         info,
+		queries:      syncdb.NewSyncQueries(info.Session, info.Config),
 		isMutex:      false,
 	}
 	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
@@ -104,12 +63,7 @@ func (s *databaseSemaphore) getName() string {
 func (s *databaseSemaphore) getLimitFromDB(ctx context.Context, _ string) (int, error) {
 	logger := s.logger(ctx)
 	// Update the limit from the database
-	limit := &limitRecord{}
-	err := s.info.session.SQL().
-		Select(limitSizeField).
-		From(s.info.config.limitTable).
-		Where(db.Cond{limitNameField: s.shortDBKey}).
-		One(limit)
+	limit, err := s.queries.GetSemaphoreLimit(ctx, s.shortDBKey)
 	if err != nil {
 		logger.WithField("key", s.shortDBKey).WithError(err).Error(ctx, "Failed to get limit")
 		return 0, err
@@ -136,13 +90,7 @@ func (s *databaseSemaphore) getLimit(ctx context.Context) int {
 
 func (s *databaseSemaphore) currentState(ctx context.Context, session db.Session, held bool) ([]string, error) {
 	logger := s.logger(ctx)
-	var states []stateRecord
-	err := session.SQL().
-		Select(stateKeyField).
-		From(s.info.config.stateTable).
-		Where(db.Cond{stateHeldField: held}).
-		And(db.Cond{stateNameField: s.longDBKey()}).
-		All(&states)
+	states, err := s.queries.GetCurrentState(ctx, session, s.longDBKey(), held)
 	if err != nil {
 		logger.WithField("held", held).WithError(err).Error(ctx, "Failed to get current state")
 		return nil, err
@@ -155,11 +103,11 @@ func (s *databaseSemaphore) currentState(ctx context.Context, session db.Session
 }
 
 func (s *databaseSemaphore) getCurrentPending(ctx context.Context) ([]string, error) {
-	return s.currentState(ctx, s.info.session, false)
+	return s.currentState(ctx, s.info.Session, false)
 }
 
 func (s *databaseSemaphore) getCurrentHolders(ctx context.Context) ([]string, error) {
-	return s.currentHoldersSession(ctx, s.info.session)
+	return s.currentHoldersSession(ctx, s.info.Session)
 }
 
 func (s *databaseSemaphore) currentHoldersSession(ctx context.Context, session db.Session) ([]string, error) {
@@ -169,13 +117,7 @@ func (s *databaseSemaphore) currentHoldersSession(ctx context.Context, session d
 func (s *databaseSemaphore) lock(ctx context.Context) bool {
 	logger := s.logger(ctx)
 	// Check if lock already exists, in case we crashed and restarted
-	var existingLocks []lockRecord
-	err := s.info.session.SQL().
-		Select(lockNameField).
-		From(s.info.config.lockTable).
-		Where(db.Cond{lockNameField: s.longDBKey()}).
-		And(db.Cond{lockControllerField: s.info.config.controllerName}).
-		All(&existingLocks)
+	existingLocks, err := s.queries.GetExistingLocks(ctx, s.longDBKey(), s.info.Config.ControllerName)
 
 	if err == nil && len(existingLocks) > 0 {
 		// Lock already exists
@@ -183,21 +125,18 @@ func (s *databaseSemaphore) lock(ctx context.Context) bool {
 		return true
 	}
 
-	record := &lockRecord{
+	record := &syncdb.LockRecord{
 		Name:       s.longDBKey(),
-		Controller: s.info.config.controllerName,
+		Controller: s.info.Config.ControllerName,
 		Time:       time.Now(),
 	}
-	_, err = s.info.session.Collection(s.info.config.lockTable).Insert(record)
+	err = s.queries.InsertLock(ctx, record)
 	return err == nil
 }
 
-func (s *databaseSemaphore) unlock(_ context.Context) {
+func (s *databaseSemaphore) unlock(ctx context.Context) {
 	for {
-		_, err := s.info.session.SQL().
-			DeleteFrom(s.info.config.lockTable).
-			Where(db.Cond{lockNameField: s.longDBKey()}).
-			Exec()
+		err := s.queries.DeleteLock(ctx, s.longDBKey())
 		if err == nil {
 			break
 		}
@@ -207,13 +146,7 @@ func (s *databaseSemaphore) unlock(_ context.Context) {
 
 func (s *databaseSemaphore) release(ctx context.Context, key string) bool {
 	logger := s.logger(ctx)
-	_, err := s.info.session.SQL().
-		DeleteFrom(s.info.config.stateTable).
-		Where(db.Cond{stateHeldField: true}).
-		And(db.Cond{stateNameField: s.longDBKey()}).
-		And(db.Cond{stateKeyField: key}).
-		And(db.Cond{stateControllerField: s.info.config.controllerName}).
-		Exec()
+	err := s.queries.ReleaseHeld(ctx, s.longDBKey(), key, s.info.Config.ControllerName)
 
 	switch err {
 	case nil:
@@ -226,26 +159,9 @@ func (s *databaseSemaphore) release(ctx context.Context, key string) bool {
 	}
 }
 
-func (s *databaseSemaphore) queueOrdered(ctx context.Context, session db.Session) ([]stateRecord, error) {
+func (s *databaseSemaphore) queueOrdered(ctx context.Context, session db.Session) ([]syncdb.StateRecord, error) {
 	logger := s.logger(ctx)
-	since := time.Now().Add(-s.info.config.inactiveControllerTimeout)
-	var queue []stateRecord
-	subquery := session.SQL().
-		Select(controllerNameField).
-		From(s.info.config.controllerTable).
-		And(db.Cond{controllerTimeField + " >": since})
-
-	err := session.SQL().
-		Select(stateKeyField, stateControllerField).
-		From(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.longDBKey()}).
-		And(db.Cond{stateHeldField: false}).
-		And(db.Cond{
-			"controller IN": subquery,
-		}).
-		OrderBy(statePriorityField+" DESC", stateTimeField+" ASC").
-		All(&queue)
-
+	queue, err := s.queries.GetOrderedQueue(ctx, session, s.longDBKey(), s.info.Config.InactiveControllerTimeout)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to get ordered queue for semaphore notification")
 		return nil, err
@@ -266,7 +182,7 @@ func (s *databaseSemaphore) notifyWaiters(ctx context.Context) {
 	}
 	holdCount := len(holders)
 
-	pending, err := s.queueOrdered(ctx, s.info.session)
+	pending, err := s.queueOrdered(ctx, s.info.Session)
 	if err != nil {
 		return
 	}
@@ -278,7 +194,7 @@ func (s *databaseSemaphore) notifyWaiters(ctx context.Context) {
 	}).Debug(ctx, "Notifying waiters for semaphore")
 	for idx := 0; idx < triggerCount; idx++ {
 		item := pending[idx]
-		if item.Controller != s.info.config.controllerName {
+		if item.Controller != s.info.Config.ControllerName {
 			continue
 		}
 		key := workflowKey(item.Key)
@@ -288,42 +204,29 @@ func (s *databaseSemaphore) notifyWaiters(ctx context.Context) {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *databaseSemaphore) addToQueue(_ context.Context, holderKey string, priority int32, creationTime time.Time) error {
+func (s *databaseSemaphore) addToQueue(ctx context.Context, holderKey string, priority int32, creationTime time.Time) error {
 	// Doesn't need a transaction, as no-one else should be inserting exactly this record ever
-	var states []stateRecord
-	err := s.info.session.SQL().
-		Select(stateKeyField).
-		From(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.longDBKey()}).
-		And(db.Cond{stateKeyField: holderKey}).
-		And(db.Cond{stateControllerField: s.info.config.controllerName}).
-		All(&states)
+	states, err := s.queries.CheckQueueExists(ctx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 	if err != nil {
 		return err
 	}
 	if len(states) > 0 {
 		return nil
 	}
-	record := &stateRecord{
+	record := &syncdb.StateRecord{
 		Name:       s.longDBKey(),
 		Key:        holderKey,
-		Controller: s.info.config.controllerName,
+		Controller: s.info.Config.ControllerName,
 		Held:       false,
 		Priority:   priority,
 		Time:       creationTime,
 	}
-	_, err = s.info.session.Collection(s.info.config.stateTable).Insert(record)
+	err = s.queries.AddToQueue(ctx, record)
 	return err
 }
 
-func (s *databaseSemaphore) removeFromQueue(_ context.Context, holderKey string) error {
-	_, err := s.info.session.SQL().
-		DeleteFrom(s.info.config.stateTable).
-		Where(db.Cond{stateNameField: s.longDBKey()}).
-		And(db.Cond{stateKeyField: holderKey}).
-		And(db.Cond{stateHeldField: false}).
-		Exec()
-
+func (s *databaseSemaphore) removeFromQueue(ctx context.Context, holderKey string) error {
+	err := s.queries.RemoveFromQueue(ctx, s.longDBKey(), holderKey)
 	return err
 }
 
@@ -392,14 +295,14 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		}).Info(ctx, "CheckAcquire - empty queue")
 		return false, false, ""
 	}
-	if queue[0].Controller != s.info.config.controllerName {
+	if queue[0].Controller != s.info.Config.ControllerName {
 		logger.WithFields(logging.Fields{
 			"key":                holderKey,
 			"result":             false,
 			"already_held":       false,
 			"message":            waitingMsg,
 			"queue_controller":   queue[0].Controller,
-			"current_controller": s.info.config.controllerName,
+			"current_controller": s.info.Config.ControllerName,
 		}).Info(ctx, "CheckAcquire - different controller")
 		return false, false, waitingMsg
 	}
@@ -434,39 +337,25 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *t
 		return false
 	}
 	if len(existing) < limit {
-		var pending []stateRecord
-		err := (*tx.db).SQL().
-			Select(stateKeyField).
-			From(s.info.config.stateTable).
-			Where(db.Cond{stateNameField: s.longDBKey()}).
-			And(db.Cond{stateKeyField: holderKey}).
-			And(db.Cond{stateControllerField: s.info.config.controllerName}).
-			And(db.Cond{stateHeldField: false}).
-			All(&pending)
+		pending, err := s.queries.GetPendingInQueueWithSession(ctx, *tx.db, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 		if err != nil {
 			logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 			return false
 		}
 		if len(pending) > 0 {
-			_, err := (*tx.db).SQL().Update(s.info.config.stateTable).
-				Set(stateHeldField, true).
-				Where(db.Cond{stateNameField: s.longDBKey()}).
-				And(db.Cond{stateKeyField: holderKey}).
-				And(db.Cond{stateControllerField: s.info.config.controllerName}).
-				And(db.Cond{stateHeldField: false}).
-				Exec()
+			err := s.queries.UpdateStateToHeldWithSession(ctx, *tx.db, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false
 			}
 		} else {
-			record := &stateRecord{
+			record := &syncdb.StateRecord{
 				Name:       s.longDBKey(),
 				Key:        holderKey,
-				Controller: s.info.config.controllerName,
+				Controller: s.info.Config.ControllerName,
 				Held:       true,
 			}
-			_, err := (*tx.db).Collection(s.info.config.stateTable).Insert(record)
+			err := s.queries.InsertHeldStateWithSession(ctx, *tx.db, record)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false
@@ -525,19 +414,10 @@ func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 
 func (s *databaseSemaphore) expireLocks(ctx context.Context) {
 	logger := s.logger(ctx)
-	since := time.Now().Add(-s.info.config.inactiveControllerTimeout)
-	subquery := s.info.session.SQL().
-		Select(controllerNameField).
-		From(s.info.config.controllerTable).
-		And(db.Cond{controllerTimeField + " <=": since})
-
-	// Delete locks from inactive controllers
-	result, err := s.info.session.SQL().DeleteFrom(s.info.config.lockTable).
-		Where(db.Cond{lockControllerField + " IN": subquery}).
-		Exec()
+	rowsAffected, err := s.queries.ExpireInactiveLocks(ctx, s.info.Config.InactiveControllerTimeout)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to expire locks")
-	} else if rowsAffected, err := result.RowsAffected(); err == nil && rowsAffected > 0 {
+	} else if rowsAffected > 0 {
 		logger.WithField("rowsAffected", rowsAffected).Info(ctx, "Expired locks")
 	}
 }

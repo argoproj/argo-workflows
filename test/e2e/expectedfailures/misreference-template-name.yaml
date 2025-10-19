@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-misreference-
+spec:
+  podMetadata:
+    labels:
+      test: steps-with-misreference
+  podPriorityClassName: lowest
+  entrypoint: steps-with-misreference
+  templates:
+    - name: steps-with-misreference
+      steps:
+        - - name: hello1
+            template: hello
+            arguments:
+              parameters:
+                - name: message
+                  value: "hello1"
+        - - name: hello2
+            template: hell0
+            arguments:
+              parameters:
+                - name: message
+                  value: "hello2"
+    - name: hello
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.message}}"]
