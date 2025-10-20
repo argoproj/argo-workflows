@@ -21,8 +21,8 @@ func registerKind(k kind) {
 
 func parseTag(tag string) (kind, string) {
 	for _, k := range kinds {
-		if strings.HasPrefix(tag, k) {
-			return k, jsonutil.Fix(strings.TrimPrefix(tag, k))
+		if after, ok := strings.CutPrefix(tag, k); ok {
+			return k, jsonutil.Fix(after)
 		}
 	}
 	return kindSimple, tag

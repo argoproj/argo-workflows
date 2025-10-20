@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -752,20 +753,12 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.execWf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
-		for k, v := range woc.execWf.Spec.PodMetadata.Annotations {
-			pod.Annotations[k] = v
-		}
-		for k, v := range woc.execWf.Spec.PodMetadata.Labels {
-			pod.Labels[k] = v
-		}
+		maps.Copy(pod.Annotations, woc.execWf.Spec.PodMetadata.Annotations)
+		maps.Copy(pod.Labels, woc.execWf.Spec.PodMetadata.Labels)
 	}
 
-	for k, v := range tmpl.Metadata.Annotations {
-		pod.Annotations[k] = v
-	}
-	for k, v := range tmpl.Metadata.Labels {
-		pod.Labels[k] = v
-	}
+	maps.Copy(pod.Annotations, tmpl.Metadata.Annotations)
+	maps.Copy(pod.Labels, tmpl.Metadata.Labels)
 }
 
 // addDNSConfig applies DNSConfig to the pod

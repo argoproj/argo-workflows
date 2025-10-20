@@ -476,12 +476,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	if podInfo.serviceAccount != "" {
 		pod.Spec.ServiceAccountName = podInfo.serviceAccount
 	}
-	for label, labelVal := range podInfo.podMetadata.Labels {
-		pod.Labels[label] = labelVal
-	}
-	for annotation, annotationVal := range podInfo.podMetadata.Annotations {
-		pod.Annotations[annotation] = annotationVal
-	}
+	maps.Copy(pod.Labels, podInfo.podMetadata.Labels)
+	maps.Copy(pod.Annotations, podInfo.podMetadata.Annotations)
 
 	if v := woc.controller.Config.InstanceID; v != "" {
 		pod.Labels[common.EnvVarInstanceID] = v
@@ -709,15 +705,11 @@ func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, 
 		if len(artifactGC.PodMetadata.Labels) > 0 && podInfo.podMetadata.Labels == nil {
 			podInfo.podMetadata.Labels = make(map[string]string)
 		}
-		for labelKey, labelValue := range artifactGC.PodMetadata.Labels {
-			podInfo.podMetadata.Labels[labelKey] = labelValue
-		}
+		maps.Copy(podInfo.podMetadata.Labels, artifactGC.PodMetadata.Labels)
 		if len(artifactGC.PodMetadata.Annotations) > 0 && podInfo.podMetadata.Annotations == nil {
 			podInfo.podMetadata.Annotations = make(map[string]string)
 		}
-		for annotationKey, annotationValue := range artifactGC.PodMetadata.Annotations {
-			podInfo.podMetadata.Annotations[annotationKey] = annotationValue
-		}
+		maps.Copy(podInfo.podMetadata.Annotations, artifactGC.PodMetadata.Annotations)
 	}
 
 }

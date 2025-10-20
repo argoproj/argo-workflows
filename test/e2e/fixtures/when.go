@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -601,9 +602,7 @@ func (w *When) CreateConfigMap(name string, data map[string]string, customLabels
 
 	labels := map[string]string{Label: "true"}
 
-	for k, v := range customLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, customLabels)
 
 	ctx := logging.TestContext(w.t.Context())
 	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(ctx, &corev1.ConfigMap{
@@ -621,9 +620,7 @@ func (w *When) UpdateConfigMap(name string, data map[string]string, customLabels
 
 	labels := map[string]string{Label: "true"}
 
-	for k, v := range customLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, customLabels)
 
 	ctx := logging.TestContext(w.t.Context())
 	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Update(ctx, &corev1.ConfigMap{

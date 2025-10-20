@@ -26,7 +26,7 @@ func Exec(name string, args ...string) (string, error) {
 	if err != nil {
 		errorln(err)
 	}
-	for _, s := range strings.Split(output, "\n") {
+	for s := range strings.SplitSeq(output, "\n") {
 		_, _ = fmt.Println(s)
 	}
 	return output, err
@@ -56,8 +56,8 @@ func runWithTimeout(cmd *exec.Cmd) (string, error) {
 // LoadObject is used to load yaml to runtime.Object
 func LoadObject(text string) (runtime.Object, error) {
 	var yaml string
-	if strings.HasPrefix(text, "@") {
-		file := strings.TrimPrefix(text, "@")
+	if after, ok := strings.CutPrefix(text, "@"); ok {
+		file := after
 		f, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return nil, err

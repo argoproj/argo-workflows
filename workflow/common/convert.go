@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"maps"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,14 +95,10 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
 	if cronWf.Spec.WorkflowMetadata != nil {
-		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
-			wf.Labels[key] = label
-		}
+		maps.Copy(wf.Labels, cronWf.Spec.WorkflowMetadata.Labels)
 
 		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
-			for key, annotation := range cronWf.Spec.WorkflowMetadata.Annotations {
-				wf.Annotations[key] = annotation
-			}
+			maps.Copy(wf.Annotations, cronWf.Spec.WorkflowMetadata.Annotations)
 		}
 
 		wf.Finalizers = append(wf.Finalizers, cronWf.Spec.WorkflowMetadata.Finalizers...)
