@@ -915,14 +915,24 @@ func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
 }
 
 // updateWorkflowFastCache updates the fast cache with the latest workflow object
-func (wfc *WorkflowController) updateWorkflowFastCache(key string, wf *unstructured.Unstructured) {
+func (wfc *WorkflowController) updateWorkflowFastCache(wf *unstructured.Unstructured) {
 	// Add or update the workflow in the store (cache.Store is thread-safe)
-	wfc.workflowFastStore.Add(wf)
+	if wfc.workflowFastStore == nil {
+		// initialize lazily for controllers constructed in tests
+		wfc.workflowFastStore = cache.NewStore(cache.MetaNamespaceKeyFunc)
+	}
+	if err := wfc.workflowFastStore.Add(wf); err != nil {
+		// best-effort cache; ignore errors to avoid impacting controller flow
+	}
 }
 
 // getWorkflowFromFastCache retrieves workflow from fast cache if available and not expired
 func (wfc *WorkflowController) getWorkflowFromFastCache(key string) (*unstructured.Unstructured, bool) {
 	// Get workflow from store
+	if wfc.workflowFastStore == nil {
+		return nil, false
+	}
+
 	obj, exists, err := wfc.workflowFastStore.GetByKey(key)
 	if err != nil || !exists {
 		return nil, false
@@ -942,7 +952,12 @@ func (wfc *WorkflowController) evictOldCacheEntries() {}
 
 // deleteWorkflowFromFastCache removes workflow from fast cache
 func (wfc *WorkflowController) deleteWorkflowFromFastCache(key string) {
-	wfc.workflowFastStore.Delete(key)
+	if wfc.workflowFastStore == nil {
+		return
+	}
+	if obj, exists, _ := wfc.workflowFastStore.GetByKey(key); exists {
+		_ = wfc.workflowFastStore.Delete(obj)
+	}
 }
 
 // cleanupFastCache periodically cleans up expired entries from the fast cache
@@ -952,6 +967,10 @@ func (wfc *WorkflowController) cleanupFastCache(ctx context.Context) {}
 func (wfc *WorkflowController) getWorkflowByKeyWithCache(ctx context.Context, key string) (interface{}, bool) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
+	if wfc.wfInformer == nil || wfc.wfInformer.GetIndexer() == nil {
+		return nil, false
+	}
+
 	// Get from informer cache first; if not present, we consider it not processable
 	objInf, infExists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if !infExists || err != nil {
@@ -960,13 +979,15 @@ func (wfc *WorkflowController) getWorkflowByKeyWithCache(ctx context.Context, ke
 	}
 
 	// Try fast cache; if newer than informer, prefer fast
-	objFast, fastExists, _ := wfc.workflowFastStore.GetByKey(key)
-	if fastExists {
-		fastUn, okFast := objFast.(*unstructured.Unstructured)
-		infUn, okInf := objInf.(*unstructured.Unstructured)
-		if okFast && okInf {
-			if util.OutDateResourceVersion(infUn.GetResourceVersion(), fastUn.GetResourceVersion()) {
-				return fastUn.DeepCopy(), true
+	if wfc.workflowFastStore != nil {
+		objFast, fastExists, _ := wfc.workflowFastStore.GetByKey(key)
+		if fastExists {
+			fastUn, okFast := objFast.(*unstructured.Unstructured)
+			infUn, okInf := objInf.(*unstructured.Unstructured)
+			if okFast && okInf {
+				if util.OutDateResourceVersion(infUn.GetResourceVersion(), fastUn.GetResourceVersion()) {
+					return fastUn.DeepCopy(), true
+				}
 			}
 		}
 	}

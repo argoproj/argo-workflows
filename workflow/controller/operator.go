@@ -801,7 +801,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Update fast cache with the latest workflow object immediately after successful update
 	// This ensures we have the most recent version available for subsequent processing
 	if wfUnstructured, err := wfutil.ToUnstructured(woc.wf); err == nil {
-		woc.controller.updateWorkflowFastCache(key, wfUnstructured)
+		woc.controller.updateWorkflowFastCache(wfUnstructured)
 	}
 
 	// Make sure the workflow completed.

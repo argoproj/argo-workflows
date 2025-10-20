@@ -908,6 +908,72 @@ func TestIsArchivable(t *testing.T) {
 	})
 }
 
+// makeUnstructuredCache creates a minimal unstructured Workflow with given rv.
+func makeUnstructuredCache(ns, name, rv string) *unstructured.Unstructured {
+	un := &unstructured.Unstructured{}
+	un.SetNamespace(ns)
+	un.SetName(name)
+	un.SetResourceVersion(rv)
+	return un
+}
+
+// setupControllerForFastCacheTests initializes only the parts needed for cache tests.
+func setupControllerForFastCacheTests(t *testing.T) *WorkflowController {
+	t.Helper()
+	wfc := &WorkflowController{}
+	wfc.workflowFastStore = cache.NewStore(cache.MetaNamespaceKeyFunc)
+	inf := cache.NewSharedIndexInformer(&cache.ListWatch{}, &unstructured.Unstructured{}, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	wfc.wfInformer = inf
+	return wfc
+}
+
+func TestGetWorkflowByKeyWithCache_PreferFastWhenNewer(t *testing.T) {
+	wfc := setupControllerForFastCacheTests(t)
+	key := "default/wf"
+	// informer rv=10
+	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("default", "wf", "10"))
+	// fast rv=20 -> choose fast
+	wfc.updateWorkflowFastCache(key, makeUnstructuredCache("default", "wf", "20"))
+
+	obj, ok := wfc.getWorkflowByKeyWithCache(logging.TestContext(context.Background()), key)
+	if !ok {
+		t.Fatalf("expected object, got none")
+	}
+	if rv := obj.(*unstructured.Unstructured).GetResourceVersion(); rv != "20" {
+		t.Fatalf("expected rv=20 (fast), got %s", rv)
+	}
+}
+
+func TestGetWorkflowByKeyWithCache_PreferInformerWhenNewerOrEqual(t *testing.T) {
+	wfc := setupControllerForFastCacheTests(t)
+	key := "default/wf"
+	// informer rv=10
+	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("default", "wf", "10"))
+	// fast rv=9 -> choose informer
+	wfc.updateWorkflowFastCache(key, makeUnstructuredCache("default", "wf", "9"))
+
+	obj, ok := wfc.getWorkflowByKeyWithCache(logging.TestContext(context.Background()), key)
+	if !ok {
+		t.Fatalf("expected object, got none")
+	}
+	if rv := obj.(*unstructured.Unstructured).GetResourceVersion(); rv != "10" {
+		t.Fatalf("expected rv=10 (informer), got %s", rv)
+	}
+}
+
+func TestFastCacheUpdateAndDelete(t *testing.T) {
+	wfc := setupControllerForFastCacheTests(t)
+	key := "default/wf"
+	wfc.updateWorkflowFastCache(key, makeUnstructuredCache("default", "wf", "1"))
+	if _, exists, _ := wfc.workflowFastStore.GetByKey(key); !exists {
+		t.Fatalf("expected fast cache to contain key after update")
+	}
+	wfc.deleteWorkflowFromFastCache(key)
+	if _, exists, _ := wfc.workflowFastStore.GetByKey(key); exists {
+		t.Fatalf("expected fast cache to delete key")
+	}
+}
+
 func TestReleaseAllWorkflowLocks(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
