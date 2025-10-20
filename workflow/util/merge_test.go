@@ -419,7 +419,7 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 	})
 }
 
-var baseNilHookWF = `
+var baseNilWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -461,7 +461,7 @@ spec:
 func TestMergeHooks(t *testing.T) {
 	t.Run("NilBaseAndNilPatch", func(t *testing.T) {
 		patchHookWf := wfv1.MustUnmarshalWorkflow(patchNilHookWF)
-		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
@@ -470,7 +470,7 @@ func TestMergeHooks(t *testing.T) {
 
 	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
 		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
-		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
@@ -489,5 +489,53 @@ func TestMergeHooks(t *testing.T) {
 		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+	})
+}
+
+var patchLabelsFromWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  workflowMetadata:
+    labelsFrom:
+      foo:
+        expression: PATCH
+      bar:
+        expression: PATCH
+`
+var baseLabelsFromWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  workflowMetadata:
+    labelsFrom:
+      foo:
+        expression: BASE
+      baz:
+        expression: BASE
+`
+
+func TestMergeLabelsFrom(t *testing.T) {
+	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
+		patchWf := wfv1.MustUnmarshalWorkflow(patchLabelsFromWF)
+		targetWf := wfv1.MustUnmarshalWorkflow(baseNilWF)
+
+		err := MergeTo(patchWf, targetWf)
+		require.NoError(t, err)
+		assert.Len(t, targetWf.Spec.WorkflowMetadata.LabelsFrom, 2)
+		assert.Equal(t, "PATCH", targetWf.Spec.WorkflowMetadata.LabelsFrom[`foo`].Expression)
+		assert.Equal(t, "PATCH", targetWf.Spec.WorkflowMetadata.LabelsFrom[`bar`].Expression)
+	})
+
+	t.Run("NotNilBaseAndPatch", func(t *testing.T) {
+		patchWf := wfv1.MustUnmarshalWorkflow(patchLabelsFromWF)
+		targetWf := wfv1.MustUnmarshalWorkflow(baseLabelsFromWF)
+
+		err := MergeTo(patchWf, targetWf)
+		require.NoError(t, err)
+		assert.Len(t, targetWf.Spec.WorkflowMetadata.LabelsFrom, 3)
+		assert.Equal(t, "BASE", targetWf.Spec.WorkflowMetadata.LabelsFrom[`foo`].Expression)
+		assert.Equal(t, "PATCH", targetWf.Spec.WorkflowMetadata.LabelsFrom[`bar`].Expression)
+		assert.Equal(t, "BASE", targetWf.Spec.WorkflowMetadata.LabelsFrom[`baz`].Expression)
 	})
 }
