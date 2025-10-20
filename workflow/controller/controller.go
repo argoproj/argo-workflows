@@ -923,32 +923,9 @@ func (wfc *WorkflowController) updateWorkflowFastCache(wf *unstructured.Unstruct
 	}
 	if err := wfc.workflowFastStore.Add(wf); err != nil {
 		// best-effort cache; ignore errors to avoid impacting controller flow
+		_ = err // explicitly ignore error to satisfy linter
 	}
 }
-
-// getWorkflowFromFastCache retrieves workflow from fast cache if available and not expired
-func (wfc *WorkflowController) getWorkflowFromFastCache(key string) (*unstructured.Unstructured, bool) {
-	// Get workflow from store
-	if wfc.workflowFastStore == nil {
-		return nil, false
-	}
-
-	obj, exists, err := wfc.workflowFastStore.GetByKey(key)
-	if err != nil || !exists {
-		return nil, false
-	}
-
-	// Cast to unstructured and return a deep copy to avoid reference issues
-	wf, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		return nil, false
-	}
-
-	return wf.DeepCopy(), true
-}
-
-// evictOldCacheEntries removes the oldest cache entries when cache is full
-func (wfc *WorkflowController) evictOldCacheEntries() {}
 
 // deleteWorkflowFromFastCache removes workflow from fast cache
 func (wfc *WorkflowController) deleteWorkflowFromFastCache(key string) {
@@ -959,9 +936,6 @@ func (wfc *WorkflowController) deleteWorkflowFromFastCache(key string) {
 		_ = wfc.workflowFastStore.Delete(obj)
 	}
 }
-
-// cleanupFastCache periodically cleans up expired entries from the fast cache
-func (wfc *WorkflowController) cleanupFastCache(ctx context.Context) {}
 
 // getWorkflowByKeyWithCache tries to get workflow from fast cache first, then falls back to informer
 func (wfc *WorkflowController) getWorkflowByKeyWithCache(ctx context.Context, key string) (interface{}, bool) {

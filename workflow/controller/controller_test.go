@@ -909,6 +909,7 @@ func TestIsArchivable(t *testing.T) {
 }
 
 // makeUnstructuredCache creates a minimal unstructured Workflow with given rv.
+// ns parameter is kept for flexibility in future tests
 func makeUnstructuredCache(ns, name, rv string) *unstructured.Unstructured {
 	un := &unstructured.Unstructured{}
 	un.SetNamespace(ns)
