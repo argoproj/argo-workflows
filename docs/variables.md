@@ -145,7 +145,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
-| `steps.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
+| `steps.<STEPNAME>.hostNodeName` | Host node where step ran (available from version 3.5) |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
