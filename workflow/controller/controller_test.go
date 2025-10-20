@@ -933,7 +933,7 @@ func TestGetWorkflowByKeyWithCache_PreferFastWhenNewer(t *testing.T) {
 	// informer rv=10
 	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("default", "wf", "10"))
 	// fast rv=20 -> choose fast
-	wfc.updateWorkflowFastCache(key, makeUnstructuredCache("default", "wf", "20"))
+	wfc.updateWorkflowFastCache(makeUnstructuredCache("default", "wf", "20"))
 
 	obj, ok := wfc.getWorkflowByKeyWithCache(logging.TestContext(context.Background()), key)
 	if !ok {
@@ -950,7 +950,7 @@ func TestGetWorkflowByKeyWithCache_PreferInformerWhenNewerOrEqual(t *testing.T) 
 	// informer rv=10
 	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("default", "wf", "10"))
 	// fast rv=9 -> choose informer
-	wfc.updateWorkflowFastCache(key, makeUnstructuredCache("default", "wf", "9"))
+	wfc.updateWorkflowFastCache(makeUnstructuredCache("default", "wf", "9"))
 
 	obj, ok := wfc.getWorkflowByKeyWithCache(logging.TestContext(context.Background()), key)
 	if !ok {
@@ -964,7 +964,7 @@ func TestGetWorkflowByKeyWithCache_PreferInformerWhenNewerOrEqual(t *testing.T) 
 func TestFastCacheUpdateAndDelete(t *testing.T) {
 	wfc := setupControllerForFastCacheTests(t)
 	key := "default/wf"
-	wfc.updateWorkflowFastCache(key, makeUnstructuredCache("default", "wf", "1"))
+	wfc.updateWorkflowFastCache(makeUnstructuredCache("default", "wf", "1"))
 	if _, exists, _ := wfc.workflowFastStore.GetByKey(key); !exists {
 		t.Fatalf("expected fast cache to contain key after update")
 	}
