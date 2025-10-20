@@ -909,10 +909,10 @@ func TestIsArchivable(t *testing.T) {
 }
 
 // makeUnstructuredCache creates a minimal unstructured Workflow with given rv.
-func makeUnstructuredCache(name, rv string) *unstructured.Unstructured {
+func makeUnstructuredCache(rv string) *unstructured.Unstructured {
 	un := &unstructured.Unstructured{}
 	un.SetNamespace("default")
-	un.SetName(name)
+	un.SetName("wf")
 	un.SetResourceVersion(rv)
 	return un
 }
@@ -931,9 +931,9 @@ func TestGetWorkflowByKeyWithCache_PreferFastWhenNewer(t *testing.T) {
 	wfc := setupControllerForFastCacheTests(t)
 	key := "default/wf"
 	// informer rv=10
-	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("wf", "10"))
+	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("10"))
 	// fast rv=20 -> choose fast
-	wfc.updateWorkflowFastCache(makeUnstructuredCache("wf", "20"))
+	wfc.updateWorkflowFastCache(makeUnstructuredCache("20"))
 
 	obj, ok := wfc.getWorkflowByKeyWithCache(logging.TestContext(context.Background()), key)
 	if !ok {
@@ -948,9 +948,9 @@ func TestGetWorkflowByKeyWithCache_PreferInformerWhenNewerOrEqual(t *testing.T) 
 	wfc := setupControllerForFastCacheTests(t)
 	key := "default/wf"
 	// informer rv=10
-	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("wf", "10"))
+	_ = wfc.wfInformer.GetStore().Add(makeUnstructuredCache("10"))
 	// fast rv=9 -> choose informer
-	wfc.updateWorkflowFastCache(makeUnstructuredCache("wf", "9"))
+	wfc.updateWorkflowFastCache(makeUnstructuredCache("9"))
 
 	obj, ok := wfc.getWorkflowByKeyWithCache(logging.TestContext(context.Background()), key)
 	if !ok {
@@ -964,7 +964,7 @@ func TestGetWorkflowByKeyWithCache_PreferInformerWhenNewerOrEqual(t *testing.T) 
 func TestFastCacheUpdateAndDelete(t *testing.T) {
 	wfc := setupControllerForFastCacheTests(t)
 	key := "default/wf"
-	wfc.updateWorkflowFastCache(makeUnstructuredCache("wf", "1"))
+	wfc.updateWorkflowFastCache(makeUnstructuredCache("1"))
 	if _, exists, _ := wfc.workflowFastStore.GetByKey(key); !exists {
 		t.Fatalf("expected fast cache to contain key after update")
 	}
