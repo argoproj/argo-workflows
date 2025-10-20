@@ -796,17 +796,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
-	switch os.Getenv("INFORMER_WRITE_BACK") {
-	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
-	// conflicts and therefore we log fewer warning messages.
-	case "", "true":
-		if err := woc.writeBackToInformer(); err != nil {
-			woc.markWorkflowError(ctx, err)
-			return
-		}
-	case "false":
-		time.Sleep(1 * time.Second)
-	}
+	// writeBackToInformer no longer used; rely on fast cache + informer updates
 
 	key := wf.Namespace + "/" + wf.Name
 
@@ -847,18 +837,6 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
 			metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name},
 		)
-}
-
-func (woc *wfOperationCtx) writeBackToInformer() error {
-	un, err := wfutil.ToUnstructured(woc.wf)
-	if err != nil {
-		return fmt.Errorf("failed to convert workflow to unstructured: %w", err)
-	}
-	err = woc.controller.wfInformer.GetStore().Update(un)
-	if err != nil {
-		return fmt.Errorf("failed to update informer store: %w", err)
-	}
-	return nil
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
