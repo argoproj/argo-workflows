@@ -19,7 +19,7 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	// Temporarily remove hooks and labelsFrom as they don't merge
 	patchHooks := patch.Spec.Hooks
 	patch.Spec.Hooks = nil
-	var patchLabelsFrom wfv1.LabelsFrom
+	var patchLabelsFrom map[string]wfv1.LabelValueFrom
 	if patch.Spec.WorkflowMetadata != nil {
 		patchLabelsFrom = patch.Spec.WorkflowMetadata.LabelsFrom
 		patch.Spec.WorkflowMetadata.LabelsFrom = nil
@@ -63,7 +63,7 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	}
 
 	if len(patchLabelsFrom) != 0 && target.Spec.WorkflowMetadata.LabelsFrom == nil {
-		target.Spec.WorkflowMetadata.LabelsFrom = make(wfv1.LabelsFrom)
+		target.Spec.WorkflowMetadata.LabelsFrom = make(map[string]wfv1.LabelValueFrom)
 	}
 	for key, val := range patchLabelsFrom {
 		// If the patch labelFrom doesn't exist in target

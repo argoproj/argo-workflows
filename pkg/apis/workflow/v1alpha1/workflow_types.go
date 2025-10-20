@@ -440,12 +440,10 @@ type LabelValueFrom struct {
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 }
 
-type LabelsFrom map[string]LabelValueFrom
-
 type WorkflowMetadata struct {
-	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,1,rep,name=labels"`
-	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,2,rep,name=annotations"`
-	LabelsFrom  LabelsFrom        `json:"labelsFrom,omitempty" protobuf:"bytes,3,rep,name=labelsFrom"`
+	Labels      map[string]string         `json:"labels,omitempty" protobuf:"bytes,1,rep,name=labels"`
+	Annotations map[string]string         `json:"annotations,omitempty" protobuf:"bytes,2,rep,name=annotations"`
+	LabelsFrom  map[string]LabelValueFrom `json:"labelsFrom,omitempty" protobuf:"bytes,3,rep,name=labelsFrom"`
 }
 
 func (in *WorkflowMetadata) AsObjectMeta() *metav1.ObjectMeta {
