@@ -2,7 +2,6 @@ package logging
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"maps"
 	"os"
@@ -113,19 +112,16 @@ func (i initLogger) WithFields(fields Fields) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
 	i = DeepCopy(i)
-	maps.Copy(fields, i.fields)
+	maps.Copy(i.fields, fields)
 	return i
 }
 
 func (i initLogger) WithError(err error) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
+	i = DeepCopy(i)
 	i.fields["error"] = err
 	return i
-}
-
-func (i initLogger) Debugf(ctx context.Context, format string, args ...any) {
-	i.Debug(ctx, fmt.Sprintf(format, args...))
 }
 
 func (i initLogger) Debug(ctx context.Context, message string) {
@@ -134,28 +130,16 @@ func (i initLogger) Debug(ctx context.Context, message string) {
 	i.add(Debug, message)
 }
 
-func (i initLogger) Infof(ctx context.Context, format string, args ...any) {
-	i.Info(ctx, fmt.Sprintf(format, args...))
-}
-
 func (i initLogger) Info(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
 	i.add(Info, message)
 }
 
-func (i initLogger) Warnf(ctx context.Context, format string, args ...any) {
-	i.Warn(ctx, fmt.Sprintf(format, args...))
-}
-
 func (i initLogger) Warn(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
 	i.add(Warn, message)
-}
-
-func (i initLogger) Errorf(ctx context.Context, format string, args ...any) {
-	i.Error(ctx, fmt.Sprintf(format, args...))
 }
 
 func (i initLogger) Error(ctx context.Context, message string) {

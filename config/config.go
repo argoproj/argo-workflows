@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"slices"
 	"time"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -146,10 +147,8 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
-	for _, protocol := range allowedProtocol {
-		if inputProtocol == protocol {
-			return nil
-		}
+	if slices.Contains(allowedProtocol, inputProtocol) {
+		return nil
 	}
 	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
@@ -178,8 +177,8 @@ type PodSpecLogStrategy struct {
 	AllPods   bool `json:"allPods,omitempty"`
 }
 
-// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
-// it is used when the workflow controller is in a different cluster with the workflow workloads
+// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method;
+// it is used when the workflow controller is in a different cluster from the workflow workloads
 type KubeConfig struct {
 	// SecretName of the kubeconfig secret
 	// may not be empty if kuebConfig specified
@@ -238,6 +237,8 @@ func (c PersistConfig) GetClusterName() string {
 // SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)
 type SyncConfig struct {
 	DBConfig
+	// EnableAPI enables the database synchronization API
+	EnableAPI bool `json:"enableAPI,omitempty"`
 	// ControllerName sets a unique name for this controller instance
 	ControllerName string `json:"controllerName"`
 	// SkipMigration skips database migration if needed

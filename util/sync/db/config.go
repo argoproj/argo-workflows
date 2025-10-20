@@ -1,4 +1,4 @@
-package sync
+package db
 
 import (
 	"context"
@@ -14,24 +14,24 @@ import (
 )
 
 type dbConfig struct {
-	limitTable                string
-	stateTable                string
-	controllerTable           string
-	lockTable                 string
-	controllerName            string
-	inactiveControllerTimeout time.Duration
-	skipMigration             bool
+	LimitTable                string
+	StateTable                string
+	ControllerTable           string
+	LockTable                 string
+	ControllerName            string
+	InactiveControllerTimeout time.Duration
+	SkipMigration             bool
 }
 
-type dbInfo struct {
-	config  dbConfig
-	session db.Session
+type DBInfo struct {
+	Config  dbConfig
+	Session db.Session
 }
 
 const (
-	defaultDBPollSeconds               = 10
-	defaultDBHeartbeatSeconds          = 60
-	defaultDBInactiveControllerSeconds = 600
+	DefaultDBPollSeconds               = 10
+	DefaultDBHeartbeatSeconds          = 60
+	DefaultDBInactiveControllerSeconds = 600
 
 	defaultLimitTableName      = "sync_limit"
 	defaultStateTableName      = "sync_state"
@@ -46,7 +46,7 @@ func defaultTable(tableName, defaultName string) string {
 	return tableName
 }
 
-func secondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration {
+func SecondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration {
 	dur := time.Duration(defaultSeconds) * time.Second
 	if value != nil {
 		dur = time.Duration(*value) * time.Second
@@ -54,18 +54,18 @@ func secondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration 
 	return dur
 }
 
-func (d *dbInfo) migrate(ctx context.Context) {
-	if d.session == nil {
+func (d *DBInfo) Migrate(ctx context.Context) {
+	if d.Session == nil {
 		return
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Setting up sync manager database")
-	if !d.config.skipMigration {
-		err := migrate(ctx, d.session, &d.config)
+	if !d.Config.SkipMigration {
+		err := migrate(ctx, d.Session, &d.Config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
 			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
-			d.session = nil
+			d.Session = nil
 		} else {
 			logger.Info(ctx, "Sync db migration complete")
 		}
@@ -74,23 +74,23 @@ func (d *dbInfo) migrate(ctx context.Context) {
 	}
 }
 
-func dbConfigFromConfig(config *config.SyncConfig) dbConfig {
+func DBConfigFromConfig(config *config.SyncConfig) dbConfig {
 	if config == nil {
 		return dbConfig{}
 	}
 	return dbConfig{
-		limitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
-		stateTable:      defaultTable(config.StateTableName, defaultStateTableName),
-		controllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),
-		lockTable:       defaultTable(config.LockTableName, defaultLockTableName),
-		controllerName:  config.ControllerName,
-		inactiveControllerTimeout: secondsToDurationWithDefault(config.InactiveControllerSeconds,
-			defaultDBInactiveControllerSeconds),
-		skipMigration: config.SkipMigration,
+		LimitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
+		StateTable:      defaultTable(config.StateTableName, defaultStateTableName),
+		ControllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),
+		LockTable:       defaultTable(config.LockTableName, defaultLockTableName),
+		ControllerName:  config.ControllerName,
+		InactiveControllerTimeout: SecondsToDurationWithDefault(config.InactiveControllerSeconds,
+			DefaultDBInactiveControllerSeconds),
+		SkipMigration: config.SkipMigration,
 	}
 }
 
-func dbSessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
+func DBSessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
 	if config == nil {
 		return nil
 	}
@@ -102,7 +102,7 @@ func dbSessionFromConfigWithCreds(config *config.SyncConfig, username, password 
 	return dbSession
 }
 
-func dbSessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) db.Session {
+func DBSessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) db.Session {
 	if config == nil {
 		return nil
 	}

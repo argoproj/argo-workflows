@@ -991,11 +991,18 @@ func untar(tarPath string, destPath string) error {
 				continue
 			}
 			target := filepath.Join(dest, filepath.Clean(header.Name))
+			if !strings.HasPrefix(target, filepath.Clean(dest)+string(os.PathSeparator)) {
+				return fmt.Errorf("illegal file path: %s", header.Name)
+			}
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil && os.IsExist(err) {
 				return err
 			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:
+				linkTarget := filepath.Join(filepath.Dir(target), header.Linkname)
+				if !strings.HasPrefix(filepath.Clean(linkTarget), filepath.Clean(dest)+string(os.PathSeparator)) {
+					return fmt.Errorf("illegal symlink target: %s -> %s", header.Name, header.Linkname)
+				}
 				err := os.Symlink(header.Linkname, target)
 				if err != nil {
 					return err

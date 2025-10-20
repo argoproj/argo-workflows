@@ -315,6 +315,9 @@ data:
   # This enables coordination between multiple argo controller instances or across clusters
   # Shares a similar structure with persistence configuration
   synchronization: |
+    # Enable or disable database synchronization API (default: false)
+    enableAPI: false
+    
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
       maxIdleConns: 100

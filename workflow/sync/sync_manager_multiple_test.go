@@ -66,18 +66,18 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 
 	// Set up the semaphore limit in the database
 	dbKey := "default/my-db-semaphore"
-	_, err = info.session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
+	_, err = info.Session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
-	require.NotNil(t, syncMgr1.dbInfo.session)
+	require.NotNil(t, syncMgr1.dbInfo.Session)
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
-	require.NotNil(t, syncMgr2.dbInfo.session)
+	require.NotNil(t, syncMgr2.dbInfo.Session)
 	return ctx, deferfn2, syncMgr1, syncMgr2
 }
 

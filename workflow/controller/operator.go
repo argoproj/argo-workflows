@@ -774,6 +774,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
 		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
+			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
 			return
 		}
@@ -2572,21 +2573,38 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-// check if all of the nodes children are fulffilled
-func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
+func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache map[string]bool) bool {
+
+	res, has := cache[node.ID]
+	if has {
+		return res
+	}
+
 	if len(node.Children) == 0 {
+		cache[node.ID] = node.Fulfilled()
 		return node.Fulfilled()
 	}
+
 	for _, childID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childID)
 		if err != nil {
 			continue
 		}
-		if !woc.childrenFulfilled(childNode) {
+		isChildrenFulfilled := woc.childrenFulfilledHelper(childNode, cache)
+		if !isChildrenFulfilled {
+			cache[node.ID] = false
 			return false
 		}
 	}
+
+	cache[node.ID] = true
 	return true
+}
+
+// check if all of the nodes children are fulffilled
+func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
+	m := make(map[string]bool)
+	return woc.childrenFulfilledHelper(node, m)
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
@@ -3565,11 +3583,9 @@ func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, chil
 	if err != nil {
 		woc.log.WithPanic().WithField("nodeID", parentID).Error(ctx, "was unable to obtain node for nodeID")
 	}
-	for _, nodeID := range node.Children {
-		if childID == nodeID {
-			// already exists
-			return
-		}
+	if slices.Contains(node.Children, childID) {
+		// already exists
+		return
 	}
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes.Set(ctx, parentID, *node)

@@ -2607,12 +2607,7 @@ func (n NodeStatus) GetDuration() time.Duration {
 }
 
 func (n NodeStatus) HasChild(childID string) bool {
-	for _, nodeID := range n.Children {
-		if childID == nodeID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(n.Children, childID)
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -2695,7 +2690,7 @@ func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 type GitArtifact struct {
 	// Repo is the git repository
 	Repo string `json:"repo" protobuf:"bytes,1,opt,name=repo"`
@@ -2810,7 +2805,7 @@ type AzureBlobContainer struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,4,opt,name=useSDKCreds"`
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 type AzureArtifact struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
 
@@ -3215,12 +3210,7 @@ func (tmpl *Template) IsLeaf() bool {
 }
 
 func (tmpl *Template) IsMainContainerName(containerName string) bool {
-	for _, c := range tmpl.GetMainContainerNames() {
-		if c == containerName {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(tmpl.GetMainContainerNames(), containerName)
 }
 
 func (tmpl *Template) GetMainContainerNames() []string {

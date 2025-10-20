@@ -23,6 +23,7 @@ data:
         name: argo-postgres-config
         key: password
   synchronization: |
+    enableAPI: true
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0

@@ -110,7 +110,13 @@ func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 	if err != nil {
 		return
 	}
-	_, ok := m.pending[namespace]
+
+	_, ok := m.running[key]
+	if ok {
+		return
+	}
+
+	_, ok = m.pending[namespace]
 	if !ok {
 		m.pending[namespace] = &priorityQueue{itemByKey: make(map[string]*item)}
 	}

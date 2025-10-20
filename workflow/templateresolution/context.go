@@ -110,13 +110,13 @@ func (tplCtx *TemplateContext) GetTemplateByName(ctx context.Context, name strin
 	tplCtx.log.WithField("name", name).Debug(ctx, "Getting the template by name")
 
 	tmpl := tplCtx.tmplBase.GetTemplateByName(name)
+	if tmpl == nil {
+		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
+	}
 
 	podMetadata := tplCtx.tmplBase.GetPodMetadata()
 	tplCtx.addPodMetadata(podMetadata, tmpl)
 
-	if tmpl == nil {
-		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
-	}
 	return tmpl.DeepCopy(), nil
 }
 

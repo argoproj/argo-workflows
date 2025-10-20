@@ -1,5 +1,23 @@
 # Changelog
 
+## v3.7.3 (2025-10-14)
+
+Full Changelog: [v3.7.2...v3.7.3](https://github.com/argoproj/argo-workflows/compare/v3.7.2...v3.7.3)
+
+### Selected Changes
+
+* [bded09fe4](https://github.com/argoproj/argo-workflows/commit/bded09fe4abd37cb98d7fc81b4c14a6f5034e9ab) Merge commit from fork
+* [5659ad9b6](https://github.com/argoproj/argo-workflows/commit/5659ad9b641fcf52c04ed594cd6493f9170f6011) Merge commit from fork
+* [2890ce3ba](https://github.com/argoproj/argo-workflows/commit/2890ce3baa5231aa9e4ca1fb4123717926f58c00) chore(deps): bump x/crypto for CVE-2025-47913 (#14925)
+* [0a3c04351](https://github.com/argoproj/argo-workflows/commit/0a3c043515fc0e9d97692bc30c2fa2b21ff0802f) fix: 3.7 version modal and docs (#14921)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Sergey K.
+
+</details>
+
 ## v3.7.2 (2025-09-11)
 
 Full Changelog: [v3.7.1...v3.7.2](https://github.com/argoproj/argo-workflows/compare/v3.7.1...v3.7.2)
@@ -155,7 +173,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.11...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.11...v3.7.0-rc1)
+Full Changelog: [v3.6.12...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.12...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -362,6 +380,22 @@ Full Changelog: [v3.6.11...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.12 (2025-10-14)
+
+Full Changelog: [v3.6.11...v3.6.12](https://github.com/argoproj/argo-workflows/compare/v3.6.11...v3.6.12)
+
+### Selected Changes
+
+* [18ad5138b](https://github.com/argoproj/argo-workflows/commit/18ad5138b6bcb2aba04e00b4ec657bc6b8fad8df) Merge commit from fork
+* [9f6bc5d23](https://github.com/argoproj/argo-workflows/commit/9f6bc5d236cd1b24d607943384511d71ad17a4c3) Merge commit from fork
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Sergey K.
 
 </details>
 

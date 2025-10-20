@@ -31,3 +31,6 @@ packages:
   github.com/argoproj/argo-workflows/v3/workflow/sync:
     interfaces:
       Throttler: {}
+  github.com/argoproj/argo-workflows/v3/util/sync/db:
+    interfaces:
+      SyncQueries: {}

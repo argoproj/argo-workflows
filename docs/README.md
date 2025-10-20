@@ -84,7 +84,7 @@ You're here!
 
 ## Features
 
-An incomplete list of features Argo Workflows provide:
+An incomplete list of features Argo Workflows provides:
 
 * UI to visualize and manage Workflows
 * Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)

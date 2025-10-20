@@ -6,7 +6,7 @@ If you want to automate tasks with the Argo Server API or CLI, you will need an 
 
 ## Prerequisites
 
-Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:
+Firstly, create a role with minimal permissions. This example role for jenkins has only permission to update and list workflows:
 
 ```bash
 kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io

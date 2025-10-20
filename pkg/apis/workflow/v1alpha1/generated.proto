@@ -289,7 +289,7 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 message AzureArtifact {
   optional AzureBlobContainer azureBlobContainer = 1;
 
@@ -686,7 +686,7 @@ message Gauge {
   optional string operation = 3;
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 message GitArtifact {
   // Repo is the git repository
   optional string repo = 1;

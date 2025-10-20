@@ -617,8 +617,10 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	}
 	archivedRepo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", LabelRequirements: r}).Return(int64(2), nil)
 	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", Limit: -2, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", LabelRequirements: r}).Return(false, nil)
 	archivedRepo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(int64(1), nil)
 	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", Limit: -1, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj4}, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(false, nil)
 
 	kubeClientSet := fake.NewSimpleClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {

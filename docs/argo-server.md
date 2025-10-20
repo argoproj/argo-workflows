@@ -124,7 +124,7 @@ spec:
 ...
 ```
 
-Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
+Create an ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 
 >If TLS is enabled (which it is by default), the ingress controller must be told that the backend uses HTTPS.
 >The method depends on the ingress controller, e.g.

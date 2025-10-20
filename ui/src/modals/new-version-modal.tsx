@@ -17,6 +17,18 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v3.7</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>Enhanced retry strategies with daemon container support, backoff caps, and retry variables in expressions</li>
+                <li>Multi-controller locks (semaphores and mutexes) and dynamic namespace parallelism</li>
+                <li>UI improvements: visualize workflows before submitting, markdown support in templates, and pre-filled submit forms</li>
+                <li>Cron workflow backfill support and non-root argoexec image for improved security</li>
+            </ul>
+            <p>
+                <a href='https://argo-workflows.readthedocs.io/en/release-3.7/features-3.7/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    See the list of changes
+                </a>
+            </p>
             <h5>v3.6</h5>
             <ul className='new-version-modal-bullets'>
                 <li>
