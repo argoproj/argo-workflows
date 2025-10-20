@@ -808,6 +808,14 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
+	key := wf.Namespace + "/" + wf.Name
+
+	// Update fast cache with the latest workflow object immediately after successful update
+	// This ensures we have the most recent version available for subsequent processing
+	if wfUnstructured, err := wfutil.ToUnstructured(woc.wf); err == nil {
+		woc.controller.updateWorkflowFastCache(key, wfUnstructured)
+	}
+
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
 		woc.controller.metrics.CompleteRealtimeMetricsForWfUID(string(woc.wf.GetUID()))
