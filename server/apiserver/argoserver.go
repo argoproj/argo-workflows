@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -312,7 +311,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 	serverLog := logging.RequireLoggerFromContext(ctx)
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
-	grpc_prometheus.EnableHandlingTimeHistogram()
+	prometheusMetrics := grpc_prometheus.NewServerMetrics(grpc_prometheus.WithServerHandlingTimeHistogram())
 
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB or GRPC_MESSAGE_SIZE
@@ -321,24 +320,24 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
 		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_prometheus.UnaryServerInterceptor,
+		grpc.ChainUnaryInterceptor(
+			prometheusMetrics.UnaryServerInterceptor(),
 			grpcutil.LoggerUnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
 			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderUnaryServerInterceptor(argo.GetVersion()),
-		)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_prometheus.StreamServerInterceptor,
+		),
+		grpc.ChainStreamInterceptor(
+			prometheusMetrics.StreamServerInterceptor(),
 			grpcutil.LoggerStreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.gatekeeper.StreamServerInterceptor(),
 			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderStreamServerInterceptor(argo.GetVersion()),
-		)),
+		),
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
@@ -352,7 +351,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, wfArchiveServer)
 	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService, cwftmplStore, wfDefaults))
 	syncpkg.RegisterSyncServiceServer(grpcServer, syncServer)
-	grpc_prometheus.Register(grpcServer)
+	prometheusMetrics.InitializeMetrics(grpcServer)
 	return grpcServer
 }
 
