@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"slices"
-	"sort"
 
-	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -246,16 +245,14 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podInf
 	_, _ = h.Write([]byte(podInfo.serviceAccount))
 	// we should be able to always get the same result regardless of the order of our Labels or Annotations
 	// so sort alphabetically
-	sortedLabels := maps.Keys(podInfo.podMetadata.Labels)
-	sort.Strings(sortedLabels)
+	sortedLabels := slices.Sorted(maps.Keys(podInfo.podMetadata.Labels))
 	for _, label := range sortedLabels {
 		labelValue := podInfo.podMetadata.Labels[label]
 		_, _ = h.Write([]byte(label))
 		_, _ = h.Write([]byte(labelValue))
 	}
 
-	sortedAnnotations := maps.Keys(podInfo.podMetadata.Annotations)
-	sort.Strings(sortedAnnotations)
+	sortedAnnotations := slices.Sorted(maps.Keys(podInfo.podMetadata.Annotations))
 	for _, annotation := range sortedAnnotations {
 		annotationValue := podInfo.podMetadata.Annotations[annotation]
 		_, _ = h.Write([]byte(annotation))

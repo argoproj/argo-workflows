@@ -66,7 +66,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.36.0
 	go.uber.org/mock v0.5.2
 	golang.org/x/crypto v0.43.0
-	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.17.0
 	golang.org/x/time v0.11.0
@@ -93,6 +92,7 @@ require (
 	github.com/olekukonko/ll v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b // indirect
 )
 
 require (
