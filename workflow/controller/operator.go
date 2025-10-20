@@ -796,8 +796,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
-	// writeBackToInformer no longer used; rely on fast cache + informer updates
-
 	key := wf.Namespace + "/" + wf.Name
 
 	// Update fast cache with the latest workflow object immediately after successful update

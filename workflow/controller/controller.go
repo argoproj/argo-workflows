@@ -938,7 +938,6 @@ func (wfc *WorkflowController) getWorkflowFromFastCache(key string) (*unstructur
 }
 
 // evictOldCacheEntries removes the oldest cache entries when cache is full
-// evictOldCacheEntries is no longer needed; kept as no-op for future use
 func (wfc *WorkflowController) evictOldCacheEntries() {}
 
 // deleteWorkflowFromFastCache removes workflow from fast cache
@@ -947,56 +946,31 @@ func (wfc *WorkflowController) deleteWorkflowFromFastCache(key string) {
 }
 
 // cleanupFastCache periodically cleans up expired entries from the fast cache
-// cleanupFastCache is no longer needed; kept as no-op for future use
 func (wfc *WorkflowController) cleanupFastCache(ctx context.Context) {}
 
 // getWorkflowByKeyWithCache tries to get workflow from fast cache first, then falls back to informer
 func (wfc *WorkflowController) getWorkflowByKeyWithCache(ctx context.Context, key string) (interface{}, bool) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
-	// Get from fast cache (if present)
-	var fastObj *unstructured.Unstructured
-	objFast, fastExists, _ := wfc.workflowFastStore.GetByKey(key)
-	if fastExists {
-		if un, ok := objFast.(*unstructured.Unstructured); ok {
-			fastObj = un
-		}
-	}
-
-	// Get from informer cache
+	// Get from informer cache first; if not present, we consider it not processable
 	objInf, infExists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
-	if err != nil {
+	if !infExists || err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
-		infExists = false
-	}
-
-	// Decide which one to use
-	switch {
-	case fastExists && infExists:
-		infUn, ok := objInf.(*unstructured.Unstructured)
-		if !ok {
-			// if informer object is unexpected type, prefer fast cache
-			logger.WithField("key", key).Warn(ctx, "Informer object is not unstructured; using fast cache copy")
-			return fastObj.DeepCopy(), true
-		}
-		fastRV := fastObj.GetResourceVersion()
-		infRV := infUn.GetResourceVersion()
-		// If informer is outdated compared to fast cache, use fast cache
-		if util.OutDateResourceVersion(infRV, fastRV) {
-			logger.WithField("key", key).Debug(ctx, "Using fast cache (newer resourceVersion)")
-			return fastObj.DeepCopy(), true
-		}
-		logger.WithField("key", key).Debug(ctx, "Using informer cache (newer or equal resourceVersion)")
-		return objInf, true
-	case fastExists:
-		logger.WithField("key", key).Debug(ctx, "Only fast cache present; using it")
-		return fastObj.DeepCopy(), true
-	case infExists:
-		logger.WithField("key", key).Debug(ctx, "Only informer cache present; using it")
-		return objInf, true
-	default:
 		return nil, false
 	}
+
+	// Try fast cache; if newer than informer, prefer fast
+	objFast, fastExists, _ := wfc.workflowFastStore.GetByKey(key)
+	if fastExists {
+		fastUn, okFast := objFast.(*unstructured.Unstructured)
+		infUn, okInf := objInf.(*unstructured.Unstructured)
+		if okFast && okInf {
+			if util.OutDateResourceVersion(infUn.GetResourceVersion(), fastUn.GetResourceVersion()) {
+				return fastUn.DeepCopy(), true
+			}
+		}
+	}
+	return objInf, true
 }
 
 // Returns true if the workflow given by key is in the recently completed
@@ -1058,8 +1032,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
 					if err == nil {
-						// Update fast cache immediately to avoid informer sync delays
-						wfc.updateWorkflowFastCache(key, newWf)
 						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(new)
 						wfc.throttler.Add(key, priority, creation)
