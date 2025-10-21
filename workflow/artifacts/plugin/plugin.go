@@ -109,10 +109,18 @@ func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPa
 
 	conn.Connect()
 
-	// Wait for the connection to be possibly ready within the timeout.
-	if !conn.WaitForStateChange(ctx, connectivity.Idle) {
-		_ = conn.Close()
-		return nil, fmt.Errorf("timeout waiting for plugin %s connection to become active (socket=%q)", pluginName, socketPath)
+	// Wait for the connection to reach Ready state within the timeout
+	for state := conn.GetState(); state != connectivity.Ready; state = conn.GetState() {
+		if state == connectivity.Shutdown {
+			_ = conn.Close()
+			return nil, fmt.Errorf("plugin %s connection shutdown (socket=%q)", pluginName, socketPath)
+		}
+		if !conn.WaitForStateChange(ctx, state) {
+			// Timeout or context cancelled
+			currentState := conn.GetState()
+			_ = conn.Close()
+			return nil, fmt.Errorf("timeout waiting for plugin %s connection to become ready, last state: %s (socket=%q)", pluginName, currentState, socketPath)
+		}
 	}
 
 	logger.Info(ctx, fmt.Sprintf("plugin %s: connected successfully to %q", pluginName, socketPath))
