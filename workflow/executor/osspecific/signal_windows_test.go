@@ -21,8 +21,8 @@ func TestKill(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		err = cmd.Wait()
