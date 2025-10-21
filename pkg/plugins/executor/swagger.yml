@@ -273,6 +273,16 @@ definitions:
                 description: SubPath allows an artifact to be sourced from a subpath within the specified source
                 type: string
         type: object
+    ArtifactRepositoryRef:
+        description: +protobuf.options.(gogoproto.goproto_stringer)=false
+        properties:
+            configMap:
+                description: The name of the config map. Defaults to "artifact-repositories".
+                type: string
+            key:
+                description: The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+                type: string
+        type: object
     ArtifactoryArtifact:
         description: ArtifactoryArtifact is the location of an artifactory artifact
         properties:
@@ -2010,6 +2020,10 @@ definitions:
     Inputs:
         description: Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
         properties:
+            artifactLocation:
+                $ref: '#/definitions/ArtifactLocation'
+            artifactRepositoryRef:
+                $ref: '#/definitions/ArtifactRepositoryRef'
             artifacts:
                 $ref: '#/definitions/Artifacts'
             parameters:
@@ -2535,6 +2549,10 @@ definitions:
     Outputs:
         description: Outputs hold parameters, artifacts, and results from a step
         properties:
+            artifactLocation:
+                $ref: '#/definitions/ArtifactLocation'
+            artifactRepositoryRef:
+                $ref: '#/definitions/ArtifactRepositoryRef'
             artifacts:
                 $ref: '#/definitions/Artifacts'
             exitCode:

@@ -2137,3 +2137,156 @@ func TestMergeEnvVars(t *testing.T) {
 		})
 	})
 }
+
+var helloWorldWfWithInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-input
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    inputs:
+      artifacts:
+      - name: foo
+        path: /tmp/file
+        s3:
+          key: foo
+      artifactRepositoryRef:
+        key: my-key
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+var helloWorldWfWithOutput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-output
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    outputs:
+      artifacts:
+      - name: foo
+        path: /tmp/file
+        s3:
+          key: foo
+      artifactRepositoryRef:
+        key: my-key
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+// TestInputArtifactLocation tests verifies that the artifact location is set for inputs
+func TestInputArtifactLocation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithInput)
+	woc := newWoc(ctx, *wf)
+	setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket: "foo",
+				AccessKeySecret: &apiv1.SecretKeySelector{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: "my-minio-cred",
+					},
+					Key: "accessKey",
+				},
+				SecretKeySecret: &apiv1.SecretKeySelector{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: "my-minio-cred",
+					},
+					Key: "secretKey",
+				},
+			},
+		},
+	})
+	secretVolumeMount := apiv1.VolumeMount{
+		Name:             "my-minio-cred",
+		ReadOnly:         true,
+		MountPath:        "/argo/secret/my-minio-cred",
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+	tmpl, err := getPodTemplate(&pod)
+	require.NoError(t, err)
+	assert.NotNil(t, tmpl.Inputs.ArtifactLocation)
+	assert.Nil(t, tmpl.Outputs.ArtifactLocation)
+	assert.Equal(t, "foo", tmpl.Inputs.ArtifactLocation.S3.Bucket)
+	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, secretVolumeMount)
+	assert.Contains(t, pod.Spec.Containers[0].VolumeMounts, secretVolumeMount)
+}
+
+// TestOutputArtifactLocation tests verifies that the artifact location is set for outputs
+func TestOutputArtifactLocation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithOutput)
+	woc := newWoc(ctx, *wf)
+	setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket: "foo",
+				AccessKeySecret: &apiv1.SecretKeySelector{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: "my-minio-cred",
+					},
+					Key: "accessKey",
+				},
+				SecretKeySecret: &apiv1.SecretKeySelector{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: "my-minio-cred",
+					},
+					Key: "secretKey",
+				},
+			},
+		},
+	})
+	secretVolumeMount := apiv1.VolumeMount{
+		Name:             "my-minio-cred",
+		ReadOnly:         true,
+		MountPath:        "/argo/secret/my-minio-cred",
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+	tmpl, err := getPodTemplate(&pod)
+	require.NoError(t, err)
+	assert.Nil(t, tmpl.Inputs.ArtifactLocation)
+	assert.NotNil(t, tmpl.Outputs.ArtifactLocation)
+	assert.Equal(t, "foo", tmpl.Outputs.ArtifactLocation.S3.Bucket)
+	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, secretVolumeMount)
+	assert.Contains(t, pod.Spec.Containers[0].VolumeMounts, secretVolumeMount)
+}
