@@ -34,32 +34,67 @@ func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password strin
 	return nil, fmt.Errorf("no databases are configured")
 }
 
+func validateUserNameInConfig(dbConfig config.DatabaseConfig) error {
+	isUserNameInPlaintext := dbConfig.Username != ""
+	isUserNameInSecret := dbConfig.UsernameSecret.Name != ""
+
+	if !isUserNameInPlaintext && !isUserNameInSecret {
+		return fmt.Errorf("user name has not been configured both as plaintext or as secret")
+	}
+	if isUserNameInPlaintext && isUserNameInSecret {
+		return fmt.Errorf("configure user name either as plaintext or as secret but not as both")
+	}
+	return nil
+}
+
 // createPostGresDBSession creates postgresDB session
 func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
-	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	err := validateUserNameInConfig(cfg.DatabaseConfig)
 	if err != nil {
 		return nil, err
 	}
+
+	userName := cfg.Username
+	if userName == "" {
+		userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		userName = string(userNameByte)
+	}
+
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	return createPostGresDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+	return createPostGresDBSessionWithCreds(cfg, persistPool, userName, string(passwordByte))
 }
 
 // createMySQLDBSession creates Mysql DB session
 func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
-	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	err := validateUserNameInConfig(cfg.DatabaseConfig)
 	if err != nil {
 		return nil, err
 	}
+
+	userName := cfg.Username
+	if userName == "" {
+		userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		userName = string(userNameByte)
+	}
+
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+	return createMySQLDBSessionWithCreds(cfg, persistPool, userName, string(passwordByte))
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
