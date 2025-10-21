@@ -10674,7 +10674,7 @@
           "type": "string"
         },
         "connectionTimeoutSeconds": {
-          "description": "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set",
+          "description": "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout",
           "type": "integer"
         },
         "key": {

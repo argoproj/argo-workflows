@@ -1307,7 +1307,7 @@ message PluginArtifact {
   // Configuration is the plugin defined configuration for the artifact driver plugin
   optional string configuration = 2;
 
-  // ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+  // ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
   optional int32 connectionTimeoutSeconds = 3;
 
   // Key is the path in the artifact repository where the artifact resides

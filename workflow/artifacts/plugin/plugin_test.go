@@ -95,7 +95,7 @@ func TestNewDriver(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	_, err = NewDriver(ctx, "test-plugin", path, 1)
+	_, err = NewDriver(ctx, "test-plugin", path, 1*time.Second)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "context cancelled while waiting for socket")
 }

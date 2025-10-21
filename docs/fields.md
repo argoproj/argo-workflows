@@ -3838,7 +3838,7 @@ PluginArtifact is the location of a plugin artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`configuration`|`string`|Configuration is the plugin defined configuration for the artifact driver plugin|
-|`connectionTimeoutSeconds`|`integer`|ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set|
+|`connectionTimeoutSeconds`|`integer`|ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout|
 |`key`|`string`|Key is the path in the artifact repository where the artifact resides|
 |`name`|`string`|Name is the name of the artifact driver plugin|
 

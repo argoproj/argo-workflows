@@ -145,7 +145,7 @@ class IoArgoprojWorkflowV1alpha1PluginArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            connection_timeout_seconds (int): ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set. [optional]  # noqa: E501
+            connection_timeout_seconds (int): ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -235,7 +235,7 @@ class IoArgoprojWorkflowV1alpha1PluginArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            connection_timeout_seconds (int): ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set. [optional]  # noqa: E501
+            connection_timeout_seconds (int): ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

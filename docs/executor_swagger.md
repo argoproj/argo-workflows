@@ -2717,7 +2717,7 @@ type of volume that is owned by someone else (the system).
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configuration | string| `string` |  | | Configuration is the plugin defined configuration for the artifact driver plugin |  |
-| connectionTimeoutSeconds | int32 (formatted integer)| `int32` |  | | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set |  |
+| connectionTimeoutSeconds | int32 (formatted integer)| `int32` |  | | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout |  |
 | key | string| `string` |  | | Key is the path in the artifact repository where the artifact resides |  |
 | name | [ArtifactPluginName](#artifact-plugin-name)| `ArtifactPluginName` |  | |  |  |
 

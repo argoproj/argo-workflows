@@ -2916,7 +2916,7 @@ definitions:
                 description: Configuration is the plugin defined configuration for the artifact driver plugin
                 type: string
             connectionTimeoutSeconds:
-                description: ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+                description: ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
                 format: int32
                 type: integer
             key:

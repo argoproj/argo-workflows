@@ -893,8 +893,8 @@ spec:
                               type: string
                             connectionTimeoutSeconds:
                               description: ConnectionTimeoutSeconds is the timeout
-                                for the artifact driver connection, 5 seconds if not
-                                set
+                                for the artifact driver connection, overriding the
+                                driver's timeout
                               format: int32
                               type: integer
                             key:
@@ -1955,8 +1955,8 @@ spec:
                                 type: string
                               connectionTimeoutSeconds:
                                 description: ConnectionTimeoutSeconds is the timeout
-                                  for the artifact driver connection, 5 seconds if
-                                  not set
+                                  for the artifact driver connection, overriding the
+                                  driver's timeout
                                 format: int32
                                 type: integer
                               key:
@@ -3137,8 +3137,8 @@ spec:
                                   type: string
                                 connectionTimeoutSeconds:
                                   description: ConnectionTimeoutSeconds is the timeout
-                                    for the artifact driver connection, 5 seconds
-                                    if not set
+                                    for the artifact driver connection, overriding
+                                    the driver's timeout
                                   format: int32
                                   type: integer
                                 key:
@@ -4466,7 +4466,8 @@ spec:
                           type: string
                         connectionTimeoutSeconds:
                           description: ConnectionTimeoutSeconds is the timeout for
-                            the artifact driver connection, 5 seconds if not set
+                            the artifact driver connection, overriding the driver's
+                            timeout
                           format: int32
                           type: integer
                         key:

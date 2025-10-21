@@ -3202,16 +3202,24 @@ type PluginArtifact struct {
 	Name ArtifactPluginName `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// Configuration is the plugin defined configuration for the artifact driver plugin
 	Configuration string `json:"configuration" protobuf:"bytes,2,opt,name=configuration"`
-	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
 	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty" protobuf:"varint,3,opt,name=connectionTimeoutSeconds"`
 
 	// Key is the path in the artifact repository where the artifact resides
 	Key string `json:"key" protobuf:"bytes,4,opt,name=key"`
 }
 
+func (p *PluginArtifact) ConnectionTimeout() time.Duration {
+	if p.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(p.ConnectionTimeoutSeconds) * time.Second
+	}
+	return 5 * time.Second
+}
+
 func (p *PluginArtifact) GetKey() (string, error) {
 	return p.Key, nil
 }
+
 func (p *PluginArtifact) SetKey(key string) error {
 	p.Key = key
 	return nil

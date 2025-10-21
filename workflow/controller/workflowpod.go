@@ -237,6 +237,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.addArchiveLocation(ctx, tmpl)
 
+	// Populate plugin artifact connection timeouts for all input and output artifacts
+	woc.populateAllPluginArtifactTimeouts(tmpl)
+
 	err = woc.setupServiceAccount(ctx, pod, tmpl)
 	if err != nil {
 		return nil, err
@@ -1220,6 +1223,33 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 	}
 	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
 	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
+}
+
+// populateAllPluginArtifactTimeouts populates connection timeouts for all plugin artifacts in the template
+func (woc *wfOperationCtx) populateAllPluginArtifactTimeouts(tmpl *wfv1.Template) {
+	populateTimeout := func(plugin *wfv1.PluginArtifact) {
+		if plugin != nil && plugin.ConnectionTimeoutSeconds == 0 {
+			driver, err := woc.controller.Config.GetArtifactDriver(plugin.Name)
+			if err == nil {
+				plugin.ConnectionTimeoutSeconds = driver.ConnectionTimeoutSeconds
+			}
+		}
+	}
+
+	// Populate timeout for archive location
+	if tmpl.ArchiveLocation != nil {
+		populateTimeout(tmpl.ArchiveLocation.Plugin)
+	}
+
+	// Populate timeouts for input artifacts
+	for i := range tmpl.Inputs.Artifacts {
+		populateTimeout(tmpl.Inputs.Artifacts[i].Plugin)
+	}
+
+	// Populate timeouts for output artifacts
+	for i := range tmpl.Outputs.Artifacts {
+		populateTimeout(tmpl.Outputs.Artifacts[i].Plugin)
+	}
 }
 
 // IsArchiveLogs determines if container should archive logs

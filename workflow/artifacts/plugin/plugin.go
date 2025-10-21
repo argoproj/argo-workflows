@@ -17,8 +17,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-const defaultConnectionTimeoutSeconds = int32(5)
-
 // Driver implements the ArtifactDriver interface by making gRPC calls to a plugin service
 type Driver struct {
 	pluginName wfv1.ArtifactPluginName
@@ -27,7 +25,7 @@ type Driver struct {
 }
 
 // NewDriver creates a new plugin artifact driver
-func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPath string, connectionTimeoutSeconds int32) (*Driver, error) {
+func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPath string, connectionTimeout time.Duration) (*Driver, error) {
 	// Check for the unix socket, retrying for up to two minutes if it doesn't exist immediately
 	logger := logging.RequireLoggerFromContext(ctx)
 
@@ -92,7 +90,7 @@ func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPa
 			if len(addr) > 7 && addr[:7] == "unix://" {
 				addr = addr[7:]
 			}
-			return net.DialTimeout("unix", addr, time.Duration(connectionTimeoutSeconds)*time.Second)
+			return net.DialTimeout("unix", addr, connectionTimeout)
 		}),
 	)
 	if err != nil {
@@ -106,10 +104,7 @@ func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPa
 	}
 
 	// Verify the connection by checking the connection state
-	if connectionTimeoutSeconds == 0 {
-		connectionTimeoutSeconds = defaultConnectionTimeoutSeconds
-	}
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(connectionTimeoutSeconds)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, connectionTimeout)
 	defer cancel()
 
 	conn.Connect()

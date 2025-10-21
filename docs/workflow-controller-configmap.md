@@ -338,7 +338,8 @@ ArtifactDriver is a plugin for an artifact driver
 
 ### Fields
 
-| Field Name |                           Field Type                            |                   Description                    |
-|------------|-----------------------------------------------------------------|--------------------------------------------------|
-| `Name`     | `wfv1.ArtifactPluginName` (string (name of an artifact plugin)) | Name is the name of the artifact driver plugin   |
-| `Image`    | `string`                                                        | Image is the docker image of the artifact driver |
+|         Field Name         |                           Field Type                            |                                           Description                                            |
+|----------------------------|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `Name`                     | `wfv1.ArtifactPluginName` (string (name of an artifact plugin)) | Name is the name of the artifact driver plugin                                                   |
+| `Image`                    | `string`                                                        | Image is the docker image of the artifact driver                                                 |
+| `ConnectionTimeoutSeconds` | `int32`                                                         | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set |

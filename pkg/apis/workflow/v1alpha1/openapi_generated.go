@@ -4976,7 +4976,7 @@ func schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref common.ReferenceCallba
 					},
 					"connectionTimeoutSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set",
+							Description: "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

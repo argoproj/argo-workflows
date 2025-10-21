@@ -490,7 +490,7 @@ func (as *argoServer) validateArtifactDriverConnections(ctx context.Context, cfg
 			defer wg.Done()
 
 			// Create a new driver connection
-			pluginDriver, err := plugin.NewDriver(ctx, driver.Name, driver.Name.SocketPath(), 5) // replace with driver.ConnectionTimeoutSeconds once we have it
+			pluginDriver, err := plugin.NewDriver(ctx, driver.Name, driver.Name.SocketPath(), driver.ConnectionTimeout())
 			if err != nil {
 				errorChannel <- fmt.Errorf("failed to connect to artifact driver %s: %w", driver.Name, err)
 				return

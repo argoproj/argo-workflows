@@ -279,7 +279,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 	if art.Plugin != nil {
 		// Get the socket path from the driver configuration
 		// This would typically come from the workflow controller configuration
-		driver, err := plugin.NewDriver(ctx, art.Plugin.Name, art.Plugin.Name.SocketPath(), art.Plugin.ConnectionTimeoutSeconds)
+		driver, err := plugin.NewDriver(ctx, art.Plugin.Name, art.Plugin.Name.SocketPath(), art.Plugin.ConnectionTimeout())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create plugin driver for %s: %w", art.Plugin.Name, err)
 		}
