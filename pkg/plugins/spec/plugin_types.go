@@ -26,8 +26,9 @@ type PluginSpec struct {
 
 type Sidecar struct {
 	// AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
-	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty"`
-	Container                    apiv1.Container `json:"container"`
+	AutomountServiceAccountToken         bool            `json:"automountServiceAccountToken,omitempty"`
+	AutomountWorkflowServiceAccountToken bool            `json:"automountWorkflowServiceAccountToken,omitempty"`
+	Container                            apiv1.Container `json:"container"`
 }
 
 func (s Sidecar) Validate() error {
