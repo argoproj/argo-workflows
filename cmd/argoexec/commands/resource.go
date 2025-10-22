@@ -8,6 +8,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 )
 
 func NewResourceCommand() *cobra.Command {
@@ -28,7 +30,7 @@ func NewResourceCommand() *cobra.Command {
 
 // nolint: contextcheck
 func execResource(ctx context.Context, action string) error {
-	wfExecutor := initExecutor(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	// nolint:contextcheck

@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artgc-template-ref-template-plugin
+spec:
+  entrypoint: steps-direct
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  
+  templates:
+    - name: steps-direct
+      steps:
+        - - name: main
+            templateRef:
+              name: artgc-template-plugin
+              template: artgc-template-main

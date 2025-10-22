@@ -860,6 +860,79 @@ func (a Artifacts) GetArtifactByName(name string) *Artifact {
 	return nil
 }
 
+type ArtifactPluginLogs int
+
+const (
+	IncludeLogs ArtifactPluginLogs = iota
+	ExcludeLogs
+)
+
+func (a Artifacts) GetPluginNames(ctx context.Context, defaultRepo *ArtifactRepository, includeLogs ArtifactPluginLogs, archiveLocation *ArtifactLocation) []ArtifactPluginName {
+	log := logging.RequireLoggerFromContext(ctx)
+	plugins := make(map[ArtifactPluginName]bool, 0)
+	defaultPluginName := ArtifactPluginName("")
+	if defaultRepo != nil &&
+		defaultRepo.Plugin != nil {
+		defaultPluginName = defaultRepo.Plugin.Name
+	}
+
+	// Check if the template's archiveLocation specifies a plugin
+	archiveLocationPluginName := ArtifactPluginName("")
+	if archiveLocation != nil && archiveLocation.Plugin != nil {
+		archiveLocationPluginName = archiveLocation.Plugin.Name
+		log.WithFields(logging.Fields{"plugin": archiveLocationPluginName}).Debug(ctx, "template archiveLocation has plugin")
+	}
+
+	for _, art := range a {
+		artifactPluginName := ArtifactPluginName("")
+		if art.Plugin != nil {
+			artifactPluginName = art.Plugin.Name
+		}
+		log.WithField("artifact", art).Debug(ctx, "checking artifact")
+		switch {
+		// if the artifact has a plugin name, add it
+		case artifactPluginName != "":
+			log.WithFields(logging.Fields{"plugin": artifactPluginName}).Debug(ctx, "adding plugin")
+			plugins[artifactPluginName] = true
+		// if the artifact has no plugin name but archiveLocation has a plugin, use that
+		case artifactPluginName == "" && archiveLocationPluginName != "":
+			log.WithFields(logging.Fields{"artifact": art, "plugin": archiveLocationPluginName}).Debug(ctx, "no plugin name, using archiveLocation plugin")
+			plugins[archiveLocationPluginName] = true
+		// if the artifact has no plugin name, but the default repo has a plugin name, add it. This is valid, for example an Input From.
+		case artifactPluginName == "" &&
+			defaultPluginName != "":
+			log.WithFields(logging.Fields{"artifact": art, "defaultRepo": defaultRepo}).Debug(ctx, "no plugin name, using default repo plugin")
+			plugins[defaultPluginName] = true
+		// if the default repo has a plugin name, add it
+		case defaultPluginName != "":
+			log.WithFields(logging.Fields{"plugin": defaultPluginName}).Debug(ctx, "adding default repo plugin")
+			plugins[defaultPluginName] = true
+		default:
+			log.WithFields(logging.Fields{"artifact": art.Name, "defaultRepo": defaultRepo}).Debug(ctx, "no plugin")
+		}
+	}
+
+	if needDefaultLoggingPlugin(includeLogs, defaultRepo) {
+		log.WithField("plugin", defaultRepo.Plugin.Name).Debug(ctx, "adding logging plugin")
+		plugins[defaultRepo.Plugin.Name] = true
+	}
+	pluginNames := make([]ArtifactPluginName, 0)
+	for name := range plugins {
+		if name != "" {
+			pluginNames = append(pluginNames, name)
+		}
+	}
+	return pluginNames
+}
+
+func needDefaultLoggingPlugin(includeLogs ArtifactPluginLogs, defaultRepo *ArtifactRepository) bool {
+	return includeLogs == IncludeLogs &&
+		defaultRepo != nil &&
+		defaultRepo.ArchiveLogs != nil &&
+		*defaultRepo.ArchiveLogs &&
+		defaultRepo.Plugin != nil
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -1195,6 +1268,9 @@ type ArtifactLocation struct {
 
 	// Azure contains Azure Storage artifact location details
 	Azure *AzureArtifact `json:"azure,omitempty" protobuf:"bytes,10,opt,name=azure"`
+
+	// Plugin contains plugin artifact location details
+	Plugin *PluginArtifact `json:"plugin,omitempty" protobuf:"bytes,11,opt,name=plugin"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1218,6 +1294,8 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 		return a.Raw, nil
 	} else if a.S3 != nil {
 		return a.S3, nil
+	} else if a.Plugin != nil {
+		return a.Plugin, nil
 	}
 	return nil, fmt.Errorf("artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
@@ -1242,6 +1320,8 @@ func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
 		a.Raw = &RawArtifact{}
 	case *S3Artifact:
 		a.S3 = &S3Artifact{}
+	case *PluginArtifact:
+		a.Plugin = &PluginArtifact{}
 	default:
 		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
 	}
@@ -3078,6 +3158,71 @@ func (o *OSSArtifact) SetKey(key string) error {
 
 func (o *OSSArtifact) HasLocation() bool {
 	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
+}
+
+// ArtifactPluginName is the name of an artifact plugin
+type ArtifactPluginName string
+
+func (a ArtifactPluginName) SocketDir() string {
+	return `/tmp/artifact-plugins/` + string(a)
+}
+
+func (a ArtifactPluginName) SocketPath() string {
+	return a.SocketDir() + "/socket"
+}
+
+func (a ArtifactPluginName) volumeName() string {
+	return "artifact-plugin-" + string(a)
+}
+
+func (a ArtifactPluginName) VolumeMount() apiv1.VolumeMount {
+	return apiv1.VolumeMount{
+		Name:      a.volumeName(),
+		MountPath: a.SocketDir(),
+	}
+}
+
+func (a ArtifactPluginName) Volume() apiv1.Volume {
+	return apiv1.Volume{
+		Name: a.volumeName(),
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+}
+
+// PluginArtifact is the location of a plugin artifact
+type PluginArtifact struct {
+	// Name is the name of the artifact driver plugin
+	Name ArtifactPluginName `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// Configuration is the plugin defined configuration for the artifact driver plugin
+	Configuration string `json:"configuration" protobuf:"bytes,2,opt,name=configuration"`
+	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty" protobuf:"varint,3,opt,name=connectionTimeoutSeconds"`
+
+	// Key is the path in the artifact repository where the artifact resides
+	Key string `json:"key" protobuf:"bytes,4,opt,name=key"`
+}
+
+func (p *PluginArtifact) ConnectionTimeout() time.Duration {
+	if p.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(p.ConnectionTimeoutSeconds) * time.Second
+	}
+	return 5 * time.Second
+}
+
+func (p *PluginArtifact) GetKey() (string, error) {
+	return p.Key, nil
+}
+
+func (p *PluginArtifact) SetKey(key string) error {
+	p.Key = key
+	return nil
+}
+
+// HasLocation returns true if the plugin artifact has a name, configuration and key
+func (p *PluginArtifact) HasLocation() bool {
+	return p != nil && p.Name != "" && p.Configuration != "" && p.Key != ""
 }
 
 // ExecutorConfig holds configurations of an executor container.

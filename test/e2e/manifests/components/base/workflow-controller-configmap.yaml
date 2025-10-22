@@ -7,7 +7,7 @@ data:
     spec:
       activeDeadlineSeconds: 300
       podSpecPatch: |
-        terminationGracePeriodSeconds: 3
+        terminationGracePeriodSeconds: 10
       workflowMetadata:
         labels:
           default-label: thisLabelIsFromWorkflowDefaults
@@ -24,3 +24,6 @@ data:
     completed: 10
     failed: 2
     errored: 2
+  artifactDrivers: |
+    - name: test
+      image: ghcr.io/argoproj-labs/artifact-driver-s3:v0.3.1
