@@ -191,6 +191,17 @@ function WorkflowNodeSummary(props: Props) {
                         MANIFEST
                     </Button>
                 )}{' '}
+                {props.node.type === 'Pod' && props.node.isParent && (
+                    <Button
+                        icon='external-link-alt'
+                        onClick={() => {
+                            const namespace = props.workflow.metadata.namespace;
+                            const podName = getPodName(props.workflow, props.node);
+                            window.location.href = `/workflows/${namespace}?label=workflows.argoproj.io/resource-parent-pod-name=${podName}`;
+                        }}>
+                        CHILD WORKFLOW
+                    </Button>
+                )}{' '}
                 {props.onRetryNode && ['Succeeded', 'Failed'].includes(props.node.phase) && (
                     <Button icon='undo-alt' onClick={() => props.onRetryNode()}>
                         RETRY NODE
