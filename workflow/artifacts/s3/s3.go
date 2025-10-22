@@ -189,25 +189,37 @@ func (s3Driver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Ar
 // returns true if the download is completed or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)
 func loadS3Artifact(ctx context.Context, s3cli S3Client, inputArtifact *wfv1.Artifact, path string) (bool, error) {
-	origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
+	key := inputArtifact.S3.Key
+
+	// If the key ends with "/", treat it as a directory and download immediately
+	if strings.HasSuffix(key, "/") {
+		if err := s3cli.GetDirectory(inputArtifact.S3.Bucket, key, path); err != nil {
+			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to get directory %q: %v", key, err)
+		}
+		return true, nil
+	}
+
+	// Otherwise, try downloading it as a single file first
+	origErr := s3cli.GetFile(inputArtifact.S3.Bucket, key, path)
 	if origErr == nil {
 		return true, nil
 	}
 	if !IsS3ErrCode(origErr, "NoSuchKey") {
-		return !isTransientS3Err(ctx, origErr), fmt.Errorf("failed to get file: %v", origErr)
+		return !isTransientS3Err(ctx, origErr), fmt.Errorf("failed to get file %q: %v", key, origErr)
 	}
 	// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
-	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, key)
 	if err != nil {
-		return !isTransientS3Err(ctx, err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+		return !isTransientS3Err(ctx, err), fmt.Errorf("failed to test if %q is a directory: %v", key, err)
 	}
 	if !isDir {
-		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		// Neither file nor directory. Return the original NoSuchKey error
 		return true, argoerrs.New(argoerrs.CodeNotFound, origErr.Error())
 	}
 
-	if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
-		return !isTransientS3Err(ctx, err), fmt.Errorf("failed to get directory: %v", err)
+	// Finally, download the directory
+	if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, key, path); err != nil {
+		return !isTransientS3Err(ctx, err), fmt.Errorf("failed to get directory %q: %v", key, err)
 	}
 	return true, nil
 }
