@@ -38,7 +38,7 @@ argo stop WORKFLOW WORKFLOW2... [flags]
       --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for stop
       --message string               Message to add to previously running nodes
-      --node-field-selector string   selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+      --node-field-selector string   selector of node to stop, eg: --node-field-selector inputs.parameters.myparam.value=abc
   -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 

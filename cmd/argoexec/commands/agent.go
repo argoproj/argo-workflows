@@ -15,6 +15,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3"
+	argoexecex "github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -94,17 +95,17 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"version": version.Version}).Info(ctx, "Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
-	checkErr(err)
+	argoexecex.CheckErr(err)
 
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, "agent Executor"))
 
 	logs.AddK8SLogTransportWrapper(ctx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
-	checkErr(err)
+	argoexecex.CheckErr(err)
 
 	clientSet, err := kubernetes.NewForConfig(config)
-	checkErr(err)
+	argoexecex.CheckErr(err)
 
 	restClient := clientSet.RESTClient()
 

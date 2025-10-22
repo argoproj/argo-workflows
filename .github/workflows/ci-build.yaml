@@ -228,6 +228,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - test: test-artifacts
+            profile: minimal
+            use-api: false
           - test: test-executor
             profile: minimal
             use-api: false
@@ -269,6 +272,10 @@ jobs:
           - test: test-python-sdk
             profile: minimal
             use-api: true
+          - test: test-artifacts
+            k8s_version: min
+            profile: minimal
+            use-api: false
           - test: test-executor
             k8s_version: min
             profile: minimal
@@ -383,7 +390,7 @@ jobs:
       - name: Validate release manifests
         run: make manifests-validate
       - name: Run tests ${{matrix.test}}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false
 
       # failure debugging below
       - name: Failure debug - k3s logs
