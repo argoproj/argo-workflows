@@ -1,4 +1,4 @@
-package executor
+package artifacts
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/plugin"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
@@ -32,6 +33,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 	return logging.New(drv), nil
 
 }
+
 func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
@@ -272,6 +274,16 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			UseSDKCreds: art.Azure.UseSDKCreds,
 		}
 		return &driver, nil
+	}
+
+	if art.Plugin != nil {
+		// Get the socket path from the driver configuration
+		// This would typically come from the workflow controller configuration
+		driver, err := plugin.NewDriver(ctx, art.Plugin.Name, art.Plugin.Name.SocketPath(), art.Plugin.ConnectionTimeout())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create plugin driver for %s: %w", art.Plugin.Name, err)
+		}
+		return driver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

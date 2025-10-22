@@ -6,6 +6,8 @@ import (
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 )
 
 func NewInitCommand() *cobra.Command {
@@ -24,7 +26,7 @@ func NewInitCommand() *cobra.Command {
 }
 
 func loadArtifacts(ctx context.Context) error {
-	wfExecutor := initExecutor(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 	defer wfExecutor.HandleError(ctx)
 	defer stats.LogStats()
 
@@ -32,13 +34,13 @@ func loadArtifacts(ctx context.Context) error {
 		wfExecutor.AddError(ctx, err)
 		return err
 	}
-	// Download input artifacts
 	err := wfExecutor.StageFiles(ctx)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
 		return err
 	}
-	err = wfExecutor.LoadArtifacts(ctx)
+	// Download input artifacts
+	err = wfExecutor.LoadArtifactsWithoutPlugins(ctx)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
 		return err

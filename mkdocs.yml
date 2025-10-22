@@ -119,6 +119,7 @@ nav:
           - key-only-artifacts.md
           - artifact-repository-ref.md
           - conditional-artifacts-parameters.md
+          - artifact-plugin.md
       - Access Control:
           - service-accounts.md
           - workflow-rbac.md
@@ -162,7 +163,7 @@ nav:
           - async-pattern.md
           - client-libraries.md
           - swagger.md
-      - Plugins:
+      - Executor Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
@@ -287,6 +288,7 @@ nav:
       - running-locally.md
       - doc-changes.md
       - public-api.md
+      - artifact-plugin.md
       - static-code-analysis.md
       - stress-testing.md
       - releasing.md

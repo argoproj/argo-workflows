@@ -57,7 +57,7 @@ endif
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
-E2E_SUITE_TIMEOUT     ?= 25m
+E2E_SUITE_TIMEOUT     ?= 30m
 TEST_RETRIES          ?= 2
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
@@ -240,7 +240,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-     perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 
@@ -463,6 +463,8 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINAR
 	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
 	# Why clang-format? Google uses it.
+	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
+	@echo "*** So fix them first."
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
 	$(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
@@ -471,7 +473,7 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINAR
 		--proto-import $(GOPATH)/src
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
-	touch pkg/apis/workflow/v1alpha1/generated.proto
+	touch $@
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
@@ -952,3 +954,10 @@ devcontainer-build: $(TOOL_DEVCONTAINER)
 .PHONY: devcontainer-up
 devcontainer-up: $(TOOL_DEVCONTAINER)
 	devcontainer up --workspace-folder .
+
+# gRPC/protobuf generation for artifact.proto
+pkg/apiclient/artifact/artifact.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/artifact/artifact.proto
+	$(call protoc,pkg/apiclient/artifact/artifact.proto)
+
+# Add artifact-proto to swagger dependencies
+swagger: pkg/apiclient/artifact/artifact.swagger.json
