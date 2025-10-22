@@ -89,7 +89,7 @@ func NewNodeCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVar(&setArgs.nodeFieldSelector, "node-field-selector", "", "Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&setArgs.nodeFieldSelector, "node-field-selector", "", "Selector of node to set, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	command.Flags().StringVar(&setArgs.phase, "phase", "", "Phase to set the node to, eg: --phase Succeeded")
 	command.Flags().StringArrayVarP(&setArgs.outputParameters, "output-parameter", "p", []string{}, "Set a \"supplied\" output parameter of node, eg: --output-parameter parameter-name=\"Hello, world!\"")
 	command.Flags().StringVarP(&setArgs.message, "message", "m", "", "Set the message of a node, eg: --message \"Hello, world!\"")

@@ -518,6 +518,11 @@ func TestArtifactLocation_SetType(t *testing.T) {
 		require.NoError(t, l.SetType(&AzureArtifact{}))
 		assert.NotNil(t, l.Azure)
 	})
+	t.Run("Plugin", func(t *testing.T) {
+		l := &ArtifactLocation{}
+		require.NoError(t, l.SetType(&PluginArtifact{}))
+		assert.NotNil(t, l.Plugin)
+	})
 }
 
 func TestArtifactLocation_Key(t *testing.T) {
