@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/handlers"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -312,6 +313,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
 	prometheusMetrics := grpc_prometheus.NewServerMetrics(grpc_prometheus.WithServerHandlingTimeHistogram())
+	prometheus.MustRegister(prometheusMetrics)
 
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB or GRPC_MESSAGE_SIZE
