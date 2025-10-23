@@ -198,7 +198,7 @@ func format(version string, features []feature) string {
 			output.WriteString(fmt.Sprintf("- %s by %s %s\n", feature.Description, feature.Author, issuesStr))
 
 			if feature.Details != "" {
-				for _, line := range strings.Split(feature.Details, "\n") {
+				for line := range strings.SplitSeq(feature.Details, "\n") {
 					if line != "" {
 						output.WriteString(fmt.Sprintf("  %s\n", line))
 					}

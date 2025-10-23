@@ -41,7 +41,7 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
-	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
+	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
 		log.WithError(err).Debug(ctx, "unresolved is allowed ")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)

@@ -1013,9 +1013,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 			}
 
 			stepScope := make(map[string]interface{})
-			for k, v := range scope {
-				stepScope[k] = v
-			}
+			maps.Copy(stepScope, scope)
 
 			if i := step.Inline; i != nil {
 				for _, p := range i.Inputs.Parameters {
@@ -1444,9 +1442,7 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 			return errors.InternalWrapError(err)
 		}
 		taskScope := make(map[string]interface{})
-		for k, v := range scope {
-			taskScope[k] = v
-		}
+		maps.Copy(taskScope, scope)
 		ancestry := common.GetTaskAncestry(ctx, dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
 			ancestorTask := dagValidationCtx.GetTask(ctx, ancestor)
@@ -1523,7 +1519,7 @@ func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask)
 	if tmpl.DAG.Target == "" {
 		return nil
 	}
-	for _, targetName := range strings.Split(tmpl.DAG.Target, " ") {
+	for targetName := range strings.SplitSeq(tmpl.DAG.Target, " ") {
 		if isParameter(targetName) {
 			continue
 		}
