@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 )
 
@@ -80,13 +81,9 @@ func (s *slogLogger) Level() Level {
 func (s *slogLogger) WithFields(fields Fields) Logger {
 	newFields := make(Fields)
 
-	for k, v := range s.fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, s.fields)
 
-	for k, v := range fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, fields)
 
 	return &slogLogger{
 		fields:    newFields,
@@ -101,9 +98,7 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 func (s *slogLogger) WithField(name string, value any) Logger {
 	newFields := make(Fields)
 
-	for k, v := range s.fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, s.fields)
 
 	newFields[name] = value
 

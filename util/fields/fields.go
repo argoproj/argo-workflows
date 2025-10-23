@@ -12,7 +12,7 @@ func NewCleaner(x string) Cleaner {
 			x = x[1:]
 			y.exclude = true
 		}
-		for _, field := range strings.Split(x, ",") {
+		for field := range strings.SplitSeq(x, ",") {
 			y.fields[field] = true
 		}
 	}

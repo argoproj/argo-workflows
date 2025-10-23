@@ -3,6 +3,7 @@ package templateresolution
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -288,15 +289,11 @@ func (tplCtx *TemplateContext) addPodMetadata(podMetadata *wfv1.Metadata, tmpl *
 		if tmpl.Metadata.Annotations == nil {
 			tmpl.Metadata.Annotations = make(map[string]string)
 		}
-		for k, v := range podMetadata.Annotations {
-			tmpl.Metadata.Annotations[k] = v
-		}
+		maps.Copy(tmpl.Metadata.Annotations, podMetadata.Annotations)
 		if tmpl.Metadata.Labels == nil {
 			tmpl.Metadata.Labels = make(map[string]string)
 		}
-		for k, v := range podMetadata.Labels {
-			tmpl.Metadata.Labels[k] = v
-		}
+		maps.Copy(tmpl.Metadata.Labels, podMetadata.Labels)
 	}
 }
 

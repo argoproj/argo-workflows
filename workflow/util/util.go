@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math/rand"
 	"net/http"
 	"os"
@@ -269,9 +270,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		if err != nil {
 			return fmt.Errorf("expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
-		for k, v := range passedLabels {
-			wfLabels[k] = v
-		}
+		maps.Copy(wfLabels, passedLabels)
 	}
 	wf.SetLabels(wfLabels)
 	wfAnnotations := wf.GetAnnotations()
@@ -283,9 +282,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		if err != nil {
 			return fmt.Errorf("expected Annotations of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
-		for k, v := range passedAnnotations {
-			wfAnnotations[k] = v
-		}
+		maps.Copy(wfAnnotations, passedAnnotations)
 	}
 	wf.SetAnnotations(wfAnnotations)
 	err := overrideParameters(wf, opts.Parameters)
@@ -693,9 +690,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	if newWF.Annotations == nil {
 		newWF.Annotations = make(map[string]string)
 	}
-	for key, val := range wf.Annotations {
-		newWF.Annotations[key] = val
-	}
+	maps.Copy(newWF.Annotations, wf.Annotations)
 
 	// Setting OwnerReference from original Workflow
 	newWF.OwnerReferences = append(newWF.OwnerReferences, wf.OwnerReferences...)
@@ -766,9 +761,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
-	for id, tmpl := range wf.Status.StoredTemplates {
-		newWF.Status.StoredTemplates[id] = tmpl
-	}
+	maps.Copy(newWF.Status.StoredTemplates, wf.Status.StoredTemplates)
 
 	newWF.Status.Conditions = wfv1.Conditions{{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted}}
 	newWF.Status.Phase = wfv1.WorkflowUnknown
@@ -1090,9 +1083,7 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 func setUnion[T comparable](m1 map[T]bool, m2 map[T]bool) map[T]bool {
 	res := make(map[T]bool)
 
-	for k, v := range m1 {
-		res[k] = v
-	}
+	maps.Copy(res, m1)
 
 	for k, v := range m2 {
 		if _, ok := m1[k]; !ok {

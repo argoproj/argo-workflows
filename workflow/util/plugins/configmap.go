@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -38,12 +39,8 @@ func ToConfigMap(p *spec.Plugin) (*apiv1.ConfigMap, error) {
 			"sidecar.container":                    string(data),
 		},
 	}
-	for k, v := range p.Annotations {
-		cm.Annotations[k] = v
-	}
-	for k, v := range p.Labels {
-		cm.Labels[k] = v
-	}
+	maps.Copy(cm.Annotations, p.Annotations)
+	maps.Copy(cm.Labels, p.Labels)
 	return cm, nil
 }
 
@@ -58,12 +55,8 @@ func FromConfigMap(cm *apiv1.ConfigMap) (*spec.Plugin, error) {
 			Labels:      map[string]string{},
 		},
 	}
-	for k, v := range cm.Annotations {
-		p.Annotations[k] = v
-	}
-	for k, v := range cm.Labels {
-		p.Labels[k] = v
-	}
+	maps.Copy(p.Annotations, cm.Annotations)
+	maps.Copy(p.Labels, cm.Labels)
 	delete(p.Labels, common.LabelKeyConfigMapType)
 	p.Spec.Sidecar.AutomountServiceAccountToken = cm.Data["sidecar.automountServiceAccountToken"] == "true"
 	if err := yaml.UnmarshalStrict([]byte(cm.Data["sidecar.container"]), &p.Spec.Sidecar.Container); err != nil {
