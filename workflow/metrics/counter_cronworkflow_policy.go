@@ -12,9 +12,5 @@ func addCronWfPolicyCounter(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) CronWfPolicy(ctx context.Context, name, namespace string, policy wfv1.ConcurrencyPolicy) {
-	m.AddInt(ctx, telemetry.InstrumentCronworkflowsConcurrencypolicyTriggered.Name(), 1, telemetry.InstAttribs{
-		{Name: telemetry.AttribCronWFName, Value: name},
-		{Name: telemetry.AttribCronWFNamespace, Value: namespace},
-		{Name: telemetry.AttribConcurrencyPolicy, Value: string(policy)},
-	})
+	m.AddCronworkflowsConcurrencypolicyTriggered(ctx, 1, name, namespace, string(policy))
 }

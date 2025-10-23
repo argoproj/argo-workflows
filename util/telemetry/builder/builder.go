@@ -24,6 +24,9 @@ type attribute struct {
 	DisplayName string `json:"displayName,omitempty"`
 	// Description is a markdown explanation for the documentation. One line only.
 	Description string `json:"description"`
+	// Type is the Go type of the attribute value: string, bool, int, int64, float64
+	// Defaults to string if not specified
+	Type string `json:"type,omitempty"`
 }
 
 type allowedAttribute struct {
@@ -78,6 +81,7 @@ func main() {
 	metricsDocs := flag.String("metricsDocs", "", "Path to metrics.md in the docs")
 	attributesGo := flag.String("attributesGo", "", "Path to attributes.go in util/telemetry")
 	metricsListGo := flag.String("metricsListGo", "", "Path to metrics_list.go in util/telemetry")
+	metricsHelpersGo := flag.String("metricsHelpersGo", "", "Path to metrics_helpers.go in util/telemetry")
 	flag.Parse()
 	vals := load()
 	validate(&vals)
@@ -90,6 +94,9 @@ func main() {
 		}
 		if metricsListGo != nil && *metricsListGo != "" {
 			createMetricsListGo(*metricsListGo, &vals.Metrics)
+		}
+		if metricsHelpersGo != nil && *metricsHelpersGo != "" {
+			createMetricsHelpersGo(*metricsHelpersGo, &vals.Metrics, &vals.Attributes)
 		}
 	}
 	if len(collectedErrors) > 0 {
@@ -189,4 +196,11 @@ func getAttribByName(name string, attribs *attributesList) *attribute {
 		}
 	}
 	return nil
+}
+
+func (a *attribute) attrType() string {
+	if a.Type == "" {
+		return "string"
+	}
+	return a.Type
 }
