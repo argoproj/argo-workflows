@@ -297,9 +297,9 @@ A gauge of the number of workflows currently in the cluster in each phase.
 The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them.
 A workflow can be stuck in `Running` with pending pods for a long time.
 
-| attribute |        explanation         |
-|-----------|----------------------------|
-| `status`  | Boolean: `true` or `false` |
+| attribute |               explanation               |
+|-----------|-----------------------------------------|
+| `phase`   | The phase that the Workflow has entered |
 
 #### `is_leader`
 
