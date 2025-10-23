@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 	"maps"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -422,7 +421,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		}
 	}
 	woc.log.WithFields(logging.Fields{"pluginNames": pluginNames}).Info(ctx, "artifact GC plugin names")
-	drivers, err := woc.controller.Config.GetArtifactDrivers(maps.Keys(pluginNames))
+	drivers, err := woc.controller.Config.GetArtifactDrivers(slices.Collect(maps.Keys(pluginNames)))
 	if err != nil {
 		return nil, err
 	}
