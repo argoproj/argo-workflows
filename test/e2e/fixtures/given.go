@@ -71,8 +71,8 @@ func (g *Given) WorkflowWorkflow(wf *wfv1.Workflow) *Given {
 func (g *Given) readResource(text string, v metav1.Object) {
 	g.t.Helper()
 	var file string
-	if strings.HasPrefix(text, "@") {
-		file = strings.TrimPrefix(text, "@")
+	if after, ok := strings.CutPrefix(text, "@"); ok {
+		file = after
 	} else {
 		f, err := os.CreateTemp("", "argo_e2e")
 		if err != nil {

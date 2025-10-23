@@ -6,8 +6,9 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"golang.org/x/sys/windows"
+
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 var (

@@ -274,19 +274,19 @@ func createTypeLinkWithSpacing(baseType string) (string, bool) {
 		return fmt.Sprintf("[`%s`](#%s)", cleanBaseType, strings.ToLower(baseType)), true
 	}
 
-	if strings.HasPrefix(baseType, "wfv1.") {
-		wfType := strings.TrimPrefix(baseType, "wfv1.")
+	if after, ok := strings.CutPrefix(baseType, "wfv1."); ok {
+		wfType := after
 		return fmt.Sprintf("[`%s`](fields.md#%s)", wfType, strings.ToLower(wfType)), true
 	}
 
-	if strings.HasPrefix(baseType, "apiv1.") {
-		typeName := strings.TrimPrefix(baseType, "apiv1.")
+	if after, ok := strings.CutPrefix(baseType, "apiv1."); ok {
+		typeName := after
 		anchor := strings.ToLower(typeName)
 		return fmt.Sprintf("[`%s`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#%s-v1-core)", typeName, anchor), true
 	}
 
-	if strings.HasPrefix(baseType, "metav1.") {
-		typeName := strings.TrimPrefix(baseType, "metav1.")
+	if after, ok := strings.CutPrefix(baseType, "metav1."); ok {
+		typeName := after
 		anchor := strings.ToLower(typeName)
 		return fmt.Sprintf("[`%s`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#%s-v1-meta)", typeName, anchor), true
 	}

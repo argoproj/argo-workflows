@@ -250,10 +250,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	var remainCount int64
 	if options.ShowRemainingItemCount {
 		// Calculate exact remaining count when requested
-		remainCount = totalCount - int64(options.Offset) - int64(len(wfs))
-		if remainCount < 0 {
-			remainCount = 0
-		}
+		remainCount = max(totalCount-int64(options.Offset)-int64(len(wfs)), 0)
 		meta.RemainingItemCount = &remainCount
 	} else {
 		// For pagination without remaining count, use the efficient HasMoreWorkflows method
