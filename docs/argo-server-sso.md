@@ -212,3 +212,50 @@ sso:
     - ".*argo-wf.*"
     - ".*argo-workflow.*"
 ```
+
+## Custom TLS Configuration
+
+> v 3.8 and after
+
+You can configure custom TLS settings for OIDC provider connections. This is useful when your OIDC provider uses self-signed certificates or custom Certificate Authorities.
+
+### Custom CA Certificate
+
+You can specify a custom CA certificate in several ways:
+
+**Default system CA path** - If you mount CA certificates to `/etc/ssl/certs`, they will be automatically picked up by the system without needing to configure `rootCA` or `rootCAFile`:
+
+**Explicit configuration** - You can also explicitly specify custom CA certificates:
+
+- **Inline PEM content** - Provide the CA certificate content directly in the configuration:
+
+```yaml
+sso:
+  # Custom PEM encoded CA certificate file contents
+  rootCA: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDXTCCAkWgAwIBAgIJAKoK/heBjcOuMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+    ...
+    -----END CERTIFICATE-----
+```
+
+- **File path** - Reference a CA certificate file mounted in the container:
+
+```yaml
+sso:
+  # Custom CA certificate file name
+  rootCAFile: /etc/ssl/certs/custom-ca.pem
+```
+
+### Skip TLS Verification
+
+For development or testing environments, you can disable TLS certificate verification:
+
+```yaml
+sso:
+  # Skip TLS certificate verification (not recommended for production)
+  insecureSkipVerify: true
+```
+
+!!! Warning
+Using `insecureSkipVerify: true` disables TLS certificate verification and should only be used in development environments. For production, always use proper CA certificates.

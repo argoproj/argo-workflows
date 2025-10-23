@@ -458,6 +458,12 @@ data:
       enabled: false
     # Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
     insecureSkipVerify: false
+    # Custom PEM encoded CA certificate file contents. >= v3.8
+    # Note: If CA certificates are mounted to /etc/ssl/certs, this config is not needed.
+    rootCA: ""
+    # Custom CA certificate file name. >= v3.8
+    # Note: If CA certificates are mounted to /etc/ssl/certs, this config is not needed.
+    rootCAFile: ""
 
   # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:
