@@ -20,7 +20,7 @@ type feature struct {
 
 // Metadata field definitions
 var (
-	metadataFields = []string{"Component", "Issues", "Description", "Author"}
+	metadataFields = []string{"Component", "Issues", "Description", "Authors", "Author"}
 )
 
 func getMetadataPattern(field string) *regexp.Regexp {
@@ -80,9 +80,19 @@ func parseContent(source string, content string) (bool, feature, error) {
 	// Check required sections
 	isValid := true
 	for _, field := range metadataFields {
-		if !strings.Contains(content, field+":") {
-			fmt.Printf("Error: Missing required section '%s:' in %s\n", field, source)
-			isValid = false
+		switch field {
+		case "Authors":
+			if !strings.Contains(content, "Authors:") && !strings.Contains(content, "Author:") {
+				fmt.Printf("Error: Missing required section 'Authors:' (or 'Author:') in %s\n", source)
+				isValid = false
+			}
+		case "Author":
+			// Skip - handled by "Authors" check above
+		default:
+			if !strings.Contains(content, field+":") {
+				fmt.Printf("Error: Missing required section '%s:' in %s\n", field, source)
+				isValid = false
+			}
 		}
 	}
 
@@ -126,7 +136,9 @@ func parseContent(source string, content string) (bool, feature, error) {
 	}
 
 	author := ""
-	if matches := getMetadataPattern("Author").FindStringSubmatch(content); len(matches) > 1 {
+	if matches := getMetadataPattern("Authors").FindStringSubmatch(content); len(matches) > 1 {
+		author = strings.TrimSpace(matches[1])
+	} else if matches := getMetadataPattern("Author").FindStringSubmatch(content); len(matches) > 1 {
 		author = strings.TrimSpace(matches[1])
 	}
 
