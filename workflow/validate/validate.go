@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/robfig/cron/v3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,19 +207,19 @@ func ValidateWorkflow(ctx context.Context, wftmplGetter templateresolution.Workf
 		}
 	}
 
-	annotationSources := [][]string{maps.Keys(wf.Annotations)}
-	labelSources := [][]string{maps.Keys(wf.Labels)}
+	annotationSources := [][]string{slices.Collect(maps.Keys(wf.Annotations))}
+	labelSources := [][]string{slices.Collect(maps.Keys(wf.Labels))}
 	if wf.Spec.WorkflowMetadata != nil {
-		annotationSources = append(annotationSources, maps.Keys(wf.Spec.WorkflowMetadata.Annotations))
-		labelSources = append(labelSources, maps.Keys(wf.Spec.WorkflowMetadata.Labels), maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom))
+		annotationSources = append(annotationSources, slices.Collect(maps.Keys(wf.Spec.WorkflowMetadata.Annotations)))
+		labelSources = append(labelSources, slices.Collect(maps.Keys(wf.Spec.WorkflowMetadata.Labels)), slices.Collect(maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom)))
 	}
 	if wfDefaults != nil && wfDefaults.Spec.WorkflowMetadata != nil {
-		annotationSources = append(annotationSources, maps.Keys(wfDefaults.Spec.WorkflowMetadata.Annotations))
-		labelSources = append(labelSources, maps.Keys(wfDefaults.Spec.WorkflowMetadata.Labels), maps.Keys(wfDefaults.Spec.WorkflowMetadata.LabelsFrom))
+		annotationSources = append(annotationSources, slices.Collect(maps.Keys(wfDefaults.Spec.WorkflowMetadata.Annotations)))
+		labelSources = append(labelSources, slices.Collect(maps.Keys(wfDefaults.Spec.WorkflowMetadata.Labels)), slices.Collect(maps.Keys(wfDefaults.Spec.WorkflowMetadata.LabelsFrom)))
 	}
 	if wf.Spec.WorkflowTemplateRef != nil && wfSpecHolder.GetWorkflowSpec().WorkflowMetadata != nil {
-		annotationSources = append(annotationSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations))
-		labelSources = append(labelSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels), maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom))
+		annotationSources = append(annotationSources, slices.Collect(maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations)))
+		labelSources = append(labelSources, slices.Collect(maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels)), slices.Collect(maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom)))
 	}
 	mergedAnnotations := getUniqueKeys(annotationSources...)
 	mergedLabels := getUniqueKeys(labelSources...)
