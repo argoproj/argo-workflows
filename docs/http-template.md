@@ -33,8 +33,8 @@ spec:
         # Available variables:
         #  request.body: string, the request body
         #  request.headers: map[string][]string, the request headers
-        #  response.url: string, the request url
-        #  response.method: string, the request method
+        #  request.url: string, the request url
+        #  request.method: string, the request method
         #  response.statusCode: int, the response status code
         #  response.body: string, the response body
         #  response.headers: map[string][]string, the response headers
