@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -113,8 +112,18 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
-	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
-	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}
+
+	// Create http client
+	httpClientConfig := HTTPClientConfig{
+		InsecureSkipVerify: c.InsecureSkipVerify,
+		RootCA:             c.RootCA,
+		RootCAFile:         c.RootCAFile,
+	}
+	httpClient, err := createHTTPClient(httpClientConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
+	}
+
 	oidcContext := oidc.ClientContext(ctx, httpClient)
 	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
 	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
@@ -199,7 +208,7 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA, "rootCAFile": c.RootCAFile}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
