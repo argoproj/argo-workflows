@@ -21,19 +21,19 @@ func addErrorCounter(ctx context.Context, m *Metrics) error {
 	}
 	// Initialise all values to zero
 	for _, cause := range []ErrorCause{ErrorCauseOperationPanic, ErrorCauseCronWorkflowSubmissionError, ErrorCauseCronWorkflowSpecError} {
-		m.AddInt(ctx, telemetry.InstrumentErrorCount.Name(), 0, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(cause)}})
+		m.AddErrorCount(ctx, 0, string(cause))
 	}
 	return nil
 }
 
 func (m *Metrics) OperationPanic(ctx context.Context) {
-	m.AddInt(ctx, telemetry.InstrumentErrorCount.Name(), 1, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(ErrorCauseOperationPanic)}})
+	m.AddErrorCount(ctx, 1, string(ErrorCauseOperationPanic))
 }
 
 func (m *Metrics) CronWorkflowSubmissionError(ctx context.Context) {
-	m.AddInt(ctx, telemetry.InstrumentErrorCount.Name(), 1, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(ErrorCauseCronWorkflowSubmissionError)}})
+	m.AddErrorCount(ctx, 1, string(ErrorCauseCronWorkflowSubmissionError))
 }
 
 func (m *Metrics) CronWorkflowSpecError(ctx context.Context) {
-	m.AddInt(ctx, telemetry.InstrumentErrorCount.Name(), 1, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(ErrorCauseCronWorkflowSpecError)}})
+	m.AddErrorCount(ctx, 1, string(ErrorCauseCronWorkflowSpecError))
 }
