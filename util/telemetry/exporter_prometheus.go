@@ -5,9 +5,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	promgo "github.com/prometheus/client_golang/prometheus"
+	prommodel "github.com/prometheus/common/model"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 
 	// "github.com/prometheus/client_golang/prometheus/collectors"
@@ -18,6 +20,14 @@ import (
 
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
+
+// by default prometheus has NameValidationScheme set to UTF8Validation which allows metrics names to keep original delimiters (e.g. .),
+// rather than replacing with underscores. This flag allows the user to revert to the legacy behavior.
+func init() {
+	if _, legacyValidationScheme := os.LookupEnv("PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME"); legacyValidationScheme {
+		prommodel.NameValidationScheme = prommodel.LegacyValidation //nolint:staticcheck
+	}
+}
 
 const (
 	DefaultPrometheusServerPort = 9090
