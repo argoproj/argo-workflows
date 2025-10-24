@@ -215,9 +215,9 @@ sso:
 
 ## Custom TLS Configuration
 
-> v3.8 and after
+> v 3.8 and after
 
-You can configure custom TLS settings for OIDC provider connections. This is useful when your OIDC provider uses self-signed certificates or custom Certificate Authorities (CAs).
+You can configure custom TLS settings for OIDC provider connections. This is useful when your OIDC provider uses self-signed certificates or custom Certificate Authorities.
 
 ### Custom CA Certificate
 
