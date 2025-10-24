@@ -215,7 +215,7 @@ func TestCreateHTTPClient_WithRootCAFile(t *testing.T) {
 	// Create a temporary file with test certificate
 	tmpDir := t.TempDir()
 	caFile := filepath.Join(tmpDir, "ca.pem")
-	
+
 	err = os.WriteFile(caFile, []byte(testCertPEM), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test CA file: %v", err)
@@ -260,7 +260,7 @@ func TestCreateHTTPClient_WithBothRootCAStringAndFile(t *testing.T) {
 	// Create a temporary file with test certificate
 	tmpDir := t.TempDir()
 	caFile := filepath.Join(tmpDir, "ca.pem")
-	
+
 	err = os.WriteFile(caFile, []byte(testCertPEM), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test CA file: %v", err)
@@ -344,7 +344,7 @@ func TestCreateHTTPClient_InvalidRootCAFile(t *testing.T) {
 	// Create a temporary file with invalid certificate content
 	tmpDir := t.TempDir()
 	caFile := filepath.Join(tmpDir, "invalid-ca.pem")
-	
+
 	err := os.WriteFile(caFile, []byte("invalid-pem-content"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test CA file: %v", err)
@@ -380,7 +380,7 @@ func TestCreateHTTPClient_AllOptionsEnabled(t *testing.T) {
 	// Create a temporary file with test certificate
 	tmpDir := t.TempDir()
 	caFile := filepath.Join(tmpDir, "ca.pem")
-	
+
 	err = os.WriteFile(caFile, []byte(testCertPEM), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test CA file: %v", err)
