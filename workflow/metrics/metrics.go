@@ -49,6 +49,8 @@ func New(ctx context.Context, serviceName, prometheusName string, config *teleme
 		addWorkflowPhaseGauge,
 		addCronWfTriggerCounter,
 		addCronWfPolicyCounter,
+		addMutexCounter,
+		addSemaphoreCounter,
 		addWorkflowPhaseCounter,
 		addWorkflowTemplateCounter,
 		addWorkflowTemplateHistogram,
