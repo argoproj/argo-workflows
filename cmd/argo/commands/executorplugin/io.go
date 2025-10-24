@@ -41,7 +41,7 @@ func loadPluginManifest(pluginDir string) (*spec.Plugin, error) {
 }
 
 func addHeader(x []byte, h string) []byte {
-	return []byte(fmt.Sprintf("%s\n%s", h, string(x)))
+	return fmt.Appendf(nil, "%s\n%s", h, string(x))
 }
 
 func addCodegenHeader(x []byte) []byte {

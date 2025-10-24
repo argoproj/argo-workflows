@@ -1,6 +1,8 @@
 package resource
 
 import (
+	"maps"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -18,12 +20,8 @@ func DurationForPod(pod *corev1.Pod) wfv1.ResourcesDuration {
 			corev1.ResourceMemory: resource.MustParse("100Mi"),
 		}}
 		// Update with user-configured resources (falls back to limits as == requests, same as Kubernetes).
-		for name, quantity := range c.Resources.Limits {
-			summaries[c.Name].ResourceList[name] = quantity
-		}
-		for name, quantity := range c.Resources.Requests {
-			summaries[c.Name].ResourceList[name] = quantity
-		}
+		maps.Copy(summaries[c.Name].ResourceList, c.Resources.Limits)
+		maps.Copy(summaries[c.Name].ResourceList, c.Resources.Requests)
 	}
 	for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 		summaries[c.Name] = Summary{ResourceList: summaries[c.Name].ResourceList, ContainerState: c.State}

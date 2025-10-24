@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/expr-lang/expr"
 
@@ -61,9 +62,7 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	m := make(map[string]interface{})
-	for k, v := range s.scope {
-		m[k] = v
-	}
+	maps.Copy(m, s.scope)
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts

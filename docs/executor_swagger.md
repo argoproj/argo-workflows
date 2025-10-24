@@ -234,6 +234,7 @@ It will marshall back to string - marshalling is not symmetric.
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
@@ -296,6 +297,7 @@ of a single workflow step, which the executor will use as a default location to 
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 
@@ -333,10 +335,25 @@ of a single workflow step, which the executor will use as a default location to 
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 | subPath | string| `string` |  | | SubPath allows an artifact to be sourced from a subpath within the specified source |  |
+
+
+
+### <span id="artifact-plugin-name"></span> ArtifactPluginName
+
+
+> ArtifactPluginName is the name of an artifact plugin
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ArtifactPluginName | string| string | | ArtifactPluginName is the name of an artifact plugin |  |
 
 
 
@@ -2684,6 +2701,27 @@ type of volume that is owned by someone else (the system).
 
 
 `interface{}`
+
+### <span id="plugin-artifact"></span> PluginArtifact
+
+
+> PluginArtifact is the location of a plugin artifact
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configuration | string| `string` |  | | Configuration is the plugin defined configuration for the artifact driver plugin |  |
+| connectionTimeoutSeconds | int32 (formatted integer)| `int32` |  | | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout |  |
+| key | string| `string` |  | | Key is the path in the artifact repository where the artifact resides |  |
+| name | [ArtifactPluginName](#artifact-plugin-name)| `ArtifactPluginName` |  | |  |  |
+
+
 
 ### <span id="pod-affinity"></span> PodAffinity
 

@@ -23,6 +23,7 @@ Name | Type | Description | Notes
 **optional** | **bool** | Make Artifacts optional, if Artifacts doesn&#39;t generate or exist | [optional] 
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifact**](IoArgoprojWorkflowV1alpha1OSSArtifact.md) |  | [optional] 
 **path** | **str** | Path is the container path to the artifact | [optional] 
+**plugin** | [**IoArgoprojWorkflowV1alpha1PluginArtifact**](IoArgoprojWorkflowV1alpha1PluginArtifact.md) |  | [optional] 
 **raw** | [**IoArgoprojWorkflowV1alpha1RawArtifact**](IoArgoprojWorkflowV1alpha1RawArtifact.md) |  | [optional] 
 **recurse_mode** | **bool** | If mode is set, apply the permission recursively into the artifact if it is a folder | [optional] 
 **s3** | [**IoArgoprojWorkflowV1alpha1S3Artifact**](IoArgoprojWorkflowV1alpha1S3Artifact.md) |  | [optional] 
