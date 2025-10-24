@@ -97,17 +97,6 @@ func (s *DBSemaphoreSuite) TestSynchronizationMultiple() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
-// Legacy CRD entries: mutex and semaphore
-func (s *DBSemaphoreSuite) TestSynchronizationLegacyMutexAndSemaphore() {
-	s.Given().
-		Workflow("@synchronization/db-legacy-mutex-semaphore.yaml").
-		When().
-		ClearDBSemaphoreState().
-		SetupDatabaseSemaphore("argo/workflow", 1).
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
-}
-
 func (s *DBSemaphoreSuite) TestSynchronizationCases() {
 	type test struct {
 		semaphore      bool

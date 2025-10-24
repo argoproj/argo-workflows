@@ -112,58 +112,6 @@ func (s *MetricsSuite) TestDAGMetrics() {
 		})
 }
 
-func (s *MetricsSuite) TestDeprecatedCronSchedule() {
-	s.Given().
-		CronWorkflow(`@testdata/cronworkflow-deprecated-schedule.yaml`).
-		When().
-		CreateCronWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		Then().
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="cronworkflow schedule",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
-func (s *MetricsSuite) TestDeprecatedMutex() {
-	s.Given().
-		Workflow(`@testdata/synchronization-deprecated-mutex.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="synchronization mutex",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
-func (s *MetricsSuite) TestDeprecatedSemaphore() {
-	s.Given().
-		Workflow(`@testdata/synchronization-deprecated-semaphore.yaml`).
-		When().
-		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		DeleteConfigMap("my-config").
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="synchronization semaphore",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
 func (s *MetricsSuite) TestFailedMetric() {
 	// Define expected increases once
 	expectedIncreases := map[string]float64{

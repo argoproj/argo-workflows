@@ -5005,10 +5005,6 @@
           "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
           "type": "integer"
         },
-        "schedule": {
-          "description": "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
-          "type": "string"
-        },
         "schedules": {
           "description": "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
           "items": {
@@ -7127,20 +7123,12 @@
     "io.argoproj.workflow.v1alpha1.Synchronization": {
       "description": "Synchronization holds synchronization lock configuration",
       "properties": {
-        "mutex": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex",
-          "description": "Mutex holds the Mutex lock details - deprecated, use mutexes instead"
-        },
         "mutexes": {
           "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
           },
           "type": "array"
-        },
-        "semaphore": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef",
-          "description": "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead"
         },
         "semaphores": {
           "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",

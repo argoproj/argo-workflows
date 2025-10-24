@@ -104,7 +104,7 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	if err != nil {
 		return err
 	}
-	cronTab, err := cron.ParseStandard(cronWF.Spec.Schedule)
+	cronTab, err := cron.ParseStandard(cronWF.Spec.GetScheduleString())
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	if !cliOps.parallel {
 		wf.Spec.Priority = &priority
 		wf.Spec.Synchronization = &v1alpha1.Synchronization{
-			Mutex: &v1alpha1.Mutex{Name: cliOps.name},
+			Mutexes: []*v1alpha1.Mutex{{Name: cliOps.name}},
 		}
 	}
 	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, param)

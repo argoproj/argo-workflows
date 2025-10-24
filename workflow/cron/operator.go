@@ -324,7 +324,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Conte
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone(ctx) {
+		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone() {
 			var now time.Time
 			var cronSchedule cron.Schedule
 			now = time.Now()

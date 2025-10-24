@@ -1762,10 +1762,6 @@ type TemplateRef struct {
 
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
-	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Mutex holds the Mutex lock details - deprecated, use mutexes instead
-	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 	// v3.6 and after: Semaphores holds the list of Semaphores configuration
 	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
 	// v3.6 and after: Mutexes holds the list of Mutex lock details
@@ -1774,10 +1770,6 @@ type Synchronization struct {
 
 func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelector {
 	selectors := make([]*apiv1.ConfigMapKeySelector, 0)
-	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
-		selectors = append(selectors, s.Semaphore.ConfigMapKeyRef)
-	}
-
 	for _, semaphore := range s.Semaphores {
 		if semaphore.ConfigMapKeyRef != nil {
 			selectors = append(selectors, semaphore.ConfigMapKeyRef)

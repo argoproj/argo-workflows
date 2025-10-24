@@ -39,10 +39,9 @@ spec:
       parameters:
       - name: server-ip
     synchronization:
-      mutex:
-        name: client-{{workflow.uid}}
+      mutexes:
+        - name: client-{{workflow.uid}}
     container:
       image: appropriate/curl:latest
       command: ["/bin/sh", "-c"]
       args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
-
