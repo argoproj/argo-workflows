@@ -1,7 +1,7 @@
 <!-- Required: All of these fields are required, including at least one issue -->
 Description: Allow custom CA certificate configuration for SSO OIDC provider connections
 Authors: [bradfordwagner](https://github.com/bradfordwagner)
-Component: Server
+Component: General
 Issues: 7198
 
 <!--
@@ -11,9 +11,9 @@ This is particularly useful when your OIDC provider uses self-signed certificate
 * Use this feature when your OIDC provider uses custom self-signed CA certificates
 * Configure custom CA certificates either inline or by file path
 
-## Configuration Examples
+### Configuration Examples
 
-### Inline PEM content
+#### Inline PEM content
 ```yaml
 sso:
   # Custom PEM encoded CA certificate file contents
@@ -24,7 +24,7 @@ sso:
     -----END CERTIFICATE-----
 ```
 
-### File path reference
+#### File path reference
 ```yaml
 sso:
   # Custom CA certificate file name
