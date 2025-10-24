@@ -227,7 +227,7 @@ You can specify a custom CA certificate in several ways:
 
 **Explicit configuration** - You can also explicitly specify custom CA certificates:
 
-1. **Inline PEM content** - Provide the CA certificate content directly in the configuration:
+- **Inline PEM content** - Provide the CA certificate content directly in the configuration:
 
 ```yaml
 sso:
@@ -239,7 +239,7 @@ sso:
     -----END CERTIFICATE-----
 ```
 
-2. **File path** - Reference a CA certificate file mounted in the container:
+- **File path** - Reference a CA certificate file mounted in the container:
 
 ```yaml
 sso:
