@@ -33,6 +33,8 @@ import (
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -48,7 +50,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
-	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -530,8 +531,14 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset, wfc.namespace) {
+	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+
+	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
@@ -1268,7 +1275,7 @@ func (wfc *WorkflowController) getWorkflowPhaseMetrics(ctx context.Context) map[
 	if wfc.wfInformer != nil {
 		for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-			errors.CheckError(ctx, err)
+			errors.CheckError(err)
 			result[string(phase)] = int64(len(keys))
 		}
 	}
@@ -1283,7 +1290,7 @@ func (wfc *WorkflowController) getWorkflowConditionMetrics(ctx context.Context) 
 			{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 		} {
 			keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
-			errors.CheckError(ctx, err)
+			errors.CheckError(err)
 			result[x] = int64(len(keys))
 		}
 	}

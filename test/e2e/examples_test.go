@@ -3,13 +3,13 @@
 package e2e
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -23,9 +23,16 @@ func (s *ExamplesSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *ExamplesSuite) TestExampleWorkflows() {
-	ctx := logging.TestContext(s.T().Context())
-	err := fileutil.WalkManifests(ctx, "../../examples", func(path string, data []byte) error {
-		wfs, err := common.SplitWorkflowYAMLFile(ctx, data, true)
+	err := fileutil.WalkManifests("../../examples", func(path string, data []byte) error {
+		// Skip non-workflow files like ConfigMaps, JSON files, PVCs, and ResourceQuotas
+		if strings.Contains(path, "configmaps/") ||
+			strings.HasSuffix(path, ".json") ||
+			strings.HasSuffix(path, "testvolume.yaml") ||
+			strings.HasSuffix(path, "workflow-count-resourcequota.yaml") {
+			return nil
+		}
+
+		wfs, err := common.SplitWorkflowYAMLFile(data, true)
 		if err != nil {
 			s.T().Fatalf("Error parsing %s: %v", path, err)
 		}
