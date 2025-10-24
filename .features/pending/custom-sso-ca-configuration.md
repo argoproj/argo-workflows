@@ -1,10 +1,8 @@
-<!-- Required: All of these fields are required, including at least one issue -->
 Description: Allow custom CA certificate configuration for SSO OIDC provider connections
 Authors: [bradfordwagner](https://github.com/bradfordwagner)
 Component: General
 Issues: 7198
 
-<!--
 This feature adds support for custom TLS configuration when connecting to OIDC providers for SSO authentication.
 This is particularly useful when your OIDC provider uses self-signed certificates or custom Certificate Authorities (CAs).
 
@@ -33,4 +31,3 @@ sso:
 
 The system will automatically use certificates mounted to `/etc/ssl/certs` without additional configuration.
 For production environments, always use proper CA certificates instead of skipping TLS verification.
--->
