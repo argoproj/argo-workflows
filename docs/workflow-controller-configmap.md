@@ -120,7 +120,7 @@ WorkflowEvents configures how workflow events are emitted
 
 ## KubeConfig
 
-KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method, it is used when the workflow controller is in a different cluster with the workflow workloads
+KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method; it is used when the workflow controller is in a different cluster from the workflow workloads
 
 ### Fields
 
@@ -319,6 +319,7 @@ SyncConfig contains synchronization configuration for database locks (semaphores
 | `PostgreSQL`                 | [`PostgreSQLConfig`](#postgresqlconfig) | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time                                                                                                                                                         |
 | `MySQL`                      | [`MySQLConfig`](#mysqlconfig)           | MySQL configuration for MySQL database, don't use PostgreSQL at the same time                                                                                                                                                              |
 | `ConnectionPool`             | [`ConnectionPool`](#connectionpool)     | Pooled connection settings for all types of database connections                                                                                                                                                                           |
+| `EnableAPI`                  | `bool`                                  | EnableAPI enables the database synchronization API                                                                                                                                                                                         |
 | `ControllerName`             | `string`                                | ControllerName sets a unique name for this controller instance                                                                                                                                                                             |
 | `SkipMigration`              | `bool`                                  | SkipMigration skips database migration if needed                                                                                                                                                                                           |
 | `LimitTableName`             | `string`                                | LimitTableName customizes the table name for semaphore limits, if not set, the default value is "sync_limit"                                                                                                                               |

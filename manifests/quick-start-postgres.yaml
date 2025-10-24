@@ -5489,6 +5489,7 @@ data:
     failed: 3
     errored: 3
   synchronization: |
+    enableAPI: true
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
@@ -5990,7 +5991,7 @@ spec:
       - env:
         - name: POSTGRESQL_ADMIN_PASSWORD
           value: password
-        image: quay.io/fedora/postgresql-12@sha256:055c8bd433e3e6617e9ecbf0fe1ab1d611582cb0102aac64e42724af5f43cbac
+        image: quay.io/fedora/postgresql-16@sha256:06d566b4be3ba0542690382c2586c5e7e033005cc09a689a5c1f5c1fe7c6cc96
         name: main
         ports:
         - containerPort: 5432

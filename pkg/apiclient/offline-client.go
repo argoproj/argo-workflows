@@ -136,7 +136,7 @@ func (c *offlineClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error
 	return nil, ErrNoArgoServer
 }
 
-func (c *offlineClient) NewSyncServiceClient() (syncpkg.SyncServiceClient, error) {
+func (c *offlineClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
 	return nil, ErrNoArgoServer
 }
 

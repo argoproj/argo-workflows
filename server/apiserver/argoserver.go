@@ -255,7 +255,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
 	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
 	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
-	syncServer := sync.NewSyncServer()
+
+	syncServer := sync.NewSyncServer(ctx, as.clients.Kubernetes, as.namespace, config.Synchronization)
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())

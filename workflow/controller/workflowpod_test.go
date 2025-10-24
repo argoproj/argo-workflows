@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"testing"
 	"time"
@@ -812,10 +813,8 @@ func TestOutOfCluster(t *testing.T) {
 	verifyKubeConfigVolume := func(ctr apiv1.Container, volName, mountPath string) {
 		for _, vol := range ctr.VolumeMounts {
 			if vol.Name == volName && vol.MountPath == mountPath {
-				for _, arg := range ctr.Args {
-					if arg == fmt.Sprintf("--kubeconfig=%s", mountPath) {
-						return
-					}
+				if slices.Contains(ctr.Args, fmt.Sprintf("--kubeconfig=%s", mountPath)) {
+					return
 				}
 			}
 		}
