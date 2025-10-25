@@ -315,6 +315,7 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics(ctx)
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+		wfc.wfThrottleQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
@@ -709,6 +710,7 @@ func TestParallelism(t *testing.T) {
 				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-0
+  namespace: default
 spec:
   entrypoint: main
   templates:
@@ -719,6 +721,7 @@ spec:
 				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-1
+  namespace: default
 spec:
   entrypoint: main
   templates:
@@ -729,6 +732,7 @@ spec:
 				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-2
+  namespace: default
 spec:
   shutdown: Terminate
   entrypoint: main
@@ -741,20 +745,25 @@ spec:
 			)
 			defer cancel()
 
+			// Process throttle items first to handle throttling
+			assert.True(t, controller.processNextThrottleItem(ctx))
+			assert.True(t, controller.processNextThrottleItem(ctx))
+			assert.True(t, controller.processNextThrottleItem(ctx))
+
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 
-			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
+			expectNamespacedWorkflow(ctx, controller, "default", "my-wf-0", func(wf *wfv1.Workflow) {
 				require.NotNil(t, wf)
 				assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			})
-			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+			expectNamespacedWorkflow(ctx, controller, "default", "my-wf-1", func(wf *wfv1.Workflow) {
 				require.NotNil(t, wf)
 				assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
 				assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 			})
-			expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
+			expectNamespacedWorkflow(ctx, controller, "default", "my-wf-2", func(wf *wfv1.Workflow) {
 				require.NotNil(t, wf)
 				assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
 			})
