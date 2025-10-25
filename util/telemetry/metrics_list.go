@@ -69,7 +69,7 @@ var InstrumentGauge = BuiltinInstrument{
 	instType:    Int64ObservableGauge,
 	attributes: []BuiltinAttribute{
 		{
-			name: AttribWorkflowStatus,
+			name: AttribWorkflowPhase,
 		},
 	},
 }

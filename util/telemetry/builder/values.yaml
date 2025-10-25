@@ -140,7 +140,7 @@ metrics:
       The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them.
       A workflow can be stuck in `Running` with pending pods for a long time.
     attributes:
-      - name: WorkflowStatus
+      - name: WorkflowPhase
     unit: "{workflow}"
     type: Int64ObservableGauge
   - name: IsLeader
