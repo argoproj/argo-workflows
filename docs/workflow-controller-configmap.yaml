@@ -294,6 +294,8 @@ data:
       port: 5432
       database: postgres
       tableName: argo_workflows
+      # The user name can either be passed in plaintext with userName configuration or as a secret with the userNameSecret configuration
+      # userName: your-database-username
       # the database secrets must be in the same namespace of the controller
       userNameSecret:
         name: argo-postgres-config
