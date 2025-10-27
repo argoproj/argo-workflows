@@ -3208,7 +3208,7 @@ func (woc *wfOperationCtx) hasOutputResultRef(ctx context.Context, name string, 
 	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
 	// This is most common, so should be done first.
 	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
-	contains, err := regexp.MatchString(referenceRegex, string(jsonValue))
+	contains, err := regexp.Match(referenceRegex, jsonValue)
 	if err != nil {
 		woc.log.WithField("regex", referenceRegex).WithError(err).Warn(ctx, "Error in regex compilation")
 	}
@@ -3218,7 +3218,7 @@ func (woc *wfOperationCtx) hasOutputResultRef(ctx context.Context, name string, 
 	}
 
 	// Next, consider expression case (e.g.: `expression: "steps['generate-random-1'].outputs.result"`)
-	contains, err = regexp.MatchString(expressionRegex, string(jsonValue))
+	contains, err = regexp.Match(expressionRegex, jsonValue)
 	if err != nil {
 		woc.log.WithField("regex", expressionRegex).WithError(err).Warn(ctx, "Error in regex compilation")
 	}

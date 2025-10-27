@@ -138,9 +138,9 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					}
 				}()
 				scanner := bufio.NewScanner(stream)
-				//give it more space for long line
+				// give it more space for long line
 				scanner.Buffer(make([]byte, startBufSize), maxTokenLength)
-				//avoid bufio.ErrTooLong error when encounters a very very long line
+				// avoid bufio.ErrTooLong error when encounters a very very long line
 				scanner.Split(scanLinesOrGiveLong)
 				for scanner.Scan() {
 					select {
@@ -149,7 +149,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					default:
 						line := scanner.Text()
 						parts := strings.SplitN(line, " ", 2)
-						//on old version k8s, the line may contains no space, hence len(parts) would equal to 1
+						// on old version k8s, the line may contains no space, hence len(parts) would equal to 1
 						content := ""
 						if len(parts) > 1 {
 							content = parts[1]

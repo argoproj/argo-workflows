@@ -115,7 +115,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		//If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
+		// If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
 		ptArt, ok := val.(*wfv1.Artifact)
 		if ok {
 			valArt = *ptArt
@@ -145,7 +145,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 		}
 
 		err = copyArt.AppendToKey(resolvedSubPath)
-		if err != nil && copyArt.Optional { //Ignore error when artifact optional
+		if err != nil && copyArt.Optional { // Ignore error when artifact optional
 			return copyArt, nil
 		}
 		return copyArt, err

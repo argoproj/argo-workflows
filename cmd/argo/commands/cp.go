@@ -117,7 +117,7 @@ func NewCpCommand() *cobra.Command {
 }
 
 func getAndStoreArtifactData(namespace string, workflowName string, nodeID string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeID, artifactName), nil)
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeID, artifactName), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -131,7 +131,7 @@ func getAndStoreArtifactData(namespace string, workflowName string, nodeID strin
 		return fmt.Errorf("request failed with: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("request failed %s", resp.Status)
 	}
 	artifactFilePath := filepath.Join(customPath, fileName)

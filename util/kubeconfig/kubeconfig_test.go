@@ -45,7 +45,7 @@ func Test_BasicAuthString(t *testing.T) {
 		assert.Equal(t, "admin", uname)
 		assert.Equal(t, "admin", pwd)
 
-		file, err := os.CreateTemp("", "config.yaml")
+		file, err := os.CreateTemp(t.TempDir(), "config.yaml")
 		require.NoError(t, err)
 		_, err = file.WriteString(config)
 		require.NoError(t, err)

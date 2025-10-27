@@ -263,8 +263,8 @@ const (
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
-	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
-	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
+	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
+	ServiceAccountTokenVolumeName = "exec-sa-token"
 	SecretVolMountPath            = "/argo/secret"
 	EnvConfigMountPath            = "/argo/config"
 	EnvVarTemplateOffloaded       = "offloaded"

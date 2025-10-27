@@ -12,26 +12,41 @@ run:
     - plugins
 linters:
   enable:
+    - asciicheck
     - asasalint
     - bidichk
     - bodyclose
     - copyloopvar
     - contextcheck
     - containedctx
+    - durationcheck
     - errcheck
+    - exptostd
+    - gocheckcompilerdirectives
     - gosec
     - govet
+    - iface
     - ineffassign
+    - iotamixing
+    - mirror
     - misspell
     - nakedret
+#    - nilerr
+#    - noctx
     - nosprintfhostport
+    - nolintlint
+#    - predeclared
     - reassign
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
     - testifylint
+#    - unconvert
     - unparam
     - unused
+    - usestdlibvars
+#    - usetesting
+#    - wastedassign
   settings:
     gosec:
       includes:

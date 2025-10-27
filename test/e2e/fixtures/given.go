@@ -78,7 +78,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		_, err = f.Write([]byte(text))
+		_, err = f.WriteString(text)
 		if err != nil {
 			g.t.Fatal(err)
 		}

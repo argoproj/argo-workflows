@@ -55,7 +55,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 	if err != nil {
 		return http.Response{}, err
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {

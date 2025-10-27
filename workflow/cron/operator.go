@@ -52,7 +52,7 @@ type cronWfOperationCtx struct {
 	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx context.Context
 }
 

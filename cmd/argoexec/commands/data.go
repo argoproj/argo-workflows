@@ -30,12 +30,12 @@ func execData(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	// nolint:contextcheck
+	//nolint:contextcheck
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)
-	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 
 	err := wfExecutor.Data(ctx)
 	if err != nil {

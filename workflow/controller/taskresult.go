@@ -33,7 +33,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 		Info(ctx, "Watching task results")
 
 	// This is a generated function, so we can't change the context.
-	// nolint:contextcheck
+	//nolint:contextcheck
 	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		wfc.wfclientset,
 		wfc.GetManagedNamespace(),

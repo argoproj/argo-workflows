@@ -182,7 +182,7 @@ func TestInitLogger(t *testing.T) {
 		})
 
 		assert.Panics(t, func() {
-			// nolint:contextchec
+			//nolint:contextchec
 			initLogger.NewBackgroundContext()
 		})
 

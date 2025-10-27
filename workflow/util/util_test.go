@@ -616,7 +616,7 @@ func TestApplySubmitOpts(t *testing.T) {
 }
 
 func TestReadParametersFile(t *testing.T) {
-	file, err := os.CreateTemp("", "")
+	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
 	defer func() { _ = os.Remove(file.Name()) }()
 	err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)

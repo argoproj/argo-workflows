@@ -168,7 +168,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		if err != nil {
 			return "", err
 		}
-		req, err := http.NewRequest("GET", in.Host, nil)
+		req, err := http.NewRequest(http.MethodGet, in.Host, nil)
 		if err != nil {
 			return "", err
 		}

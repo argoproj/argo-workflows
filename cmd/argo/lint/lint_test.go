@@ -67,7 +67,7 @@ spec:
 `)
 
 func TestLintFile(t *testing.T) {
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestLintFile(t *testing.T) {
 }
 
 func TestLintMultipleKinds(t *testing.T) {
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
@@ -130,7 +130,7 @@ func TestLintMultipleKinds(t *testing.T) {
 }
 
 func TestLintWithOutput(t *testing.T) {
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
@@ -223,7 +223,7 @@ func TestLintDeviceFile(t *testing.T) {
 		t.Skip("device files not accessible in windows")
 	}
 
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	fd := file.Fd()
 	require.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)

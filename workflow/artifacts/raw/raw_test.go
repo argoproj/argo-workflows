@@ -22,7 +22,7 @@ const (
 
 func TestLoad(t *testing.T) {
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
-	lf, err := os.CreateTemp("", LoadFileName)
+	lf, err := os.CreateTemp(t.TempDir(), LoadFileName)
 	require.NoError(t, err)
 	defer os.Remove(lf.Name())
 

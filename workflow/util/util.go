@@ -624,7 +624,7 @@ const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))] //nolint:gosec
+		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
 }
@@ -1459,7 +1459,7 @@ func ReadFromStdin() ([]byte, error) {
 
 // Reads the content of a url
 func ReadFromURL(url string) ([]byte, error) {
-	response, err := http.Get(url) //nolint:gosec
+	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}

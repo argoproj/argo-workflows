@@ -459,7 +459,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 			ctx = metadata.NewIncomingContext(ctx, md)
 			if _, err := as.gatekeeper.Context(ctx); err != nil {
 				log.WithError(err).Error(ctx, "failed to authenticate /metrics endpoint")
-				w.WriteHeader(403)
+				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 		}
