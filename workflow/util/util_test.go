@@ -621,6 +621,7 @@ func TestReadParametersFile(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 	require.NoError(t, err)
 	opts := &wfv1.SubmitOpts{}
