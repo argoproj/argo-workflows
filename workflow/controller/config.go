@@ -41,6 +41,10 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			return err
 		}
 		if wfc.session == nil {
+			logger.WithField("host", persistence.DBConfig.PostgreSQL.Host).
+				WithField("port", persistence.DBConfig.PostgreSQL.Port).
+				WithField("database", persistence.DBConfig.PostgreSQL.Database).
+				Info(ctx, "DEBUG : Persistance config")
 			session, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
 			if err != nil {
 				return err

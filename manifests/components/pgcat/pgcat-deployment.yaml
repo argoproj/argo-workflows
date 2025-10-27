@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgcat
+  namespace: argo
+  labels:
+    app: pgcat
+spec:
+  selector:
+    matchLabels:
+      app: pgcat
+  template:
+    metadata:
+      name: pgcat
+      labels:
+        app: pgcat
+    spec:
+      containers:
+        - name: pgcat
+          image: ghcr.io/postgresml/pgcat:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: PGCAT_CONFIG_PATH
+              value: "/etc/pgcat/pgcat.toml"
+          volumeMounts:
+            - name: pgcat-config
+              mountPath: /etc/pgcat
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+      volumes:
+        - name: pgcat-config
+          secret:
+            secretName: argo-pgcat-config
+            items:
+              - key: pgcat.toml
+                path: pgcat.toml
+      nodeSelector:
+        kubernetes.io/os: linux
