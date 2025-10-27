@@ -124,6 +124,9 @@ Assuming you only have one controller replica, you can port-forward with:
 kubectl -n argo port-forward deploy/workflow-controller 9090:9090
 ```
 
+!!! Note "UTF-8 in Prometheus metrics"
+    Version `v3.7` upgraded the `github.com/prometheus/client_golang` library, changing the `NameValidationScheme` to `UTF8Validation`. This allows metric names to retain their original delimiters (e.g., .), instead of replacing them with underscores. To maintain the legacy behavior, you can set the environment variable `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME`. For more details, refer to the official [Prometheus documentation](https://prometheus.io/docs/guides/utf8/).
+
 ### Common
 
 You can adjust various elements of the metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
