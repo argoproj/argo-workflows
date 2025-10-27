@@ -69,8 +69,8 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 			AddFunc: func(obj interface{}) {
 				controller.enqueueWF(ctx, obj)
 			},
-			UpdateFunc: func(old, new interface{}) {
-				controller.enqueueWF(ctx, new)
+			UpdateFunc: func(old, newObj interface{}) {
+				controller.enqueueWF(ctx, newObj)
 			},
 		},
 	})
@@ -84,8 +84,8 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 			return ok && common.IsDone(un)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				controller.retentionEnqueue(ctx, new)
+			UpdateFunc: func(old, newObj interface{}) {
+				controller.retentionEnqueue(ctx, newObj)
 			},
 			AddFunc: func(obj interface{}) {
 				controller.retentionEnqueue(ctx, obj)

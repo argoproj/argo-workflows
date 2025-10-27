@@ -231,8 +231,8 @@ func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error 
 						cc.cronWfQueue.Add(key)
 					}
 				},
-				UpdateFunc: func(old, new interface{}) {
-					key, err := cache.MetaNamespaceKeyFunc(new)
+				UpdateFunc: func(old, newObj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)
 					}
