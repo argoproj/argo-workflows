@@ -261,7 +261,7 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podInf
 		_, _ = h.Write([]byte(annotationValue))
 	}
 
-	abbreviatedName := ""
+	var abbreviatedName string
 	switch strategy {
 	case wfv1.ArtifactGCOnWorkflowCompletion:
 		abbreviatedName = "wfcomp"
@@ -593,7 +593,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		}
 	}
 
-	removeFinalizer := false
+	var removeFinalizer bool
 	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
 	if forceFinalizerRemoval {
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
