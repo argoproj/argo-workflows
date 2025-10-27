@@ -69,9 +69,9 @@ spec:
 func TestLintFile(t *testing.T) {
 	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
 	require.NoError(t, err)
@@ -99,6 +99,7 @@ func TestLintFile(t *testing.T) {
 func TestLintMultipleKinds(t *testing.T) {
 	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
 	defer os.Remove(file.Name())
@@ -132,6 +133,7 @@ func TestLintMultipleKinds(t *testing.T) {
 func TestLintWithOutput(t *testing.T) {
 	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
 	defer os.Remove(file.Name())
