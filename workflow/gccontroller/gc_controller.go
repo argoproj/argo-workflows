@@ -219,6 +219,8 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	// Double check that this workflow is still completed. If it were retried, it may be running again (c.f. https://github.com/argoproj/argo-workflows/issues/12636)
 	obj, exists, err := c.wfInformer.GetStore().GetByKey(key)
 	if err != nil {
+		// Not existing shouldn't actually return error, but this is not a failure
+		//nolint: nilerr
 		return nil
 	}
 	if exists {
