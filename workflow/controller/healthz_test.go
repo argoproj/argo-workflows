@@ -89,7 +89,7 @@ func TestHealthz(t *testing.T) {
 
 		handler := LogMiddleware(logging.RequireLoggerFromContext(ctx), http.HandlerFunc(controller.Healthz))
 
-		req, err := http.NewRequest(http.MethodGet, "/healthz", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/healthz", nil)
 		if err != nil {
 			t.Fatal(err)
 		}

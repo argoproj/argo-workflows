@@ -32,7 +32,7 @@ linters:
     - misspell
     - nakedret
 #    - nilerr
-#    - noctx
+    - noctx
     - nosprintfhostport
     - nolintlint
     - predeclared

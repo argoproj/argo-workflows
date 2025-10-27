@@ -10,6 +10,8 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -232,6 +234,7 @@ func (c *HTTPClientMock) Do(req *http.Request) (*http.Response, error) {
 
 func TestGetUserInfoGroups(t *testing.T) {
 	t.Run("UserInfoGroupsReturn", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
 		userInfo := UserInfo{Groups: []string{"Everyone"}}
 		userInfoBytes, _ := json.Marshal(userInfo)
 		body := io.NopCloser(bytes.NewReader(userInfoBytes))
@@ -239,7 +242,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 		httpClient = &HTTPClientMock{StatusCode: 200, Body: body}
 
 		claims := &Claims{}
-		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
+		groups, err := claims.GetUserInfoGroups(ctx, httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
 		assert.Equal(t, []string{"Everyone"}, groups)
 		require.NoError(t, err)
 	})

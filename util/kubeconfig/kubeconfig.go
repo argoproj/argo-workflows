@@ -1,6 +1,7 @@
 package kubeconfig
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -113,14 +114,14 @@ func restConfigWithoutAuth() (*restclient.Config, error) {
 }
 
 // Return the AuthString include Auth type(Basic or Bearer)
-func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
+func GetAuthString(ctx context.Context, in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 	// Checking Basic Auth
 	if in.Username != "" {
 		token, err := GetBasicAuthToken(in)
 		return BasicAuthScheme + " " + token, err
 	}
 
-	token, err := GetBearerToken(in, explicitKubeConfigPath)
+	token, err := GetBearerToken(ctx, in, explicitKubeConfigPath)
 	return BearerAuthScheme + " " + token, err
 }
 
@@ -133,7 +134,7 @@ func GetBasicAuthToken(in *restclient.Config) (string, error) {
 }
 
 // convert the REST config into a bearer token
-func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
+func GetBearerToken(ctx context.Context, in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 	if len(in.BearerToken) > 0 {
 		return in.BearerToken, nil
 	}
@@ -150,7 +151,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		var cluster *clientauthenticationapi.Cluster
 		if in.ExecProvider.ProvideClusterInfo {
 			var err error
-			cluster, err = ConfigToExecCluster(in)
+			cluster, err = ConfigToExecCluster(ctx, in)
 			if err != nil {
 				return "", err
 			}
@@ -168,7 +169,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		if err != nil {
 			return "", err
 		}
-		req, err := http.NewRequest(http.MethodGet, in.Host, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, in.Host, nil)
 		if err != nil {
 			return "", err
 		}
@@ -200,7 +201,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 I am following this example: https://github.com/kubernetes/client-go/blob/v0.20.4/rest/transport.go#L99 and https://github.com/kubernetes/client-go/blob/v0.20.4/rest/exec.go */
 
 // ConfigToExecCluster creates a clientauthentication.Cluster with the corresponding fields from the provided Config
-func ConfigToExecCluster(config *restclient.Config) (*clientauthenticationapi.Cluster, error) {
+func ConfigToExecCluster(ctx context.Context, config *restclient.Config) (*clientauthenticationapi.Cluster, error) {
 	caData, err := dataFromSliceOrFile(config.CAData, config.CAFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA bundle for execProvider: %v", err)
@@ -208,7 +209,7 @@ func ConfigToExecCluster(config *restclient.Config) (*clientauthenticationapi.Cl
 
 	var proxyURL string
 	if config.Proxy != nil {
-		req, err := http.NewRequest("", config.Host, nil)
+		req, err := http.NewRequestWithContext(ctx, "", config.Host, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create proxy URL request for execProvider: %w", err)
 		}

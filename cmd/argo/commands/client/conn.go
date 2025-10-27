@@ -60,7 +60,7 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 			ArgoServerOpts: ArgoServerOpts,
 			InstanceID:     instanceID,
 			AuthSupplier: func() string {
-				authString, err := GetAuthString()
+				authString, err := GetAuthString(ctx)
 				if err != nil {
 					logger := logging.RequireLoggerFromContext(ctx)
 					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
@@ -92,7 +92,7 @@ func Namespace(ctx context.Context) string {
 	return namespace
 }
 
-func GetAuthString() (string, error) {
+func GetAuthString(ctx context.Context) (string, error) {
 	token, ok := os.LookupEnv("ARGO_TOKEN")
 	if ok {
 		return token, nil
@@ -103,7 +103,7 @@ func GetAuthString() (string, error) {
 	}
 	version := argo.GetVersion()
 	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
-	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
+	authString, err := kubeconfig.GetAuthString(ctx, restConfig, explicitPath)
 	if err != nil {
 		return "", err
 	}

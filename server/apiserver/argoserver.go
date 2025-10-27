@@ -291,7 +291,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	var listerErr error
 	address := fmt.Sprintf(":%d", port)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		conn, listerErr = net.Listen("tcp", address)
+		lc := &net.ListenConfig{}
+		conn, listerErr = lc.Listen(ctx, "tcp", address)
 		if listerErr != nil {
 			log.WithError(err).Warn(ctx, "failed to listen")
 			return false, nil

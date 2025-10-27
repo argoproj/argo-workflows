@@ -329,11 +329,11 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 	return nil
 }
 
-func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
+func ReadParametersFile(ctx context.Context, file string, opts *wfv1.SubmitOpts) error {
 	var body []byte
 	var err error
 	if cmdutil.IsURL(file) {
-		body, err = ReadFromURL(file)
+		body, err = ReadFromURL(ctx, file)
 		if err != nil {
 			return err
 		}
@@ -1458,8 +1458,12 @@ func ReadFromStdin() ([]byte, error) {
 }
 
 // Reads the content of a url
-func ReadFromURL(url string) ([]byte, error) {
-	response, err := http.Get(url)
+func ReadFromURL(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,13 +1476,13 @@ func ReadFromURL(url string) ([]byte, error) {
 }
 
 // ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
-func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
+func ReadFromFilePathsOrUrls(ctx context.Context, filePathsOrUrls ...string) ([][]byte, error) {
 	var fileContents [][]byte
 	var body []byte
 	var err error
 	for _, filePathOrURL := range filePathsOrUrls {
 		if cmdutil.IsURL(filePathOrURL) {
-			body, err = ReadFromURL(filePathOrURL)
+			body, err = ReadFromURL(ctx, filePathOrURL)
 			if err != nil {
 				return [][]byte{}, err
 			}
@@ -1494,7 +1498,7 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 }
 
 // ReadManifest reads from stdin, a single file/url, or a list of files and/or urls
-func ReadManifest(manifestPaths ...string) ([][]byte, error) {
+func ReadManifest(ctx context.Context, manifestPaths ...string) ([][]byte, error) {
 	var manifestContents [][]byte
 	var err error
 	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
@@ -1504,7 +1508,7 @@ func ReadManifest(manifestPaths ...string) ([][]byte, error) {
 		}
 		manifestContents = append(manifestContents, body)
 	} else {
-		manifestContents, err = ReadFromFilePathsOrUrls(manifestPaths...)
+		manifestContents, err = ReadFromFilePathsOrUrls(ctx, manifestPaths...)
 		if err != nil {
 			return [][]byte{}, err
 		}

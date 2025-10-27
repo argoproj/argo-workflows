@@ -297,7 +297,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
-		groups, err = c.GetUserInfoGroups(s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		groups, err = c.GetUserInfoGroups(ctx, s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
 			s.logger.WithField("userInfoPath", s.userInfoPath).WithError(err).Error(r.Context(), "failed to get groups claim from the given userInfoPath")
 			w.WriteHeader(http.StatusUnauthorized)

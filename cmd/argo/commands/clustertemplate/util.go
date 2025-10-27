@@ -16,7 +16,7 @@ import (
 )
 
 func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
-	fileContents, err := util.ReadManifest(filePaths...)
+	fileContents, err := util.ReadManifest(ctx, filePaths...)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -103,6 +103,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
@@ -114,7 +115,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 					t.Error("Could not write to temporary file")
 				}
 			}
-			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			body, err := ReadFromFilePathsOrUrls(ctx, filePaths...)
 			assert.Len(t, filePaths, len(body))
 			require.NoError(t, err)
 			for i := range body {
@@ -150,6 +151,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
@@ -163,7 +165,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 					}
 				}
 			}
-			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			body, err := ReadFromFilePathsOrUrls(ctx, filePaths...)
 			require.Error(t, err)
 			assert.Empty(t, body)
 		})
@@ -616,13 +618,14 @@ func TestApplySubmitOpts(t *testing.T) {
 }
 
 func TestReadParametersFile(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
 	defer func() { _ = os.Remove(file.Name()) }()
 	err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 	require.NoError(t, err)
 	opts := &wfv1.SubmitOpts{}
-	err = ReadParametersFile(file.Name(), opts)
+	err = ReadParametersFile(ctx, file.Name(), opts)
 	require.NoError(t, err)
 	parameters := opts.Parameters
 	require.Len(t, parameters, 1)

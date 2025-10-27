@@ -38,7 +38,7 @@ func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time,
 }
 
 func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool) []v1alpha1.CronWorkflow {
-	fileContents, err := util.ReadManifest(filePaths...)
+	fileContents, err := util.ReadManifest(ctx, filePaths...)
 	if err != nil {
 		log.Fatal(err)
 	}

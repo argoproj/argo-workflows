@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const config = `
@@ -34,9 +36,10 @@ users:
 
 func Test_BasicAuthString(t *testing.T) {
 	t.Run("Basic Auth", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
 		restConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(config))
 		require.NoError(t, err)
-		authString, err := GetAuthString(restConfig, "")
+		authString, err := GetAuthString(ctx, restConfig, "")
 		require.NoError(t, err)
 		assert.True(t, IsBasicAuthScheme(authString))
 		token := strings.TrimSpace(strings.TrimPrefix(authString, BasicAuthScheme))
