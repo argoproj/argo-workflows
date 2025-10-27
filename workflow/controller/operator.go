@@ -3339,7 +3339,7 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	}
 	if node.HostNodeName != "" {
 		key := fmt.Sprintf("%s.hostNodeName", prefix)
-		scope.addParamToScope(key, string(node.HostNodeName))
+		scope.addParamToScope(key, node.HostNodeName)
 	}
 	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }

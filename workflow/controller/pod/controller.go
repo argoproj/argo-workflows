@@ -200,7 +200,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 		if hasOurFinalizer(pod.Finalizers) {
 			c.log.WithFields(logging.Fields{"pod.Finalizers": pod.Finalizers}).Info(ctx, "Removing finalizers during a delete")
 			action = removeFinalizer
-			minimumDelay = time.Duration(2 * time.Minute)
+			minimumDelay = 2 * time.Minute
 		}
 	case c.podOrphaned(ctx, pod):
 		if hasOurFinalizer(pod.Finalizers) {

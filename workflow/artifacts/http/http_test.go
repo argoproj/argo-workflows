@@ -98,9 +98,8 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
 	content := "temporary file's content"
-	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
-		panic(err)
-	}
+	err := os.WriteFile(tempFile, []byte(content), 0o600)
+	require.NoError(t, err)
 
 	firstRequest := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
