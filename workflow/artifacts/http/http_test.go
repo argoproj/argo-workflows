@@ -94,11 +94,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 }
 
 func TestSaveHTTPArtifactRedirect(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "webhdfs-test")
-	if err != nil {
-		panic(err)
-	}
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
 	content := "temporary file's content"

@@ -11308,9 +11308,7 @@ spec:
 
 // TestContainerSetWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet is used.
 func TestContainerSetWhenPodDeleted(t *testing.T) {
-	// use local-scoped env vars in test to avoid long waits
-	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
-	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -11392,9 +11390,7 @@ spec:
 
 // TestContainerSetWithDependenciesWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet with dependencies is used.
 func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
-	// use local-scoped env vars in test to avoid long waits
-	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
-	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
