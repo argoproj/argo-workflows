@@ -72,6 +72,10 @@ linters:
     rules:
       - path: server/artifacts/artifact_server_test.go
         text: response body must be closed
+      - path: server/apiserver/argoserver.go
+        # The nolintlint fixer erroneous removes the nolint directives in this file
+        linters:
+          - contextcheck
     paths:
       - dist
       - docs
