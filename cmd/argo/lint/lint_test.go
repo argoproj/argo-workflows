@@ -102,7 +102,6 @@ func TestLintMultipleKinds(t *testing.T) {
 	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
 	require.NoError(t, err)
