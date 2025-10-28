@@ -135,7 +135,6 @@ func TestLintWithOutput(t *testing.T) {
 	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
