@@ -295,6 +295,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		conn, listerErr = lc.Listen(ctx, "tcp", address)
 		if listerErr != nil {
 			log.WithError(err).Warn(ctx, "failed to listen")
+			//nolint: nilerr
 			return false, nil // continue retrying
 		}
 		return true, nil
