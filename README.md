@@ -71,7 +71,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 ## Client Libraries
 
-Check out our [Java, Golang and Python clients](docs/client-libraries.md).
+Check out our [Java, Golang, and Python (Hera) clients](docs/client-libraries.md).
 
 ## Quickstart
 
@@ -116,7 +116,7 @@ An incomplete list of features Argo Workflows provides:
 * Multiple executors
 * Multiple pod and workflow garbage collection strategies
 * Automatically calculated resource usage per step
-* Java/Golang/Python SDKs
+* Java, Golang, and Python (Hera) SDKs
 * Pod Disruption Budget support
 * Single-sign on (OAuth2/OIDC)
 * Webhook triggering
