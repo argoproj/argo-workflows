@@ -6,6 +6,27 @@ data:
   sso: |
     issuer: http://dex:5556/dex
     issuerAlias: http://dex:5556/dex
+    # ca.pem associated with the self-signed cert in manifests/components/sso/dex/dex-cm.yaml
+    rootCA: |
+      -----BEGIN CERTIFICATE-----
+      MIIDBTCCAe2gAwIBAgIUMKWILZAQMhB5HJvcvoXNhd8bOEMwDQYJKoZIhvcNAQEL
+      BQAwEjEQMA4GA1UEAwwHa3ViZS1jYTAeFw0yNTEwMjcwMTQ2MzhaFw0yNTExMDYw
+      MTQ2MzhaMBIxEDAOBgNVBAMMB2t1YmUtY2EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+      DwAwggEKAoIBAQCGlEuUr07CDmZ2sKV6J1KEKEzfOdbmkhT1o7Z8qmOIuGK/TqYg
+      lXs6DJ+Vtfbq0jB9BWhA+8/Mik8GtUHOp+pEcoHncCsIwOmA5NCmnCFOhINYQe+w
+      njk5dPztB+0PP1+R0hiwtjl/ERgbhOb2z3xUbjCbKZ95c7iUoquki6TAEaID1n+A
+      TJcS9OMDF07oVPuW3Il1H8I9CjmfX34wetYLxmzPeoaUoxslqI0k3Htu7dRibZZz
+      UDbQ59wup6JajFWYTIIVq2yfmtQ812a7z9QZUNmrBVMsz7wCkPPVG/Xv7pVgHMLw
+      JpqirR9A8V4OHumSk4s+P+O60Wb4NJaE8I9vAgMBAAGjUzBRMB0GA1UdDgQWBBTk
+      F/J38BQQDRlRszRwsh24zulTWTAfBgNVHSMEGDAWgBTkF/J38BQQDRlRszRwsh24
+      zulTWTAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBmfmUA20Cd
+      INYHr7faU501JZuFcJ9QPbNb9wxGMNk3x940ixshutOBD3KWHafE9HOLFyp3BTGH
+      bNRBKwbbnqzHLvRaUwfOqRW2xFyKncxNGpTchlM3JeR7gfRxGuEdXASb4WbnJpvh
+      98Bv0IaUU2IQUjRl//HSDoJ6xANa4VmtBBRP3/9Vln8WMaYrTlenJMyn/uq5AQHx
+      9DIXaBkA2GX8bWj7H8s/5RNJr0qz8o3BSWBEv87LZxppA/lK8SZ5wd7GnMCJ17MU
+      glFG6TkG174Am0dbhla6UIvx+JTWgtbs+iD0hPhVrQrMV+V548jpdmCzCjUApEj7
+      BWhCrTK0M1QI
+      -----END CERTIFICATE-----
     clientId:
       name: argo-server-sso
       key: clientID
