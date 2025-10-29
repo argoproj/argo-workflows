@@ -1503,7 +1503,7 @@ func TestMutexMigration(t *testing.T) {
 		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
 		syncMgr.Initialize(ctx, wfs)
 
-		syncItems, err := allSyncItems(ctx, wfMutex2.Spec.Synchronization)
+		syncItems, err := allSyncItems(wfMutex2.Spec.Synchronization)
 		require.NoError(err)
 		lockName, err := syncItems[0].lockName(wfMutex2.Namespace)
 		require.NoError(err)
@@ -1547,7 +1547,7 @@ func TestMutexMigration(t *testing.T) {
 		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
 		syncMgr.Initialize(ctx, wfs)
 
-		syncItems, err := allSyncItems(ctx, wfMutex3.Spec.Templates[1].Synchronization)
+		syncItems, err := allSyncItems(wfMutex3.Spec.Templates[1].Synchronization)
 		require.NoError(err)
 		lockName, err := syncItems[0].lockName(wfMutex3.Namespace)
 		require.NoError(err)

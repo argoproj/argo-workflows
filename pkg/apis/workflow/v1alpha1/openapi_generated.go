@@ -2267,13 +2267,6 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
-					"schedule": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"concurrencyPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
@@ -6337,18 +6330,6 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 				Description: "Synchronization holds synchronization lock configuration",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"semaphore": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
-						},
-					},
-					"mutex": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Mutex holds the Mutex lock details - deprecated, use mutexes instead",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex"),
-						},
-					},
 					"semaphores": {
 						SchemaProps: spec.SchemaProps{
 							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",
