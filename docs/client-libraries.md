@@ -16,12 +16,11 @@ Please expect very minimal support from the Argo team.
 |----------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/main/cmd/argo/commands/submit.go)                           |
 | Java     | [Java](https://github.com/argoproj/argo-workflows/blob/main/sdks/java)                            |                                                                                                                       |
-| Python   | ⚠️ deprecated [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)           | Use [Hera](#hera-python-sdk) instead. Will be removed in version 3.7 |
+| Python   | [Hera](#hera-python-sdk)                                                                          | [Hera walk-through](https://hera.readthedocs.io/en/stable/walk-through/quick-start/)                                 |
 
 ## Hera Python SDK
 
-Hera is the go-to Python SDK to make Argo Workflows simple and intuitive. It goes beyond a basic REST interface,
-allowing you to easily turn Python functions into script templates, and write whole Workflows in Python:
+Hera is the recommended Python SDK for Argo Workflows. It makes Argo Workflows simple and intuitive, going beyond a basic REST interface to allow you to easily turn Python functions into script templates and write whole Workflows in Python:
 
 ```py
 from hera.workflows import DAG, Workflow, script

@@ -40,7 +40,6 @@ git-ask-pass.sh
 /.brew_home
 /go-diagrams/
 /.run/
-sdks/python/client/dist/*
 /v3/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
