@@ -1,7 +1,9 @@
 # Artifacts
 
 !!! Note
-    You will need to [configure an artifact repository](../configure-artifact-repository.md) to run this example.
+    You will need to [configure an artifact repository](../configure-artifact-repository.md) to run artifact examples.
+
+## Basic Example
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
@@ -53,13 +55,17 @@ spec:
       args: ["cat /tmp/message"]
 ```
 
-The `hello-world-to-file` template uses the `echo` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message-from-file` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
-The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message-from-file` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
+In this Workflow:
+
+- The `hello-world-to-file` template uses the `echo` command to generate a file named `/tmp/hello-world.txt`.
+- The `hello-world-to-file` template then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file.
+- The `print-message-from-file` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
+- The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message-from-file` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
 Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.
 
 ```yaml
-<... snipped ...>
+# <... snipped ...>
   - name: large-artifact
     # below patch gets merged with the actual pod spec and increases the memory
     # request of the init container.
@@ -78,13 +84,17 @@ Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec
       image: alpine:latest
       command: [sh, -c]
       args: ["cat /tmp/large-file"]
-<... snipped ...>
+# <... snipped ...>
 ```
+
+## Setting File Behavior
+
+### Archive Strategy
 
 Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the `archive` field. For example:
 
 ```yaml
-<... snipped ...>
+# <... snipped ...>
     outputs:
       artifacts:
         # default behavior - tar+gzip default compression.
@@ -108,8 +118,30 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
           tar:
             # no compression (also accepts the standard gzip 1 to 9 values)
             compressionLevel: 0
-<... snipped ...>
+# <... snipped ...>
 ```
+
+### File Permissions (`mode`)
+
+It is good practice to specify the `mode` of the input file, to ensure your container code can always interact with it (reading/writing/executing) as expected. [This article](https://www.redhat.com/en/blog/linux-file-permissions-explained) explains file permissions and octal values. For example, to allow the user to execute `/bin/kubectl`, we set `mode: 0755`.
+
+```yaml
+# <... snipped ...>
+  templates:
+  - name: executable-artifact
+    inputs:
+      artifacts:
+      # Download kubectl 1.8.0 and place it at /bin/kubectl
+      - name: kubectl
+        path: /bin/kubectl
+        mode: 0755
+        http:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+# <... snipped ...>
+```
+
+!!! Note
+    `0755` is a YAML-formatted octal value (`0o755` is also allowed in YAML spec 1.2). When the Kubernetes API receives and validates the octal `mode` value, it will be stored in decimal. Therefore you will see `mode: 493` in YAML on the cluster, and therefore also in the Argo UI. The file permissions will still be correct as 493 in decimal is 0755 in octal.
 
 ## Artifact Garbage Collection
 
