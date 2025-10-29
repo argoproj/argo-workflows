@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-config-optimal
+  namespace: argo
+  labels:
+    app: haproxy
+data:
+  haproxy.cfg: |
+    global
+        daemon
+        log stdout local0 info
+        stats socket /var/run/haproxy/haproxy.sock mode 600 level admin
+        stats timeout 2m
+
+    defaults
+        mode tcp
+        log global
+        option tcplog
+        option dontlognull
+        timeout connect 5s
+        timeout client 30s
+        timeout server 30s
+        retries 3
+
+    # Health check and stats interface
+    listen stats
+        bind *:8404
+        mode http
+        stats enable
+        stats uri /stats
+        stats refresh 5s
+
+    # PostgreSQL backend pool with proper protocol health check
+    backend postgres_backend
+        mode tcp
+        balance roundrobin
+        option tcp-check
+        option log-health-checks
+        
+        # Proper PostgreSQL protocol health check sequence
+        # 1. Connect to PostgreSQL
+        tcp-check connect
+        
+        # 2. Send PostgreSQL startup message (protocol version 3.0, user 'postgres', database 'postgres')
+        # Message format: length(4) + protocol(4) + user + null + database + null + null
+        tcp-check send-binary 00000020000300000075736572007067636865636b006461746162617365007067636865636b0000
+        
+        # 3. Expect authentication request (message type 'R' = 0x52)
+        tcp-check expect binary 52
+        
+        # 4. Send password message (message type 'p' = 0x70, empty password)
+        tcp-check send-binary 7000000005000000
+        
+        # 5. Send termination message (message type 'X' = 0x58)
+        tcp-check send-binary 5800000004
+        
+        server postgres-primary postgres-primary.argo.svc.cluster.local:5432 check inter 30s rise 2 fall 3
+        server postgres-secondary postgres-secondary.argo.svc.cluster.local:5432 check inter 30s rise 2 fall 3
+        server postgres-tertiary postgres-tertiary.argo.svc.cluster.local:5432 check inter 30s rise 2 fall 3
+
+    # Frontend listener
+    frontend postgres_frontend
+        bind *:5432
+        mode tcp
+        default_backend postgres_backend

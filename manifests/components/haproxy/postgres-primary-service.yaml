@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-primary
+  namespace: argo
+  labels:
+    app: postgres-failover-test
+    service-type: primary
+spec:
+  selector:
+    app: postgres-failover-test
+    postgres-primary: "true"
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP

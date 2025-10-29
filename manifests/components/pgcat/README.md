@@ -1,14 +1,15 @@
-# PgCat DNS Resiliency Configuration
+# PgCat with Integrated Failover Testing
 
-This configuration sets up PgCat as a PostgreSQL connection pooler with DNS resiliency and failover capabilities for external PostgreSQL instances.
+This configuration sets up PgCat as a PostgreSQL connection pooler with integrated failover testing capabilities, including a test PostgreSQL deployment and multiple service endpoints for comprehensive failover testing.
 
 ## Overview
 
-The modified PgCat deployment provides:
+The PgCat deployment provides:
+- **Integrated Failover Testing**: Built-in PostgreSQL deployment with multiple service endpoints
 - **DNS Resiliency**: Multiple PostgreSQL endpoints pointing to the same database cluster
 - **Automatic Failover**: Health checks and automatic switching between endpoints
 - **High Availability**: Connection pooling with resilient configuration
-- **External Database Support**: No embedded PostgreSQL container
+- **Testing Environment**: Complete setup for testing pgcat's failover behavior
 
 ## Configuration Features
 
@@ -163,3 +164,128 @@ Key parameters that can be adjusted:
 - `failover_timeout`: How quickly to detect failures
 
 Adjust these values based on your specific requirements and network conditions.
+
+## Integrated Failover Testing
+
+This pgcat component includes a complete failover testing environment with:
+
+### Test PostgreSQL Deployment
+- **Single PostgreSQL pod** with multiple labels for service targeting
+- **Three service endpoints** that can be independently controlled
+- **Realistic failover simulation** without affecting actual data
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PostgreSQL Pod                           │
+│  Labels: postgres-primary=true                             │
+│          postgres-secondary=true                           │
+│          postgres-tertiary=true                            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ All services point to same pod
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│postgres-    │    │postgres-    │    │postgres-    │
+│primary      │    │secondary    │    │tertiary     │
+│service      │    │service      │    │service      │
+└─────────────┘    └─────────────┘    └─────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │     PgCat       │
+                    │   (3 shards)    │
+                    └─────────────────┘
+```
+
+### Testing Failover Scenarios
+
+#### Scenario 1: Remove Primary Service
+```bash
+# Remove the postgres-primary label to make primary service unavailable
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-primary":"false"}}}}}'
+
+# Check pgcat logs - should show primary shard as unavailable
+kubectl logs -l app=pgcat -n argo -f
+
+# Restore primary service
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-primary":"true"}}}}}'
+```
+
+#### Scenario 2: Remove Secondary Service
+```bash
+# Remove the postgres-secondary label
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-secondary":"false"}}}}}'
+
+# Restore secondary service
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-secondary":"true"}}}}}'
+```
+
+#### Scenario 3: Remove Tertiary Service
+```bash
+# Remove the postgres-tertiary label
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-tertiary":"false"}}}}}'
+
+# Restore tertiary service
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-tertiary":"true"}}}}}'
+```
+
+#### Scenario 4: Multiple Service Failures
+```bash
+# Remove multiple services simultaneously
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-primary":"false","postgres-secondary":"false"}}}}}'
+
+# Only tertiary service should remain available
+# Restore all services
+kubectl patch deployment postgres-failover-test -n argo --type='merge' -p='{"spec":{"template":{"metadata":{"labels":{"postgres-primary":"true","postgres-secondary":"true"}}}}}'
+```
+
+### Monitoring Failover
+
+```bash
+# Watch pgcat logs for failover events
+kubectl logs -l app=pgcat -n argo -f | grep -i "failover\|health\|shard"
+
+# Monitor service endpoints
+kubectl get endpoints -n argo | grep postgres
+
+# Check pgcat metrics (if Prometheus is available)
+kubectl port-forward svc/pgcat 9930:9930 -n argo
+# Then visit http://localhost:9930/metrics
+```
+
+### Testing Connection Through PgCat
+
+```bash
+# Connect to pgcat and test database operations
+kubectl exec -it deployment/pgcat -n argo -- psql -h localhost -p 5432 -U postgres -d postgres
+
+# Run queries to test failover behavior
+# While connected, remove services in another terminal to see failover in action
+```
+
+### Service Configuration Details
+
+- **postgres-primary**: Selects pods with `postgres-primary=true`
+- **postgres-secondary**: Selects pods with `postgres-secondary=true`
+- **postgres-tertiary**: Selects pods with `postgres-tertiary=true`
+
+### PgCat Shard Configuration
+
+- **Shard 0**: `postgres-primary.argo.svc.cluster.local:5432`
+- **Shard 1**: `postgres-secondary.argo.svc.cluster.local:5432`
+- **Shard 2**: `postgres-tertiary.argo.svc.cluster.local:5432`
+
+### Benefits of Integrated Testing
+
+1. **Realistic Testing**: Simulates real DNS/network failures
+2. **Data Safety**: All services point to same pod, no data loss
+3. **Easy Control**: Simple label manipulation to trigger failures
+4. **Complete Environment**: Everything needed for testing included
+5. **Repeatable Tests**: Consistent testing scenarios

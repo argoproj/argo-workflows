@@ -8,7 +8,7 @@ resources:
 
 components:
 - ../components/base
-- ../../../../manifests/components/pgcat
+- ../../../../manifests/components/haproxy/
 - ../components/local-argo
 
 namespace: argo

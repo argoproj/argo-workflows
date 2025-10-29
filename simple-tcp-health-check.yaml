@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-config-simple-tcp
+  namespace: argo
+  labels:
+    app: haproxy
+data:
+  haproxy.cfg: |
+    global
+        daemon
+        log stdout local0 info
+        stats socket /var/run/haproxy/haproxy.sock mode 600 level admin
+        stats timeout 2m
+
+    defaults
+        mode tcp
+        log global
+        option tcplog
+        option dontlognull
+        timeout connect 5s
+        timeout client 30s
+        timeout server 30s
+        retries 3
+
+    # Health check and stats interface
+    listen stats
+        bind *:8404
+        mode http
+        stats enable
+        stats uri /stats
+        stats refresh 5s
+
+    # PostgreSQL backend pool with simple TCP health check
+    backend postgres_backend
+        mode tcp
+        balance roundrobin
+        # Simple TCP connect check - no PostgreSQL protocol interaction
+        option tcp-check
+        tcp-check connect
+        
+        server postgres-primary postgres-primary.argo.svc.cluster.local:5432 check inter 10s rise 2 fall 3
+        server postgres-secondary postgres-secondary.argo.svc.cluster.local:5432 check inter 10s rise 2 fall 3
+        server postgres-tertiary postgres-tertiary.argo.svc.cluster.local:5432 check inter 10s rise 2 fall 3
+
+    # Frontend listener
+    frontend postgres_frontend
+        bind *:5432
+        mode tcp
+        default_backend postgres_backend
