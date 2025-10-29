@@ -1,0 +1,57 @@
+# this example shows how to use dynamic inputs
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dynamic-inputs-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: generate
+            template: generate
+          - name: consume
+            template: consume
+            arguments:
+              parameters:
+                - name: args
+                  value: "{{tasks.generate.outputs.parameters.args}}"
+                - name: ARGO_DYNAMIC_INPUTS
+                  value: "{{tasks.generate.outputs.parameters.dynamic}}"
+            depends: "generate"
+    - name: generate
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, hello, /mnt/file]
+      outputs:
+        parameters:
+          - name: args
+            value: "cat /tmp/file"
+          - name: dynamic
+            value: |
+              {
+                "artifacts": [
+                  {
+                    "name": "file",
+                    "path": "/tmp/file",
+                    "s3": {
+                      "key": "my-file"
+                    }
+                  }
+                ]
+              }
+        artifacts:
+          - name: file
+            path: /mnt/file
+            s3:
+              key: my-file
+    - name: consume
+      inputs:
+        parameters:
+          - name: args
+          - name: ARGO_DYNAMIC_INPUTS
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["{{inputs.parameters.args}}"]
