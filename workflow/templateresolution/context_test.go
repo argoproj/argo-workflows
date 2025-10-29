@@ -346,3 +346,56 @@ func TestOnWorkflowTemplate(t *testing.T) {
 	tmpl := newCtx.tmplBase.GetTemplateByName("whalesay")
 	assert.NotNil(t, tmpl)
 }
+
+// TestGetTemplateFromRefWithPodMetadataAndMissingTemplate tests the bug where
+// GetTemplateFromRef causes a nil pointer dereference when:
+// 1. A WorkflowTemplate has podMetadata defined
+// 2. A templateRef references a template name that doesn't exist in that WorkflowTemplate
+func TestGetTemplateFromRefWithPodMetadataAndMissingTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wfClientset := fakewfclientset.NewSimpleClientset()
+
+	// Create a WorkflowTemplate with podMetadata but without the template "nonexistent"
+	workflowTemplateWithPodMetadata := `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-podmetadata
+spec:
+  podMetadata:
+    labels:
+      example-label: example-value
+    annotations:
+      example-annotation: example-value
+  templates:
+  - name: existing-template
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+	err := createWorkflowTemplate(ctx, wfClientset, workflowTemplateWithPodMetadata)
+	require.NoError(t, err)
+
+	// Create a base workflow template to use as context
+	baseWftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(
+		wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault),
+		wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(),
+		baseWftmpl,
+		nil,
+		log,
+	)
+
+	// Try to get a template that doesn't exist from a WorkflowTemplate that HAS podMetadata
+	tmplRef := wfv1.TemplateRef{
+		Name:     "template-with-podmetadata",
+		Template: "nonexistent-template",
+	}
+
+	_, err = tplCtx.GetTemplateFromRef(ctx, &tmplRef)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "template nonexistent-template not found in workflow template template-with-podmetadata")
+}

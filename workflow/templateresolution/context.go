@@ -155,12 +155,13 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 
 	template = wftmpl.GetTemplateByName(tmplRef.Template)
 
-	podMetadata := wftmpl.GetPodMetadata()
-	ctx.addPodMetadata(podMetadata, template)
-
 	if template == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
 	}
+
+	podMetadata := wftmpl.GetPodMetadata()
+	ctx.addPodMetadata(podMetadata, template)
+
 	return template.DeepCopy(), nil
 }
 
