@@ -4154,22 +4154,6 @@ spec:
                 description: Synchronization holds synchronization lock configuration
                   for this Workflow
                 properties:
-                  mutex:
-                    description: Mutex holds the Mutex lock details - deprecated,
-                      use mutexes instead
-                    properties:
-                      database:
-                        description: Database specifies this is database controlled
-                          if this is set true
-                        type: boolean
-                      name:
-                        description: name of the mutex
-                        type: string
-                      namespace:
-                        description: 'Namespace is the namespace of the mutex, default:
-                          [namespace of workflow]'
-                        type: string
-                    type: object
                   mutexes:
                     description: 'v3.6 and after: Mutexes holds the list of Mutex
                       lock details'
@@ -4189,48 +4173,6 @@ spec:
                           type: string
                       type: object
                     type: array
-                  semaphore:
-                    description: Semaphore holds the Semaphore configuration - deprecated,
-                      use semaphores instead
-                    properties:
-                      configMapKeyRef:
-                        description: ConfigMapKeyRef is a configmap selector for Semaphore
-                          configuration
-                        properties:
-                          key:
-                            description: The key to select.
-                            type: string
-                          name:
-                            default: ""
-                            description: |-
-                              Name of the referent.
-                              This field is effectively required, but due to backwards compatibility is
-                              allowed to be empty. Instances of this type with an empty value here are
-                              almost certainly wrong.
-                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            type: string
-                          optional:
-                            description: Specify whether the ConfigMap or its key
-                              must be defined
-                            type: boolean
-                        required:
-                        - key
-                        type: object
-                        x-kubernetes-map-type: atomic
-                      database:
-                        description: SyncDatabaseRef is a database reference for Semaphore
-                          configuration
-                        properties:
-                          key:
-                            type: string
-                        required:
-                        - key
-                        type: object
-                      namespace:
-                        description: 'Namespace is the namespace of the configmap,
-                          default: [namespace of workflow]'
-                        type: string
-                    type: object
                   semaphores:
                     description: 'v3.6 and after: Semaphores holds the list of Semaphores
                       configuration'
@@ -24192,22 +24134,6 @@ spec:
                     description: Synchronization holds synchronization lock configuration
                       for this template
                     properties:
-                      mutex:
-                        description: Mutex holds the Mutex lock details - deprecated,
-                          use mutexes instead
-                        properties:
-                          database:
-                            description: Database specifies this is database controlled
-                              if this is set true
-                            type: boolean
-                          name:
-                            description: name of the mutex
-                            type: string
-                          namespace:
-                            description: 'Namespace is the namespace of the mutex,
-                              default: [namespace of workflow]'
-                            type: string
-                        type: object
                       mutexes:
                         description: 'v3.6 and after: Mutexes holds the list of Mutex
                           lock details'
@@ -24227,48 +24153,6 @@ spec:
                               type: string
                           type: object
                         type: array
-                      semaphore:
-                        description: Semaphore holds the Semaphore configuration -
-                          deprecated, use semaphores instead
-                        properties:
-                          configMapKeyRef:
-                            description: ConfigMapKeyRef is a configmap selector for
-                              Semaphore configuration
-                            properties:
-                              key:
-                                description: The key to select.
-                                type: string
-                              name:
-                                default: ""
-                                description: |-
-                                  Name of the referent.
-                                  This field is effectively required, but due to backwards compatibility is
-                                  allowed to be empty. Instances of this type with an empty value here are
-                                  almost certainly wrong.
-                                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                type: string
-                              optional:
-                                description: Specify whether the ConfigMap or its
-                                  key must be defined
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                            x-kubernetes-map-type: atomic
-                          database:
-                            description: SyncDatabaseRef is a database reference for
-                              Semaphore configuration
-                            properties:
-                              key:
-                                type: string
-                            required:
-                            - key
-                            type: object
-                          namespace:
-                            description: 'Namespace is the namespace of the configmap,
-                              default: [namespace of workflow]'
-                            type: string
-                        type: object
                       semaphores:
                         description: 'v3.6 and after: Semaphores holds the list of
                           Semaphores configuration'
@@ -46221,22 +46105,6 @@ spec:
                       description: Synchronization holds synchronization lock configuration
                         for this template
                       properties:
-                        mutex:
-                          description: Mutex holds the Mutex lock details - deprecated,
-                            use mutexes instead
-                          properties:
-                            database:
-                              description: Database specifies this is database controlled
-                                if this is set true
-                              type: boolean
-                            name:
-                              description: name of the mutex
-                              type: string
-                            namespace:
-                              description: 'Namespace is the namespace of the mutex,
-                                default: [namespace of workflow]'
-                              type: string
-                          type: object
                         mutexes:
                           description: 'v3.6 and after: Mutexes holds the list of
                             Mutex lock details'
@@ -46256,48 +46124,6 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        semaphore:
-                          description: Semaphore holds the Semaphore configuration
-                            - deprecated, use semaphores instead
-                          properties:
-                            configMapKeyRef:
-                              description: ConfigMapKeyRef is a configmap selector
-                                for Semaphore configuration
-                              properties:
-                                key:
-                                  description: The key to select.
-                                  type: string
-                                name:
-                                  default: ""
-                                  description: |-
-                                    Name of the referent.
-                                    This field is effectively required, but due to backwards compatibility is
-                                    allowed to be empty. Instances of this type with an empty value here are
-                                    almost certainly wrong.
-                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                  type: string
-                                optional:
-                                  description: Specify whether the ConfigMap or its
-                                    key must be defined
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
-                              x-kubernetes-map-type: atomic
-                            database:
-                              description: SyncDatabaseRef is a database reference
-                                for Semaphore configuration
-                              properties:
-                                key:
-                                  type: string
-                              required:
-                              - key
-                              type: object
-                            namespace:
-                              description: 'Namespace is the namespace of the configmap,
-                                default: [namespace of workflow]'
-                              type: string
-                          type: object
                         semaphores:
                           description: 'v3.6 and after: Semaphores holds the list
                             of Semaphores configuration'
