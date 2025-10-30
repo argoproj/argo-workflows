@@ -4059,7 +4059,7 @@
           "description": "HTTP contains HTTP artifact location details"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
           "type": "integer"
         },
         "name": {
@@ -4228,7 +4228,7 @@
           "description": "HTTP contains HTTP artifact location details"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
           "type": "integer"
         },
         "name": {

@@ -222,7 +222,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
-            mode (int): mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.. [optional]  # noqa: E501
+            mode (int): mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.. [optional]  # noqa: E501
             optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             path (str): Path is the container path to the artifact. [optional]  # noqa: E501
@@ -329,7 +329,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
-            mode (int): mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.. [optional]  # noqa: E501
+            mode (int): mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.. [optional]  # noqa: E501
             optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             path (str): Path is the container path to the artifact. [optional]  # noqa: E501
