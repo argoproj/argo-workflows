@@ -344,7 +344,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -723,7 +723,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

@@ -1038,8 +1038,9 @@ type Artifact struct {
 	// Path is the container path to the artifact
 	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
 
-	// mode bits to use on this file, must be a value between 0 and 0777
-	// set when loading input artifacts.
+	// mode bits to use on this file, must be a value between 0 and 0777.
+	// Set when loading input artifacts. It is recommended to set the mode value
+	// to ensure the artifact has the expected permissions in your container.
 	Mode *int32 `json:"mode,omitempty" protobuf:"varint,3,opt,name=mode"`
 
 	// From allows an artifact to reference an artifact from a previous step
