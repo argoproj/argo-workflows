@@ -64,8 +64,9 @@ message Artifact {
   // Path is the container path to the artifact
   optional string path = 2;
 
-  // mode bits to use on this file, must be a value between 0 and 0777
-  // set when loading input artifacts.
+  // mode bits to use on this file, must be a value between 0 and 0777.
+  // Set when loading input artifacts. It is recommended to set the mode value
+  // to ensure the artifact has the expected permissions in your container.
   optional int32 mode = 3;
 
   // From allows an artifact to reference an artifact from a previous step
@@ -487,9 +488,6 @@ message CronWorkflowList {
 message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
-
-  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
-  optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
   optional string concurrencyPolicy = 3;
@@ -1631,12 +1629,6 @@ message SyncDatabaseRef {
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
-  optional SemaphoreRef semaphore = 1;
-
-  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
-  optional Mutex mutex = 2;
-
   // v3.6 and after: Semaphores holds the list of Semaphores configuration
   repeated SemaphoreRef semaphores = 3;
 

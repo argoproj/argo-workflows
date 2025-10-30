@@ -21,7 +21,7 @@ Name | Type | Description | Notes
 **globalName** | **String** | GlobalName exports an output artifact to the global scope, making it available as &#39;{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  [optional]
 **hdfs** | [**IoArgoprojWorkflowV1alpha1HDFSArtifact**](IoArgoprojWorkflowV1alpha1HDFSArtifact.md) |  |  [optional]
 **http** | [**IoArgoprojWorkflowV1alpha1HTTPArtifact**](IoArgoprojWorkflowV1alpha1HTTPArtifact.md) |  |  [optional]
-**mode** | **Integer** | mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts. |  [optional]
+**mode** | **Integer** | mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container. |  [optional]
 **name** | **String** | name of the artifact. must be unique within a template&#39;s inputs/outputs. | 
 **optional** | **Boolean** | Make Artifacts optional, if Artifacts doesn&#39;t generate or exist |  [optional]
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifact**](IoArgoprojWorkflowV1alpha1OSSArtifact.md) |  |  [optional]

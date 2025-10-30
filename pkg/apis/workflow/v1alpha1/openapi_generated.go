@@ -344,7 +344,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -723,7 +723,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -2265,13 +2265,6 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							Description: "WorkflowSpec is the spec of the workflow to be run",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
-						},
-					},
-					"schedule": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 					"concurrencyPolicy": {
@@ -6337,18 +6330,6 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 				Description: "Synchronization holds synchronization lock configuration",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"semaphore": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
-						},
-					},
-					"mutex": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Mutex holds the Mutex lock details - deprecated, use mutexes instead",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex"),
-						},
-					},
 					"semaphores": {
 						SchemaProps: spec.SchemaProps{
 							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",

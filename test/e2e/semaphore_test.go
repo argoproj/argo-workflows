@@ -90,16 +90,6 @@ func (s *SemaphoreSuite) TestSynchronizationMultiple() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
-// Legacy CRD entries: mutex and semaphore
-func (s *SemaphoreSuite) TestSynchronizationLegacyMutexAndSemaphore() {
-	s.Given().
-		Workflow("@synchronization/legacy-mutex-semaphore.yaml").
-		When().
-		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
-}
-
 func TestSemaphoreSuite(t *testing.T) {
 	suite.Run(t, new(SemaphoreSuite))
 }
