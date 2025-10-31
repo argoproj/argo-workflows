@@ -2028,6 +2028,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
 
+	err = AddDynamicInputs(ctx, processedTmpl)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+	}
+
 	// Update displayName from processedTmpl
 	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
 		if !displayNameRegex.MatchString(displayName) {

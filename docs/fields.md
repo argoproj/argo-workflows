@@ -117,6 +117,8 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -616,6 +618,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -1082,6 +1086,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -1471,6 +1477,8 @@ Arguments to a template
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
+
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -2056,6 +2064,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
@@ -2229,6 +2239,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fun-with-gifs.yaml)
@@ -2365,6 +2377,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
+
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -2744,6 +2758,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-tag-template-workflow.yaml)
@@ -2955,6 +2971,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
+
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -4213,6 +4231,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-tag-template-workflow.yaml)
@@ -5063,6 +5083,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -5707,6 +5729,8 @@ A single application container that you want to run within a pod.
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -6698,6 +6722,8 @@ ImageVolumeSource represents a image volume resource.
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`dynamic-inputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dynamic-inputs.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
