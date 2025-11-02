@@ -2318,6 +2318,186 @@
         }
       }
     },
+    "/api/v1/sync/{namespace}": {
+      "post": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_CreateSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sync.CreateSyncLimitRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.SyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/{namespace}/{key}": {
+      "get": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_GetSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "CONFIGMAP",
+              "DATABASE"
+            ],
+            "type": "string",
+            "default": "CONFIGMAP",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "cmName",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.SyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_UpdateSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sync.UpdateSyncLimitRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.SyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SyncService"
+        ],
+        "operationId": "SyncService_DeleteSyncLimit",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "CONFIGMAP",
+              "DATABASE"
+            ],
+            "type": "string",
+            "default": "CONFIGMAP",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "cmName",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/sync.DeleteSyncLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tracking/event": {
       "post": {
         "tags": [
@@ -8181,7 +8361,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
           "type": "integer"
         },
         "name": {
@@ -8199,6 +8379,10 @@
         "path": {
           "description": "Path is the container path to the artifact",
           "type": "string"
+        },
+        "plugin": {
+          "description": "Plugin contains plugin artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact"
         },
         "raw": {
           "description": "Raw contains raw artifact location details",
@@ -8272,6 +8456,10 @@
           "description": "OSS contains OSS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact"
         },
+        "plugin": {
+          "description": "Plugin contains plugin artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact"
+        },
         "raw": {
           "description": "Raw contains raw artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
@@ -8342,7 +8530,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
           "type": "integer"
         },
         "name": {
@@ -8360,6 +8548,10 @@
         "path": {
           "description": "Path is the container path to the artifact",
           "type": "string"
+        },
+        "plugin": {
+          "description": "Plugin contains plugin artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact"
         },
         "raw": {
           "description": "Raw contains raw artifact location details",
@@ -8406,6 +8598,10 @@
         "oss": {
           "description": "OSS stores artifact in a OSS-compliant object store",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifactRepository"
+        },
+        "plugin": {
+          "description": "Plugin stores artifact in a plugin-specific artifact repository",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifactRepository"
         },
         "s3": {
           "description": "S3 stores artifact in a S3-compliant object store",
@@ -8495,7 +8691,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.AzureArtifact": {
-      "description": "AzureArtifact is the location of a an Azure Storage artifact",
+      "description": "AzureArtifact is the location of an Azure Storage artifact",
       "type": "object",
       "required": [
         "endpoint",
@@ -9093,10 +9289,6 @@
           "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
           "type": "integer"
         },
-        "schedule": {
-          "description": "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
-          "type": "string"
-        },
         "schedules": {
           "description": "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
           "type": "array",
@@ -9435,7 +9627,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
-      "description": "GitArtifact is the location of an git artifact",
+      "description": "GitArtifact is the location of a git artifact",
       "type": "object",
       "required": [
         "repo"
@@ -10464,6 +10656,52 @@
       "description": "Plugin is an Object with exactly one key",
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.PluginArtifact": {
+      "description": "PluginArtifact is the location of a plugin artifact",
+      "type": "object",
+      "required": [
+        "name",
+        "configuration",
+        "key"
+      ],
+      "properties": {
+        "configuration": {
+          "description": "Configuration is the plugin defined configuration for the artifact driver plugin",
+          "type": "string"
+        },
+        "connectionTimeoutSeconds": {
+          "description": "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout",
+          "type": "integer"
+        },
+        "key": {
+          "description": "Key is the path in the artifact repository where the artifact resides",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the name of the artifact driver plugin",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.PluginArtifactRepository": {
+      "description": "PluginArtifactRepository defines the controller configuration for a plugin artifact repository",
+      "type": "object",
+      "required": [
+        "name",
+        "configuration"
+      ],
+      "properties": {
+        "configuration": {
+          "type": "string"
+        },
+        "keyFormat": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "type": "object",
@@ -11166,20 +11404,12 @@
       "description": "Synchronization holds synchronization lock configuration",
       "type": "object",
       "properties": {
-        "mutex": {
-          "description": "Mutex holds the Mutex lock details - deprecated, use mutexes instead",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
-        },
         "mutexes": {
           "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
           }
-        },
-        "semaphore": {
-          "description": "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
         },
         "semaphores": {
           "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",
@@ -15764,6 +15994,77 @@
         },
         "sensor": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+        }
+      }
+    },
+    "sync.CreateSyncLimitRequest": {
+      "type": "object",
+      "properties": {
+        "cmName": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      }
+    },
+    "sync.DeleteSyncLimitResponse": {
+      "type": "object"
+    },
+    "sync.SyncConfigType": {
+      "type": "string",
+      "default": "CONFIGMAP",
+      "enum": [
+        "CONFIGMAP",
+        "DATABASE"
+      ]
+    },
+    "sync.SyncLimitResponse": {
+      "type": "object",
+      "properties": {
+        "cmName": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      }
+    },
+    "sync.UpdateSyncLimitRequest": {
+      "type": "object",
+      "properties": {
+        "cmName": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
         }
       }
     }

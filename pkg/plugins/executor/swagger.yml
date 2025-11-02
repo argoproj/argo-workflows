@@ -140,8 +140,9 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             mode:
                 description: |-
-                    mode bits to use on this file, must be a value between 0 and 0777
-                    set when loading input artifacts.
+                    mode bits to use on this file, must be a value between 0 and 0777.
+                    Set when loading input artifacts. It is recommended to set the mode value
+                    to ensure the artifact has the expected permissions in your container.
                 format: int32
                 type: integer
             name:
@@ -155,6 +156,8 @@ definitions:
             path:
                 description: Path is the container path to the artifact
                 type: string
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             recurseMode:
@@ -203,6 +206,8 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             oss:
                 $ref: '#/definitions/OSSArtifact'
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             s3:
@@ -247,8 +252,9 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             mode:
                 description: |-
-                    mode bits to use on this file, must be a value between 0 and 0777
-                    set when loading input artifacts.
+                    mode bits to use on this file, must be a value between 0 and 0777.
+                    Set when loading input artifacts. It is recommended to set the mode value
+                    to ensure the artifact has the expected permissions in your container.
                 format: int32
                 type: integer
             name:
@@ -262,6 +268,8 @@ definitions:
             path:
                 description: Path is the container path to the artifact
                 type: string
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             recurseMode:
@@ -273,6 +281,9 @@ definitions:
                 description: SubPath allows an artifact to be sourced from a subpath within the specified source
                 type: string
         type: object
+    ArtifactPluginName:
+        description: ArtifactPluginName is the name of an artifact plugin
+        type: string
     ArtifactoryArtifact:
         description: ArtifactoryArtifact is the location of an artifactory artifact
         properties:
@@ -289,7 +300,7 @@ definitions:
             $ref: '#/definitions/Artifact'
         type: array
     AzureArtifact:
-        description: AzureArtifact is the location of a an Azure Storage artifact
+        description: AzureArtifact is the location of an Azure Storage artifact
         properties:
             accountKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
@@ -1627,7 +1638,7 @@ definitions:
         title: A GaugeOperation is the set of operations that can be used in a gauge metric.
         type: string
     GitArtifact:
-        description: GitArtifact is the location of an git artifact
+        description: GitArtifact is the location of a git artifact
         properties:
             branch:
                 description: Branch is the branch to fetch when `SingleBranch` is enabled
@@ -2899,6 +2910,22 @@ definitions:
         type: object
     Plugin:
         description: Plugin is an Object with exactly one key
+        type: object
+    PluginArtifact:
+        description: PluginArtifact is the location of a plugin artifact
+        properties:
+            configuration:
+                description: Configuration is the plugin defined configuration for the artifact driver plugin
+                type: string
+            connectionTimeoutSeconds:
+                description: ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
+                format: int32
+                type: integer
+            key:
+                description: Key is the path in the artifact repository where the artifact resides
+                type: string
+            name:
+                $ref: '#/definitions/ArtifactPluginName'
         type: object
     PodAffinity:
         properties:
@@ -4300,15 +4327,11 @@ definitions:
     Synchronization:
         description: Synchronization holds synchronization lock configuration
         properties:
-            mutex:
-                $ref: '#/definitions/Mutex'
             mutexes:
                 description: 'v3.6 and after: Mutexes holds the list of Mutex lock details'
                 items:
                     $ref: '#/definitions/Mutex'
                 type: array
-            semaphore:
-                $ref: '#/definitions/SemaphoreRef'
             semaphores:
                 description: 'v3.6 and after: Semaphores holds the list of Semaphores configuration'
                 items:

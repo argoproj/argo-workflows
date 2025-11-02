@@ -119,6 +119,7 @@ nav:
           - key-only-artifacts.md
           - artifact-repository-ref.md
           - conditional-artifacts-parameters.md
+          - artifact-plugin.md
       - Access Control:
           - service-accounts.md
           - workflow-rbac.md
@@ -162,7 +163,7 @@ nav:
           - async-pattern.md
           - client-libraries.md
           - swagger.md
-      - Plugins:
+      - Executor Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
@@ -228,6 +229,11 @@ nav:
           - argo stop: cli/argo_stop.md
           - argo submit: cli/argo_submit.md
           - argo suspend: cli/argo_suspend.md
+          - argo sync: cli/argo_sync.md
+          - argo sync create: cli/argo_sync_create.md
+          - argo sync delete: cli/argo_sync_delete.md
+          - argo sync get: cli/argo_sync_get.md
+          - argo sync update: cli/argo_sync_update.md
           - argo template: cli/argo_template.md
           - argo template create: cli/argo_template_create.md
           - argo template delete: cli/argo_template_delete.md
@@ -261,6 +267,7 @@ nav:
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md
+          - synchronization-config.md
           - parallelism.md
       - Argo Server:
           - argo-server.md
@@ -281,6 +288,7 @@ nav:
       - running-locally.md
       - doc-changes.md
       - public-api.md
+      - artifact-plugin.md
       - static-code-analysis.md
       - stress-testing.md
       - releasing.md

@@ -550,7 +550,7 @@ func TestMultipleSchedules(t *testing.T) {
 	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
 }
 
-var specErrWithScheduleAndSchedules = `
+var specErrWithEmptySchedules = `
   apiVersion: argoproj.io/v1alpha1
   kind: CronWorkflow
   metadata:
@@ -562,10 +562,7 @@ var specErrWithScheduleAndSchedules = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedule: "* * * * *"
-    schedules:
-    - "* * * * *"
-    - "0 * * * *"
+    schedules: []
     startingDeadlineSeconds: 30
     workflowSpec:
       entrypoint: whalesay
@@ -586,9 +583,9 @@ var specErrWithScheduleAndSchedules = `
     lastScheduledTime: "2020-02-28T19:05:00Z"
 `
 
-func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
+func TestSpecErrorWithEmptySchedules(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(specErrWithScheduleAndSchedules), &cronWf)
+	v1alpha1.MustUnmarshal([]byte(specErrWithEmptySchedules), &cronWf)
 
 	cs := fake.NewSimpleClientset()
 	ctx := logging.TestContext(t.Context())
@@ -609,7 +606,7 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
 	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
-	assert.Contains(t, submissionErrorCond.Message, "cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
+	assert.Contains(t, submissionErrorCond.Message, "cron workflow must have at least one schedule")
 }
 
 var specErrWithValidAndInvalidSchedules = `

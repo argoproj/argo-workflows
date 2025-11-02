@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"slices"
-	"sort"
+	"strings"
+	"time"
 
-	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -246,16 +247,14 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podInf
 	_, _ = h.Write([]byte(podInfo.serviceAccount))
 	// we should be able to always get the same result regardless of the order of our Labels or Annotations
 	// so sort alphabetically
-	sortedLabels := maps.Keys(podInfo.podMetadata.Labels)
-	sort.Strings(sortedLabels)
+	sortedLabels := slices.Sorted(maps.Keys(podInfo.podMetadata.Labels))
 	for _, label := range sortedLabels {
 		labelValue := podInfo.podMetadata.Labels[label]
 		_, _ = h.Write([]byte(label))
 		_, _ = h.Write([]byte(labelValue))
 	}
 
-	sortedAnnotations := maps.Keys(podInfo.podMetadata.Annotations)
-	sort.Strings(sortedAnnotations)
+	sortedAnnotations := slices.Sorted(maps.Keys(podInfo.podMetadata.Annotations))
 	for _, annotation := range sortedAnnotations {
 		annotationValue := podInfo.podMetadata.Annotations[annotation]
 		_, _ = h.Write([]byte(annotation))
@@ -415,6 +414,54 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 
 	volumes, volumeMounts := createSecretVolumesAndMountsFromArtifactLocations(artifactLocations)
 
+	pluginNames := make(map[wfv1.ArtifactPluginName]bool, 0)
+	for _, artifactLocation := range artifactLocations {
+		if artifactLocation != nil && artifactLocation.Plugin != nil && artifactLocation.Plugin.Name != "" {
+			pluginNames[artifactLocation.Plugin.Name] = true
+		}
+	}
+	woc.log.WithFields(logging.Fields{"pluginNames": pluginNames}).Info(ctx, "artifact GC plugin names")
+	drivers, err := woc.controller.Config.GetArtifactDrivers(slices.Collect(maps.Keys(pluginNames)))
+	if err != nil {
+		return nil, err
+	}
+	initContainers := make([]corev1.Container, 0)
+	artifactDriverTmpl := wfv1.Template{
+		Name: "artifact-driver",
+	}
+
+	// If we want to run the sidecars, we need a copy of argoexec,
+	// so we run the standard init container to copy it into the
+	// /var/run/argo volume
+	if len(drivers) > 0 {
+		initCtr := woc.standardInitContainer(ctx, &artifactDriverTmpl)
+		initCtr.VolumeMounts = []corev1.VolumeMount{volumeMountVarArgo}
+		// Required for the init container to work
+		initCtr.Env = append(initCtr.Env, corev1.EnvVar{Name: common.EnvVarTemplate, Value: "{}"})
+		initCtr.Env = append(initCtr.Env, corev1.EnvVar{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)})
+
+		initContainers = append(initContainers, *initCtr)
+		volumes = append(volumes, volumeVarArgo, volumeTmpDir)
+		volumeMounts = append(volumeMounts, volumeMountVarArgo)
+	}
+	artifactPluginSidecars := make([]corev1.Container, len(drivers))
+
+	for i, driver := range drivers {
+		woc.log.WithFields(logging.Fields{"driver": driver}).Info(ctx, "artifact GC driver")
+		volumes = append(volumes, driver.Name.Volume())
+		volumeMounts = append(volumeMounts, driver.Name.VolumeMount())
+		ctr, err := woc.artifactSidecarGCContainer(ctx, &artifactDriverTmpl, driver)
+		if err != nil {
+			return nil, err
+		}
+		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo)
+		artifactPluginSidecars[i] = *ctr
+	}
+	artifactPluginSidecarNames := make([]string, len(artifactPluginSidecars))
+	for i, sidecar := range artifactPluginSidecars {
+		artifactPluginSidecarNames[i] = sidecar.Name
+	}
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
@@ -430,35 +477,47 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			OwnerReferences: ownerReferences,
 		},
 		Spec: corev1.PodSpec{
-			Volumes:         volumes,
+			Volumes: volumes,
+
 			SecurityContext: common.MinimalPodSC(),
-			Containers: []corev1.Container{
-				{
-					Name:            common.MainContainerName,
-					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-					Args:            append([]string{"artifact", "delete"}, woc.getExecutorLogOpts(ctx)...),
-					Env: []corev1.EnvVar{
-						{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
-					},
-					// if this pod is breached by an attacker we:
-					// * prevent installation of any new packages
-					// * modification of the file-system
-					SecurityContext: common.MinimalCtrSC(),
-					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
-					Resources: corev1.ResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("100m"),
-							"memory": resource.MustParse("64Mi"),
-						},
-						Requests: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("50m"),
-							"memory": resource.MustParse("32Mi"),
+			InitContainers:  initContainers,
+			Containers: append(artifactPluginSidecars, corev1.Container{
+				Name:            common.MainContainerName,
+				Image:           woc.controller.executorImage(),
+				ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+				Args:            append([]string{"artifact", "delete"}, woc.getExecutorLogOpts(ctx)...),
+				Env: []corev1.EnvVar{
+					{
+						Name: common.EnvVarPodName,
+						ValueFrom: &corev1.EnvVarSource{
+							FieldRef: &corev1.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.name",
+							},
 						},
 					},
-					VolumeMounts: volumeMounts,
+					{Name: common.EnvVarTemplate, Value: "{}"},
+					{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)},
+					{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
+					{Name: common.EnvVarArtifactPluginNames, Value: strings.Join(artifactPluginSidecarNames, ",")},
 				},
-			},
+				// if this pod is breached by an attacker we:
+				// * prevent installation of any new packages
+				// * modification of the file-system
+				SecurityContext: common.MinimalCtrSC(),
+				// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
+				Resources: corev1.ResourceRequirements{
+					Limits: map[corev1.ResourceName]resource.Quantity{
+						"cpu":    resource.MustParse("100m"),
+						"memory": resource.MustParse("64Mi"),
+					},
+					Requests: map[corev1.ResourceName]resource.Quantity{
+						"cpu":    resource.MustParse("50m"),
+						"memory": resource.MustParse("32Mi"),
+					},
+				},
+				VolumeMounts: volumeMounts,
+			}),
 			AutomountServiceAccountToken: ptr.To(true),
 			RestartPolicy:                corev1.RestartPolicyNever,
 		},
@@ -476,18 +535,14 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	if podInfo.serviceAccount != "" {
 		pod.Spec.ServiceAccountName = podInfo.serviceAccount
 	}
-	for label, labelVal := range podInfo.podMetadata.Labels {
-		pod.Labels[label] = labelVal
-	}
-	for annotation, annotationVal := range podInfo.podMetadata.Annotations {
-		pod.Annotations[annotation] = annotationVal
-	}
+	maps.Copy(pod.Labels, podInfo.podMetadata.Labels)
+	maps.Copy(pod.Annotations, podInfo.podMetadata.Annotations)
 
 	if v := woc.controller.Config.InstanceID; v != "" {
 		pod.Labels[common.EnvVarInstanceID] = v
 	}
 
-	_, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
@@ -709,15 +764,11 @@ func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, 
 		if len(artifactGC.PodMetadata.Labels) > 0 && podInfo.podMetadata.Labels == nil {
 			podInfo.podMetadata.Labels = make(map[string]string)
 		}
-		for labelKey, labelValue := range artifactGC.PodMetadata.Labels {
-			podInfo.podMetadata.Labels[labelKey] = labelValue
-		}
+		maps.Copy(podInfo.podMetadata.Labels, artifactGC.PodMetadata.Labels)
 		if len(artifactGC.PodMetadata.Annotations) > 0 && podInfo.podMetadata.Annotations == nil {
 			podInfo.podMetadata.Annotations = make(map[string]string)
 		}
-		for annotationKey, annotationValue := range artifactGC.PodMetadata.Annotations {
-			podInfo.podMetadata.Annotations[annotationKey] = annotationValue
-		}
+		maps.Copy(podInfo.podMetadata.Annotations, artifactGC.PodMetadata.Annotations)
 	}
 
 }

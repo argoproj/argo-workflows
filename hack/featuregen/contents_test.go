@@ -19,7 +19,7 @@ func TestParseContent(t *testing.T) {
 			content: `Component: UI
 Issues: 1234 5678
 Description: Test Description
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Test Details
 - Point 1
@@ -39,21 +39,21 @@ Test Details
 			content: `Component: UI
 Issues: 1234
 Description: Test Description
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Some content here
 
 Component: Invalid second component
 Issues: 5678
 Description: Invalid second description
-Author: [Another Author](https://github.com/another)`,
+Authors: [Another Author](https://github.com/another)`,
 			wantValid: false,
 			want: feature{
 				Component:   "UI",
 				Description: "Test Description",
 				Author:      "[Alan Clucas](https://github.com/Joibel)",
 				Issues:      []string{"1234"},
-				Details:     "Some content here\n\nComponent: Invalid second component\nIssues: 5678\nDescription: Invalid second description\nAuthor: [Another Author](https://github.com/another)",
+				Details:     "Some content here\n\nComponent: Invalid second component\nIssues: 5678\nDescription: Invalid second description\nAuthors: [Another Author](https://github.com/another)",
 			},
 		},
 		{
@@ -62,7 +62,7 @@ Author: [Another Author](https://github.com/another)`,
 			content: `Component: UI
 Issues: 1234
 Description: Test Description
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Test Details
 
@@ -84,7 +84,7 @@ Test Details
 			content: `Component: CronWorkflows
 Issues: 1234
 Description: Test Description with issue 4567
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Test Details
 - Point 1
@@ -103,7 +103,7 @@ Test Details
 			source: "invalid.md",
 			content: `Component: UI
 Description: Test Description
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Test Details`,
 			wantValid: false,
@@ -134,7 +134,7 @@ Test Details`,
 			content: `Component: InvalidComponent
 Issues: 1234
 Description: Test Description
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Test Details`,
 			wantValid: false,
@@ -152,7 +152,7 @@ Test Details`,
 			content: `Component: UI
 Issues:
 Description: Test Description
-Author: [Alan Clucas](https://github.com/Joibel)
+Authors: [Alan Clucas](https://github.com/Joibel)
 
 Test Details`,
 			wantValid: false,
@@ -161,6 +161,24 @@ Test Details`,
 				Description: "Test Description",
 				Author:      "[Alan Clucas](https://github.com/Joibel)",
 				Issues:      []string{},
+				Details:     "Test Details",
+			},
+		},
+		{
+			name:   "Backwards compatibility with Author field",
+			source: "test.md",
+			content: `Component: UI
+Issues: 1234
+Description: Test Description
+Author: [Alan Clucas](https://github.com/Joibel)
+
+Test Details`,
+			wantValid: true,
+			want: feature{
+				Component:   "UI",
+				Description: "Test Description",
+				Author:      "[Alan Clucas](https://github.com/Joibel)",
+				Issues:      []string{"1234"},
 				Details:     "Test Details",
 			},
 		},

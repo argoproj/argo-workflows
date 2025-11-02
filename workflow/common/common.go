@@ -1,6 +1,8 @@
 package common
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -8,9 +10,11 @@ import (
 
 const (
 	// Container names used in the workflow pod
-	MainContainerName = "main"
-	InitContainerName = "init"
-	WaitContainerName = "wait"
+	MainContainerName           = "main"
+	InitContainerName           = "init"
+	WaitContainerName           = "wait"
+	ArtifactPluginSidecarPrefix = "artifact-plugin-"
+	ArtifactPluginInitPrefix    = InitContainerName + "-artifact-"
 
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
@@ -83,6 +87,8 @@ const (
 	// * `Persisted` - has been archived and retrieved from db
 	// See also `LabelKeyCompleted`.
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
+	// LabelKeyReApplyFailed is the pod metadata label to indicate if the pod re-apply failed
+	LabelKeyReApplyFailed = workflow.WorkflowFullName + "/reapply"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
@@ -134,6 +140,8 @@ const (
 
 	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
 	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
+	// EnvVarArtifactPluginNames is the env var for artifact GC pods containing the names of the artifact plugins
+	EnvVarArtifactPluginNames = "ARGO_ARTIFACT_PLUGIN_NAMES"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID
@@ -284,4 +292,16 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
 	return false
+}
+
+func IsArtifactPluginSidecar(containerName string) bool {
+	return strings.HasPrefix(containerName, ArtifactPluginSidecarPrefix)
+}
+
+func IsArgoSidecar(containerName string) bool {
+	return containerName == WaitContainerName || IsArtifactPluginSidecar(containerName)
+}
+
+func IsArtifactPluginInit(containerName string) bool {
+	return strings.HasPrefix(containerName, ArtifactPluginInitPrefix)
 }

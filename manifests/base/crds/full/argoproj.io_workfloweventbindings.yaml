@@ -785,8 +785,9 @@ spec:
                               type: object
                             mode:
                               description: |-
-                                mode bits to use on this file, must be a value between 0 and 0777
-                                set when loading input artifacts.
+                                mode bits to use on this file, must be a value between 0 and 0777.
+                                Set when loading input artifacts. It is recommended to set the mode value
+                                to ensure the artifact has the expected permissions in your container.
                               format: int32
                               type: integer
                             name:
@@ -897,6 +898,33 @@ spec:
                             path:
                               description: Path is the container path to the artifact
                               type: string
+                            plugin:
+                              description: Plugin contains plugin artifact location
+                                details
+                              properties:
+                                configuration:
+                                  description: Configuration is the plugin defined
+                                    configuration for the artifact driver plugin
+                                  type: string
+                                connectionTimeoutSeconds:
+                                  description: ConnectionTimeoutSeconds is the timeout
+                                    for the artifact driver connection, overriding
+                                    the driver's timeout
+                                  format: int32
+                                  type: integer
+                                key:
+                                  description: Key is the path in the artifact repository
+                                    where the artifact resides
+                                  type: string
+                                name:
+                                  description: Name is the name of the artifact driver
+                                    plugin
+                                  type: string
+                              required:
+                              - configuration
+                              - key
+                              - name
+                              type: object
                             raw:
                               description: Raw contains raw artifact location details
                               properties:

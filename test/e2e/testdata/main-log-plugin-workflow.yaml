@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: main-log-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - ":) Hello Argo Plugin Logs!"

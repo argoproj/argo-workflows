@@ -1,25 +1,17 @@
 import * as React from 'react';
+import {useState} from 'react';
+import {RouteComponentProps} from 'react-router';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
+import {deleteCookie, setCookie} from '../shared/cookie';
 import {useCollectEvent} from '../shared/use-collect-event';
 
 import './login.scss';
 
-function logout() {
-    document.cookie = 'authorization=;Max-Age=0';
-    document.location.reload();
-}
-function user(token: string) {
-    const path = uiUrl('');
-    document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
-    document.location.href = path;
-}
-function getRedirect(): URLSearchParams {
-    const urlParams = new URLSearchParams(document.location.search);
-    return new URLSearchParams({redirect: urlParams.get('redirect') ?? '/workflows'});
-}
-
-export function Login() {
+export function Login({location, history}: RouteComponentProps<any>) {
+    const urlParams = new URLSearchParams(location.search);
+    const redirect = new URLSearchParams({redirect: urlParams.get('redirect') ?? uiUrl('workflows')});
+    const [token, setToken] = useState('');
     useCollectEvent('openedLogin');
     return (
         <div className='login'>
@@ -47,13 +39,9 @@ export function Login() {
                             If your organisation has configured <b>single sign-on</b>:
                         </p>
                         <div>
-                            <button
-                                className='argo-button argo-button--base-o'
-                                onClick={() => {
-                                    document.location.href = uiUrlWithParams('oauth2/redirect', getRedirect());
-                                }}>
+                            <a className='argo-button argo-button--base-o' href={uiUrlWithParams('oauth2/redirect', redirect)}>
                                 <i className='fa fa-sign-in-alt' /> Login
-                            </button>
+                            </a>
                         </div>
                     </div>
                     <div className='white-box login__token-section'>
@@ -65,19 +53,24 @@ export function Login() {
                             paste in this box:
                         </p>
                         <div>
-                            <textarea id='token' className='token-input' rows={4} />
+                            <textarea id='token' className='token-input' rows={4} value={token} onChange={e => setToken(e.target.value)} />
                         </div>
                         <div>
-                            <button className='argo-button argo-button--base-o' onClick={() => user((document.getElementById('token') as HTMLInputElement).value)}>
+                            <a className='argo-button argo-button--base-o' href={uiUrl('')} onClick={() => setCookie('authorization', token)}>
                                 <i className='fa fa-sign-in-alt' /> Login
-                            </button>
+                            </a>
                         </div>
                     </div>
                     <div className='white-box login__logout-section'>
                         <p>Something wrong? Try logging out and logging back in:</p>
-                        <button className='argo-button argo-button--base-o' onClick={logout}>
+                        <a
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                deleteCookie('authorization');
+                                history.go(0);
+                            }}>
                             <i className='fa fa-sign-out-alt' /> Logout
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <div className='login__footer'>

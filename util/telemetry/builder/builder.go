@@ -105,7 +105,7 @@ func upperToSnake(in string) string {
 	in = string(append([]rune{unicode.ToLower(runes[0])}, runes[1:]...))
 	re := regexp.MustCompile(`[A-Z]`)
 	return string(re.ReplaceAllFunc([]byte(in), func(in []byte) []byte {
-		return []byte(fmt.Sprintf("_%s", strings.ToLower(string(in[0]))))
+		return fmt.Appendf(nil, "_%s", strings.ToLower(string(in[0])))
 	}))
 }
 

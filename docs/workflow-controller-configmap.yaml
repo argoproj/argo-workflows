@@ -102,6 +102,14 @@ data:
   # uncomment following lines if you want to change navigation bar background color
   # navColor: red
 
+  # ArtifactDrivers are plugin drivers for artifacts which must be configured
+  # here and added to the argo-server manually as sidecars.
+  # artifactDrivers: |
+  #  - name: my-custom-plugin
+  #    image: quay.io/myorg/my-artifact-plugin:v1.0.0
+  #  - name: another-plugin
+  #    image: docker.io/myorg/another-plugin:v2.1.0
+
   # artifactRepository defines the default location to be used as the artifact repository for
   # container artifacts.
   artifactRepository: |
@@ -315,6 +323,9 @@ data:
   # This enables coordination between multiple argo controller instances or across clusters
   # Shares a similar structure with persistence configuration
   synchronization: |
+    # Enable or disable database synchronization API (default: false)
+    enableAPI: false
+    
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
       maxIdleConns: 100

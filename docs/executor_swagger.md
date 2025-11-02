@@ -229,11 +229,12 @@ It will marshall back to string - marshalling is not symmetric.
 | globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
-| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777</br>set when loading input artifacts. |  |
+| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container. |  |
 | name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs. |  |
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
@@ -296,6 +297,7 @@ of a single workflow step, which the executor will use as a default location to 
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 
@@ -328,15 +330,30 @@ of a single workflow step, which the executor will use as a default location to 
 | globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
-| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777</br>set when loading input artifacts. |  |
+| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container. |  |
 | name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs. |  |
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 | subPath | string| `string` |  | | SubPath allows an artifact to be sourced from a subpath within the specified source |  |
+
+
+
+### <span id="artifact-plugin-name"></span> ArtifactPluginName
+
+
+> ArtifactPluginName is the name of an artifact plugin
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ArtifactPluginName | string| string | | ArtifactPluginName is the name of an artifact plugin |  |
 
 
 
@@ -370,7 +387,7 @@ of a single workflow step, which the executor will use as a default location to 
 ### <span id="azure-artifact"></span> AzureArtifact
 
 
-> AzureArtifact is the location of a an Azure Storage artifact
+> AzureArtifact is the location of an Azure Storage artifact
   
 
 
@@ -1448,7 +1465,7 @@ PDs support ownership management and SELinux relabeling.
 ### <span id="git-artifact"></span> GitArtifact
 
 
-> GitArtifact is the location of an git artifact
+> GitArtifact is the location of a git artifact
   
 
 
@@ -2685,6 +2702,27 @@ type of volume that is owned by someone else (the system).
 
 `interface{}`
 
+### <span id="plugin-artifact"></span> PluginArtifact
+
+
+> PluginArtifact is the location of a plugin artifact
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configuration | string| `string` |  | | Configuration is the plugin defined configuration for the artifact driver plugin |  |
+| connectionTimeoutSeconds | int32 (formatted integer)| `int32` |  | | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout |  |
+| key | string| `string` |  | | Key is the path in the artifact repository where the artifact resides |  |
+| name | [ArtifactPluginName](#artifact-plugin-name)| `ArtifactPluginName` |  | |  |  |
+
+
+
 ### <span id="pod-affinity"></span> PodAffinity
 
 
@@ -3767,9 +3805,7 @@ of the first container processes are calculated.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| mutex | [Mutex](#mutex)| `Mutex` |  | |  |  |
 | mutexes | [][Mutex](#mutex)| `[]*Mutex` |  | | v3.6 and after: Mutexes holds the list of Mutex lock details |  |
-| semaphore | [SemaphoreRef](#semaphore-ref)| `SemaphoreRef` |  | |  |  |
 | semaphores | [][SemaphoreRef](#semaphore-ref)| `[]*SemaphoreRef` |  | | v3.6 and after: Semaphores holds the list of Semaphores configuration |  |
 
 

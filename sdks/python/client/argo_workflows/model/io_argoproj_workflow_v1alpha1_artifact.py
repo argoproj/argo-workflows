@@ -39,6 +39,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_artifact import IoArgoprojWorkflowV1alpha1HDFSArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_http_artifact import IoArgoprojWorkflowV1alpha1HTTPArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact import IoArgoprojWorkflowV1alpha1OSSArtifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_plugin_artifact import IoArgoprojWorkflowV1alpha1PluginArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_raw_artifact import IoArgoprojWorkflowV1alpha1RawArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact import IoArgoprojWorkflowV1alpha1S3Artifact
     globals()['IoArgoprojWorkflowV1alpha1ArchiveStrategy'] = IoArgoprojWorkflowV1alpha1ArchiveStrategy
@@ -50,6 +51,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1HDFSArtifact'] = IoArgoprojWorkflowV1alpha1HDFSArtifact
     globals()['IoArgoprojWorkflowV1alpha1HTTPArtifact'] = IoArgoprojWorkflowV1alpha1HTTPArtifact
     globals()['IoArgoprojWorkflowV1alpha1OSSArtifact'] = IoArgoprojWorkflowV1alpha1OSSArtifact
+    globals()['IoArgoprojWorkflowV1alpha1PluginArtifact'] = IoArgoprojWorkflowV1alpha1PluginArtifact
     globals()['IoArgoprojWorkflowV1alpha1RawArtifact'] = IoArgoprojWorkflowV1alpha1RawArtifact
     globals()['IoArgoprojWorkflowV1alpha1S3Artifact'] = IoArgoprojWorkflowV1alpha1S3Artifact
 
@@ -125,6 +127,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             'optional': (bool,),  # noqa: E501
             'oss': (IoArgoprojWorkflowV1alpha1OSSArtifact,),  # noqa: E501
             'path': (str,),  # noqa: E501
+            'plugin': (IoArgoprojWorkflowV1alpha1PluginArtifact,),  # noqa: E501
             'raw': (IoArgoprojWorkflowV1alpha1RawArtifact,),  # noqa: E501
             'recurse_mode': (bool,),  # noqa: E501
             's3': (IoArgoprojWorkflowV1alpha1S3Artifact,),  # noqa: E501
@@ -155,6 +158,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         'optional': 'optional',  # noqa: E501
         'oss': 'oss',  # noqa: E501
         'path': 'path',  # noqa: E501
+        'plugin': 'plugin',  # noqa: E501
         'raw': 'raw',  # noqa: E501
         'recurse_mode': 'recurseMode',  # noqa: E501
         's3': 's3',  # noqa: E501
@@ -218,10 +222,11 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
-            mode (int): mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.. [optional]  # noqa: E501
+            mode (int): mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.. [optional]  # noqa: E501
             optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             path (str): Path is the container path to the artifact. [optional]  # noqa: E501
+            plugin (IoArgoprojWorkflowV1alpha1PluginArtifact): [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
@@ -324,10 +329,11 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
-            mode (int): mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.. [optional]  # noqa: E501
+            mode (int): mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.. [optional]  # noqa: E501
             optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             path (str): Path is the container path to the artifact. [optional]  # noqa: E501
+            plugin (IoArgoprojWorkflowV1alpha1PluginArtifact): [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501

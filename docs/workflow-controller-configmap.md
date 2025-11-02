@@ -96,6 +96,7 @@ Config contains the root of the configuration settings for the workflow controll
 | `NavColor`                 | `string`                                                                                                    | NavColor is an ui navigation bar background color                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `SSO`                      | [`SSOConfig`](#ssoconfig)                                                                                   | SSO in settings for single-sign on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `Synchronization`          | [`SyncConfig`](#syncconfig)                                                                                 | Synchronization via databases config                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `ArtifactDrivers`          | `Array<`[`ArtifactDriver`](#artifactdriver)`>`                                                              | ArtifactDrivers lists artifact driver plugins we can use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## NodeEvents
 
@@ -120,7 +121,7 @@ WorkflowEvents configures how workflow events are emitted
 
 ## KubeConfig
 
-KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method, it is used when the workflow controller is in a different cluster with the workflow workloads
+KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method; it is used when the workflow controller is in a different cluster from the workflow workloads
 
 ### Fields
 
@@ -319,6 +320,7 @@ SyncConfig contains synchronization configuration for database locks (semaphores
 | `PostgreSQL`                 | [`PostgreSQLConfig`](#postgresqlconfig) | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time                                                                                                                                                         |
 | `MySQL`                      | [`MySQLConfig`](#mysqlconfig)           | MySQL configuration for MySQL database, don't use PostgreSQL at the same time                                                                                                                                                              |
 | `ConnectionPool`             | [`ConnectionPool`](#connectionpool)     | Pooled connection settings for all types of database connections                                                                                                                                                                           |
+| `EnableAPI`                  | `bool`                                  | EnableAPI enables the database synchronization API                                                                                                                                                                                         |
 | `ControllerName`             | `string`                                | ControllerName sets a unique name for this controller instance                                                                                                                                                                             |
 | `SkipMigration`              | `bool`                                  | SkipMigration skips database migration if needed                                                                                                                                                                                           |
 | `LimitTableName`             | `string`                                | LimitTableName customizes the table name for semaphore limits, if not set, the default value is "sync_limit"                                                                                                                               |
@@ -329,3 +331,15 @@ SyncConfig contains synchronization configuration for database locks (semaphores
 | `HeartbeatSeconds`           | `int`                                   | HeartbeatSeconds specifies how often to update controller heartbeat, if not set, the default value is 60 seconds                                                                                                                           |
 | `InactiveControllerSeconds`  | `int`                                   | InactiveControllerSeconds specifies when to consider a controller dead, if not set, the default value is 300 seconds                                                                                                                       |
 | `SemaphoreLimitCacheSeconds` | `int64`                                 | SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked). |
+
+## ArtifactDriver
+
+ArtifactDriver is a plugin for an artifact driver
+
+### Fields
+
+|         Field Name         |                           Field Type                            |                                           Description                                            |
+|----------------------------|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `Name`                     | `wfv1.ArtifactPluginName` (string (name of an artifact plugin)) | Name is the name of the artifact driver plugin                                                   |
+| `Image`                    | `string`                                                        | Image is the docker image of the artifact driver                                                 |
+| `ConnectionTimeoutSeconds` | `int32`                                                         | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set |

@@ -80,7 +80,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 					},
 				},
 			}
-			err := we.LoadArtifacts(ctx)
+			err := we.loadArtifacts(ctx, "")
 			require.EqualError(t, err, test.error)
 		})
 	}

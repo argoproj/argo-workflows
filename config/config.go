@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"slices"
 	"time"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -118,6 +119,49 @@ type Config struct {
 
 	// Synchronization via databases config
 	Synchronization *SyncConfig `json:"synchronization,omitempty"`
+
+	// ArtifactDrivers lists artifact driver plugins we can use
+	ArtifactDrivers []ArtifactDriver `json:"artifactDrivers,omitempty"`
+}
+
+// ArtifactDriver is a plugin for an artifact driver
+type ArtifactDriver struct {
+	// Name is the name of the artifact driver plugin
+	Name wfv1.ArtifactPluginName `json:"name"`
+	// Image is the docker image of the artifact driver
+	Image string `json:"image"`
+	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty" protobuf:"varint,3,opt,name=connectionTimeoutSeconds"`
+}
+
+const defaultArtifactConnectionTimeout = time.Duration(5) * time.Second
+
+func (a ArtifactDriver) ConnectionTimeout() time.Duration {
+	if a.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(a.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultArtifactConnectionTimeout
+}
+
+func (c Config) GetArtifactDriver(name wfv1.ArtifactPluginName) (ArtifactDriver, error) {
+	for _, driver := range c.ArtifactDrivers {
+		if driver.Name == name {
+			return driver, nil
+		}
+	}
+	return ArtifactDriver{}, fmt.Errorf("artifact driver %s not found", name)
+}
+
+func (c Config) GetArtifactDrivers(plugins []wfv1.ArtifactPluginName) ([]ArtifactDriver, error) {
+	drivers := []ArtifactDriver{}
+	for _, plugin := range plugins {
+		driver, err := c.GetArtifactDriver(plugin)
+		if err != nil {
+			return nil, err
+		}
+		drivers = append(drivers, driver)
+	}
+	return drivers, nil
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -146,10 +190,8 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
-	for _, protocol := range allowedProtocol {
-		if inputProtocol == protocol {
-			return nil
-		}
+	if slices.Contains(allowedProtocol, inputProtocol) {
+		return nil
 	}
 	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
@@ -178,8 +220,8 @@ type PodSpecLogStrategy struct {
 	AllPods   bool `json:"allPods,omitempty"`
 }
 
-// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
-// it is used when the workflow controller is in a different cluster with the workflow workloads
+// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method;
+// it is used when the workflow controller is in a different cluster from the workflow workloads
 type KubeConfig struct {
 	// SecretName of the kubeconfig secret
 	// may not be empty if kuebConfig specified
@@ -238,6 +280,8 @@ func (c PersistConfig) GetClusterName() string {
 // SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)
 type SyncConfig struct {
 	DBConfig
+	// EnableAPI enables the database synchronization API
+	EnableAPI bool `json:"enableAPI,omitempty"`
 	// ControllerName sets a unique name for this controller instance
 	ControllerName string `json:"controllerName"`
 	// SkipMigration skips database migration if needed

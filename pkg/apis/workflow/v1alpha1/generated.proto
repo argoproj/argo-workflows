@@ -64,8 +64,9 @@ message Artifact {
   // Path is the container path to the artifact
   optional string path = 2;
 
-  // mode bits to use on this file, must be a value between 0 and 0777
-  // set when loading input artifacts.
+  // mode bits to use on this file, must be a value between 0 and 0777.
+  // Set when loading input artifacts. It is recommended to set the mode value
+  // to ensure the artifact has the expected permissions in your container.
   optional int32 mode = 3;
 
   // From allows an artifact to reference an artifact from a previous step
@@ -159,6 +160,9 @@ message ArtifactLocation {
 
   // Azure contains Azure Storage artifact location details
   optional AzureArtifact azure = 10;
+
+  // Plugin contains plugin artifact location details
+  optional PluginArtifact plugin = 11;
 }
 
 // ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
@@ -198,6 +202,9 @@ message ArtifactRepository {
 
   // Azure stores artifact in an Azure Storage account
   optional AzureArtifactRepository azure = 7;
+
+  // Plugin stores artifact in a plugin-specific artifact repository
+  optional PluginArtifactRepository plugin = 8;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -289,7 +296,7 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 message AzureArtifact {
   optional AzureBlobContainer azureBlobContainer = 1;
 
@@ -481,9 +488,6 @@ message CronWorkflowList {
 message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
-
-  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
-  optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
   optional string concurrencyPolicy = 3;
@@ -686,7 +690,7 @@ message Gauge {
   optional string operation = 3;
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 message GitArtifact {
   // Repo is the git repository
   optional string repo = 1;
@@ -1293,6 +1297,30 @@ message Plugin {
   optional Object object = 1;
 }
 
+// PluginArtifact is the location of a plugin artifact
+message PluginArtifact {
+  // Name is the name of the artifact driver plugin
+  optional string name = 1;
+
+  // Configuration is the plugin defined configuration for the artifact driver plugin
+  optional string configuration = 2;
+
+  // ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
+  optional int32 connectionTimeoutSeconds = 3;
+
+  // Key is the path in the artifact repository where the artifact resides
+  optional string key = 4;
+}
+
+// PluginArtifactRepository defines the controller configuration for a plugin artifact repository
+message PluginArtifactRepository {
+  optional string name = 1;
+
+  optional string keyFormat = 2;
+
+  optional string configuration = 3;
+}
+
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
   // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
@@ -1601,12 +1629,6 @@ message SyncDatabaseRef {
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
-  optional SemaphoreRef semaphore = 1;
-
-  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
-  optional Mutex mutex = 2;
-
   // v3.6 and after: Semaphores holds the list of Semaphores configuration
   repeated SemaphoreRef semaphores = 3;
 

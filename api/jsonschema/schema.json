@@ -4059,7 +4059,7 @@
           "description": "HTTP contains HTTP artifact location details"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
           "type": "integer"
         },
         "name": {
@@ -4077,6 +4077,10 @@
         "path": {
           "description": "Path is the container path to the artifact",
           "type": "string"
+        },
+        "plugin": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact",
+          "description": "Plugin contains plugin artifact location details"
         },
         "raw": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact",
@@ -4153,6 +4157,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact",
           "description": "OSS contains OSS artifact location details"
         },
+        "plugin": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact",
+          "description": "Plugin contains plugin artifact location details"
+        },
         "raw": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact",
           "description": "Raw contains raw artifact location details"
@@ -4220,7 +4228,7 @@
           "description": "HTTP contains HTTP artifact location details"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
           "type": "integer"
         },
         "name": {
@@ -4238,6 +4246,10 @@
         "path": {
           "description": "Path is the container path to the artifact",
           "type": "string"
+        },
+        "plugin": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifact",
+          "description": "Plugin contains plugin artifact location details"
         },
         "raw": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact",
@@ -4287,6 +4299,10 @@
         "oss": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifactRepository",
           "description": "OSS stores artifact in a OSS-compliant object store"
+        },
+        "plugin": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PluginArtifactRepository",
+          "description": "Plugin stores artifact in a plugin-specific artifact repository"
         },
         "s3": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3ArtifactRepository",
@@ -4377,7 +4393,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.AzureArtifact": {
-      "description": "AzureArtifact is the location of a an Azure Storage artifact",
+      "description": "AzureArtifact is the location of an Azure Storage artifact",
       "properties": {
         "accountKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -4989,10 +5005,6 @@
           "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
           "type": "integer"
         },
-        "schedule": {
-          "description": "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
-          "type": "string"
-        },
         "schedules": {
           "description": "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
           "items": {
@@ -5335,7 +5347,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
-      "description": "GitArtifact is the location of an git artifact",
+      "description": "GitArtifact is the location of a git artifact",
       "properties": {
         "branch": {
           "description": "Branch is the branch to fetch when `SingleBranch` is enabled",
@@ -6364,6 +6376,52 @@
       "description": "Plugin is an Object with exactly one key",
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.PluginArtifact": {
+      "description": "PluginArtifact is the location of a plugin artifact",
+      "properties": {
+        "configuration": {
+          "description": "Configuration is the plugin defined configuration for the artifact driver plugin",
+          "type": "string"
+        },
+        "connectionTimeoutSeconds": {
+          "description": "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout",
+          "type": "integer"
+        },
+        "key": {
+          "description": "Key is the path in the artifact repository where the artifact resides",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the name of the artifact driver plugin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "configuration",
+        "key"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.PluginArtifactRepository": {
+      "description": "PluginArtifactRepository defines the controller configuration for a plugin artifact repository",
+      "properties": {
+        "configuration": {
+          "type": "string"
+        },
+        "keyFormat": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "configuration"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
@@ -7065,20 +7123,12 @@
     "io.argoproj.workflow.v1alpha1.Synchronization": {
       "description": "Synchronization holds synchronization lock configuration",
       "properties": {
-        "mutex": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex",
-          "description": "Mutex holds the Mutex lock details - deprecated, use mutexes instead"
-        },
         "mutexes": {
           "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
           },
           "type": "array"
-        },
-        "semaphore": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef",
-          "description": "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead"
         },
         "semaphores": {
           "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",
@@ -11690,6 +11740,77 @@
         },
         "sensor": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+        }
+      },
+      "type": "object"
+    },
+    "sync.CreateSyncLimitRequest": {
+      "properties": {
+        "cmName": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      },
+      "type": "object"
+    },
+    "sync.DeleteSyncLimitResponse": {
+      "type": "object"
+    },
+    "sync.SyncConfigType": {
+      "default": "CONFIGMAP",
+      "enum": [
+        "CONFIGMAP",
+        "DATABASE"
+      ],
+      "type": "string"
+    },
+    "sync.SyncLimitResponse": {
+      "properties": {
+        "cmName": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
+        }
+      },
+      "type": "object"
+    },
+    "sync.UpdateSyncLimitRequest": {
+      "properties": {
+        "cmName": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/sync.SyncConfigType"
         }
       },
       "type": "object"
