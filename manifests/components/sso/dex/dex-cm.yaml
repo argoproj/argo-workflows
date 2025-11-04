@@ -13,6 +13,9 @@ data:
         file: ":memory:"
     web:
       http: 0.0.0.0:5556
+      https: 0.0.0.0:5554
+      tlsCert: /data/tls.crt
+      tlsKey: /data/tls.key
     logger:
       level: debug
     staticClients:
@@ -33,3 +36,53 @@ data:
         hash: $2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W
         username: admin
         userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
+  # Self-signed certificate generated via https://github.com/dexidp/dex/blob/7e2225c0e6594dafd049b5cb3a9fe1fd1941f385/examples/k8s/gencert.sh
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDHDCCAgSgAwIBAgIUbheSqdU5mYJvB4tYDfYv1xYGUL8wDQYJKoZIhvcNAQEL
+    BQAwEjEQMA4GA1UEAwwHa3ViZS1jYTAeFw0yNTEwMjcwMTQ2MzhaFw0yNTExMDYw
+    MTQ2MzhaMBIxEDAOBgNVBAMMB2t1YmUtY2EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+    DwAwggEKAoIBAQC2Yx1p7W4v+3z1LGGePcQz6UzezSFQgQMFk/VX3k6OqqVJg8tr
+    KBYmk6NyeBx2ayo+yLfOWhzAF2tP/jF/s15yyttHjYHA02TSkt+SrpHlqSUSBUO2
+    E2DHH3y0r0tJT4GEnSLsN4YOwo4BGQ++o97z83GkPHY08r7CCOzs/PkyBLv/bhNk
+    x2MYLbC8UTqCJMg8dw+5UBKhgvLxLKu/51Tv21CWfhPmTwXlo4+SJlNZ9P09S8M/
+    mlQB8tZOBYY//xY2d938zMAUlc/wgNAVrQCa78RDpos98VBUuMAzlZvMcP/6qe5X
+    Q7rlvoDxfQHhc7naWjXyUrFkubt3d6edGPM9AgMBAAGjajBoMAkGA1UdEwQCMAAw
+    CwYDVR0PBAQDAgXgMA4GA1UdEQQHMAWCA2RleDAdBgNVHQ4EFgQUp0lk1FwePOOy
+    TrspSac1NPwz1DYwHwYDVR0jBBgwFoAU5Bfyd/AUEA0ZUbM0cLIduM7pU1kwDQYJ
+    KoZIhvcNAQELBQADggEBAA0cCDgsnuF3TnX4+vAlQHXlcSwUMSWeJi2whZZvX83N
+    kk6MkvTor0cbTqBtZkyMw8IvW8ioxyEO+GQnZfbZ11XTimfOCLoP+Lxo4wGA7WeJ
+    NVTU26rvi0nfvWXBusk6a8M5HMQ/kAUmzG/Vb0wriQ+q5P906AzU83TljXTFXOTP
+    gNFZcfwdi/ALp9ZthEPmbPTUSSs05td3agJqSomsOVsWEDYb7GJEIqi9JP2eihhA
+    8puMm/9SX9Sv0oLPZECXsZcK/AGRIGm1MQfXnlauFqJR26kM4arSU9np7IAqPboZ
+    KySHaTX4XYnvxVX5BMT9HaFRJ3bcRJE0Osk8hOZkzWQ=
+    -----END CERTIFICATE-----
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2Yx1p7W4v+3z1
+    LGGePcQz6UzezSFQgQMFk/VX3k6OqqVJg8trKBYmk6NyeBx2ayo+yLfOWhzAF2tP
+    /jF/s15yyttHjYHA02TSkt+SrpHlqSUSBUO2E2DHH3y0r0tJT4GEnSLsN4YOwo4B
+    GQ++o97z83GkPHY08r7CCOzs/PkyBLv/bhNkx2MYLbC8UTqCJMg8dw+5UBKhgvLx
+    LKu/51Tv21CWfhPmTwXlo4+SJlNZ9P09S8M/mlQB8tZOBYY//xY2d938zMAUlc/w
+    gNAVrQCa78RDpos98VBUuMAzlZvMcP/6qe5XQ7rlvoDxfQHhc7naWjXyUrFkubt3
+    d6edGPM9AgMBAAECggEAB1XPpEe6B4B+C088YtSZnDvdDVXjKd1ybWpAswa8EpVO
+    3fjIuNfNIkKMT4mAnYucUJeaethZcSlP9dDjlT71xLifXo6UohhuZOCm0LuoHvwx
+    QzsGeN9pJEECLzMgnENwElEOi0EFaXkOJIGpRjHJgPawwpny6Bi+LsgUnUhkTkxc
+    gKQU1pdX3F5QGBp0YdTzPj3Ekf3Tw7z+gT+8JkV8Z/g+1kRusgyBCrjfmHe6ulv6
+    9LMbl3vdc+HnK/jw0Lx0eIMdRDJb4gotpATCoEwVA0CZTJRvaGFY1mUQwQ7uecqf
+    v/P1vQYW5nKtEWJaYJ45hpl0pvjLS5rmMfbrdo5ByQKBgQDrQ05ER5+NKe8Wj3qS
+    HKTdbVN6nOkbMzRkwmqWAl0pRPpRysnegrUwvApNr73IL/HVTw9RQwiR/d0QZKM9
+    aDlO1mVrBThAY7EyeUmZSZBUXbYZg6dOntKU+C2GztIzHHXXLsNuaKuI3UXcyJqO
+    S7PH9Z5f3+PSF+UFIXI4tgLb5QKBgQDGdqvFC2mYPCvcTUYcgdQFZzBTBAiVbKFt
+    yrHsXTOpnrkxQF/uV9qCgrIddAqm+2uPZqRXgscJpYv+mMhcQDrLrSIh1i5KSBBU
+    HcvmZUiqQ5/vi+PyEipXcaEvO16c8aDs3Ls8W68NPjLnOCpS2zWTKgK88prxCREM
+    A7IbKHq0eQKBgCIFMJs1FEBwkO9dPidE1x5iAdFYQWk6hVgQuSMKInimTeBoB7sS
+    gasTdhX31OTO8hSbgyaIIAQkhsQpGWX23VqmLDJGpfTBtc0LtvXgqmtYxc14uUfo
+    NaFvJf45iDH16qB8VaxwnGWFQeYEaD0te0juHsHUeXhXFjogtQi4YT91AoGAXQmW
+    3snJ188ldKJZItYOEfZc5h329C23w6OJI1hR9sts39Tg4/gVfKdOXpZexAcLVm90
+    zX2GV1RfO5xeGTkXFxJz9M7WZoY/+V76jmie1wrauE6pLnsrlFC1klHPud1gZonX
+    0KTefGPTMyfWV39iLzo7jF5jGmn4rtwwq6CfXWkCgYEAic8g95T9mcswD4dtoq8n
+    Y0D2jn4haw6M8x1cI0Op3M3cyST1vng7y2ta+YVbpws8j6n0hVfPPWZ42pBK3j5J
+    lpS2grJ+nbmdPu4S2zr8hbwVpqjYYlSKa5YhTnq4pYCfAgulYQ5QeOCDIFBJSaFp
+    eQNDdRcWA8EWy9aPeyEzMc0=
+    -----END PRIVATE KEY-----
