@@ -223,7 +223,7 @@ You can configure custom TLS settings for OIDC provider connections. This is use
 
 You can specify a custom CA certificate in several ways:
 
-**Default system CA path** - If you mount CA certificates to `/etc/ssl/certs`, they will be automatically picked up by the system without needing to configure `rootCA` or `rootCAFile`:
+**Default system CA path** - The system automatically loads CA certificates from paths specified by the `SSL_CERT_DIR` and `SSL_CERT_FILE` environment variables. See the [Go documentation](https://pkg.go.dev/crypto/x509#SystemCertPool) for more details.
 
 **Explicit configuration** - You can also explicitly specify custom CA certificates:
 
@@ -237,14 +237,6 @@ sso:
     MIIDXTCCAkWgAwIBAgIJAKoK/heBjcOuMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
     ...
     -----END CERTIFICATE-----
-```
-
-- **File path** - Reference a CA certificate file mounted in the container:
-
-```yaml
-sso:
-  # Custom CA certificate file name
-  rootCAFile: /etc/ssl/certs/custom-ca.pem
 ```
 
 ### Skip TLS Verification
