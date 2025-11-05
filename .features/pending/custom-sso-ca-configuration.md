@@ -22,12 +22,5 @@ sso:
     -----END CERTIFICATE-----
 ```
 
-#### File path reference
-```yaml
-sso:
-  # Custom CA certificate file name
-  rootCAFile: /etc/ssl/certs/custom-ca.pem
-```
-
-The system will automatically use certificates mounted to `/etc/ssl/certs` without additional configuration.
+The system will automatically use certificates configured with SSL_CERT_DIR, and SSL_CERT_FILE for non macOS environments.
 For production environments, always use proper CA certificates instead of skipping TLS verification.
