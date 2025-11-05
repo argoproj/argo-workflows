@@ -191,8 +191,15 @@ metrics:
       - name: LogLevel
     unit: "{message}"
     type: Int64Counter
-  - name: MutexTotal
-    description: A counter of the number of mutexes
+  - name: MutexReleasedTotal
+    description: A counter of the number of mutexes released
+    attributes:
+      - name: MutexName
+      - name: MutexNamespace
+    unit: "{mutex}"
+    type: Int64Counter
+  - name: MutexTakenTotal
+    description: A counter of the number of mutexes taken
     attributes:
       - name: MutexName
       - name: MutexNamespace
@@ -360,8 +367,16 @@ metrics:
       - name: QueueName
     unit: "{item}"
     type: Float64ObservableGauge
-  - name: SemaphoreTotal
-    description: A counter of the number of semaphores
+  - name: SemaphoreReleasedTotal
+    description: A counter of the number of semaphores released
+    attributes:
+      - name: SemaphoreConfigMapName
+      - name: SemaphoreName
+      - name: SemaphoreNamespace
+    unit: "{semaphore}"
+    type: Int64Counter
+  - name: SemaphoreTakenTotal
+    description: A counter of the number of semaphores taken
     attributes:
       - name: SemaphoreConfigMapName
       - name: SemaphoreName

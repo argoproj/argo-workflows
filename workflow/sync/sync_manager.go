@@ -524,7 +524,6 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 			lockKey := lockName
 			if wf.Status.Synchronization != nil {
 				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey.String(ctx))
-				// decrement metrics only if we had previously recorded an acquisition
 				if sm.metrics != nil {
 					switch syncItem.getType() {
 					case wfv1.SynchronizationTypeMutex:

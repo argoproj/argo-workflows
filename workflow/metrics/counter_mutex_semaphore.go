@@ -11,7 +11,7 @@ func (m *Metrics) AddMutex(ctx context.Context, name, namespace string) {
     if m == nil || m.Metrics == nil {
         return
     }
-    m.AddInt(ctx, telemetry.InstrumentMutexTotal.Name(), 1, telemetry.InstAttribs{
+    m.AddInt(ctx, telemetry.InstrumentMutexTakenTotal.Name(), 1, telemetry.InstAttribs{
         {Name: telemetry.AttribMutexName, Value: name},
         {Name: telemetry.AttribMutexNamespace, Value: namespace},
     })
@@ -21,7 +21,7 @@ func (m *Metrics) RemoveMutex(ctx context.Context, name, namespace string) {
     if m == nil || m.Metrics == nil {
         return
     }
-    m.AddInt(ctx, telemetry.InstrumentMutexTotal.Name(), -1, telemetry.InstAttribs{
+    m.AddInt(ctx, telemetry.InstrumentMutexReleasedTotal.Name(), 1, telemetry.InstAttribs{
         {Name: telemetry.AttribMutexName, Value: name},
         {Name: telemetry.AttribMutexNamespace, Value: namespace},
     })
@@ -37,7 +37,7 @@ func (m *Metrics) AddSemaphore(ctx context.Context, name, namespace string) {
         {Name: telemetry.AttribSemaphoreName, Value: semName},
         {Name: telemetry.AttribSemaphoreNamespace, Value: namespace},
     }
-    m.AddInt(ctx, telemetry.InstrumentSemaphoreTotal.Name(), 1, attribs)
+    m.AddInt(ctx, telemetry.InstrumentSemaphoreTakenTotal.Name(), 1, attribs)
 }
 
 func (m *Metrics) RemoveSemaphore(ctx context.Context, name, namespace string) {
@@ -50,7 +50,7 @@ func (m *Metrics) RemoveSemaphore(ctx context.Context, name, namespace string) {
         {Name: telemetry.AttribSemaphoreName, Value: semName},
         {Name: telemetry.AttribSemaphoreNamespace, Value: namespace},
     }
-    m.AddInt(ctx, telemetry.InstrumentSemaphoreTotal.Name(), -1, attribs)
+    m.AddInt(ctx, telemetry.InstrumentSemaphoreReleasedTotal.Name(), 1, attribs)
 }
 
 // parseSemaphoreLockName tries to derive configmap and semaphore logical names from encoded lock key forms.

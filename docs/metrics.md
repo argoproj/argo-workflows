@@ -344,9 +344,18 @@ A count of log messages emitted by the controller by log level: `error`, `warn` 
 |-----------|------------------------------|
 | `level`   | The log level of the message |
 
-#### `mutex_total`
+#### `mutex_released_total`
 
-A counter of the number of mutexes.
+A counter of the number of mutexes released.
+
+|     attribute     |        explanation         |
+|-------------------|----------------------------|
+| `name`            | The name of the mutex      |
+| `mutex_namespace` | The namespace of the mutex |
+
+#### `mutex_taken_total`
+
+A counter of the number of mutexes taken.
 
 |     attribute     |        explanation         |
 |-------------------|----------------------------|
@@ -538,9 +547,19 @@ Queues:
 
 This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
 
-#### `semaphore_total`
+#### `semaphore_released_total`
 
-A counter of the number of semaphores.
+A counter of the number of semaphores released.
+
+|    attribute     |                         explanation                         |
+|------------------|-------------------------------------------------------------|
+| `configmap_name` | The name of the ConfigMap used to store the semaphore state |
+| `name`           | The name of the semaphore                                   |
+| `namespace`      | The namespace of the semaphore                              |
+
+#### `semaphore_taken_total`
+
+A counter of the number of semaphores taken.
 
 |    attribute     |                         explanation                         |
 |------------------|-------------------------------------------------------------|
