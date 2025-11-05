@@ -35,8 +35,6 @@ type SSOConfig struct {
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
 	// custom PEM encoded CA certificate file contents
 	RootCA string `json:"rootCA,omitempty"`
-	// custom CA certificate file name
-	RootCAFile string `json:"rootCAFile,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {

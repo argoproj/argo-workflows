@@ -299,7 +299,6 @@ SSOConfig contains single sign-on configuration settings
 | `InsecureSkipVerify`   | `bool`                                                                                                                      | InsecureSkipVerify skips TLS certificate verification              |
 | `FilterGroupsRegex`    | `Array<string>`                                                                                                             | FilterGroupsRegex filters groups using regular expressions         |
 | `RootCA`               | `string`                                                                                                                    | custom PEM encoded CA certificate file contents                    |
-| `RootCAFile`           | `string`                                                                                                                    | custom CA certificate file name                                    |
 
 ## RBACConfig
 

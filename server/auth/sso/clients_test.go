@@ -8,8 +8,6 @@ import (
 	"encoding/pem"
 	"math/big"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -55,54 +53,32 @@ func TestHTTPClientConfig_String(t *testing.T) {
 			config: HTTPClientConfig{
 				InsecureSkipVerify: false,
 				RootCA:             "",
-				RootCAFile:         "",
 			},
-			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "" (0 bytes), RootCAFile: ""}`,
+			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "" (0 bytes)}`,
 		},
 		{
 			name: "insecure skip verify true",
 			config: HTTPClientConfig{
 				InsecureSkipVerify: true,
 				RootCA:             "",
-				RootCAFile:         "",
 			},
-			expected: `HTTPClientConfig{InsecureSkipVerify: true, RootCA: "" (0 bytes), RootCAFile: ""}`,
+			expected: `HTTPClientConfig{InsecureSkipVerify: true, RootCA: "" (0 bytes)}`,
 		},
 		{
 			name: "short root CA",
 			config: HTTPClientConfig{
 				InsecureSkipVerify: false,
 				RootCA:             "short-ca-content",
-				RootCAFile:         "",
 			},
-			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "short-ca-content" (16 bytes), RootCAFile: ""}`,
+			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "short-ca-content" (16 bytes)}`,
 		},
 		{
 			name: "long root CA gets truncated",
 			config: HTTPClientConfig{
 				InsecureSkipVerify: false,
 				RootCA:             strings.Repeat("a", 100),
-				RootCAFile:         "",
 			},
-			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "` + strings.Repeat("a", 50) + `..." (100 bytes), RootCAFile: ""}`,
-		},
-		{
-			name: "with root CA file",
-			config: HTTPClientConfig{
-				InsecureSkipVerify: false,
-				RootCA:             "",
-				RootCAFile:         "/path/to/ca.pem",
-			},
-			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "" (0 bytes), RootCAFile: "/path/to/ca.pem"}`,
-		},
-		{
-			name: "all fields set",
-			config: HTTPClientConfig{
-				InsecureSkipVerify: true,
-				RootCA:             "test-ca",
-				RootCAFile:         "/path/to/ca.pem",
-			},
-			expected: `HTTPClientConfig{InsecureSkipVerify: true, RootCA: "test-ca" (7 bytes), RootCAFile: "/path/to/ca.pem"}`,
+			expected: `HTTPClientConfig{InsecureSkipVerify: false, RootCA: "` + strings.Repeat("a", 50) + `..." (100 bytes)}`,
 		},
 	}
 
@@ -120,7 +96,6 @@ func TestCreateHTTPClient_DefaultConfig(t *testing.T) {
 	config := HTTPClientConfig{
 		InsecureSkipVerify: false,
 		RootCA:             "",
-		RootCAFile:         "",
 	}
 
 	client, err := createHTTPClient(config)
@@ -143,7 +118,6 @@ func TestCreateHTTPClient_InsecureSkipVerify(t *testing.T) {
 	config := HTTPClientConfig{
 		InsecureSkipVerify: true,
 		RootCA:             "",
-		RootCAFile:         "",
 	}
 
 	client, err := createHTTPClient(config)
@@ -179,97 +153,6 @@ func TestCreateHTTPClient_WithRootCAString(t *testing.T) {
 	config := HTTPClientConfig{
 		InsecureSkipVerify: false,
 		RootCA:             testCertPEM,
-		RootCAFile:         "",
-	}
-
-	client, err := createHTTPClient(config)
-	if err != nil {
-		t.Fatalf("createHTTPClient() error = %v, want nil", err)
-	}
-
-	if client == nil {
-		t.Fatal("createHTTPClient() returned nil client")
-	}
-
-	// Should have custom transport with RootCAs set
-	transport, ok := client.Transport.(*http.Transport)
-	if !ok {
-		t.Fatal("Expected *http.Transport, got different type")
-	}
-
-	if transport.TLSClientConfig == nil {
-		t.Fatal("Expected TLS config to be set")
-	}
-
-	if transport.TLSClientConfig.RootCAs == nil {
-		t.Error("Expected RootCAs to be set")
-	}
-}
-
-func TestCreateHTTPClient_WithRootCAFile(t *testing.T) {
-	testCertPEM, err := generateTestCert()
-	if err != nil {
-		t.Fatalf("Failed to generate test certificate: %v", err)
-	}
-
-	// Create a temporary file with test certificate
-	tmpDir := t.TempDir()
-	caFile := filepath.Join(tmpDir, "ca.pem")
-
-	err = os.WriteFile(caFile, []byte(testCertPEM), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create test CA file: %v", err)
-	}
-
-	config := HTTPClientConfig{
-		InsecureSkipVerify: false,
-		RootCA:             "",
-		RootCAFile:         caFile,
-	}
-
-	client, err := createHTTPClient(config)
-	if err != nil {
-		t.Fatalf("createHTTPClient() error = %v, want nil", err)
-	}
-
-	if client == nil {
-		t.Fatal("createHTTPClient() returned nil client")
-	}
-
-	// Should have custom transport with RootCAs set
-	transport, ok := client.Transport.(*http.Transport)
-	if !ok {
-		t.Fatal("Expected *http.Transport, got different type")
-	}
-
-	if transport.TLSClientConfig == nil {
-		t.Fatal("Expected TLS config to be set")
-	}
-
-	if transport.TLSClientConfig.RootCAs == nil {
-		t.Error("Expected RootCAs to be set")
-	}
-}
-
-func TestCreateHTTPClient_WithBothRootCAStringAndFile(t *testing.T) {
-	testCertPEM, err := generateTestCert()
-	if err != nil {
-		t.Fatalf("Failed to generate test certificate: %v", err)
-	}
-
-	// Create a temporary file with test certificate
-	tmpDir := t.TempDir()
-	caFile := filepath.Join(tmpDir, "ca.pem")
-
-	err = os.WriteFile(caFile, []byte(testCertPEM), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create test CA file: %v", err)
-	}
-
-	config := HTTPClientConfig{
-		InsecureSkipVerify: false,
-		RootCA:             testCertPEM,
-		RootCAFile:         caFile,
 	}
 
 	client, err := createHTTPClient(config)
@@ -300,7 +183,6 @@ func TestCreateHTTPClient_InvalidRootCAString(t *testing.T) {
 	config := HTTPClientConfig{
 		InsecureSkipVerify: false,
 		RootCA:             "invalid-pem-content",
-		RootCAFile:         "",
 	}
 
 	client, err := createHTTPClient(config)
@@ -318,78 +200,15 @@ func TestCreateHTTPClient_InvalidRootCAString(t *testing.T) {
 	}
 }
 
-func TestCreateHTTPClient_NonExistentRootCAFile(t *testing.T) {
-	config := HTTPClientConfig{
-		InsecureSkipVerify: false,
-		RootCA:             "",
-		RootCAFile:         "/nonexistent/path/ca.pem",
-	}
-
-	client, err := createHTTPClient(config)
-	if err == nil {
-		t.Fatal("Expected error for nonexistent file, got nil")
-	}
-
-	if client != nil {
-		t.Error("Expected nil client for nonexistent file")
-	}
-
-	expectedError := "failed to read CA certificate file"
-	if !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("Expected error to contain %q, got %q", expectedError, err.Error())
-	}
-}
-
-func TestCreateHTTPClient_InvalidRootCAFile(t *testing.T) {
-	// Create a temporary file with invalid certificate content
-	tmpDir := t.TempDir()
-	caFile := filepath.Join(tmpDir, "invalid-ca.pem")
-
-	err := os.WriteFile(caFile, []byte("invalid-pem-content"), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create test CA file: %v", err)
-	}
-
-	config := HTTPClientConfig{
-		InsecureSkipVerify: false,
-		RootCA:             "",
-		RootCAFile:         caFile,
-	}
-
-	client, err := createHTTPClient(config)
-	if err == nil {
-		t.Fatal("Expected error for invalid PEM file content, got nil")
-	}
-
-	if client != nil {
-		t.Error("Expected nil client for invalid PEM file content")
-	}
-
-	expectedError := "failed to append CA certificate from file"
-	if !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("Expected error to contain %q, got %q", expectedError, err.Error())
-	}
-}
-
 func TestCreateHTTPClient_AllOptionsEnabled(t *testing.T) {
 	testCertPEM, err := generateTestCert()
 	if err != nil {
 		t.Fatalf("Failed to generate test certificate: %v", err)
 	}
 
-	// Create a temporary file with test certificate
-	tmpDir := t.TempDir()
-	caFile := filepath.Join(tmpDir, "ca.pem")
-
-	err = os.WriteFile(caFile, []byte(testCertPEM), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create test CA file: %v", err)
-	}
-
 	config := HTTPClientConfig{
 		InsecureSkipVerify: true,
 		RootCA:             testCertPEM,
-		RootCAFile:         caFile,
 	}
 
 	client, err := createHTTPClient(config)
@@ -424,7 +243,6 @@ func TestCreateHTTPClient_TransportCloning(t *testing.T) {
 	config := HTTPClientConfig{
 		InsecureSkipVerify: true,
 		RootCA:             "",
-		RootCAFile:         "",
 	}
 
 	client1, err := createHTTPClient(config)
@@ -456,7 +274,6 @@ func TestCreateHTTPClient_TLSConfigIsolation(t *testing.T) {
 	config1 := HTTPClientConfig{
 		InsecureSkipVerify: true,
 		RootCA:             "",
-		RootCAFile:         "",
 	}
 
 	testCertPEM, err := generateTestCert()
@@ -467,7 +284,6 @@ func TestCreateHTTPClient_TLSConfigIsolation(t *testing.T) {
 	config2 := HTTPClientConfig{
 		InsecureSkipVerify: false,
 		RootCA:             testCertPEM,
-		RootCAFile:         "",
 	}
 
 	client1, err := createHTTPClient(config1)

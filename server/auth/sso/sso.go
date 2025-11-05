@@ -117,7 +117,6 @@ func newSso(
 	httpClientConfig := HTTPClientConfig{
 		InsecureSkipVerify: c.InsecureSkipVerify,
 		RootCA:             c.RootCA,
-		RootCAFile:         c.RootCAFile,
 	}
 	httpClient, err := createHTTPClient(httpClientConfig)
 	if err != nil {
@@ -208,7 +207,7 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA, "rootCAFile": c.RootCAFile}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
