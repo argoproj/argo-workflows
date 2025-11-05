@@ -30,30 +30,22 @@ func (c HTTPClientConfig) String() string {
 }
 
 func createHTTPClient(config HTTPClientConfig) (*http.Client, error) {
-
 	// Start with a copy of the default client
 	httpClient := *http.DefaultClient
-
-	// If no custom TLS configuration is needed, return the default client copy
-	if !config.InsecureSkipVerify && config.RootCA == "" && config.RootCAFile == "" {
-		return &httpClient, nil
-	}
 
 	// Clone the default transport and cast to *http.Transport
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 	transport := defaultTransport.Clone()
 
-	// Configure TLS settings
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: config.InsecureSkipVerify,
+	// Load system cert pool to respect env.SSL_CERT_DIR, env.SSL_CERT_FILE
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load system cert pool: %w", err)
 	}
 
 	// Set RootCAs if provided
 	// Load root CA certificates from both string and file if defined
 	if config.RootCA != "" || config.RootCAFile != "" {
-
-		rootCAs := x509.NewCertPool()
-
 		// Add certificates from PEM string if provided
 		if config.RootCA != "" {
 			if ok := rootCAs.AppendCertsFromPEM([]byte(config.RootCA)); !ok {
@@ -72,12 +64,13 @@ func createHTTPClient(config HTTPClientConfig) (*http.Client, error) {
 				return nil, fmt.Errorf("failed to append CA certificate from file")
 			}
 		}
-
-		tlsConfig.RootCAs = rootCAs
 	}
 
 	// Apply the custom TLS config to the cloned transport
-	transport.TLSClientConfig = tlsConfig
+	transport.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: config.InsecureSkipVerify,
+		RootCAs:            rootCAs,
+	}
 
 	// Use the modified transport in our client copy
 	httpClient.Transport = transport
