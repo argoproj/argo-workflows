@@ -107,10 +107,24 @@ func TestCreateHTTPClient_DefaultConfig(t *testing.T) {
 		t.Fatal("createHTTPClient() returned nil client")
 	}
 
-	// Should return a copy of the default client with default transport
+	// Should have custom transport with system cert pool loaded
 	transport, ok := client.Transport.(*http.Transport)
-	if ok && transport.TLSClientConfig != nil {
-		t.Error("Expected default transport for default config, but got custom TLS config")
+	if !ok {
+		t.Fatal("Expected *http.Transport, got different type")
+	}
+
+	if transport.TLSClientConfig == nil {
+		t.Fatal("Expected TLS config to be set")
+	}
+
+	// Should have system cert pool loaded (RootCAs should be set)
+	if transport.TLSClientConfig.RootCAs == nil {
+		t.Error("Expected RootCAs to be set with system cert pool")
+	}
+
+	// InsecureSkipVerify should be false
+	if transport.TLSClientConfig.InsecureSkipVerify {
+		t.Error("Expected InsecureSkipVerify to be false")
 	}
 }
 
@@ -141,6 +155,11 @@ func TestCreateHTTPClient_InsecureSkipVerify(t *testing.T) {
 
 	if !transport.TLSClientConfig.InsecureSkipVerify {
 		t.Error("Expected InsecureSkipVerify to be true")
+	}
+
+	// Should still have system cert pool loaded
+	if transport.TLSClientConfig.RootCAs == nil {
+		t.Error("Expected RootCAs to be set with system cert pool")
 	}
 }
 
@@ -313,11 +332,12 @@ func TestCreateHTTPClient_TLSConfigIsolation(t *testing.T) {
 		t.Error("Expected client2 to have InsecureSkipVerify = false")
 	}
 
-	if transport1.TLSClientConfig.RootCAs != nil {
-		t.Error("Expected client1 to have no custom RootCAs")
+	// Both clients should have RootCAs set (system cert pool is always loaded)
+	if transport1.TLSClientConfig.RootCAs == nil {
+		t.Error("Expected client1 to have RootCAs set with system cert pool")
 	}
 
 	if transport2.TLSClientConfig.RootCAs == nil {
-		t.Error("Expected client2 to have custom RootCAs")
+		t.Error("Expected client2 to have RootCAs set (system cert pool + custom CA)")
 	}
 }
