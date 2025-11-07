@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/Knetic/govaluate"
+	"github.com/argoproj/pkg/sync"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 
@@ -54,12 +56,13 @@ type cronWfOperationCtx struct {
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
 	//nolint: containedctx
-	ctx context.Context
+	ctx     context.Context
+	keylock sync.KeyLock
 }
 
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
-	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow, keyLock sync.KeyLock,
 ) *cronWfOperationCtx {
 	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
@@ -74,6 +77,7 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 			"workflow":  cronWorkflow.Name,
 			"namespace": cronWorkflow.Namespace,
 		}),
+		keylock: keyLock,
 		metrics: metrics,
 		// inferScheduledTime returns an inferred scheduled time based on the current time and only works if it is called
 		// within 59 seconds of the scheduled time. Here it acts as a placeholder until it is replaced by a similar
@@ -88,6 +92,13 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 // Run handles the running of a cron workflow
 // It fits the github.com/robfig/cron.Job interface
 func (woc *cronWfOperationCtx) Run() {
+	key, err := cache.MetaNamespaceKeyFunc(woc.cronWf)
+	if err != nil {
+		woc.log.Error(woc.ctx, "failed to get key for object")
+		return
+	}
+	woc.keylock.Lock(key)
+	defer woc.keylock.Unlock(key)
 	woc.run(woc.ctx, woc.scheduledTimeFunc(woc.ctx))
 }
 
@@ -360,7 +371,7 @@ type fulfilledWfsPhase struct {
 	phase     v1alpha1.WorkflowPhase
 }
 
-func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows []v1alpha1.Workflow) error {
+func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows []*v1alpha1.Workflow) error {
 	updated := false
 	currentWfsFulfilled := make(map[types.UID]fulfilledWfsPhase, len(workflows))
 	for _, wf := range workflows {
@@ -370,7 +381,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 		}
 		if !woc.cronWf.Status.HasActiveUID(wf.UID) && !wf.Status.Fulfilled() {
 			updated = true
-			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf))
+			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, wf))
 		}
 	}
 
@@ -407,11 +418,11 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 	woc.cronWf.Status.Active = newActive
 }
 
-func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflows []v1alpha1.Workflow) error {
+func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflows []*v1alpha1.Workflow) error {
 	woc.log.WithField("name", woc.cronWf.Name).Debug(ctx, "Enforcing history limit")
 
-	var successfulWorkflows []v1alpha1.Workflow
-	var failedWorkflows []v1alpha1.Workflow
+	var successfulWorkflows []*v1alpha1.Workflow
+	var failedWorkflows []*v1alpha1.Workflow
 	for _, wf := range workflows {
 		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
@@ -445,7 +456,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	return nil
 }
 
-func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobList []v1alpha1.Workflow, workflowsToKeep int) error {
+func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobList []*v1alpha1.Workflow, workflowsToKeep int) error {
 	if workflowsToKeep >= len(jobList) {
 		return nil
 	}
