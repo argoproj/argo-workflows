@@ -157,7 +157,6 @@ spec:
                 workflows.argoproj.io/controller-instanceid: i1
 ```
 
-
 ### Maximum Recursion Depth
 
 In order to protect users against infinite recursion, the controller has a default maximum recursion depth of 100 calls to templates.
