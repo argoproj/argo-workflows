@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.config_map_key_selector import ConfigMapKeySelector
-    globals()['ConfigMapKeySelector'] = ConfigMapKeySelector
+    from argo_workflows.model.local_object_reference import LocalObjectReference
+    globals()['LocalObjectReference'] = LocalObjectReference
 
 
 class IoArgoprojWorkflowV1alpha1Cache(ModelNormal):
@@ -87,7 +87,7 @@ class IoArgoprojWorkflowV1alpha1Cache(ModelNormal):
         """
         lazy_import()
         return {
-            'config_map': (ConfigMapKeySelector,),  # noqa: E501
+            'config_map': (LocalObjectReference,),  # noqa: E501
         }
 
     @cached_property
@@ -110,7 +110,7 @@ class IoArgoprojWorkflowV1alpha1Cache(ModelNormal):
         """IoArgoprojWorkflowV1alpha1Cache - a model defined in OpenAPI
 
         Args:
-            config_map (ConfigMapKeySelector):
+            config_map (LocalObjectReference):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -195,7 +195,7 @@ class IoArgoprojWorkflowV1alpha1Cache(ModelNormal):
         """IoArgoprojWorkflowV1alpha1Cache - a model defined in OpenAPI
 
         Args:
-            config_map (ConfigMapKeySelector):
+            config_map (LocalObjectReference):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

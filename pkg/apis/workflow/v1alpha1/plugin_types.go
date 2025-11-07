@@ -7,6 +7,7 @@ import (
 
 // Plugin is an Object with exactly one key
 type Plugin struct {
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Object `json:",inline" protobuf:"bytes,1,opt,name=object"`
 }
 
