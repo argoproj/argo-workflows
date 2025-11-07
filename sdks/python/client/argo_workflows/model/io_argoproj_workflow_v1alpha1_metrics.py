@@ -110,7 +110,7 @@ class IoArgoprojWorkflowV1alpha1Metrics(ModelNormal):
         """IoArgoprojWorkflowV1alpha1Metrics - a model defined in OpenAPI
 
         Args:
-            prometheus ([IoArgoprojWorkflowV1alpha1Prometheus]): Prometheus is a list of prometheus metrics to be emitted
+            prometheus ([IoArgoprojWorkflowV1alpha1Prometheus]): Prometheus is a list of prometheus metrics to be emitted MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -195,7 +195,7 @@ class IoArgoprojWorkflowV1alpha1Metrics(ModelNormal):
         """IoArgoprojWorkflowV1alpha1Metrics - a model defined in OpenAPI
 
         Args:
-            prometheus ([IoArgoprojWorkflowV1alpha1Prometheus]): Prometheus is a list of prometheus metrics to be emitted
+            prometheus ([IoArgoprojWorkflowV1alpha1Prometheus]): Prometheus is a list of prometheus metrics to be emitted MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
