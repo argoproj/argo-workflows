@@ -33,4 +33,4 @@ In particular:
 
 * Your logger must conform to the logging interface `Logger` from that file.
 * Your logger should be retrievable from the context key `logger` (util/logging/logging.go `LoggerKey`)
-* You may wish to use the logger from [slog.go](https://github.com/argoproj/argo-workflows/blob/main/util/logging/logging.go)
+* You may wish to use the logger from [slog.go](https://github.com/argoproj/argo-workflows/blob/main/util/logging/slog.go)
