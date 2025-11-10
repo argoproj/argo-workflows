@@ -78,6 +78,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [DevSamurai](https://www.devsamurai.com/)
 1. [Devtron Labs](https://github.com/devtron-labs/devtron)
 1. [DLR](https://www.dlr.de/eoc/)
+2. [DocNetwork](https://docnetwork.org/)
 1. [DP Technology](https://www.dp.tech/)
 1. [Dyno Therapeutics](https://dynotx.com)
 1. [EBSCO Information Services](https://www.ebsco.com/)
