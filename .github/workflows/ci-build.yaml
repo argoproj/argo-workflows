@@ -262,7 +262,6 @@ jobs:
             profile: minimal
             use-api: false
             retries: 0
-          # Example tests are not retryable without a controller restart
           - test: test-examples
             profile: minimal
             use-api: false
