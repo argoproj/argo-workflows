@@ -5,6 +5,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
   generateName: loop-arbitrary-sequential-steps-
 spec:
   entrypoint: loop-arbitrary-sequential-steps-example

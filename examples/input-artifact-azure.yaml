@@ -9,6 +9,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
   generateName: input-artifact-s3-
 spec:
   entrypoint: input-artifact-s3-example

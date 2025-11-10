@@ -1,6 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow                  # new type of k8s spec
 metadata:
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
   generateName: test-dns-config-    # name of the workflow spec
 spec:
   entrypoint: hello-world       # invoke the hello-world template

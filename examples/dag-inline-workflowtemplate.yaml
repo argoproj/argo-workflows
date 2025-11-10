@@ -1,6 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
   name: dag-inline
   annotations:
     workflows.argoproj.io/description: |

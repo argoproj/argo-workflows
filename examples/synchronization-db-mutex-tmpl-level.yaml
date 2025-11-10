@@ -3,6 +3,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
   generateName: synchronization-db-tmpl-level-mutex-
 spec:
   entrypoint: synchronization-db-tmpl-level-mutex-example

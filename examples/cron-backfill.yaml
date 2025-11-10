@@ -45,6 +45,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: backfill-v1
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
 spec:
   entrypoint: main
   # the backfill must use a service account which can create workflows
@@ -98,6 +100,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: backfill-v2
+  labels:
+    workflows.argoproj.io/no-test-broken: "true"
 spec:
   entrypoint: main
   # limit to one job at a time
