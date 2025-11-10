@@ -30,14 +30,19 @@ func (s *ExamplesSuite) TestExampleWorkflows() {
 			s.T().Fatalf("Error parsing %s: %v", path, err)
 		}
 		for _, wf := range wfs {
-			if _, ok := wf.GetLabels()["workflows.argoproj.io/test"]; ok {
-				s.T().Logf("Found example workflow at %s with test label\n", path)
+			_, noTestBrokenLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-broken"]
+			_, noTestBrokenEnvironmentLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-environment"]
+			if noTestBrokenLabelExists || noTestBrokenEnvironmentLabelExists {
+				continue
+			}
+			s.T().Run(path, func(t *testing.T) {
+				s.T().Logf("Found example workflow at %s\n", path)
 				s.Given().
 					ExampleWorkflow(&wf).
 					When().
 					SubmitWorkflow().
 					WaitForWorkflow(fixtures.ToBeSucceeded)
-			}
+			})
 		}
 		return nil
 	})
