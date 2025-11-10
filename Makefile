@@ -223,7 +223,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
-GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md
+GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/metrics.md
 
 # protoc,my.proto
 define protoc
