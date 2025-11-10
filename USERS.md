@@ -138,6 +138,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Microblink](https://microblink.com/)
 1. [Mirantis](https://mirantis.com/)
 1. [Mixpanel](https://mixpanel.com)
+1. [MongoDB](https://www.mongodb.com/)
 1. [Motus](https://www.motus.com)
 1. [New Relic](https://newrelic.com/)
 1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
