@@ -29,6 +29,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Anova](https://www.anova.com/)
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
+1. [Arcadia](https://www.arcadia.io)
 1. [Arabesque](https://www.arabesque.com/)
 1. [Argonaut](https://www.argonaut.dev/)
 1. [ArthurAI](https://arthur.ai/)
