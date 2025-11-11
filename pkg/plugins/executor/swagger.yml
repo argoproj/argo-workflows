@@ -434,7 +434,7 @@ definitions:
         description: Cache is the configuration for the type of cache to be used
         properties:
             configMap:
-                $ref: '#/definitions/ConfigMapKeySelector'
+                $ref: '#/definitions/LocalObjectReference'
         type: object
     Capabilities:
         properties:

@@ -359,7 +359,7 @@ message BasicAuth {
 // Cache is the configuration for the type of cache to be used
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
-  optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
+  optional k8s.io.api.core.v1.LocalObjectReference configMap = 1;
 }
 
 // ClientCertAuth holds necessary information for client authentication via certificates
@@ -1294,6 +1294,7 @@ message Parameter {
 
 // Plugin is an Object with exactly one key
 message Plugin {
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Object object = 1;
 }
 

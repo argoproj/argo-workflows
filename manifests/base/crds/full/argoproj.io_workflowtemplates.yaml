@@ -1822,9 +1822,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -3141,9 +3139,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -5918,9 +5914,7 @@ spec:
                             description: Name is the name of the artifact driver plugin
                             type: string
                         required:
-                        - configuration
                         - key
-                        - name
                         type: object
                       raw:
                         description: Raw contains raw artifact location details
@@ -10041,9 +10035,7 @@ spec:
                                               driver plugin
                                             type: string
                                         required:
-                                        - configuration
                                         - key
-                                        - name
                                         type: object
                                       raw:
                                         description: Raw contains raw artifact location
@@ -11385,9 +11377,7 @@ spec:
                                                     the artifact driver plugin
                                                   type: string
                                               required:
-                                              - configuration
                                               - key
-                                              - name
                                               type: object
                                             raw:
                                               description: Raw contains raw artifact
@@ -12744,9 +12734,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -15403,9 +15391,7 @@ spec:
                                     plugin
                                   type: string
                               required:
-                              - configuration
                               - key
-                              - name
                               type: object
                             raw:
                               description: Raw contains raw artifact location details
@@ -15736,9 +15722,6 @@ spec:
                           configMap:
                             description: ConfigMap sets a ConfigMap-based cache
                             properties:
-                              key:
-                                description: The key to select.
-                                type: string
                               name:
                                 default: ""
                                 description: |-
@@ -15748,12 +15731,6 @@ spec:
                                   almost certainly wrong.
                                   More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 type: string
-                              optional:
-                                description: Specify whether the ConfigMap or its
-                                  key must be defined
-                                type: boolean
-                            required:
-                            - key
                             type: object
                             x-kubernetes-map-type: atomic
                         required:
@@ -16752,9 +16729,7 @@ spec:
                                     plugin
                                   type: string
                               required:
-                              - configuration
                               - key
-                              - name
                               type: object
                             raw:
                               description: Raw contains raw artifact location details
@@ -17999,9 +17974,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -22351,9 +22324,7 @@ spec:
                                             driver plugin
                                           type: string
                                       required:
-                                      - configuration
                                       - key
-                                      - name
                                       type: object
                                     raw:
                                       description: Raw contains raw artifact location
@@ -23654,9 +23625,7 @@ spec:
                                                   artifact driver plugin
                                                 type: string
                                             required:
-                                            - configuration
                                             - key
-                                            - name
                                             type: object
                                           raw:
                                             description: Raw contains raw artifact
@@ -27767,9 +27736,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -31900,9 +31867,7 @@ spec:
                                                 artifact driver plugin
                                               type: string
                                           required:
-                                          - configuration
                                           - key
-                                          - name
                                           type: object
                                         raw:
                                           description: Raw contains raw artifact location
@@ -33269,9 +33234,7 @@ spec:
                                                       of the artifact driver plugin
                                                     type: string
                                                 required:
-                                                - configuration
                                                 - key
-                                                - name
                                                 type: object
                                               raw:
                                                 description: Raw contains raw artifact
@@ -34641,9 +34604,7 @@ spec:
                                         driver plugin
                                       type: string
                                   required:
-                                  - configuration
                                   - key
-                                  - name
                                   type: object
                                 raw:
                                   description: Raw contains raw artifact location
@@ -37311,9 +37272,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -37647,9 +37606,6 @@ spec:
                             configMap:
                               description: ConfigMap sets a ConfigMap-based cache
                               properties:
-                                key:
-                                  description: The key to select.
-                                  type: string
                                 name:
                                   default: ""
                                   description: |-
@@ -37659,12 +37615,6 @@ spec:
                                     almost certainly wrong.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
-                                optional:
-                                  description: Specify whether the ConfigMap or its
-                                    key must be defined
-                                  type: boolean
-                              required:
-                              - key
                               type: object
                               x-kubernetes-map-type: atomic
                           required:
@@ -38669,9 +38619,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -39927,9 +39875,7 @@ spec:
                                         driver plugin
                                       type: string
                                   required:
-                                  - configuration
                                   - key
-                                  - name
                                   type: object
                                 raw:
                                   description: Raw contains raw artifact location
@@ -44290,9 +44236,7 @@ spec:
                                               driver plugin
                                             type: string
                                         required:
-                                        - configuration
                                         - key
-                                        - name
                                         type: object
                                       raw:
                                         description: Raw contains raw artifact location
@@ -45624,9 +45568,7 @@ spec:
                                                     the artifact driver plugin
                                                   type: string
                                               required:
-                                              - configuration
                                               - key
-                                              - name
                                               type: object
                                             raw:
                                               description: Raw contains raw artifact
