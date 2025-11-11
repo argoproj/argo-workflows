@@ -352,7 +352,6 @@ func TestOnWorkflowTemplate(t *testing.T) {
 // 1. A WorkflowTemplate has podMetadata defined
 // 2. A templateRef references a template name that doesn't exist in that WorkflowTemplate
 func TestGetTemplateFromRefWithPodMetadataAndMissingTemplate(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
 
 	// Create a WorkflowTemplate with podMetadata but without the template "nonexistent"
@@ -374,18 +373,16 @@ spec:
       command: [echo, hello]
 `
 
-	err := createWorkflowTemplate(ctx, wfClientset, workflowTemplateWithPodMetadata)
+	err := createWorkflowTemplate(wfClientset, workflowTemplateWithPodMetadata)
 	require.NoError(t, err)
 
 	// Create a base workflow template to use as context
 	baseWftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	log := logging.RequireLoggerFromContext(ctx)
 	tplCtx := NewContextFromClientSet(
 		wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault),
 		wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(),
 		baseWftmpl,
 		nil,
-		log,
 	)
 
 	// Try to get a template that doesn't exist from a WorkflowTemplate that HAS podMetadata
@@ -394,7 +391,7 @@ spec:
 		Template: "nonexistent-template",
 	}
 
-	_, err = tplCtx.GetTemplateFromRef(ctx, &tmplRef)
+	_, err = tplCtx.GetTemplateFromRef(&tmplRef)
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "template nonexistent-template not found in workflow template template-with-podmetadata")
