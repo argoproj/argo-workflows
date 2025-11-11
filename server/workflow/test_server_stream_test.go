@@ -8,7 +8,7 @@ import (
 )
 
 type testServerStream struct {
-	// nolint:containedctx
+	//nolint:containedctx
 	ctx context.Context
 }
 

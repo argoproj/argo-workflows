@@ -60,7 +60,7 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 		return strings.Contains(err.Error(), "connection refused") || errors.IsTransientErr(ctx, err)
 	}, func() error {
 		log.Debug(ctx, "Calling plugin")
-		req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/api/v1/%s", p.address, method), bytes.NewBuffer(body))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/v1/%s", p.address, method), bytes.NewBuffer(body))
 		if err != nil {
 			return err
 		}
@@ -73,14 +73,14 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 		defer resp.Body.Close()
 		log.WithField("statusCode", resp.StatusCode).Debug(ctx, "Called plugin")
 		switch resp.StatusCode {
-		case 200:
+		case http.StatusOK:
 			return json.NewDecoder(resp.Body).Decode(reply)
-		case 404:
+		case http.StatusNotFound:
 			log.Info(ctx, "method not found, not calling again")
 			p.invalid[method] = true
 			_, err := io.Copy(io.Discard, resp.Body)
 			return err
-		case 503:
+		case http.StatusServiceUnavailable:
 			data, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return err

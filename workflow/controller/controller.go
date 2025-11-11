@@ -963,16 +963,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				},
 				// This function is called when an updated (we already know about this object)
 				// is to be updated in the informer
-				UpdateFunc: func(old, new interface{}) {
-					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+				UpdateFunc: func(old, newObj interface{}) {
+					oldWf, newWf := old.(*unstructured.Unstructured), newObj.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
-					key, err := cache.MetaNamespaceKeyFunc(new)
+					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
 						wfc.wfQueue.AddRateLimited(key)
-						priority, creation := getWfPriority(new)
+						priority, creation := getWfPriority(newObj)
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
@@ -1310,8 +1310,8 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
+			UpdateFunc: func(old, newObj interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				if err == nil {
 					wfc.wfQueue.AddRateLimited(key)
 				}
@@ -1332,8 +1332,8 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
+			UpdateFunc: func(old, newObj interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				if err == nil {
 					wfc.wfQueue.AddRateLimited(key)
 				}

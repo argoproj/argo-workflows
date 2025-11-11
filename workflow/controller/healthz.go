@@ -113,10 +113,10 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 				"age":              age,
 			}).
 			Info(r.Context(), "healthz")
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(err.Error()))
 	} else {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	}
 }

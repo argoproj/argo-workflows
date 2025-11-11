@@ -48,7 +48,7 @@ func (i *WebhookInterceptor) Interceptor(client kubernetes.Interface) func(w htt
 		err := i.addWebhookAuthorization(r, client)
 		if err != nil {
 			i.logger.WithError(err).Error(r.Context(), "Failed to process webhook request")
-			w.WriteHeader(403)
+			w.WriteHeader(http.StatusForbidden)
 			// hide the message from the user, because it could help them attack us
 			_, _ = w.Write([]byte(`{"message": "failed to process webhook request"}`))
 		} else {
@@ -59,7 +59,7 @@ func (i *WebhookInterceptor) Interceptor(client kubernetes.Interface) func(w htt
 
 func (i *WebhookInterceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	// try and exit quickly before we do anything API calls
-	if r.Method != "POST" || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
+	if r.Method != http.MethodPost || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
 		return nil
 	}
 	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, pathPrefix), "/", 2)

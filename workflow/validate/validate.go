@@ -113,7 +113,7 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 	var substitutions = make(map[string]string)
 	pattern, _ := regexp.Compile(`{{\s*=\s*(.+?)\s*}}`)
 	for _, match := range pattern.FindAllStringSubmatch(manifest, -1) {
-		substitutions[string(match[1])] = placeholderGenerator.NextPlaceholder()
+		substitutions[match[1]] = placeholderGenerator.NextPlaceholder()
 	}
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement

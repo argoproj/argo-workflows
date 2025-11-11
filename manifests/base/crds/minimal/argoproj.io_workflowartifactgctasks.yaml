@@ -803,9 +803,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -1866,9 +1864,7 @@ spec:
                                   plugin
                                 type: string
                             required:
-                            - configuration
                             - key
-                            - name
                             type: object
                           raw:
                             description: Raw contains raw artifact location details

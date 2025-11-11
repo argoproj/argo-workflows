@@ -171,7 +171,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		return nil, sutils.ToStatusError(fmt.Errorf("only allow 1 labelRequirement, found %v", len(requirements)), codes.InvalidArgument)
 	}
 
-	key := ""
+	var key string
 	requirement := requirements[0]
 	if requirement.Operator() == selection.Exists {
 		key = requirement.Key()

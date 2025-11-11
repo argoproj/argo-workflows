@@ -19,7 +19,7 @@ import (
 const testNamespace = "argo"
 
 type fakeOidcProvider struct {
-	// nolint:containedctx
+	//nolint:containedctx
 	Ctx    context.Context
 	Issuer string
 }

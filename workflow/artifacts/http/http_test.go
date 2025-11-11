@@ -94,17 +94,12 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 }
 
 func TestSaveHTTPArtifactRedirect(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "webhdfs-test")
-	if err != nil {
-		panic(err)
-	}
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
 	content := "temporary file's content"
-	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
-		panic(err)
-	}
+	err := os.WriteFile(tempFile, []byte(content), 0o600)
+	require.NoError(t, err)
 
 	firstRequest := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

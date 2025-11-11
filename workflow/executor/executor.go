@@ -1090,7 +1090,7 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 				}
 			}()
 
-			path := filepath.Join(dest, f.Name) //nolint:gosec
+			path := filepath.Join(dest, f.Name)
 			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
 				return fmt.Errorf("%s: Illegal file path", path)
 			}
@@ -1113,7 +1113,7 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 					}
 				}()
 
-				_, err = io.Copy(f, rc) //nolint:gosec
+				_, err = io.Copy(f, rc)
 				if err != nil {
 					return err
 				}

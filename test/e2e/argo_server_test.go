@@ -1709,7 +1709,7 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	ctx := logging.TestContext(s.T().Context())
 	log := logging.RequireLoggerFromContext(ctx)
 	t := s.T()
-	req, err := http.NewRequest("GET", baseURL+url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+url, nil)
 	s.Require().NoError(err)
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+s.bearerToken)

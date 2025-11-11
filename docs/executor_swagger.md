@@ -547,7 +547,7 @@ of a single workflow step, which the executor will use as a default location to 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| configMap | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| configMap | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 
 
 

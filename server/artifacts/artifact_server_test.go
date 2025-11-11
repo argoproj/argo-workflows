@@ -78,7 +78,7 @@ var bucketsOfKeys = map[string][]string{
 }
 
 func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifact) (io.ReadCloser, error) {
-	//fmt.Printf("deletethis: artifact=%+v\n", artifact)
+	// fmt.Printf("deletethis: artifact=%+v\n", artifact)
 
 	key, err := artifact.GetKey()
 	if err != nil {
@@ -381,9 +381,9 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		path string
 		// expected results:
 		statusCode int
-		//redirect       bool
+		// redirect       bool
 		location string
-		//success        bool
+		// success        bool
 		isDirectory    bool
 		directoryFiles []string // verify these files are in there, if this is a directory
 	}{

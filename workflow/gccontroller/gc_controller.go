@@ -69,8 +69,8 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 			AddFunc: func(obj interface{}) {
 				controller.enqueueWF(ctx, obj)
 			},
-			UpdateFunc: func(old, new interface{}) {
-				controller.enqueueWF(ctx, new)
+			UpdateFunc: func(old, newObj interface{}) {
+				controller.enqueueWF(ctx, newObj)
 			},
 		},
 	})
@@ -84,8 +84,8 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 			return ok && common.IsDone(un)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				controller.retentionEnqueue(ctx, new)
+			UpdateFunc: func(old, newObj interface{}) {
+				controller.retentionEnqueue(ctx, newObj)
 			},
 			AddFunc: func(obj interface{}) {
 				controller.retentionEnqueue(ctx, obj)
@@ -219,6 +219,8 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	// Double check that this workflow is still completed. If it were retried, it may be running again (c.f. https://github.com/argoproj/argo-workflows/issues/12636)
 	obj, exists, err := c.wfInformer.GetStore().GetByKey(key)
 	if err != nil {
+		// Not existing shouldn't actually return error, but this is not a failure
+		//nolint: nilerr
 		return nil
 	}
 	if exists {
