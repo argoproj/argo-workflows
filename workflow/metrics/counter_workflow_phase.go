@@ -41,8 +41,5 @@ func addWorkflowPhaseCounter(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) ChangeWorkflowPhase(ctx context.Context, phase MetricWorkflowPhase, namespace string) {
-	m.AddInt(ctx, telemetry.InstrumentTotalCount.Name(), 1, telemetry.InstAttribs{
-		{Name: telemetry.AttribWorkflowPhase, Value: string(phase)},
-		{Name: telemetry.AttribWorkflowNamespace, Value: namespace},
-	})
+	m.AddTotalCount(ctx, 1, string(phase), namespace)
 }

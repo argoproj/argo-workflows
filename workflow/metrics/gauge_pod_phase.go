@@ -13,7 +13,7 @@ type PodPhaseCallback func(ctx context.Context) map[string]int64
 
 type podPhaseGauge struct {
 	callback PodPhaseCallback
-	gauge    *telemetry.Instrument
+	observe  func(ctx context.Context, o metric.Observer, val int64, nodePhase string)
 }
 
 func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
@@ -22,13 +22,13 @@ func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
 		return err
 	}
 
-	name := telemetry.InstrumentPodsGauge.Name()
 	if m.callbacks.PodPhase != nil {
+		inst := m.GetInstrument(telemetry.InstrumentPodsGauge.Name())
 		ppGauge := podPhaseGauge{
 			callback: m.callbacks.PodPhase,
-			gauge:    m.GetInstrument(name),
+			observe:  m.ObservePodsGauge,
 		}
-		return ppGauge.gauge.RegisterCallback(m.Metrics, ppGauge.update)
+		return inst.RegisterCallback(m.Metrics, ppGauge.update)
 	}
 	return nil
 }
@@ -36,7 +36,7 @@ func addPodPhaseGauge(ctx context.Context, m *Metrics) error {
 func (p *podPhaseGauge) update(ctx context.Context, o metric.Observer) error {
 	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribPodPhase, Value: phase}})
+		p.observe(ctx, o, val, phase)
 	}
 	return nil
 }

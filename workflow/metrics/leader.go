@@ -12,7 +12,7 @@ type IsLeaderCallback func() bool
 
 type leaderGauge struct {
 	callback IsLeaderCallback
-	gauge    *telemetry.Instrument
+	observe  func(ctx context.Context, o metric.Observer, val int64)
 }
 
 func addIsLeader(ctx context.Context, m *Metrics) error {
@@ -23,12 +23,12 @@ func addIsLeader(ctx context.Context, m *Metrics) error {
 	if m.callbacks.IsLeader == nil {
 		return nil
 	}
-	name := telemetry.InstrumentIsLeader.Name()
+	inst := m.GetInstrument(telemetry.InstrumentIsLeader.Name())
 	lGauge := leaderGauge{
 		callback: m.callbacks.IsLeader,
-		gauge:    m.GetInstrument(name),
+		observe:  m.ObserveIsLeader,
 	}
-	return lGauge.gauge.RegisterCallback(m.Metrics, lGauge.update)
+	return inst.RegisterCallback(m.Metrics, lGauge.update)
 }
 
 func (l *leaderGauge) update(ctx context.Context, o metric.Observer) error {
@@ -36,6 +36,6 @@ func (l *leaderGauge) update(ctx context.Context, o metric.Observer) error {
 	if l.callback() {
 		val = 1
 	}
-	l.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{})
+	l.observe(ctx, o, val)
 	return nil
 }
