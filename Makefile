@@ -734,6 +734,10 @@ util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --attributesGo $@
 
+util/telemetry/metrics_helpers.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+	@echo Rebuilding $@
+	go run ./util/telemetry/builder --metricsHelpersGo $@
+
 # swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
