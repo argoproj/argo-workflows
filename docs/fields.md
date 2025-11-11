@@ -4383,7 +4383,7 @@ Cache is the configuration for the type of cache to be used
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMap sets a ConfigMap-based cache|
+|`configMap`|[`LocalObjectReference`](#localobjectreference)|ConfigMap sets a ConfigMap-based cache|
 
 ## ManifestFrom
 

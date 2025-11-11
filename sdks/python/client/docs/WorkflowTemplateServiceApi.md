@@ -3708,10 +3708,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     memoize=IoArgoprojWorkflowV1alpha1Memoize(
                         cache=IoArgoprojWorkflowV1alpha1Cache(
-                            config_map=ConfigMapKeySelector(
-                                key="key_example",
+                            config_map=LocalObjectReference(
                                 name="name_example",
-                                optional=True,
                             ),
                         ),
                         key="key_example",
@@ -8584,10 +8582,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
-                                config_map=ConfigMapKeySelector(
-                                    key="key_example",
+                                config_map=LocalObjectReference(
                                     name="name_example",
-                                    optional=True,
                                 ),
                             ),
                             key="key_example",
@@ -15364,10 +15360,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     memoize=IoArgoprojWorkflowV1alpha1Memoize(
                         cache=IoArgoprojWorkflowV1alpha1Cache(
-                            config_map=ConfigMapKeySelector(
-                                key="key_example",
+                            config_map=LocalObjectReference(
                                 name="name_example",
-                                optional=True,
                             ),
                         ),
                         key="key_example",
@@ -20240,10 +20234,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
-                                config_map=ConfigMapKeySelector(
-                                    key="key_example",
+                                config_map=LocalObjectReference(
                                     name="name_example",
-                                    optional=True,
                                 ),
                             ),
                             key="key_example",
@@ -26931,10 +26923,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     memoize=IoArgoprojWorkflowV1alpha1Memoize(
                         cache=IoArgoprojWorkflowV1alpha1Cache(
-                            config_map=ConfigMapKeySelector(
-                                key="key_example",
+                            config_map=LocalObjectReference(
                                 name="name_example",
-                                optional=True,
                             ),
                         ),
                         key="key_example",
@@ -31807,10 +31797,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
-                                config_map=ConfigMapKeySelector(
-                                    key="key_example",
+                                config_map=LocalObjectReference(
                                     name="name_example",
-                                    optional=True,
                                 ),
                             ),
                             key="key_example",

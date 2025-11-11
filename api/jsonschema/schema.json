@@ -4493,7 +4493,7 @@
       "description": "Cache is the configuration for the type of cache to be used",
       "properties": {
         "configMap": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "description": "ConfigMap sets a ConfigMap-based cache"
         }
       },
@@ -6397,8 +6397,6 @@
         }
       },
       "required": [
-        "name",
-        "configuration",
         "key"
       ],
       "type": "object"
