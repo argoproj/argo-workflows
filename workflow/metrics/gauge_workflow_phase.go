@@ -37,7 +37,7 @@ func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
 func (p *workflowPhaseGauge) update(ctx context.Context, o metric.Observer) error {
 	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribWorkflowStatus, Value: phase}})
+		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribWorkflowPhase, Value: phase}})
 	}
 	return nil
 }
