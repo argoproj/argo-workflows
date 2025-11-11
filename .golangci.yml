@@ -12,26 +12,41 @@ run:
     - plugins
 linters:
   enable:
+    - asciicheck
     - asasalint
     - bidichk
     - bodyclose
     - copyloopvar
     - contextcheck
     - containedctx
+    - durationcheck
     - errcheck
+    - exptostd
+    - gocheckcompilerdirectives
     - gosec
     - govet
+    - iface
     - ineffassign
+    - iotamixing
+    - mirror
     - misspell
     - nakedret
+    - nilerr
+    - noctx
     - nosprintfhostport
+    - nolintlint
+    - predeclared
     - reassign
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
     - testifylint
+    - unconvert
     - unparam
     - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
   settings:
     gosec:
       includes:
@@ -57,6 +72,10 @@ linters:
     rules:
       - path: server/artifacts/artifact_server_test.go
         text: response body must be closed
+      - path: server/apiserver/argoserver.go
+        # The nolintlint fixer erroneous removes the nolint directives in this file
+        linters:
+          - contextcheck
     paths:
       - dist
       - docs

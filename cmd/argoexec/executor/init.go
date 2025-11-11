@@ -33,7 +33,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	CheckErr(err)
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor", version.Version))
 
-	// nolint:contextcheck
+	//nolint:contextcheck
 	bgCtx := logger.NewBackgroundContext()
 	logs.AddK8SLogTransportWrapper(bgCtx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 

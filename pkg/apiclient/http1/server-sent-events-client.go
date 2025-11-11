@@ -14,7 +14,7 @@ import (
 // serverSentEventsClient provides a RecvEvent func to make getting Server-Sent Events (SSE)
 // simple and consistent
 type serverSentEventsClient struct {
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx    context.Context
 	reader *bufio.Reader
 }

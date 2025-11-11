@@ -150,7 +150,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 			logger.WithField("signalDir", signalDir).WithError(err).Error(ctx, "failed to create signal directory")
 			return err
 		}
-		if err := os.WriteFile(signalPath, []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
+		if err := os.WriteFile(signalPath, []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil {
 			return err
 		}
 	}
@@ -168,7 +168,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 			"containerName": containerName,
 			"signalPath":    signalPath,
 		}).Debug(ctx, "Sending SIGKILL to container")
-		if err := os.WriteFile(signalPath, []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
+		if err := os.WriteFile(signalPath, []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil {
 			return err
 		}
 	}

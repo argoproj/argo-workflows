@@ -39,7 +39,7 @@ func NewUpdateCommand() *cobra.Command {
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if parametersFile != "" {
-				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				err := util.ReadParametersFile(cmd.Context(), parametersFile, &submitOpts)
 				if err != nil {
 					return err
 				}

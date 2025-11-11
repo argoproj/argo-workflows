@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestIncomingHeaderMatcher(t *testing.T) {
@@ -47,17 +49,18 @@ func TestIncomingHeaderMatcher(t *testing.T) {
 }
 
 func TestNewMuxHandler(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	grpcHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(201)
+		w.WriteHeader(http.StatusCreated)
 	})
 	httpHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(202)
+		w.WriteHeader(http.StatusAccepted)
 	})
 
 	handler := NewMuxHandler(grpcHandler, httpHandler)
 
 	t.Run("gRPC request handling", func(t *testing.T) {
-		req, err := http.NewRequest("POST", "/", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/", nil)
 		require.NoError(t, err)
 		req.ProtoMajor = 2
 		req.Header.Set("Content-Type", "application/grpc")
@@ -67,7 +70,7 @@ func TestNewMuxHandler(t *testing.T) {
 	})
 
 	t.Run("HTTP request handling", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		recorder := httptest.NewRecorder()

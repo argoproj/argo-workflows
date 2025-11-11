@@ -1689,11 +1689,11 @@ func (s *CLISuite) workflowCopyArtifactTests(workflowFileName string) {
 		Given().
 		RunCli([]string{"cp", "@latest", ".", "--path", "/{templateName}/{artifactName}/"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			//Assert everything was stored
+			// Assert everything was stored
 			assert.Contains(t, output, "Created \"main.log\"")
 			assert.Contains(t, output, "Created \"bye_world.tgz\"")
 			assert.Contains(t, output, "Created \"hello_world.tgz\"")
-			//Assert filepaths are correct
+			// Assert filepaths are correct
 			statStrip := func(f os.FileInfo, err error) error {
 				return err
 			}

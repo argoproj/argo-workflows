@@ -128,7 +128,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 	i := NewWebhookInterceptor(logging.RequireLoggerFromContext(ctx)).Interceptor(k)
 	w := httptest.NewRecorder()
 	b := &bytes.Buffer{}
-	b.Write([]byte("{}"))
+	b.WriteString("{}")
 	r := httptest.NewRequest(method, target, b)
 	for k, v := range headers {
 		r.Header.Set(k, v)
