@@ -69,6 +69,8 @@ jobs:
               - docs/fields.md
               - docs/executor_swagger.md
               - docs/cli/**
+              - docs/workflow-controller-configmap.md
+              - docs/metrics.md
               - pkg/**
               - sdks/java/**
               - sdks/python/**

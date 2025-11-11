@@ -34,7 +34,6 @@ func PanicLoggerUnaryServerInterceptor(log logging.Logger) grpc.UnaryServerInter
 }
 
 // PanicLoggerStreamServerInterceptor returns a new streaming server interceptor for recovering from panics and returning error
-// nolint: contextcheck
 func PanicLoggerStreamServerInterceptor(log logging.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		defer func() {
@@ -81,7 +80,6 @@ func SetVersionHeaderUnaryServerInterceptor(version wfv1.Version) grpc.UnaryServ
 }
 
 // SetVersionHeaderStreamServerInterceptor returns a new stream server interceptor that sets the argo-version header
-// nolint: contextcheck
 func SetVersionHeaderStreamServerInterceptor(version wfv1.Version) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		origErr := handler(srv, ss)
@@ -107,7 +105,6 @@ func GetVersionHeaderClientUnaryInterceptor(ctx context.Context, method string, 
 }
 
 // RatelimitUnaryServerInterceptor returns a new unary server interceptor that performs request rate limiting.
-// nolint: contextcheck
 func RatelimitUnaryServerInterceptor(ratelimiter limiter.Store) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ip := getClientIP(ctx)
@@ -125,7 +122,6 @@ func RatelimitUnaryServerInterceptor(ratelimiter limiter.Store) grpc.UnaryServer
 }
 
 // RatelimitStreamServerInterceptor returns a new stream server interceptor that performs rate limiting on the request.
-// nolint: contextcheck
 func RatelimitStreamServerInterceptor(ratelimiter limiter.Store) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := stream.Context()
@@ -144,7 +140,6 @@ func RatelimitStreamServerInterceptor(ratelimiter limiter.Store) grpc.StreamServ
 }
 
 // LoggerUnaryServerInterceptor adds a logger to the context
-// nolint: contextcheck
 func LoggerUnaryServerInterceptor(logger logging.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if logging.GetLoggerFromContextOrNil(ctx) == nil {
@@ -155,7 +150,6 @@ func LoggerUnaryServerInterceptor(logger logging.Logger) grpc.UnaryServerInterce
 }
 
 // LoggerStreamServerInterceptor adds a logger to the context for streaming requests
-// nolint: contextcheck
 func LoggerStreamServerInterceptor(logger logging.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := ss.Context()
@@ -170,7 +164,7 @@ func LoggerStreamServerInterceptor(logger logging.Logger) grpc.StreamServerInter
 // loggerServerStream wraps grpc.ServerStream to override Context()
 type loggerServerStream struct {
 	grpc.ServerStream
-	// nolint: containedctx
+	//nolint:containedctx
 	ctx context.Context
 }
 

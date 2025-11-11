@@ -21,7 +21,7 @@ func NewTokenCommand() *cobra.Command {
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			authString, err := client.GetAuthString()
+			authString, err := client.GetAuthString(cmd.Context())
 			if err != nil {
 				return err
 			}

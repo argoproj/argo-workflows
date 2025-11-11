@@ -95,7 +95,7 @@ func (msts mockServerStream) SetHeader(md metadata.MD) error {
 func (mockServerStream) SendHeader(md metadata.MD) error { return nil }
 func (mockServerStream) SetTrailer(md metadata.MD)       {}
 func (mockServerStream) Context() context.Context {
-	// nolint:contextcheck
+
 	return logging.TestContext(context.Background())
 }
 func (mockServerStream) SendMsg(m any) error { return nil }

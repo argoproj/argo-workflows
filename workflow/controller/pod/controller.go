@@ -200,7 +200,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 		if hasOurFinalizer(pod.Finalizers) {
 			c.log.WithFields(logging.Fields{"pod.Finalizers": pod.Finalizers}).Info(ctx, "Removing finalizers during a delete")
 			action = removeFinalizer
-			minimumDelay = time.Duration(2 * time.Minute)
+			minimumDelay = 2 * time.Minute
 		}
 	case c.podOrphaned(ctx, pod):
 		if hasOurFinalizer(pod.Finalizers) {
@@ -245,14 +245,14 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, false)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, new *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
 	c.log.WithField("pod", old.Name).Info(ctx, "update pod event")
-	err := c.callBack(new)
+	err := c.callBack(newPod)
 	if err != nil {
-		c.log.WithField("pod", new.Name).Warn(ctx, "callback for pod update failed")
+		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
 	}
-	c.commonPodEvent(ctx, new, false)
+	c.commonPodEvent(ctx, newPod, false)
 }
 
 func (c *Controller) deletePodEvent(ctx context.Context, obj interface{}) {

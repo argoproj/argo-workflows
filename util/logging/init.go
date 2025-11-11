@@ -147,7 +147,7 @@ func (i initLogger) Error(ctx context.Context, message string) {
 	defer i.storage.mutex.Unlock()
 	i.add(Error, message)
 	if i.storage.fatal {
-		// nolint:contextcheck
+		//nolint:contextcheck
 		emitInitLogs(ctx, NewSlogLoggerCustom(Debug, JSON, i.storage.out))
 		if exitFunc := GetExitFunc(); exitFunc != nil {
 			exitFunc(1)

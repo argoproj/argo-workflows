@@ -10,8 +10,9 @@ import (
 )
 
 func TestGetAuthString(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Setenv("ARGO_TOKEN", "my-token")
-	authString, err := GetAuthString()
+	authString, err := GetAuthString(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "my-token", authString)
 }

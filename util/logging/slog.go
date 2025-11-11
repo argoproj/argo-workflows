@@ -69,7 +69,7 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 		level:  logLevel,
 		hooks:  mappedHooks,
 	}
-	// nolint:contextcheck
+
 	emitInitLogs(context.Background(), &s)
 	return &s
 }

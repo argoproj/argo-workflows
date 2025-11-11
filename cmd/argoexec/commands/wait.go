@@ -32,7 +32,7 @@ func waitContainer(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	// nolint:contextcheck
+	//nolint:contextcheck
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 
 	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
