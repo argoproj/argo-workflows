@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -78,7 +79,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		_, err = f.Write([]byte(text))
+		_, err = f.WriteString(text)
 		if err != nil {
 			g.t.Fatal(err)
 		}
@@ -222,7 +223,8 @@ var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) 
 
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	output, err := Exec(name, args...)
+	ctx := logging.TestContext(g.t.Context())
+	output, err := Exec(ctx, name, args...)
 	block(g.t, output, err)
 	return g
 }

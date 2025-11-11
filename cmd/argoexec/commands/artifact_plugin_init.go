@@ -72,7 +72,7 @@ func loadArtifactPlugin(ctx context.Context, pluginName wfv1.ArtifactPluginName)
 	defer wfExecutor.HandleError(ctx)
 	defer stats.LogStats()
 
-	err := wfExecutor.LoadArtifactsFromPlugin(ctx, wfv1.ArtifactPluginName(pluginName))
+	err := wfExecutor.LoadArtifactsFromPlugin(ctx, pluginName)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
 		return err

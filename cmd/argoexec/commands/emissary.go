@@ -246,7 +246,7 @@ func NewEmissaryCommand() *cobra.Command {
 func startCommand(ctx context.Context, name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
-	command := exec.Command(name, args...)
+	command := exec.CommandContext(ctx, name, args...)
 	command.Env = os.Environ()
 
 	var closer = func() {}

@@ -24,7 +24,7 @@ func init() {
 func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	name, ok := m.GetLabels()[common.LabelKeyWorkflow]
 	if !ok {
@@ -69,7 +69,7 @@ func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
 		}
 		wf, err := util.FromUnstructured(un)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		return wf.GetSemaphoreKeys(), nil
 	}

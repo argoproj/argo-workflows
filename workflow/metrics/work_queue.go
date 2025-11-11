@@ -18,7 +18,7 @@ type workersBusyRateLimiterWorkQueue struct {
 	workerType string
 	busyGauge  *telemetry.Instrument
 	// Evil storage of context for compatibility with legacy interface to workqueue
-	// nolint:containedctx
+	//nolint:containedctx
 	ctx context.Context
 }
 

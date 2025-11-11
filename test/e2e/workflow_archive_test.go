@@ -21,7 +21,7 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 	b.ResetTimer()
 
 	// Uncomment the following line to log queries to stdout
-	//db.LC().SetLevel(db.LogLevelDebug)
+	// db.LC().SetLevel(db.LogLevelDebug)
 
 	ctx := logging.TestContext(b.Context())
 

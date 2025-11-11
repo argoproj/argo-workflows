@@ -161,6 +161,7 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 		if err != nil {
 			// this is okay, this means that
 			// we are still running
+			//nolint: nilerr
 			return wfv1.NodeRunning, nil
 		}
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes

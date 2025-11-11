@@ -84,7 +84,7 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 }
 
 func newContext(ctx context.Context, auth string) context.Context {
-	// nolint:contextcheck
+
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	if auth == "" {
 		return ctx
