@@ -611,6 +611,7 @@ Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 | `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
 | `namespace`     | The namespace that the WorkflowTemplate is in               |
 | `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate     |
+| `phase`         | The phase that the Workflow has entered                     |
 <!-- Generated documentation END -->
 
 ### Metric types
