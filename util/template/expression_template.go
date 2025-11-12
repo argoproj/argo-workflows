@@ -23,13 +23,24 @@ func init() {
 	}
 }
 
-func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
-	for _, variable := range variables {
+var variablesToCheck = []string{
+	"item",
+	"retries",
+	"lastRetry.exitCode",
+	"lastRetry.status",
+	"lastRetry.duration",
+	"lastRetry.message",
+	"workflow.status",
+	"workflow.failures",
+}
+
+func anyVarNotInEnv(expression string, env map[string]interface{}) *string {
+	for _, variable := range variablesToCheck {
 		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
-			return true
+			return &variable
 		}
 	}
-	return false
+	return nil
 }
 
 func expressionReplace(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
@@ -45,35 +56,13 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	if anyVarNotInEnv(unmarshalledExpression, []string{"item"}, env) && allowUnresolved {
-		// this is to make sure expressions like `sprig.upper(item)` don't get resolved to an empty string when `item`
-		// doesn't exist in the env. See https://github.com/argoproj/argo-workflows/issues/15008
-		log.WithError(err).Debug(ctx, "item variable is present and unresolved is allowed")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
-	if anyVarNotInEnv(unmarshalledExpression, []string{"retries"}, env) && allowUnresolved {
-		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` doesn't exist in the env
-		// See https://github.com/argoproj/argo-workflows/issues/5388
-		log.WithError(err).Debug(ctx, "retries variable is present and unresolved is allowed")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
-	lastRetryVariables := []string{"lastRetry.exitCode", "lastRetry.status", "lastRetry.duration", "lastRetry.message"}
-	if anyVarNotInEnv(unmarshalledExpression, lastRetryVariables, env) && allowUnresolved {
-		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
-		// when they don't exist in the env.
-		log.WithError(err).Debug(ctx, "LastRetry variables are present and unresolved is allowed")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
-	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
-	// when `workflow.status` and `workflow.failures` don't exist in the env.
-	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
-	// when the exit handlers complete.
-	if anyVarNotInEnv(unmarshalledExpression, []string{"workflow.status", "workflow.failures"}, env) && allowUnresolved {
-		log.WithError(err).Debug(ctx, "workflow.status or workflow.failures are present and unresolved is allowed")
+	varNameNotInEnv := anyVarNotInEnv(unmarshalledExpression, env)
+	if varNameNotInEnv != nil && allowUnresolved {
+		// this is to make sure expressions don't get resolved to nil or an empty string when certain variables
+		// don't exist in the env during the "global" replacement.
+		// See https://github.com/argoproj/argo-workflows/issues/5388, https://github.com/argoproj/argo-workflows/issues/15008,
+		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
+		log.WithError(err).WithField("variable", varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
