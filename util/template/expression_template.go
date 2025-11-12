@@ -38,17 +38,24 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 	var unmarshalledExpression string
 	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
-		log.WithError(err).Debug(ctx, "unresolved is allowed ")
+		log.WithError(err).Debug(ctx, "unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
+	if anyVarNotInEnv(unmarshalledExpression, []string{"item"}, env) && allowUnresolved {
+		// this is to make sure expressions like `sprig.upper(item)` don't get resolved to an empty string when `item`
+		// doesn't exist in the env. See https://github.com/argoproj/argo-workflows/issues/15008
+		log.WithError(err).Debug(ctx, "item variable is present and unresolved is allowed")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
+	}
+
 	if anyVarNotInEnv(unmarshalledExpression, []string{"retries"}, env) && allowUnresolved {
-		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
+		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` doesn't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
-		log.WithError(err).Debug(ctx, "Retries are present and unresolved is allowed")
+		log.WithError(err).Debug(ctx, "retries variable is present and unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
