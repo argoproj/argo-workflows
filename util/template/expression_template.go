@@ -62,7 +62,7 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 		// don't exist in the env during the "global" replacement.
 		// See https://github.com/argoproj/argo-workflows/issues/5388, https://github.com/argoproj/argo-workflows/issues/15008,
 		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-		log.WithError(err).WithField("variable", varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
+		log.WithField("variable", *varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
