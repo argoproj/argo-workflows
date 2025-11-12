@@ -115,11 +115,6 @@ func EnvMap(replaceMap map[string]string) map[string]interface{} {
 	return envMap
 }
 
-// hasRetries checks if the variable `retries` exists in the expression template
-func hasRetries(expression string) bool {
-	return hasVariableInExpression(expression, "retries")
-}
-
 func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
 	if len(needle) > len(haystack) {
 		return false
