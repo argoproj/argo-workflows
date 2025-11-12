@@ -384,7 +384,11 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 			}
 			num := int64(total.Total)
 			if num > 1 {
-				return nil, fmt.Errorf("found %d archived workflows with namespace/name: %s/%s", num, namespace, name)
+				log.WithFields(log.Fields{
+					"namespace": namespace,
+					"name":      name,
+					"num":       num,
+				}).Debug("returning latest of archived workflows")
 			}
 			err = r.session.SQL().
 				Select("workflow").
@@ -392,6 +396,7 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 				Where(r.clusterManagedNamespaceAndInstanceID()).
 				And(namespaceEqual(namespace)).
 				And(nameEqual(name)).
+				OrderBy("-startedat").
 				One(archivedWf)
 		} else {
 			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)
