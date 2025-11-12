@@ -20,7 +20,7 @@ type ExprSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *ExprSuite) TestRegression12037() {
+func (s *ExprSuite) TestShadowedExprFunctionsAsTaskNames() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -64,7 +64,7 @@ spec:
 		})
 }
 
-func (s *ExprSuite) TestRegression15008() {
+func (s *ExprSuite) TestItemInSprigExpr() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
