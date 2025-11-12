@@ -40,12 +40,11 @@ spec:
 
     - name: foo
       container:
-        image: alpine
+        image: argoproj/argosay:v2
         command:
-          - sh
-          - -c
-          - |
-            echo "foo"
+        - echo
+        args:
+        - foo
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
