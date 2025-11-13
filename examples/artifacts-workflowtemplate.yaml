@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   name: artifacts
   annotations:
     workflows.argoproj.io/description: |

@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: dag-diamond-
 spec:
   entrypoint: diamond
@@ -32,14 +30,14 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: busybox 
         command:
           - sh
           - -c
           - exit 0
     - name: fail
       container:
-        image: alpine:3.7
+        image: busybox
         command:
           - sh
           - -c

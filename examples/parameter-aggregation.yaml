@@ -2,8 +2,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: parameter-aggregation-
 spec:
   entrypoint: parameter-aggregation
@@ -56,7 +54,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -xc]
       args:
       - |
@@ -82,7 +80,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -x]
       source: |
         #!/bin/sh

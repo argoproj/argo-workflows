@@ -72,7 +72,7 @@ spec:
                 terminationGracePeriodSeconds: 10
                 containers:
                   - name: nginx
-                    image: registry.k8s.io/nginx-slim:0.8
+                    image:  nginx:1.13
                     ports:
                       - containerPort: 80
                         name: web

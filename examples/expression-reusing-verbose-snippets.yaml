@@ -4,8 +4,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: expression-reusing-verbose-snippets-
 spec:
   arguments:
@@ -40,7 +38,7 @@ spec:
             value: "{{=jsonpath(inputs.parameters['week-temps'], '$.min')}}"
           - name: MAX
             value: "{{=jsonpath(inputs.parameters['week-temps'], '$.max')}}"
-        image: debian:9.4
-        command: [bash]
+        image: busybox
+        command: [sh]
         source: |
           echo "The week's average temperature was $AVG with a minimum of $MIN and a maximum of $MAX."

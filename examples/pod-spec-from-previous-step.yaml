@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: pod-spec-from-previous-step-
 spec:
   entrypoint: workflow
@@ -27,7 +25,7 @@ spec:
           valueFrom:
             path: /tmp/resources.json
     script:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh]
       source: |
         echo '{"memory": "10Gi", "cpu": "2000m"}' > /tmp/resources.json && cat /tmp/resources.json
@@ -38,7 +36,7 @@ spec:
       - name: resources
     podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits": {{inputs.parameters.resources}}, "requests": {{inputs.parameters.resources}} }}]}'
     script:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh]
       source: |
         echo {{inputs.parameters.resources}}

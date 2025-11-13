@@ -10,8 +10,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: conditional-
 spec:
   entrypoint: conditional-example

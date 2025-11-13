@@ -5,7 +5,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test-environment: "true"
   generateName: pod-gc-strategy-with-label-selector-
 spec:
   entrypoint: pod-gc-strategy-with-label-selector

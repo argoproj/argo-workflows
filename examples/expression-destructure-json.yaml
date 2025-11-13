@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: expression-destructure-json-
   annotations:
     workflows.argoproj.io/version: ">= 3.1.0"
@@ -30,7 +28,7 @@ spec:
             value: "{{inputs.parameters.b}}"
           - name: C
             value: "{{inputs.parameters.c}}"
-        image: debian:9.4
-        command: [bash]
+        image: busybox
+        command: [sh]
         source: |
           echo "$A$B$C"

@@ -1,10 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: influxdb-ci-
-
+  labels:
+    workflows.argoproj.io/no-test-environment: "true"
 spec:
   entrypoint: influxdb-ci
   arguments:
@@ -57,7 +56,7 @@ spec:
       - name: source
         path: /src
     container:
-      image: golang:1.9.2
+      image: golang:1.18
       command: ["/bin/sh", "-c"]
       args: ["cd /src && git status && ls -l"]
 
@@ -71,7 +70,7 @@ spec:
       - name: influxd
         path: /go/bin
     container:
-      image: golang:1.9.2
+      image: golang:1.18
       command: ["/bin/sh", "-c"]
       args: ["
         cd /go/src/github.com/influxdata/influxdb &&
@@ -90,7 +89,7 @@ spec:
       - name: source
         path: /go/src/github.com/influxdata/influxdb
     container:
-      image: golang:1.9.2
+      image: golang:1.18
       command: ["/bin/sh", "-c"]
       args: ["
         cd /go/src/github.com/influxdata/influxdb &&
@@ -134,7 +133,7 @@ spec:
       - name: covreport
         path: /tmp/index.html
     container:
-      image: golang:1.9.2
+      image: golang:1.18
       command: ["/bin/sh", "-c"]
       args: ["
         cd /go/src/github.com/influxdata/influxdb &&
@@ -201,7 +200,7 @@ spec:
         - name: data
           path: /var/lib/influxdb/data
     container:
-      image: debian:9.4
+      image: busybox
       readinessProbe:
         httpGet:
           path: /ping
@@ -220,7 +219,7 @@ spec:
       parameters:
       - name: cmd
     container:
-      image: appropriate/curl:latest
+      image: curlimages/curl:latest
       command: ["/bin/sh", "-c"]
       args: ["{{inputs.parameters.cmd}}"]
       resources:

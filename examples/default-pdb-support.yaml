@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: default-pdb-support-
 
 spec:
@@ -13,6 +11,6 @@ spec:
   templates:
   - name: pdbcreate
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["sleep 10"]

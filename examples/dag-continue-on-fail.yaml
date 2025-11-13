@@ -39,6 +39,6 @@ spec:
 
   - name: intentional-fail
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["echo intentional failure; exit 1"]
