@@ -280,12 +280,94 @@ jobs:
             docker pull quay.io/$image_name
           done
 
+  build-ui:
+    name: Build UI
+    if: github.repository == 'argoproj/argo-workflows'
+    runs-on: ubuntu-24.04
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+        with:
+          node-version: "20" # change in all GH Workflows
+      - name: Restore node packages cache
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+      - name: Build UI
+        run: |
+          yarn --cwd ui install
+          yarn --cwd ui build
+      - name: Upload UI artifact
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: ui-dist
+          path: ui/dist/
+
+  build-clis:
+    name: Build CLI ${{ matrix.goos }}-${{ matrix.goarch }}
+    if: github.repository == 'argoproj/argo-workflows'
+    needs: [ build-ui ]
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: ppc64le
+          - goos: linux
+            goarch: riscv64
+          - goos: linux
+            goarch: s390x
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: "1.24"
+      - name: Download UI artifact
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: ui-dist
+          path: ui/dist/
+      - name: Set VERSION
+        run: |
+          if [ ${GITHUB_REF##*/} = main ]; then
+           echo "VERSION=latest" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          fi
+      - name: Restore Go build cache
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-${{ matrix.goos }}-${{ matrix.goarch }}-
+      - name: Build CLI for ${{ matrix.goos }}-${{ matrix.goarch }}
+        run: make dist/argo-${{ matrix.goos }}-${{ matrix.goarch }}.gz STATIC_FILES=true VERSION=$VERSION
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: argo-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/argo-${{ matrix.goos }}-${{ matrix.goarch }}.gz
+
   publish-release:
     permissions:
       contents: write  # for softprops/action-gh-release to create GitHub release
     runs-on: ubuntu-24.04
     if: github.repository == 'argoproj/argo-workflows'
-    needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    needs: [ push-images, test-images-linux-amd64, test-images-windows, build-clis ]
     env:
       NODE_OPTIONS: --max-old-space-size=4096
       COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
@@ -317,6 +399,12 @@ jobs:
       - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
       - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
       - run: mkdir -p dist
+      - name: Download CLI artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          pattern: argo-*
+          path: dist/
+          merge-multiple: true
       - run: generator -o dist -p .
       - run: yarn --cwd ui install
       - run: generator -o dist -p ui
@@ -332,8 +420,6 @@ jobs:
       - name: Print image tag (please check it is not `:latest`)
         run: |
           grep image: dist/manifests/install.yaml
-      - run: go mod download
-      - run: make clis STATIC_FILES=true VERSION=$VERSION
       - name: Print version (please check it is not dirty)
         run: dist/argo-linux-amd64 version
       - run: make checksums
