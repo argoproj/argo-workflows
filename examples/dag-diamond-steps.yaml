@@ -23,8 +23,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: dag-diamond-steps-
 spec:
   entrypoint: diamond
@@ -34,7 +32,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: busybox
       command: [echo, "{{inputs.parameters.message}}"]
   - name: echo-thrice
     inputs:

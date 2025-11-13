@@ -5,9 +5,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: sidecar-dind-
+  labels:
+    workflows.argoproj.io/no-test-environment: "true"
 spec:
   entrypoint: dind-sidecar-example
   templates:

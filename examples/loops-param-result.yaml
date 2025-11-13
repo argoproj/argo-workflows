@@ -3,9 +3,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: loops-param-result-
+  labels:
+    workflows.argoproj.io/no-test-duration: "true"
 spec:
   entrypoint: loop-param-result-example
   templates:
@@ -35,6 +35,6 @@ spec:
       parameters:
       - name: seconds
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]

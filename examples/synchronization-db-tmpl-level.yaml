@@ -6,7 +6,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test-environment: "true"
   generateName: synchronization-db-tmpl-level-
 spec:
   entrypoint: synchronization-db-tmpl-level-example
@@ -27,6 +27,6 @@ spec:
         - database: # v3.7 and after
             key: template
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["sleep 10; echo acquired lock"]

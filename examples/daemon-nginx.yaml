@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: daemon-nginx-
 spec:
   entrypoint: daemon-nginx-example
@@ -35,7 +33,7 @@ spec:
       parameters:
       - name: server-ip
     container:
-      image: appropriate/curl:latest
+      image: curlimages/curl:latest
       command: ["/bin/sh", "-c"]
       args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
 

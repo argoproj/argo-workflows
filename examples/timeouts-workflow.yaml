@@ -11,9 +11,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: timeouts-workflow-
+  labels:
+    workflows.argoproj.io/no-test-duration: "true"
 spec:
   activeDeadlineSeconds: 30
   entrypoint: bunch-of-sleeps
@@ -29,11 +29,11 @@ spec:
 
   - name: sleep
     container:
-      image: debian:9.5-slim
+      image: busybox
       command: [sleep, 1d]
 
   - name: unschedulable
     nodeSelector:
       beta.kubernetes.io/arch: no-such-arch
     container:
-      image: alpine:latest
+      image: alpine:3.6

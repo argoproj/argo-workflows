@@ -6,7 +6,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test-environment: "true"
   generateName: exit-handler-slack-
 spec:
   entrypoint: say-hello
@@ -14,13 +14,13 @@ spec:
   templates:
   - name: say-hello
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["echo hello"]
 
   - name: exit-handler
     container:
-      image: curlimages/curl
+      image: curlimages/curl:latest
       command: [sh, -c]
       args: [
         "curl -X POST --data-urlencode 'payload={

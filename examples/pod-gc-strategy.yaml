@@ -2,9 +2,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: pod-gc-strategy-
+  labels:
+    workflows.argoproj.io/no-test-environment: "true"
 spec:
   entrypoint: pod-gc-strategy
 
@@ -30,12 +30,12 @@ spec:
 
   - name: fail
     container:
-      image: alpine:3.7
+      image: alpine:3.6
       command: [sh, -c]
       args: ["exit 1"]
 
   - name: succeed
     container:
-      image: alpine:3.7
+      image: alpine:3.6
       command: [sh, -c]
       args: ["exit 0"]

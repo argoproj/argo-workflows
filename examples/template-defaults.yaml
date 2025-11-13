@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: template-defaults-
   annotations:
     workflows.argoproj.io/description: |
       Template defaults will provide the fixability to configure the defaults values for all templates in workflow.
       Individual template can be overide default values.
     workflows.argoproj.io/version: '>= 3.1.0'
+    workflows.argoproj.io/no-test-reasons: |
+      This tests requires interaction and we can't test it automatically.
 spec:
   entrypoint: main
   templateDefaults:

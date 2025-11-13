@@ -3,7 +3,6 @@ kind: Workflow
 metadata:
   generateName: title-and-description-with-markdown-
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
     workflows.argoproj.io/archive-strategy: "false"
   annotations:
     # both annotations are available since v3.4.4

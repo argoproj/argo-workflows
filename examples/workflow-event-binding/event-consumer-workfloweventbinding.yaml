@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowEventBinding
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   name: event-consumer
 spec:
   event:

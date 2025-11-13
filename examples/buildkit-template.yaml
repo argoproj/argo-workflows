@@ -28,8 +28,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   name: buildkit
 spec:
   arguments:
@@ -107,7 +105,7 @@ spec:
         parameters:
           - name: path
       container:
-        image: golang:1.13
+        image: golang:1.18
         volumeMounts:
           - mountPath: /work
             name: work

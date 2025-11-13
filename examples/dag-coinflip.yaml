@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: dag-diamond-coinflip-
   annotations:
     workflows.argoproj.io/description: |
@@ -47,6 +45,6 @@ spec:
 
   - name: heads
     container:
-      image: alpine:3.6
+      image: busybox 
       command: [sh, -c]
       args: ["echo \"it was heads\""]

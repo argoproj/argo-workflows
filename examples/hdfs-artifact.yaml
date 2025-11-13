@@ -8,7 +8,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test-environment: "true"
   generateName: hdfs-artifact-
 spec:
   entrypoint: artifact-example
@@ -80,6 +80,6 @@ spec:
           #   key: krb5.conf
           # krbServicePrincipalName: hdfs/_HOST
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["cat /tmp/message"]

@@ -2,9 +2,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: retry-on-error-
+  labels:
+    workflows.argoproj.io/no-test-expected-failure: "true"
 spec:
   entrypoint: error-container
   templates:
@@ -13,7 +13,7 @@ spec:
       limit: "2"
       retryPolicy: "Always"   # Retry on errors AND failures. Also available: "OnFailure" (default), "OnError", and "OnTransientError" (retry only on transient errors such as i/o or TLS handshake timeout. Available after v3.0.0-rc2)
     container:
-      image: python
+      image: python:alpine3.6
       command: ["python", "-c"]
       # fail with a 80% probability
       args: ["import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)"]

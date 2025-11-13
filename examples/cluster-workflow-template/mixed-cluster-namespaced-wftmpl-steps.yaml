@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  generateName: workflow-template-steps-
   labels:
     workflows.argoproj.io/no-test-broken: "true"
-  generateName: workflow-template-steps-
 spec:
   entrypoint: hello-hello-hello
   templates:

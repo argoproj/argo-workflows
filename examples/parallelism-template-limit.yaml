@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: parallelism-template-limit-
+  labels:
+    workflows.argoproj.io/no-test-duration: "true"
 spec:
   entrypoint: parallelism-template-limit
   templates:
@@ -26,5 +26,5 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c, sleep 10]

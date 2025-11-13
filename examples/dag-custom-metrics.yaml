@@ -20,8 +20,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: dag-task-
 spec:
   entrypoint: dag-task
@@ -101,5 +99,5 @@ spec:
           counter:
             value: "1"
     container:
-      image: alpine:3.7
+      image: busybox
       command: [echo, "{{inputs.parameters.message}}"]

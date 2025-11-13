@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: global-outputs-
 spec:
   entrypoint: generate-globals
@@ -19,7 +17,7 @@ spec:
   # Template which produces a global parameter and artifact
   - name: global-output
     container:
-      image: alpine:3.7
+      image: alpine:3.6
       command: [sh, -c]
       args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
@@ -57,7 +55,7 @@ spec:
         - name: param
           value: "{{workflow.outputs.parameters.my-global-param}}"
     container:
-      image: alpine:3.7
+      image: alpine:3.6
       command: [sh, -c]
       args: ["echo {{inputs.parameters.param}}"]
 
@@ -67,6 +65,6 @@ spec:
       - name: art
         path: /art
     container:
-      image: alpine:3.7
+      image: alpine:3.6
       command: [sh, -c]
       args: ["cat /art"]

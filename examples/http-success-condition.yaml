@@ -1,8 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: http-template-condition-
   annotations:
     workflows.argoproj.io/description: |
@@ -15,7 +13,7 @@ spec:
         - - name: http-status-is-201-succeeds
             template: http-status-is-201
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/201"}]  # Returns status code 201
+              parameters: [{name: url, value: "https://httpbin.org/status/201"}]  # Returns status code 201
           - name: http-body-contains-google-succeeds
             template: http-body-contains-google
             arguments:

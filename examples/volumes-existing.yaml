@@ -10,9 +10,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: volumes-existing-
+  labels:
+    workflows.argoproj.io/no-test-environment: "true"
 spec:
   entrypoint: volumes-existing-example
   volumes:
@@ -30,7 +30,7 @@ spec:
 
   - name: append-to-accesslog
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
       volumeMounts:
@@ -39,7 +39,7 @@ spec:
 
   - name: print-accesslog
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["echo 'Volume access log:'; cat /mnt/vol/accesslog"]
       volumeMounts:

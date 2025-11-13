@@ -9,7 +9,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test-environment: "true"
   generateName: k8s-jobs-log-selector-
 spec:
   entrypoint: tf-jobtmpl
