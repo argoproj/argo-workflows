@@ -60,11 +60,9 @@ var yamlSeparator = regexp.MustCompile(`\n---`)
 func runConvert(ctx context.Context, args []string, output string) error {
 	for _, file := range args {
 		err := fileutil.WalkManifests(ctx, file, func(path string, data []byte) error {
-			isJSON := jsonpkg.IsJSON(data)
-
-			if isJSON {
+			if jsonpkg.IsJSON(data) {
 				// Parse single JSON document
-				if err := convertDocument(data, output, isJSON); err != nil {
+				if err := convertDocument(data, output, true); err != nil {
 					return fmt.Errorf("error converting %s: %w", path, err)
 				}
 			} else {
