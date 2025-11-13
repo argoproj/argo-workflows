@@ -20,6 +20,36 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
+func NewGiven(
+	t *testing.T,
+	client v1alpha1.WorkflowInterface,
+	wfebClient v1alpha1.WorkflowEventBindingInterface,
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface,
+	wftsClient v1alpha1.WorkflowTaskSetInterface,
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface,
+	cronClient v1alpha1.CronWorkflowInterface,
+	hydrator hydrator.Interface,
+	kubeClient kubernetes.Interface,
+	bearerToken string,
+	restConfig *rest.Config,
+	config *config.Config,
+) *Given {
+	return &Given{
+		t:                 t,
+		client:            client,
+		wfebClient:        wfebClient,
+		wfTemplateClient:  wfTemplateClient,
+		wftsClient:        wftsClient,
+		cwfTemplateClient: cwfTemplateClient,
+		cronClient:        cronClient,
+		hydrator:          hydrator,
+		kubeClient:        kubeClient,
+		bearerToken:       bearerToken,
+		restConfig:        restConfig,
+		config:            config,
+	}
+}
+
 type Given struct {
 	t                 *testing.T
 	client            v1alpha1.WorkflowInterface

@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"os"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
@@ -84,8 +85,8 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(ctx, s.KubeClient, s.Config)
-	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
+	s.Persistence = NewPersistence(ctx, s.KubeClient, s.Config)
+	s.hydrator = hydrator.New(s.Persistence.OffloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
