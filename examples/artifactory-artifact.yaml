@@ -56,6 +56,6 @@ spec:
             name: my-artifactory-credentials
             key: password
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["cat /tmp/message"]

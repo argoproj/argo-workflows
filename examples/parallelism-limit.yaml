@@ -26,5 +26,5 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c, sleep 10]

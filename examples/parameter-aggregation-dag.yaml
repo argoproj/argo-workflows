@@ -2,9 +2,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  generateName: parameter-aggregation-dag-
   labels:
     workflows.argoproj.io/no-test-broken: "true"
-  generateName: parameter-aggregation-dag-
 spec:
   entrypoint: parameter-aggregation
   templates:
@@ -61,7 +61,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args:
       - |
@@ -87,7 +87,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args:
         - echo $(({{inputs.parameters.num}}/2))

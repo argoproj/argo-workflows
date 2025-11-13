@@ -61,6 +61,6 @@ spec:
       parameters:
       - name: cmd
     container:
-      image: appropriate/curl:latest
+      image: curlimages/curl:latest
       command: ["sh", "-c"]
       args: ["{{inputs.parameters.cmd}}"]

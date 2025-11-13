@@ -8,9 +8,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  generateName: workflow-template-dag-diamond-
   labels:
     workflows.argoproj.io/no-test-broken: "true"
-  generateName: workflow-template-dag-diamond-
 spec:
   entrypoint: diamond
   templates:

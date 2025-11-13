@@ -28,7 +28,7 @@ spec:
       limit: "10"
     daemon: true
     container:
-      image: nginx:latest
+      image: nginx:1.13
       command: ["nginx"]
       args: ["-g", "daemon off;"]
       readinessProbe:
@@ -46,6 +46,6 @@ spec:
       mutexes:
         - name: client-{{workflow.uid}}
     container:
-      image: appropriate/curl:latest
+      image: curlimages/curl:latest
       command: ["/bin/sh", "-c"]
       args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]

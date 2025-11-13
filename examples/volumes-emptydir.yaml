@@ -16,7 +16,7 @@ spec:
   templates:
   - name: volumes-emptydir-example
     container:
-      image: debian:latest
+      image: aline:3.6
       command: ["/bin/bash", "-c"]
       args: ["
         vol_found=`mount | grep /mnt/vol` && \

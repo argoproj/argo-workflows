@@ -4,8 +4,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: artifact-passing-subpath-
 spec:
   entrypoint: artifact-example
@@ -46,7 +44,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["ls /tmp/message"]
 
@@ -56,6 +54,6 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["cat /tmp/message"]

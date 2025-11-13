@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  generateName: fibonacci-
   labels:
     workflows.argoproj.io/no-test-broken: "true"
-  generateName: fibonacci-
   annotations:
     workflows.argoproj.io/description: |
       This example demonstrates fibonacci sequence problem using conditional parameter feature.
@@ -120,6 +120,6 @@ spec:
         parameters:
           - name: result
       container:
-        image: alpine:latest
+        image: busybox
         command: [ sh, -c ]
         args: [ "echo {{inputs.parameters.result}}" ]
