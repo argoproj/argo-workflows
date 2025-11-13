@@ -3979,13 +3979,9 @@ MetricLabel is a single label for a prometheus metric
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
-
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifactory-artifact.yaml)
-
-- [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-output-artifact.yaml)
 
@@ -4000,8 +3996,6 @@ MetricLabel is a single label for a prometheus metric
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/colored-logs.yaml)
-
-- [`conditionals-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditionals-complex.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
@@ -4021,15 +4015,9 @@ MetricLabel is a single label for a prometheus metric
 
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-multiroot.yaml)
-
-- [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-nested.yaml)
-
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
-
-- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-slack.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-slack.yaml)
 
@@ -4056,8 +4044,6 @@ MetricLabel is a single label for a prometheus metric
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
-
-- [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/init-container.yaml)
 
 - [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-azure.yaml)
 
@@ -4088,8 +4074,6 @@ MetricLabel is a single label for a prometheus metric
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
-
-- [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/map-reduce.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/nested-workflow.yaml)
 
@@ -4157,8 +4141,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-on-exit.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-step.yaml)
-
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
@@ -4168,14 +4150,6 @@ MetricLabel is a single label for a prometheus metric
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
-
-- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
-
-- [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
-
-- [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 

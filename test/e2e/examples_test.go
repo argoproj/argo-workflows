@@ -3,72 +3,78 @@
 package e2e
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"k8s.io/client-go/kubernetes"
 
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ExamplesSuite struct {
-	fixtures.E2ESuite
-}
+func TestExampleWorkflows(t *testing.T) {
+	restConfig, err := kubeconfig.DefaultRestConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	configController := config.NewController(fixtures.Namespace, common.ConfigMapName, kubeClient)
+	ctx := logging.TestContext(t.Context())
+	config, err := configController.Get(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	persistence := fixtures.NewPersistence(ctx, kubeClient, config)
 
-func (s *ExamplesSuite) BeforeTest(suiteName, testName string) {
-	s.E2ESuite.BeforeTest(suiteName, testName)
-	s.Given().KubectlApply("../../examples/configmaps/simple-parameters-configmap.yaml", fixtures.NoError)
-}
+	clientset, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sec, err := clientset.CoreV1().Secrets(fixtures.Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-func (s *ExamplesSuite) TestExampleWorkflows() {
-	ctx := logging.TestContext(s.T().Context())
-	err := fileutil.WalkManifests(ctx, "../../examples", func(path string, data []byte) error {
+	err = fileutil.WalkManifests(ctx, "../../examples", func(path string, data []byte) error {
 		wfs, err := common.SplitWorkflowYAMLFile(ctx, data, true)
 		if err != nil {
-			s.T().Fatalf("Error parsing %s: %v", path, err)
+			t.Fatalf("Error parsing %s: %v", path, err)
 		}
 		for _, wf := range wfs {
-			isTestBroken := false
-			isEvironmentNotReady := false
-			isTestTooLong := false
-			isTestExpectedToFail := false
-			isTestBrokenRaw, noTestBrokenLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-broken"]
-			if noTestBrokenLabelExists {
-				isTestBroken, err = strconv.ParseBool(isTestBrokenRaw)
-				if err != nil {
-					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-broken\": %v", err)
+			t.Run(path, func(t *testing.T) {
+				t.Parallel()
+				noTestKeyword, noTextLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test"]
+				if noTextLabelExists {
+					t.Skip(fmt.Sprintf("Impossible to run this example: %s", noTestKeyword))
 				}
-			}
-			isEvironmentNotReadyRaw, noTestBrokenEnvironmentLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-environment"]
-			if noTestBrokenEnvironmentLabelExists {
-				isEvironmentNotReady, err = strconv.ParseBool(isEvironmentNotReadyRaw)
-				if err != nil {
-					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-environment\": %v", err)
-				}
-			}
-			isTestTooLongRaw, noTestTooLongLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-duration"]
-			if noTestTooLongLabelExists {
-				isTestTooLong, err = strconv.ParseBool(isTestTooLongRaw)
-				if err != nil {
-					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-duration\": %v", err)
-				}
-			}
-			isTestExpectedToFailRaw, noTestTooLongLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-expected-failure"]
-			if noTestTooLongLabelExists {
-				isTestExpectedToFail, err = strconv.ParseBool(isTestExpectedToFailRaw)
-				if err != nil {
-					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-expected-failure\": %v", err)
-				}
-			}
-			if isTestBroken || isEvironmentNotReady || isTestTooLong || isTestExpectedToFail {
-				continue
-			}
-			s.T().Run(path, func(t *testing.T) {
-				s.T().Logf("Found example workflow at %s\n", path)
-				s.Given().
+				given := fixtures.NewGiven(
+					t,
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().Workflows(fixtures.Namespace),
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().WorkflowEventBindings(fixtures.Namespace),
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().WorkflowTemplates(fixtures.Namespace),
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().WorkflowTaskSets(fixtures.Namespace),
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates(),
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().CronWorkflows(fixtures.Namespace),
+					hydrator.New(persistence.OffloadNodeStatusRepo),
+					kubeClient,
+					string(sec.Data["token"]),
+					restConfig,
+					config,
+				)
+
+				given.KubectlApply("../../examples/configmaps/simple-parameters-configmap.yaml", fixtures.NoError)
+				given.
 					ExampleWorkflow(&wf).
 					When().
 					SubmitWorkflow().
@@ -77,9 +83,7 @@ func (s *ExamplesSuite) TestExampleWorkflows() {
 		}
 		return nil
 	})
-	s.CheckError(err)
-}
-
-func TestExamplesSuite(t *testing.T) {
-	suite.Run(t, new(ExamplesSuite))
+	if err != nil {
+		t.Fatal(err)
+	}
 }
