@@ -1,5 +1,43 @@
 # Changelog
 
+## v3.7.4 (2025-11-13)
+
+Full Changelog: [v3.7.3...v3.7.4](https://github.com/argoproj/argo-workflows/compare/v3.7.3...v3.7.4)
+
+### Selected Changes
+
+* [9b9649b0a](https://github.com/argoproj/argo-workflows/commit/9b9649b0af3d5006f3b6688cb2881db4fb324a96) chore(deps): bump golang version from 1.24.4 to 1.24.10 (cherry-pick #15037 for 3.7) (#15038)
+* [75caaf2a8](https://github.com/argoproj/argo-workflows/commit/75caaf2a8d822486ab0d27b75f42c49258b83278) fix: add a special case for `item` variable during global expression replacement (cherry-pick #15033 for 3.7) (#15036)
+* [7d7072552](https://github.com/argoproj/argo-workflows/commit/7d7072552b258836756bc138078afa63d169ab18) fix!: return latest workflow for retried-persisted workflows (cherry-pick #15030 for 3.7) (#15032)
+* [96335d4be](https://github.com/argoproj/argo-workflows/commit/96335d4bed02214a7b0f55c3e74457c7a4e1a1e5) fix: prevent nil pointer dereference in GetTemplateFromRef with podMetadata. Fixes #14968 (cherry-pick #14970 for 3.7) (#15029)
+* [8d6356c9f](https://github.com/argoproj/argo-workflows/commit/8d6356c9fb07e56e345a8f768b1395dbc8112156) fix: cache calls to prevent exponential recursion. Fixes #14904 (cherry-pick #14920 for 3.7) (#14988)
+* [c9f25a6bc](https://github.com/argoproj/argo-workflows/commit/c9f25a6bc3507bf0d0473d36f5cc0845b2aee308) fix: allow legacy name validation scheme for prometheus metrics (cherry-pick #14879 for 3.7) (#14987)
+* [2af7ffcb9](https://github.com/argoproj/argo-workflows/commit/2af7ffcb9889c2d3c7c94051c2410ffe0e909aff) fix: linting pointer error when template name is invalid (cherry-pick #14896 for 3.7) (#14961)
+* [826075ef4](https://github.com/argoproj/argo-workflows/commit/826075ef4918b8b3505d48b76a34d9be855692d8) fix: typo paramaters to parameters in cli help text (cherry-pick #14939 for 3.7) (#14960)
+* [787640769](https://github.com/argoproj/argo-workflows/commit/78764076950209e9263837dad23e26c336e90eec) fix(ui): login/logout bug when base HREF set. Fixes #14897 (cherry-pick #14909 for 3.7) (#14964)
+* [a9ca5f2a3](https://github.com/argoproj/argo-workflows/commit/a9ca5f2a316b704d13adaf65d86cb250105b56e2) fix(ui): support base HREF in dev environment (cherry-pick #14894 for 3.7) (#14953)
+* [c8ae54eae](https://github.com/argoproj/argo-workflows/commit/c8ae54eae324654556d8a3c33419e711137abf49) fix: only mark the realtime metrics of the workflow itself as completed. Fixes #14694 (cherry-pick #14764 for 3.7) (#14950)
+* [1811022c0](https://github.com/argoproj/argo-workflows/commit/1811022c02d9ed8b976c248fe887f1bce906151b) fix: allow `labelsFrom` to be specified in `workflowDefaults`. Fixes #14927 (cherry-pick #14941 for 3.7) (#14944)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Andrey Kuznetsov
+* Bjoern Weidlich
+* Eduardo Rodrigues
+* Elliot Gunton
+* Isitha Subasinghe
+* Jason Meridth
+* J. Gavin Ray
+* jswxstw
+* Ken Cochrane
+* littlejian
+* Mason Malone
+* Matt McLane
+* Shota Sugiura
+
+</details>
+
 ## v3.7.3 (2025-10-14)
 
 Full Changelog: [v3.7.2...v3.7.3](https://github.com/argoproj/argo-workflows/compare/v3.7.2...v3.7.3)
@@ -173,7 +211,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.12...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.12...v3.7.0-rc1)
+Full Changelog: [v3.6.13...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.13...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -380,6 +418,33 @@ Full Changelog: [v3.6.12...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.13 (2025-11-13)
+
+Full Changelog: [v3.6.12...v3.6.13](https://github.com/argoproj/argo-workflows/compare/v3.6.12...v3.6.13)
+
+### Selected Changes
+
+* [bb2f3de3a](https://github.com/argoproj/argo-workflows/commit/bb2f3de3a83240ba9de1f43e27189c88e2f82208) fix: add a special case for `item` variable during global expression replacement (cherry-pick #15033 for 3.6) (#15040)
+* [bb3d97dc8](https://github.com/argoproj/argo-workflows/commit/bb3d97dc8d2c389b30dfd97979bc74f06bb1e3eb) fix: typo paramaters to parameters in cli help text (cherry-pick #14939 for 3.6) (#14959)
+* [691fcf679](https://github.com/argoproj/argo-workflows/commit/691fcf679b9ca5c6542ef293f9e14b82c30f863b) fix: only mark the realtime metrics of the workflow itself as completed. Fixes #14694 (cherry-pick #14764 for 3.6) (#14951)
+* [c1dcf35f2](https://github.com/argoproj/argo-workflows/commit/c1dcf35f2b657d180bffba2ff83ee4b8dc7daa89) fix: cronworkfow update via UI when parameter is using valueFrom. Fixes #14550 (cherry-pick #14745 for 3.6) (#14956)
+* [fc4cf8935](https://github.com/argoproj/argo-workflows/commit/fc4cf8935de9b2fbf6af325dda77a62ec4edee58) fix: allow `labelsFrom` to be specified in `workflowDefaults`. Fixes #14927 (cherry-pick #14941 for 3.6) (#14945)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Andrey Kuznetsov
+* Eduardo Rodrigues
+* Elliot Gunton
+* J. Gavin Ray
+* jswxstw
+* littlejian
+* Mason Malone
+* Matt McLane
+* Shota Sugiura
 
 </details>
 
