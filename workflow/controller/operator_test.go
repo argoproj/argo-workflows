@@ -1492,59 +1492,6 @@ func TestRetriesVariableWithGlobalVariableInPodSpecPatch(t *testing.T) {
 	assert.ElementsMatch(t, actual, expected)
 }
 
-var lastretryVariableInPodSpecPatchTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    retryStrategy:
-      limit: 10
-    podSpecPatch: |
-      containers:
-        - name: main
-          resources:
-            limits:
-              memory: "{{= (sprig.int(lastRetry.exitCode)==1 ? (sprig.int(retries)+1) : 1)* 100}}Mi"
-    container:
-      image: python:alpine3.6
-      command: ["python", -c]
-      args: ["import sys; sys.exit(1)"]
-`
-
-func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(lastretryVariableInPodSpecPatchTemplate)
-	cancel, controller := newController(wf)
-	defer cancel()
-	ctx := context.Background()
-	iterations := 5
-	var woc *wfOperationCtx
-	for i := 1; i <= iterations; i++ {
-		woc = newWorkflowOperationCtx(wf, controller)
-		if i != 1 {
-			makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(1))
-		}
-		woc.operate(ctx)
-		wf = woc.wf
-	}
-
-	pods, err := listPods(woc)
-	require.NoError(t, err)
-	assert.Len(t, pods.Items, iterations)
-	expected := []string{}
-	actual := []string{}
-	for i := 0; i < iterations; i++ {
-		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
-		expected = append(expected, fmt.Sprintf("%dMi", (i+1)*100))
-	}
-	// expecting memory limit to increase after each retry: "100Mi", "200Mi", "300Mi", "400Mi", "500Mi"
-	// ordering not preserved
-	assert.ElementsMatch(t, actual, expected)
-}
-
 var stepsRetriesVariableTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

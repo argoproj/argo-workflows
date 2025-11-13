@@ -219,7 +219,6 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
-| `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
