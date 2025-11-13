@@ -2,6 +2,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test-environment: "true"
   generateName: input-artifact-http-
 spec:
   entrypoint: http-artifact-example

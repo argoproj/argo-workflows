@@ -15,6 +15,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: container-on-exit-
+  labels:
+    workflows.argoproj.io/no-test-environment: "true"
 spec:
   entrypoint: step-template
   templates:
