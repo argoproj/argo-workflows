@@ -23,18 +23,24 @@ func init() {
 	}
 }
 
-func anyVarNotInEnv(expression string, variables []string, env map[string]interface{}) bool {
-	for _, variable := range variables {
+var variablesToCheck = []string{
+	"item",
+	"retries",
+	"lastRetry.exitCode",
+	"lastRetry.status",
+	"lastRetry.duration",
+	"lastRetry.message",
+	"workflow.status",
+	"workflow.failures",
+}
+
+func anyVarNotInEnv(expression string, env map[string]interface{}) *string {
+	for _, variable := range variablesToCheck {
 		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
-			// Special handling for workflow.outputs.* variables - let them proceed to expr evaluation
-			// where they can be properly resolved even if the base key doesn't exist in env
-			if strings.HasPrefix(variable, "workflow.outputs.") {
-				continue
-			}
-			return true
+			return &variable
 		}
 	}
-	return false
+	return nil
 }
 
 func expressionReplace(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
@@ -43,75 +49,31 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 	var unmarshalledExpression string
 	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
-		log.WithError(err).Debug(ctx, "unresolved is allowed ")
+		log.WithError(err).Debug(ctx, "unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	if anyVarNotInEnv(unmarshalledExpression, []string{"retries"}, env) && allowUnresolved {
-		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
-		// See https://github.com/argoproj/argo-workflows/issues/5388
-		log.WithError(err).Debug(ctx, "Retries are present and unresolved is allowed")
+	varNameNotInEnv := anyVarNotInEnv(unmarshalledExpression, env)
+	if varNameNotInEnv != nil && allowUnresolved {
+		// this is to make sure expressions don't get resolved to nil or an empty string when certain variables
+		// don't exist in the env during the "global" replacement.
+		// See https://github.com/argoproj/argo-workflows/issues/5388, https://github.com/argoproj/argo-workflows/issues/15008,
+		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
+		log.WithField("variable", *varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
-	lastRetryVariables := []string{"lastRetry.exitCode", "lastRetry.status", "lastRetry.duration", "lastRetry.message"}
-	if anyVarNotInEnv(unmarshalledExpression, lastRetryVariables, env) && allowUnresolved {
-		// This is to make sure expressions which contains `lastRetry.*` don't get resolved to nil
-		// when they don't exist in the env.
-		log.WithError(err).Debug(ctx, "LastRetry variables are present and unresolved is allowed")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
-	// This is to make sure expressions which contains `workflow.status`, `workflow.failures`
-	// don't get resolved to nil when they don't exist in the env.
-	// Note: workflow.outputs.* variables are handled specially below with minimal structure
-	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-	// This issue doesn't happen to other template parameters since these workflow-level variables only exist in the env
-	// when the exit handlers complete.
-	workflowVariables := []string{"workflow.status", "workflow.failures"}
-	if anyVarNotInEnv(unmarshalledExpression, workflowVariables, env) && allowUnresolved {
-		log.WithError(err).Debug(ctx, "workflow.status or workflow.failures are present and unresolved is allowed")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
-	// Special handling: if the expression contains workflow.outputs.* but workflow doesn't exist in env,
-	// create a minimal workflow structure to prevent "unknown name workflow" errors
-	envForCompilation := env
-	if strings.Contains(unmarshalledExpression, "workflow.outputs.") {
-		if _, hasWorkflow := env["workflow"]; !hasWorkflow {
-			// Create a copy of env with minimal workflow structure
-			envForCompilation = make(map[string]interface{})
-			for k, v := range env {
-				envForCompilation[k] = v
-			}
-			envForCompilation["workflow"] = map[string]interface{}{
-				"outputs": map[string]interface{}{
-					"artifacts":  map[string]interface{}{},
-					"parameters": map[string]interface{}{},
-				},
-			}
-		}
-	}
-
-	program, err := expr.Compile(unmarshalledExpression, expr.Env(envForCompilation))
+	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
 	if err != nil && !allowUnresolved {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
-	result, err := expr.Run(program, envForCompilation)
-
-	// Special handling for workflow.outputs.* expressions that evaluate to null
-	// In exit handler context, this is expected and should remain unresolved rather than error
-	if result == nil && strings.Contains(unmarshalledExpression, "workflow.outputs.") && allowUnresolved {
-		log.Debug(ctx, "workflow.outputs expression evaluated to null, leaving unresolved")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
+	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug(ctx, "Result and error are unresolved")
@@ -151,11 +113,6 @@ func EnvMap(replaceMap map[string]string) map[string]interface{} {
 		envMap[k] = v
 	}
 	return envMap
-}
-
-// hasRetries checks if the variable `retries` exists in the expression template
-func hasRetries(expression string) bool {
-	return hasVariableInExpression(expression, "retries")
 }
 
 func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
