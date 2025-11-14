@@ -1096,7 +1096,13 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 	}
 	archiveLogs := woc.IsArchiveLogs(tmpl)
 	needLocation := archiveLogs
-	for _, art := range append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...) {
+	artifacts := append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...)
+	if tmpl.Data != nil {
+		if art, exist := tmpl.Data.Source.GetArtifactIfNeeded(); exist {
+			artifacts = append(artifacts, *art)
+		}
+	}
+	for _, art := range artifacts {
 		if !art.HasLocation() {
 			needLocation = true
 		}
