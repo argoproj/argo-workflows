@@ -108,7 +108,8 @@ Rather than running a single installation in your cluster, run one per namespace
 
 ### Instance ID
 
-Within a cluster you can use instance ID to run many Argo instances within a cluster. You can run each instance in separate, or the same namespace.
+Within a cluster you can use instance ID to run many Argo instances within a cluster.
+You can run each instance in a separate, or the same namespace.
 
 For each instance, edit the [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml) to set an `instanceID`.
 
@@ -123,7 +124,8 @@ data:
 
 #### CLI Usage
 
-When you are using the CLI, set the `--instanceid` to interact with a specific instance. For example, to submit a Workflow defined in `my-wf.yaml`:
+When you are using the CLI, set the `--instanceid` to interact with a specific instance.
+For example, to submit a Workflow defined in `my-wf.yaml`:
 
 ```bash
 argo --instanceid i1 submit my-wf.yaml
