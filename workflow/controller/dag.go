@@ -560,7 +560,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
+	scope, err := woc.buildLocalScopeFromTask(dagCtx, newTask)
+	if err != nil {
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		connectDependencies(nodeName)
+		return
+	}
+	expandedTasks, err := expandTask(*newTask, woc.globalParams.Merge(scope.getParameters()))
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
@@ -789,7 +795,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func expandTask(task wfv1.DAGTask, globalScope map[string]string) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
@@ -832,7 +838,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask, task.When)
+		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask, task.When, globalScope)
 		if err != nil {
 			return nil, err
 		}
