@@ -520,7 +520,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
-		expandedStep, err := woc.expandStep(step)
+		expandedStep, err := woc.expandStep(step, stepsCtx.scope)
 		if err != nil {
 			return nil, err
 		}
@@ -544,7 +544,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
 	var items []wfv1.Item
@@ -588,7 +588,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(t, step.Name, i, item, &newStep, step.When)
+		newStepName, err := processItem(t, step.Name, i, item, &newStep, step.When, woc.globalParams.Merge(scope.getParameters()))
 		if err != nil {
 			return nil, err
 		}

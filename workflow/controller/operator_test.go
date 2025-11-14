@@ -2608,7 +2608,7 @@ func TestExpandWithItems(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 5)
 	woc.operate(ctx)
@@ -2658,7 +2658,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 3)
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
@@ -6875,7 +6875,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "")
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
 	require.NoError(t, err)
 	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 }
@@ -11523,7 +11523,7 @@ spec:
           - name: message
             optional: true
             path: /tmp/hello_world
-          
+
 
     - name: print-message
       inputs:
@@ -11584,7 +11584,7 @@ spec:
           - name: message
             optional: true
             path: /tmp/hello_world
-           
+
 
     - name: print-message
       inputs:
@@ -11610,4 +11610,508 @@ func TestWithItemsOptionalArtDAGWF(t *testing.T) {
 	node := woc.wf.Status.Nodes.FindByDisplayName("consume-artifact(0:hello world)")
 	require.NotNil(t, node)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
+}
+
+var wfWithValueOverriding = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-valuefrom-value-
+spec:
+  entrypoint: echo
+  arguments: &args
+    parameters:
+      - name: message
+        value: "configmap argument overwrite with argument"
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  templates:
+    - name: echo
+      inputs: *args
+      container:
+        image: busybox
+        args: ["printf", "WORKFLOW: %s\nINPUT: %s", "{{workflow.parameters.message}}", "{{inputs.parameters.message}}"]
+`
+
+// https://github.com/argoproj/argo-workflows/issues/14426#issuecomment-2870224091
+func TestSetGlobalParametersOverriding(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithValueOverriding)
+	t.Run("CheckArgumentFromWF", func(t *testing.T) {
+		cancel, controller := newController(wf)
+		defer cancel()
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, "configmap argument overwrite with argument", woc.execWf.Spec.Arguments.Parameters[0].Value.String())
+	})
+}
+
+const marksWFSucceeded = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-06-05T02:55:32Z"
+  generateName: archive-strategies-
+  generation: 12
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+  name: archive-strategies-4br4g
+  namespace: argo
+  resourceVersion: "1185"
+  uid: 18f952fc-65ad-4415-908f-4e23b22633f0
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: main
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - dag:
+      tasks:
+      - arguments: {}
+        name: generate-default
+        template: generate-default
+      - arguments:
+          artifacts:
+          - from: '{{tasks.generate-default.outputs.artifacts.file-default}}'
+            name: file-default
+        dependencies:
+        - generate-default
+        name: consume-default
+        template: consume-default
+      - arguments: {}
+        name: generate-tar
+        template: generate-tar
+      - arguments:
+          artifacts:
+          - from: '{{tasks.generate-tar.outputs.artifacts.file-tar}}'
+            name: file-tar
+        dependencies:
+        - generate-tar
+        name: consume-tar
+        template: consume-tar
+      - arguments: {}
+        name: generate-none
+        template: generate-none
+      - arguments:
+          artifacts:
+          - from: '{{tasks.generate-none.outputs.artifacts.file-none}}'
+            name: file-none
+        dependencies:
+        - generate-none
+        name: consume-none
+        template: consume-none
+    inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+  - container:
+      args:
+      - echo
+      - hello
+      - /tmp/file-default
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: generate-default
+    outputs:
+      artifacts:
+      - name: file-default
+        path: /tmp/file-default
+  - container:
+      args:
+      - assert_contains
+      - /tmp/file-default
+      - hello
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: file-default
+        path: /tmp/file-default
+    metadata: {}
+    name: consume-default
+    outputs: {}
+  - container:
+      args:
+      - echo
+      - hello
+      - /tmp/file-tar
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: generate-tar
+    outputs:
+      artifacts:
+      - archive:
+          tar: {}
+        name: file-tar
+        path: /tmp/file-tar
+  - container:
+      args:
+      - assert_contains
+      - /tmp/file-tar
+      - hello
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - archive:
+          tar: {}
+        name: file-tar
+        path: /tmp/file-tar
+    metadata: {}
+    name: consume-tar
+    outputs: {}
+  - container:
+      args:
+      - echo
+      - hello
+      - /tmp/file-none
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: generate-none
+    outputs:
+      artifacts:
+      - archive:
+          none: {}
+        name: file-none
+        path: /tmp/file-none
+  - container:
+      args:
+      - assert_contains
+      - /tmp/file-none
+      - hello
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - archive:
+          none: {}
+        name: file-none
+        path: /tmp/file-none
+    metadata: {}
+    name: consume-none
+    outputs: {}
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  nodes:
+    archive-strategies-4br4g:
+      children:
+      - archive-strategies-4br4g-281020786
+      - archive-strategies-4br4g-867259351
+      - archive-strategies-4br4g-2183706504
+      displayName: archive-strategies-4br4g
+      id: archive-strategies-4br4g
+      name: archive-strategies-4br4g
+      outboundNodes:
+      - archive-strategies-4br4g-375797365
+      - archive-strategies-4br4g-1330961402
+      - archive-strategies-4br4g-491290487
+      phase: Succeeded
+      progress: 6/6
+      startedAt: "2025-06-05T02:55:32Z"
+      templateName: main
+      templateScope: local/archive-strategies-4br4g
+      type: DAG
+    archive-strategies-4br4g-281020786:
+      boundaryID: archive-strategies-4br4g
+      children:
+      - archive-strategies-4br4g-375797365
+      displayName: generate-default
+      finishedAt: "2025-06-05T02:56:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-281020786
+      name: archive-strategies-4br4g.generate-default
+      outputs:
+        artifacts:
+        - name: file-default
+          path: /tmp/file-default
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/file-default.tgz
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 17
+      startedAt: "2025-06-05T02:55:32Z"
+      templateName: generate-default
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-375797365:
+      boundaryID: archive-strategies-4br4g
+      displayName: consume-default
+      finishedAt: "2025-06-05T02:56:45Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-375797365
+      inputs:
+        artifacts:
+        - name: file-default
+          path: /tmp/file-default
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/file-default.tgz
+      name: archive-strategies-4br4g.consume-default
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-default-375797365/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2025-06-05T02:56:41Z"
+      templateName: consume-default
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-491290487:
+      boundaryID: archive-strategies-4br4g
+      displayName: consume-tar
+      finishedAt: "2025-06-05T02:56:45Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-491290487
+      inputs:
+        artifacts:
+        - archive:
+            tar: {}
+          name: file-tar
+          path: /tmp/file-tar
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/file-tar.tgz
+      name: archive-strategies-4br4g.consume-tar
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-tar-491290487/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2025-06-05T02:56:41Z"
+      templateName: consume-tar
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-867259351:
+      boundaryID: archive-strategies-4br4g
+      children:
+      - archive-strategies-4br4g-1330961402
+      displayName: generate-none
+      finishedAt: "2025-06-05T02:56:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-867259351
+      name: archive-strategies-4br4g.generate-none
+      outputs:
+        artifacts:
+        - archive:
+            none: {}
+          name: file-none
+          path: /tmp/file-none
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/file-none
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 17
+      startedAt: "2025-06-05T02:55:35Z"
+      templateName: generate-none
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-1330961402:
+      boundaryID: archive-strategies-4br4g
+      displayName: consume-none
+      finishedAt: "2025-06-05T02:56:45Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-1330961402
+      inputs:
+        artifacts:
+        - archive:
+            none: {}
+          name: file-none
+          path: /tmp/file-none
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/file-none
+      name: archive-strategies-4br4g.consume-none
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-none-1330961402/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2025-06-05T02:56:41Z"
+      templateName: consume-none
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+    archive-strategies-4br4g-2183706504:
+      boundaryID: archive-strategies-4br4g
+      children:
+      - archive-strategies-4br4g-491290487
+      displayName: generate-tar
+      finishedAt: "2025-06-05T02:56:38Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: archive-strategies-4br4g-2183706504
+      name: archive-strategies-4br4g.generate-tar
+      outputs:
+        artifacts:
+        - archive:
+            tar: {}
+          name: file-tar
+          path: /tmp/file-tar
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/file-tar.tgz
+        - name: main-logs
+          s3:
+            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 17
+      startedAt: "2025-06-05T02:55:35Z"
+      templateName: generate-tar
+      templateScope: local/archive-strategies-4br4g
+      type: Pod
+  phase: Running
+  progress: 6/6
+  resourcesDuration:
+    cpu: 6
+    memory: 57
+  startedAt: "2025-06-05T02:55:32Z"
+  taskResultsCompletionStatus:
+    archive-strategies-4br4g-281020786: true
+    archive-strategies-4br4g-375797365: true
+    archive-strategies-4br4g-491290487: true
+    archive-strategies-4br4g-867259351: true
+    archive-strategies-4br4g-1330961402: true
+    archive-strategies-4br4g-2183706504: true`
+
+func TestMarksWFSucceeded(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(marksWFSucceeded)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var wfWithSequenceIssue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: withsequence-expr-test-
+spec:
+  entrypoint: start
+  templates:
+    - name: start
+      inputs:
+        parameters:
+          - name: someInt
+            value: "12"
+      steps:
+        - - name: create-sequence
+            template: print-argument
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{= int(item) + int(inputs.parameters.someInt) }}"
+            withSequence:
+              count: "2"
+    - name: print-argument
+      inputs:
+        parameters:
+          - name: arg
+      container:
+        image: alpine:latest
+        command: [echo]
+        args: ["{{inputs.parameters.arg}}"]
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion
+`
+
+func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithSequenceIssue)
+	t.Run("CheckExpressionWithItemAndInputs", func(t *testing.T) {
+		cancel, controller := newController(wf)
+		defer cancel()
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		// Operate to trigger step expansion
+		woc.operate(ctx)
+
+		// The key test is that the workflow should be Running (not Failed)
+		// If the expression failed, the workflow would be in Failed state
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+			"Workflow should be running, indicating expressions were evaluated successfully")
+
+		// Verify no error occurred during expansion
+		assert.Empty(t, woc.wf.Status.Message, "No error message should be present")
+
+		// Check that we have the expected number of nodes
+		// Should have at least: workflow root + start template + step group + expanded steps
+		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
+			"Should have created multiple nodes for expanded sequence")
+	})
 }
