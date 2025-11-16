@@ -225,12 +225,12 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			accessKey = string(accessKeyBytes)
+			accessKey = accessKeyBytes
 			secretKeyBytes, err := ri.GetSecret(ctx, art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			secretKey = string(secretKeyBytes)
+			secretKey = secretKeyBytes
 		}
 
 		driver := oss.ArtifactDriver{
@@ -250,7 +250,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			serviceAccountKey := string(serviceAccountKeyBytes)
+			serviceAccountKey := serviceAccountKeyBytes
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity

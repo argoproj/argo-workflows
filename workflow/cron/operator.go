@@ -52,7 +52,7 @@ type cronWfOperationCtx struct {
 	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx context.Context
 }
 
@@ -221,7 +221,7 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 		return true, nil
 	}
 
-	t, err := template.NewTemplate(string(cron.Spec.When))
+	t, err := template.NewTemplate(cron.Spec.When)
 	if err != nil {
 		return false, err
 	}

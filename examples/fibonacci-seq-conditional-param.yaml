@@ -37,7 +37,6 @@ spec:
         cache:
           configMap:
             name: fibonacci-m
-            key: fibonacci-cache
       steps:
         - - name: fibonacci-helper
             template: fibonaccihelper

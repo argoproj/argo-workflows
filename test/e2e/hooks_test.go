@@ -171,7 +171,7 @@ spec:
 	// TODO: Temporarily comment out this assertion since it's flaky:
 	// 	  The running hook is occasionally not triggered. Possibly because the step finishes too quickly
 	//	  while the controller did not get a chance to trigger this hook.
-	//.ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+	// .ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 	//	return strings.Contains(status.Name, "step-2.hooks.running")
 	//}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 	//	assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
@@ -285,7 +285,7 @@ spec:
 		// TODO: Temporarily comment out this assertion since it's flaky:
 		// 	  The running hook is occasionally not triggered. Possibly because the step finishes too quickly
 		//	  while the controller did not get a chance to trigger this hook.
-		//assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		// assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 

@@ -57,8 +57,8 @@ func TestNewTimedCache(t *testing.T) {
 
 }
 
-func getTimeFunc(min int, sec int) func() time.Time {
+func getTimeFunc(minutes int, sec int) func() time.Time {
 	return func() time.Time {
-		return time.Date(0, 0, 0, 0, min, sec, 0, time.UTC)
+		return time.Date(0, 0, 0, 0, minutes, sec, 0, time.UTC)
 	}
 }

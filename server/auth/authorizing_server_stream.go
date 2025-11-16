@@ -9,7 +9,7 @@ import (
 // authorizingServerStream is a thin wrapper around grpc.ServerStream that allows modifying context and do RBAC via gatekeeper.
 type authorizingServerStream struct {
 	grpc.ServerStream
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx context.Context
 	Gatekeeper
 }

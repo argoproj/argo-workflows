@@ -22,20 +22,20 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Response, error) {
+func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv1.Artifact) (http.Response, error) {
 	var req *http.Request
 	var url string
 	var err error
 	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
 		url = inputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
 	} else if inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil {
 		url = inputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
@@ -55,7 +55,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 	if err != nil {
 		return http.Response{}, err
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
@@ -73,7 +73,7 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	defer func() {
 		_ = lf.Close()
 	}()
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 }
 
 func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return nil, err
 	}
@@ -103,14 +103,14 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	var url string
 	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
 		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
 		if err != nil {
 			return err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
 	} else {
 		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
 		if err != nil {
 			return err
 		}

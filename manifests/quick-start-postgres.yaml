@@ -906,9 +906,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -1969,9 +1967,7 @@ spec:
                                   plugin
                                 type: string
                             required:
-                            - configuration
                             - key
-                            - name
                             type: object
                           raw:
                             description: Raw contains raw artifact location details
@@ -3152,9 +3148,7 @@ spec:
                                     plugin
                                   type: string
                               required:
-                              - configuration
                               - key
-                              - name
                               type: object
                             raw:
                               description: Raw contains raw artifact location details
@@ -4481,9 +4475,7 @@ spec:
                           description: Name is the name of the artifact driver plugin
                           type: string
                       required:
-                      - configuration
                       - key
-                      - name
                       type: object
                     raw:
                       description: Raw contains raw artifact location details

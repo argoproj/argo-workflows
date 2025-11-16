@@ -54,6 +54,7 @@ type Config struct {
 	// in order to support multiple controllers in a single cluster, and ultimately allows the
 	// controller itself to be bundled as part of a higher level application. If omitted, the
 	// controller watches workflows and pods that *are not* labeled with an instance id.
+	// See [Scaling - Instance ID](https://argo-workflows.readthedocs.io/en/latest/scaling/#instance-id) for more details.
 	InstanceID string `json:"instanceID,omitempty"`
 
 	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics

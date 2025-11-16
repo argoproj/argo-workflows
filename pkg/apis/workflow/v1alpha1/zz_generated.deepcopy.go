@@ -738,8 +738,8 @@ func (in *Cache) DeepCopyInto(out *Cache) {
 	*out = *in
 	if in.ConfigMap != nil {
 		in, out := &in.ConfigMap, &out.ConfigMap
-		*out = new(v1.ConfigMapKeySelector)
-		(*in).DeepCopyInto(*out)
+		*out = new(v1.LocalObjectReference)
+		**out = **in
 	}
 	return
 }

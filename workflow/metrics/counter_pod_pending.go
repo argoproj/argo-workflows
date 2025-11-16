@@ -21,9 +21,6 @@ func (m *Metrics) ChangePodPending(ctx context.Context, reason, namespace string
 		// the pod_phase metric can cope with this being visible
 		return
 	default:
-		m.AddInt(ctx, telemetry.InstrumentPodPendingCount.Name(), 1, telemetry.InstAttribs{
-			{Name: telemetry.AttribPodPendingReason, Value: splitReason[0]},
-			{Name: telemetry.AttribPodNamespace, Value: namespace},
-		})
+		m.AddPodPendingCount(ctx, 1, splitReason[0], namespace)
 	}
 }

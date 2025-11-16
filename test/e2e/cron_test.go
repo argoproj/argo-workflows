@@ -74,13 +74,13 @@ spec:
 		testTimezone := "Pacific/Niue"
 		testLocation, err := time.LoadLocation(testTimezone)
 		s.CheckError(err)
-		hour, min, _ := time.Now().In(testLocation).Clock()
-		min++
-		if min == 60 {
-			min = 0
+		hour, minute, _ := time.Now().In(testLocation).Clock()
+		minute++
+		if minute == 60 {
+			minute = 0
 			hour = (hour + 1) % 24
 		}
-		scheduleInTestTimezone := strconv.Itoa(min) + " " + strconv.Itoa(hour) + " * * *"
+		scheduleInTestTimezone := strconv.Itoa(minute) + " " + strconv.Itoa(hour) + " * * *"
 		s.Given().
 			CronWorkflow(fmt.Sprintf(`
 apiVersion: argoproj.io/v1alpha1

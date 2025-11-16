@@ -291,10 +291,12 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	var listerErr error
 	address := fmt.Sprintf(":%d", port)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		conn, listerErr = net.Listen("tcp", address)
+		lc := &net.ListenConfig{}
+		conn, listerErr = lc.Listen(ctx, "tcp", address)
 		if listerErr != nil {
 			log.WithError(err).Warn(ctx, "failed to listen")
-			return false, nil
+			//nolint: nilerr
+			return false, nil // continue retrying
 		}
 		return true, nil
 	})
@@ -459,7 +461,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 			ctx = metadata.NewIncomingContext(ctx, md)
 			if _, err := as.gatekeeper.Context(ctx); err != nil {
 				log.WithError(err).Error(ctx, "failed to authenticate /metrics endpoint")
-				w.WriteHeader(403)
+				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 		}

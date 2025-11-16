@@ -8796,7 +8796,7 @@
       "properties": {
         "configMap": {
           "description": "ConfigMap sets a ConfigMap-based cache",
-          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
         }
       }
     },
@@ -10660,8 +10660,6 @@
       "description": "PluginArtifact is the location of a plugin artifact",
       "type": "object",
       "required": [
-        "name",
-        "configuration",
         "key"
       ],
       "properties": {

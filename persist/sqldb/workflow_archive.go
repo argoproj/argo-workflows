@@ -509,6 +509,7 @@ func phaseEqual(phase string) db.Cond {
 }
 
 func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	var err error
 	archivedWf := &archivedWorkflowRecord{}
 	if uid != "" {
@@ -533,7 +534,11 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 			}
 			num := int64(total.Total)
 			if num > 1 {
-				return nil, fmt.Errorf("found %d archived workflows with namespace/name: %s/%s", num, namespace, name)
+				logger.WithFields(logging.Fields{
+					"namespace": namespace,
+					"name":      name,
+					"num":       num,
+				}).Debug(ctx, "returning latest of archived workflows")
 			}
 			err = r.session.SQL().
 				Select("workflow").
@@ -541,6 +546,7 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 				Where(r.clusterManagedNamespaceAndInstanceID()).
 				And(namespaceEqual(namespace)).
 				And(nameEqual(name)).
+				OrderBy("-startedat").
 				One(archivedWf)
 		} else {
 			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)

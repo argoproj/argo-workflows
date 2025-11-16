@@ -54,9 +54,11 @@ attributes:
     description: The name of the queue
   - name: RecentlyStarted
     description: "Boolean: was this pod started recently"
+    type: bool
   - name: RequestCode
     displayName: status_code
     description: The HTTP status code of the response
+    type: int
   - name: RequestKind
     displayName: kind
     description: "The kubernetes `kind` involved in the request such as `configmaps`"
@@ -66,6 +68,7 @@ attributes:
   - name: TemplateCluster
     displayName: cluster_scope
     description: A boolean set true if this is a ClusterWorkflowTemplate
+    type: bool
   - name: TemplateName
     displayName: name
     description: "⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate."
@@ -140,7 +143,7 @@ metrics:
       The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them.
       A workflow can be stuck in `Running` with pending pods for a long time.
     attributes:
-      - name: WorkflowStatus
+      - name: WorkflowPhase
     unit: "{workflow}"
     type: Int64ObservableGauge
   - name: IsLeader
@@ -402,5 +405,6 @@ metrics:
       - name: TemplateName
       - name: TemplateNamespace
       - name: TemplateCluster
+      - name: WorkflowPhase
     unit: "{workflow_template}"
     type: Int64Counter

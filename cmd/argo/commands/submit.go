@@ -79,7 +79,7 @@ func NewSubmitCommand() *cobra.Command {
 			}
 
 			if parametersFile != "" {
-				if err := util.ReadParametersFile(parametersFile, &submitOpts); err != nil {
+				if err := util.ReadParametersFile(ctx, parametersFile, &submitOpts); err != nil {
 					return err
 				}
 			}
@@ -121,7 +121,7 @@ func NewSubmitCommand() *cobra.Command {
 }
 
 func submitWorkflowsFromFile(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, filePaths []string, submitOpts *wfv1.SubmitOpts, cliOpts *common.CliSubmitOpts) error {
-	fileContents, err := util.ReadManifest(filePaths...)
+	fileContents, err := util.ReadManifest(ctx, filePaths...)
 	if err != nil {
 		return err
 	}

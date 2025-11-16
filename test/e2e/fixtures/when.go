@@ -527,7 +527,7 @@ func (w *When) AddNamespaceLimit(limit string) *When {
 		w.t.Fatal(err)
 	}
 
-	_, err = w.kubeClient.CoreV1().Namespaces().Patch(ctx, Namespace, types.MergePatchType, []byte(bs), metav1.PatchOptions{})
+	_, err = w.kubeClient.CoreV1().Namespaces().Patch(ctx, Namespace, types.MergePatchType, bs, metav1.PatchOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -584,7 +584,8 @@ func (w *When) And(block func()) *When {
 
 func (w *When) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := Exec(name, args...)
+	ctx := logging.TestContext(w.t.Context())
+	output, err := Exec(ctx, name, args...)
 	block(w.t, output, err)
 	return w
 }
