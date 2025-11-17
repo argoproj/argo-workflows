@@ -59,7 +59,7 @@ message ArtGCStatus {
 // Artifact indicates an artifact to place at a specified path
 message Artifact {
   // name of the artifact. must be unique within a template's inputs/outputs.
-  // +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$`
+  // +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
   optional string name = 1;
 
   // Path is the container path to the artifact
@@ -522,7 +522,7 @@ message CronWorkflowSpec {
 
   // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   // +kubebuilder:validation:MinItems=1
-  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/-]+\s+){4}[0-9*,/-]+)$`
+  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/-?]+\s+){4}[0-9*,/-?]+)$`
   repeated string schedules = 11;
 
   // v3.6 and after: When is an expression that determines if a run should be scheduled.
@@ -1296,7 +1296,7 @@ message ParallelSteps {
 // Parameter indicate a passed string parameter to a service template with an optional default value
 message Parameter {
   // Name is the parameter name
-  // +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$`
+  // +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied

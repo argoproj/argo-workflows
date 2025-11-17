@@ -981,7 +981,7 @@ type Metadata struct {
 // Parameter indicate a passed string parameter to a service template with an optional default value
 type Parameter struct {
 	// Name is the parameter name
-	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$`
+	// +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
@@ -1057,7 +1057,7 @@ type SuppliedValueFrom struct{}
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
 	// name of the artifact. must be unique within a template's inputs/outputs.
-	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$`
+	// +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Path is the container path to the artifact

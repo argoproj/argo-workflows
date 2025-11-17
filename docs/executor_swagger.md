@@ -230,7 +230,7 @@ It will marshall back to string - marshalling is not symmetric.
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container.</br>+kubebuilder:validation:Minimum=0</br>+kubebuilder:validation:Maximum=511 |  |
-| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs.</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$` |  |
+| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs.</br>+kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$` |  |
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
@@ -332,7 +332,7 @@ of a single workflow step, which the executor will use as a default location to 
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container.</br>+kubebuilder:validation:Minimum=0</br>+kubebuilder:validation:Maximum=511 |  |
-| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs.</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$` |  |
+| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs.</br>+kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$` |  |
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
@@ -2569,7 +2569,7 @@ be cluster-scoped, so there is no namespace field.
 | description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter</br>+kubebuilder:validation:MinItems=1 |  |
 | globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as</br>'{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters |  |
-| name | string| `string` |  | | Name is the parameter name</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9_][-a-zA-Z0-9_]*$` |  |
+| name | string| `string` |  | | Name is the parameter name</br>+kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$` |  |
 | value | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | valueFrom | [ValueFrom](#value-from)| `ValueFrom` |  | |  |  |
 
