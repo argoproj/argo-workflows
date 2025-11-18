@@ -38,7 +38,7 @@ Name | Type | Description | Notes
 **suspend** | **bool** | Suspend will suspend the workflow and prevent execution of any future steps in the workflow | [optional] 
 **synchronization** | [**IoArgoprojWorkflowV1alpha1Synchronization**](IoArgoprojWorkflowV1alpha1Synchronization.md) |  | [optional] 
 **template_defaults** | [**IoArgoprojWorkflowV1alpha1Template**](IoArgoprojWorkflowV1alpha1Template.md) |  | [optional] 
-**templates** | [**[IoArgoprojWorkflowV1alpha1Template]**](IoArgoprojWorkflowV1alpha1Template.md) | Templates is a list of workflow templates used in a workflow | [optional] 
+**templates** | [**[IoArgoprojWorkflowV1alpha1Template]**](IoArgoprojWorkflowV1alpha1Template.md) | Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file | [optional] 
 **tolerations** | [**[Toleration]**](Toleration.md) | Tolerations to apply to workflow pods. | [optional] 
 **ttl_strategy** | [**IoArgoprojWorkflowV1alpha1TTLStrategy**](IoArgoprojWorkflowV1alpha1TTLStrategy.md) |  | [optional] 
 **volume_claim_gc** | [**IoArgoprojWorkflowV1alpha1VolumeClaimGC**](IoArgoprojWorkflowV1alpha1VolumeClaimGC.md) |  | [optional] 

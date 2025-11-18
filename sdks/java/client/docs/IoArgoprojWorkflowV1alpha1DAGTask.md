@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1DAGTask
 
-DAGTask represents a node in the graph during DAG execution
+DAGTask represents a node in the graph during DAG execution Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
 
 ## Properties
 
