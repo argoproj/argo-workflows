@@ -29,10 +29,17 @@ type SSOConfig struct {
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	// UserInfoPath specifies the path to user info endpoint
 	UserInfoPath string `json:"userInfoPath,omitempty"`
-	// InsecureSkipVerify skips TLS certificate verification
-	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// FilterGroupsRegex filters groups using regular expressions
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
+	// client certificates used for mTLS with the provider
+	ClientCert string `json:"clientCert,omitempty"`
+	ClientKey string `json:"clientKey,omitempty"`
+	// InsecureSkipVerify skips TLS certificate verification
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
+	// custom PEM encoded CA certificate file contents
+	RootCA string `json:"rootCA,omitempty"`
+	// custom CA certificate file name
+	RootCAFile string `json:"rootCAFile,omitempty"`	
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {
