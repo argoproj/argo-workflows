@@ -337,6 +337,13 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		request = request.WithContext(ctx)
 	}
 
+	// Apply authentication if provided
+	if httpTemplate.Auth != nil {
+		if err := common.ApplyHTTPAuth(ctx, request, httpTemplate.Auth, ae.ClientSet, ae.Namespace); err != nil {
+			return nil, fmt.Errorf("failed to apply authentication: %w", err)
+		}
+	}
+
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
@@ -354,7 +361,18 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		}
 	}
 
-	response, err := httpClients[httpTemplate.InsecureSkipVerify].Do(request)
+	// Use appropriate HTTP client, potentially with client cert auth
+	var client *http.Client
+	if httpTemplate.Auth != nil {
+		client, err = common.CreateHTTPClientWithAuth(ctx, httpTemplate.Auth, httpTemplate.InsecureSkipVerify, ae.ClientSet, ae.Namespace)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create authenticated HTTP client: %w", err)
+		}
+	} else {
+		client = httpClients[httpTemplate.InsecureSkipVerify]
+	}
+
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
