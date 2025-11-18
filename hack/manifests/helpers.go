@@ -9,35 +9,57 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-type obj map[string]interface{}
+type obj map[string]any
 
 func (o *obj) RemoveNestedField(fields ...string) {
 	unstructured.RemoveNestedField(*o, fields...)
 }
 
 func (o *obj) RecursiveRemoveDescriptions(fields ...string) {
-	startField := nestedFieldNoCopy[map[string]interface{}](o, fields...)
+	startField := nestedFieldNoCopy[map[string]any](o, fields...)
 	description := startField["description"].(string)
 	startField["description"] = description + ".\nAll nested field descriptions have been dropped due to Kubernetes size limitations."
 
-	var rec func(field *map[string]interface{})
-	rec = func(field *map[string]interface{}) {
+	var rec func(field *map[string]any)
+	rec = func(field *map[string]any) {
 		if _, ok := (*field)["description"].(string); ok {
 			delete(*field, "description")
 		}
 		for _, value := range *field {
-			if nested, ok := value.(map[string]interface{}); ok {
+			if nested, ok := value.(map[string]any); ok {
 				rec(&nested)
 			}
 		}
 	}
 
-	properties := startField["properties"].(map[string]interface{})
+	properties := startField["properties"].(map[string]any)
 	rec(&properties)
 }
 
-func (o *obj) SetNestedField(value interface{}, fields ...string) {
-	parentField := nestedFieldNoCopy[map[string]interface{}](o, fields[:len(fields)-1]...)
+// Status block validation is expensive and less needed
+func (o *obj) RecursiveRemoveValidations(fields ...string) {
+	if _, found, _ := unstructured.NestedFieldNoCopy(*o, fields...); !found {
+		return
+	}
+	startField := nestedFieldNoCopy[map[string]any](o, fields...)
+
+	var rec func(field *map[string]any)
+	rec = func(field *map[string]any) {
+		// Remove x-kubernetes-validations if present
+		delete(*field, "x-kubernetes-validations")
+		// Recurse into nested maps
+		for _, value := range *field {
+			if nested, ok := value.(map[string]any); ok {
+				rec(&nested)
+			}
+		}
+	}
+
+	rec(&startField)
+}
+
+func (o *obj) SetNestedField(value any, fields ...string) {
+	parentField := nestedFieldNoCopy[map[string]any](o, fields[:len(fields)-1]...)
 	parentField[fields[len(fields)-1]] = value
 }
 
@@ -51,9 +73,9 @@ func (o *obj) Name() string {
 }
 
 func (o *obj) OpenAPIV3Schema() obj {
-	versions := nestedFieldNoCopy[[]interface{}](o, "spec", "versions")
-	version := obj(versions[0].(map[string]interface{}))
-	return nestedFieldNoCopy[map[string]interface{}](&version, "schema", "openAPIV3Schema", "properties")
+	versions := nestedFieldNoCopy[[]any](o, "spec", "versions")
+	version := obj(versions[0].(map[string]any))
+	return nestedFieldNoCopy[map[string]any](&version, "schema", "openAPIV3Schema", "properties")
 }
 
 func nestedFieldNoCopy[T any](o *obj, fields ...string) T {

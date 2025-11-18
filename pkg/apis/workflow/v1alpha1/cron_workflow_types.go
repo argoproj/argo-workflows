@@ -30,6 +30,7 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// +kubebuilder:validation:Enum=Allow;Forbid;Replace
 type ConcurrencyPolicy string
 
 const (
@@ -50,6 +51,7 @@ type CronWorkflowSpec struct {
 	Suspend bool `json:"suspend,omitempty" protobuf:"varint,4,opt,name=suspend"`
 	// StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
 	// original scheduled time if it is missed.
+	// +kubebuilder:validation:Minimum=0
 	StartingDeadlineSeconds *int64 `json:"startingDeadlineSeconds,omitempty" protobuf:"varint,5,opt,name=startingDeadlineSeconds"`
 	// SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
 	SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit,omitempty" protobuf:"varint,6,opt,name=successfulJobsHistoryLimit"`
@@ -62,7 +64,9 @@ type CronWorkflowSpec struct {
 	// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
 	// v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
-	Schedules []string `json:"schedules,omitempty" protobuf:"bytes,11,opt,name=schedules"`
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/-?]+\s+){4}[0-9*,/-?]+)$`
+	Schedules []string `json:"schedules" protobuf:"bytes,11,opt,name=schedules"`
 	// v3.6 and after: When is an expression that determines if a run should be scheduled.
 	When string `json:"when,omitempty" protobuf:"bytes,12,opt,name=when"`
 }

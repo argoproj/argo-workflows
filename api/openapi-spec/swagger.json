@@ -9278,7 +9278,8 @@
       "description": "CronWorkflowSpec is the specification of a CronWorkflow",
       "type": "object",
       "required": [
-        "workflowSpec"
+        "workflowSpec",
+        "schedules"
       ],
       "properties": {
         "concurrencyPolicy": {
@@ -9378,7 +9379,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.DAGTask": {
-      "description": "DAGTask represents a node in the graph during DAG execution",
+      "description": "DAGTask represents a node in the graph during DAG execution Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.",
       "type": "object",
       "required": [
         "name"
@@ -9467,7 +9468,7 @@
           "type": "string"
         },
         "tasks": {
-          "description": "Tasks are a list of DAG tasks",
+          "description": "Tasks are a list of DAG tasks MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
@@ -9589,7 +9590,7 @@
           "type": "boolean"
         },
         "value": {
-          "description": "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric",
+          "description": "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric MaxLength is an artificial limit to limit CEL validation costs - see note at top of file",
           "type": "string"
         }
       }
@@ -9994,7 +9995,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "parameters": {
-          "description": "Parameters are a list of parameters passed as inputs",
+          "description": "Parameters are a list of parameters passed as inputs MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
@@ -10215,7 +10216,7 @@
       ],
       "properties": {
         "prometheus": {
-          "description": "Prometheus is a list of prometheus metrics to be emitted",
+          "description": "Prometheus is a list of prometheus metrics to be emitted MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Prometheus"
@@ -12391,7 +12392,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "templates": {
-          "description": "Templates is a list of workflow templates used in a workflow",
+          "description": "Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
@@ -12544,7 +12545,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.WorkflowStep": {
-      "description": "WorkflowStep is a reference to a template to execute in a series of step",
+      "description": "WorkflowStep is a reference to a template to execute in a series of step Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.",
       "type": "object",
       "properties": {
         "arguments": {
