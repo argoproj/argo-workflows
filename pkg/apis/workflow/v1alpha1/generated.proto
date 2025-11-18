@@ -59,7 +59,7 @@ message ArtGCStatus {
 // Artifact indicates an artifact to place at a specified path
 message Artifact {
   // name of the artifact. must be unique within a template's inputs/outputs.
-  // +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
+  // +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
   optional string name = 1;
 
   // Path is the container path to the artifact
