@@ -3432,19 +3432,17 @@ spec:
 
 func TestParameterizedGlobalArtifactsInExitHandler(t *testing.T) {
 	// Test that parameterized global artifacts can be referenced in exit handlers
-	err := validate(logging.TestContext(t.Context()), parameterizedGlobalArtifactsWorkflow)
+	err := validate(parameterizedGlobalArtifactsWorkflow)
 	require.NoError(t, err)
 }
 
 func TestParameterizedGlobalArtifactsWithWorkflowTemplateRef(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-
 	// Create the workflow template with parameterized artifacts
-	err := createWorkflowTemplateFromSpec(ctx, parameterizedArtifactsWorkflowTemplate)
+	err := createWorkflowTemplateFromSpec(parameterizedArtifactsWorkflowTemplate)
 	require.NoError(t, err)
 
 	// Test that parameterized global artifacts from workflow template refs can be referenced in exit handlers
-	err = validate(ctx, parameterizedGlobalArtifactsWithWorkflowTemplateRef)
+	err = validate(parameterizedGlobalArtifactsWithWorkflowTemplateRef)
 	require.NoError(t, err)
 }
 
@@ -3478,7 +3476,7 @@ spec:
 
 func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
 	// Test that referencing non-existent global artifacts still fails validation when there are no parameterized artifacts
-	err := validate(logging.TestContext(t.Context()), workflowWithoutParameterizedArtifacts)
+	err := validate(workflowWithoutParameterizedArtifacts)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
 }
