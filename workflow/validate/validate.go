@@ -303,7 +303,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			}
 		}
 		if hasParametrizedGlobalArtifacts {
-			tctx.globalParams[anyWorkflowOutputArtifactMagicValue] = "true"
+			ctx.globalParams[anyWorkflowOutputArtifactMagicValue] = "true"
 		}
 
 		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
