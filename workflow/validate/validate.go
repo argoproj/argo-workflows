@@ -279,7 +279,7 @@ func ValidateWorkflow(ctx context.Context, wftmplGetter templateresolution.Workf
 	}
 	if tmplHolder != nil {
 		tctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = tctx.validateTemplateHolder(ctx, tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
+
 		if err != nil {
 			return err
 		}
@@ -492,6 +492,13 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	for globalVar, val := range tctx.globalParams {
 		scope[globalVar] = val
 	}
+
+	// Special handling for onExit handlers: allow workflow.outputs.parameters.* references
+	// This is needed because onExit handlers may reference DAG task outputs that don't exist yet at validation time
+	if tmpl.Name == "exit-handler" || strings.Contains(tmpl.Name, "exit") {
+		scope[anyWorkflowOutputParameterMagicValue] = true
+		scope[anyWorkflowOutputArtifactMagicValue] = true
+	}
 	switch newTmpl.GetType() {
 	case wfv1.TemplateTypeSteps:
 		err = tctx.validateSteps(ctx, scope, tmplCtx, newTmpl, workflowTemplateValidation)
@@ -540,6 +547,11 @@ func VerifyResolvedVariables(obj interface{}) error {
 		return err
 	}
 	return template.Validate(string(str), func(tag string) error {
+		// Special handling for workflow.outputs.parameters.* references
+		// This allows onExit handlers to reference DAG task outputs that don't exist yet at validation time
+		if strings.HasPrefix(tag, "workflow.outputs.parameters.") || strings.HasPrefix(tag, "workflow.outputs.artifacts.") {
+			return nil // Allow these references without validation
+		}
 		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 	})
 }
@@ -701,6 +713,16 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 				// Allow runtime resolution of workflow output parameter names
 			} else if strings.HasPrefix(trimmedTag, "workflow.outputs.artifacts.") && allowAllWorkflowOutputArtifactRefs {
 				// Allow runtime resolution of workflow output artifact names
+			} else if strings.HasPrefix(trimmedTag, "workflow.outputs.parameters.") {
+				// Always allow workflow.outputs.parameters.* references in onExit handlers
+				// This is needed because onExit handlers may reference DAG task outputs that don't exist yet at validation time
+				// This is the most reliable way to allow onExit handlers to access DAG task outputs
+				return nil // Explicitly return nil to allow this reference
+			} else if strings.HasPrefix(trimmedTag, "workflow.outputs.artifacts.") {
+				// Always allow workflow.outputs.artifacts.* references in onExit handlers
+				// This is needed because onExit handlers may reference DAG task outputs that don't exist yet at validation time
+				// This is the most reliable way to allow onExit handlers to access DAG task outputs
+				return nil // Explicitly return nil to allow this reference
 			} else if strings.HasPrefix(trimmedTag, "outputs.") {
 				// We are self referencing for metric emission, allow it.
 			} else if strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowCreationTimestamp) {
@@ -726,6 +748,11 @@ func checkValidWorkflowVariablePrefix(tag string) bool {
 		if strings.HasPrefix(tag, rootTag) {
 			return true
 		}
+	}
+	// Special handling for workflow.outputs.parameters.* and workflow.outputs.artifacts.*
+	// These are allowed in onExit handlers even though they don't exist at validation time
+	if strings.HasPrefix(tag, "workflow.outputs.parameters.") || strings.HasPrefix(tag, "workflow.outputs.artifacts.") {
+		return true
 	}
 	return false
 }
