@@ -3344,3 +3344,129 @@ func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
 	// Do not allow leading or trailing spaces in parameters
 	require.ErrorContains(t, err, "failed to resolve {{  workflow.thisdoesnotexist  }}")
 }
+
+var parameterizedGlobalArtifactsWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-parameterized-global-artifacts-
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  arguments:
+    parameters:
+    - name: variable
+      value: "car"
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'test data' > /tmp/result.txt"]
+    outputs:
+      artifacts:
+      - name: result
+        globalName: output-result-{{workflow.parameters.variable}}
+        path: /tmp/result.txt
+        archive:
+          none: {}
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'Access artifact: {{workflow.outputs.artifacts.output-result-car}}'"]
+`
+
+var parameterizedGlobalArtifactsWithWorkflowTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-wft-ref-
+spec:
+  onExit: exit-handler
+  arguments:
+    parameters:
+    - name: variable
+      value: "test"
+  workflowTemplateRef:
+    name: parameterized-artifacts-template
+`
+
+var parameterizedArtifactsWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: parameterized-artifacts-template
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'test data' > /tmp/result.txt"]
+    outputs:
+      artifacts:
+      - name: result
+        globalName: output-result-{{workflow.parameters.variable}}
+        path: /tmp/result.txt
+        archive:
+          none: {}
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'Access artifact: {{workflow.outputs.artifacts.output-result-test}}'"]
+`
+
+func TestParameterizedGlobalArtifactsInExitHandler(t *testing.T) {
+	// Test that parameterized global artifacts can be referenced in exit handlers
+	err := validate(parameterizedGlobalArtifactsWorkflow)
+	require.NoError(t, err)
+}
+
+func TestParameterizedGlobalArtifactsWithWorkflowTemplateRef(t *testing.T) {
+	// Create the workflow template with parameterized artifacts
+	err := createWorkflowTemplateFromSpec(parameterizedArtifactsWorkflowTemplate)
+	require.NoError(t, err)
+
+	// Test that parameterized global artifacts from workflow template refs can be referenced in exit handlers
+	err = validate(parameterizedGlobalArtifactsWithWorkflowTemplateRef)
+	require.NoError(t, err)
+}
+
+var workflowWithoutParameterizedArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-no-parameterized-
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'test data' > /tmp/result.txt"]
+    outputs:
+      artifacts:
+      - name: result
+        globalName: simple-artifact
+        path: /tmp/result.txt
+        archive:
+          none: {}
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo 'Access artifact: {{workflow.outputs.artifacts.nonexistent}}'"]
+`
+
+func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
+	// Test that referencing non-existent global artifacts still fails validation when there are no parameterized artifacts
+	err := validate(workflowWithoutParameterizedArtifacts)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
+}
