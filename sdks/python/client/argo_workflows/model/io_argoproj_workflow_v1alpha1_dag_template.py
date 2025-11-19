@@ -114,7 +114,7 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
         """IoArgoprojWorkflowV1alpha1DAGTemplate - a model defined in OpenAPI
 
         Args:
-            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): Tasks are a list of DAG tasks
+            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): Tasks are a list of DAG tasks MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -201,7 +201,7 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
         """IoArgoprojWorkflowV1alpha1DAGTemplate - a model defined in OpenAPI
 
         Args:
-            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): Tasks are a list of DAG tasks
+            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): Tasks are a list of DAG tasks MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

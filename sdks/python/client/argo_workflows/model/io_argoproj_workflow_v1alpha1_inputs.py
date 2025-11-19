@@ -145,7 +145,7 @@ class IoArgoprojWorkflowV1alpha1Inputs(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             artifacts ([IoArgoprojWorkflowV1alpha1Artifact]): Artifact are a list of artifacts passed as inputs. [optional]  # noqa: E501
-            parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters are a list of parameters passed as inputs. [optional]  # noqa: E501
+            parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters are a list of parameters passed as inputs MaxItems is an artificial limit to limit CEL validation costs - see note at top of file. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +228,7 @@ class IoArgoprojWorkflowV1alpha1Inputs(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             artifacts ([IoArgoprojWorkflowV1alpha1Artifact]): Artifact are a list of artifacts passed as inputs. [optional]  # noqa: E501
-            parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters are a list of parameters passed as inputs. [optional]  # noqa: E501
+            parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters are a list of parameters passed as inputs MaxItems is an artificial limit to limit CEL validation costs - see note at top of file. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

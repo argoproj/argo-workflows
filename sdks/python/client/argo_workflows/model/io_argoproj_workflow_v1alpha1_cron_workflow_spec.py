@@ -91,10 +91,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         """
         lazy_import()
         return {
+            'schedules': ([str],),  # noqa: E501
             'workflow_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
             'concurrency_policy': (str,),  # noqa: E501
             'failed_jobs_history_limit': (int,),  # noqa: E501
-            'schedules': ([str],),  # noqa: E501
             'starting_deadline_seconds': (int,),  # noqa: E501
             'stop_strategy': (IoArgoprojWorkflowV1alpha1StopStrategy,),  # noqa: E501
             'successful_jobs_history_limit': (int,),  # noqa: E501
@@ -110,10 +110,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
 
 
     attribute_map = {
+        'schedules': 'schedules',  # noqa: E501
         'workflow_spec': 'workflowSpec',  # noqa: E501
         'concurrency_policy': 'concurrencyPolicy',  # noqa: E501
         'failed_jobs_history_limit': 'failedJobsHistoryLimit',  # noqa: E501
-        'schedules': 'schedules',  # noqa: E501
         'starting_deadline_seconds': 'startingDeadlineSeconds',  # noqa: E501
         'stop_strategy': 'stopStrategy',  # noqa: E501
         'successful_jobs_history_limit': 'successfulJobsHistoryLimit',  # noqa: E501
@@ -130,10 +130,11 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, workflow_spec, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, schedules, workflow_spec, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowSpec - a model defined in OpenAPI
 
         Args:
+            schedules ([str]): v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
             workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec):
 
         Keyword Args:
@@ -169,7 +170,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
             failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
-            schedules ([str]): v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format. [optional]  # noqa: E501
             starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
             stop_strategy (IoArgoprojWorkflowV1alpha1StopStrategy): [optional]  # noqa: E501
             successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
@@ -204,6 +204,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.schedules = schedules
         self.workflow_spec = workflow_spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -225,10 +226,11 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, workflow_spec, *args, **kwargs):  # noqa: E501
+    def __init__(self, schedules, workflow_spec, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowSpec - a model defined in OpenAPI
 
         Args:
+            schedules ([str]): v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
             workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec):
 
         Keyword Args:
@@ -264,7 +266,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
             failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
-            schedules ([str]): v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format. [optional]  # noqa: E501
             starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
             stop_strategy (IoArgoprojWorkflowV1alpha1StopStrategy): [optional]  # noqa: E501
             successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
@@ -297,6 +298,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.schedules = schedules
         self.workflow_spec = workflow_spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
