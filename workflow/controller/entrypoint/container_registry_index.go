@@ -2,6 +2,8 @@ package entrypoint
 
 import (
 	"context"
+	v12 "github.com/google/go-containerregistry/pkg/v1"
+	"runtime"
 
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -27,7 +29,11 @@ func (i *containerRegistryIndex) Lookup(ctx context.Context, image string, optio
 	if err != nil {
 		return nil, err
 	}
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(kc))
+	var defaultPlatform = v12.Platform{
+		Architecture: runtime.GOARCH,
+		OS:           runtime.GOOS,
+	}
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(kc), remote.WithPlatform(defaultPlatform))
 	if err != nil {
 		return nil, err
 	}
