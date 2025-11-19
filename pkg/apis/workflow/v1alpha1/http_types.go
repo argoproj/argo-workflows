@@ -1,7 +1,10 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 )
@@ -59,4 +62,48 @@ func (h *HTTP) GetBodyBytes() []byte {
 		return h.BodyFrom.Bytes
 	}
 	return nil
+}
+
+// Custom JSON unmarshaller in order to accept both string and int64 values
+func (h *HTTP) UnmarshalJSON(data []byte) error {
+	type HTTPAlias HTTP
+
+	aux := &struct {
+		RawTimeoutSeconds interface{} `json:"timeoutSeconds,omitempty"`
+		*HTTPAlias
+	}{
+		HTTPAlias: (*HTTPAlias)(h),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	switch rawValue := aux.RawTimeoutSeconds.(type) {
+
+	case nil:
+		return nil
+
+	// JSON numbers are always converted to float64
+	case float64:
+		timeoutInt := int64(rawValue)
+		h.TimeoutSeconds = &timeoutInt
+		return nil
+
+	case string:
+		if rawValue == "" {
+			h.TimeoutSeconds = nil
+			return nil
+		}
+
+		parsedTimeout, err := strconv.ParseInt(rawValue, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid http.timeoutSeconds %q: %w", rawValue, err)
+		}
+		h.TimeoutSeconds = &parsedTimeout
+		return nil
+
+	default:
+		return fmt.Errorf("invalid type for timeoutSeconds: %T", rawValue)
+	}
 }
