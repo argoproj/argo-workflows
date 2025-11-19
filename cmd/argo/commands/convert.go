@@ -30,7 +30,7 @@ func NewConvertCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "convert FILE...",
 		Short: "convert workflow manifests from legacy format to current format",
-		Long:  "Converts singular schedule, mutex and semaphore to the new plural version",
+		Long:  "Converts singular schedule, mutex and semaphore fields to the new plural versions, outputting to stdout",
 		Example: `
 # Convert manifests in a specified directory:
 
