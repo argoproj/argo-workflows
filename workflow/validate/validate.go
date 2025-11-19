@@ -278,6 +278,38 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 	if tmplHolder != nil {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
+
+		// Check if any template has parametrized global artifacts, if so enable global artifact resolution for exit handlers
+		hasParametrizedGlobalArtifacts := false
+		for _, tmpl := range wf.Spec.Templates {
+			for _, art := range tmpl.Outputs.Artifacts {
+				if art.GlobalName != "" && isParameter(art.GlobalName) {
+					hasParametrizedGlobalArtifacts = true
+					break
+				}
+			}
+			if hasParametrizedGlobalArtifacts {
+				break
+			}
+		}
+		if hasWorkflowTemplateRef && !hasParametrizedGlobalArtifacts {
+			// Also check the referenced workflow template
+			for _, tmpl := range wfSpecHolder.GetWorkflowSpec().Templates {
+				for _, art := range tmpl.Outputs.Artifacts {
+					if art.GlobalName != "" && isParameter(art.GlobalName) {
+						hasParametrizedGlobalArtifacts = true
+						break
+					}
+				}
+				if hasParametrizedGlobalArtifacts {
+					break
+				}
+			}
+		}
+		if hasParametrizedGlobalArtifacts {
+			ctx.globalParams[anyWorkflowOutputArtifactMagicValue] = "true"
+		}
+
 		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
