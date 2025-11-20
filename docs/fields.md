@@ -351,6 +351,8 @@ Workflow is the definition of a workflow resource
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -836,6 +838,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -1302,6 +1306,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -1583,6 +1589,8 @@ Arguments to a template
 - [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -2474,6 +2482,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
@@ -3208,6 +3218,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
+
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
 
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
@@ -4032,6 +4044,8 @@ MetricLabel is a single label for a prometheus metric
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
 </details>
 
 ### Fields
@@ -4316,6 +4330,8 @@ DataSource sources external data into a data template
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
+
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
 
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
@@ -5281,6 +5297,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -5897,6 +5915,8 @@ A single application container that you want to run within a pod.
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -6906,6 +6926,8 @@ ImageVolumeSource represents a image volume resource.
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
+- [`rejected-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/validating-admission-policies/rejected-workflow.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
