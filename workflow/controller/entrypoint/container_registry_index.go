@@ -2,8 +2,9 @@ package entrypoint
 
 import (
 	"context"
-	v12 "github.com/google/go-containerregistry/pkg/v1"
 	"runtime"
+	
+	v12 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
