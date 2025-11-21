@@ -4,7 +4,7 @@ convert workflow manifests from legacy format to current format
 
 ### Synopsis
 
-Converts singular schedule, mutex and semaphore to the new plural version
+Converts singular schedule, mutex and semaphore fields to the new plural versions, outputting to stdout
 
 ```
 argo convert FILE... [flags]
