@@ -96,6 +96,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 		},
 	}
 	command.AddCommand(NewCompletionCommand())
+	command.AddCommand(NewConvertCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewLintCommand())
