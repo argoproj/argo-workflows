@@ -36,16 +36,12 @@ data:
         mode tcp
         balance roundrobin
         
-        # Use simple TCP health checks to avoid PostgreSQL protocol interference
-        # This prevents "incomplete startup packet" and "connection reset by peer" errors
-        option tcp-check
-        tcp-check connect
+        option httpchk GET /master
+        http-check expect status 200
         
-        # Increased health check interval to reduce PostgreSQL log noise
-        # Changed from 1s to 10s to be less aggressive
-        server postgres-primary postgres-primary.argo.svc.cluster.local:5432 check inter 10s rise 2 fall 3
-        server postgres-secondary postgres-secondary.argo.svc.cluster.local:5432 check inter 10s rise 2 fall 3
-        server postgres-tertiary postgres-tertiary.argo.svc.cluster.local:5432 check inter 10s rise 2 fall 3
+        server postgres-0 postgres-0.postgres.argo.svc.cluster.local:5432 check port 8008 inter 3s fall 3 rise 2 init-addr last,libc,none
+        server postgres-1 postgres-1.postgres.argo.svc.cluster.local:5432 check port 8008 inter 3s fall 3 rise 2 init-addr last,libc,none
+        server postgres-2 postgres-2.postgres.argo.svc.cluster.local:5432 check port 8008 inter 3s fall 3 rise 2 init-addr last,libc,none
 
     # Frontend listener
     frontend postgres_frontend

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: argo
+  labels:
+    app: postgres
+spec:
+  ports:
+    - port: 5432
+      name: postgres
+    - port: 8008
+      name: patroni
+  clusterIP: None
+  selector:
+    app: postgres

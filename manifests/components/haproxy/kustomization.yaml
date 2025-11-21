@@ -6,6 +6,5 @@ resources:
   - haproxy-deployment.yaml
   - haproxy-service.yaml
   - postgres-deployment.yaml
-  - postgres-primary-service.yaml
-  - postgres-secondary-service.yaml
-  - postgres-tertiary-service.yaml
+  - postgres-service.yaml
+  - postgres-rbac.yaml
