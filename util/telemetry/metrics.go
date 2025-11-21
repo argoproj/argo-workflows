@@ -5,16 +5,16 @@ import (
 	"os"
 	"sync"
 	"time"
-
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"strings"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 )
 
 type Config struct {
@@ -76,11 +76,29 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 	_, otlpMetricsEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
 	if otlpEnabled || otlpMetricsEnabled {
 		log.Info("Starting OTLP metrics exporter")
-		otelExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
-		if err != nil {
-			return nil, err
+
+		// NOTE: The OTel SDK default changed from gRPC to http/protobuf. For backwards compatibility,
+		// gRPC is preserved as the default in workflows controller, but http/protobuf can be opted-in
+		// to by setting the _PROTOCOL env var explicitly.
+		// These env vars match the official SDK: https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_metrics_protocol.
+		otlpProtocol := os.Getenv(`OTEL_EXPORTER_OTLP_METRICS_PROTOCOL`)
+		if otlpProtocol == "" {
+			otlpProtocol = os.Getenv(`OTEL_EXPORTER_OTLP_PROTOCOL`)
 		}
-		options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(otelExporter)))
+
+		if otlpProtocol == "" || otlpProtocol == "grpc" {
+			httpExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
+			if err != nil {
+				return nil, err
+			}
+			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(httpExporter)))
+		} else if strings.HasPrefix(otlpProtocol, "http/") {
+			grpcExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithTemporalitySelector(config.Temporality))
+			if err != nil {
+				return nil, err
+			}
+			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(grpcExporter)))
+		}
 	}
 
 	if config.Enabled {
