@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: conditional-parameter-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       Conditional parameters provide a way to choose the output parameters based on expression.

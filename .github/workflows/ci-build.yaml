@@ -257,14 +257,16 @@ jobs:
           - test: test-cli
             profile: mysql
             use-api: true
-          # Cron tests are not retryable withou a controller restart
+          # Cron tests are not retryable without a controller restart
           - test: test-cron
             profile: minimal
             use-api: false
             retries: 0
+          # Example tests are not retryable without a controller restart
           - test: test-examples
             profile: minimal
             use-api: false
+            retries: 0
           - test: test-plugins
             profile: plugins
             use-api: false

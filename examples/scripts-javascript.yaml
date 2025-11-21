@@ -36,6 +36,6 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]

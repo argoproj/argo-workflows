@@ -35,12 +35,12 @@ spec:
 
   - name: heads
     container:
-      image: alpine:3.6
+      image: busybox
       command: [sh, -c]
       args: ["echo \"it was heads\""]
 
   - name: tails
     container:
-      image: alpine:3.6
+      image: busybox
       command: [sh, -c]
       args: ["echo \"it was tails\""]

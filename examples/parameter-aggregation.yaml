@@ -54,7 +54,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -xc]
       args:
       - |
@@ -80,7 +80,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -x]
       source: |
         #!/bin/sh
