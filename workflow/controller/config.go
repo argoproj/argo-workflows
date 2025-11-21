@@ -40,17 +40,21 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if wfc.session == nil {
-			session, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
+		if wfc.sessionProxy == nil {
+			sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+				KubectlConfig: wfc.kubeclientset,
+				Namespace:     wfc.namespace,
+				DBConfig:      persistence.DBConfig,
+			})
 			if err != nil {
 				return err
 			}
-			logger.Info(ctx, "Persistence Session created successfully")
-			wfc.session = session
+			logger.Info(ctx, "Persistence SessionProxy created successfully")
+			wfc.sessionProxy = sessionProxy
 		}
-		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
+		sqldb.ConfigureDBSession(wfc.sessionProxy.Session(), persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
@@ -65,7 +69,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			wfc.wfArchive = persist.NewWorkflowArchive(wfc.sessionProxy, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			logger.Info(ctx, "Workflow archiving is enabled")
 		} else {
 			logger.Info(ctx, "Workflow archiving is disabled")
@@ -99,7 +103,7 @@ func (wfc *WorkflowController) initDB(ctx context.Context) error {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.session, persistence.GetClusterName(), tableName)
+	return persist.Migrate(ctx, wfc.sessionProxy.Session(), persistence.GetClusterName(), tableName)
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {

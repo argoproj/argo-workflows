@@ -12,6 +12,7 @@ const (
 	versionTable = "schema_history"
 )
 
+// Migrate runs the migrations
 func Migrate(ctx context.Context, session db.Session, clusterName, tableName string) (err error) {
 	dbType := sqldb.DBTypeFor(session)
 	return sqldb.Migrate(ctx, session, versionTable, []sqldb.Change{

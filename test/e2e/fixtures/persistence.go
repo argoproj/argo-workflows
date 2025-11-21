@@ -37,12 +37,20 @@ func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 			panic(err)
 		}
 		log := logging.RequireLoggerFromContext(ctx)
-		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
+		sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+			KubectlConfig: kubeClient,
+			Namespace:     Namespace,
+			DBConfig:      persistence.DBConfig,
+		})
 		if err != nil {
 			panic(err)
 		}
-		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
+		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
+		if err != nil {
+			panic(err)
+		}
+		workflowArchive := persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), Namespace, instanceIDService)
 		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
 	} else {
 		return &Persistence{offloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}

@@ -10,8 +10,6 @@ import (
 	gosync "sync"
 	"time"
 
-	"github.com/upper/db/v4"
-
 	syncpkg "github.com/argoproj/pkg/sync"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -50,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
+	utilsqldb "github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
@@ -128,7 +127,7 @@ type WorkflowController struct {
 	wfArchiveQueue        workqueue.TypedRateLimitingInterface[string]
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               db.Session
+	sessionProxy          *utilsqldb.SessionProxy
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -436,7 +435,12 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, isWFDeleted)
+	var err error
+	wfc.syncManager, err = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, isWFDeleted, true)
+
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to create lock manager")
+	}
 }
 
 // list all running workflows to initialize throttler and syncManager

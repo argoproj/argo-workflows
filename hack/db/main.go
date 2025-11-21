@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	utilsqldb "github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 var session db.Session
@@ -29,6 +30,9 @@ func main() {
 	}
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
 		session, err = createDBSession(dsn)
+		if err != nil {
+			return err
+		}
 		return
 	}
 	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "d", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
@@ -72,7 +76,8 @@ func NewFakeDataCommand() *cobra.Command {
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
-				wfArchive := sqldb.NewWorkflowArchive(session, cluster, "", instanceIDService)
+				sessionProxy := utilsqldb.NewSessionProxyFromSession(session, nil, "", "").Tx()
+				wfArchive := sqldb.NewWorkflowArchive(sessionProxy, cluster, "", instanceIDService)
 				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}
