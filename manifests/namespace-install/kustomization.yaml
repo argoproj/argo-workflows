@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../base/crds/minimal
+  - ../base/crds/full
   - ../base/workflow-controller
   - ../base/argo-server
   - ./argo-server-rbac
