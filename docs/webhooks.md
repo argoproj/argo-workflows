@@ -19,13 +19,13 @@ The secret `argo-workflows-webhook-clients` tells Argo:
 * What type of webhook the account can be used for, e.g. `github`.
 * What "secret" that webhook is configured for, e.g. in your Github settings page.
 
-## X-Hub (websub) Webhook Type
+## X-Hub (`websub`) Webhook Type
 
 The `x-hub` type provides a generic webhook authentication that works
-with any platform using the [WebSub
+with any platform using the [`WebSub`
 specification](https://www.w3.org/TR/websub/#authenticated-content-distribution),
-plus some non-standard features found in the wild like base64-encoded
-header values.
+plus some non-standard features found in the wild, such as header
+values encoded in `base64`.
 
 Supported configuration fields:
 
