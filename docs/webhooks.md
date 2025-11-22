@@ -32,5 +32,5 @@ Supported configuration fields:
 | Field | Description | Default |
 |-------|-------------|---------|
 | `x-hub-header-name` | The header containing the signature | `X-Hub-Signature-256` |
-| `x-hub-hash` | The hash algorithm to use:<br>• `sha1`<br>• `sha256`<br>• `sha384`<br>• `sha512` | `sha256` |
-| `x-hub-encoding` | The signature encoding:<br>• `hex`<br>• `base64` | `hex` |
+| `x-hub-hash` | The hash algorithm to use, one of: `sha1`,`sha256`,`sha384`,`sha512` | `sha256` |
+| `x-hub-encoding` | The signature encoding, one of: `hex`,`base64` | `hex` |
