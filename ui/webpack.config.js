@@ -24,7 +24,6 @@ const config = {
     output: {
         filename: '[name].[contenthash].js',
         path: __dirname + '/dist/app',
-        publicPath: base,
     },
 
     devtool: isProd ? 'source-map' : 'eval',
@@ -118,6 +117,9 @@ const config = {
             disableDotRule: true,
             // Needed to fix 404s: https://github.com/webpack/webpack-dev-server/issues/1457#issuecomment-415527819
             index: base
+        },
+        devMiddleware: {
+            publicPath: base,
         },
         headers: {
             'X-Frame-Options': 'SAMEORIGIN'
