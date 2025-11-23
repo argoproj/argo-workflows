@@ -5724,10 +5724,10 @@ stringData:
     secret: "shh!"
   facebook.com: |
     type: x-hub
-    secret: "shh!"
+    secret: "shh!shh!"
   forgejo: |
     type: x-hub
-    secret: "shh!"
+    secret: "shh!shh!"
   github.com: |
     type: github
     secret: "shh!"
@@ -5736,7 +5736,7 @@ stringData:
     secret: "shh!"
   shopify.com: |
     type: x-hub
-    secret: "shh!"
+    secret: "shh!shh!"
     x-hub-header-name: X-Shopify-Hmac-SHA256
     x-hub-encoding: base64
 ---
