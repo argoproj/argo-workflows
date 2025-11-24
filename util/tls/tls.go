@@ -151,6 +151,9 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 	}, nil
 }
 
+// GetTLSConfig creates a TLS configuration for client connections.
+// If clientCert and clientKey are provided, they will be loaded and included in the configuration.
+// The insecureSkipVerify parameter controls whether the server's certificate will be verified.
 func GetTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify,
