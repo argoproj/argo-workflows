@@ -150,7 +150,7 @@ definitions:
             name:
                 description: |-
                     name of the artifact. must be unique within a template's inputs/outputs.
-                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
                 type: string
             optional:
                 description: Make Artifacts optional, if Artifacts doesn't generate or exist
@@ -267,7 +267,7 @@ definitions:
             name:
                 description: |-
                     name of the artifact. must be unique within a template's inputs/outputs.
-                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
                 type: string
             optional:
                 description: Make Artifacts optional, if Artifacts doesn't generate or exist

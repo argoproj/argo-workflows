@@ -31,6 +31,8 @@ It will not be enabled if left blank, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
+By default, GRPC is used; to switch to HTTP, set either the `OTEL_EXPORTER_OTLP_PROTOCOL` or `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL` environment variable to `http/protobuf`.
+
 The [configuration options](#common) in the controller ConfigMap `metricsTTL`, `modifiers` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
 
 To use the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/) you can configure it

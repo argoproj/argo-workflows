@@ -5735,7 +5735,7 @@ spec:
                                         name:
                                           description: name of the artifact. must
                                             be unique within a template's inputs/outputs.
-                                          pattern: ^[-a-zA-Z0-9_]+$
+                                          pattern: ^[-a-zA-Z0-9_{}.]+$
                                           type: string
                                         optional:
                                           description: Make Artifacts optional, if
@@ -7100,7 +7100,7 @@ spec:
                                                 description: name of the artifact.
                                                   must be unique within a template's
                                                   inputs/outputs.
-                                                pattern: ^[-a-zA-Z0-9_]+$
+                                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                                 type: string
                                               optional:
                                                 description: Make Artifacts optional,
@@ -8498,7 +8498,7 @@ spec:
                                 name:
                                   description: name of the artifact. must be unique
                                     within a template's inputs/outputs.
-                                  pattern: ^[-a-zA-Z0-9_]+$
+                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                   type: string
                                 optional:
                                   description: Make Artifacts optional, if Artifacts
@@ -11170,7 +11170,7 @@ spec:
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
-                                pattern: ^[-a-zA-Z0-9_]+$
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -12540,7 +12540,7 @@ spec:
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
-                                pattern: ^[-a-zA-Z0-9_]+$
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -13808,7 +13808,7 @@ spec:
                                 name:
                                   description: name of the artifact. must be unique
                                     within a template's inputs/outputs.
-                                  pattern: ^[-a-zA-Z0-9_]+$
+                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                   type: string
                                 optional:
                                   description: Make Artifacts optional, if Artifacts
@@ -18198,7 +18198,7 @@ spec:
                                           name:
                                             description: name of the artifact. must
                                               be unique within a template's inputs/outputs.
-                                            pattern: ^[-a-zA-Z0-9_]+$
+                                            pattern: ^[-a-zA-Z0-9_{}.]+$
                                             type: string
                                           optional:
                                             description: Make Artifacts optional,
@@ -19574,7 +19574,7 @@ spec:
                                                   description: name of the artifact.
                                                     must be unique within a template's
                                                     inputs/outputs.
-                                                  pattern: ^[-a-zA-Z0-9_]+$
+                                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                                   type: string
                                                 optional:
                                                   description: Make Artifacts optional,
@@ -22926,7 +22926,7 @@ spec:
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
-                                pattern: ^[-a-zA-Z0-9_]+$
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts

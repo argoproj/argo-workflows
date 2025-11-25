@@ -24,6 +24,8 @@ spec:
           ports:
             - name: http
               containerPort: 5556
+            - name: https
+              containerPort: 5554
           volumeMounts:
             - mountPath: /data
               name: config
