@@ -3,6 +3,8 @@
 package e2e
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -270,6 +273,103 @@ func (s *MetricsSuite) TestClusterTemplateMetrics() {
 		CreateClusterWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
+		})
+}
+
+func (s *MetricsSuite) TestPodRestartMetric() {
+	// Define expected increases - pod restart with Evicted reason and DiskPressure condition
+	expectedIncreases := map[string]float64{
+		`pod_restarts_total{condition="DiskPressure",namespace="argo",reason="Evicted"}`: 1,
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
+	var podName string
+
+	s.Given().
+		Workflow(`@testdata/workflow-pod-restart.yaml`).
+		When().
+		SubmitWorkflow().
+		// Wait for the pod to be created
+		WaitForPod(func(p *corev1.Pod) bool {
+			if p.Status.Phase != corev1.PodRunning && p.Status.Phase != corev1.PodPending {
+				return false
+			}
+			podName = p.Name
+			return true
+		}).
+		And(func() {
+			// Patch the pod status to simulate an eviction before main container started
+			ctx := context.Background()
+
+			patch := map[string]interface{}{
+				"status": map[string]interface{}{
+					"phase":   "Failed",
+					"reason":  "Evicted",
+					"message": "The node had condition: [DiskPressure]",
+					"initContainerStatuses": []map[string]interface{}{
+						{
+							"name":  "init",
+							"image": "alpine:latest",
+							"state": map[string]interface{}{
+								"terminated": map[string]interface{}{
+									"exitCode": 0,
+									"reason":   "Completed",
+								},
+							},
+							"ready":        true,
+							"restartCount": 0,
+						},
+						{
+							"name":  "delay",
+							"image": "alpine:latest",
+							"state": map[string]interface{}{
+								"terminated": map[string]interface{}{
+									"exitCode": 137,
+									"reason":   "Error",
+								},
+							},
+							"ready":        false,
+							"restartCount": 0,
+						},
+					},
+					"containerStatuses": []map[string]interface{}{
+						{
+							"name":  "main",
+							"image": "alpine:latest",
+							"state": map[string]interface{}{
+								"waiting": map[string]interface{}{
+									"reason": "PodInitializing",
+								},
+							},
+							"ready":        false,
+							"restartCount": 0,
+						},
+					},
+				},
+			}
+			patchBytes, err := json.Marshal(patch)
+			s.Require().NoError(err)
+
+			_, err = s.KubeClient.CoreV1().Pods(fixtures.Namespace).Patch(
+				ctx,
+				podName,
+				types.MergePatchType,
+				patchBytes,
+				metav1.PatchOptions{},
+				"status",
+			)
+			s.Require().NoError(err)
+			s.T().Logf("Patched pod %s to simulate eviction", podName)
+		}).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 60*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)

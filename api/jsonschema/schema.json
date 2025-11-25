@@ -6037,6 +6037,10 @@
           "description": "EstimatedDuration in seconds.",
           "type": "integer"
         },
+        "failedPodRestarts": {
+          "description": "FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.",
+          "type": "integer"
+        },
         "finishedAt": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "Time at which this node completed"

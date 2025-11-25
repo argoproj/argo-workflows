@@ -1412,6 +1412,23 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
+
+		// Check if this pod qualifies for automatic restart (failed before entering Running state)
+		// Skip if pod is already being deleted (we've already initiated restart)
+		if pod.DeletionTimestamp == nil && woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
+			updated.FailedPodRestarts++
+			woc.log.WithFields(logging.Fields{
+				"podName":      pod.Name,
+				"nodeID":       old.ID,
+				"restartCount": updated.FailedPodRestarts,
+				"reason":       pod.Status.Reason,
+				"message":      pod.Status.Message,
+			}).Info(ctx, "Pod qualifies for automatic restart - marking as pending")
+			updated.Phase = wfv1.NodePending
+			updated.Message = fmt.Sprintf("Pod auto-restarting due to %s: %s", pod.Status.Reason, pod.Status.Message)
+			woc.controller.PodController.DeletePod(ctx, pod.Namespace, pod.Name)
+			woc.controller.metrics.RecordPodRestart(ctx, pod.Status.Reason, pod.Status.Message, pod.Namespace)
+		}
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
 		// A node transitions into "daemoned" only if it's a daemon template and it becomes running AND ready.
@@ -1757,6 +1774,43 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			return wfv1.NodeFailed, "pod failed: neither main nor wait container completed successfully"
 		}
 	}
+}
+
+// shouldAutoRestartPod checks if a failed pod should be automatically restarted.
+// A pod qualifies for auto-restart if:
+// 1. The failedPodRestart feature is enabled in controller config
+// 2. The pod failed before its main container entered Running state
+// 3. The failure reason is a restartable infrastructure failure such as Evicted due to node pressure
+// 4. The restart count hasn't exceeded the configured limit
+//
+// This works in conjunction with retryStrategy - infrastructure failures that happen
+// before the container starts are handled transparently here, while application-level
+// failures after the container runs are handled by retryStrategy.
+func (woc *wfOperationCtx) shouldAutoRestartPod(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, node *wfv1.NodeStatus) bool {
+	// Check if the feature is enabled
+	config := woc.controller.Config.FailedPodRestart
+	if !config.IsEnabled() {
+		return false
+	}
+
+	// Analyze if the pod qualifies for restart
+	if !analyzePodForRestart(pod, tmpl) {
+		return false
+	}
+
+	// Check if we've exceeded the max restart count
+	maxRestarts := config.GetMaxRestarts()
+	if node.FailedPodRestarts >= maxRestarts {
+		woc.log.WithFields(logging.Fields{
+			"podName":         pod.Name,
+			"nodeID":          node.ID,
+			"currentRestarts": node.FailedPodRestarts,
+			"maxRestarts":     maxRestarts,
+		}).Info(ctx, "Pod has exceeded max auto-restart attempts")
+		return false
+	}
+
+	return true
 }
 
 func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {

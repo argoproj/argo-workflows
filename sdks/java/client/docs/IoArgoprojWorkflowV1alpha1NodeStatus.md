@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **daemoned** | **Boolean** | Daemoned tracks whether or not this node was daemoned and need to be terminated |  [optional]
 **displayName** | **String** | DisplayName is a human readable representation of the node. Unique within a template boundary |  [optional]
 **estimatedDuration** | **Integer** | EstimatedDuration in seconds. |  [optional]
+**failedPodRestarts** | **Integer** | FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started. |  [optional]
 **finishedAt** | **java.time.Instant** |  |  [optional]
 **hostNodeName** | **String** | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable |  [optional]
 **id** | **String** | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | 

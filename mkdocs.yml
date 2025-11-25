@@ -133,6 +133,7 @@ nav:
           - template-defaults.md
           - enhanced-depends-logic.md
           - node-field-selector.md
+          - pod-restarts.md
       - Status:
           - resource-duration.md
           - estimated-duration.md

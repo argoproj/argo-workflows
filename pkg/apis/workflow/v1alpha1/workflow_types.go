@@ -2536,6 +2536,10 @@ type NodeStatus struct {
 
 	// TaskResultSynced is used to determine if the node's output has been received
 	TaskResultSynced *bool `json:"taskResultSynced,omitempty" protobuf:"bytes,28,opt,name=taskResultSynced"`
+
+	// FailedPodRestarts tracks the number of times the pod for this node was restarted
+	// due to infrastructure failures before the main container started.
+	FailedPodRestarts int32 `json:"failedPodRestarts,omitempty" protobuf:"varint,29,opt,name=failedPodRestarts"`
 }
 
 // Completed is used to determine if this node can proceed

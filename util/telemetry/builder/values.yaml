@@ -50,6 +50,12 @@ attributes:
   - name: PodPhase
     displayName: phase
     description: The phase that the pod is in
+  - name: PodRestartCondition
+    displayName: condition
+    description: "The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`"
+  - name: PodRestartReason
+    displayName: reason
+    description: "The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError`"
   - name: QueueName
     description: The name of the queue
   - name: RecentlyStarted
@@ -203,6 +209,28 @@ metrics:
     description: "Total number of pods that started pending by reason"
     attributes:
       - name: PodPendingReason
+      - name: PodNamespace
+    unit: "{pod}"
+    type: Int64Counter
+  - name: PodRestartsTotal
+    description: "Total number of pods automatically restarted due to infrastructure failures before the main container started"
+    extendedDescription: |
+      This counter tracks pods that were automatically restarted by the [failed pod restart](pod-restarts.md) feature.
+      These are infrastructure-level failures (like node eviction) that occur before the main container enters the Running state.
+    notes: |
+      `reason` will be one of:
+
+      - `Evicted`: Node pressure eviction (`DiskPressure`, `MemoryPressure`, etc.)
+      - `NodeShutdown`: Graceful node shutdown
+      - `NodeAffinity`: Node affinity/selector no longer matches
+      - `UnexpectedAdmissionError`: Unexpected error during pod admission
+
+      `condition` is extracted from the pod status message when available (e.g., `DiskPressure`, `MemoryPressure`).
+      It will be empty if the condition cannot be determined.
+    attributes:
+      - name: PodRestartReason
+      - name: PodRestartCondition
+        optional: true
       - name: PodNamespace
     unit: "{pod}"
     type: Int64Counter
