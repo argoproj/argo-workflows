@@ -105,6 +105,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'daemoned': (bool,),  # noqa: E501
             'display_name': (str,),  # noqa: E501
             'estimated_duration': (int,),  # noqa: E501
+            'failed_pod_restarts': (int,),  # noqa: E501
             'finished_at': (datetime,),  # noqa: E501
             'host_node_name': (str,),  # noqa: E501
             'inputs': (IoArgoprojWorkflowV1alpha1Inputs,),  # noqa: E501
@@ -139,6 +140,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'daemoned': 'daemoned',  # noqa: E501
         'display_name': 'displayName',  # noqa: E501
         'estimated_duration': 'estimatedDuration',  # noqa: E501
+        'failed_pod_restarts': 'failedPodRestarts',  # noqa: E501
         'finished_at': 'finishedAt',  # noqa: E501
         'host_node_name': 'hostNodeName',  # noqa: E501
         'inputs': 'inputs',  # noqa: E501
@@ -210,6 +212,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
             display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
             estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
+            failed_pod_restarts (int): FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             host_node_name (str): HostNodeName name of the Kubernetes node on which the Pod is running, if applicable. [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
@@ -322,6 +325,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
             display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
             estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
+            failed_pod_restarts (int): FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             host_node_name (str): HostNodeName name of the Kubernetes node on which the Pod is running, if applicable. [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501

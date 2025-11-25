@@ -1173,6 +1173,10 @@ message NodeStatus {
 
   // TaskResultSynced is used to determine if the node's output has been received
   optional bool taskResultSynced = 28;
+
+  // FailedPodRestarts tracks the number of times the pod for this node was restarted
+  // due to infrastructure failures before the main container started.
+  optional int32 failedPodRestarts = 29;
 }
 
 // NodeSynchronizationStatus stores the status of a node

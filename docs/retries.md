@@ -2,6 +2,10 @@
 
 Argo Workflows offers a range of options for retrying failed steps.
 
+!!! Note "restarts"
+    For infrastructure-level failures that occur before your container starts (like node evictions or disk pressure), see [Automatic Pod Restarts](pod-restarts.md).
+    This page covers application-level retries using `retryStrategy`.
+
 ## Configuring `retryStrategy` in `WorkflowSpec`
 
 ```yaml

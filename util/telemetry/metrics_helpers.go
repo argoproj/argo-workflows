@@ -20,6 +20,19 @@ func WithWorkflowNamespace(workflowNamespace string) DeprecatedFeatureOption {
 	}
 }
 
+// PodRestartsTotalOption is a functional option for configuring optional attributes on PodRestartsTotal
+type PodRestartsTotalOption func(*InstAttribs)
+
+// WithPodRestartCondition sets the condition attribute
+func WithPodRestartCondition(podRestartCondition string) PodRestartsTotalOption {
+	return func(a *InstAttribs) {
+		*a = append(*a, InstAttrib{
+			Name:  AttribPodRestartCondition,
+			Value: podRestartCondition,
+		})
+	}
+}
+
 // AddCronworkflowsConcurrencypolicyTriggered adds a value to the cronworkflows_concurrencypolicy_triggered counter
 func (m *Metrics) AddCronworkflowsConcurrencypolicyTriggered(ctx context.Context, val int64, cronWFName string, cronWFNamespace string, concurrencyPolicy string) {
 	attribs := InstAttribs{
@@ -60,13 +73,13 @@ func (m *Metrics) AddErrorCount(ctx context.Context, val int64, errorCause strin
 
 // ObserveGauge observes a value for the gauge gauge
 // This is a helper method for use inside RegisterCallback functions
-func (m *Metrics) ObserveGauge(ctx context.Context, o metric.Observer, val int64, workflowStatus string) {
+func (m *Metrics) ObserveGauge(ctx context.Context, o metric.Observer, val int64, workflowPhase string) {
 	inst := m.GetInstrument(InstrumentGauge.Name())
 	if inst == nil {
 		return
 	}
 	attribs := InstAttribs{
-		{Name: AttribWorkflowStatus, Value: workflowStatus},
+		{Name: AttribWorkflowPhase, Value: workflowPhase},
 	}
 	inst.ObserveInt(ctx, o, val, attribs)
 }
@@ -130,6 +143,18 @@ func (m *Metrics) AddPodPendingCount(ctx context.Context, val int64, podPendingR
 		{Name: AttribPodNamespace, Value: podNamespace},
 	}
 	m.AddInt(ctx, InstrumentPodPendingCount.Name(), val, attribs)
+}
+
+// AddPodRestartsTotal adds a value to the pod_restarts_total counter
+func (m *Metrics) AddPodRestartsTotal(ctx context.Context, val int64, podRestartReason string, podNamespace string, opts ...PodRestartsTotalOption) {
+	attribs := InstAttribs{
+		{Name: AttribPodRestartReason, Value: podRestartReason},
+		{Name: AttribPodNamespace, Value: podNamespace},
+	}
+	for _, opt := range opts {
+		opt(&attribs)
+	}
+	m.AddInt(ctx, InstrumentPodRestartsTotal.Name(), val, attribs)
 }
 
 // ObservePodsGauge observes a value for the pods_gauge gauge

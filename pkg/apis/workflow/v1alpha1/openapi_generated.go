@@ -4395,6 +4395,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"failedPodRestarts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},

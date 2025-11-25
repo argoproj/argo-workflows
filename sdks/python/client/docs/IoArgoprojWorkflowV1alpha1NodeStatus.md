@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **daemoned** | **bool** | Daemoned tracks whether or not this node was daemoned and need to be terminated | [optional] 
 **display_name** | **str** | DisplayName is a human readable representation of the node. Unique within a template boundary | [optional] 
 **estimated_duration** | **int** | EstimatedDuration in seconds. | [optional] 
+**failed_pod_restarts** | **int** | FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started. | [optional] 
 **finished_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 
 **host_node_name** | **str** | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | [optional] 
 **inputs** | [**IoArgoprojWorkflowV1alpha1Inputs**](IoArgoprojWorkflowV1alpha1Inputs.md) |  | [optional] 
