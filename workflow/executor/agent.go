@@ -245,7 +245,13 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	if tmpl.HTTP == nil {
 		return 0, nil
 	}
-
+	// Read response.Body after cancel(), sometimes it return a context canceled error
+	// For more detail  https://groups.google.com/g/golang-nuts/c/2FKwG6oEvos
+	var cancel context.CancelFunc
+	if tmpl.HTTP.TimeoutSeconds != nil {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(*tmpl.HTTP.TimeoutSeconds)*time.Second)
+		defer cancel()
+	}
 	response, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
 	if err != nil {
 		return 0, err
@@ -323,14 +329,6 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	}
 	if err != nil {
 		return nil, err
-	}
-
-	if httpTemplate.TimeoutSeconds != nil {
-		ctx, cancel := context.WithTimeout(ctx, time.Duration(*httpTemplate.TimeoutSeconds)*time.Second)
-		defer cancel()
-		request = request.WithContext(ctx)
-	} else {
-		request = request.WithContext(ctx)
 	}
 
 	for _, header := range httpTemplate.Headers {
