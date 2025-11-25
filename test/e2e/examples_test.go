@@ -33,6 +33,8 @@ func (s *ExamplesSuite) TestExampleWorkflows() {
 		for _, wf := range wfs {
 			isTestBroken := false
 			isEvironmentNotReady := false
+			isTestTooLong := false
+			isTestExpectedToFail := false
 			isTestBrokenRaw, noTestBrokenLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-broken"]
 			if noTestBrokenLabelExists {
 				isTestBroken, err = strconv.ParseBool(isTestBrokenRaw)
@@ -47,7 +49,21 @@ func (s *ExamplesSuite) TestExampleWorkflows() {
 					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-environment\": %v", err)
 				}
 			}
-			if isTestBroken || isEvironmentNotReady {
+			isTestTooLongRaw, noTestTooLongLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-duration"]
+			if noTestTooLongLabelExists {
+				isTestTooLong, err = strconv.ParseBool(isTestTooLongRaw)
+				if err != nil {
+					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-duration\": %v", err)
+				}
+			}
+			isTestExpectedToFailRaw, noTestTooLongLabelExists := wf.GetLabels()["workflows.argoproj.io/no-test-expected-failure"]
+			if noTestTooLongLabelExists {
+				isTestExpectedToFail, err = strconv.ParseBool(isTestExpectedToFailRaw)
+				if err != nil {
+					s.T().Fatalf("Error parsing annotation \"workflows.argoproj.io/no-test-expected-failure\": %v", err)
+				}
+			}
+			if isTestBroken || isEvironmentNotReady || isTestTooLong || isTestExpectedToFail {
 				continue
 			}
 			s.T().Run(path, func(t *testing.T) {
