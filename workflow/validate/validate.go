@@ -602,6 +602,10 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
+			if tmplRef != nil && strings.Contains(tmplRef.Template, "placeholder") {
+				// placeholder indicate this is a dynamic template, skip validation
+				return nil, nil
+			}
 			if tmplRef != nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "template reference %s.%s not found", tmplRef.Name, tmplRef.Template)
 			}
