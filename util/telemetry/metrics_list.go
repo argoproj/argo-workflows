@@ -141,6 +141,36 @@ var InstrumentLogMessages = BuiltinInstrument{
 	},
 }
 
+var InstrumentMutexReleasedTotal = BuiltinInstrument{
+	name:        "mutex_released_total",
+	description: "A counter of the number of mutexes released",
+	unit:        "{mutex}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribMutexName,
+		},
+		{
+			name: AttribMutexNamespace,
+		},
+	},
+}
+
+var InstrumentMutexTakenTotal = BuiltinInstrument{
+	name:        "mutex_taken_total",
+	description: "A counter of the number of mutexes taken",
+	unit:        "{mutex}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribMutexName,
+		},
+		{
+			name: AttribMutexNamespace,
+		},
+	},
+}
+
 var InstrumentOperationDurationSeconds = BuiltinInstrument{
 	name:        "operation_duration_seconds",
 	description: "A histogram of durations of operations",
@@ -304,6 +334,42 @@ var InstrumentQueueUnfinishedWork = BuiltinInstrument{
 	attributes: []BuiltinAttribute{
 		{
 			name: AttribQueueName,
+		},
+	},
+}
+
+var InstrumentSemaphoreReleasedTotal = BuiltinInstrument{
+	name:        "semaphore_released_total",
+	description: "A counter of the number of semaphores released",
+	unit:        "{semaphore}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribSemaphoreConfigMapName,
+		},
+		{
+			name: AttribSemaphoreName,
+		},
+		{
+			name: AttribSemaphoreNamespace,
+		},
+	},
+}
+
+var InstrumentSemaphoreTakenTotal = BuiltinInstrument{
+	name:        "semaphore_taken_total",
+	description: "A counter of the number of semaphores taken",
+	unit:        "{semaphore}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribSemaphoreConfigMapName,
+		},
+		{
+			name: AttribSemaphoreName,
+		},
+		{
+			name: AttribSemaphoreNamespace,
 		},
 	},
 }
