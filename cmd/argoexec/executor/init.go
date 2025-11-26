@@ -10,6 +10,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -79,7 +80,13 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	wfExecutor := executor.NewExecutor(
 		ctx,
 		clientset,
-		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
+		versioned.NewForConfigOrDie(&rest.Config{
+			Host:        "https://argo-wtr-apiserver.argo.svc.cluster.local:443",
+			BearerToken: "mytoken",
+			TLSClientConfig: rest.TLSClientConfig{
+				Insecure: true,
+			},
+		}).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
 		podName,
 		types.UID(os.Getenv(common.EnvVarPodUID)),

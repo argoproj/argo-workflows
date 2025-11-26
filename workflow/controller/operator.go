@@ -834,7 +834,7 @@ func (woc *wfOperationCtx) checkTaskResultsInProgress(ctx context.Context) bool 
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 	deletePropagationBackground := metav1.DeletePropagationBackground
-	return woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+	return woc.controller.wftrclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 		DeleteCollection(
 			ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},

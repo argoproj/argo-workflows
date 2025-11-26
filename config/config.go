@@ -123,6 +123,9 @@ type Config struct {
 
 	// ArtifactDrivers lists artifact driver plugins we can use
 	ArtifactDrivers []ArtifactDriver `json:"artifactDrivers,omitempty"`
+
+	// OffloadTaskResults holds the config for offloading task results to a separate store
+	OffloadTaskResults *OffloadTaskResultsConfig `json:"offloadTaskResults,omitempty"`
 }
 
 // ArtifactDriver is a plugin for an artifact driver
@@ -451,4 +454,12 @@ func (req *WorkflowRestrictions) MustNotChangeSpec() bool {
 		return false
 	}
 	return req.TemplateReferencing == TemplateReferencingSecure
+}
+
+type OffloadTaskResultsConfig struct {
+	// Enabled controls offloading. Default false.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// APIServer is the Kube API endpoint to write WorkflowTaskResults to.
+	APIServer string `json:"APIServer,omitempty"`
 }

@@ -40,6 +40,7 @@ import (
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
@@ -112,6 +113,7 @@ type WorkflowController struct {
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
+	wftrclientset    wfclientset.Interface
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
 	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
@@ -184,9 +186,29 @@ func init() {
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool) (*WorkflowController, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
+	}
+
+	configController := config.NewController(namespace, configMap, kubeclientset)
+	config, err := configController.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	wftrclientset := wfclientset
+	if config.OffloadTaskResults != nil && config.OffloadTaskResults.Enabled {
+		logger.Info(ctx, "Setting offloadtaskresults client")
+		offloadCfg := rest.Config{
+			Host:        config.OffloadTaskResults.APIServer,
+			BearerToken: "mytoken",
+			TLSClientConfig: rest.TLSClientConfig{
+				Insecure: true, // TODO: Not use insecure
+			},
+		}
+		wftrclientset = versioned.NewForConfigOrDie(&offloadCfg)
 	}
 
 	wfc := WorkflowController{
@@ -194,12 +216,13 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		kubeclientset:              kubeclientset,
 		dynamicInterface:           dynamicInterface,
 		wfclientset:                wfclientset,
+		wftrclientset:              wftrclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		cliExecutorLogFormat:       executorLogFormat,
-		configController:           config.NewController(namespace, configMap, kubeclientset),
+		configController:           configController,
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),

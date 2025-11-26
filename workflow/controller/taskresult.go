@@ -35,7 +35,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 	// This is a generated function, so we can't change the context.
 	//nolint:contextcheck
 	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
-		wfc.wfclientset,
+		wfc.wftrclientset,
 		wfc.GetManagedNamespace(),
 		20*time.Minute,
 		cache.Indexers{

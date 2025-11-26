@@ -473,7 +473,7 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 				Outputs: &outputs,
 			},
 		}
-		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+		_, err := woc.controller.wftrclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 			Create(
 				ctx,
 				taskResult,
