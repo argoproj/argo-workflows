@@ -3,18 +3,19 @@ package telemetry
 import (
 	"context"
 	"os"
+	"strings"
 	"sync"
 	"time"
+
 	log "github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
-	"strings"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 )
 
 type Config struct {
@@ -87,17 +88,19 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 		}
 
 		if otlpProtocol == "" || otlpProtocol == "grpc" {
-			httpExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
-			if err != nil {
-				return nil, err
-			}
-			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(httpExporter)))
-		} else if strings.HasPrefix(otlpProtocol, "http/") {
-			grpcExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithTemporalitySelector(config.Temporality))
+			grpcExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
 			if err != nil {
 				return nil, err
 			}
 			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(grpcExporter)))
+		} else if strings.HasPrefix(otlpProtocol, "http/") {
+			httpExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithTemporalitySelector(config.Temporality))
+			if err != nil {
+				return nil, err
+			}
+			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(httpExporter)))
+		} else {
+			log.WithField("protocol", otlpProtocol).Fatal("OTEL metric protocol invalid")
 		}
 	}
 
