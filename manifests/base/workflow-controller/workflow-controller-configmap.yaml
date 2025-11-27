@@ -5,4 +5,4 @@ metadata:
 data:
   offloadTaskResults: |
     enabled: true
-    APIServer: argo-wtr-etcd.argo.svc:2379
+    APIServer: https://localhost:443

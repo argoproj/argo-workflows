@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-wtr-etcd
+  namespace: argo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argo-wtr-etcd
+  template:
+    metadata:
+      labels:
+        app: argo-wtr-etcd
+    spec:
+      containers:
+      - name: etcd
+        image: quay.io/coreos/etcd:v3.6.6
+        command:
+        - etcd
+        - --name=argo-wtr-etcd
+        - --data-dir=/var/lib/etcd
+        - --advertise-client-urls=http://0.0.0.0:2379
+        - --listen-client-urls=http://0.0.0.0:2379
+        - --listen-peer-urls=http://0.0.0.0:2380
+        - --initial-advertise-peer-urls=http://0.0.0.0:2380
+        - --initial-cluster=argo-wtr-etcd=http://0.0.0.0:2380
+        ports:
+        - containerPort: 2379
+        - containerPort: 2380
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/etcd
+      volumes:
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-wtr-etcd
+  namespace: argo
+spec:
+  selector:
+    app: argo-wtr-etcd
+  ports:
+  - port: 2379
+    targetPort: 2379
+    name: client
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: certs-and-keys
+  namespace: argo
+data:
+  serviceaccount.key: |
+    -----BEGIN PRIVATE KEY-----
+    <snipped>
+    -----END PRIVATE KEY-----
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    <snipped>
+    -----END CERTIFICATE-----
+
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    <snipped>
+    -----END PRIVATE KEY-----
+  tokens.csv: |
+    mytoken,admin,1,system:masters
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-wtr-apiserver
+  namespace: argo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argo-wtr-apiserver
+  template:
+    metadata:
+      labels:
+        app: argo-wtr-apiserver
+    spec:
+      containers:
+      - name: kube-apiserver
+        image: registry.k8s.io/kube-apiserver:v1.31.9
+        command:
+        - kube-apiserver
+        - --etcd-servers=http://argo-wtr-etcd.argo.svc:2379
+        - --advertise-address=127.0.0.1
+        - --allow-privileged=true
+        - --token-auth-file=/var/run/kubernetes/tokens.csv
+        - --service-account-key-file=/var/run/kubernetes/serviceaccount.key
+        - --service-account-signing-key-file=/var/run/kubernetes/serviceaccount.key
+        - --service-account-issuer=https://argo-wtr-apiserver.argo.svc
+        - --api-audiences=https://argo-wtr-apiserver.argo.svc
+        - --secure-port=443
+        - --service-cluster-ip-range=10.96.0.0/12
+        - --authorization-mode=AlwaysAllow
+        - --enable-admission-plugins=NamespaceLifecycle
+        - --tls-cert-file=/var/run/kubernetes/tls.crt
+        - --tls-private-key-file=/var/run/kubernetes/tls.key
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: certs-and-keys-vol
+          mountPath: /var/run/kubernetes
+          readOnly: true
+      volumes:
+      - name: certs-and-keys-vol
+        configMap:
+          name: certs-and-keys
+          items:
+            - key: serviceaccount.key
+              path: serviceaccount.key
+            - key: tls.crt
+              path: tls.crt
+            - key: tls.key
+              path: tls.key
+            - key: tokens.csv
+              path: tokens.csv
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-wtr-apiserver
+  namespace: argo
+spec:
+  selector:
+    app: argo-wtr-apiserver
+  ports:
+  - port: 443
+    targetPort: 443
+    name: https

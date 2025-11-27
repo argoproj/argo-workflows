@@ -27,6 +27,8 @@ Where Argo has a lot of work to do, the Kubernetes API can be overwhelmed. There
 * Limit the number of concurrent workflows using parallelism.
 * Rate-limit pod creation [configuration](workflow-controller-configmap.yaml) (>= v3.1).
 * Set [`DEFAULT_REQUEUE_TIME=1m`](environment-variables.md)
+* Offload Workflow Task Results by using an external Kubernetes API Server via the `OffloadTaskResultsConfig` in the Workflow Controller ConfigMap. (>=4.0 [TBD]).
+  Read more in [Vertically Scaling](./scaling.md#offloading-workflow-task-results-to-a-secondary-kubernetes-api-server).
 
 ## Overwhelmed Database
 

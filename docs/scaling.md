@@ -100,6 +100,198 @@ It is not possible to provide a one-size-fits-all recommendation for these value
 !!! Note
     Despite the name, this rate limit only applies to the creation of Pods and not the creation of other Kubernetes resources (for example, ConfigMaps or PersistentVolumeClaims).
 
+### Offloading Workflow Task Results to a Secondary Kubernetes API Server
+
+Workflow Task Results are how Argo Workflows tracks outputs of pods and passes them between tasks (in a DAG) and steps.
+They are provided as a Custom Resource Definition (CRD) within the Argo Workflows installation, as `WorkflowTaskResults`, with the Argo executor creating and updating them, and the Workflow Controller reading them.
+It is possible that with many workflows the Kubernetes API will be overwhelmed due to the creation and deletion of many `WorkflowTaskResults` on the cluster.
+To solve this, the Workflow Controller ConfigMap can specify an `OffloadTaskResultsConfig`.
+
+#### POC Setup (Not for upstream docs)
+
+The goal is to have a fully functional Kubernetes API endpoint that stores Argo's `WorkflowTaskResults` in its own data store.
+Conceptually, we will be running a lightweight sub-cluster within the main cluster, in a similar way to tools like `vcluster`.
+For this, we will run a Kubernetes API Server (Service and Deployment) and point it to an `etcd` Service/Deployment for its backend storage.
+This is loosely how the Kubernetes Control Plane itself runs -- for more information, take a look at the [Kubernetes Components](https://kubernetes.io/docs/concepts/overview/components/) documentation.
+
+##### Running a Kubernetes API Server
+
+###### Run an `etcd` instance
+
+We deploy a single-node `etcd`. The API server uses it exactly like the real Kubernetes control plane would.
+
+| Flag                                                   | Why we need it                                          |
+| ------------------------------------------------------ | ------------------------------------------------------- |
+| `--data-dir=/var/lib/etcd`                             | Local storage. We use `emptyDir:` for ephemeral POC.    |
+| `--advertise-client-urls` / `--listen-client-urls`     | Expose the client API on port 2379.                     |
+| `--listen-peer-urls` / `--initial-advertise-peer-urls` | Required even for a single-member “cluster”.            |
+| `--initial-cluster`                                    | Defines the cluster membership. Required syntactically. |
+
+The Service simply exposes port 2379 inside the namespace so the API server can reach it at `http://argo-wtr-etcd.argo.svc:2379`.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-wtr-etcd
+  namespace: argo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argo-wtr-etcd
+  template:
+    metadata:
+      labels:
+        app: argo-wtr-etcd
+    spec:
+      containers:
+      - name: etcd
+        image: quay.io/coreos/etcd:v3.6.6
+        command:
+        - etcd
+        - --name=argo-wtr-etcd
+        - --data-dir=/var/lib/etcd
+        - --advertise-client-urls=http://0.0.0.0:2379
+        - --listen-client-urls=http://0.0.0.0:2379
+        - --listen-peer-urls=http://0.0.0.0:2380
+        - --initial-advertise-peer-urls=http://0.0.0.0:2380
+        - --initial-cluster=argo-wtr-etcd=http://0.0.0.0:2380
+        ports:
+        - containerPort: 2379
+        - containerPort: 2380
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/etcd
+      volumes:
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-wtr-etcd
+  namespace: argo
+spec:
+  selector:
+    app: argo-wtr-etcd
+  ports:
+  - port: 2379
+    targetPort: 2379
+    name: client
+```
+
+###### Set Up Certs & API Server Security
+
+A full kube-apiserver normally requires multiple certificates, CA bundles, front-proxy certs, and authentication plugins.
+
+For this POC we run with the absolute minimum we can get away with:
+
+| File                 | Purpose                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `tls.crt`, `tls.key` | Server certificate & private key for HTTPS endpoint (`--secure-port=443`).                 |
+| `serviceaccount.key` | Used both as the *public* and *private* key for signing service account tokens.            |
+| `tokens.csv`         | Static token authentication. Used so kubectl can authenticate without bootstrap machinery. |
+
+We create `tls.crt` and `tls.key` using:
+
+```console
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=argo-wtr-apiserver"
+```
+
+We create `serviceaccount.key` using:
+
+```console
+openssl genrsa -out serviceaccount.key 2048
+```
+
+`tokens.csv` contains a static token authentication, where the file format is `<token>,<user>,<uid>,<group1>,<group2>,...`.
+
+Copy these values to the ConfigMap:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: certs-and-keys
+  namespace: argo
+data:
+  serviceaccount.key: |
+    -----BEGIN PRIVATE KEY-----
+    <snipped>
+    -----END PRIVATE KEY-----
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    <snipped>
+    -----END CERTIFICATE-----
+
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    <snipped>
+    -----END PRIVATE KEY-----
+  tokens.csv: |
+    mytoken,admin,1,"system:masters"
+```
+
+###### Run the kube-apiserver
+
+| Flag                                                | Why                                                 |
+| --------------------------------------------------- | --------------------------------------------------- |
+| `--etcd-servers=http://argo-wtr-etcd.argo.svc:2379` | Backend database.                                   |
+| `--secure-port=443`                                 | Only expose HTTPS; insecure port removed in >=1.31. |
+| `--tls-cert-file`, `--tls-private-key-file`         | Required since insecure-port is gone.               |
+| `--token-auth-file=/var/run/kubernetes/tokens.csv`  | Simplest auth flow for kubectl.                     |
+| `--service-account-key-file`                        | Needed even if we don’t actually use SA tokens.     |
+| `--service-account-signing-key-file`                | Required in 1.20+ to serve the SA issuer.           |
+| `--service-account-issuer`                          | Must match what your workloads use when validating. |
+| `--authorization-mode=AlwaysAllow`                  | Disables RBAC entirely. |
+| `--enable-admission-plugins=NamespaceLifecycle`     | Default admission plugin required for namespace-scoped CRDs and is on by default in upstream. |
+
+###### Apply the `WorkflowTaskResults` CRD
+
+Once the API server is running, we can apply the CRD directly to it:
+
+```console
+kubectl \
+  --server=https://127.0.0.1:443 \
+  --token=mytoken \
+  --insecure-skip-tls-verify=true \
+  apply -f argoproj.io_workflowtaskresults.yaml
+```
+
+###### Optional convenience: use a Config for `kubectl` and `k9s`
+
+To save writing out the args to `kubectl` and `k9s`, you can use this Config:
+
+```yaml
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://127.0.0.1:443
+    insecure-skip-tls-verify: true
+  name: argo-wtr-cluster
+users:
+- name: argo-wtr-user
+  user:
+    token: mytoken
+contexts:
+- context:
+    cluster: argo-wtr-cluster
+    user: argo-wtr-user
+  name: argo-wtr-context
+current-context: argo-wtr-context
+```
+
+And run commands like:
+
+```console
+KUBECONFIG=api-server-kubeconfig.yaml kubectl get ns
+KUBECONFIG=api-server-kubeconfig.yaml ./k9s
+```
+
+(Download `k9s` to the container if using Dev Containers.)
+
 ## Sharding
 
 ### One Install Per Namespace
