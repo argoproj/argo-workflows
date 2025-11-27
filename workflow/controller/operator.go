@@ -1415,6 +1415,10 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 
 		// Check if this pod qualifies for automatic restart (failed before entering Running state)
 		// Skip if pod is already being deleted (we've already initiated restart)
+		woc.log.WithFields(logging.Fields{
+			"podName":           pod.Name,
+			"hasDeletionTS":     pod.DeletionTimestamp != nil,
+		}).Info(ctx, "Checking pod for automatic restart")
 		if pod.DeletionTimestamp == nil && woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
 			updated.FailedPodRestarts++
 			woc.log.WithFields(logging.Fields{
@@ -1790,11 +1794,27 @@ func (woc *wfOperationCtx) shouldAutoRestartPod(ctx context.Context, pod *apiv1.
 	// Check if the feature is enabled
 	config := woc.controller.Config.FailedPodRestart
 	if !config.IsEnabled() {
+		woc.log.WithFields(logging.Fields{
+			"podName": pod.Name,
+		}).Debug(ctx, "Pod restart check: feature not enabled")
 		return false
 	}
 
 	// Analyze if the pod qualifies for restart
+	woc.log.WithFields(logging.Fields{
+		"podName":            pod.Name,
+		"podPhase":           pod.Status.Phase,
+		"podReason":          pod.Status.Reason,
+		"podMessage":         pod.Status.Message,
+		"containerStatuses":  len(pod.Status.ContainerStatuses),
+		"initContainerStatuses": len(pod.Status.InitContainerStatuses),
+	}).Info(ctx, "Pod restart check: analyzing pod status")
+
 	if !analyzePodForRestart(pod, tmpl) {
+		woc.log.WithFields(logging.Fields{
+			"podName":   pod.Name,
+			"podReason": pod.Status.Reason,
+		}).Info(ctx, "Pod restart check: pod does not qualify for restart")
 		return false
 	}
 
