@@ -10390,6 +10390,10 @@
             "format": "int64"
           }
         },
+        "restartingPodUID": {
+          "description": "RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.",
+          "type": "string"
+        },
         "startedAt": {
           "description": "Time at which this node started",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"

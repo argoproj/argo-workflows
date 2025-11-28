@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **pod_ip** | **str** | PodIP captures the IP of the pod for daemoned steps | [optional] 
 **progress** | **str** | Progress to completion | [optional] 
 **resources_duration** | **{str: (int,)}** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. | [optional] 
+**restarting_pod_uid** | **str** | RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running. | [optional] 
 **started_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 
 **synchronization_status** | [**IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus**](IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus.md) |  | [optional] 
 **task_result_synced** | **bool** | TaskResultSynced is used to determine if the node&#39;s output has been received | [optional] 
