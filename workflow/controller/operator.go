@@ -1407,6 +1407,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 
 		updated.Daemoned = nil
+		updated.RestartingPodUID = ""
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
@@ -1414,13 +1415,16 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 
 		// Check if this pod qualifies for automatic restart (failed before entering Running state)
-		// Skip if pod is already being deleted (we've already initiated restart)
+		// Skip if we've already initiated a restart for this pod (prevents duplicate restarts on rapid reprocessing)
+		podUID := string(pod.UID)
 		woc.log.WithFields(logging.Fields{
-			"podName":       pod.Name,
-			"hasDeletionTS": pod.DeletionTimestamp != nil,
+			"podName":          pod.Name,
+			"podUID":           podUID,
+			"restartingPodUID": old.RestartingPodUID,
 		}).Info(ctx, "Checking pod for automatic restart")
-		if pod.DeletionTimestamp == nil && woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
+		if podUID != old.RestartingPodUID && woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
 			updated.FailedPodRestarts++
+			updated.RestartingPodUID = podUID
 			woc.log.WithFields(logging.Fields{
 				"podName":      pod.Name,
 				"nodeID":       old.ID,
@@ -1455,6 +1459,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		} else {
 			updated.Phase = wfv1.NodeRunning
 		}
+		// Clear RestartingPodUID since the pod is now running successfully
+		updated.RestartingPodUID = ""
 		if tmpl != nil {
 			woc.cleanUpPod(ctx, pod, *tmpl)
 		}
