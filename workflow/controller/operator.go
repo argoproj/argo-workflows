@@ -1411,12 +1411,18 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
+		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
 
+		podUID := string(pod.UID)
+		// If we've already transitioned this node to Pending for this pod UID,
+		// ignore duplicate Failed updates to avoid reverting back to Failed.
+		if podUID == old.RestartingPodUID && old.Phase == wfv1.NodePending {
+			return nil
+		}
 		// Check if this pod qualifies for automatic restart (failed before entering Running state)
 		// Skip if we've already initiated a restart for this pod (prevents duplicate restarts on rapid reprocessing)
-		podUID := string(pod.UID)
 		woc.log.WithFields(logging.Fields{
 			"podName":          pod.Name,
 			"podUID":           podUID,
