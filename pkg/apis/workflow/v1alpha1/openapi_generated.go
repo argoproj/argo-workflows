@@ -4402,6 +4402,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "int32",
 						},
 					},
+					"restartingPodUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},

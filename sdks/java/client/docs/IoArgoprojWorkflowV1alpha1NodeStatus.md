@@ -28,6 +28,7 @@ Name | Type | Description | Notes
 **podIP** | **String** | PodIP captures the IP of the pod for daemoned steps |  [optional]
 **progress** | **String** | Progress to completion |  [optional]
 **resourcesDuration** | **Map&lt;String, Long&gt;** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. |  [optional]
+**restartingPodUID** | **String** | RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running. |  [optional]
 **startedAt** | **java.time.Instant** |  |  [optional]
 **synchronizationStatus** | [**IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus**](IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus.md) |  |  [optional]
 **taskResultSynced** | **Boolean** | TaskResultSynced is used to determine if the node&#39;s output has been received |  [optional]
