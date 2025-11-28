@@ -4402,7 +4402,7 @@ func (woc *wfOperationCtx) setNodeDisplayName(ctx context.Context, node *wfv1.No
 
 func (woc *wfOperationCtx) updateLastSeenVersionAnnotation(value string) {
 	if woc.wf.GetAnnotations() == nil {
-		woc.wf.Annotations = make(map[string]string)
+		woc.wf.SetAnnotations(make(map[string]string))
 	}
 	woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion] = value
 }
@@ -4410,5 +4410,8 @@ func (woc *wfOperationCtx) updateLastSeenVersionAnnotation(value string) {
 func (woc *wfOperationCtx) updateLastSeenVersion(value string) {
 	woc.controller.lastSeenVersions.mutex.Lock()
 	defer woc.controller.lastSeenVersions.mutex.Unlock()
+	if woc.controller.lastSeenVersions.versions == nil {
+		woc.controller.lastSeenVersions.versions = make(map[string]string)
+	}
 	woc.controller.lastSeenVersions.versions[woc.controller.getLastSeenVersionKey(woc.wf)] = value
 }
