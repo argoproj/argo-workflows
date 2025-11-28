@@ -82,6 +82,11 @@ type recentCompletions struct {
 	mutex       gosync.RWMutex
 }
 
+type lastSeenVersions struct {
+	versions map[string]string
+	mutex    gosync.RWMutex
+}
+
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -153,6 +158,8 @@ type WorkflowController struct {
 	recentCompletions recentCompletions
 	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
 	lastUnreconciledWorkflows map[string]*wfv1.Workflow
+
+	lastSeenVersions lastSeenVersions // key: workflow UID, value: resource version
 }
 
 const (
@@ -205,6 +212,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		lastSeenVersions: lastSeenVersions{
+			versions: make(map[string]string),
+			mutex:    gosync.RWMutex{},
+		},
 	}
 
 	if executorPlugins {
@@ -724,6 +735,12 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	if wfc.isOutdated(un) {
+		logger.WithField("key", key).Debug(ctx, "Skipping outdated workflow event")
+		wfc.wfQueue.AddRateLimited(key)
+		return true
+	}
+
 	if !reconciliationNeeded(un) {
 		logger.WithField("key", key).Debug(ctx, "Won't process Workflow since it's completed")
 		return true
@@ -946,6 +963,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				if !needed {
 					key, _ := cache.MetaNamespaceKeyFunc(un)
 					wfc.recordCompletedWorkflow(key)
+					wfc.deleteLastSeenVersionKey(wfc.getLastSeenVersionKey(un))
 				}
 				return needed
 			},
@@ -1003,6 +1021,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
+					wfc.deleteLastSeenVersionKey(wfc.getLastSeenVersionKey(obj.(*unstructured.Unstructured)))
 				},
 			},
 		},
@@ -1345,4 +1364,26 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 func (wfc *WorkflowController) IsLeader() bool {
 	// the wfc.wfInformer is nil if it is not the leader
 	return wfc.wfInformer != nil
+}
+
+func (wfc *WorkflowController) isOutdated(wf metav1.Object) bool {
+	wfc.lastSeenVersions.mutex.RLock()
+	defer wfc.lastSeenVersions.mutex.RUnlock()
+	lastSeenRV, ok := wfc.lastSeenVersions.versions[wfc.getLastSeenVersionKey(wf)]
+	// always process if not seen before
+	if !ok || lastSeenRV == "" {
+		return false
+	}
+	annotations := wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]
+	return annotations != lastSeenRV
+}
+
+func (wfc *WorkflowController) getLastSeenVersionKey(wf metav1.Object) string {
+	return string(wf.GetUID())
+}
+
+func (wfc *WorkflowController) deleteLastSeenVersionKey(key string) {
+	wfc.lastSeenVersions.mutex.Lock()
+	defer wfc.lastSeenVersions.mutex.Unlock()
+	delete(wfc.lastSeenVersions.versions, key)
 }

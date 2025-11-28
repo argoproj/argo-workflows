@@ -761,6 +761,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn(ctx, "error updating taskset")
 	}
 
+	oldRV := woc.wf.ResourceVersion
+	woc.updateLastSeenVersionAnnotation(oldRV)
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Warn(ctx, "Error updating workflow")
@@ -784,6 +786,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	woc.updateLastSeenVersion(oldRV)
 	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
 	// with it, so copy from the original workflow.
 	woc.wf.TypeMeta = woc.orig.TypeMeta
@@ -859,9 +862,12 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
+	oldRV := woc.wf.ResourceVersion
 	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
+	} else {
+		woc.updateLastSeenVersion(oldRV)
 	}
 }
 
@@ -4392,4 +4398,17 @@ func (woc *wfOperationCtx) setNodeDisplayName(ctx context.Context, node *wfv1.No
 	newNode := node.DeepCopy()
 	newNode.DisplayName = displayName
 	woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
+}
+
+func (woc *wfOperationCtx) updateLastSeenVersionAnnotation(value string) {
+	if woc.wf.GetAnnotations() == nil {
+		woc.wf.Annotations = make(map[string]string)
+	}
+	woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion] = value
+}
+
+func (woc *wfOperationCtx) updateLastSeenVersion(value string) {
+	woc.controller.lastSeenVersions.mutex.Lock()
+	defer woc.controller.lastSeenVersions.mutex.Unlock()
+	woc.controller.lastSeenVersions.versions[woc.controller.getLastSeenVersionKey(woc.wf)] = value
 }
