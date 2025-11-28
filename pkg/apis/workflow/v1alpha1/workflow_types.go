@@ -1057,7 +1057,7 @@ type SuppliedValueFrom struct{}
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
 	// name of the artifact. must be unique within a template's inputs/outputs.
-	// +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
+	// +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Path is the container path to the artifact
