@@ -3,8 +3,6 @@ package entrypoint
 import (
 	"context"
 	"runtime"
-	
-	v12 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -31,7 +29,7 @@ func (i *containerRegistryIndex) Lookup(ctx context.Context, image string, optio
 	if err != nil {
 		return nil, err
 	}
-	var defaultPlatform = v12.Platform{
+	var defaultPlatform = pkgv1.Platform{
 		Architecture: runtime.GOARCH,
 		OS:           runtime.GOOS,
 	}
