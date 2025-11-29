@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
+	"github.com/expr-lang/expr"
 	"google.golang.org/grpc/codes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
@@ -56,6 +59,52 @@ func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx contex
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
 	}
+
+	// 1. Evaluate global parameters first. They cannot reference other parameters.
+	globalParamsMap := make(map[string]interface{})
+	globalEvalEnv := env.GetFuncMap(nil) // Env with just sprig functions
+
+	for i, param := range wfTmpl.Spec.Arguments.Parameters {
+		if param.Default != nil {
+			paramStr := strings.TrimSpace(param.Default.String())
+			if strings.HasPrefix(paramStr, "{{=") && strings.HasSuffix(paramStr, "}}") {
+				expression := strings.TrimSpace(paramStr[3 : len(paramStr)-2])
+				val, err := expr.Eval(expression, globalEvalEnv)
+				if err == nil {
+					newValue := v1alpha1.ParseAnyString(val)
+					wfTmpl.Spec.Arguments.Parameters[i].Value = &newValue
+					globalParamsMap[param.Name] = val
+				}
+			} else {
+				// This is a static default value, not an expression.
+				globalParamsMap[param.Name] = param.Default.String()
+			}
+		}
+	}
+
+	// 2. Evaluate template-level parameters.
+	// The environment for these parameters includes the evaluated global parameters.
+	templateEvalEnv := env.GetFuncMap(nil)
+	templateEvalEnv["workflow"] = map[string]interface{}{
+		"parameters": globalParamsMap,
+	}
+
+	for i, tmpl := range wfTmpl.Spec.Templates {
+		for j, param := range tmpl.Inputs.Parameters {
+			if param.Default != nil {
+				paramStr := strings.TrimSpace(param.Default.String())
+				if strings.HasPrefix(paramStr, "{{=") && strings.HasSuffix(paramStr, "}}") {
+					expression := strings.TrimSpace(paramStr[3 : len(paramStr)-2])
+					val, err := expr.Eval(expression, templateEvalEnv)
+					if err == nil {
+						newValue := v1alpha1.ParseAnyString(val)
+						wfTmpl.Spec.Templates[i].Inputs.Parameters[j].Value = &newValue
+					}
+				}
+			}
+		}
+	}
+
 	return wfTmpl, nil
 }
 
