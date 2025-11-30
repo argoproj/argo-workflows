@@ -29,7 +29,7 @@ import (
 )
 
 type Operation struct {
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx               context.Context
 	eventRecorder     record.EventRecorder
 	instanceIDService instanceid.Service
@@ -95,7 +95,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 	logger.WithFields(logging.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched}).Debug(ctx, "Selector evaluation")
 	submit := wfeb.Spec.Submit
 	if matched && submit != nil {
-		// nolint: contextcheck
+		//nolint: contextcheck
 		client := auth.GetWfClient(o.ctx)
 		ref := wfeb.Spec.Submit.WorkflowTemplateRef
 		var tmpl wfv1.WorkflowSpecHolder
@@ -125,7 +125,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
-		// nolint: contextcheck
+		//nolint: contextcheck
 		creator.LabelCreator(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
 		if submit.Arguments != nil {

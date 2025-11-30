@@ -269,7 +269,7 @@ func (l *LintResults) buildMsg() string {
 }
 
 func getObjectName(kind string, obj metav1.Object, objIndex int) string {
-	name := ""
+	var name string
 	switch {
 	case obj.GetName() != "":
 		name = obj.GetName()

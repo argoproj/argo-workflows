@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1WorkflowStep
 
-WorkflowStep is a reference to a template to execute in a series of step
+WorkflowStep is a reference to a template to execute in a series of step Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
 
 ## Properties
 

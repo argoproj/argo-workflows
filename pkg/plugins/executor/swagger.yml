@@ -143,10 +143,14 @@ definitions:
                     mode bits to use on this file, must be a value between 0 and 0777.
                     Set when loading input artifacts. It is recommended to set the mode value
                     to ensure the artifact has the expected permissions in your container.
+                    +kubebuilder:validation:Minimum=0
+                    +kubebuilder:validation:Maximum=511
                 format: int32
                 type: integer
             name:
-                description: name of the artifact. must be unique within a template's inputs/outputs.
+                description: |-
+                    name of the artifact. must be unique within a template's inputs/outputs.
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
                 type: string
             optional:
                 description: Make Artifacts optional, if Artifacts doesn't generate or exist
@@ -188,6 +192,7 @@ definitions:
             It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
             It is also used to describe the location of multiple artifacts such as the archive location
             of a single workflow step, which the executor will use as a default location to store its files.
+            +kubebuilder:validation:XValidation:rule="(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1",message="at most one artifact location can be specified"
         properties:
             archiveLogs:
                 description: ArchiveLogs indicates if the container logs should be archived
@@ -255,10 +260,14 @@ definitions:
                     mode bits to use on this file, must be a value between 0 and 0777.
                     Set when loading input artifacts. It is recommended to set the mode value
                     to ensure the artifact has the expected permissions in your container.
+                    +kubebuilder:validation:Minimum=0
+                    +kubebuilder:validation:Maximum=511
                 format: int32
                 type: integer
             name:
-                description: name of the artifact. must be unique within a template's inputs/outputs.
+                description: |-
+                    name of the artifact. must be unique within a template's inputs/outputs.
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
                 type: string
             optional:
                 description: Make Artifacts optional, if Artifacts doesn't generate or exist
@@ -434,7 +443,7 @@ definitions:
         description: Cache is the configuration for the type of cache to be used
         properties:
             configMap:
-                $ref: '#/definitions/ConfigMapKeySelector'
+                $ref: '#/definitions/LocalObjectReference'
         type: object
     Capabilities:
         properties:
@@ -1170,7 +1179,9 @@ definitions:
         description: Counter is a Counter prometheus metric
         properties:
             value:
-                description: Value is the value of the metric
+                description: |-
+                    Value is the value of the metric
+                    +kubebuilder:validation:MinLength=1
                 type: string
         type: object
     CreateS3BucketOptions:
@@ -1181,7 +1192,12 @@ definitions:
                 type: boolean
         type: object
     DAGTask:
-        description: DAGTask represents a node in the graph during DAG execution
+        description: |-
+            DAGTask represents a node in the graph during DAG execution
+            Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
+            +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.dependencies)",message="cannot use both 'depends' and 'dependencies'"
+            +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.continueOn)",message="cannot use 'continueOn' when using 'depends'"
+            +kubebuilder:validation:XValidation:rule="!(has(self.depends) || has(self.dependencies)) || !self.name.matches('^[0-9]')",message="task name cannot begin with a digit when using 'depends' or 'dependencies'"
         properties:
             arguments:
                 $ref: '#/definitions/Arguments'
@@ -1200,7 +1216,10 @@ definitions:
             inline:
                 $ref: '#/definitions/Template'
             name:
-                description: Name is the name of the target
+                description: |-
+                    Name is the name of the target
+                    +kubebuilder:validation:MaxLength=128
+                    +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
                 type: string
             onExit:
                 description: |-
@@ -1253,8 +1272,11 @@ definitions:
             tasks:
                 description: |-
                     Tasks are a list of DAG tasks
+                    MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                     +patchStrategy=merge
                     +patchMergeKey=name
+                    +kubebuilder:validation:MinItems=1
+                    +kubebuilder:validation:MaxItems=200
                 items:
                     $ref: '#/definitions/DAGTask'
                 type: array
@@ -1621,7 +1643,9 @@ definitions:
         title: GRPCAction specifies an action involving a GRPC service.
         type: object
     Gauge:
-        description: Gauge is a Gauge prometheus metric
+        description: |-
+            Gauge is a Gauge prometheus metric
+            +kubebuilder:validation:XValidation:rule="!has(self.realtime) || !self.realtime || !self.value.contains('resourcesDuration.')",message="'resourcesDuration.*' metrics cannot be used in real-time gauges"
         properties:
             operation:
                 $ref: '#/definitions/GaugeOperation'
@@ -1632,9 +1656,13 @@ definitions:
                 description: |-
                     Value is the value to be used in the operation with the metric's current value. If no operation is set,
                     value is the value of the metric
+                    MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+                    +kubebuilder:validation:MinLength=1
+                    +kubebuilder:validation:MaxLength=256
                 type: string
         type: object
     GaugeOperation:
+        description: +kubebuilder:validation:Enum=Set;Add;Sub
         title: A GaugeOperation is the set of operations that can be used in a gauge metric.
         type: string
     GitArtifact:
@@ -1896,7 +1924,9 @@ definitions:
                     $ref: '#/definitions/Amount'
                 type: array
             value:
-                description: Value is the value of the metric
+                description: |-
+                    Value is the value of the metric
+                    +kubebuilder:validation:MinLength=1
                 type: string
         type: object
     HostAlias:
@@ -2026,8 +2056,10 @@ definitions:
             parameters:
                 description: |-
                     Parameters are a list of parameters passed as inputs
+                    MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                     +patchStrategy=merge
                     +patchMergeKey=name
+                    +kubebuilder:validation:MaxItems=500
                 items:
                     $ref: '#/definitions/Parameter'
                 type: array
@@ -2291,6 +2323,7 @@ definitions:
         description: MetricLabel is a single label for a prometheus metric
         properties:
             key:
+                description: +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
                 type: string
             value:
                 type: string
@@ -2299,7 +2332,10 @@ definitions:
         description: Metrics are a list of metrics emitted from a Workflow/Template
         properties:
             prometheus:
-                description: Prometheus is a list of prometheus metrics to be emitted
+                description: |-
+                    Prometheus is a list of prometheus metrics to be emitted
+                    MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
+                    +kubebuilder:validation:MaxItems=100
                 items:
                     $ref: '#/definitions/Prometheus'
                 type: array
@@ -2612,7 +2648,9 @@ definitions:
             description:
                 $ref: '#/definitions/AnyString'
             enum:
-                description: Enum holds a list of string values to choose from, for the actual value of the parameter
+                description: |-
+                    Enum holds a list of string values to choose from, for the actual value of the parameter
+                    +kubebuilder:validation:MinItems=1
                 items:
                     $ref: '#/definitions/AnyString'
                 type: array
@@ -2622,7 +2660,9 @@ definitions:
                     '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
                 type: string
             name:
-                description: Name is the parameter name
+                description: |-
+                    Name is the parameter name
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
                 type: string
             value:
                 $ref: '#/definitions/AnyString'
@@ -3298,7 +3338,9 @@ definitions:
             gauge:
                 $ref: '#/definitions/Gauge'
             help:
-                description: Help is a string that describes the metric
+                description: |-
+                    Help is a string that describes the metric
+                    +kubebuilder:validation:MinLength=1
                 type: string
             histogram:
                 $ref: '#/definitions/Histogram'
@@ -3308,7 +3350,9 @@ definitions:
                     $ref: '#/definitions/MetricLabel'
                 type: array
             name:
-                description: Name is the name of the metric
+                description: |-
+                    Name is the name of the metric
+                    +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
                 type: string
             when:
                 description: When is a conditional statement that decides when to emit the metric
@@ -3574,12 +3618,15 @@ definitions:
         title: ResourceResizeRestartPolicy specifies how to handle container resource resize.
         type: string
     ResourceTemplate:
-        description: ResourceTemplate is a template subtype to manipulate kubernetes resources
+        description: |-
+            ResourceTemplate is a template subtype to manipulate kubernetes resources
+            +kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
         properties:
             action:
                 description: |-
                     Action is the action to perform to the resource.
                     Must be one of: get, create, apply, delete, replace, patch
+                    +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
                 type: string
             failureCondition:
                 description: |-
@@ -3605,6 +3652,7 @@ definitions:
                 description: |-
                     MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
                     Must be one of: strategic, merge, json
+                    +kubebuilder:validation:Enum=strategic;merge;json
                 type: string
             setOwnerReference:
                 description: SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
@@ -3626,6 +3674,7 @@ definitions:
         title: RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
         type: object
     RetryPolicy:
+        description: +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
         type: string
     RetryStrategy:
         description: RetryStrategy provides controls on how to retry a workflow step
@@ -4207,7 +4256,9 @@ definitions:
                 type: string
         type: object
     Sequence:
-        description: Sequence expands a workflow step into numeric range
+        description: |-
+            Sequence expands a workflow step into numeric range
+            +kubebuilder:validation:XValidation:rule="!(has(self.count) && has(self.end))",message="only one of count or end can be defined"
         properties:
             count:
                 $ref: '#/definitions/IntOrString'
@@ -4436,7 +4487,10 @@ definitions:
             metrics:
                 $ref: '#/definitions/Metrics'
             name:
-                description: Name is the name of the template
+                description: |-
+                    Name is the name of the template
+                    +kubebuilder:validation:MaxLength=128
+                    +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
                 type: string
             nodeSelector:
                 additionalProperties:
@@ -4452,6 +4506,7 @@ definitions:
                     Parallelism limits the max total parallel pods that can execute at the same time within the
                     boundaries of this template invocation. If additional steps/dag templates are invoked, the
                     pods created by those templates will not be counted towards this total.
+                    +kubebuilder:validation:Minimum=1
                 format: int64
                 type: integer
             plugin:
@@ -4492,7 +4547,9 @@ definitions:
                     $ref: '#/definitions/UserContainer'
                 type: array
             steps:
-                description: Steps define a series of sequential/parallel workflow steps
+                description: |-
+                    Steps define a series of sequential/parallel workflow steps
+                    +kubebuilder:validation:MinItems=1
                 items:
                     $ref: '#/definitions/ParallelSteps'
                 type: array

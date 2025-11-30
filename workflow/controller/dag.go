@@ -161,6 +161,7 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 		if err != nil {
 			// this is okay, this means that
 			// we are still running
+			//nolint: nilerr
 			return wfv1.NodeRunning, nil
 		}
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
@@ -563,7 +564,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(ctx, *newTask)
+	scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, newTask)
+	if err != nil {
+		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		connectDependencies(nodeName)
+		return
+	}
+	expandedTasks, err := expandTask(ctx, *newTask, woc.globalParams.Merge(scope.getParameters()))
 	if err != nil {
 		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
@@ -792,7 +799,7 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]string) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
@@ -835,7 +842,7 @@ func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) 
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(ctx, tmpl, task.Name, i, item, &newTask, task.When)
+		newTaskName, err := processItem(ctx, tmpl, task.Name, i, item, &newTask, task.When, globalScope)
 		if err != nil {
 			return nil, err
 		}

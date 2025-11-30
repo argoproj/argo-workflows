@@ -38,7 +38,7 @@ type Opts struct {
 	Offline              bool
 	OfflineFiles         []string
 	// DEPRECATED: use NewClientFromOptsWithContext
-	// nolint: containedctx
+	//nolint: containedctx
 	Context   context.Context
 	LogLevel  string
 	LogFormat string

@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,8 +18,8 @@ func errorln(args ...interface{}) {
 	_, _ = fmt.Fprint(os.Stderr, args...)
 }
 
-func Exec(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+func Exec(ctx context.Context, name string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Env = os.Environ()
 	_, _ = fmt.Println(cmd.String())
 	output, err := runWithTimeout(cmd)

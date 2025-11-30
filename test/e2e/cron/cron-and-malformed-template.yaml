@@ -27,7 +27,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: basic
+  name: basic-malformed
   labels:
     argo-e2e: "true"
 spec:

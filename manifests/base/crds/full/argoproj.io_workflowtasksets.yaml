@@ -1740,9 +1740,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -4940,10 +4938,13 @@ spec:
                             execute in a DAG
                           type: string
                         tasks:
-                          description: Tasks are a list of DAG tasks
+                          description: |-
+                            Tasks are a list of DAG tasks
+                            MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                           items:
-                            description: DAGTask represents a node in the graph during
-                              DAG execution
+                            description: |-
+                              DAGTask represents a node in the graph during DAG execution
+                              Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
                             properties:
                               arguments:
                                 description: Arguments are the parameter and artifact
@@ -5728,10 +5729,13 @@ spec:
                                             Set when loading input artifacts. It is recommended to set the mode value
                                             to ensure the artifact has the expected permissions in your container.
                                           format: int32
+                                          maximum: 511
+                                          minimum: 0
                                           type: integer
                                         name:
                                           description: name of the artifact. must
                                             be unique within a template's inputs/outputs.
+                                          pattern: ^[-a-zA-Z0-9_{}.]+$
                                           type: string
                                         optional:
                                           description: Make Artifacts optional, if
@@ -5875,9 +5879,7 @@ spec:
                                                 artifact driver plugin
                                               type: string
                                           required:
-                                          - configuration
                                           - key
-                                          - name
                                           type: object
                                         raw:
                                           description: Raw contains raw artifact location
@@ -6140,6 +6142,7 @@ spec:
                                               * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                               * It will marshall back to string - marshalling is not symmetric.
                                             type: string
+                                          minItems: 1
                                           type: array
                                         globalName:
                                           description: |-
@@ -6148,6 +6151,7 @@ spec:
                                           type: string
                                         name:
                                           description: Name is the parameter name
+                                          pattern: ^[-a-zA-Z0-9_]+$
                                           type: string
                                         value:
                                           description: |-
@@ -7089,11 +7093,14 @@ spec:
                                                   Set when loading input artifacts. It is recommended to set the mode value
                                                   to ensure the artifact has the expected permissions in your container.
                                                 format: int32
+                                                maximum: 511
+                                                minimum: 0
                                                 type: integer
                                               name:
                                                 description: name of the artifact.
                                                   must be unique within a template's
                                                   inputs/outputs.
+                                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                                 type: string
                                               optional:
                                                 description: Make Artifacts optional,
@@ -7244,9 +7251,7 @@ spec:
                                                       of the artifact driver plugin
                                                     type: string
                                                 required:
-                                                - configuration
                                                 - key
-                                                - name
                                                 type: object
                                               raw:
                                                 description: Raw contains raw artifact
@@ -7522,6 +7527,7 @@ spec:
                                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                     * It will marshall back to string - marshalling is not symmetric.
                                                   type: string
+                                                minItems: 1
                                                 type: array
                                               globalName:
                                                 description: |-
@@ -7531,6 +7537,7 @@ spec:
                                               name:
                                                 description: Name is the parameter
                                                   name
+                                                pattern: ^[-a-zA-Z0-9_]+$
                                                 type: string
                                               value:
                                                 description: |-
@@ -7655,6 +7662,8 @@ spec:
                                 x-kubernetes-preserve-unknown-fields: true
                               name:
                                 description: Name is the name of the target
+                                maxLength: 128
+                                pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                                 type: string
                               onExit:
                                 description: |-
@@ -7731,6 +7740,8 @@ spec:
                             required:
                             - name
                             type: object
+                          maxItems: 200
+                          minItems: 1
                           type: array
                       required:
                       - tasks
@@ -8481,10 +8492,13 @@ spec:
                                     Set when loading input artifacts. It is recommended to set the mode value
                                     to ensure the artifact has the expected permissions in your container.
                                   format: int32
+                                  maximum: 511
+                                  minimum: 0
                                   type: integer
                                 name:
                                   description: name of the artifact. must be unique
                                     within a template's inputs/outputs.
+                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                   type: string
                                 optional:
                                   description: Make Artifacts optional, if Artifacts
@@ -8616,9 +8630,7 @@ spec:
                                         driver plugin
                                       type: string
                                   required:
-                                  - configuration
                                   - key
-                                  - name
                                   type: object
                                 raw:
                                   description: Raw contains raw artifact location
@@ -11152,10 +11164,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -11286,9 +11301,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -11506,8 +11519,9 @@ spec:
                             type: object
                           type: array
                         parameters:
-                          description: Parameters are a list of parameters passed
-                            as inputs
+                          description: |-
+                            Parameters are a list of parameters passed as inputs
+                            MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                           items:
                             description: Parameter indicate a passed string parameter
                               to a service template with an optional default value
@@ -11528,6 +11542,7 @@ spec:
                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                     * It will marshall back to string - marshalling is not symmetric.
                                   type: string
+                                minItems: 1
                                 type: array
                               globalName:
                                 description: |-
@@ -11536,6 +11551,7 @@ spec:
                                 type: string
                               name:
                                 description: Name is the parameter name
+                                pattern: ^[-a-zA-Z0-9_]+$
                                 type: string
                               value:
                                 description: |-
@@ -11610,6 +11626,7 @@ spec:
                             required:
                             - name
                             type: object
+                          maxItems: 500
                           type: array
                       type: object
                     memoize:
@@ -11622,9 +11639,6 @@ spec:
                             configMap:
                               description: ConfigMap sets a ConfigMap-based cache
                               properties:
-                                key:
-                                  description: The key to select.
-                                  type: string
                                 name:
                                   default: ""
                                   description: |-
@@ -11634,12 +11648,6 @@ spec:
                                     almost certainly wrong.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
-                                optional:
-                                  description: Specify whether the ConfigMap or its
-                                    key must be defined
-                                  type: boolean
-                              required:
-                              - key
                               type: object
                               x-kubernetes-map-type: atomic
                           required:
@@ -11676,8 +11684,9 @@ spec:
                         template
                       properties:
                         prometheus:
-                          description: Prometheus is a list of prometheus metrics
-                            to be emitted
+                          description: |-
+                            Prometheus is a list of prometheus metrics to be emitted
+                            MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                           items:
                             description: Prometheus is a prometheus metric to be emitted
                             properties:
@@ -11686,6 +11695,7 @@ spec:
                                 properties:
                                   value:
                                     description: Value is the value of the metric
+                                    minLength: 1
                                     type: string
                                 required:
                                 - value
@@ -11696,6 +11706,10 @@ spec:
                                   operation:
                                     description: Operation defines the operation to
                                       apply with value and the metrics' current value
+                                    enum:
+                                    - Set
+                                    - Add
+                                    - Sub
                                     type: string
                                   realtime:
                                     description: Realtime emits this metric in real
@@ -11705,6 +11719,9 @@ spec:
                                     description: |-
                                       Value is the value to be used in the operation with the metric's current value. If no operation is set,
                                       value is the value of the metric
+                                      MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+                                    maxLength: 256
+                                    minLength: 1
                                     type: string
                                 required:
                                 - realtime
@@ -11712,6 +11729,7 @@ spec:
                                 type: object
                               help:
                                 description: Help is a string that describes the metric
+                                minLength: 1
                                 type: string
                               histogram:
                                 description: Histogram is a histogram metric
@@ -11724,6 +11742,7 @@ spec:
                                     type: array
                                   value:
                                     description: Value is the value of the metric
+                                    minLength: 1
                                     type: string
                                 required:
                                 - buckets
@@ -11736,6 +11755,7 @@ spec:
                                     prometheus metric
                                   properties:
                                     key:
+                                      pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                       type: string
                                     value:
                                       type: string
@@ -11746,6 +11766,7 @@ spec:
                                 type: array
                               name:
                                 description: Name is the name of the metric
+                                pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                 type: string
                               when:
                                 description: When is a conditional statement that
@@ -11755,12 +11776,15 @@ spec:
                             - help
                             - name
                             type: object
+                          maxItems: 100
                           type: array
                       required:
                       - prometheus
                       type: object
                     name:
                       description: Name is the name of the template
+                      maxLength: 128
+                      pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                       type: string
                     nodeSelector:
                       additionalProperties:
@@ -12510,10 +12534,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -12644,9 +12671,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -12889,6 +12914,7 @@ spec:
                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                     * It will marshall back to string - marshalling is not symmetric.
                                   type: string
+                                minItems: 1
                                 type: array
                               globalName:
                                 description: |-
@@ -12897,6 +12923,7 @@ spec:
                                 type: string
                               name:
                                 description: Name is the parameter name
+                                pattern: ^[-a-zA-Z0-9_]+$
                                 type: string
                               value:
                                 description: |-
@@ -12984,6 +13011,7 @@ spec:
                         boundaries of this template invocation. If additional steps/dag templates are invoked, the
                         pods created by those templates will not be counted towards this total.
                       format: int64
+                      minimum: 1
                       type: integer
                     plugin:
                       description: |-
@@ -13007,6 +13035,13 @@ spec:
                           description: |-
                             Action is the action to perform to the resource.
                             Must be one of: get, create, apply, delete, replace, patch
+                          enum:
+                          - get
+                          - create
+                          - apply
+                          - delete
+                          - replace
+                          - patch
                           type: string
                         failureCondition:
                           description: |-
@@ -13767,10 +13802,13 @@ spec:
                                     Set when loading input artifacts. It is recommended to set the mode value
                                     to ensure the artifact has the expected permissions in your container.
                                   format: int32
+                                  maximum: 511
+                                  minimum: 0
                                   type: integer
                                 name:
                                   description: name of the artifact. must be unique
                                     within a template's inputs/outputs.
+                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                   type: string
                                 optional:
                                   description: Make Artifacts optional, if Artifacts
@@ -13902,9 +13940,7 @@ spec:
                                         driver plugin
                                       type: string
                                   required:
-                                  - configuration
                                   - key
-                                  - name
                                   type: object
                                 raw:
                                   description: Raw contains raw artifact location
@@ -14130,6 +14166,10 @@ spec:
                           description: |-
                             MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
                             Must be one of: strategic, merge, json
+                          enum:
+                          - strategic
+                          - merge
+                          - json
                           type: string
                         setOwnerReference:
                           description: SetOwnerReference sets the reference to the
@@ -14202,6 +14242,11 @@ spec:
                         retryPolicy:
                           description: RetryPolicy is a policy of NodePhase statuses
                             that will be retried
+                          enum:
+                          - Always
+                          - OnFailure
+                          - OnError
+                          - OnTransientError
                           type: string
                       type: object
                     schedulerName:
@@ -17344,8 +17389,9 @@ spec:
                               There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
                               See the custom Unmarshaller below and ./hack/manifests/crd.go
                             items:
-                              description: WorkflowStep is a reference to a template
-                                to execute in a series of step
+                              description: |-
+                                WorkflowStep is a reference to a template to execute in a series of step
+                                Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
                               properties:
                                 arguments:
                                   description: Arguments hold arguments to the template
@@ -18146,10 +18192,13 @@ spec:
                                               Set when loading input artifacts. It is recommended to set the mode value
                                               to ensure the artifact has the expected permissions in your container.
                                             format: int32
+                                            maximum: 511
+                                            minimum: 0
                                             type: integer
                                           name:
                                             description: name of the artifact. must
                                               be unique within a template's inputs/outputs.
+                                            pattern: ^[-a-zA-Z0-9_{}.]+$
                                             type: string
                                           optional:
                                             description: Make Artifacts optional,
@@ -18293,9 +18342,7 @@ spec:
                                                   artifact driver plugin
                                                 type: string
                                             required:
-                                            - configuration
                                             - key
-                                            - name
                                             type: object
                                           raw:
                                             description: Raw contains raw artifact
@@ -18561,6 +18608,7 @@ spec:
                                                 * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                 * It will marshall back to string - marshalling is not symmetric.
                                               type: string
+                                            minItems: 1
                                             type: array
                                           globalName:
                                             description: |-
@@ -18569,6 +18617,7 @@ spec:
                                             type: string
                                           name:
                                             description: Name is the parameter name
+                                            pattern: ^[-a-zA-Z0-9_]+$
                                             type: string
                                           value:
                                             description: |-
@@ -19518,11 +19567,14 @@ spec:
                                                     Set when loading input artifacts. It is recommended to set the mode value
                                                     to ensure the artifact has the expected permissions in your container.
                                                   format: int32
+                                                  maximum: 511
+                                                  minimum: 0
                                                   type: integer
                                                 name:
                                                   description: name of the artifact.
                                                     must be unique within a template's
                                                     inputs/outputs.
+                                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                                   type: string
                                                 optional:
                                                   description: Make Artifacts optional,
@@ -19674,9 +19726,7 @@ spec:
                                                         of the artifact driver plugin
                                                       type: string
                                                   required:
-                                                  - configuration
                                                   - key
-                                                  - name
                                                   type: object
                                                 raw:
                                                   description: Raw contains raw artifact
@@ -19955,6 +20005,7 @@ spec:
                                                       * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                       * It will marshall back to string - marshalling is not symmetric.
                                                     type: string
+                                                  minItems: 1
                                                   type: array
                                                 globalName:
                                                   description: |-
@@ -19964,6 +20015,7 @@ spec:
                                                 name:
                                                   description: Name is the parameter
                                                     name
+                                                  pattern: ^[-a-zA-Z0-9_]+$
                                                   type: string
                                                 value:
                                                   description: |-
@@ -20092,6 +20144,8 @@ spec:
                                   x-kubernetes-preserve-unknown-fields: true
                                 name:
                                   description: Name of the step
+                                  maxLength: 128
+                                  pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                                   type: string
                                 onExit:
                                   description: |-
@@ -20172,6 +20226,7 @@ spec:
                         required:
                         - steps
                         type: object
+                      minItems: 1
                       type: array
                     suspend:
                       description: Suspend template subtype which can suspend a workflow
@@ -22865,10 +22920,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -22999,9 +23057,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -23244,6 +23300,7 @@ spec:
                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                     * It will marshall back to string - marshalling is not symmetric.
                                   type: string
+                                minItems: 1
                                 type: array
                               globalName:
                                 description: |-
@@ -23252,6 +23309,7 @@ spec:
                                 type: string
                               name:
                                 description: Name is the parameter name
+                                pattern: ^[-a-zA-Z0-9_]+$
                                 type: string
                               value:
                                 description: |-

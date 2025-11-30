@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -100,7 +101,7 @@ func NewCpCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("error getting key for artifact: %w", err)
 				}
-				err = getAndStoreArtifactData(namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), customPath, c, client.ArgoServerOpts)
+				err = getAndStoreArtifactData(ctx, namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), customPath, c, client.ArgoServerOpts)
 				if err != nil {
 					return fmt.Errorf("failed to get and store artifact data: %w", err)
 				}
@@ -116,12 +117,12 @@ func NewCpCommand() *cobra.Command {
 	return command
 }
 
-func getAndStoreArtifactData(namespace string, workflowName string, nodeID string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeID, artifactName), nil)
+func getAndStoreArtifactData(ctx context.Context, namespace string, workflowName string, nodeID string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeID, artifactName), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
-	authString, err := client.GetAuthString()
+	authString, err := client.GetAuthString(ctx)
 	if err != nil {
 		return err
 	}
@@ -131,7 +132,7 @@ func getAndStoreArtifactData(namespace string, workflowName string, nodeID strin
 		return fmt.Errorf("request failed with: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("request failed %s", resp.Status)
 	}
 	artifactFilePath := filepath.Join(customPath, fileName)

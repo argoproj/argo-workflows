@@ -13,15 +13,15 @@ func AddVersion(ctx context.Context, m *Metrics) error {
 	}
 
 	version := argo.GetVersion()
-	m.AddInt(ctx, InstrumentVersion.Name(), 1, InstAttribs{
-		{Name: AttribBuildVersion, Value: version.Version},
-		{Name: AttribBuildPlatform, Value: version.Platform},
-		{Name: AttribBuildGoVersion, Value: version.GoVersion},
-		{Name: AttribBuildDate, Value: version.BuildDate},
-		{Name: AttribBuildCompiler, Value: version.Compiler},
-		{Name: AttribBuildGitCommit, Value: version.GitCommit},
-		{Name: AttribBuildGitTreeState, Value: version.GitTreeState},
-		{Name: AttribBuildGitTag, Value: version.GitTag},
-	})
+	m.AddVersion(ctx, 1,
+		version.Version,
+		version.Platform,
+		version.GoVersion,
+		version.BuildDate,
+		version.Compiler,
+		version.GitCommit,
+		version.GitTreeState,
+		version.GitTag,
+	)
 	return nil
 }

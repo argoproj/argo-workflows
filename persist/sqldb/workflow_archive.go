@@ -310,6 +310,9 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 			if nameFilter == "Prefix" {
 				selector = selector.And(namePrefixClause(options.Name))
 			}
+			if nameFilter == "NotEquals" {
+				selector = selector.And(nameNotEqual(options.Name))
+			}
 		}
 
 		err := selector.One(total)
@@ -361,6 +364,9 @@ func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (i
 		}
 		if nameFilter == "Prefix" {
 			sampleSelector = sampleSelector.And(namePrefixClause(options.Name))
+		}
+		if nameFilter == "NotEquals" {
+			sampleSelector = sampleSelector.And(nameNotEqual(options.Name))
 		}
 	}
 
@@ -415,6 +421,9 @@ func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.L
 		}
 		if nameFilter == "Prefix" {
 			selector = selector.And(namePrefixClause(options.Name))
+		}
+		if nameFilter == "NotEquals" {
+			selector = selector.And(nameNotEqual(options.Name))
 		}
 	}
 
@@ -487,6 +496,13 @@ func nameEqual(name string) db.Cond {
 	return db.Cond{}
 }
 
+func nameNotEqual(name string) db.Cond {
+	if name != "" {
+		return db.Cond{"name !=": name}
+	}
+	return db.Cond{}
+}
+
 func namePrefixClause(namePrefix string) db.Cond {
 	if namePrefix != "" {
 		return db.Cond{"name LIKE": namePrefix + "%"}
@@ -509,6 +525,7 @@ func phaseEqual(phase string) db.Cond {
 }
 
 func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	var err error
 	archivedWf := &archivedWorkflowRecord{}
 	if uid != "" {
@@ -533,7 +550,11 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 			}
 			num := int64(total.Total)
 			if num > 1 {
-				return nil, fmt.Errorf("found %d archived workflows with namespace/name: %s/%s", num, namespace, name)
+				logger.WithFields(logging.Fields{
+					"namespace": namespace,
+					"name":      name,
+					"num":       num,
+				}).Debug(ctx, "returning latest of archived workflows")
 			}
 			err = r.session.SQL().
 				Select("workflow").
@@ -541,6 +562,7 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 				Where(r.clusterManagedNamespaceAndInstanceID()).
 				And(namespaceEqual(namespace)).
 				And(nameEqual(name)).
+				OrderBy("-startedat").
 				One(archivedWf)
 		} else {
 			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)

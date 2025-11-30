@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -2689,7 +2688,7 @@ func TestExpandWithItems(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 5)
 	woc.operate(ctx)
@@ -2739,7 +2738,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 3)
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
@@ -6959,7 +6958,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "")
+	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
 	require.NoError(t, err)
 	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 }
@@ -11308,9 +11307,7 @@ spec:
 
 // TestContainerSetWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet is used.
 func TestContainerSetWhenPodDeleted(t *testing.T) {
-	// use local-scoped env vars in test to avoid long waits
-	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
-	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -11392,9 +11389,7 @@ spec:
 
 // TestContainerSetWithDependenciesWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet with dependencies is used.
 func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
-	// use local-scoped env vars in test to avoid long waits
-	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
-	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -12154,4 +12149,66 @@ func TestMarksWFSucceeded(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var wfWithSequenceIssue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: withsequence-expr-test-
+spec:
+  entrypoint: start
+  templates:
+    - name: start
+      inputs:
+        parameters:
+          - name: someInt
+            value: "12"
+      steps:
+        - - name: create-sequence
+            template: print-argument
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{= int(item) + int(inputs.parameters.someInt) }}"
+            withSequence:
+              count: "2"
+    - name: print-argument
+      inputs:
+        parameters:
+          - name: arg
+      container:
+        image: alpine:latest
+        command: [echo]
+        args: ["{{inputs.parameters.arg}}"]
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion
+`
+
+func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithSequenceIssue)
+	t.Run("CheckExpressionWithItemAndInputs", func(t *testing.T) {
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Operate to trigger step expansion
+		woc.operate(ctx)
+
+		// The key test is that the workflow should be Running (not Failed)
+		// If the expression failed, the workflow would be in Failed state
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+			"Workflow should be running, indicating expressions were evaluated successfully")
+
+		// Verify no error occurred during expansion
+		assert.Empty(t, woc.wf.Status.Message, "No error message should be present")
+
+		// Check that we have the expected number of nodes
+		// Should have at least: workflow root + start template + step group + expanded steps
+		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
+			"Should have created multiple nodes for expanded sequence")
+	})
 }

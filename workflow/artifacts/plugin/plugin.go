@@ -90,7 +90,8 @@ func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPa
 			if len(addr) > 7 && addr[:7] == "unix://" {
 				addr = addr[7:]
 			}
-			return net.DialTimeout("unix", addr, connectionTimeout)
+			dialer := &net.Dialer{Timeout: connectionTimeout}
+			return dialer.DialContext(ctx, "unix", addr)
 		}),
 	)
 	if err != nil {

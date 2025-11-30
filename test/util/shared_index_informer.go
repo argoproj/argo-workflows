@@ -1,9 +1,8 @@
 package util
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"k8s.io/client-go/tools/cache"
 )

@@ -102,8 +102,10 @@ endif
 # Need to rewrite the SSO redirect URL referenced in ConfigMaps when UI_SECURE and/or BASE_HREF is set.
 # Can't use "kustomize" or "kubectl patch" because the SSO config is a YAML string in those ConfigMaps.
 SSO_REDIRECT_URL   := http
+SSO_ISSUER_URL     := http://dex:5556/dex
 ifeq ($(UI_SECURE),true)
 SSO_REDIRECT_URL   := https
+SSO_ISSUER_URL     := https://dex:5554/dex
 endif
 ifeq ($(BASE_HREF),)
 BASE_HREF          := /
@@ -223,7 +225,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
-GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md
+GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/metrics.md
 
 # protoc,my.proto
 define protoc
@@ -555,7 +557,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.3.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.5.0
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
@@ -594,6 +596,7 @@ install: githooks ## Install Argo to the current Kubernetes cluster
 		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
 		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
 		| sed 's|http://localhost:8080/oauth2/callback|$(SSO_REDIRECT_URL)|' \
+		| sed 's|http://dex:5556/dex|$(SSO_ISSUER_URL)|' \
 		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
@@ -733,6 +736,10 @@ util/telemetry/metrics_list.go: $(TELEMETRY_BUILDER) util/telemetry/builder/valu
 util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --attributesGo $@
+
+util/telemetry/metrics_helpers.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+	@echo Rebuilding $@
+	go run ./util/telemetry/builder --metricsHelpersGo $@
 
 # swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)

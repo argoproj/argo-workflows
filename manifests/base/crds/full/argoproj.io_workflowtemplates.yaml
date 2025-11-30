@@ -1692,10 +1692,13 @@ spec:
                             Set when loading input artifacts. It is recommended to set the mode value
                             to ensure the artifact has the expected permissions in your container.
                           format: int32
+                          maximum: 511
+                          minimum: 0
                           type: integer
                         name:
                           description: name of the artifact. must be unique within
                             a template's inputs/outputs.
+                          pattern: ^[-a-zA-Z0-9_{}.]+$
                           type: string
                         optional:
                           description: Make Artifacts optional, if Artifacts doesn't
@@ -1822,9 +1825,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -2033,6 +2034,13 @@ spec:
                       required:
                       - name
                       type: object
+                      x-kubernetes-validations:
+                      - message: at most one artifact location can be specified
+                        rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) +
+                          (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 :
+                          0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0)
+                          + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure)
+                          ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1'
                     type: array
                   parameters:
                     description: Parameters is the list of parameters to pass to the
@@ -2057,6 +2065,7 @@ spec:
                               * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                               * It will marshall back to string - marshalling is not symmetric.
                             type: string
+                          minItems: 1
                           type: array
                         globalName:
                           description: |-
@@ -2065,6 +2074,7 @@ spec:
                           type: string
                         name:
                           description: Name is the parameter name
+                          pattern: ^[-a-zA-Z0-9_]+$
                           type: string
                         value:
                           description: |-
@@ -3007,10 +3017,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -3141,9 +3154,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -3359,6 +3370,14 @@ spec:
                             required:
                             - name
                             type: object
+                            x-kubernetes-validations:
+                            - message: at most one artifact location can be specified
+                              rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 :
+                                0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                ? 1 : 0) <= 1'
                           type: array
                         parameters:
                           description: Parameters is the list of parameters to pass
@@ -3383,6 +3402,7 @@ spec:
                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                     * It will marshall back to string - marshalling is not symmetric.
                                   type: string
+                                minItems: 1
                                 type: array
                               globalName:
                                 description: |-
@@ -3391,6 +3411,7 @@ spec:
                                 type: string
                               name:
                                 description: Name is the parameter name
+                                pattern: ^[-a-zA-Z0-9_]+$
                                 type: string
                               value:
                                 description: |-
@@ -3547,8 +3568,9 @@ spec:
                 description: Metrics are a list of metrics emitted from this Workflow
                 properties:
                   prometheus:
-                    description: Prometheus is a list of prometheus metrics to be
-                      emitted
+                    description: |-
+                      Prometheus is a list of prometheus metrics to be emitted
+                      MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                     items:
                       description: Prometheus is a prometheus metric to be emitted
                       properties:
@@ -3557,6 +3579,7 @@ spec:
                           properties:
                             value:
                               description: Value is the value of the metric
+                              minLength: 1
                               type: string
                           required:
                           - value
@@ -3567,6 +3590,10 @@ spec:
                             operation:
                               description: Operation defines the operation to apply
                                 with value and the metrics' current value
+                              enum:
+                              - Set
+                              - Add
+                              - Sub
                               type: string
                             realtime:
                               description: Realtime emits this metric in real time
@@ -3576,13 +3603,21 @@ spec:
                               description: |-
                                 Value is the value to be used in the operation with the metric's current value. If no operation is set,
                                 value is the value of the metric
+                                MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+                              maxLength: 256
+                              minLength: 1
                               type: string
                           required:
                           - realtime
                           - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: '''resourcesDuration.*'' metrics cannot be used
+                              in real-time gauges'
+                            rule: '!has(self.realtime) || !self.realtime || !self.value.contains(''resourcesDuration.'')'
                         help:
                           description: Help is a string that describes the metric
+                          minLength: 1
                           type: string
                         histogram:
                           description: Histogram is a histogram metric
@@ -3595,6 +3630,7 @@ spec:
                               type: array
                             value:
                               description: Value is the value of the metric
+                              minLength: 1
                               type: string
                           required:
                           - buckets
@@ -3607,6 +3643,7 @@ spec:
                               metric
                             properties:
                               key:
+                                pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                 type: string
                               value:
                                 type: string
@@ -3617,6 +3654,7 @@ spec:
                           type: array
                         name:
                           description: Name is the name of the metric
+                          pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                           type: string
                         when:
                           description: When is a conditional statement that decides
@@ -3626,6 +3664,7 @@ spec:
                       - help
                       - name
                       type: object
+                    maxItems: 100
                     type: array
                 required:
                 - prometheus
@@ -3648,6 +3687,7 @@ spec:
                 description: Parallelism limits the max total parallel pods that can
                   execute at the same time in a workflow
                 format: int64
+                minimum: 1
                 type: integer
               podDisruptionBudget:
                 description: |-
@@ -3810,6 +3850,12 @@ spec:
                     description: Strategy is the strategy to use. One of "OnPodCompletion",
                       "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess".
                       If unset, does not delete Pods
+                    enum:
+                    - ""
+                    - OnPodCompletion
+                    - OnPodSuccess
+                    - OnWorkflowCompletion
+                    - OnWorkflowSuccess
                     type: string
                 type: object
               podMetadata:
@@ -3896,6 +3942,11 @@ spec:
                   retryPolicy:
                     description: RetryPolicy is a policy of NodePhase statuses that
                       will be retried
+                    enum:
+                    - Always
+                    - OnFailure
+                    - OnError
+                    - OnTransientError
                     type: string
                 type: object
               schedulerName:
@@ -5918,9 +5969,7 @@ spec:
                             description: Name is the name of the artifact driver plugin
                             type: string
                         required:
-                        - configuration
                         - key
-                        - name
                         type: object
                       raw:
                         description: Raw contains raw artifact location details
@@ -6118,6 +6167,13 @@ spec:
                             type: boolean
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: at most one artifact location can be specified
+                      rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http)
+                        ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs)
+                        ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 :
+                        0) + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) +
+                        (has(self.plugin) ? 1 : 0) <= 1'
                   automountServiceAccountToken:
                     description: |-
                       AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
@@ -9112,10 +9168,13 @@ spec:
                           in a DAG
                         type: string
                       tasks:
-                        description: Tasks are a list of DAG tasks
+                        description: |-
+                          Tasks are a list of DAG tasks
+                          MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                         items:
-                          description: DAGTask represents a node in the graph during
-                            DAG execution
+                          description: |-
+                            DAGTask represents a node in the graph during DAG execution
+                            Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
                           properties:
                             arguments:
                               description: Arguments are the parameter and artifact
@@ -9897,10 +9956,13 @@ spec:
                                           Set when loading input artifacts. It is recommended to set the mode value
                                           to ensure the artifact has the expected permissions in your container.
                                         format: int32
+                                        maximum: 511
+                                        minimum: 0
                                         type: integer
                                       name:
                                         description: name of the artifact. must be
                                           unique within a template's inputs/outputs.
+                                        pattern: ^[-a-zA-Z0-9_{}.]+$
                                         type: string
                                       optional:
                                         description: Make Artifacts optional, if Artifacts
@@ -10041,9 +10103,7 @@ spec:
                                               driver plugin
                                             type: string
                                         required:
-                                        - configuration
                                         - key
-                                        - name
                                         type: object
                                       raw:
                                         description: Raw contains raw artifact location
@@ -10274,6 +10334,15 @@ spec:
                                     required:
                                     - name
                                     type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one artifact location can be
+                                        specified
+                                      rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                        ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                        ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                        ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                        ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                        ? 1 : 0) <= 1'
                                   type: array
                                 parameters:
                                   description: Parameters is the list of parameters
@@ -10302,6 +10371,7 @@ spec:
                                             * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                             * It will marshall back to string - marshalling is not symmetric.
                                           type: string
+                                        minItems: 1
                                         type: array
                                       globalName:
                                         description: |-
@@ -10310,6 +10380,7 @@ spec:
                                         type: string
                                       name:
                                         description: Name is the parameter name
+                                        pattern: ^[-a-zA-Z0-9_]+$
                                         type: string
                                       value:
                                         description: |-
@@ -11235,10 +11306,13 @@ spec:
                                                 Set when loading input artifacts. It is recommended to set the mode value
                                                 to ensure the artifact has the expected permissions in your container.
                                               format: int32
+                                              maximum: 511
+                                              minimum: 0
                                               type: integer
                                             name:
                                               description: name of the artifact. must
                                                 be unique within a template's inputs/outputs.
+                                              pattern: ^[-a-zA-Z0-9_{}.]+$
                                               type: string
                                             optional:
                                               description: Make Artifacts optional,
@@ -11385,9 +11459,7 @@ spec:
                                                     the artifact driver plugin
                                                   type: string
                                               required:
-                                              - configuration
                                               - key
-                                              - name
                                               type: object
                                             raw:
                                               description: Raw contains raw artifact
@@ -11632,6 +11704,17 @@ spec:
                                           required:
                                           - name
                                           type: object
+                                          x-kubernetes-validations:
+                                          - message: at most one artifact location
+                                              can be specified
+                                            rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                              ? 1 : 0) + (has(self.http) ? 1 : 0)
+                                              + (has(self.artifactory) ? 1 : 0) +
+                                              (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                              ? 1 : 0) + (has(self.oss) ? 1 : 0) +
+                                              (has(self.gcs) ? 1 : 0) + (has(self.azure)
+                                              ? 1 : 0) + (has(self.plugin) ? 1 : 0)
+                                              <= 1'
                                         type: array
                                       parameters:
                                         description: Parameters is the list of parameters
@@ -11660,6 +11743,7 @@ spec:
                                                   * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                   * It will marshall back to string - marshalling is not symmetric.
                                                 type: string
+                                              minItems: 1
                                               type: array
                                             globalName:
                                               description: |-
@@ -11668,6 +11752,7 @@ spec:
                                               type: string
                                             name:
                                               description: Name is the parameter name
+                                              pattern: ^[-a-zA-Z0-9_]+$
                                               type: string
                                             value:
                                               description: |-
@@ -11791,6 +11876,8 @@ spec:
                               x-kubernetes-preserve-unknown-fields: true
                             name:
                               description: Name is the name of the target
+                              maxLength: 128
+                              pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                               type: string
                             onExit:
                               description: |-
@@ -11863,9 +11950,23 @@ spec:
                                     (default: 0)'
                                   x-kubernetes-int-or-string: true
                               type: object
+                              x-kubernetes-validations:
+                              - message: only one of count or end can be defined
+                                rule: '!(has(self.count) && has(self.end))'
                           required:
                           - name
                           type: object
+                          x-kubernetes-validations:
+                          - message: cannot use both 'depends' and 'dependencies'
+                            rule: '!has(self.depends) || !has(self.dependencies)'
+                          - message: cannot use 'continueOn' when using 'depends'
+                            rule: '!has(self.depends) || !has(self.continueOn)'
+                          - message: task name cannot begin with a digit when using
+                              'depends' or 'dependencies'
+                            rule: '!(has(self.depends) || has(self.dependencies))
+                              || !self.name.matches(''^[0-9]'')'
+                        maxItems: 200
+                        minItems: 1
                         type: array
                     required:
                     - tasks
@@ -12610,10 +12711,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -12744,9 +12848,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -12962,6 +13064,14 @@ spec:
                             required:
                             - name
                             type: object
+                            x-kubernetes-validations:
+                            - message: at most one artifact location can be specified
+                              rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 :
+                                0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                ? 1 : 0) <= 1'
                         type: object
                       transformation:
                         description: Transformation applies a set of transformations
@@ -15271,10 +15381,13 @@ spec:
                                 Set when loading input artifacts. It is recommended to set the mode value
                                 to ensure the artifact has the expected permissions in your container.
                               format: int32
+                              maximum: 511
+                              minimum: 0
                               type: integer
                             name:
                               description: name of the artifact. must be unique within
                                 a template's inputs/outputs.
+                              pattern: ^[-a-zA-Z0-9_{}.]+$
                               type: string
                             optional:
                               description: Make Artifacts optional, if Artifacts doesn't
@@ -15403,9 +15516,7 @@ spec:
                                     plugin
                                   type: string
                               required:
-                              - configuration
                               - key
-                              - name
                               type: object
                             raw:
                               description: Raw contains raw artifact location details
@@ -15619,10 +15730,19 @@ spec:
                           required:
                           - name
                           type: object
+                          x-kubernetes-validations:
+                          - message: at most one artifact location can be specified
+                            rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0)
+                              + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                              ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                              ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                              ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                              ? 1 : 0) <= 1'
                         type: array
                       parameters:
-                        description: Parameters are a list of parameters passed as
-                          inputs
+                        description: |-
+                          Parameters are a list of parameters passed as inputs
+                          MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                         items:
                           description: Parameter indicate a passed string parameter
                             to a service template with an optional default value
@@ -15643,6 +15763,7 @@ spec:
                                   * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                   * It will marshall back to string - marshalling is not symmetric.
                                 type: string
+                              minItems: 1
                               type: array
                             globalName:
                               description: |-
@@ -15651,6 +15772,7 @@ spec:
                               type: string
                             name:
                               description: Name is the parameter name
+                              pattern: ^[-a-zA-Z0-9_]+$
                               type: string
                             value:
                               description: |-
@@ -15724,6 +15846,7 @@ spec:
                           required:
                           - name
                           type: object
+                        maxItems: 500
                         type: array
                     type: object
                   memoize:
@@ -15736,9 +15859,6 @@ spec:
                           configMap:
                             description: ConfigMap sets a ConfigMap-based cache
                             properties:
-                              key:
-                                description: The key to select.
-                                type: string
                               name:
                                 default: ""
                                 description: |-
@@ -15748,12 +15868,6 @@ spec:
                                   almost certainly wrong.
                                   More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 type: string
-                              optional:
-                                description: Specify whether the ConfigMap or its
-                                  key must be defined
-                                type: boolean
-                            required:
-                            - key
                             type: object
                             x-kubernetes-map-type: atomic
                         required:
@@ -15789,8 +15903,9 @@ spec:
                     description: Metrics are a list of metrics emitted from this template
                     properties:
                       prometheus:
-                        description: Prometheus is a list of prometheus metrics to
-                          be emitted
+                        description: |-
+                          Prometheus is a list of prometheus metrics to be emitted
+                          MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                         items:
                           description: Prometheus is a prometheus metric to be emitted
                           properties:
@@ -15799,6 +15914,7 @@ spec:
                               properties:
                                 value:
                                   description: Value is the value of the metric
+                                  minLength: 1
                                   type: string
                               required:
                               - value
@@ -15809,6 +15925,10 @@ spec:
                                 operation:
                                   description: Operation defines the operation to
                                     apply with value and the metrics' current value
+                                  enum:
+                                  - Set
+                                  - Add
+                                  - Sub
                                   type: string
                                 realtime:
                                   description: Realtime emits this metric in real
@@ -15818,13 +15938,21 @@ spec:
                                   description: |-
                                     Value is the value to be used in the operation with the metric's current value. If no operation is set,
                                     value is the value of the metric
+                                    MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+                                  maxLength: 256
+                                  minLength: 1
                                   type: string
                               required:
                               - realtime
                               - value
                               type: object
+                              x-kubernetes-validations:
+                              - message: '''resourcesDuration.*'' metrics cannot be
+                                  used in real-time gauges'
+                                rule: '!has(self.realtime) || !self.realtime || !self.value.contains(''resourcesDuration.'')'
                             help:
                               description: Help is a string that describes the metric
+                              minLength: 1
                               type: string
                             histogram:
                               description: Histogram is a histogram metric
@@ -15837,6 +15965,7 @@ spec:
                                   type: array
                                 value:
                                   description: Value is the value of the metric
+                                  minLength: 1
                                   type: string
                               required:
                               - buckets
@@ -15849,6 +15978,7 @@ spec:
                                   metric
                                 properties:
                                   key:
+                                    pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                     type: string
                                   value:
                                     type: string
@@ -15859,6 +15989,7 @@ spec:
                               type: array
                             name:
                               description: Name is the name of the metric
+                              pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                               type: string
                             when:
                               description: When is a conditional statement that decides
@@ -15868,12 +15999,15 @@ spec:
                           - help
                           - name
                           type: object
+                        maxItems: 100
                         type: array
                     required:
                     - prometheus
                     type: object
                   name:
                     description: Name is the name of the template
+                    maxLength: 128
+                    pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                     type: string
                   nodeSelector:
                     additionalProperties:
@@ -16620,10 +16754,13 @@ spec:
                                 Set when loading input artifacts. It is recommended to set the mode value
                                 to ensure the artifact has the expected permissions in your container.
                               format: int32
+                              maximum: 511
+                              minimum: 0
                               type: integer
                             name:
                               description: name of the artifact. must be unique within
                                 a template's inputs/outputs.
+                              pattern: ^[-a-zA-Z0-9_{}.]+$
                               type: string
                             optional:
                               description: Make Artifacts optional, if Artifacts doesn't
@@ -16752,9 +16889,7 @@ spec:
                                     plugin
                                   type: string
                               required:
-                              - configuration
                               - key
-                              - name
                               type: object
                             raw:
                               description: Raw contains raw artifact location details
@@ -16968,6 +17103,14 @@ spec:
                           required:
                           - name
                           type: object
+                          x-kubernetes-validations:
+                          - message: at most one artifact location can be specified
+                            rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0)
+                              + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                              ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                              ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                              ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                              ? 1 : 0) <= 1'
                         type: array
                       exitCode:
                         description: ExitCode holds the exit code of a script template
@@ -16995,6 +17138,7 @@ spec:
                                   * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                   * It will marshall back to string - marshalling is not symmetric.
                                 type: string
+                              minItems: 1
                               type: array
                             globalName:
                               description: |-
@@ -17003,6 +17147,7 @@ spec:
                               type: string
                             name:
                               description: Name is the parameter name
+                              pattern: ^[-a-zA-Z0-9_]+$
                               type: string
                             value:
                               description: |-
@@ -17088,6 +17233,7 @@ spec:
                       boundaries of this template invocation. If additional steps/dag templates are invoked, the
                       pods created by those templates will not be counted towards this total.
                     format: int64
+                    minimum: 1
                     type: integer
                   plugin:
                     description: |-
@@ -17111,6 +17257,13 @@ spec:
                         description: |-
                           Action is the action to perform to the resource.
                           Must be one of: get, create, apply, delete, replace, patch
+                        enum:
+                        - get
+                        - create
+                        - apply
+                        - delete
+                        - replace
+                        - patch
                         type: string
                       failureCondition:
                         description: |-
@@ -17865,10 +18018,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -17999,9 +18155,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -18217,6 +18371,14 @@ spec:
                             required:
                             - name
                             type: object
+                            x-kubernetes-validations:
+                            - message: at most one artifact location can be specified
+                              rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 :
+                                0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                ? 1 : 0) <= 1'
                         required:
                         - artifact
                         type: object
@@ -18224,6 +18386,10 @@ spec:
                         description: |-
                           MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
                           Must be one of: strategic, merge, json
+                        enum:
+                        - strategic
+                        - merge
+                        - json
                         type: string
                       setOwnerReference:
                         description: SetOwnerReference sets the reference to the workflow
@@ -18237,6 +18403,10 @@ spec:
                     required:
                     - action
                     type: object
+                    x-kubernetes-validations:
+                    - message: only one of manifest or manifestFrom can be specified
+                      rule: (has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest)
+                        && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))
                   retryStrategy:
                     description: RetryStrategy describes how to retry a template when
                       it fails
@@ -18296,6 +18466,11 @@ spec:
                       retryPolicy:
                         description: RetryPolicy is a policy of NodePhase statuses
                           that will be retried
+                        enum:
+                        - Always
+                        - OnFailure
+                        - OnError
+                        - OnTransientError
                         type: string
                     type: object
                   schedulerName:
@@ -21431,8 +21606,9 @@ spec:
                         There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
                         See the custom Unmarshaller below and ./hack/manifests/crd.go
                       items:
-                        description: WorkflowStep is a reference to a template to
-                          execute in a series of step
+                        description: |-
+                          WorkflowStep is a reference to a template to execute in a series of step
+                          Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
                         properties:
                           arguments:
                             description: Arguments hold arguments to the template
@@ -22210,10 +22386,13 @@ spec:
                                         Set when loading input artifacts. It is recommended to set the mode value
                                         to ensure the artifact has the expected permissions in your container.
                                       format: int32
+                                      maximum: 511
+                                      minimum: 0
                                       type: integer
                                     name:
                                       description: name of the artifact. must be unique
                                         within a template's inputs/outputs.
+                                      pattern: ^[-a-zA-Z0-9_{}.]+$
                                       type: string
                                     optional:
                                       description: Make Artifacts optional, if Artifacts
@@ -22351,9 +22530,7 @@ spec:
                                             driver plugin
                                           type: string
                                       required:
-                                      - configuration
                                       - key
-                                      - name
                                       type: object
                                     raw:
                                       description: Raw contains raw artifact location
@@ -22581,6 +22758,15 @@ spec:
                                   required:
                                   - name
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: at most one artifact location can be
+                                      specified
+                                    rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                      ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                      ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                      ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                      ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                      ? 1 : 0) <= 1'
                                 type: array
                               parameters:
                                 description: Parameters is the list of parameters
@@ -22608,6 +22794,7 @@ spec:
                                           * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                           * It will marshall back to string - marshalling is not symmetric.
                                         type: string
+                                      minItems: 1
                                       type: array
                                     globalName:
                                       description: |-
@@ -22616,6 +22803,7 @@ spec:
                                       type: string
                                     name:
                                       description: Name is the parameter name
+                                      pattern: ^[-a-zA-Z0-9_]+$
                                       type: string
                                     value:
                                       description: |-
@@ -23507,10 +23695,13 @@ spec:
                                               Set when loading input artifacts. It is recommended to set the mode value
                                               to ensure the artifact has the expected permissions in your container.
                                             format: int32
+                                            maximum: 511
+                                            minimum: 0
                                             type: integer
                                           name:
                                             description: name of the artifact. must
                                               be unique within a template's inputs/outputs.
+                                            pattern: ^[-a-zA-Z0-9_{}.]+$
                                             type: string
                                           optional:
                                             description: Make Artifacts optional,
@@ -23654,9 +23845,7 @@ spec:
                                                   artifact driver plugin
                                                 type: string
                                             required:
-                                            - configuration
                                             - key
-                                            - name
                                             type: object
                                           raw:
                                             description: Raw contains raw artifact
@@ -23894,6 +24083,16 @@ spec:
                                         required:
                                         - name
                                         type: object
+                                        x-kubernetes-validations:
+                                        - message: at most one artifact location can
+                                            be specified
+                                          rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                            ? 1 : 0) + (has(self.http) ? 1 : 0) +
+                                            (has(self.artifactory) ? 1 : 0) + (has(self.hdfs)
+                                            ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss)
+                                            ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure)
+                                            ? 1 : 0) + (has(self.plugin) ? 1 : 0)
+                                            <= 1'
                                       type: array
                                     parameters:
                                       description: Parameters is the list of parameters
@@ -23922,6 +24121,7 @@ spec:
                                                 * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                 * It will marshall back to string - marshalling is not symmetric.
                                               type: string
+                                            minItems: 1
                                             type: array
                                           globalName:
                                             description: |-
@@ -23930,6 +24130,7 @@ spec:
                                             type: string
                                           name:
                                             description: Name is the parameter name
+                                            pattern: ^[-a-zA-Z0-9_]+$
                                             type: string
                                           value:
                                             description: |-
@@ -24052,6 +24253,8 @@ spec:
                             x-kubernetes-preserve-unknown-fields: true
                           name:
                             description: Name of the step
+                            maxLength: 128
+                            pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                             type: string
                           onExit:
                             description: |-
@@ -24125,8 +24328,12 @@ spec:
                                   (default: 0)'
                                 x-kubernetes-int-or-string: true
                             type: object
+                            x-kubernetes-validations:
+                            - message: only one of count or end can be defined
+                              rule: '!(has(self.count) && has(self.end))'
                         type: object
                       type: array
+                    minItems: 1
                     type: array
                   suspend:
                     description: Suspend template subtype which can suspend a workflow
@@ -26064,7 +26271,9 @@ spec:
                     type: array
                 type: object
               templates:
-                description: Templates is a list of workflow templates used in a workflow
+                description: |-
+                  Templates is a list of workflow templates used in a workflow
+                  MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                 items:
                   description: Template is a reusable and composable unit of execution
                     in a workflow
@@ -27767,9 +27976,7 @@ spec:
                                 plugin
                               type: string
                           required:
-                          - configuration
                           - key
-                          - name
                           type: object
                         raw:
                           description: Raw contains raw artifact location details
@@ -27968,6 +28175,13 @@ spec:
                               type: boolean
                           type: object
                       type: object
+                      x-kubernetes-validations:
+                      - message: at most one artifact location can be specified
+                        rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) +
+                          (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 :
+                          0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0)
+                          + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure)
+                          ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1'
                     automountServiceAccountToken:
                       description: |-
                         AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
@@ -30965,10 +31179,13 @@ spec:
                             execute in a DAG
                           type: string
                         tasks:
-                          description: Tasks are a list of DAG tasks
+                          description: |-
+                            Tasks are a list of DAG tasks
+                            MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                           items:
-                            description: DAGTask represents a node in the graph during
-                              DAG execution
+                            description: |-
+                              DAGTask represents a node in the graph during DAG execution
+                              Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
                             properties:
                               arguments:
                                 description: Arguments are the parameter and artifact
@@ -31753,10 +31970,13 @@ spec:
                                             Set when loading input artifacts. It is recommended to set the mode value
                                             to ensure the artifact has the expected permissions in your container.
                                           format: int32
+                                          maximum: 511
+                                          minimum: 0
                                           type: integer
                                         name:
                                           description: name of the artifact. must
                                             be unique within a template's inputs/outputs.
+                                          pattern: ^[-a-zA-Z0-9_{}.]+$
                                           type: string
                                         optional:
                                           description: Make Artifacts optional, if
@@ -31900,9 +32120,7 @@ spec:
                                                 artifact driver plugin
                                               type: string
                                           required:
-                                          - configuration
                                           - key
-                                          - name
                                           type: object
                                         raw:
                                           description: Raw contains raw artifact location
@@ -32137,6 +32355,15 @@ spec:
                                       required:
                                       - name
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: at most one artifact location can
+                                          be specified
+                                        rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                          ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                          ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                          ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                          ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                          ? 1 : 0) <= 1'
                                     type: array
                                   parameters:
                                     description: Parameters is the list of parameters
@@ -32165,6 +32392,7 @@ spec:
                                               * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                               * It will marshall back to string - marshalling is not symmetric.
                                             type: string
+                                          minItems: 1
                                           type: array
                                         globalName:
                                           description: |-
@@ -32173,6 +32401,7 @@ spec:
                                           type: string
                                         name:
                                           description: Name is the parameter name
+                                          pattern: ^[-a-zA-Z0-9_]+$
                                           type: string
                                         value:
                                           description: |-
@@ -33114,11 +33343,14 @@ spec:
                                                   Set when loading input artifacts. It is recommended to set the mode value
                                                   to ensure the artifact has the expected permissions in your container.
                                                 format: int32
+                                                maximum: 511
+                                                minimum: 0
                                                 type: integer
                                               name:
                                                 description: name of the artifact.
                                                   must be unique within a template's
                                                   inputs/outputs.
+                                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                                 type: string
                                               optional:
                                                 description: Make Artifacts optional,
@@ -33269,9 +33501,7 @@ spec:
                                                       of the artifact driver plugin
                                                     type: string
                                                 required:
-                                                - configuration
                                                 - key
-                                                - name
                                                 type: object
                                               raw:
                                                 description: Raw contains raw artifact
@@ -33519,6 +33749,17 @@ spec:
                                             required:
                                             - name
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: at most one artifact location
+                                                can be specified
+                                              rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                                ? 1 : 0) + (has(self.http) ? 1 : 0)
+                                                + (has(self.artifactory) ? 1 : 0)
+                                                + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                                ? 1 : 0) + (has(self.oss) ? 1 : 0)
+                                                + (has(self.gcs) ? 1 : 0) + (has(self.azure)
+                                                ? 1 : 0) + (has(self.plugin) ? 1 :
+                                                0) <= 1'
                                           type: array
                                         parameters:
                                           description: Parameters is the list of parameters
@@ -33547,6 +33788,7 @@ spec:
                                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                     * It will marshall back to string - marshalling is not symmetric.
                                                   type: string
+                                                minItems: 1
                                                 type: array
                                               globalName:
                                                 description: |-
@@ -33556,6 +33798,7 @@ spec:
                                               name:
                                                 description: Name is the parameter
                                                   name
+                                                pattern: ^[-a-zA-Z0-9_]+$
                                                 type: string
                                               value:
                                                 description: |-
@@ -33680,6 +33923,8 @@ spec:
                                 x-kubernetes-preserve-unknown-fields: true
                               name:
                                 description: Name is the name of the target
+                                maxLength: 128
+                                pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                                 type: string
                               onExit:
                                 description: |-
@@ -33753,9 +33998,23 @@ spec:
                                       (default: 0)'
                                     x-kubernetes-int-or-string: true
                                 type: object
+                                x-kubernetes-validations:
+                                - message: only one of count or end can be defined
+                                  rule: '!(has(self.count) && has(self.end))'
                             required:
                             - name
                             type: object
+                            x-kubernetes-validations:
+                            - message: cannot use both 'depends' and 'dependencies'
+                              rule: '!has(self.depends) || !has(self.dependencies)'
+                            - message: cannot use 'continueOn' when using 'depends'
+                              rule: '!has(self.depends) || !has(self.continueOn)'
+                            - message: task name cannot begin with a digit when using
+                                'depends' or 'dependencies'
+                              rule: '!(has(self.depends) || has(self.dependencies))
+                                || !self.name.matches(''^[0-9]'')'
+                          maxItems: 200
+                          minItems: 1
                           type: array
                       required:
                       - tasks
@@ -34506,10 +34765,13 @@ spec:
                                     Set when loading input artifacts. It is recommended to set the mode value
                                     to ensure the artifact has the expected permissions in your container.
                                   format: int32
+                                  maximum: 511
+                                  minimum: 0
                                   type: integer
                                 name:
                                   description: name of the artifact. must be unique
                                     within a template's inputs/outputs.
+                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                   type: string
                                 optional:
                                   description: Make Artifacts optional, if Artifacts
@@ -34641,9 +34903,7 @@ spec:
                                         driver plugin
                                       type: string
                                   required:
-                                  - configuration
                                   - key
-                                  - name
                                   type: object
                                 raw:
                                   description: Raw contains raw artifact location
@@ -34862,6 +35122,14 @@ spec:
                               required:
                               - name
                               type: object
+                              x-kubernetes-validations:
+                              - message: at most one artifact location can be specified
+                                rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1
+                                  : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                  ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                  ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                  ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                  ? 1 : 0) <= 1'
                           type: object
                         transformation:
                           description: Transformation applies a set of transformations
@@ -37177,10 +37445,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -37311,9 +37582,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -37529,10 +37798,19 @@ spec:
                             required:
                             - name
                             type: object
+                            x-kubernetes-validations:
+                            - message: at most one artifact location can be specified
+                              rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 :
+                                0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                ? 1 : 0) <= 1'
                           type: array
                         parameters:
-                          description: Parameters are a list of parameters passed
-                            as inputs
+                          description: |-
+                            Parameters are a list of parameters passed as inputs
+                            MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                           items:
                             description: Parameter indicate a passed string parameter
                               to a service template with an optional default value
@@ -37553,6 +37831,7 @@ spec:
                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                     * It will marshall back to string - marshalling is not symmetric.
                                   type: string
+                                minItems: 1
                                 type: array
                               globalName:
                                 description: |-
@@ -37561,6 +37840,7 @@ spec:
                                 type: string
                               name:
                                 description: Name is the parameter name
+                                pattern: ^[-a-zA-Z0-9_]+$
                                 type: string
                               value:
                                 description: |-
@@ -37635,6 +37915,7 @@ spec:
                             required:
                             - name
                             type: object
+                          maxItems: 500
                           type: array
                       type: object
                     memoize:
@@ -37647,9 +37928,6 @@ spec:
                             configMap:
                               description: ConfigMap sets a ConfigMap-based cache
                               properties:
-                                key:
-                                  description: The key to select.
-                                  type: string
                                 name:
                                   default: ""
                                   description: |-
@@ -37659,12 +37937,6 @@ spec:
                                     almost certainly wrong.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
-                                optional:
-                                  description: Specify whether the ConfigMap or its
-                                    key must be defined
-                                  type: boolean
-                              required:
-                              - key
                               type: object
                               x-kubernetes-map-type: atomic
                           required:
@@ -37701,8 +37973,9 @@ spec:
                         template
                       properties:
                         prometheus:
-                          description: Prometheus is a list of prometheus metrics
-                            to be emitted
+                          description: |-
+                            Prometheus is a list of prometheus metrics to be emitted
+                            MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                           items:
                             description: Prometheus is a prometheus metric to be emitted
                             properties:
@@ -37711,6 +37984,7 @@ spec:
                                 properties:
                                   value:
                                     description: Value is the value of the metric
+                                    minLength: 1
                                     type: string
                                 required:
                                 - value
@@ -37721,6 +37995,10 @@ spec:
                                   operation:
                                     description: Operation defines the operation to
                                       apply with value and the metrics' current value
+                                    enum:
+                                    - Set
+                                    - Add
+                                    - Sub
                                     type: string
                                   realtime:
                                     description: Realtime emits this metric in real
@@ -37730,13 +38008,22 @@ spec:
                                     description: |-
                                       Value is the value to be used in the operation with the metric's current value. If no operation is set,
                                       value is the value of the metric
+                                      MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+                                    maxLength: 256
+                                    minLength: 1
                                     type: string
                                 required:
                                 - realtime
                                 - value
                                 type: object
+                                x-kubernetes-validations:
+                                - message: '''resourcesDuration.*'' metrics cannot
+                                    be used in real-time gauges'
+                                  rule: '!has(self.realtime) || !self.realtime ||
+                                    !self.value.contains(''resourcesDuration.'')'
                               help:
                                 description: Help is a string that describes the metric
+                                minLength: 1
                                 type: string
                               histogram:
                                 description: Histogram is a histogram metric
@@ -37749,6 +38036,7 @@ spec:
                                     type: array
                                   value:
                                     description: Value is the value of the metric
+                                    minLength: 1
                                     type: string
                                 required:
                                 - buckets
@@ -37761,6 +38049,7 @@ spec:
                                     prometheus metric
                                   properties:
                                     key:
+                                      pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                       type: string
                                     value:
                                       type: string
@@ -37771,6 +38060,7 @@ spec:
                                 type: array
                               name:
                                 description: Name is the name of the metric
+                                pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                 type: string
                               when:
                                 description: When is a conditional statement that
@@ -37780,12 +38070,15 @@ spec:
                             - help
                             - name
                             type: object
+                          maxItems: 100
                           type: array
                       required:
                       - prometheus
                       type: object
                     name:
                       description: Name is the name of the template
+                      maxLength: 128
+                      pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                       type: string
                     nodeSelector:
                       additionalProperties:
@@ -38535,10 +38828,13 @@ spec:
                                   Set when loading input artifacts. It is recommended to set the mode value
                                   to ensure the artifact has the expected permissions in your container.
                                 format: int32
+                                maximum: 511
+                                minimum: 0
                                 type: integer
                               name:
                                 description: name of the artifact. must be unique
                                   within a template's inputs/outputs.
+                                pattern: ^[-a-zA-Z0-9_{}.]+$
                                 type: string
                               optional:
                                 description: Make Artifacts optional, if Artifacts
@@ -38669,9 +38965,7 @@ spec:
                                       driver plugin
                                     type: string
                                 required:
-                                - configuration
                                 - key
-                                - name
                                 type: object
                               raw:
                                 description: Raw contains raw artifact location details
@@ -38887,6 +39181,14 @@ spec:
                             required:
                             - name
                             type: object
+                            x-kubernetes-validations:
+                            - message: at most one artifact location can be specified
+                              rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 :
+                                0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                ? 1 : 0) <= 1'
                           type: array
                         exitCode:
                           description: ExitCode holds the exit code of a script template
@@ -38914,6 +39216,7 @@ spec:
                                     * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                     * It will marshall back to string - marshalling is not symmetric.
                                   type: string
+                                minItems: 1
                                 type: array
                               globalName:
                                 description: |-
@@ -38922,6 +39225,7 @@ spec:
                                 type: string
                               name:
                                 description: Name is the parameter name
+                                pattern: ^[-a-zA-Z0-9_]+$
                                 type: string
                               value:
                                 description: |-
@@ -39009,6 +39313,7 @@ spec:
                         boundaries of this template invocation. If additional steps/dag templates are invoked, the
                         pods created by those templates will not be counted towards this total.
                       format: int64
+                      minimum: 1
                       type: integer
                     plugin:
                       description: |-
@@ -39032,6 +39337,13 @@ spec:
                           description: |-
                             Action is the action to perform to the resource.
                             Must be one of: get, create, apply, delete, replace, patch
+                          enum:
+                          - get
+                          - create
+                          - apply
+                          - delete
+                          - replace
+                          - patch
                           type: string
                         failureCondition:
                           description: |-
@@ -39792,10 +40104,13 @@ spec:
                                     Set when loading input artifacts. It is recommended to set the mode value
                                     to ensure the artifact has the expected permissions in your container.
                                   format: int32
+                                  maximum: 511
+                                  minimum: 0
                                   type: integer
                                 name:
                                   description: name of the artifact. must be unique
                                     within a template's inputs/outputs.
+                                  pattern: ^[-a-zA-Z0-9_{}.]+$
                                   type: string
                                 optional:
                                   description: Make Artifacts optional, if Artifacts
@@ -39927,9 +40242,7 @@ spec:
                                         driver plugin
                                       type: string
                                   required:
-                                  - configuration
                                   - key
-                                  - name
                                   type: object
                                 raw:
                                   description: Raw contains raw artifact location
@@ -40148,6 +40461,14 @@ spec:
                               required:
                               - name
                               type: object
+                              x-kubernetes-validations:
+                              - message: at most one artifact location can be specified
+                                rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1
+                                  : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                  ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                  ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                  ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                  ? 1 : 0) <= 1'
                           required:
                           - artifact
                           type: object
@@ -40155,6 +40476,10 @@ spec:
                           description: |-
                             MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
                             Must be one of: strategic, merge, json
+                          enum:
+                          - strategic
+                          - merge
+                          - json
                           type: string
                         setOwnerReference:
                           description: SetOwnerReference sets the reference to the
@@ -40168,6 +40493,10 @@ spec:
                       required:
                       - action
                       type: object
+                      x-kubernetes-validations:
+                      - message: only one of manifest or manifestFrom can be specified
+                        rule: (has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest)
+                          && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))
                     retryStrategy:
                       description: RetryStrategy describes how to retry a template
                         when it fails
@@ -40227,6 +40556,11 @@ spec:
                         retryPolicy:
                           description: RetryPolicy is a policy of NodePhase statuses
                             that will be retried
+                          enum:
+                          - Always
+                          - OnFailure
+                          - OnError
+                          - OnTransientError
                           type: string
                       type: object
                     schedulerName:
@@ -43364,8 +43698,9 @@ spec:
                           There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
                           See the custom Unmarshaller below and ./hack/manifests/crd.go
                         items:
-                          description: WorkflowStep is a reference to a template to
-                            execute in a series of step
+                          description: |-
+                            WorkflowStep is a reference to a template to execute in a series of step
+                            Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
                           properties:
                             arguments:
                               description: Arguments hold arguments to the template
@@ -44146,10 +44481,13 @@ spec:
                                           Set when loading input artifacts. It is recommended to set the mode value
                                           to ensure the artifact has the expected permissions in your container.
                                         format: int32
+                                        maximum: 511
+                                        minimum: 0
                                         type: integer
                                       name:
                                         description: name of the artifact. must be
                                           unique within a template's inputs/outputs.
+                                        pattern: ^[-a-zA-Z0-9_{}.]+$
                                         type: string
                                       optional:
                                         description: Make Artifacts optional, if Artifacts
@@ -44290,9 +44628,7 @@ spec:
                                               driver plugin
                                             type: string
                                         required:
-                                        - configuration
                                         - key
-                                        - name
                                         type: object
                                       raw:
                                         description: Raw contains raw artifact location
@@ -44523,6 +44859,15 @@ spec:
                                     required:
                                     - name
                                     type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one artifact location can be
+                                        specified
+                                      rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                        ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory)
+                                        ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                        ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs)
+                                        ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                                        ? 1 : 0) <= 1'
                                   type: array
                                 parameters:
                                   description: Parameters is the list of parameters
@@ -44551,6 +44896,7 @@ spec:
                                             * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                             * It will marshall back to string - marshalling is not symmetric.
                                           type: string
+                                        minItems: 1
                                         type: array
                                       globalName:
                                         description: |-
@@ -44559,6 +44905,7 @@ spec:
                                         type: string
                                       name:
                                         description: Name is the parameter name
+                                        pattern: ^[-a-zA-Z0-9_]+$
                                         type: string
                                       value:
                                         description: |-
@@ -45474,10 +45821,13 @@ spec:
                                                 Set when loading input artifacts. It is recommended to set the mode value
                                                 to ensure the artifact has the expected permissions in your container.
                                               format: int32
+                                              maximum: 511
+                                              minimum: 0
                                               type: integer
                                             name:
                                               description: name of the artifact. must
                                                 be unique within a template's inputs/outputs.
+                                              pattern: ^[-a-zA-Z0-9_{}.]+$
                                               type: string
                                             optional:
                                               description: Make Artifacts optional,
@@ -45624,9 +45974,7 @@ spec:
                                                     the artifact driver plugin
                                                   type: string
                                               required:
-                                              - configuration
                                               - key
-                                              - name
                                               type: object
                                             raw:
                                               description: Raw contains raw artifact
@@ -45871,6 +46219,17 @@ spec:
                                           required:
                                           - name
                                           type: object
+                                          x-kubernetes-validations:
+                                          - message: at most one artifact location
+                                              can be specified
+                                            rule: '(has(self.s3) ? 1 : 0) + (has(self.git)
+                                              ? 1 : 0) + (has(self.http) ? 1 : 0)
+                                              + (has(self.artifactory) ? 1 : 0) +
+                                              (has(self.hdfs) ? 1 : 0) + (has(self.raw)
+                                              ? 1 : 0) + (has(self.oss) ? 1 : 0) +
+                                              (has(self.gcs) ? 1 : 0) + (has(self.azure)
+                                              ? 1 : 0) + (has(self.plugin) ? 1 : 0)
+                                              <= 1'
                                         type: array
                                       parameters:
                                         description: Parameters is the list of parameters
@@ -45899,6 +46258,7 @@ spec:
                                                   * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                                                   * It will marshall back to string - marshalling is not symmetric.
                                                 type: string
+                                              minItems: 1
                                               type: array
                                             globalName:
                                               description: |-
@@ -45907,6 +46267,7 @@ spec:
                                               type: string
                                             name:
                                               description: Name is the parameter name
+                                              pattern: ^[-a-zA-Z0-9_]+$
                                               type: string
                                             value:
                                               description: |-
@@ -46031,6 +46392,8 @@ spec:
                               x-kubernetes-preserve-unknown-fields: true
                             name:
                               description: Name of the step
+                              maxLength: 128
+                              pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]*$
                               type: string
                             onExit:
                               description: |-
@@ -46104,8 +46467,12 @@ spec:
                                     (default: 0)'
                                   x-kubernetes-int-or-string: true
                               type: object
+                              x-kubernetes-validations:
+                              - message: only one of count or end can be defined
+                                rule: '!(has(self.count) && has(self.end))'
                           type: object
                         type: array
+                      minItems: 1
                       type: array
                     suspend:
                       description: Suspend template subtype which can suspend a workflow
@@ -48049,7 +48416,21 @@ spec:
                         type: object
                       type: array
                   type: object
+                maxItems: 200
                 type: array
+                x-kubernetes-validations:
+                - message: template must have at most one template type
+                  rule: 'self.all(t, (has(t.container) ? 1 : 0) + (has(t.script) ?
+                    1 : 0) + (has(t.dag) ? 1 : 0) + (has(t.steps) ? 1 : 0) + (has(t.resource)
+                    ? 1 : 0) + (has(t.suspend) ? 1 : 0) + (has(t.containerSet) ? 1
+                    : 0) + (has(t.data) ? 1 : 0) + (has(t.http) ? 1 : 0) + (has(t.plugin)
+                    ? 1 : 0) <= 1)'
+                - message: timeout cannot be applied to steps or dag templates
+                  rule: self.all(t, !(has(t.timeout) && t.timeout != "" && (has(t.steps)
+                    || has(t.dag))))
+                - message: activeDeadlineSeconds is only valid for leaf templates
+                  rule: self.all(t, !(has(t.activeDeadlineSeconds) && (has(t.steps)
+                    || has(t.dag))))
               tolerations:
                 description: Tolerations to apply to workflow pods.
                 items:

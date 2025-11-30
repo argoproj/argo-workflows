@@ -1496,7 +1496,7 @@ func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) commo
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ConfigMap sets a ConfigMap-based cache",
-							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 				},
@@ -1504,7 +1504,7 @@ func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -2344,7 +2344,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 						},
 					},
 				},
-				Required: []string{"workflowSpec"},
+				Required: []string{"workflowSpec", "schedules"},
 			},
 		},
 		Dependencies: []string{
@@ -2429,7 +2429,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "DAGTask represents a node in the graph during DAG execution",
+				Description: "DAGTask represents a node in the graph during DAG execution Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -2581,7 +2581,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Tasks are a list of DAG tasks",
+							Description: "Tasks are a list of DAG tasks MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2817,7 +2817,7 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric",
+							Description: "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric MaxLength is an artificial limit to limit CEL validation costs - see note at top of file",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -3591,7 +3591,7 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameters are a list of parameters passed as inputs",
+							Description: "Parameters are a list of parameters passed as inputs MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -3987,7 +3987,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metrics(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"prometheus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Prometheus is a list of prometheus metrics to be emitted",
+							Description: "Prometheus is a list of prometheus metrics to be emitted MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -4954,7 +4954,6 @@ func schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref common.ReferenceCallba
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the name of the artifact driver plugin",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4962,7 +4961,6 @@ func schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref common.ReferenceCallba
 					"configuration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration is the plugin defined configuration for the artifact driver plugin",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4983,7 +4981,7 @@ func schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"name", "configuration", "key"},
+				Required: []string{"key"},
 			},
 		},
 	}
@@ -7766,7 +7764,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Templates is a list of workflow templates used in a workflow",
+							Description: "Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -8319,7 +8317,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WorkflowStep is a reference to a template to execute in a series of step",
+				Description: "WorkflowStep is a reference to a template to execute in a series of step Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {

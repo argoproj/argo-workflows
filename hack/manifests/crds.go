@@ -43,7 +43,18 @@ func cleanCRD(filename string) {
 		patchMetadata(&schema, "spec", "properties", "submit", "properties", "metadata", "properties")
 	case "workflowtasksets.argoproj.io":
 		patchVolumeFields(&schema, "spec", "properties", "tasks", "additionalProperties", "properties")
+		// Controller-managed CRD: strip all CEL validations from spec to reduce budget cost
+		schema.RecursiveRemoveValidations("spec")
+	case "workflowtaskresults.argoproj.io":
+		// Controller-managed CRD: strip all CEL validations from spec to reduce budget cost
+		schema.RecursiveRemoveValidations("spec")
+	case "workflowartifactgctasks.argoproj.io":
+		// Controller-managed CRD: strip all CEL validations from spec to reduce budget cost
+		schema.RecursiveRemoveValidations("spec")
 	}
+	// Remove x-kubernetes-validations from all status blocks to reduce CEL budget cost
+	// (status is controller-managed and doesn't need user-facing validation)
+	schema.RecursiveRemoveValidations("status")
 	crd.WriteYaml(filename)
 }
 

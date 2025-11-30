@@ -42,7 +42,7 @@ spec:
     entrypoint: whalesay
     templates:
     - name: whalesay
-      container: 
+      container:
         image: docker/whalesay:latest
         command: [cowsay]
         args: ["hello world"]
@@ -103,6 +103,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
@@ -114,7 +115,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 					t.Error("Could not write to temporary file")
 				}
 			}
-			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			body, err := ReadFromFilePathsOrUrls(ctx, filePaths...)
 			assert.Len(t, filePaths, len(body))
 			require.NoError(t, err)
 			for i := range body {
@@ -150,6 +151,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
@@ -163,7 +165,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 					}
 				}
 			}
-			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			body, err := ReadFromFilePathsOrUrls(ctx, filePaths...)
 			require.Error(t, err)
 			assert.Empty(t, body)
 		})
@@ -183,19 +185,19 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/suspend
   uid: 4f08d325-dc5a-43a3-9986-259e259e6ea3
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -368,16 +370,16 @@ kind: Workflow
 metadata:
   name: suspend-template
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
     - - arguments:
@@ -386,7 +388,7 @@ spec:
             value: '{{steps.approve.outputs.parameters.message}}'
         name: release
         template: whalesay
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -396,7 +398,7 @@ spec:
         valueFrom:
           supplied: {}
     suspend: {}
-  - 
+  -
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -616,13 +618,14 @@ func TestApplySubmitOpts(t *testing.T) {
 }
 
 func TestReadParametersFile(t *testing.T) {
-	file, err := os.CreateTemp("", "")
+	ctx := logging.TestContext(t.Context())
+	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
-	defer func() { _ = os.Remove(file.Name()) }()
+	file.Close()
 	err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 	require.NoError(t, err)
 	opts := &wfv1.SubmitOpts{}
-	err = ReadParametersFile(file.Name(), opts)
+	err = ReadParametersFile(ctx, file.Name(), opts)
 	require.NoError(t, err)
 	parameters := opts.Parameters
 	require.Len(t, parameters, 1)
@@ -746,22 +749,22 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
   uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
 spec:
-  
+
   entrypoint: foo
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: foo
     outputs: {}
     steps:
-    - - 
+    - -
         name: pass
         template: pass
-    - - 
+    - -
         name: fail
         template: fail
-  - 
+  -
     container:
       args:
       - exit 0
@@ -775,7 +778,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
