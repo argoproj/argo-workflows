@@ -4,9 +4,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: dag-daemon-task-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: daemon-example
   templates:

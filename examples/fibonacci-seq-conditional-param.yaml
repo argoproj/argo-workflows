@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: fibonacci-
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test: "environment"
   annotations:
     workflows.argoproj.io/description: |
       This example demonstrates fibonacci sequence problem using conditional parameter feature.

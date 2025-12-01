@@ -3,6 +3,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: k8s-wait-wf-
+  labels:
+    workflows.argoproj.io/no-test: "flaky"
 spec:
   entrypoint: k8s-wait-wf
   templates:

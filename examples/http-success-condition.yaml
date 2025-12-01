@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: http-template-condition-
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   annotations:
     workflows.argoproj.io/description: |
       Exemplifies usage of successCondition in HTTP template (available since v3.3)
@@ -15,7 +13,7 @@ spec:
         - - name: http-status-is-201-succeeds
             template: http-status-is-201
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/201"}]  # Returns status code 201
+              parameters: [{name: url, value: "http://httpbin:9100/status/201"}]  # Returns status code 201
           - name: http-body-contains-google-succeeds
             template: http-body-contains-google
             arguments:

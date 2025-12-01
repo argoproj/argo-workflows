@@ -5,7 +5,7 @@ kind: Workflow
 metadata:
   generateName: nested-workflow-
   labels:
-    workflows.argoproj.io/no-test-environment: "true"
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: nested-workflow-example
   templates:

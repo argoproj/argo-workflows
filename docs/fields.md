@@ -3997,11 +3997,11 @@ MetricLabel is a single label for a prometheus metric
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/colored-logs.yaml)
 
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/continue-on-fail.yaml)
+
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
-
-- [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-coinflip.yaml)
 
@@ -4015,9 +4015,13 @@ MetricLabel is a single label for a prometheus metric
 
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
+- [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-nested.yaml)
+
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-task-level-timeout.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-slack.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-slack.yaml)
 
@@ -4039,8 +4043,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
-- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
-
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
@@ -4061,7 +4063,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
 
-- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-wf-level.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
 
 - [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-arbitrary-sequential-steps.yaml)
 
@@ -4085,8 +4087,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/output-parameter.yaml)
-
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-dag.yaml)
@@ -4097,8 +4097,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parameter-aggregation-dag.yaml)
-
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy.yaml)
@@ -4106,6 +4104,8 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata.yaml)
+
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -4115,6 +4115,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
@@ -4122,8 +4124,6 @@ MetricLabel is a single label for a prometheus metric
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
 - [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
-
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
@@ -4139,7 +4139,11 @@ MetricLabel is a single label for a prometheus metric
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-on-exit.yaml)
+
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 

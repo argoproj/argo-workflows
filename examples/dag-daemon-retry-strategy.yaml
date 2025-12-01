@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  labels:
-    workflows.argoproj.io/no-test-broken: "true"
   generateName: dag-daemon-retry-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: main
 
@@ -21,11 +21,11 @@ spec:
           - name: server-ip
             value: "{{tasks.server.ip}}"
         withSequence:
-          count: "10"
+          count: "6"
 
   - name: server
     retryStrategy:
-      limit: "10"
+      limit: "6"
     daemon: true
     container:
       image: nginx:1.13

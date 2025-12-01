@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: parallelism-template-limit-
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: parallelism-template-limit
   templates:

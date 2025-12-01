@@ -4,7 +4,12 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-resons: |
+      the code that checks images allowed to run in test runs before the actual
+      image value is applied. In this case it checks for the template variable
+      and it is not an allowed image
   generateName: loops-param-arg-
 spec:
   entrypoint: loop-param-arg-example

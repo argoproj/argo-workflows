@@ -8,7 +8,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test: "duration"
   generateName: parallelism-nested-dag-
 spec:
   entrypoint: A

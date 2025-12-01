@@ -6,7 +6,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-environment: "true"
+    workflows.argoproj.io/no-test: "environment"
   generateName: exit-handler-slack-
 spec:
   entrypoint: say-hello

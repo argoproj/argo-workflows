@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   labels:
-    workflows.argoproj.io/no-test-environment: "true"
+    workflows.argoproj.io/no-test: "environment"
   annotations:
     workflows.argoproj.io/no-test-reasons: |
       main: Error (exit code 64): no more retries Error from server (Forbidden):

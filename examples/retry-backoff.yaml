@@ -4,7 +4,7 @@ kind: Workflow
 metadata:
   generateName: retry-backoff-
   labels:
-    workflows.argoproj.io/no-test-environment: "true"
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: retry-backoff
   templates:

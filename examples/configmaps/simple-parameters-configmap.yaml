@@ -5,6 +5,5 @@ metadata:
   labels:
     # Note that this label is required for the informer to detect this ConfigMap.
     workflows.argoproj.io/configmap-type: Parameter
-    workflows.argoproj.io/no-test-environment: "true"
 data:
   msg: 'hello world'

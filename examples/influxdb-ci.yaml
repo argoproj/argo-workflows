@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: influxdb-ci-
   labels:
-    workflows.argoproj.io/no-test-broken: "true"
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: influxdb-ci
   arguments:
