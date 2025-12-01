@@ -308,7 +308,7 @@ func (t *Then) ExpectWorkflowTaskSet(block func(t *testing.T, wfts *wfv1.Workflo
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
-	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec("../../dist/argo", "", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	return t
 }

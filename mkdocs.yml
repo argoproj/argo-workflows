@@ -202,6 +202,7 @@ nav:
           - argo cluster-template list: cli/argo_cluster-template_list.md
           - argo cluster-template update: cli/argo_cluster-template_update.md
           - argo completion: cli/argo_completion.md
+          - argo convert: cli/argo_convert.md
           - argo cp: cli/argo_cp.md
           - argo cron: cli/argo_cron.md
           - argo cron: cli/argo_cron_backfill.md

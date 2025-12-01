@@ -17,8 +17,15 @@ func errorln(args ...interface{}) {
 	_, _ = fmt.Fprint(os.Stderr, args...)
 }
 
-func Exec(name string, args ...string) (string, error) {
+func Exec(name string, stdin string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
+	if stdin != "" {
+		data, err := os.ReadFile(stdin)
+		if err != nil {
+			return "", err
+		}
+		cmd.Stdin = bytes.NewReader(data)
+	}
 	cmd.Env = os.Environ()
 	_, _ = fmt.Println(cmd.String())
 	output, err := runWithTimeout(cmd)

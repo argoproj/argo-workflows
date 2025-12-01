@@ -220,9 +220,9 @@ var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) 
 	}
 }
 
-func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
+func (g *Given) Exec(name string, args []string, stdin string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	output, err := Exec(name, args...)
+	output, err := Exec(name, stdin, args...)
 	block(g.t, output, err)
 	return g
 }
@@ -230,11 +230,15 @@ func (g *Given) Exec(name string, args []string, block func(t *testing.T, output
 // Use Kubectl to server-side apply the given file
 func (g *Given) KubectlApply(file string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), block)
+	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), "", block)
 }
 
 func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
-	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
+	return g.RunCliStdin(args, "", block)
+}
+
+func (g *Given) RunCliStdin(args []string, stdin string, block func(t *testing.T, output string, err error)) *Given {
+	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), stdin, block)
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {

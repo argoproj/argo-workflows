@@ -580,7 +580,7 @@ func (w *When) And(block func()) *When {
 
 func (w *When) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := Exec(name, args...)
+	output, err := Exec(name, "", args...)
 	block(w.t, output, err)
 	return w
 }
