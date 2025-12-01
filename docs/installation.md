@@ -21,6 +21,13 @@ You can use Kustomize to patch your preferred [configurations](managed-namespace
     `latest` is the tip of the `main` branch and may not be stable.
     In production, you should use a specific release version.
 
+#### Full CRDs
+
+As of version 4.0, the official release manifests use CRDs with full validation information.
+They must be applied using [server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) to workaround [Kubernetes size limits](https://github.com/kubernetes/kubernetes/issues/82292).
+
+Previous versions used [minimal CRDs](https://github.com/argoproj/argo-workflows/tree/main/manifests/base/crds/minimal) that stripped out validation information to avoid the size limits.
+
 #### Argo Workflows Helm Chart
 
 You can install Argo Workflows using the community maintained [Helm charts](https://github.com/argoproj/argo-helm).
