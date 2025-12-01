@@ -35,3 +35,16 @@ For more details see the example provided [here](https://github.com/argoproj/arg
 
 The logging levels available have been reduced to `debug`, `info`, `warn` and `error`.
 Other levels will be mapped to their equivalent if you use them, although they were previously undocumented.
+
+### Full CRDs
+
+The [official release manifests](installation.md#official-release-manifests) now default to using CRDs with full validation information.
+This enables using [Validating Admission Policy](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/) and `kubectl explain ...` on Argo CRDs.
+
+Existing installations using the [minimal CRDs](https://github.com/argoproj/argo-workflows/tree/main/manifests/base/crds/minimal) will continue to work, but you'll be unable to use features that rely on CRD validation information.
+
+Use the following command to selectively apply the full CRDs for an existing installation:
+
+```bash
+kubectl apply --server-side --kustomize https://github.com/argoproj/argo-workflows/manifests/base/crds/full?ref=v4.0.0
+```
