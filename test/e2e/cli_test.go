@@ -2077,17 +2077,7 @@ func (s *CLISuite) TestWorkflowConvert() {
 		})
 	})
 	s.Run("ConvertStdin", func() {
-		tmp, err := os.CreateTemp("", "convert-test-*.yaml")
-		s.CheckError(err)
-		defer os.Remove(tmp.Name())
-
-		data, err := os.ReadFile("testdata/convert/convert-legacy-cron.yaml")
-		s.CheckError(err)
-		_, err = tmp.Write(data)
-		s.CheckError(err)
-		tmp.Close()
-
-		s.Given().RunCli([]string{"convert", tmp.Name()}, func(t *testing.T, output string, err error) {
+		s.Given().RunCliStdin([]string{"convert", "-"}, "testdata/convert/convert-legacy-cron.yaml", func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 			assert.Contains(t, output, "schedules:")
 			assert.Contains(t, output, "- 0 0 * * *")
