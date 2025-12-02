@@ -1,0 +1,15 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: "argo-dangerous-interpolation-vap-binding"
+spec:
+  policyName: "argo-dangerous-interpolation-vap"
+  # Reject workflows that match the VAP.
+  # You could also set this to "Audit" to instead generate an audit event on a
+  # match, which can be used to identify workflows that need to be fixed.
+  validationActions: [Deny]
+  matchResources:
+    objectSelector:
+      matchLabels:
+        # Only match workflows with the "workflows.argoproj.io/vap" label.
+        workflows.argoproj.io/vap: "true"

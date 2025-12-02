@@ -1,0 +1,31 @@
+# This workflow contains a "container" template and "script" template that both
+# match the validating admission policy at
+# examples/validating-admission-policies/argo-dangerous-interpolation-vap.yaml.
+#
+# Attempting to submit it should give you the following:
+# $ kubectl create -f examples/validating-admission-policies/rejected-workflow.yaml
+# The workflows "rejected-workflow-fvj4h" is invalid: : ValidatingAdmissionPolicy 'argo-dangerous-interpolation-vap' with binding 'argo-dangerous-interpolation-vap-binding' denied request: Dangerous interpolation detected
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: rejected-workflow-
+  labels:
+    workflows.argoproj.io/vap: "true"
+spec:
+  entrypoint: container-with-interpolation
+  arguments:
+    parameters:
+      - name: message
+        value: test
+  templates:
+    - name: container-with-interpolation
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - "{{workflow.parameters.message}}"
+    - name: script-with-interpolation
+      script:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        source: "{{workflow.parameters.message}}"
