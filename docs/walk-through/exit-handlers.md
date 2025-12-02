@@ -9,6 +9,8 @@ Some common use cases of exit handlers are:
 - posting the pass/fail status to a web-hook result (e.g. GitHub build result)
 - resubmitting or submitting another workflow
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -55,3 +57,55 @@ spec:
       command: [sh, -c]
       args: ["echo boohoo!"]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, Steps, Workflow
+
+with Workflow(
+    generate_name="exit-handlers-",
+    entrypoint="intentional-fail",
+    on_exit="exit-handler",
+) as w:
+    Container(
+        name="intentional-fail",
+        args=["echo intentional failure; exit 1"],
+        command=["sh", "-c"],
+        image="alpine:latest",
+    )
+    send_email = Container(
+        name="send-email",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}"],
+    )
+    celebrate = Container(
+        name="celebrate",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["echo hooray!"],
+    )
+    cry = Container(
+        name="cry",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["echo boohoo!"],
+    )
+
+    with Steps(name="exit-handler") as steps:
+        with steps.parallel():
+            send_email(name="notify")
+            celebrate(
+                name="celebrate",
+                when="{{workflow.status}} == Succeeded",
+            )
+            cry(
+                name="cry",
+                when="{{workflow.status}} != Succeeded",
+            )
+```
+
+///
