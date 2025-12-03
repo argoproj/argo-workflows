@@ -42,8 +42,13 @@ Many go-lang functions have changed signature to require a [context](https://pkg
 In almost all cases you will need to provide a logger in your context.
 The details are in [logging.go](https://github.com/argoproj/argo-workflows/blob/main/util/logging/logging.go)
 
+The kubernetes client does not require a context.
+The API client from [apiclient](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) is an exception and will create a logger for you if you don't provide one.
+
 In particular:
 
 * Your logger must conform to the logging interface `Logger` from that file.
 * Your logger should be retrievable from the context key `logger` (util/logging/logging.go `LoggerKey`)
 * You may wish to use the logger from [slog.go](https://github.com/argoproj/argo-workflows/blob/main/util/logging/slog.go)
+
+Apiclient no longer provides `NewClient` or `NewClientFromOpts`, you must use `NewClientFromOptsWithContext`.
