@@ -554,6 +554,48 @@ func (s *ArgoServerSuite) TestPermission() {
 			IsEqual(1)
 	})
 
+	// Test list workflows with the original token and NotEquals namespace.
+	// We need the original token because it has the ClusterRoleBinding needed to list workflows in all namespaces
+	s.bearerToken = token
+	s.Run("ListWFsGoodTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	// Test list workflows with good token and NotEquals a non-existent namespace
+	s.Run("ListWFsGoodTokenNotEqualsNamespaceExcluded", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
+	// Test list workflows with good token and Equals namespace
+	s.Run("ListWFsGoodTokenDoubleEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
 	s.Given().
 		When().
 		WaitForWorkflow(fixtures.ToBeArchived)
@@ -583,6 +625,13 @@ func (s *ArgoServerSuite) TestPermission() {
     }
   }
 }`)).
+			Expect().
+			Status(403)
+	})
+
+	s.Run("ListWFsBadTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
 			Expect().
 			Status(403)
 	})

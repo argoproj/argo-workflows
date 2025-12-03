@@ -15,6 +15,7 @@ import (
 type ListOptions struct {
 	Namespace, Name              string
 	NamePrefix, NameFilter       string
+	NamespaceFilter              string
 	MinStartedAt, MaxStartedAt   time.Time
 	CreatedAfter, FinishedBefore time.Time
 	LabelRequirements            labels.Requirements
@@ -73,6 +74,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 	// namespace is now specified as its own query parameter
 	// note that for backward compatibility, the field selector 'metadata.namespace' is also supported for now
 	namespace := ns // optional
+	namespaceFilter := ""
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
@@ -96,7 +98,21 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 		if len(selector) == 0 {
 			continue
 		}
-		if after, ok := strings.CutPrefix(selector, "metadata.namespace="); ok {
+		if after, ok := strings.CutPrefix(selector, "metadata.namespace!="); ok {
+			namespace = after
+			namespaceFilter = "NotEquals"
+		} else if after, ok := strings.CutPrefix(selector, "metadata.namespace=="); ok {
+			fieldSelectedNamespace := after
+			switch namespace {
+			case "":
+				namespace = fieldSelectedNamespace
+			case fieldSelectedNamespace:
+				// namespace matches, nothing to do
+			default:
+				return ListOptions{}, status.Errorf(codes.InvalidArgument,
+					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
+			}
+		} else if after, ok := strings.CutPrefix(selector, "metadata.namespace="); ok {
 			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
 			// of the new 'namespace' query parameter, which is what the UI uses
 			fieldSelectedNamespace := after
@@ -147,6 +163,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 		Name:                   name,
 		NamePrefix:             namePrefix,
 		NameFilter:             nameFilter,
+		NamespaceFilter:        namespaceFilter,
 		CreatedAfter:           createdAfterTime,
 		FinishedBefore:         finishedBeforeTime,
 		MinStartedAt:           minStartedAt,

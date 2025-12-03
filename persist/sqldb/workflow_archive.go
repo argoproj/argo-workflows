@@ -293,8 +293,15 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 		selector := r.session.SQL().
 			Select(db.Raw("count(*) as total")).
 			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID()).
-			And(namespaceEqual(options.Namespace)).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		if options.NamespaceFilter == "NotEquals" {
+			selector = selector.And(namespaceNotEqual(options.Namespace))
+		} else {
+			selector = selector.And(namespaceEqual(options.Namespace))
+		}
+
+		selector = selector.
 			And(namePrefixClause(options.NamePrefix)).
 			And(startedAtFromClause(options.MinStartedAt)).
 			And(startedAtToClause(options.MaxStartedAt)).
@@ -348,8 +355,15 @@ func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (i
 	sampleSelector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+
+	if options.NamespaceFilter == "NotEquals" {
+		sampleSelector = sampleSelector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		sampleSelector = sampleSelector.And(namespaceEqual(options.Namespace))
+	}
+
+	sampleSelector = sampleSelector.
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -405,8 +419,15 @@ func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.L
 	selector := r.session.SQL().
 		Select("uid").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+
+	if options.NamespaceFilter == "NotEquals" {
+		selector = selector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		selector = selector.And(namespaceEqual(options.Namespace))
+	}
+
+	selector = selector.
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -490,6 +511,13 @@ func startedAtToClause(to time.Time) db.Cond {
 func namespaceEqual(namespace string) db.Cond {
 	if namespace != "" {
 		return db.Cond{"namespace": namespace}
+	}
+	return db.Cond{}
+}
+
+func namespaceNotEqual(namespace string) db.Cond {
+	if namespace != "" {
+		return db.Cond{"namespace !=": namespace}
 	}
 	return db.Cond{}
 }

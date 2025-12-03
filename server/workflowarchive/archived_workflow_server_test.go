@@ -68,6 +68,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(v1alpha1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "excluded-name", NameFilter: "NotEquals", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "exact-name", NameFilter: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "excluded-ns", NamespaceFilter: "NotEquals", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 1, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(int64(5), nil)
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(int64(5), nil)
@@ -197,6 +199,18 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		// pass namespace as field selector and query parameter both, where they don't match
 		_, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=other-ns"}})
 		assert.Equal(t, err, status.Error(codes.InvalidArgument, "'namespace' query param (\"user-ns\") and fieldselector 'metadata.namespace' (\"other-ns\") are both specified and contradict each other"))
+
+		// namespace NotEquals
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace!=excluded-ns"}})
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
+
+		// namespace DoubleEquals
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace==user-ns"}})
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
 
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
