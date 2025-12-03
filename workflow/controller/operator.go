@@ -1422,20 +1422,24 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 		// Check if this pod qualifies for automatic restart (failed before entering Running state)
 		// Skip if we've already initiated a restart for this pod (prevents duplicate restarts on rapid reprocessing)
-		if podUID != old.RestartingPodUID && woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
-			updated.FailedPodRestarts++
-			updated.RestartingPodUID = podUID
-			woc.log.WithFields(logging.Fields{
-				"podName":      pod.Name,
-				"nodeID":       old.ID,
-				"restartCount": updated.FailedPodRestarts,
-				"reason":       pod.Status.Reason,
-				"message":      pod.Status.Message,
-			}).Info(ctx, "Pod qualifies for automatic restart - marking as pending")
-			updated.Phase = wfv1.NodePending
-			updated.Message = fmt.Sprintf("Pod auto-restarting due to %s: %s", pod.Status.Reason, pod.Status.Message)
-			woc.controller.PodController.DeletePod(ctx, pod.Namespace, pod.Name)
-			woc.controller.metrics.RecordPodRestart(ctx, pod.Status.Reason, pod.Status.Message, pod.Namespace)
+		if woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
+			if podUID != old.RestartingPodUID {
+				updated.FailedPodRestarts++
+				updated.RestartingPodUID = podUID
+				woc.log.WithFields(logging.Fields{
+					"podName":      pod.Name,
+					"nodeID":       old.ID,
+					"restartCount": updated.FailedPodRestarts,
+					"reason":       pod.Status.Reason,
+					"message":      pod.Status.Message,
+				}).Info(ctx, "Pod qualifies for automatic restart - marking as pending")
+				updated.Phase = wfv1.NodePending
+				updated.Message = fmt.Sprintf("Pod auto-restarting due to %s: %s", pod.Status.Reason, pod.Status.Message)
+				woc.controller.metrics.RecordPodRestart(ctx, pod.Status.Reason, pod.Status.Message, pod.Namespace)
+			}
+			// Issue a delete request by UID here in case we lost the delete request
+			// since the last call to operate() (for example: controller restart)
+			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, podUID)
 		}
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
