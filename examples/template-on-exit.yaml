@@ -24,12 +24,12 @@ spec:
             template: hello-world
             hooks:
               exit:
-                template: exitContainer
+                template: exit-container
         - - name: stepB
             template: hello-world
             hooks:
               exit:
-                template: exitContainer
+                template: exit-container
 
     - name: hello-world
       container:
@@ -37,7 +37,7 @@ spec:
         command: [echo]
         args: ["hello world"]
 
-    - name: exitContainer
+    - name: exit-container
       container:
         image: busybox
         command: [echo]

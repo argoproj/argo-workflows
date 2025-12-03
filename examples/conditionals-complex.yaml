@@ -51,18 +51,18 @@ spec:
 
   - name: heads
     container:
-      image: alpine:3.6
+      image: busybox 
       command: [sh, -c]
       args: ["echo \"it was heads\""]
 
   - name: tails
     container:
-      image: alpine:3.6
+      image: busybox
       command: [sh, -c]
       args: ["echo \"it was tails\""]
   
   - name: heads-tails-or-twice-tails
     container:
-      image: alpine:3.6
+      image: busybox 
       command: [sh, -c]
       args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
