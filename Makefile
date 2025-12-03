@@ -354,8 +354,6 @@ argoexec-nonroot-image:
 codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS) ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
 	$(TOOL_MOCKERY) --config .mockery.yaml
- 	# The generated markdown contains links to nowhere for interfaces, so remove them
-	sed -i.bak 's/\[any\](#any)/`any`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
@@ -926,14 +924,14 @@ features-preview: hack/featuregen/featuregen
 	$< update --dry
 
 .PHONY: features-update
-features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Update the features documentation, but keep the feature files in the pending directory
 	# Updates docs/new-features.md for release-candidates
 	$< update --version $(VERSION)
 	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 .PHONY: features-release
-features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Update the features documentation AND move the feature files to the released directory
 	# Use this for the final update when releasing a version
 	$< update --version $(VERSION) --final
