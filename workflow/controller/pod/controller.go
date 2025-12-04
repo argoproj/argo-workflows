@@ -118,7 +118,7 @@ func (c *Controller) Run(ctx context.Context, workers int) {
 	if !cache.WaitForCacheSync(ctx.Done(), c.HasSynced()) {
 		return
 	}
-	for range workers {
+	for i := 0; i < workers; i++ {
 		go wait.UntilWithContext(ctx, c.runPodCleanup, time.Second)
 	}
 	<-ctx.Done()
