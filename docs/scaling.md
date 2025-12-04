@@ -189,7 +189,7 @@ For this POC we run with the absolute minimum we can get away with:
 
 | File                 | Purpose                                                                                    |
 | -------------------- | ------------------------------------------------------------------------------------------ |
-| `tls.crt`, `tls.key` | Server certificate & private key for HTTPS endpoint (`--secure-port=443`).                 |
+| `tls.crt`, `tls.key` | Server certificate & private key for HTTPS endpoint (`--secure-port=6443`).                 |
 | `serviceaccount.key` | Used both as the *public* and *private* key for signing service account tokens.            |
 | `tokens.csv`         | Static token authentication. Used so kubectl can authenticate without bootstrap machinery. |
 
@@ -238,26 +238,46 @@ data:
 | Flag                                                | Why                                                 |
 | --------------------------------------------------- | --------------------------------------------------- |
 | `--etcd-servers=http://argo-wtr-etcd.argo.svc:2379` | Backend database.                                   |
-| `--secure-port=443`                                 | Only expose HTTPS; insecure port removed in >=1.31. |
+| `--secure-port=6443`                                 | Only expose HTTPS; insecure port removed in >=1.31. |
 | `--tls-cert-file`, `--tls-private-key-file`         | Required since insecure-port is gone.               |
 | `--token-auth-file=/var/run/kubernetes/tokens.csv`  | Simplest auth flow for kubectl.                     |
 | `--service-account-key-file`                        | Needed even if we don’t actually use SA tokens.     |
 | `--service-account-signing-key-file`                | Required in 1.20+ to serve the SA issuer.           |
 | `--service-account-issuer`                          | Must match what your workloads use when validating. |
-| `--authorization-mode=AlwaysAllow`                  | Disables RBAC entirely. |
+| `--authorization-mode=AlwaysAllow`                  | Disables RBAC entirely.                             |
 | `--enable-admission-plugins=NamespaceLifecycle`     | Default admission plugin required for namespace-scoped CRDs and is on by default in upstream. |
 
 ###### Apply the `WorkflowTaskResults` CRD
 
-Once the API server is running, we can apply the CRD directly to it:
+<!-- Doesn't seem to be needed? `kit` tasks forwards everything for you? -->
+Once the API server is running, we can port forward it and apply the CRD directly to it.
+
+Port forward in a separate terminal:
+
+```console
+kubectl -n argo port-forward service/argo-wtr-apiserver 6443:6443;
+```
+
+And then run the `apply`:
 
 ```console
 kubectl \
-  --server=https://127.0.0.1:443 \
+  --server=https://localhost:6443 \
   --token=mytoken \
   --insecure-skip-tls-verify=true \
-  apply -f argoproj.io_workflowtaskresults.yaml
+  apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
 ```
+
+Also create the `argo` namespace in the API server:
+
+```console
+kubectl \
+  --server=https://localhost:6443 \
+  --token=mytoken \
+  --insecure-skip-tls-verify=true \
+  create ns argo
+```
+
 
 ###### Optional convenience: use a Config for `kubectl` and `k9s`
 
@@ -268,7 +288,7 @@ apiVersion: v1
 kind: Config
 clusters:
 - cluster:
-    server: https://127.0.0.1:443
+    server: https://localhost:6443
     insecure-skip-tls-verify: true
   name: argo-wtr-cluster
 users:
@@ -291,6 +311,24 @@ KUBECONFIG=api-server-kubeconfig.yaml ./k9s
 ```
 
 (Download `k9s` to the container if using Dev Containers.)
+
+##### Set Up the Controller Config
+
+The final step is to tell our Workflows Controller about the offloadTaskResults config.
+Based on the above config with the server at `https://localhost:6443`, we can use this `ConfigMap` as `manifests/base/workflow-controller/workflow-controller-configmap.yaml`:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  offloadTaskResults: |
+    enabled: true
+    APIServer: https://localhost:6443
+```
+
+And finally (with the api-server still port-forwarded) run `make start` to run the workflow controller with workflowtaskresult offloading!
 
 ## Sharding
 

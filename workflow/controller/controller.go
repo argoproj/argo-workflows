@@ -209,6 +209,12 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 			},
 		}
 		wftrclientset = versioned.NewForConfigOrDie(&offloadCfg)
+		_, err := wftrclientset.ArgoprojV1alpha1().WorkflowTaskResults("").List(ctx, metav1.ListOptions{})
+		if err != nil {
+			logger.WithError(err).Error(ctx, "Offload cluster connectivity check failed")
+		} else {
+			logger.Info(ctx, "Offload cluster connectivity OK")
+		}
 	}
 
 	wfc := WorkflowController{

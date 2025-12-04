@@ -5,4 +5,4 @@ metadata:
 data:
   offloadTaskResults: |
     enabled: true
-    APIServer: https://localhost:443
+    APIServer: https://localhost:6443

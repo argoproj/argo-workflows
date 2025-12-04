@@ -81,7 +81,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		ctx,
 		clientset,
 		versioned.NewForConfigOrDie(&rest.Config{
-			Host:        "https://argo-wtr-apiserver.argo.svc.cluster.local:443",
+			Host:        "https://argo-wtr-apiserver.argo.svc.cluster.local:6443",
 			BearerToken: "mytoken",
 			TLSClientConfig: rest.TLSClientConfig{
 				Insecure: true,

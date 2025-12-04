@@ -88,24 +88,29 @@ spec:
       containers:
       - name: kube-apiserver
         image: registry.k8s.io/kube-apiserver:v1.31.9
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         command:
         - kube-apiserver
         - --etcd-servers=http://argo-wtr-etcd.argo.svc:2379
-        - --advertise-address=127.0.0.1
+        - --advertise-address=$(POD_IP)
         - --allow-privileged=true
         - --token-auth-file=/var/run/kubernetes/tokens.csv
         - --service-account-key-file=/var/run/kubernetes/serviceaccount.key
         - --service-account-signing-key-file=/var/run/kubernetes/serviceaccount.key
         - --service-account-issuer=https://argo-wtr-apiserver.argo.svc
         - --api-audiences=https://argo-wtr-apiserver.argo.svc
-        - --secure-port=443
+        - --secure-port=6443
         - --service-cluster-ip-range=10.96.0.0/12
         - --authorization-mode=AlwaysAllow
         - --enable-admission-plugins=NamespaceLifecycle
         - --tls-cert-file=/var/run/kubernetes/tls.crt
         - --tls-private-key-file=/var/run/kubernetes/tls.key
         ports:
-        - containerPort: 443
+        - containerPort: 6443
         volumeMounts:
         - name: certs-and-keys-vol
           mountPath: /var/run/kubernetes
@@ -133,6 +138,6 @@ spec:
   selector:
     app: argo-wtr-apiserver
   ports:
-  - port: 443
-    targetPort: 443
+  - port: 6443
+    targetPort: 6443
     name: https
