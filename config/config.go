@@ -123,6 +123,39 @@ type Config struct {
 
 	// ArtifactDrivers lists artifact driver plugins we can use
 	ArtifactDrivers []ArtifactDriver `json:"artifactDrivers,omitempty"`
+
+	// FailedPodRestart configures automatic restart of pods that fail before entering Running state
+	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
+	// infrastructure issues without requiring a retryStrategy on templates.
+	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+}
+
+// FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
+// This is useful for recovering from transient infrastructure issues like node eviction due to
+// DiskPressure or MemoryPressure without requiring a retryStrategy on every template.
+type FailedPodRestartConfig struct {
+	// Enabled enables automatic restart of pods that fail before entering Running state.
+	// When enabled, pods that fail due to infrastructure issues (like eviction) without ever
+	// running their main container will be automatically recreated.
+	// Default is false.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MaxRestarts is the maximum number of automatic restarts per node before giving up.
+	// This prevents infinite restart loops. Default is 3.
+	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
+}
+
+// GetMaxRestarts returns the configured max restarts or the default value of 3.
+func (c *FailedPodRestartConfig) GetMaxRestarts() int32 {
+	if c == nil || c.MaxRestarts == nil {
+		return 3
+	}
+	return *c.MaxRestarts
+}
+
+// IsEnabled returns true if the feature is enabled.
+func (c *FailedPodRestartConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
 }
 
 // ArtifactDriver is a plugin for an artifact driver

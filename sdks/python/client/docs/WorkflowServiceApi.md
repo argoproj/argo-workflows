@@ -11614,6 +11614,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         daemoned=True,
                         display_name="display_name_example",
                         estimated_duration=1,
+                        failed_pod_restarts=1,
                         finished_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                         host_node_name="host_node_name_example",
                         id="id_example",
@@ -12209,6 +12210,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         resources_duration={
                             "key": 1,
                         },
+                        restarting_pod_uid="restarting_pod_uid_example",
                         started_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                         synchronization_status=IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus(
                             waiting="waiting_example",
@@ -40972,6 +40974,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         daemoned=True,
                         display_name="display_name_example",
                         estimated_duration=1,
+                        failed_pod_restarts=1,
                         finished_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                         host_node_name="host_node_name_example",
                         id="id_example",
@@ -41567,6 +41570,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         resources_duration={
                             "key": 1,
                         },
+                        restarting_pod_uid="restarting_pod_uid_example",
                         started_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                         synchronization_status=IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus(
                             waiting="waiting_example",
