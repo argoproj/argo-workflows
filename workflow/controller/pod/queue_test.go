@@ -13,12 +13,12 @@ import (
 
 func TestParsePodCleanupKey(t *testing.T) {
 	tests := []struct {
-		name              string
-		key               podCleanupKey
-		wantNamespace     string
-		wantPodName       string
-		wantAction        podCleanupAction
-		wantUID           string
+		name          string
+		key           podCleanupKey
+		wantNamespace string
+		wantPodName   string
+		wantAction    podCleanupAction
+		wantUID       string
 	}{
 		{
 			name:          "standard key without UID",
