@@ -112,14 +112,14 @@ func TestLegacyCronWorkflowSpec_ToCurrent(t *testing.T) {
 		assert.Equal(t, []string{"0 * * * *", "30 * * * *"}, result.Schedules)
 	})
 
-	t.Run("appends singular to plural without aliasing", func(t *testing.T) {
+	t.Run("singular only when both", func(t *testing.T) {
 		lcs := &LegacyCronWorkflowSpec{
 			Schedule:  "0 0 * * *",
 			Schedules: []string{"0 * * * *", "30 * * * *"},
 		}
 		result := lcs.ToCurrent()
 
-		assert.Equal(t, []string{"0 * * * *", "30 * * * *", "0 0 * * *"}, result.Schedules)
+		assert.Equal(t, []string{"0 0 * * *"}, result.Schedules)
 
 		// Verify no aliasing
 		assert.Len(t, lcs.Schedules, 2)
