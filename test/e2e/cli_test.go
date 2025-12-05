@@ -3,8 +3,17 @@
 package e2e
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"math/big"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -2093,6 +2102,215 @@ func (s *CLISuite) TestWorkflowConvert() {
 	})
 }
 
+func (s *CLISuite) TestClientCerts() {
+	s.Run("gRPC", func() {
+		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startTLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version"}, receivedCertCh)
+	})
+	s.Run("HTTP1", func() {
+		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startTLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version", "--argo-http1"}, receivedCertCh)
+	})
+}
+
+func (s *CLISuite) startTLSServerWithClientAuth() (string, string, string, chan bool) {
+	s.T().Helper()
+
+	tmpDir := s.T().TempDir()
+	caCert, caKey, err := generateCert(nil, nil, true, "Test CA")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	serverCert, serverKey, err := generateCert(caCert, caKey, false, "localhost")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	clientCert, clientKey, err := generateCert(caCert, caKey, false, "client")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	caFile := filepath.Join(tmpDir, "ca.crt")
+	err = os.WriteFile(caFile, pemEncode(caCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	serverCertFile := filepath.Join(tmpDir, "server.crt")
+	err = os.WriteFile(serverCertFile, pemEncode(serverCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	serverKeyFile := filepath.Join(tmpDir, "server.key")
+	err = os.WriteFile(serverKeyFile, pemEncode(serverKey, "RSA PRIVATE KEY"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	clientCertPath := filepath.Join(tmpDir, "client.crt")
+	err = os.WriteFile(clientCertPath, pemEncode(clientCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	clientKeyPath := filepath.Join(tmpDir, "client.key")
+	err = os.WriteFile(clientKeyPath, pemEncode(clientKey, "RSA PRIVATE KEY"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(caCert)
+
+	serverTLSCert, err := tls.LoadX509KeyPair(serverCertFile, serverKeyFile)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverTLSCert},
+		ClientAuth:   tls.RequestClientCert,
+		ClientCAs:    certPool,
+		NextProtos:   []string{"h2", "http/1.1"},
+	}
+
+	listener, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	port := listener.Addr().(*net.TCPAddr).Port
+	tlsServerAddr := fmt.Sprintf("localhost:%d", port)
+	receivedCertCh := make(chan bool, 1)
+	expectedSerialNumber := clientCert.SerialNumber
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(r.TLS.PeerCertificates) > 0 {
+			receivedCert := r.TLS.PeerCertificates[0]
+			// Validate that the received certificate matches the expected client certificate
+			if receivedCert.SerialNumber.Cmp(expectedSerialNumber) == 0 {
+				receivedCertCh <- true
+			} else {
+				receivedCertCh <- false
+			}
+		} else {
+			receivedCertCh <- false
+		}
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write([]byte(`{"version": "v0.0.0"}`))
+		s.CheckError(err)
+	})
+
+	server := &http.Server{
+		Handler: handler,
+	}
+
+	go func() {
+		_ = server.Serve(listener)
+	}()
+
+	s.T().Cleanup(func() {
+		server.Close()
+		listener.Close()
+	})
+
+	return tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh
+}
+
+func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath string, args []string, receivedCertCh chan bool) {
+	s.T().Helper()
+
+	select {
+	case <-receivedCertCh:
+	default:
+	}
+
+	baseArgs := []string{
+		"--argo-server", tlsServerAddr,
+		"--client-certificate", clientCertPath,
+		"--client-key", clientKeyPath,
+		"--secure",
+		"--insecure-skip-verify",
+	}
+
+	finalArgs := append(baseArgs, args...)
+
+	s.Given().RunCli(finalArgs, func(t *testing.T, output string, err error) {
+	})
+
+	select {
+	case received := <-receivedCertCh:
+		s.True(received, "Server should have received client certificate")
+	case <-time.After(5 * time.Second):
+		s.Fail("Timed out waiting for request")
+	}
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
+}
+
+func generateCert(caCert *x509.Certificate, caKey interface{}, isCA bool, commonName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notBefore := time.Now()
+	notAfter := notBefore.Add(time.Hour)
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+	}
+
+	if isCA {
+		template.IsCA = true
+		template.KeyUsage |= x509.KeyUsageCertSign
+	} else {
+		template.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+		template.DNSNames = []string{"localhost"}
+	}
+
+	parent := &template
+	parentKey := priv
+	if caCert != nil {
+		parent = caCert
+		parentKey = caKey.(*rsa.PrivateKey)
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, parent, &priv.PublicKey, parentKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := x509.ParseCertificate(derBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cert, priv, nil
+}
+
+func pemEncode(data interface{}, typeStr string) []byte {
+	var bytes []byte
+	switch d := data.(type) {
+	case *x509.Certificate:
+		bytes = d.Raw
+	case *rsa.PrivateKey:
+		bytes = x509.MarshalPKCS1PrivateKey(d)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: typeStr, Bytes: bytes})
 }
