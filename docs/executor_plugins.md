@@ -163,7 +163,7 @@ spec:
         - containerPort: 4355
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534 # nobody
+        runAsUser: 1000
       resources:
         requests:
           memory: "64Mi"
