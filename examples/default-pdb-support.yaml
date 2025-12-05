@@ -11,6 +11,6 @@ spec:
   templates:
   - name: pdbcreate
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["sleep 10"]

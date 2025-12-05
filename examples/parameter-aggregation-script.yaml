@@ -47,7 +47,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: alpine:latest
+      image: alpine:3.6
       command: [sh, -x]
       source: |
         echo $(({{inputs.parameters.num}}/2))

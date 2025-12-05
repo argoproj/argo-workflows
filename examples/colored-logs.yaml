@@ -3,12 +3,14 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: colored-logs-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: print-colors
   templates:
   - name: print-colors
     script:
-      image: python:3.7
+      image: python:alpine3.6
       command: ["python"]
       source: |
         import time

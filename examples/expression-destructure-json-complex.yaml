@@ -30,7 +30,7 @@ spec:
             value: "{{inputs.parameters.c}}"
           - name: D
             value: "{{inputs.parameters.d}}"
-        image: debian:9.4
-        command: [bash]
+        image: busybox
+        command: [sh]
         source: |
           echo "$A$B$C$D"

@@ -45,6 +45,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: backfill-v1
+  labels:
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: main
   # the backfill must use a service account which can create workflows
@@ -98,6 +100,15 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: backfill-v2
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      This is the error, we should fix the service account
+
+      workflowtaskresults.argoproj.io is forbidden: User
+      "system:serviceaccount:argo:argo-server" cannot create resource
+      "workflowtaskresults" in API group "argoproj.io" in the namespace "argo"
 spec:
   entrypoint: main
   # limit to one job at a time
