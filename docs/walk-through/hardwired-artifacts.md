@@ -2,6 +2,8 @@
 
 You can use any container image to generate any kind of artifact. In practice, however, certain types of artifacts are very common, so there is built-in support for git, HTTP, GCS, and S3 artifacts.
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -44,3 +46,48 @@ spec:
       command: [sh, -c]
       args: ["ls -l /src /bin/kubectl /s3"]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, GitArtifact, HTTPArtifact, S3Artifact, Workflow
+from hera.workflows.models import SecretKeySelector
+
+with Workflow(
+    generate_name="hardwired-artifact-",
+    entrypoint="hardwired-artifact",
+) as w:
+    Container(
+        name="hardwired-artifact",
+        image="debian",
+        command=["sh", "-c"],
+        args=["ls -l /src /bin/kubectl /s3"],
+        inputs=[
+            GitArtifact(
+                repo="https://github.com/argoproj/argo-workflows.git",
+                revision="main",
+                name="argo-source",
+                path="/src",
+            ),
+            HTTPArtifact(
+                name="kubectl",
+                path="/bin/kubectl",
+                mode=0o755,
+                url="https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl",
+            ),
+            S3Artifact(
+                name="objects",
+                path="/s3",
+                access_key_secret=SecretKeySelector(key="accessKey", name="my-s3-credentials"),
+                bucket="my-bucket-name",
+                endpoint="storage.googleapis.com",
+                key="path/in/bucket",
+                secret_key_secret=SecretKeySelector(key="secretKey", name="my-s3-credentials"),
+            ),
+        ],
+    )
+```
+
+///

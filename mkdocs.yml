@@ -24,23 +24,29 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
 extra:
   analytics:
     provider: google
     property: G-5Z1VTPDL73
 markdown_extensions:
-  - codehilite
   - admonition
   - md_in_html
+  - pymdownx.highlight
   - pymdownx.details
   - pymdownx.snippets
   - pymdownx.tilde
+  - pymdownx.superfences
   - pymdownx.superfences:
       custom_fences:
         # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.blocks.tab:
+      alternate_style: true
   - toc:
       permalink: true
 plugins:
