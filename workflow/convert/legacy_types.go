@@ -28,17 +28,21 @@ func (ls *LegacySynchronization) ToCurrent() *wfv1.Synchronization {
 		return nil
 	}
 
-	sync := &wfv1.Synchronization{
-		Semaphores: ls.Semaphores,
-		Mutexes:    ls.Mutexes,
+	sync := &wfv1.Synchronization{}
+
+	// Copy semaphores to avoid aliasing, then append singular if present
+	// Unlike schedules, we honor both singular and plurals here
+	sync.Semaphores = make([]*wfv1.SemaphoreRef, len(ls.Semaphores))
+	copy(sync.Semaphores, ls.Semaphores)
+	if ls.Semaphore != nil {
+		sync.Semaphores = append(sync.Semaphores, ls.Semaphore)
 	}
 
-	// Migrate singular to plural if needed
-	if ls.Semaphore != nil && len(sync.Semaphores) == 0 {
-		sync.Semaphores = []*wfv1.SemaphoreRef{ls.Semaphore}
-	}
-	if ls.Mutex != nil && len(sync.Mutexes) == 0 {
-		sync.Mutexes = []*wfv1.Mutex{ls.Mutex}
+	// Copy mutexes to avoid aliasing, then append singular if present
+	sync.Mutexes = make([]*wfv1.Mutex, len(ls.Mutexes))
+	copy(sync.Mutexes, ls.Mutexes)
+	if ls.Mutex != nil {
+		sync.Mutexes = append(sync.Mutexes, ls.Mutex)
 	}
 
 	return sync
@@ -126,7 +130,8 @@ func (lcs *LegacyCronWorkflowSpec) ToCurrent() wfv1.CronWorkflowSpec {
 	}
 
 	// Migrate singular schedule to plural if needed
-	if lcs.Schedule != "" && len(spec.Schedules) == 0 {
+	// Unlike synchronization we didn't honor both singular and plural, singular has priority
+	if lcs.Schedule != "" {
 		spec.Schedules = []string{lcs.Schedule}
 	}
 
