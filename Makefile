@@ -459,8 +459,8 @@ else
 endif
 endif
 
-# go-to-protobuf fails with mysterious errors on code that doesn't compile, hence lint-go as a dependency here
-pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf lint-go
+# go-to-protobuf fails with mysterious errors on code that doesn't compile
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
