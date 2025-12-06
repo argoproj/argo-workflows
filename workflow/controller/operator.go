@@ -839,7 +839,10 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 		DeleteCollection(
 			ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
-			metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name},
+			metav1.ListOptions{
+				LabelSelector:   common.LabelKeyWorkflow + "=" + woc.wf.Name,
+				ResourceVersion: "0",
+			},
 		)
 }
 
