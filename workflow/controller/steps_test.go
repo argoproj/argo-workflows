@@ -127,6 +127,95 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
+var stepsWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-params-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-param
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "[1234, \"foo\\tbar\", true, []]"
+`
+
+func TestExpandStepGroupWithParam(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithParam)
+	woc := newWoc(ctx, *wf)
+
+	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	require.NoError(t, err)
+	require.Len(t, expanded, 4)
+
+	expectedExpandedTasks := []struct {
+		Name      string
+		Parameter string
+	}{
+		{
+			Name:      "use-with-param(0:1234)",
+			Parameter: "1234",
+		},
+		{
+			Name:      `use-with-param(1:foo\tbar)`,
+			Parameter: "foo\tbar",
+		},
+		{
+			Name:      "use-with-param(2:true)",
+			Parameter: "true",
+		},
+		{
+			Name:      "use-with-param(3:[])",
+			Parameter: "[]",
+		},
+	}
+
+	for i, expected := range expectedExpandedTasks {
+		assert.Equal(t, expected.Name, expanded[i].Name)
+		require.Len(t, expanded[i].Arguments.Parameters, 1)
+		assert.Equal(t, expected.Parameter, expanded[i].Arguments.Parameters[0].Value.String())
+	}
+}
+
+var stepsWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-items-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-items
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+          - Hello"Argo
+`
+
+func TestExpandStepGroupWithItems(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithItems)
+	woc := newWoc(ctx, *wf)
+
+	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	require.NoError(t, err)
+	require.Len(t, expanded, 1)
+
+	assert.Equal(t, `Hello"Argo`, expanded[0].Arguments.Parameters[0].Value.String())
+}
+
 func TestResourceDurationMetric(t *testing.T) {
 	nodeStatus := `
       boundaryID: many-items-z26lj

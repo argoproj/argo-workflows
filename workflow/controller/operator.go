@@ -3756,8 +3756,11 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 	var newName string
 
 	switch item.GetType() {
-	case wfv1.String, wfv1.Number, wfv1.Bool:
+	case wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", item)
+		newName = generateNodeName(name, index, item)
+	case wfv1.String:
+		replaceMap["item"] = item.GetStrVal()
 		newName = generateNodeName(name, index, item)
 	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.

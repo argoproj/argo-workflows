@@ -6948,19 +6948,82 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 
 func Test_processItem(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	task := wfv1.DAGTask{
-		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
-	}
-	taskBytes, err := json.Marshal(task)
-	require.NoError(t, err)
-	var items []wfv1.Item
-	wfv1.MustUnmarshal([]byte(task.WithParam), &items)
 
-	var newTask wfv1.DAGTask
-	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
-	require.NoError(t, err)
-	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
+	tests := []struct {
+		name          string
+		withParam     string
+		expectedName  string
+		expectedParam string
+	}{
+		{
+			name:          "Test string",
+			withParam:     `["string"]`,
+			expectedName:  `task-name(0:string)`,
+			expectedParam: `string`,
+		},
+		{
+			name:          "Test multiline string",
+			withParam:     `["alpha\nbeta"]`,
+			expectedName:  `task-name(0:alpha\nbeta)`,
+			expectedParam: "alpha\nbeta",
+		},
+		{
+			name:          "Test number",
+			withParam:     `[42]`,
+			expectedName:  `task-name(0:42)`,
+			expectedParam: `42`,
+		},
+		{
+			name:          "Test boolean",
+			withParam:     `[true]`,
+			expectedName:  `task-name(0:true)`,
+			expectedParam: `true`,
+		},
+		{
+			name:          "Test map",
+			withParam:     `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+			expectedName:  `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`,
+			expectedParam: `{"json":{"list":[0,"1"],"number":2,"string":"foo"},"list":[0,"1"],"number":2,"string":"foo"}`,
+		},
+		{
+			name:          "Test list",
+			withParam:     `[[1, "two", 3]]`,
+			expectedName:  `task-name(0:[1 two 3])`,
+			expectedParam: `[1,"two",3]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			task := wfv1.DAGTask{
+				WithParam: tt.withParam,
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:  "item",
+							Value: wfv1.AnyStringPtr("{{item}}"),
+						},
+					},
+				},
+			}
+
+			taskBytes, err := json.Marshal(task)
+			require.NoError(t, err)
+
+			tmpl, err := template.NewTemplate(string(taskBytes))
+			require.NoError(t, err)
+
+			var items []wfv1.Item
+			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
+
+			var newTask wfv1.DAGTask
+			newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedName, newTaskName)
+			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())
+		})
+	}
 }
 
 var stepTimeoutWf = `
