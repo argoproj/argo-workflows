@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	sema "golang.org/x/sync/semaphore"
@@ -17,6 +18,7 @@ type prioritySemaphore struct {
 	pending      *priorityQueue
 	semaphore    *sema.Weighted
 	lockHolder   map[string]bool
+	lockHolderMu sync.RWMutex
 	nextWorkflow NextWorkflow
 	logger       loggerFn
 }
@@ -76,6 +78,8 @@ func (s *prioritySemaphore) getCurrentPending(_ context.Context) ([]string, erro
 }
 
 func (s *prioritySemaphore) getCurrentHolders(_ context.Context) ([]string, error) {
+	s.lockHolderMu.RLock()
+	defer s.lockHolderMu.RUnlock()
 	var keys []string
 	for k := range s.lockHolder {
 		keys = append(keys, k)
@@ -85,7 +89,9 @@ func (s *prioritySemaphore) getCurrentHolders(_ context.Context) ([]string, erro
 
 func (s *prioritySemaphore) resize(ctx context.Context, n int) bool {
 	// downward case, acquired n locks
+	s.lockHolderMu.RLock()
 	cur := min(len(s.lockHolder), n)
+	s.lockHolderMu.RUnlock()
 
 	semaphore := sema.NewWeighted(int64(n))
 	status := semaphore.TryAcquire(int64(cur))
@@ -102,16 +108,20 @@ func (s *prioritySemaphore) resize(ctx context.Context, n int) bool {
 
 func (s *prioritySemaphore) release(ctx context.Context, key string) bool {
 	limit := s.getLimit(ctx)
-	if _, ok := s.lockHolder[key]; ok {
+	s.lockHolderMu.Lock()
+	_, ok := s.lockHolder[key]
+	if ok {
 		delete(s.lockHolder, key)
+		holderCount := len(s.lockHolder)
+		s.lockHolderMu.Unlock()
 		// When semaphore resized downward
 		// Remove the excess holders from map once the done.
-		if len(s.lockHolder) >= limit {
+		if holderCount >= limit {
 			return true
 		}
 
 		s.semaphore.Release(1)
-		availableLocks := limit - len(s.lockHolder)
+		availableLocks := limit - holderCount
 		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 			"key":            key,
 			"availableLocks": availableLocks,
@@ -119,6 +129,8 @@ func (s *prioritySemaphore) release(ctx context.Context, key string) bool {
 		if s.pending.Len() > 0 {
 			s.notifyWaiters(ctx)
 		}
+	} else {
+		s.lockHolderMu.Unlock()
 	}
 	return true
 }
@@ -126,7 +138,10 @@ func (s *prioritySemaphore) release(ctx context.Context, key string) bool {
 // notifyWaiters enqueues the next N workflows who are waiting for the semaphore to the workqueue,
 // where N is the availability of the semaphore. If semaphore is out of capacity, this does nothing.
 func (s *prioritySemaphore) notifyWaiters(ctx context.Context) {
-	triggerCount := min(s.pending.Len(), s.getLimit(ctx)-len(s.lockHolder))
+	s.lockHolderMu.RLock()
+	holderCount := len(s.lockHolder)
+	s.lockHolderMu.RUnlock()
+	triggerCount := min(s.pending.Len(), s.getLimit(ctx)-holderCount)
 	for idx := 0; idx < triggerCount; idx++ {
 		item := s.pending.items[idx]
 		wfKey := workflowKey(item.key)
@@ -150,7 +165,10 @@ func workflowKey(key string) string {
 func (s *prioritySemaphore) addToQueue(ctx context.Context, holderKey string, priority int32, creationTime time.Time) error {
 	logger := s.logger(ctx)
 
-	if _, ok := s.lockHolder[holderKey]; ok {
+	s.lockHolderMu.RLock()
+	_, ok := s.lockHolder[holderKey]
+	s.lockHolderMu.RUnlock()
+	if ok {
 		logger.WithField("holderKey", holderKey).Debug(ctx, "Lock is already acquired")
 		return nil
 	}
@@ -169,7 +187,9 @@ func (s *prioritySemaphore) removeFromQueue(ctx context.Context, holderKey strin
 
 func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *transaction) bool {
 	if s.semaphore.TryAcquire(1) {
+		s.lockHolderMu.Lock()
 		s.lockHolder[holderKey] = true
+		s.lockHolderMu.Unlock()
 		return true
 	}
 	return false
@@ -200,7 +220,12 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		return false, false, "bug: attempt to check semaphore with empty holder key"
 	}
 
-	if _, ok := s.lockHolder[holderKey]; ok {
+	s.lockHolderMu.RLock()
+	_, ok := s.lockHolder[holderKey]
+	holderCount := len(s.lockHolder)
+	s.lockHolderMu.RUnlock()
+
+	if ok {
 		logger.WithField("holderKey", holderKey).Debug(ctx, "is already holding a lock")
 		return false, true, ""
 	}
@@ -209,7 +234,7 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		return false, false, fmt.Sprintf("Failed to get semaphore limit for %s", s.name)
 	}
 
-	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, limit-len(s.lockHolder), limit)
+	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, limit-holderCount, limit)
 
 	// Check whether requested holdkey is in front of priority queue.
 	// If it is in front position, it will allow to acquire lock.
@@ -218,7 +243,7 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		item := s.pending.peek()
 		if !isSameWorkflowNodeKeys(holderKey, item.key) {
 			// Enqueue the front workflow if lock is available
-			if len(s.lockHolder) < limit {
+			if holderCount < limit {
 				s.nextWorkflow(workflowKey(item.key))
 			}
 			logger.WithField("holderKey", holderKey).Info(ctx, "isn't at the front")
@@ -230,7 +255,13 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		return true, false, ""
 	}
 
-	logger.WithField("lockHolder", s.lockHolder).Debug(ctx, "Current semaphore Holders")
+	s.lockHolderMu.RLock()
+	lockHolderCopy := make(map[string]bool, len(s.lockHolder))
+	for k, v := range s.lockHolder {
+		lockHolderCopy[k] = v
+	}
+	s.lockHolderMu.RUnlock()
+	logger.WithField("lockHolder", lockHolderCopy).Debug(ctx, "Current semaphore Holders")
 	return false, false, waitingMsg
 }
 
@@ -246,16 +277,29 @@ func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 	if s.acquire(ctx, holderKey, tx) {
 		s.pending.pop()
 		limit := s.getLimit(ctx)
+		s.lockHolderMu.RLock()
+		holderCount := len(s.lockHolder)
+		lockHolderCopy := make(map[string]bool, len(s.lockHolder))
+		for k, v := range s.lockHolder {
+			lockHolderCopy[k] = v
+		}
+		s.lockHolderMu.RUnlock()
 		logger.WithFields(logging.Fields{
 			"name":      s.name,
 			"holderKey": holderKey,
-			"available": limit - len(s.lockHolder),
+			"available": limit - holderCount,
 			"limit":     limit,
 		}).Info(ctx, "acquired")
 		s.notifyWaiters(ctx)
 		return true, ""
 	}
-	logger.WithField("lockHolder", s.lockHolder).Debug(ctx, "Current semaphore Holders")
+	s.lockHolderMu.RLock()
+	lockHolderCopy := make(map[string]bool, len(s.lockHolder))
+	for k, v := range s.lockHolder {
+		lockHolderCopy[k] = v
+	}
+	s.lockHolderMu.RUnlock()
+	logger.WithField("lockHolder", lockHolderCopy).Debug(ctx, "Current semaphore Holders")
 	return false, msg
 }
 
