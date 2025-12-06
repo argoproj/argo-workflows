@@ -88,6 +88,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [freee](https://corp.freee.co.jp/en/company/)
 1. [FreeWheel](https://freewheel.com/)
 1. [Fynd Trak](https://trak.fynd.com/)
+1. [GAC Group](https://www.gacgroup.com/en)
 1. [Galixir](https://www.galixir.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [Gepardec](https://gepardec.com/)
