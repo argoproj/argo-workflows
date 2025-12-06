@@ -5,10 +5,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**schedules** | **[str]** | v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format | 
 **workflow_spec** | [**IoArgoprojWorkflowV1alpha1WorkflowSpec**](IoArgoprojWorkflowV1alpha1WorkflowSpec.md) |  | 
 **concurrency_policy** | **str** | ConcurrencyPolicy is the K8s-style concurrency policy that will be used | [optional] 
 **failed_jobs_history_limit** | **int** | FailedJobsHistoryLimit is the number of failed jobs to be kept at a time | [optional] 
-**schedules** | **[str]** | v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format | [optional] 
 **starting_deadline_seconds** | **int** | StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed. | [optional] 
 **stop_strategy** | [**IoArgoprojWorkflowV1alpha1StopStrategy**](IoArgoprojWorkflowV1alpha1StopStrategy.md) |  | [optional] 
 **successful_jobs_history_limit** | **int** | SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time | [optional] 

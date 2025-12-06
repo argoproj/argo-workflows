@@ -299,7 +299,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             suspend (bool): Suspend will suspend the workflow and prevent execution of any future steps in the workflow. [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
             template_defaults (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
-            templates ([IoArgoprojWorkflowV1alpha1Template]): Templates is a list of workflow templates used in a workflow. [optional]  # noqa: E501
+            templates ([IoArgoprojWorkflowV1alpha1Template]): Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file. [optional]  # noqa: E501
             tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
             ttl_strategy (IoArgoprojWorkflowV1alpha1TTLStrategy): [optional]  # noqa: E501
             volume_claim_gc (IoArgoprojWorkflowV1alpha1VolumeClaimGC): [optional]  # noqa: E501
@@ -421,7 +421,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             suspend (bool): Suspend will suspend the workflow and prevent execution of any future steps in the workflow. [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
             template_defaults (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
-            templates ([IoArgoprojWorkflowV1alpha1Template]): Templates is a list of workflow templates used in a workflow. [optional]  # noqa: E501
+            templates ([IoArgoprojWorkflowV1alpha1Template]): Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file. [optional]  # noqa: E501
             tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
             ttl_strategy (IoArgoprojWorkflowV1alpha1TTLStrategy): [optional]  # noqa: E501
             volume_claim_gc (IoArgoprojWorkflowV1alpha1VolumeClaimGC): [optional]  # noqa: E501

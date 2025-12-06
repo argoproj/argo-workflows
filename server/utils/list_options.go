@@ -109,6 +109,11 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name!="); ok {
+			name = after
+			nameFilter = "NotEquals"
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name=="); ok {
+			name = after
 		} else if after, ok := strings.CutPrefix(selector, "metadata.name="); ok {
 			name = after
 		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt>"); ok {
