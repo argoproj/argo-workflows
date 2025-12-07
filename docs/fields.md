@@ -3839,10 +3839,15 @@ S3Artifact is the location of an S3 artifact
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`caSecret`|[`SecretKeySelector`](#secretkeyselector)|CASecret specifies the secret that contains the CA, used to verify the TLS connection|
 |`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.|
+|`enableParallelism`|`boolean`|EnableParallelism enables parallel upload/download for directories with many files or large files|
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`fileCountThreshold`|`integer`|FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.|
+|`fileSizeThreshold`|`integer`|FileSizeThreshold is the minimum file size in bytes to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`key`|`string`|Key is the key in the bucket where the artifact resides|
+|`parallelism`|`integer`|Parallelism is the number of concurrent workers for parallel operations. Default is 10.|
+|`partSize`|`integer`|PartSize is the part size in bytes for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
@@ -4614,11 +4619,16 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`caSecret`|[`SecretKeySelector`](#secretkeyselector)|CASecret specifies the secret that contains the CA, used to verify the TLS connection|
 |`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.|
+|`enableParallelism`|`boolean`|EnableParallelism enables parallel upload/download for directories with many files or large files|
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`fileCountThreshold`|`integer`|FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.|
+|`fileSizeThreshold`|`integer`|FileSizeThreshold is the minimum file size in bytes to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |~~`keyPrefix`~~|~~`string`~~|~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead|
+|`parallelism`|`integer`|Parallelism is the number of concurrent workers for parallel operations. Default is 10.|
+|`partSize`|`integer`|PartSize is the part size in bytes for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
