@@ -1,5 +1,5 @@
 Description: Add parallelism configuration options for S3 artifact uploads and downloads to improve performance for many files and large files
-Authors: [Your Name](https://github.com/yourusername)
+Authors: [Uziel Sulkies](https://github.com/usulkies)
 Component: General
 Issues: 12442 9022 4014
 
