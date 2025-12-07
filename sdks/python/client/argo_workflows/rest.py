@@ -35,11 +35,23 @@ class RESTResponse(io.IOBase):
 
     def getheaders(self):
         """Returns a dictionary of the response headers."""
-        return self.urllib3_response.getheaders()
+        # Compatibility with both old and new urllib3 versions
+        if hasattr(self.urllib3_response, 'getheaders'):
+            return self.urllib3_response.getheaders()
+        elif hasattr(self.urllib3_response, 'headers'):
+            return dict(self.urllib3_response.headers)
+        else:
+            return {}
 
     def getheader(self, name, default=None):
         """Returns a given response header."""
-        return self.urllib3_response.getheader(name, default)
+        # Compatibility with both old and new urllib3 versions
+        if hasattr(self.urllib3_response, 'getheader'):
+            return self.urllib3_response.getheader(name, default)
+        elif hasattr(self.urllib3_response, 'headers'):
+            return self.urllib3_response.headers.get(name.lower(), default)
+        else:
+            return default
 
 
 class RESTClientObject(object):
