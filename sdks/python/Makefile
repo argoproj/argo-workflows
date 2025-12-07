@@ -48,6 +48,9 @@ else
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
+	# Apply urllib3 compatibility fix for rest.py
+	# This fixes compatibility with urllib3 >= 2.0 which removed getheader/getheaders methods
+	python3 fix_urllib3_compat.py $(WD)/argo_workflows/rest.py
 endif
 
 install:
