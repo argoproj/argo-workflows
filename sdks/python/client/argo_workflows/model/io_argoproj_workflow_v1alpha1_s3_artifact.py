@@ -99,11 +99,11 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
             'encryption_options': (IoArgoprojWorkflowV1alpha1S3EncryptionOptions,),  # noqa: E501
             'endpoint': (str,),  # noqa: E501
             'file_count_threshold': (int,),  # noqa: E501
-            'file_size_threshold': (int,),  # noqa: E501
+            'file_size_threshold': (str,),  # noqa: E501
             'insecure': (bool,),  # noqa: E501
             'key': (str,),  # noqa: E501
             'parallelism': (int,),  # noqa: E501
-            'part_size': (int,),  # noqa: E501
+            'part_size': (str,),  # noqa: E501
             'region': (str,),  # noqa: E501
             'role_arn': (str,),  # noqa: E501
             'secret_key_secret': (SecretKeySelector,),  # noqa: E501
@@ -186,11 +186,11 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
             encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             file_count_threshold (int): FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.. [optional]  # noqa: E501
-            file_size_threshold (int): FileSizeThreshold is the minimum file size in bytes to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.. [optional]  # noqa: E501
+            file_size_threshold (str): FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
             key (str): Key is the key in the bucket where the artifact resides. [optional]  # noqa: E501
             parallelism (int): Parallelism is the number of concurrent workers for parallel operations. Default is 10.. [optional]  # noqa: E501
-            part_size (int): PartSize is the part size in bytes for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.. [optional]  # noqa: E501
+            part_size (str): PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -285,11 +285,11 @@ class IoArgoprojWorkflowV1alpha1S3Artifact(ModelNormal):
             encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             file_count_threshold (int): FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.. [optional]  # noqa: E501
-            file_size_threshold (int): FileSizeThreshold is the minimum file size in bytes to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.. [optional]  # noqa: E501
+            file_size_threshold (str): FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
             key (str): Key is the key in the bucket where the artifact resides. [optional]  # noqa: E501
             parallelism (int): Parallelism is the number of concurrent workers for parallel operations. Default is 10.. [optional]  # noqa: E501
-            part_size (int): PartSize is the part size in bytes for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.. [optional]  # noqa: E501
+            part_size (str): PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501

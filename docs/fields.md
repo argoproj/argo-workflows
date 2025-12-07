@@ -3843,11 +3843,11 @@ S3Artifact is the location of an S3 artifact
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`fileCountThreshold`|`integer`|FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.|
-|`fileSizeThreshold`|`integer`|FileSizeThreshold is the minimum file size in bytes to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.|
+|`fileSizeThreshold`|`string`|FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`key`|`string`|Key is the key in the bucket where the artifact resides|
 |`parallelism`|`integer`|Parallelism is the number of concurrent workers for parallel operations. Default is 10.|
-|`partSize`|`integer`|PartSize is the part size in bytes for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.|
+|`partSize`|`string`|PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
@@ -4623,12 +4623,12 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`fileCountThreshold`|`integer`|FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.|
-|`fileSizeThreshold`|`integer`|FileSizeThreshold is the minimum file size in bytes to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.|
+|`fileSizeThreshold`|`string`|FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |~~`keyPrefix`~~|~~`string`~~|~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead|
 |`parallelism`|`integer`|Parallelism is the number of concurrent workers for parallel operations. Default is 10.|
-|`partSize`|`integer`|PartSize is the part size in bytes for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.|
+|`partSize`|`string`|PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
