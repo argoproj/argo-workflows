@@ -23,6 +23,24 @@ jobs:
   build-linux:
     name: Build & push linux
     if: github.repository == 'argoproj/argo-workflows'
+    # Available runners are listable here if you have access https://github.com/organizations/argoproj/settings/actions/runners
+    # Current oracle runners are:
+    # # amd64
+    # oracle-vm-2cpu-8gb-x86-64
+    # oracle-vm-4cpu-16gb-x86-64
+    # oracle-vm-8cpu-32gb-x86-64
+    # oracle-vm-16cpu-64gb-x86-64
+    # oracle-vm-24cpu-96gb-x86-64
+    # oracle-vm-32cpu-128gb-x86-64
+
+    # # arm64
+    # oracle-vm-2cpu-8gb-arm64
+    # oracle-vm-4cpu-16gb-arm64
+    # oracle-vm-8cpu-32gb-arm64
+    # oracle-vm-16cpu-64gb-arm64
+    # oracle-vm-24cpu-96gb-arm64
+    # oracle-vm-32cpu-128gb-arm64
+    # Unfortunately there are no more minimal labels on the runners to select by label
     runs-on: ${{ matrix.platform == 'linux/arm64' && 'oracle-vm-16cpu-64gb-arm64' || 'oracle-vm-16cpu-64gb-x86-64' }}
     strategy:
       matrix:
