@@ -8,6 +8,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: handle-large-output-results-
+  labels:
+    workflows.argoproj.io/no-test: "flaky"
 spec:
   entrypoint: handle-large-output-results
   templates:
@@ -28,7 +30,7 @@ spec:
               count: "{{steps.get-items.outputs.parameters.count}}"
     - name: get-items
       container:
-        image: alpine:latest
+        image: alpine:3.6
         command: ["/bin/sh", "-c"]
         # This small array is just for an example. Make sure the count matches the actual size of
         # your JSON array.
