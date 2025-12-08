@@ -1,10 +1,15 @@
 package executor
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -584,4 +589,139 @@ func TestReportOutputs(t *testing.T) {
 		assert.Empty(t, we.errors)
 	})
 
+}
+
+func TestUntarMaliciousSymlink(t *testing.T) {
+	// Create a temporary directory for the test
+	tmpDir := t.TempDir()
+
+	// Create a target directory outside the extraction root
+	outsideDir := filepath.Join(tmpDir, "outside")
+	err := os.Mkdir(outsideDir, 0755)
+	require.NoError(t, err)
+
+	// Create a file in the outside directory to verify it's NOT overwritten initially
+	targetFile := filepath.Join(outsideDir, "pwned")
+	err = os.WriteFile(targetFile, []byte("safe"), 0644)
+	require.NoError(t, err)
+
+	// Create the malicious tarball directly
+	tarPath := filepath.Join(tmpDir, "malicious.tar.gz")
+	f, err := os.Create(tarPath)
+	require.NoError(t, err)
+	gw := gzip.NewWriter(f)
+	tw := tar.NewWriter(gw)
+
+	// 1. Create a symlink "link" -> absolute path of outsideDir
+	absOutside, err := filepath.Abs(outsideDir)
+	require.NoError(t, err)
+
+	err = tw.WriteHeader(&tar.Header{
+		Name:     "link",
+		Typeflag: tar.TypeSymlink,
+		Linkname: absOutside,
+		Mode:     0777,
+	})
+	require.NoError(t, err)
+
+	// 2. Create a file "link/pwned" that writes through the symlink
+	fileContent := []byte("pwned")
+	err = tw.WriteHeader(&tar.Header{
+		Name:     "link/pwned",
+		Typeflag: tar.TypeReg,
+		Mode:     0644,
+		Size:     int64(len(fileContent)),
+	})
+	require.NoError(t, err)
+	_, err = tw.Write(fileContent)
+	require.NoError(t, err)
+
+	require.NoError(t, tw.Close())
+	require.NoError(t, gw.Close())
+	require.NoError(t, f.Close())
+
+	// Debug: List tarball contents
+	cmd := exec.CommandContext(t.Context(), "tar", "-tvzf", tarPath)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err)
+	if err == nil {
+		t.Logf("Tarball contents:\n%s", string(out))
+	}
+
+	// Destination directory for extraction
+	destDir := filepath.Join(tmpDir, "dest")
+
+	// Perform untar
+	err = untar(tarPath, destDir)
+	// This should return an error because the symlink is outside the extraction root
+	require.Error(t, err)
+
+	// Check if the file outside was overwritten
+	content, err := os.ReadFile(targetFile)
+	require.NoError(t, err)
+
+	// If content is "pwned", the vulnerability is reproduced.
+	if string(content) == "pwned" {
+		t.Logf("Tar slip symlink vulnerability reproduced: File outside was overwritten with '%s'", string(content))
+	} else {
+		t.Logf("Tar slip symlink vulnerability NOT reproduced: File content is '%s'", string(content))
+	}
+
+	// Assert that it IS "safe" (this should FAIL if vulnerable)
+	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten")
+}
+
+func TestUnzipMaliciousSymlink(t *testing.T) {
+	// Create a temporary directory for the test
+	tmpDir := t.TempDir()
+
+	// Create a target directory outside the extraction root
+	outsideDir := filepath.Join(tmpDir, "outside")
+	err := os.Mkdir(outsideDir, 0755)
+	require.NoError(t, err)
+
+	// Create a file in the outside directory
+	targetFile := filepath.Join(outsideDir, "pwned")
+	err = os.WriteFile(targetFile, []byte("safe"), 0644)
+	require.NoError(t, err)
+
+	// Create the malicious zip
+	zipPath := filepath.Join(tmpDir, "malicious.zip")
+	f, err := os.Create(zipPath)
+	require.NoError(t, err)
+	zw := zip.NewWriter(f)
+
+	// 1. Create a symlink "link" -> "../outside"
+	header := &zip.FileHeader{
+		Name:   "link",
+		Method: zip.Store,
+	}
+	header.SetMode(0777 | os.ModeSymlink)
+	w, err := zw.CreateHeader(header)
+	require.NoError(t, err)
+	_, err = w.Write([]byte("../outside"))
+	require.NoError(t, err)
+
+	// 2. Create a file "link/pwned"
+	w, err = zw.Create("link/pwned")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("pwned"))
+	require.NoError(t, err)
+
+	require.NoError(t, zw.Close())
+	require.NoError(t, f.Close())
+
+	// Destination directory
+	destDir := filepath.Join(tmpDir, "dest")
+
+	// Perform unzip
+	// This should return an error because the symlink is outside the extraction root
+	err = unzip(zipPath, destDir)
+	require.Error(t, err)
+
+	// Check if the file outside was overwritten
+	content, err := os.ReadFile(targetFile)
+	require.NoError(t, err)
+
+	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten by unzip")
 }
