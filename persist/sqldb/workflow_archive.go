@@ -597,7 +597,9 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 	// if not, set a default timeout from environment variable or use default.
 	if ctx == nil {
 		// Create a context with logger to avoid panic in env.LookupEnvDurationOr
-		ctx = logging.InitLoggerInContext()
+		// First create a background context, then add logger to it
+		ctx = context.Background()
+		ctx = logging.WithLogger(ctx, logging.InitLogger())
 	}
 	queryTimeout := env.LookupEnvDurationOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT", defaultEstimationDBQueryTimeout)
 	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
