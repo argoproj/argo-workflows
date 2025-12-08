@@ -1946,6 +1946,62 @@ func (s *CLISuite) TestPluginStruct() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowConvert() {
+	s.Run("ConvertCronWorkflowSchedule", func() {
+		s.Given().RunCli([]string{"convert", "testdata/convert/convert-legacy-cron.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Check that schedule (singular) has been converted to schedules (plural)
+			assert.Contains(t, output, "schedules:")
+			assert.Contains(t, output, "- 0 0 * * *")
+			assert.NotContains(t, output, "schedule: \"0 0 * * *\"")
+		})
+	})
+	s.Run("ConvertSynchronization", func() {
+		s.Given().RunCli([]string{"convert", "testdata/convert/convert-legacy-sync.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Check that semaphore (singular) has been converted to semaphores (plural)
+			assert.Contains(t, output, "semaphores:")
+			// Check that mutex (singular) has been converted to mutexes (plural)
+			assert.Contains(t, output, "mutexes:")
+			// Verify workflow-level conversions
+			assert.Contains(t, output, "name: my-config")
+			assert.Contains(t, output, "name: test-mutex")
+			// Verify template-level conversions
+			assert.Contains(t, output, "name: template-config")
+			assert.Contains(t, output, "name: template-mutex")
+		})
+	})
+	s.Run("ConvertJSON", func() {
+		s.Given().RunCli([]string{"convert", "-o", "json", "testdata/convert/convert-legacy-cron.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Parse as JSON to verify it's valid JSON
+			var cronWf wfv1.CronWorkflow
+			lines := strings.Split(strings.TrimSpace(output), "\n")
+			require.NotEmpty(t, lines)
+			err = json.Unmarshal([]byte(lines[0]), &cronWf)
+			require.NoError(t, err)
+			// Verify conversion happened - legacy schedule field should be converted to schedules array
+			assert.Len(t, cronWf.Spec.Schedules, 1)
+			assert.Equal(t, "0 0 * * *", cronWf.Spec.Schedules[0])
+		})
+	})
+	s.Run("ConvertStdin", func() {
+		s.Given().RunCliStdin([]string{"convert", "-"}, "testdata/convert/convert-legacy-cron.yaml", func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "schedules:")
+			assert.Contains(t, output, "- 0 0 * * *")
+		})
+	})
+	s.Run("ConvertPreservesNonLegacy", func() {
+		// Test that files already in the new format pass through unchanged (except for default/empty fields)
+		s.Given().RunCli([]string{"convert", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Should successfully parse and output the workflow
+			assert.Contains(t, output, "kind: Workflow")
+		})
+	})
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
