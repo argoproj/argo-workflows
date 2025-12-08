@@ -588,7 +588,7 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 }
 
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
-	selector := r.session.SQL().
+	selector := r.session.WithContext(ctx).SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
