@@ -23,16 +23,13 @@ jobs:
   build-linux:
     name: Build & push linux
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'oracle-vm-16cpu-64gb-arm64' || 'oracle-vm-16cpu-64gb-x86-64' }}
     strategy:
       matrix:
         platform: [ linux/amd64, linux/arm64 ]
         target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
@@ -147,7 +144,7 @@ jobs:
   push-images:
     name: Push manifest with all images
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-24.04
+    runs-on: oracle-vm-4cpu-16gb-x86-64
     needs: [ build-linux, build-windows ]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -208,7 +205,7 @@ jobs:
   test-images-linux-amd64:
     name: Try pulling linux/amd64
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-24.04
+    runs-on: oracle-vm-4cpu-16gb-x86-64
     needs: [ push-images ]
     strategy:
       matrix:
@@ -283,7 +280,7 @@ jobs:
   build-ui:
     name: Build UI
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-24.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
@@ -310,7 +307,7 @@ jobs:
     name: Build CLI ${{ matrix.goos }}-${{ matrix.goarch }}
     if: github.repository == 'argoproj/argo-workflows'
     needs: [ build-ui ]
-    runs-on: ubuntu-24.04
+    runs-on: oracle-vm-8cpu-32gb-x86-64
     strategy:
       matrix:
         include:
@@ -365,7 +362,7 @@ jobs:
   publish-release:
     permissions:
       contents: write  # for softprops/action-gh-release to create GitHub release
-    runs-on: ubuntu-24.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     if: github.repository == 'argoproj/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows, build-clis ]
     env:
