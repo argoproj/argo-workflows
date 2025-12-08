@@ -421,7 +421,9 @@ jobs:
         run: |
           grep image: dist/manifests/install.yaml
       - name: Print version (please check it is not dirty)
-        run: dist/argo-linux-amd64 version
+        run: |
+          gunzip -k dist/argo-linux-amd64.gz
+          dist/argo-linux-amd64 version
       - run: make checksums
       - name: Sign checksums and create public key for release assets
         run: |
