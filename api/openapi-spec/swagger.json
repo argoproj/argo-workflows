@@ -2536,6 +2536,14 @@
           "InfoService"
         ],
         "operationId": "InfoService_GetUserInfo",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The namespace in which to look for a service account.\nOnly used when SSO RBAC namespace delegation is enabled.\nDefaults to the installation namespace.",
+            "name": "namespace",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "A successful response.",

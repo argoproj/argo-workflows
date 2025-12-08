@@ -144,7 +144,7 @@ This endpoint does not need any parameter.
 
 <a name="infoServiceGetUserInfo"></a>
 # **infoServiceGetUserInfo**
-> IoArgoprojWorkflowV1alpha1GetUserInfoResponse infoServiceGetUserInfo()
+> IoArgoprojWorkflowV1alpha1GetUserInfoResponse infoServiceGetUserInfo(namespace)
 
 
 
@@ -170,8 +170,9 @@ public class Example {
     //BearerToken.setApiKeyPrefix("Token");
 
     InfoServiceApi apiInstance = new InfoServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | The namespace in which to look for a service account. Only used when SSO RBAC namespace delegation is enabled. Defaults to the installation namespace.
     try {
-      IoArgoprojWorkflowV1alpha1GetUserInfoResponse result = apiInstance.infoServiceGetUserInfo();
+      IoArgoprojWorkflowV1alpha1GetUserInfoResponse result = apiInstance.infoServiceGetUserInfo(namespace);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling InfoServiceApi#infoServiceGetUserInfo");
@@ -185,7 +186,10 @@ public class Example {
 ```
 
 ### Parameters
-This endpoint does not need any parameter.
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**| The namespace in which to look for a service account. Only used when SSO RBAC namespace delegation is enabled. Defaults to the installation namespace. | [optional]
 
 ### Return type
 

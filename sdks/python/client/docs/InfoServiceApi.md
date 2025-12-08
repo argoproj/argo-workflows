@@ -199,10 +199,12 @@ configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
 with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = info_service_api.InfoServiceApi(api_client)
+    namespace = "namespace_example" # str | The namespace in which to look for a service account. Only used when SSO RBAC namespace delegation is enabled. Defaults to the installation namespace. (optional)
 
-    # example, this endpoint has no required or optional parameters
+    # example passing only required values which don't have defaults set
+    # and optional values
     try:
-        api_response = api_instance.get_user_info()
+        api_response = api_instance.get_user_info(namespace=namespace)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling InfoServiceApi->get_user_info: %s\n" % e)
@@ -210,7 +212,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-This endpoint does not need any parameter.
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **str**| The namespace in which to look for a service account. Only used when SSO RBAC namespace delegation is enabled. Defaults to the installation namespace. | [optional]
 
 ### Return type
 
