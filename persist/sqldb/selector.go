@@ -32,6 +32,9 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		if nameFilter == "Prefix" {
 			selector = selector.And(namePrefixClause(options.Name))
 		}
+		if nameFilter == "NotEquals" {
+			selector = selector.And(nameNotEqual(options.Name))
+		}
 	}
 
 	selector, err := labelsClause(selector, t, options.LabelRequirements, tableName, labelTableName, true)
@@ -71,6 +74,9 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		}
 		if nameFilter == "Prefix" {
 			clauses = append(clauses, db.Raw("name like ?", options.Name+"%"))
+		}
+		if nameFilter == "NotEquals" {
+			clauses = append(clauses, db.Raw("name != ?", options.Name))
 		}
 	}
 	if !options.CreatedAfter.IsZero() {

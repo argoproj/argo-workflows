@@ -1,37 +1,67 @@
 # Upgrading Guide
 
+For the upgrading guide to a specific version of workflows change the documentation version in the lower right corner of your browser.
+
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
-## Upgrading to v3.7
-
-See also the list of [new features in 3.7](new-features.md).
-
-For upgrades to older versions of Argo Workflows, please change to the documentation for the version of interest.
+## Upgrading to v4.0
 
 ### Deprecations
 
-The following features are deprecated and will be removed in a future verison of Argo Workflows:
+Several features were marked for deprecation in 3.6, and are now removed:
 
-* The Python SDK is deprecated, we recommend migrating to [Hera](https://github.com/argoproj-labs/hera)
+* The Python SDK is removed, we recommend migrating to [Hera](https://github.com/argoproj-labs/hera)
 * `schedule` in CronWorkflows, `podPriority`, `mutex` and `semaphore` in Workflows and WorkflowTemplates.
 
 For more information on how to migrate these see [deprecations](deprecations.md)
 
-### Removed Docker Hub Image Publishing
+### Python SDK Removed
 
-Pull Request [#14457](https://github.com/argoproj/argo-workflows/pull/14457) removed pushing to docker hub.
-Argo Workflows exclusively uses quay.io now.
+The Python SDK (`argo-workflows` package on PyPI) has been removed from the repository in version 4.0 as previously announced in v3.6.
 
-### Made Parameter Value Overriding Consistent
+If you have the Python SDK installed, it will mostly continue to work with Argo Workflows 4.0, but it will not receive updates, bug fixes, or support.
+We recommend migrating to [Hera](https://github.com/argoproj-labs/hera), which is the recommended Python SDK for Argo Workflows.
+Hera provides a more intuitive and Pythonic interface for working with Argo Workflows.
 
-Pull Request [#14462](https://github.com/argoproj/argo-workflows/pull/14462) made parameter value overriding consistent.
-This fix changes the priority in which the values are processed, meaning that a Workflow argument will now take priority.
-For more details see the example provided [here](https://github.com/argoproj/argo-workflows/issues/14426)
+For migration guidance and documentation, see:
 
-## Upgrading to 4.0
+* [Hera Documentation](https://hera.readthedocs.io/)
+* [Hera Quick Start Guide](https://hera.readthedocs.io/en/stable/walk-through/quick-start/)
 
 ### Logging levels
 
 The logging levels available have been reduced to `debug`, `info`, `warn` and `error`.
 Other levels will be mapped to their equivalent if you use them, although they were previously undocumented.
+
+### Full CRDs
+
+The [official release manifests](installation.md#official-release-manifests) now default to using CRDs with full validation information.
+This enables using [Validating Admission Policy](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/) and `kubectl explain ...` on Argo CRDs.
+
+Existing installations using the [minimal CRDs](https://github.com/argoproj/argo-workflows/tree/main/manifests/base/crds/minimal) will continue to work, but you'll be unable to use features that rely on CRD validation information.
+
+Use the following command to selectively apply the full CRDs for an existing installation:
+
+```bash
+kubectl apply --server-side --kustomize https://github.com/argoproj/argo-workflows/manifests/base/crds/full?ref=v4.0.0
+```
+
+### Go language (Developers)
+
+If you are importing argo-workflows code into your go project you need to be aware of some changes.
+
+Many go-lang functions have changed signature to require a [context](https://pkg.go.dev/context) as the first parameter.
+In almost all cases you will need to provide a logger in your context.
+The details are in [logging.go](https://github.com/argoproj/argo-workflows/blob/main/util/logging/logging.go)
+
+The kubernetes client does not require a context.
+The API client from [apiclient](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) is an exception and will create a logger for you if you don't provide one.
+
+In particular:
+
+* Your logger must conform to the logging interface `Logger` from that file.
+* Your logger should be retrievable from the context key `logger` (util/logging/logging.go `LoggerKey`)
+* You may wish to use the logger from [slog.go](https://github.com/argoproj/argo-workflows/blob/main/util/logging/slog.go)
+
+Apiclient no longer provides `NewClient` or `NewClientFromOpts`, you must use `NewClientFromOptsWithContext`.

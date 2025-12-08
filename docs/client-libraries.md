@@ -37,8 +37,7 @@ It is community supported.
 
 ### Hera Python SDK
 
-Hera is the go-to Python SDK to make Argo Workflows simple and intuitive. It goes beyond a basic REST interface,
-allowing you to easily turn Python functions into script templates, and write whole Workflows in Python:
+Hera is the recommended Python SDK for Argo Workflows. It makes Argo Workflows simple and intuitive, going beyond a basic REST interface to allow you to easily turn Python functions into script templates and write whole Workflows in Python:
 
 ```py
 from hera.workflows import DAG, Workflow, script

@@ -357,7 +357,6 @@ codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS) ## Generate c
  	# The generated markdown contains links to nowhere for interfaces, so remove them
 	sed -i.bak 's/\[interface{}\](#interface)/`interface{}`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
-	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
 check-pwd:
