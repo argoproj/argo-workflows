@@ -595,24 +595,12 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 	// Add timeout to database query to prevent blocking workflow execution
 	// if database is slow or locked. Check if context already has a deadline,
 	// if not, set a default timeout from environment variable or use default.
-	queryCtx := ctx
-	var cancel context.CancelFunc
-	if ctx != nil {
-		// Check if context already has a deadline
-		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-			queryTimeout := defaultEstimationDBQueryTimeout
-			if timeout := env.LookupEnvDurationOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT", defaultEstimationDBQueryTimeout); timeout > 0 {
-				queryTimeout = timeout
-			}
-			queryCtx, cancel = context.WithTimeout(ctx, queryTimeout)
-			defer cancel()
-		}
-	} else {
-		// If ctx is nil, create a new context with timeout
-		queryTimeout := defaultEstimationDBQueryTimeout
-		queryCtx, cancel = context.WithTimeout(context.Background(), queryTimeout)
-		defer cancel()
+	queryTimeout := env.LookupEnvDurationOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT", defaultEstimationDBQueryTimeout)
+	if ctx == nil {
+		ctx = context.Background()
 	}
+	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
 
 	selector := r.session.WithContext(queryCtx).SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
