@@ -591,6 +591,7 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 	return wf, nil
 }
 
+//nolint:contextcheck // ctx may be nil, in which case we create a new context with logger
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
 	// Add timeout to database query to prevent blocking workflow execution
 	// if database is slow or locked. Check if context already has a deadline,
