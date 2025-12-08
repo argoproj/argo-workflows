@@ -853,6 +853,35 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 	}
 }
 
+func (s *ArtifactsSuite) TestExitHandlerWithParameterizedGlobalArtifacts() {
+	s.Given().
+		Workflow("@testdata/exit-handler-parameterized-global-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printer"),
+			func(t *testing.T, n *wfv1.NodeStatus, pod *corev1.Pod) {
+				assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+				require.NotNil(t, pod)
+				// Get pod logs to verify the artifacts were correctly resolved
+				ctx := logging.TestContext(t.Context())
+				logStream, err := s.KubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+					Container: "main",
+				}).Stream(ctx)
+				require.NoError(t, err, "Failed to get pod logs")
+				defer logStream.Close()
+
+				logBytes, err := io.ReadAll(logStream)
+				require.NoError(t, err, "Failed to read pod logs")
+				logs := string(logBytes)
+
+				// Verify the logs contain output from both parameterized artifacts
+				assert.Contains(t, logs, "Have car", "Logs should contain 'Have car' from the car artifact")
+				assert.Contains(t, logs, "Have bike", "Logs should contain 'Have bike' from the bike artifact")
+			})
+}
+
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
 	s.Given().
 		Workflow(`

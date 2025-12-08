@@ -798,14 +798,15 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
-	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
+	// this does not reduce errors, but does reduce
 	// conflicts and therefore we log fewer warning messages.
-	case "", "true":
+	case "true":
 		if err := woc.writeBackToInformer(); err != nil {
 			woc.markWorkflowError(ctx, err)
 			return
 		}
-	case "false":
+	// no longer write back to informer cache as default (as per v4.0)
+	case "", "false":
 		time.Sleep(1 * time.Second)
 	}
 
@@ -3746,8 +3747,12 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
+func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string, globalScope map[string]string) (string, error) {
 	replaceMap := make(map[string]interface{})
+	// Start with the global scope
+	for k, v := range globalScope {
+		replaceMap[k] = v
+	}
 	var newName string
 
 	switch item.GetType() {

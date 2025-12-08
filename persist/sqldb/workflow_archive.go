@@ -310,6 +310,9 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 			if nameFilter == "Prefix" {
 				selector = selector.And(namePrefixClause(options.Name))
 			}
+			if nameFilter == "NotEquals" {
+				selector = selector.And(nameNotEqual(options.Name))
+			}
 		}
 
 		err := selector.One(total)
@@ -361,6 +364,9 @@ func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (i
 		}
 		if nameFilter == "Prefix" {
 			sampleSelector = sampleSelector.And(namePrefixClause(options.Name))
+		}
+		if nameFilter == "NotEquals" {
+			sampleSelector = sampleSelector.And(nameNotEqual(options.Name))
 		}
 	}
 
@@ -415,6 +421,9 @@ func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.L
 		}
 		if nameFilter == "Prefix" {
 			selector = selector.And(namePrefixClause(options.Name))
+		}
+		if nameFilter == "NotEquals" {
+			selector = selector.And(nameNotEqual(options.Name))
 		}
 	}
 
@@ -483,6 +492,13 @@ func namespaceEqual(namespace string) db.Cond {
 func nameEqual(name string) db.Cond {
 	if name != "" {
 		return db.Cond{"name": name}
+	}
+	return db.Cond{}
+}
+
+func nameNotEqual(name string) db.Cond {
+	if name != "" {
+		return db.Cond{"name !=": name}
 	}
 	return db.Cond{}
 }

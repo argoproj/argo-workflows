@@ -53,11 +53,12 @@ func TestCRDExamples(t *testing.T) {
 				return nil
 			}
 
-			// Skip directories with malformed or expectedfailures in the path
+			// Skip directories with known invalid YAML
 			pathLower := strings.ToLower(path)
 			if strings.Contains(pathLower, "/malformed/") ||
 				strings.Contains(pathLower, "/expectedfailures/") ||
-				strings.Contains(pathLower, "/lintfail/") {
+				strings.Contains(pathLower, "/lintfail/") ||
+				strings.Contains(pathLower, "/convert/") {
 				return nil
 			}
 

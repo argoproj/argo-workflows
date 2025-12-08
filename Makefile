@@ -102,8 +102,10 @@ endif
 # Need to rewrite the SSO redirect URL referenced in ConfigMaps when UI_SECURE and/or BASE_HREF is set.
 # Can't use "kustomize" or "kubectl patch" because the SSO config is a YAML string in those ConfigMaps.
 SSO_REDIRECT_URL   := http
+SSO_ISSUER_URL     := http://dex:5556/dex
 ifeq ($(UI_SECURE),true)
 SSO_REDIRECT_URL   := https
+SSO_ISSUER_URL     := https://dex:5554/dex
 endif
 ifeq ($(BASE_HREF),)
 BASE_HREF          := /
@@ -354,7 +356,6 @@ codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS) ## Generate c
  	# The generated markdown contains links to nowhere for interfaces, so remove them
 	sed -i.bak 's/\[interface{}\](#interface)/`interface{}`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
-	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
 check-pwd:
@@ -594,6 +595,7 @@ install: githooks ## Install Argo to the current Kubernetes cluster
 		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
 		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
 		| sed 's|http://localhost:8080/oauth2/callback|$(SSO_REDIRECT_URL)|' \
+		| sed 's|http://dex:5556/dex|$(SSO_ISSUER_URL)|' \
 		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
