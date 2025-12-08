@@ -16,10 +16,10 @@ import (
 type Persistence struct {
 	WorkflowArchive       persist.WorkflowArchive
 	session               db.Session
-	offloadNodeStatusRepo persist.OffloadNodeStatusRepo
+	OffloadNodeStatusRepo persist.OffloadNodeStatusRepo
 }
 
-func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
+func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
 	persistence := wcConfig.Persistence
 	if persistence != nil {
 		if persistence.PostgreSQL != nil {
@@ -45,12 +45,12 @@ func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
 		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
 	} else {
-		return &Persistence{offloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
+		return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 	}
 }
 
 func (s *Persistence) IsEnabled() bool {
-	return s.offloadNodeStatusRepo.IsEnabled()
+	return s.OffloadNodeStatusRepo.IsEnabled()
 }
 
 func (s *Persistence) Close() {

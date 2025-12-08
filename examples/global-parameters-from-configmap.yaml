@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: global-parameter-values-from-configmap-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       This example demonstrates loading global parameter values from a ConfigMap.
