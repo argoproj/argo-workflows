@@ -1058,6 +1058,79 @@ func TestExitHandler(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var workflowFailuresNotOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: pass
+  templates:
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{workflow.failures}}"]
+`
+
+var workflowFailuresOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: pass
+  onExit: fail
+  templates:
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 0"]
+  - name: fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{workflow.failures}}"]
+`
+
+var workflowFailuresExitHook = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: pass
+  hooks:
+    exit:
+      template: fail
+  templates:
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 0"]
+  - name: fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{workflow.failures}}"]
+`
+
+func TestExitHandlerWorkflowFailures(t *testing.T) {
+	// ensure {{workflow.failures}} is not available when not in onExit or in exit hooks
+	err := validate(workflowFailuresNotOnExit)
+	assert.NotNil(t, err)
+
+	// ensure {{workflow.failures}} is available in onExit
+	err = validate(workflowFailuresOnExit)
+	assert.NoError(t, err)
+
+	// ensure {{workflow.failures}} is available in exit hook
+	err = validate(workflowFailuresExitHook)
+	assert.NoError(t, err)
+}
+
 var workflowWithPriority = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
