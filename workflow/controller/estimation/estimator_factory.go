@@ -11,7 +11,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -88,12 +87,6 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 
 			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(ctx, wf.Namespace, requirements)
 			if err != nil {
-				// Log the error but return default estimator to not block workflow execution
-				// Timeout handling is done inside GetWorkflowForEstimator
-				if ctx != nil {
-					logger := logging.RequireLoggerFromContext(ctx)
-					logger.WithError(err).Warn(ctx, "failed to get archived workflow for estimator, using default estimator")
-				}
 				return defaultEstimator, nil
 			}
 			return &estimator{wf, baselineWF}, nil
