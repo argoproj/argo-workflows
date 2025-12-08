@@ -17,6 +17,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
@@ -27,6 +28,9 @@ const (
 	archiveTableName        = "argo_archived_workflows"
 	archiveLabelsTableName  = archiveTableName + "_labels"
 	postgresNullReplacement = "ARGO_POSTGRES_NULL_REPLACEMENT"
+	// Default timeout for database queries in GetWorkflowForEstimator to prevent blocking workflow execution
+	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT environment variable
+	defaultEstimationDBQueryTimeout = 5 * time.Second
 )
 
 type archivedWorkflowMetadata struct {
@@ -588,7 +592,29 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 }
 
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
-	selector := r.session.WithContext(ctx).SQL().
+	// Add timeout to database query to prevent blocking workflow execution
+	// if database is slow or locked. Check if context already has a deadline,
+	// if not, set a default timeout from environment variable or use default.
+	queryCtx := ctx
+	var cancel context.CancelFunc
+	if ctx != nil {
+		// Check if context already has a deadline
+		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+			queryTimeout := defaultEstimationDBQueryTimeout
+			if timeout := env.LookupEnvDurationOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT", defaultEstimationDBQueryTimeout); timeout > 0 {
+				queryTimeout = timeout
+			}
+			queryCtx, cancel = context.WithTimeout(ctx, queryTimeout)
+			defer cancel()
+		}
+	} else {
+		// If ctx is nil, create a new context with timeout
+		queryTimeout := defaultEstimationDBQueryTimeout
+		queryCtx, cancel = context.WithTimeout(context.Background(), queryTimeout)
+		defer cancel()
+	}
+
+	selector := r.session.WithContext(queryCtx).SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).

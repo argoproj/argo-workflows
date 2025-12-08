@@ -3,7 +3,6 @@ package estimation
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,9 +33,6 @@ var _ EstimatorFactory = &estimatorFactory{}
 
 var (
 	skipWorkflowDurationEstimation = env.LookupEnvStringOr("SKIP_WORKFLOW_DURATION_ESTIMATION", "false")
-	// Default timeout for database queries to prevent blocking workflow execution
-	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT environment variable
-	defaultEstimationDBQueryTimeout = 5 * time.Second
 )
 
 func NewEstimatorFactory(ctx context.Context, wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
@@ -89,35 +85,14 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			// Add timeout to database query to prevent blocking workflow execution
-			// if database is slow or locked
-			queryTimeout := defaultEstimationDBQueryTimeout
-			if ctx != nil {
-				if timeout := env.LookupEnvDurationOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT", defaultEstimationDBQueryTimeout); timeout > 0 {
-					queryTimeout = timeout
-				}
-			}
-			// Use context.WithTimeout to create a new context with timeout
-			// If ctx is nil, use context.Background() as the base context
-			var queryCtx context.Context //nolint:contextcheck // queryCtx is assigned from context.WithTimeout in the if-else below
-			var cancel context.CancelFunc
-			if ctx != nil {
-				queryCtx, cancel = context.WithTimeout(ctx, queryTimeout)
-			} else {
-				queryCtx, cancel = context.WithTimeout(context.Background(), queryTimeout)
-			}
-			defer cancel()
 
-			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(queryCtx, wf.Namespace, requirements)
+			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(ctx, wf.Namespace, requirements)
 			if err != nil {
 				// Log the error but return default estimator to not block workflow execution
+				// Timeout handling is done inside GetWorkflowForEstimator
 				if ctx != nil {
 					logger := logging.RequireLoggerFromContext(ctx)
-					if queryCtx.Err() == context.DeadlineExceeded {
-						logger.WithError(err).WithField("timeout", queryTimeout).Warn(ctx, "database query for workflow estimation timed out, using default estimator")
-					} else {
-						logger.WithError(err).Warn(ctx, "failed to get archived workflow for estimator, using default estimator")
-					}
+					logger.WithError(err).Warn(ctx, "failed to get archived workflow for estimator, using default estimator")
 				}
 				return defaultEstimator, nil
 			}
