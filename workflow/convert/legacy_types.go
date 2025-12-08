@@ -9,6 +9,9 @@ import (
 // Legacy types for parsing manifests with deprecated fields.
 // These types include both old (deprecated) and new fields to support
 // parsing v3.5 and earlier manifests.
+// This file looks a bit odd in release 3.7, but exists in this form to match
+// that in 4.0 - the structures are here but because 3.7 contains all the fields
+// they don't need to differ
 
 // LegacySynchronization can parse both old (semaphore/mutex) and new (semaphores/mutexes) formats
 type LegacySynchronization struct {

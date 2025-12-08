@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -45,7 +44,7 @@ func NewConvertCommand() *cobra.Command {
   cat workflow.yaml | argo convert -`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runConvert(cmd.Context(), args, output.String())
+			return runConvert(args, output.String())
 		},
 	}
 
@@ -57,9 +56,9 @@ func NewConvertCommand() *cobra.Command {
 
 var yamlSeparator = regexp.MustCompile(`\n---`)
 
-func runConvert(ctx context.Context, args []string, output string) error {
+func runConvert(args []string, output string) error {
 	for _, file := range args {
-		err := fileutil.WalkManifests(ctx, file, func(path string, data []byte) error {
+		err := fileutil.WalkManifests(file, func(path string, data []byte) error {
 			if jsonpkg.IsJSON(data) {
 				// Parse single JSON document
 				if err := convertDocument(data, output, true); err != nil {
