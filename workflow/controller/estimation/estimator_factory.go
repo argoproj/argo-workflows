@@ -84,7 +84,6 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-
 			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(ctx, wf.Namespace, requirements)
 			if err != nil {
 				return defaultEstimator, nil
