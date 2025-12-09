@@ -1,5 +1,23 @@
 # Changelog
 
+## v3.7.6 (2025-12-09)
+
+Full Changelog: [v3.7.5...v3.7.6](https://github.com/argoproj/argo-workflows/compare/v3.7.5...v3.7.6)
+
+### Selected Changes
+
+* [9572e7b82](https://github.com/argoproj/argo-workflows/commit/9572e7b8243834b951385584c2a344378accb76d) fix: make executable (cherry-pick #15129 for 3.7) (#15135)
+* [f1e70413a](https://github.com/argoproj/argo-workflows/commit/f1e70413a7ccd133ae19dd6a2795ed1c3ba320c8) fix: more release fixing (cherry-pick #15128 for 3.7) (#15133)
+* [297446af2](https://github.com/argoproj/argo-workflows/commit/297446af2b36a97f6ce3c57bb8fd95bb2637d601) fix: release process bugs from #15124 (cherry-pick #15127 for 3.7) (#15131)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude
+* Copilot
+
+</details>
+
 ## v3.7.5 (2025-12-08)
 
 Full Changelog: [v3.7.4...v3.7.5](https://github.com/argoproj/argo-workflows/compare/v3.7.4...v3.7.5)
@@ -241,7 +259,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.14...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.14...v3.7.0-rc1)
+Full Changelog: [v3.6.15...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.15...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -448,6 +466,24 @@ Full Changelog: [v3.6.14...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.15 (2025-12-09)
+
+Full Changelog: [v3.6.14...v3.6.15](https://github.com/argoproj/argo-workflows/compare/v3.6.14...v3.6.15)
+
+### Selected Changes
+
+* [ae0e0a270](https://github.com/argoproj/argo-workflows/commit/ae0e0a2704b330b7fc9fd2fb2b4f3fdd149a39ba) fix: make executable (cherry-pick #15129 for 3.6) (#15134)
+* [84e38fbc3](https://github.com/argoproj/argo-workflows/commit/84e38fbc32b83103262593c92f7bcb79d68eea46) fix: more release fixing (cherry-pick #15128 for 3.6) (#15132)
+* [7a457137e](https://github.com/argoproj/argo-workflows/commit/7a457137ef1607f4d197d6c45a1981e9417f837a) fix: release process bugs from #15124 (cherry-pick #15127 for 3.6) (#15130)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude
+* Copilot
 
 </details>
 
