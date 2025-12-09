@@ -3,6 +3,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: retry-backoff-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: retry-backoff
   templates:

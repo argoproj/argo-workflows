@@ -16,6 +16,19 @@ Several features were marked for deprecation in 3.6, and are now removed:
 
 For more information on how to migrate these see [deprecations](deprecations.md)
 
+### Python SDK Removed
+
+The Python SDK (`argo-workflows` package on PyPI) has been removed from the repository in version 4.0 as previously announced in v3.6.
+
+If you have the Python SDK installed, it will mostly continue to work with Argo Workflows 4.0, but it will not receive updates, bug fixes, or support.
+We recommend migrating to [Hera](https://github.com/argoproj-labs/hera), which is the recommended Python SDK for Argo Workflows.
+Hera provides a more intuitive and Pythonic interface for working with Argo Workflows.
+
+For migration guidance and documentation, see:
+
+* [Hera Documentation](https://hera.readthedocs.io/)
+* [Hera Quick Start Guide](https://hera.readthedocs.io/en/stable/walk-through/quick-start/)
+
 ### Logging levels
 
 The logging levels available have been reduced to `debug`, `info`, `warn` and `error`.
