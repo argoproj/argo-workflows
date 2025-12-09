@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - ../base
-  - ../../base/crds/minimal
+  - ../../base/crds/full
 
 patches:
   - path: overlays/workflow-controller-configmap.yaml

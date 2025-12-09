@@ -6,7 +6,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: k8s-jobs
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Error (exit code 64): no more retries Error from server (Forbidden): error when
+      creating "/tmp/manifest.yaml": jobs.batch is forbidden: User
+      "system:serviceaccount:argo:default" cannot create resource "jobs" in API group
+      "batch" in the namespace "argo"
+      name: k8s-jobs
 spec:
   entrypoint: rand-num
   templates:

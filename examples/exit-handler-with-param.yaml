@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: exit-handler-with-param-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       onExitTemplate enables workflow to pass the arguments (parameters/Artifacts) to exit handler template.

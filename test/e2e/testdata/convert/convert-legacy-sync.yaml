@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: legacy-sync
+spec:
+  entrypoint: main
+  synchronization:
+    semaphore:
+      configMapKeyRef:
+        name: my-config
+        key: workflow
+    mutex:
+      name: test-mutex
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: [echo]
+      args: ["hello"]
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          name: template-config
+          key: template
+      mutex:
+        name: template-mutex

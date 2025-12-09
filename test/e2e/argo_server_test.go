@@ -1127,6 +1127,17 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			IsEqualUnordered([]interface{}{uidBobWf})
 	})
 
+	s.Run("ListNameDoubleEqualsBob", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
 	s.Run("ListNameContainsTest", func() {
 		s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.fieldSelector", "metadata.name=test").
@@ -1302,6 +1313,17 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			IsEqualUnordered([]interface{}{uidBobWf})
 	})
 
+	s.Run("ArchiveNameDoubleEqualsBob", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
 	s.Run("ArchiveNameContainsTest", func() {
 		s.e().GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.fieldSelector", "metadata.name=test").
@@ -1370,6 +1392,78 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			Path("$.items[*].metadata.uid").
 			Array().
 			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+	})
+
+	s.Run("ListNameNotEqualsAlice", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ListNameNotEqualsNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name!=nomatch").
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+	})
+
+	s.Run("ListNameNotEqualsPrecedence", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ArchiveNameNotEqualsAlice", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
+	})
+
+	s.Run("ArchiveNameNotEqualsNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name!=nomatch").
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+	})
+
+	s.Run("ArchiveNameNotEqualsPrecedence", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]interface{}{uidBobWf})
 	})
 }
 
