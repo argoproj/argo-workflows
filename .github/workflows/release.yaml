@@ -441,6 +441,7 @@ jobs:
       - name: Print version (please check it is not dirty)
         run: |
           gunzip -k dist/argo-linux-amd64.gz
+          chmod +x dist/argo-linux-amd64
           dist/argo-linux-amd64 version
       - run: make checksums
       - name: Sign checksums and create public key for release assets
