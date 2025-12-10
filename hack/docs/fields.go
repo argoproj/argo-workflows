@@ -197,6 +197,15 @@ type DocGeneratorContext struct {
 
 type Set map[string]bool
 
+func (c *DocGeneratorContext) addToIndex(indexName, fileName string) {
+	if set, ok := c.index[indexName]; ok {
+		set[fileName] = true
+	} else {
+		c.index[indexName] = make(Set)
+		c.index[indexName][fileName] = true
+	}
+}
+
 func NewDocGeneratorContext() *DocGeneratorContext {
 	return &DocGeneratorContext{
 		doneFields: make(Set),
@@ -244,35 +253,20 @@ FILES:
 			default:
 				continue FILES
 			}
-			if set, ok := c.index[kind]; ok {
-				set[fileName] = true
-			} else {
-				c.index[kind] = make(Set)
-				c.index[kind][fileName] = true
-			}
+			c.addToIndex(kind, fileName)
 		}
 
 		r = regexp.MustCompile(`([a-zA-Z]+?):`)
 		finds := r.FindAllStringSubmatch(string(bytes), -1)
 		for _, find := range finds {
-			if set, ok := c.index[find[1]]; ok {
-				set[fileName] = true
-			} else {
-				c.index[find[1]] = make(Set)
-				c.index[find[1]][fileName] = true
-			}
+			c.addToIndex(find[1], fileName)
 		}
 
 		// Index by type name for specific patterns where field name matching is too broad.
 		// MetricLabel is used in prometheus metrics config - match files with both "prometheus:" and "labels:".
 		if _, hasPrometheus := c.index["prometheus"][fileName]; hasPrometheus {
 			if _, hasLabels := c.index["labels"][fileName]; hasLabels {
-				if set, ok := c.index["MetricLabel"]; ok {
-					set[fileName] = true
-				} else {
-					c.index["MetricLabel"] = make(Set)
-					c.index["MetricLabel"][fileName] = true
-				}
+				c.addToIndex("MetricLabel", fileName)
 			}
 		}
 	}
