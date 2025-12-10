@@ -262,6 +262,19 @@ FILES:
 				c.index[find[1]][fileName] = true
 			}
 		}
+
+		// Index by type name for specific patterns where field name matching is too broad.
+		// MetricLabel is used in prometheus metrics config - match files with both "prometheus:" and "labels:".
+		if _, hasPrometheus := c.index["prometheus"][fileName]; hasPrometheus {
+			if _, hasLabels := c.index["labels"][fileName]; hasLabels {
+				if set, ok := c.index["MetricLabel"]; ok {
+					set[fileName] = true
+				} else {
+					c.index["MetricLabel"] = make(Set)
+					c.index["MetricLabel"][fileName] = true
+				}
+			}
+		}
 	}
 }
 
@@ -304,7 +317,16 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 		if set, ok := c.index[jsonName]; ok {
 			// HACK: The "spec" field usually refers to a WorkflowSpec, but other CRDs
 			// have different definitions, and the examples with "spec" aren't applicable.
-			if jsonName != "spec" || name == "WorkflowSpec" || name == "CronWorkflowSpec" {
+			// Similarly, "labels" appears in metadata.labels for every workflow, but we
+			// only want examples that actually use the field (e.g., MetricLabel in prometheus.labels).
+			showExamples := true
+			if jsonName == "spec" && name != "WorkflowSpec" && name != "CronWorkflowSpec" {
+				showExamples = false
+			}
+			if jsonName == "labels" && name != "ObjectMeta" {
+				showExamples = false
+			}
+			if showExamples {
 				out += getExamples(set, "Examples with this field")
 			}
 		}
