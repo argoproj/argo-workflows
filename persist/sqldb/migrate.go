@@ -12,6 +12,8 @@ const (
 	versionTable = "schema_history"
 )
 
+// Migrate performs a multi-stage schema migration to create and transform the history table and related archived-workflows artifacts for the specified cluster and table.
+// It applies database-specific changes for MySQL and Postgres as needed and returns any error encountered while executing the migration.
 func Migrate(ctx context.Context, session db.Session, clusterName, tableName string) (err error) {
 	dbType := sqldb.DBTypeFor(session)
 	return sqldb.Migrate(ctx, session, versionTable, []sqldb.Change{

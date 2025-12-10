@@ -24,8 +24,8 @@ type dbConfig struct {
 }
 
 type DBInfo struct {
-	Config  dbConfig
-	Session db.Session
+	Config       dbConfig
+	SessionProxy *sqldb.SessionProxy
 }
 
 const (
@@ -46,6 +46,8 @@ func defaultTable(tableName, defaultName string) string {
 	return tableName
 }
 
+// SecondsToDurationWithDefault converts a pointer to seconds into a time.Duration, using defaultSeconds when value is nil.
+// If value is non-nil, the integer it points to is used; the returned duration equals the chosen number of seconds.
 func SecondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration {
 	dur := time.Duration(defaultSeconds) * time.Second
 	if value != nil {
@@ -55,17 +57,17 @@ func SecondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration 
 }
 
 func (d *DBInfo) Migrate(ctx context.Context) {
-	if d.Session == nil {
+	if d.SessionProxy == nil {
 		return
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Setting up sync manager database")
 	if !d.Config.SkipMigration {
-		err := migrate(ctx, d.Session, &d.Config)
+		err := migrate(ctx, d.SessionProxy, &d.Config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
 			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
-			d.Session = nil
+			d.SessionProxy = nil
 		} else {
 			logger.Info(ctx, "Sync db migration complete")
 		}
