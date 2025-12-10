@@ -14,8 +14,8 @@ spec:
   templates:
   - name: volumes-emptydir-example
     container:
-      image: debian:latest
-      command: ["/bin/bash", "-c"]
+      image: alpine:3.6
+      command: ["/bin/sh", "-c"]
       args: ["
         vol_found=`mount | grep /mnt/vol` && \
         if [[ -n $vol_found ]]; then echo \"Volume mounted and found\"; else echo \"Not found\"; fi

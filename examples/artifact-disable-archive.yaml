@@ -57,7 +57,7 @@ spec:
       - name: hello-txt-nc
         path: /tmp/hello_nc.txt
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args:
       - cat /tmp/hello.txt && cat /tmp/hello_nc.txt && cd /tmp/etc && find .

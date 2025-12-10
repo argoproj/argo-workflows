@@ -5,6 +5,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: loop-arbitrary-sequential-steps-
 spec:
   entrypoint: loop-arbitrary-sequential-steps-example
@@ -44,6 +46,6 @@ spec:
           - name: exit_code
           - name: message
       container:
-        image: alpine
+        image: alpine:3.6
         command: [ '/bin/sh', '-c' ]
         args: [ "echo {{inputs.parameters.message}}; exit {{inputs.parameters.exit_code}}" ]

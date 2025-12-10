@@ -1,5 +1,53 @@
 # Changelog
 
+## v3.7.6 (2025-12-09)
+
+Full Changelog: [v3.7.5...v3.7.6](https://github.com/argoproj/argo-workflows/compare/v3.7.5...v3.7.6)
+
+### Selected Changes
+
+* [9572e7b82](https://github.com/argoproj/argo-workflows/commit/9572e7b8243834b951385584c2a344378accb76d) fix: make executable (cherry-pick #15129 for 3.7) (#15135)
+* [f1e70413a](https://github.com/argoproj/argo-workflows/commit/f1e70413a7ccd133ae19dd6a2795ed1c3ba320c8) fix: more release fixing (cherry-pick #15128 for 3.7) (#15133)
+* [297446af2](https://github.com/argoproj/argo-workflows/commit/297446af2b36a97f6ce3c57bb8fd95bb2637d601) fix: release process bugs from #15124 (cherry-pick #15127 for 3.7) (#15131)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude
+* Copilot
+
+</details>
+
+## v3.7.5 (2025-12-08)
+
+Full Changelog: [v3.7.4...v3.7.5](https://github.com/argoproj/argo-workflows/compare/v3.7.4...v3.7.5)
+
+### Selected Changes
+
+* [505255925](https://github.com/argoproj/argo-workflows/commit/5052559257e3a3ab965d8c6408af0d2fa3b5e822) Merge commit from fork
+* [bff87fdcc](https://github.com/argoproj/argo-workflows/commit/bff87fdcc6cb9b5523cf3b1c3fe9fea02489cd3b) feat: convert command (cherry-pick #14996 for 3.7) (cherry-pick #15092 for 3.7)  (#15119)
+* [63953a26e](https://github.com/argoproj/argo-workflows/commit/63953a26e97c6a91c42f082fc9d7300fc5b1b01f) fix: add urllib3 compatibility for HTTPResponse getheader methods (cherry-pick #15117 for 3.7) (#15120)
+* [100b7aaca](https://github.com/argoproj/argo-workflows/commit/100b7aacabc9160b494831dcae6d5366eeea7d2d) chore(deps): bump golang.org/x/crypto from 0.43.0 to 0.45.0 in the go_modules group across 1 directory (cherry-pick #15062 for 3.7) (#15109)
+* [9effb67aa](https://github.com/argoproj/argo-workflows/commit/9effb67aa259724febda0bd079137524a8ca8a96) fix: skip validate dynamic templateref (cherry-pick #14850 for 3.7) (#15082)
+* [0b5b28aca](https://github.com/argoproj/argo-workflows/commit/0b5b28aca7fb7c6d6382c5fb56c417d190864d6c) fix: http template read response.Body after cancel(), sometimes it return a context canceled error (cherry-pick #14853 for 3.7) (#15075)
+* [033961ef9](https://github.com/argoproj/argo-workflows/commit/033961ef969880ff4a1deb413eebc2a45bf3858f) fix: Fixes parameterized global artifacts resolution in exit handlers. Fixes #11610 (cherry-pick #14991 for 3.7) (#15056)
+* [c9a798717](https://github.com/argoproj/argo-workflows/commit/c9a7987174d5dc685d0ac4a5030b1fc2560e4bdb) fix: preserve global scope variables in withSequence expressions (cherry-pick #14718 for 3.7) (#15049)
+* [ce09c32de](https://github.com/argoproj/argo-workflows/commit/ce09c32de1f220b3bbd39dae48ef49b237f5c9f4) fix: add archive location if artifact is needed in data source. Fixes #14990 (cherry-pick #15004 for 3.7) (#15048)
+* [0f90c2dba](https://github.com/argoproj/argo-workflows/commit/0f90c2dbaf4f00706586485d2730f770b7e869d8) chore(deps): bump github.com/go-viper/mapstructure/v2 from 2.3.0 to 2.4.0 in the go_modules group (cherry-pick #14779 for 3.7) (#15045)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* AnonyScorpio
+* ItielOlenick
+* jswxstw
+* k3rnL
+* Milas Bowman
+* shuangkun
+* Tianchu Zhao
+
+</details>
+
 ## v3.7.4 (2025-11-13)
 
 Full Changelog: [v3.7.3...v3.7.4](https://github.com/argoproj/argo-workflows/compare/v3.7.3...v3.7.4)
@@ -211,7 +259,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.13...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.13...v3.7.0-rc1)
+Full Changelog: [v3.6.15...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.15...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -418,6 +466,51 @@ Full Changelog: [v3.6.13...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.15 (2025-12-09)
+
+Full Changelog: [v3.6.14...v3.6.15](https://github.com/argoproj/argo-workflows/compare/v3.6.14...v3.6.15)
+
+### Selected Changes
+
+* [ae0e0a270](https://github.com/argoproj/argo-workflows/commit/ae0e0a2704b330b7fc9fd2fb2b4f3fdd149a39ba) fix: make executable (cherry-pick #15129 for 3.6) (#15134)
+* [84e38fbc3](https://github.com/argoproj/argo-workflows/commit/84e38fbc32b83103262593c92f7bcb79d68eea46) fix: more release fixing (cherry-pick #15128 for 3.6) (#15132)
+* [7a457137e](https://github.com/argoproj/argo-workflows/commit/7a457137ef1607f4d197d6c45a1981e9417f837a) fix: release process bugs from #15124 (cherry-pick #15127 for 3.6) (#15130)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude
+* Copilot
+
+</details>
+
+## v3.6.14 (2025-12-08)
+
+Full Changelog: [v3.6.13...v3.6.14](https://github.com/argoproj/argo-workflows/compare/v3.6.13...v3.6.14)
+
+### Selected Changes
+
+* [089c7be81](https://github.com/argoproj/argo-workflows/commit/089c7be814b60da59567b33a74e716bf492a85e7) chore(deps): bump golang.org/x/crypto from 0.36.0 to 0.45.0 in the go_modules group across 1 directory (cherry-pick #15062 for 3.6) (#15122)
+* [4ee61135b](https://github.com/argoproj/argo-workflows/commit/4ee61135b2b404624433671bf537fcace0a32a58) Merge commit from fork
+* [2ffc9bb67](https://github.com/argoproj/argo-workflows/commit/2ffc9bb6713913a8c337596588c6598b93598c65) fix: add urllib3 compatibility for HTTPResponse getheader methods (cherry-pick #15117 for 3.6) (#15121)
+* [870122211](https://github.com/argoproj/argo-workflows/commit/87012221182dff5517674e49a00fab70b31cc3c7) fix: http template read response.Body after cancel(), sometimes it return a context canceled error (cherry-pick #14853 for 3.6) (#15074)
+* [14585e9e7](https://github.com/argoproj/argo-workflows/commit/14585e9e784c18d868840759d8bca6663e99481d) fix: skip validate dynamic templateref (cherry-pick #14850 for 3.6) (#15081)
+* [f53e1d1b8](https://github.com/argoproj/argo-workflows/commit/f53e1d1b8310f921f004d2084e51e57a5d44dcc2) fix: Fixes parameterized global artifacts resolution in exit handlers. Fixes #11610 (cherry-pick #14991 for 3.6) (#15057)
+* [6ab325261](https://github.com/argoproj/argo-workflows/commit/6ab3252612397af72c69444d3a4e02063cd087c0) fix: preserve global scope variables in withSequence expressions (cherry-pick #14718 for 3.6) (#15050)
+* [0d670dfd6](https://github.com/argoproj/argo-workflows/commit/0d670dfd6adcccb11a6e765abdc759e2c26787ca) fix: add archive location if artifact is needed in data source. Fixes #14990 (cherry-pick #15004 for 3.6) (#15047)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* AnonyScorpio
+* ItielOlenick
+* jswxstw
+* k3rnL
+* shuangkun
+* Tianchu Zhao
 
 </details>
 
