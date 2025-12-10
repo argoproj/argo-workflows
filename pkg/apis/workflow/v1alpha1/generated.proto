@@ -997,7 +997,7 @@ message Memoize {
   optional string maxAge = 3;
 }
 
-// Pod metdata
+// Pod metadata
 message Metadata {
   map<string, string> annotations = 1;
 
@@ -1721,7 +1721,7 @@ message Template {
   // Overrides the affinity set at the workflow level (if any)
   optional k8s.io.api.core.v1.Affinity affinity = 8;
 
-  // Metdata sets the pods's metadata, i.e. annotations and labels
+  // Metadata sets the pods's metadata, i.e. annotations and labels
   optional Metadata metadata = 9;
 
   // Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
