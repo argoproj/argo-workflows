@@ -840,7 +840,10 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 			ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
 			metav1.ListOptions{
-				LabelSelector:   common.LabelKeyWorkflow + "=" + woc.wf.Name,
+				LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name,
+				// DeleteCollection does a "list" operation to get the resources to delete, which by default does a strongly consistent read of the most recent version.
+				// This can be slow for Kubernetes versions before 1.34, so we set resourceVersion=0 to relax consistency and tell the k8s API to return any resource version.
+				// It's possible for this to miss some resources, but those should be GC'd when the parent workflow is deleted.
 				ResourceVersion: "0",
 			},
 		)
