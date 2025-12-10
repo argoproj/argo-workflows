@@ -863,6 +863,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
 	oldRV := woc.wf.ResourceVersion
+	woc.updateLastSeenVersionAnnotation(oldRV)
 	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
