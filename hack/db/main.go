@@ -17,10 +17,17 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	utilsqldb "github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
 var session db.Session
 
+// main initializes and runs the "db" CLI.
+//
+// It registers a persistent --dsn flag, configures a PersistentPreRunE handler
+// that creates the global DB session from the provided DSN, adds the migrate and
+// fake-archived-workflows subcommands, and executes the command tree. If command
+// execution returns an error, the process exits with status code 1.
 func main() {
 	var dsn string
 	rootCmd := &cobra.Command{
@@ -29,6 +36,9 @@ func main() {
 	}
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
 		session, err = createDBSession(dsn)
+		if err != nil {
+			return err
+		}
 		return
 	}
 	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "d", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
@@ -54,6 +64,9 @@ func NewMigrateCommand() *cobra.Command {
 	return migrationCmd
 }
 
+// NewFakeDataCommand creates a Cobra command that inserts randomly generated archived workflows into the argo_archived_workflows table for testing.
+// The command seeds the RNG, clones and randomizes a provided workflow template across specified clusters and namespaces, and archives each generated workflow
+// using a session proxy and the workflow archive store. Flags control the template path, seed, number of rows, clusters, and namespaces.
 func NewFakeDataCommand() *cobra.Command {
 	var template string
 	var seed, rows int
@@ -72,7 +85,8 @@ func NewFakeDataCommand() *cobra.Command {
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
-				wfArchive := sqldb.NewWorkflowArchive(session, cluster, "", instanceIDService)
+				sessionProxy := utilsqldb.NewSessionProxyFromSession(session, nil, "", "").Tx()
+				wfArchive := sqldb.NewWorkflowArchive(sessionProxy, cluster, "", instanceIDService)
 				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}

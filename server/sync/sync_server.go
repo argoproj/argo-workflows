@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
 )
 
@@ -25,6 +26,10 @@ type syncServer struct {
 	providers map[syncpkg.SyncConfigType]SyncConfigProvider
 }
 
+// NewSyncServer constructs a syncServer that routes synchronization limit operations to provider implementations.
+// It always registers a CONFIGMAP provider and, if syncConfig is non-nil with EnableAPI true and a DB session proxy
+// can be created via sqldb.NewSessionProxy, also registers a DATABASE provider backed by the provided DBConfig; if
+// session proxy creation fails the DATABASE provider is omitted.
 func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) *syncServer {
 	server := &syncServer{
 		providers: make(map[syncpkg.SyncConfigType]SyncConfigProvider),
@@ -33,8 +38,14 @@ func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, name
 	server.providers[syncpkg.SyncConfigType_CONFIGMAP] = &configMapSyncProvider{}
 
 	if syncConfig != nil && syncConfig.EnableAPI {
-		session := syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, syncConfig)
-		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(session, syncdb.DBConfigFromConfig(syncConfig))}
+		sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+			KubectlConfig: kubectlConfig,
+			Namespace:     namespace,
+			DBConfig:      syncConfig.DBConfig,
+		})
+		if err == nil {
+			server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(sessionProxy, syncdb.DBConfigFromConfig(syncConfig))}
+		}
 	}
 
 	return server

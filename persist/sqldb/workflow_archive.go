@@ -85,7 +85,7 @@ type WorkflowArchive interface {
 }
 
 type workflowArchive struct {
-	session           db.Session
+	sessionProxy      *sqldb.SessionProxy
 	clusterName       string
 	managedNamespace  string
 	instanceIDService instanceid.Service
@@ -96,9 +96,9 @@ func (r *workflowArchive) IsEnabled() bool {
 	return true
 }
 
-// NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(session)}
+// NewWorkflowArchive creates a WorkflowArchive that stores archived workflows for the given cluster and managed namespace using the provided SessionProxy and instance ID service.
+func NewWorkflowArchive(sessionProxy *sqldb.SessionProxy, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
+	return &workflowArchive{sessionProxy: sessionProxy, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(sessionProxy.Session())}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
@@ -112,8 +112,8 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 	if r.dbType == sqldb.Postgres {
 		workflow = bytes.ReplaceAll(workflow, []byte("\\u0000"), []byte(postgresNullReplacement))
 	}
-	return r.session.Tx(func(sess db.Session) error {
-		_, err := sess.SQL().
+	return r.sessionProxy.TxWith(ctx, func(sp *sqldb.SessionProxy) error {
+		_, err := sp.Session().SQL().
 			DeleteFrom(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
 			And(db.Cond{"uid": wf.UID}).
@@ -121,7 +121,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 		if err != nil {
 			return err
 		}
-		_, err = sess.Collection(archiveTableName).
+		_, err = sp.Session().Collection(archiveTableName).
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
 					ClusterName:       r.clusterName,
@@ -140,7 +140,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 			return err
 		}
 
-		_, err = sess.SQL().
+		_, err = sp.Session().SQL().
 			DeleteFrom(archiveLabelsTableName).
 			Where(db.Cond{"clustername": r.clusterName}).
 			And(db.Cond{"uid": wf.UID}).
@@ -150,7 +150,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 		}
 		// insert the labels
 		for key, value := range wf.GetLabels() {
-			_, err := sess.Collection(archiveLabelsTableName).
+			_, err := sp.Session().Collection(archiveLabelsTableName).
 				Insert(&archivedWorkflowLabelRecord{
 					ClusterName: r.clusterName,
 					UID:         string(wf.UID),
@@ -162,67 +162,77 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 			}
 		}
 		return nil
-	})
+	}, nil)
 }
 
 func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	var baseSelector = r.session.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp")
 
 	switch r.dbType {
 	case sqldb.MySQL:
-		selectQuery := baseSelector.
-			Columns(
-				db.Raw("coalesce(workflow->'$.metadata.labels', '{}') as labels"),
-				db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
-				db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
-				db.Raw("workflow->>'$.spec.suspend'"),
-				db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
-				db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
-				db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
-			).
-			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID())
+		err := r.sessionProxy.With(ctx, func(s db.Session) error {
+			baseSelector := s.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp")
+			selectQuery := baseSelector.
+				Columns(
+					db.Raw("coalesce(workflow->'$.metadata.labels', '{}') as labels"),
+					db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
+					db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
+					db.Raw("workflow->>'$.spec.suspend'"),
+					db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
+					db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
+					db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
+				).
+				From(archiveTableName).
+				Where(r.clusterManagedNamespaceAndInstanceID())
 
-		selectQuery, err := BuildArchivedWorkflowSelector(selectQuery, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
-		if err != nil {
-			return nil, err
-		}
+			selectQuery, err := BuildArchivedWorkflowSelector(selectQuery, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+			if err != nil {
+				return err
+			}
 
-		err = selectQuery.All(&archivedWfs)
+			err = selectQuery.All(&archivedWfs)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		if err != nil {
 			return nil, err
 		}
 	case sqldb.Postgres:
-		// Use a common table expression to reduce detoast overhead for the "workflow" column:
-		// https://github.com/argoproj/argo-workflows/issues/13601#issuecomment-2420499551
-		cteSelector := baseSelector.
-			Columns(
-				db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
-				db.Raw("coalesce(workflow->'status', '{}') as status"),
-				db.Raw("workflow->'spec'->>'suspend' as suspend"),
-			).
-			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID())
+		err := r.sessionProxy.With(ctx, func(s db.Session) error {
+			baseSelector := s.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp")
+			// Use a common table expression to reduce detoast overhead for the "workflow" column:
+			// https://github.com/argoproj/argo-workflows/issues/13601#issuecomment-2420499551
+			cteSelector := baseSelector.
+				Columns(
+					db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
+					db.Raw("coalesce(workflow->'status', '{}') as status"),
+					db.Raw("workflow->'spec'->>'suspend' as suspend"),
+				).
+				From(archiveTableName).
+				Where(r.clusterManagedNamespaceAndInstanceID())
 
-		cteSelector, err := BuildArchivedWorkflowSelector(cteSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
-		if err != nil {
-			return nil, err
-		}
+			cteSelector, err := BuildArchivedWorkflowSelector(cteSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+			if err != nil {
+				return err
+			}
 
-		selectQuery := baseSelector.Columns(
-			db.Raw("coalesce(metadata->>'labels', '{}') as labels"),
-			db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
-			db.Raw("coalesce(status->>'progress', '') as progress"),
-			"suspend",
-			db.Raw("coalesce(status->>'message', '') as message"),
-			db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
-			db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
-		)
+			selectQuery := baseSelector.Columns(
+				db.Raw("coalesce(metadata->>'labels', '{}') as labels"),
+				db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
+				db.Raw("coalesce(status->>'progress', '') as progress"),
+				"suspend",
+				db.Raw("coalesce(status->>'message', '') as message"),
+				db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
+				db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
+			)
 
-		err = r.session.SQL().
-			Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows")).
-			All(&archivedWfs)
+			err = s.SQL().
+				Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows")).
+				All(&archivedWfs)
+			return err
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -279,14 +289,142 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 
 func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error) {
 	if options.Limit > 0 && options.Offset > 0 {
-		return r.countWorkflowsOptimized(options)
+		return r.countWorkflowsOptimized(ctx, options)
 	}
 
-	total := &archivedWorkflowCount{}
+	var result int64
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		total := &archivedWorkflowCount{}
 
-	if len(options.LabelRequirements) == 0 {
-		selector := r.session.SQL().
+		if len(options.LabelRequirements) == 0 {
+			selector := s.SQL().
+				Select(db.Raw("count(*) as total")).
+				From(archiveTableName).
+				Where(r.clusterManagedNamespaceAndInstanceID()).
+				And(namespaceEqual(options.Namespace)).
+				And(namePrefixClause(options.NamePrefix)).
+				And(startedAtFromClause(options.MinStartedAt)).
+				And(startedAtToClause(options.MaxStartedAt)).
+				And(createdAfterClause(options.CreatedAfter)).
+				And(finishedBeforeClause(options.FinishedBefore))
+
+			if options.Name != "" {
+				nameFilter := options.NameFilter
+				if nameFilter == "" {
+					nameFilter = "Exact"
+				}
+				if nameFilter == "Exact" {
+					selector = selector.And(nameEqual(options.Name))
+				}
+				if nameFilter == "Contains" {
+					selector = selector.And(nameContainsClause(options.Name))
+				}
+				if nameFilter == "Prefix" {
+					selector = selector.And(namePrefixClause(options.Name))
+				}
+			}
+
+			err := selector.One(total)
+			if err != nil {
+				return err
+			}
+			result = int64(total.Total)
+			return nil
+		}
+
+		selector := s.SQL().
 			Select(db.Raw("count(*) as total")).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, true)
+		if err != nil {
+			return err
+		}
+		err = selector.One(total)
+		if err != nil {
+			return err
+		}
+
+		result = int64(total.Total)
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
+}
+
+func (r *workflowArchive) countWorkflowsOptimized(ctx context.Context, options sutils.ListOptions) (int64, error) {
+	var result int64
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		sampleSelector := s.SQL().
+			Select(db.Raw("count(*) as total")).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(namespaceEqual(options.Namespace)).
+			And(namePrefixClause(options.NamePrefix)).
+			And(startedAtFromClause(options.MinStartedAt)).
+			And(startedAtToClause(options.MaxStartedAt)).
+			And(createdAfterClause(options.CreatedAfter)).
+			And(finishedBeforeClause(options.FinishedBefore))
+
+		if options.Name != "" {
+			nameFilter := options.NameFilter
+			if nameFilter == "" {
+				nameFilter = "Exact"
+			}
+			if nameFilter == "Exact" {
+				sampleSelector = sampleSelector.And(nameEqual(options.Name))
+			}
+			if nameFilter == "Contains" {
+				sampleSelector = sampleSelector.And(nameContainsClause(options.Name))
+			}
+			if nameFilter == "Prefix" {
+				sampleSelector = sampleSelector.And(namePrefixClause(options.Name))
+			}
+		}
+
+		if options.Offset < 1000 {
+			total := &archivedWorkflowCount{}
+			err := sampleSelector.One(total)
+			if err != nil {
+				return err
+			}
+			result = int64(total.Total)
+			return nil
+		}
+
+		sampleSize := 1000
+		sampleSelector = sampleSelector.Limit(sampleSize)
+
+		sampleTotal := &archivedWorkflowCount{}
+		err := sampleSelector.One(sampleTotal)
+		if err != nil {
+			return err
+		}
+
+		if int64(sampleTotal.Total) < int64(sampleSize) {
+			result = int64(sampleTotal.Total)
+			return nil
+		}
+
+		result = int64(options.Offset) + int64(sampleTotal.Total) + int64(options.Limit)
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
+}
+
+func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.ListOptions) (bool, error) {
+	var hasMore bool
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		selector := s.SQL().
+			Select("uid").
 			From(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
 			And(namespaceEqual(options.Namespace)).
@@ -310,140 +448,32 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 			if nameFilter == "Prefix" {
 				selector = selector.And(namePrefixClause(options.Name))
 			}
-			if nameFilter == "NotEquals" {
-				selector = selector.And(nameNotEqual(options.Name))
+		}
+
+		if len(options.LabelRequirements) > 0 {
+			var err error
+			selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+			if err != nil {
+				return err
 			}
 		}
 
-		err := selector.One(total)
+		selector = selector.Limit(1).Offset(options.Offset + options.Limit)
+
+		var result []struct{ UID string }
+		err := selector.All(&result)
 		if err != nil {
-			return 0, err
+			return err
 		}
-		return int64(total.Total), nil
-	}
 
-	selector := r.session.SQL().
-		Select(db.Raw("count(*) as total")).
-		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID())
-
-	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, true)
-	if err != nil {
-		return 0, err
-	}
-	err = selector.One(total)
-	if err != nil {
-		return 0, err
-	}
-
-	return int64(total.Total), nil
-}
-
-func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (int64, error) {
-	sampleSelector := r.session.SQL().
-		Select(db.Raw("count(*) as total")).
-		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
-		And(namePrefixClause(options.NamePrefix)).
-		And(startedAtFromClause(options.MinStartedAt)).
-		And(startedAtToClause(options.MaxStartedAt)).
-		And(createdAfterClause(options.CreatedAfter)).
-		And(finishedBeforeClause(options.FinishedBefore))
-
-	if options.Name != "" {
-		nameFilter := options.NameFilter
-		if nameFilter == "" {
-			nameFilter = "Exact"
-		}
-		if nameFilter == "Exact" {
-			sampleSelector = sampleSelector.And(nameEqual(options.Name))
-		}
-		if nameFilter == "Contains" {
-			sampleSelector = sampleSelector.And(nameContainsClause(options.Name))
-		}
-		if nameFilter == "Prefix" {
-			sampleSelector = sampleSelector.And(namePrefixClause(options.Name))
-		}
-		if nameFilter == "NotEquals" {
-			sampleSelector = sampleSelector.And(nameNotEqual(options.Name))
-		}
-	}
-
-	if options.Offset < 1000 {
-		total := &archivedWorkflowCount{}
-		err := sampleSelector.One(total)
-		if err != nil {
-			return 0, err
-		}
-		return int64(total.Total), nil
-	}
-
-	sampleSize := 1000
-	sampleSelector = sampleSelector.Limit(sampleSize)
-
-	sampleTotal := &archivedWorkflowCount{}
-	err := sampleSelector.One(sampleTotal)
-	if err != nil {
-		return 0, err
-	}
-
-	if int64(sampleTotal.Total) < int64(sampleSize) {
-		return int64(sampleTotal.Total), nil
-	}
-
-	estimatedTotal := int64(options.Offset) + int64(sampleTotal.Total) + int64(options.Limit)
-	return estimatedTotal, nil
-}
-
-func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.ListOptions) (bool, error) {
-	selector := r.session.SQL().
-		Select("uid").
-		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
-		And(namePrefixClause(options.NamePrefix)).
-		And(startedAtFromClause(options.MinStartedAt)).
-		And(startedAtToClause(options.MaxStartedAt)).
-		And(createdAfterClause(options.CreatedAfter)).
-		And(finishedBeforeClause(options.FinishedBefore))
-
-	if options.Name != "" {
-		nameFilter := options.NameFilter
-		if nameFilter == "" {
-			nameFilter = "Exact"
-		}
-		if nameFilter == "Exact" {
-			selector = selector.And(nameEqual(options.Name))
-		}
-		if nameFilter == "Contains" {
-			selector = selector.And(nameContainsClause(options.Name))
-		}
-		if nameFilter == "Prefix" {
-			selector = selector.And(namePrefixClause(options.Name))
-		}
-		if nameFilter == "NotEquals" {
-			selector = selector.And(nameNotEqual(options.Name))
-		}
-	}
-
-	if len(options.LabelRequirements) > 0 {
-		var err error
-		selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	selector = selector.Limit(1).Offset(options.Offset + options.Limit)
-
-	var result []struct{ UID string }
-	err := selector.All(&result)
+		hasMore = len(result) > 0
+		return nil
+	})
 	if err != nil {
 		return false, err
 	}
 
-	return len(result) > 0, nil
+	return hasMore, nil
 }
 
 func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
@@ -496,13 +526,6 @@ func nameEqual(name string) db.Cond {
 	return db.Cond{}
 }
 
-func nameNotEqual(name string) db.Cond {
-	if name != "" {
-		return db.Cond{"name !=": name}
-	}
-	return db.Cond{}
-}
-
 func namePrefixClause(namePrefix string) db.Cond {
 	if namePrefix != "" {
 		return db.Cond{"name LIKE": namePrefix + "%"}
@@ -517,6 +540,9 @@ func nameContainsClause(nameSubstring string) db.Cond {
 	return db.Cond{}
 }
 
+// phaseEqual returns a database condition that filters rows where the "phase"
+// column equals the provided value. If the phase argument is an empty string,
+// an empty condition is returned.
 func phaseEqual(phase string) db.Cond {
 	if phase != "" {
 		return db.Cond{"phase": phase}
@@ -525,140 +551,165 @@ func phaseEqual(phase string) db.Cond {
 }
 
 func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {
+	var result *wfv1.Workflow
 	logger := logging.RequireLoggerFromContext(ctx)
-	var err error
-	archivedWf := &archivedWorkflowRecord{}
-	if uid != "" {
-		err = r.session.SQL().
-			Select("workflow").
-			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID()).
-			And(db.Cond{"uid": uid}).
-			One(archivedWf)
-	} else {
-		if name != "" && namespace != "" {
-			total := &archivedWorkflowCount{}
-			err = r.session.SQL().
-				Select(db.Raw("count(*) as total")).
-				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(namespace)).
-				And(nameEqual(name)).
-				One(total)
-			if err != nil {
-				return nil, err
-			}
-			num := int64(total.Total)
-			if num > 1 {
-				logger.WithFields(logging.Fields{
-					"namespace": namespace,
-					"name":      name,
-					"num":       num,
-				}).Debug(ctx, "returning latest of archived workflows")
-			}
-			err = r.session.SQL().
+
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		archivedWf := &archivedWorkflowRecord{}
+		var err error
+
+		if uid != "" {
+			err = s.SQL().
 				Select("workflow").
 				From(archiveTableName).
 				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(namespace)).
-				And(nameEqual(name)).
-				OrderBy("-startedat").
+				And(db.Cond{"uid": uid}).
 				One(archivedWf)
 		} else {
-			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)
+			if name != "" && namespace != "" {
+				total := &archivedWorkflowCount{}
+				err = s.SQL().
+					Select(db.Raw("count(*) as total")).
+					From(archiveTableName).
+					Where(r.clusterManagedNamespaceAndInstanceID()).
+					And(namespaceEqual(namespace)).
+					And(nameEqual(name)).
+					One(total)
+				if err != nil {
+					return err
+				}
+				num := int64(total.Total)
+				if num > 1 {
+					logger.WithFields(logging.Fields{
+						"namespace": namespace,
+						"name":      name,
+						"num":       num,
+					}).Debug(ctx, "returning latest of archived workflows")
+				}
+				err = s.SQL().
+					Select("workflow").
+					From(archiveTableName).
+					Where(r.clusterManagedNamespaceAndInstanceID()).
+					And(namespaceEqual(namespace)).
+					And(nameEqual(name)).
+					OrderBy("-startedat").
+					One(archivedWf)
+			} else {
+				return sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)
+			}
 		}
-	}
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				result = nil
+				return nil
+			}
+			return err
+		}
+
+		var wf *wfv1.Workflow
+		if r.dbType == sqldb.Postgres {
+			archivedWf.Workflow = strings.ReplaceAll(archivedWf.Workflow, postgresNullReplacement, "\\u0000")
+		}
+		err = json.Unmarshal([]byte(archivedWf.Workflow), &wf)
+		if err != nil {
+			return err
+		}
+		// For backward compatibility, we should label workflow retrieved from DB as Persisted.
+		wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
+		result = wf
+		return nil
+	})
 	if err != nil {
-		if err == db.ErrNoMoreRows {
-			return nil, nil
-		}
 		return nil, err
 	}
-	var wf *wfv1.Workflow
-	if r.dbType == sqldb.Postgres {
-		archivedWf.Workflow = strings.ReplaceAll(archivedWf.Workflow, postgresNullReplacement, "\\u0000")
-	}
-	err = json.Unmarshal([]byte(archivedWf.Workflow), &wf)
-	if err != nil {
-		return nil, err
-	}
-	// For backward compatibility, we should label workflow retrieved from DB as Persisted.
-	wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
-	return wf, nil
+
+	return result, nil
 }
 
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
-	selector := r.session.SQL().
-		Select("name", "namespace", "uid", "startedat", "finishedat").
-		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(phaseEqual(string(wfv1.NodeSucceeded)))
+	var result *wfv1.Workflow
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		selector := s.SQL().
+			Select("name", "namespace", "uid", "startedat", "finishedat").
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(phaseEqual(string(wfv1.NodeSucceeded)))
 
-	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, sutils.ListOptions{
-		Namespace:         namespace,
-		LabelRequirements: requirements,
-		Limit:             1,
-		Offset:            0,
-	}, false)
-	if err != nil {
-		return nil, err
-	}
+		selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, sutils.ListOptions{
+			Namespace:         namespace,
+			LabelRequirements: requirements,
+			Limit:             1,
+			Offset:            0,
+		}, false)
+		if err != nil {
+			return err
+		}
 
-	var awf archivedWorkflowMetadata
-	err = selector.One(&awf)
-	if err != nil {
-		return nil, err
-	}
+		var awf archivedWorkflowMetadata
+		err = selector.One(&awf)
+		if err != nil {
+			return err
+		}
 
-	return &wfv1.Workflow{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      awf.Name,
-			Namespace: awf.Namespace,
-			UID:       types.UID(awf.UID),
-			Labels: map[string]string{
-				common.LabelKeyWorkflowArchivingStatus: "Persisted",
+		result = &wfv1.Workflow{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      awf.Name,
+				Namespace: awf.Namespace,
+				UID:       types.UID(awf.UID),
+				Labels: map[string]string{
+					common.LabelKeyWorkflowArchivingStatus: "Persisted",
+				},
 			},
-		},
-		Status: wfv1.WorkflowStatus{
-			StartedAt:  v1.Time{Time: awf.StartedAt},
-			FinishedAt: v1.Time{Time: awf.FinishedAt},
-		},
-	}, nil
+			Status: wfv1.WorkflowStatus{
+				StartedAt:  v1.Time{Time: awf.StartedAt},
+				FinishedAt: v1.Time{Time: awf.FinishedAt},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 
+	return result, nil
 }
 
 func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	rs, err := r.session.SQL().
-		DeleteFrom(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(db.Cond{"uid": uid}).
-		Exec()
-	if err != nil {
-		return err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return err
-	}
-	logger.WithFields(logging.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug(ctx, "Deleted archived workflow")
-	return nil
+	return r.sessionProxy.With(ctx, func(s db.Session) error {
+		rs, err := s.SQL().
+			DeleteFrom(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(db.Cond{"uid": uid}).
+			Exec()
+		if err != nil {
+			return err
+		}
+		rowsAffected, err := rs.RowsAffected()
+		if err != nil {
+			return err
+		}
+		logger.WithFields(logging.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug(ctx, "Deleted archived workflow")
+		return nil
+	})
 }
 
 func (r *workflowArchive) DeleteExpiredWorkflows(ctx context.Context, ttl time.Duration) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	rs, err := r.session.SQL().
-		DeleteFrom(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
-		Exec()
-	if err != nil {
-		return err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return err
-	}
-	logger.WithFields(logging.Fields{"rowsAffected": rowsAffected}).Info(ctx, "Deleted archived workflows")
-	return nil
+	return r.sessionProxy.With(ctx, func(s db.Session) error {
+		rs, err := s.SQL().
+			DeleteFrom(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
+			Exec()
+		if err != nil {
+			return err
+		}
+		rowsAffected, err := rs.RowsAffected()
+		if err != nil {
+			return err
+		}
+		logger.WithFields(logging.Fields{"rowsAffected": rowsAffected}).Info(ctx, "Deleted archived workflows")
+		return nil
+	})
 }

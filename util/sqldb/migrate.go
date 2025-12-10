@@ -96,6 +96,12 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 	return nil
 }
 
+// applyChange updates the version table to changeSchemaVersion and, when the update affects exactly one row,
+// executes the provided Change within the same transaction.
+//
+// The function attempts to advance schema_version from changeSchemaVersion-1 to changeSchemaVersion; if that update
+// succeeds and affects one row, it invokes c.Apply(ctx, tx) (when c is non-nil) using the transactional session.
+// It returns any error from the SQL update, from retrieving rows affected, from c.Apply, or from the enclosing transaction.
 func applyChange(ctx context.Context, session db.Session, changeSchemaVersion int, versionTableName string, c Change) error {
 	// https://upper.io/blog/2020/08/29/whats-new-on-upper-v4/#transactions-enclosed-by-functions
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -114,6 +120,7 @@ func applyChange(ctx context.Context, session db.Session, changeSchemaVersion in
 		if rowsAffected == 1 {
 			logger.WithFields(logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info(ctx, "applying database change")
 			if c != nil {
+				// Apply the change directly with the transaction session
 				err := c.Apply(ctx, tx)
 				if err != nil {
 					return err
