@@ -106,6 +106,11 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
+			EnableParallelism:     art.S3.EnableParallelism,
+			Parallelism:           art.S3.Parallelism,
+			FileCountThreshold:    art.S3.FileCountThreshold,
+			FileSizeThreshold:     art.S3.FileSizeThreshold,
+			PartSize:              art.S3.PartSize,
 		}
 
 		return &driver, nil

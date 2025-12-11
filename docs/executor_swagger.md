@@ -3351,10 +3351,15 @@ cause implementors to also use a fixed point implementation.
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
 | caSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
+| enableParallelism | boolean| `bool` |  | | EnableParallelism enables parallel upload/download for directories with many files or large files |  |
 | encryptionOptions | [S3EncryptionOptions](#s3-encryption-options)| `S3EncryptionOptions` |  | |  |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
+| fileCountThreshold | int32 (formatted integer)| `int32` |  | | FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10. |  |
+| fileSizeThreshold | string| `string` |  | | FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.</br>Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.</br>Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi"). |  |
 | insecure | boolean| `bool` |  | | Insecure will connect to the service with TLS |  |
 | key | string| `string` |  | | Key is the key in the bucket where the artifact resides |  |
+| parallelism | int32 (formatted integer)| `int32` |  | | Parallelism is the number of concurrent workers for parallel operations. Default is 10. |  |
+| partSize | string| `string` |  | | PartSize is the part size for multipart uploads.</br>Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.</br>Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi"). |  |
 | region | string| `string` |  | | Region contains the optional bucket region |  |
 | roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |

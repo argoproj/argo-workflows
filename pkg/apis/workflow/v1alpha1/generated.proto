@@ -1519,6 +1519,25 @@ message S3Bucket {
 
   // CASecret specifies the secret that contains the CA, used to verify the TLS connection
   optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
+
+  // EnableParallelism enables parallel upload/download for directories with many files or large files
+  optional bool enableParallelism = 13;
+
+  // Parallelism is the number of concurrent workers for parallel operations. Default is 10.
+  optional int32 parallelism = 14;
+
+  // FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.
+  optional int32 fileCountThreshold = 15;
+
+  // FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+  // Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+  // Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+  optional string fileSizeThreshold = 16;
+
+  // PartSize is the part size for multipart uploads.
+  // Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+  // Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
+  optional string partSize = 17;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations

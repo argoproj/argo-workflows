@@ -5390,6 +5390,41 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
+					"enableParallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableParallelism enables parallel upload/download for directories with many files or large files",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"parallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parallelism is the number of concurrent workers for parallel operations. Default is 10.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fileCountThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fileSizeThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"partSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5487,6 +5522,41 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"enableParallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableParallelism enables parallel upload/download for directories with many files or large files",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"parallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parallelism is the number of concurrent workers for parallel operations. Default is 10.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fileCountThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fileSizeThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"partSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"keyFormat": {
@@ -5593,6 +5663,41 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"enableParallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableParallelism enables parallel upload/download for directories with many files or large files",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"parallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parallelism is the number of concurrent workers for parallel operations. Default is 10.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fileCountThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fileSizeThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"partSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

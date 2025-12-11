@@ -1818,6 +1818,10 @@ spec:
                                   description: ObjectLocking Enable object locking
                                   type: boolean
                               type: object
+                            enableParallelism:
+                              description: EnableParallelism enables parallel upload/download
+                                for directories with many files or large files
+                              type: boolean
                             encryptionOptions:
                               description: S3EncryptionOptions used to determine encryption
                                 options during s3 operations
@@ -1868,6 +1872,18 @@ spec:
                               description: Endpoint is the hostname of the bucket
                                 endpoint
                               type: string
+                            fileCountThreshold:
+                              description: FileCountThreshold is the minimum number
+                                of files in a directory to trigger parallel operations.
+                                Default is 10.
+                              format: int32
+                              type: integer
+                            fileSizeThreshold:
+                              description: |-
+                                FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                              type: string
                             insecure:
                               description: Insecure will connect to the service with
                                 TLS
@@ -1875,6 +1891,17 @@ spec:
                             key:
                               description: Key is the key in the bucket where the
                                 artifact resides
+                              type: string
+                            parallelism:
+                              description: Parallelism is the number of concurrent
+                                workers for parallel operations. Default is 10.
+                              format: int32
+                              type: integer
+                            partSize:
+                              description: |-
+                                PartSize is the part size for multipart uploads.
+                                Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                               type: string
                             region:
                               description: Region contains the optional bucket region
@@ -5973,6 +6000,11 @@ spec:
                                                     object locking
                                                   type: boolean
                                               type: object
+                                            enableParallelism:
+                                              description: EnableParallelism enables
+                                                parallel upload/download for directories
+                                                with many files or large files
+                                              type: boolean
                                             encryptionOptions:
                                               description: S3EncryptionOptions used
                                                 to determine encryption options during
@@ -6030,6 +6062,19 @@ spec:
                                               description: Endpoint is the hostname
                                                 of the bucket endpoint
                                               type: string
+                                            fileCountThreshold:
+                                              description: FileCountThreshold is the
+                                                minimum number of files in a directory
+                                                to trigger parallel operations. Default
+                                                is 10.
+                                              format: int32
+                                              type: integer
+                                            fileSizeThreshold:
+                                              description: |-
+                                                FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                                Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                                Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                              type: string
                                             insecure:
                                               description: Insecure will connect to
                                                 the service with TLS
@@ -6037,6 +6082,18 @@ spec:
                                             key:
                                               description: Key is the key in the bucket
                                                 where the artifact resides
+                                              type: string
+                                            parallelism:
+                                              description: Parallelism is the number
+                                                of concurrent workers for parallel
+                                                operations. Default is 10.
+                                              format: int32
+                                              type: integer
+                                            partSize:
+                                              description: |-
+                                                PartSize is the part size for multipart uploads.
+                                                Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                                Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                               type: string
                                             region:
                                               description: Region contains the optional
@@ -7348,6 +7405,12 @@ spec:
                                                           Enable object locking
                                                         type: boolean
                                                     type: object
+                                                  enableParallelism:
+                                                    description: EnableParallelism
+                                                      enables parallel upload/download
+                                                      for directories with many files
+                                                      or large files
+                                                    type: boolean
                                                   encryptionOptions:
                                                     description: S3EncryptionOptions
                                                       used to determine encryption
@@ -7410,6 +7473,19 @@ spec:
                                                     description: Endpoint is the hostname
                                                       of the bucket endpoint
                                                     type: string
+                                                  fileCountThreshold:
+                                                    description: FileCountThreshold
+                                                      is the minimum number of files
+                                                      in a directory to trigger parallel
+                                                      operations. Default is 10.
+                                                    format: int32
+                                                    type: integer
+                                                  fileSizeThreshold:
+                                                    description: |-
+                                                      FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                                      Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                                      Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                                    type: string
                                                   insecure:
                                                     description: Insecure will connect
                                                       to the service with TLS
@@ -7418,6 +7494,19 @@ spec:
                                                     description: Key is the key in
                                                       the bucket where the artifact
                                                       resides
+                                                    type: string
+                                                  parallelism:
+                                                    description: Parallelism is the
+                                                      number of concurrent workers
+                                                      for parallel operations. Default
+                                                      is 10.
+                                                    format: int32
+                                                    type: integer
+                                                  partSize:
+                                                    description: |-
+                                                      PartSize is the part size for multipart uploads.
+                                                      Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                                      Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                                     type: string
                                                   region:
                                                     description: Region contains the
@@ -8716,6 +8805,11 @@ spec:
                                             locking
                                           type: boolean
                                       type: object
+                                    enableParallelism:
+                                      description: EnableParallelism enables parallel
+                                        upload/download for directories with many
+                                        files or large files
+                                      type: boolean
                                     encryptionOptions:
                                       description: S3EncryptionOptions used to determine
                                         encryption options during s3 operations
@@ -8770,6 +8864,18 @@ spec:
                                       description: Endpoint is the hostname of the
                                         bucket endpoint
                                       type: string
+                                    fileCountThreshold:
+                                      description: FileCountThreshold is the minimum
+                                        number of files in a directory to trigger
+                                        parallel operations. Default is 10.
+                                      format: int32
+                                      type: integer
+                                    fileSizeThreshold:
+                                      description: |-
+                                        FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                        Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                        Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                      type: string
                                     insecure:
                                       description: Insecure will connect to the service
                                         with TLS
@@ -8777,6 +8883,18 @@ spec:
                                     key:
                                       description: Key is the key in the bucket where
                                         the artifact resides
+                                      type: string
+                                    parallelism:
+                                      description: Parallelism is the number of concurrent
+                                        workers for parallel operations. Default is
+                                        10.
+                                      format: int32
+                                      type: integer
+                                    partSize:
+                                      description: |-
+                                        PartSize is the part size for multipart uploads.
+                                        Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                        Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                       type: string
                                     region:
                                       description: Region contains the optional bucket
@@ -11385,6 +11503,11 @@ spec:
                                         description: ObjectLocking Enable object locking
                                         type: boolean
                                     type: object
+                                  enableParallelism:
+                                    description: EnableParallelism enables parallel
+                                      upload/download for directories with many files
+                                      or large files
+                                    type: boolean
                                   encryptionOptions:
                                     description: S3EncryptionOptions used to determine
                                       encryption options during s3 operations
@@ -11438,6 +11561,18 @@ spec:
                                     description: Endpoint is the hostname of the bucket
                                       endpoint
                                     type: string
+                                  fileCountThreshold:
+                                    description: FileCountThreshold is the minimum
+                                      number of files in a directory to trigger parallel
+                                      operations. Default is 10.
+                                    format: int32
+                                    type: integer
+                                  fileSizeThreshold:
+                                    description: |-
+                                      FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                      Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                      Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                    type: string
                                   insecure:
                                     description: Insecure will connect to the service
                                       with TLS
@@ -11445,6 +11580,18 @@ spec:
                                   key:
                                     description: Key is the key in the bucket where
                                       the artifact resides
+                                    type: string
+                                  parallelism:
+                                    description: Parallelism is the number of concurrent
+                                      workers for parallel operations. Default is
+                                      10.
+                                    format: int32
+                                    type: integer
+                                  partSize:
+                                    description: |-
+                                      PartSize is the part size for multipart uploads.
+                                      Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                      Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                     type: string
                                   region:
                                     description: Region contains the optional bucket
@@ -12755,6 +12902,11 @@ spec:
                                         description: ObjectLocking Enable object locking
                                         type: boolean
                                     type: object
+                                  enableParallelism:
+                                    description: EnableParallelism enables parallel
+                                      upload/download for directories with many files
+                                      or large files
+                                    type: boolean
                                   encryptionOptions:
                                     description: S3EncryptionOptions used to determine
                                       encryption options during s3 operations
@@ -12808,6 +12960,18 @@ spec:
                                     description: Endpoint is the hostname of the bucket
                                       endpoint
                                     type: string
+                                  fileCountThreshold:
+                                    description: FileCountThreshold is the minimum
+                                      number of files in a directory to trigger parallel
+                                      operations. Default is 10.
+                                    format: int32
+                                    type: integer
+                                  fileSizeThreshold:
+                                    description: |-
+                                      FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                      Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                      Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                    type: string
                                   insecure:
                                     description: Insecure will connect to the service
                                       with TLS
@@ -12815,6 +12979,18 @@ spec:
                                   key:
                                     description: Key is the key in the bucket where
                                       the artifact resides
+                                    type: string
+                                  parallelism:
+                                    description: Parallelism is the number of concurrent
+                                      workers for parallel operations. Default is
+                                      10.
+                                    format: int32
+                                    type: integer
+                                  partSize:
+                                    description: |-
+                                      PartSize is the part size for multipart uploads.
+                                      Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                      Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                     type: string
                                   region:
                                     description: Region contains the optional bucket
@@ -14026,6 +14202,11 @@ spec:
                                             locking
                                           type: boolean
                                       type: object
+                                    enableParallelism:
+                                      description: EnableParallelism enables parallel
+                                        upload/download for directories with many
+                                        files or large files
+                                      type: boolean
                                     encryptionOptions:
                                       description: S3EncryptionOptions used to determine
                                         encryption options during s3 operations
@@ -14080,6 +14261,18 @@ spec:
                                       description: Endpoint is the hostname of the
                                         bucket endpoint
                                       type: string
+                                    fileCountThreshold:
+                                      description: FileCountThreshold is the minimum
+                                        number of files in a directory to trigger
+                                        parallel operations. Default is 10.
+                                      format: int32
+                                      type: integer
+                                    fileSizeThreshold:
+                                      description: |-
+                                        FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                        Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                        Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                      type: string
                                     insecure:
                                       description: Insecure will connect to the service
                                         with TLS
@@ -14087,6 +14280,18 @@ spec:
                                     key:
                                       description: Key is the key in the bucket where
                                         the artifact resides
+                                      type: string
+                                    parallelism:
+                                      description: Parallelism is the number of concurrent
+                                        workers for parallel operations. Default is
+                                        10.
+                                      format: int32
+                                      type: integer
+                                    partSize:
+                                      description: |-
+                                        PartSize is the part size for multipart uploads.
+                                        Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                        Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                       type: string
                                     region:
                                       description: Region contains the optional bucket
@@ -18436,6 +18641,11 @@ spec:
                                                       object locking
                                                     type: boolean
                                                 type: object
+                                              enableParallelism:
+                                                description: EnableParallelism enables
+                                                  parallel upload/download for directories
+                                                  with many files or large files
+                                                type: boolean
                                               encryptionOptions:
                                                 description: S3EncryptionOptions used
                                                   to determine encryption options
@@ -18494,6 +18704,19 @@ spec:
                                                 description: Endpoint is the hostname
                                                   of the bucket endpoint
                                                 type: string
+                                              fileCountThreshold:
+                                                description: FileCountThreshold is
+                                                  the minimum number of files in a
+                                                  directory to trigger parallel operations.
+                                                  Default is 10.
+                                                format: int32
+                                                type: integer
+                                              fileSizeThreshold:
+                                                description: |-
+                                                  FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                                  Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                                  Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                                type: string
                                               insecure:
                                                 description: Insecure will connect
                                                   to the service with TLS
@@ -18501,6 +18724,18 @@ spec:
                                               key:
                                                 description: Key is the key in the
                                                   bucket where the artifact resides
+                                                type: string
+                                              parallelism:
+                                                description: Parallelism is the number
+                                                  of concurrent workers for parallel
+                                                  operations. Default is 10.
+                                                format: int32
+                                                type: integer
+                                              partSize:
+                                                description: |-
+                                                  PartSize is the part size for multipart uploads.
+                                                  Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                                  Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                                 type: string
                                               region:
                                                 description: Region contains the optional
@@ -19824,6 +20059,12 @@ spec:
                                                             Enable object locking
                                                           type: boolean
                                                       type: object
+                                                    enableParallelism:
+                                                      description: EnableParallelism
+                                                        enables parallel upload/download
+                                                        for directories with many
+                                                        files or large files
+                                                      type: boolean
                                                     encryptionOptions:
                                                       description: S3EncryptionOptions
                                                         used to determine encryption
@@ -19887,6 +20128,20 @@ spec:
                                                       description: Endpoint is the
                                                         hostname of the bucket endpoint
                                                       type: string
+                                                    fileCountThreshold:
+                                                      description: FileCountThreshold
+                                                        is the minimum number of files
+                                                        in a directory to trigger
+                                                        parallel operations. Default
+                                                        is 10.
+                                                      format: int32
+                                                      type: integer
+                                                    fileSizeThreshold:
+                                                      description: |-
+                                                        FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                                        Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                                        Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                                      type: string
                                                     insecure:
                                                       description: Insecure will connect
                                                         to the service with TLS
@@ -19895,6 +20150,19 @@ spec:
                                                       description: Key is the key
                                                         in the bucket where the artifact
                                                         resides
+                                                      type: string
+                                                    parallelism:
+                                                      description: Parallelism is
+                                                        the number of concurrent workers
+                                                        for parallel operations. Default
+                                                        is 10.
+                                                      format: int32
+                                                      type: integer
+                                                    partSize:
+                                                      description: |-
+                                                        PartSize is the part size for multipart uploads.
+                                                        Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                                        Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                                       type: string
                                                     region:
                                                       description: Region contains
@@ -23141,6 +23409,11 @@ spec:
                                         description: ObjectLocking Enable object locking
                                         type: boolean
                                     type: object
+                                  enableParallelism:
+                                    description: EnableParallelism enables parallel
+                                      upload/download for directories with many files
+                                      or large files
+                                    type: boolean
                                   encryptionOptions:
                                     description: S3EncryptionOptions used to determine
                                       encryption options during s3 operations
@@ -23194,6 +23467,18 @@ spec:
                                     description: Endpoint is the hostname of the bucket
                                       endpoint
                                     type: string
+                                  fileCountThreshold:
+                                    description: FileCountThreshold is the minimum
+                                      number of files in a directory to trigger parallel
+                                      operations. Default is 10.
+                                    format: int32
+                                    type: integer
+                                  fileSizeThreshold:
+                                    description: |-
+                                      FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+                                      Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+                                      Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+                                    type: string
                                   insecure:
                                     description: Insecure will connect to the service
                                       with TLS
@@ -23201,6 +23486,18 @@ spec:
                                   key:
                                     description: Key is the key in the bucket where
                                       the artifact resides
+                                    type: string
+                                  parallelism:
+                                    description: Parallelism is the number of concurrent
+                                      workers for parallel operations. Default is
+                                      10.
+                                    format: int32
+                                    type: integer
+                                  partSize:
+                                    description: |-
+                                      PartSize is the part size for multipart uploads.
+                                      Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+                                      Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
                                     type: string
                                   region:
                                     description: Region contains the optional bucket

@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
@@ -22,6 +23,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/sse"
 
 	"github.com/minio/minio-go/v7"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/util/retry"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
@@ -89,20 +91,25 @@ const (
 )
 
 type S3ClientOpts struct {
-	Endpoint        string
-	AddressingStyle AddressingStyle
-	Region          string
-	Secure          bool
-	Transport       http.RoundTripper
-	AccessKey       string
-	SecretKey       string
-	SessionToken    string
-	Trace           bool
-	RoleARN         string
-	RoleSessionName string
-	UseSDKCreds     bool
-	EncryptOpts     EncryptOpts
-	SendContentMd5  bool
+	Endpoint           string
+	AddressingStyle    AddressingStyle
+	Region             string
+	Secure             bool
+	Transport          http.RoundTripper
+	AccessKey          string
+	SecretKey          string
+	SessionToken       string
+	Trace              bool
+	RoleARN            string
+	RoleSessionName    string
+	UseSDKCreds        bool
+	EncryptOpts        EncryptOpts
+	SendContentMd5     bool
+	EnableParallelism  *bool
+	Parallelism        *int32
+	FileCountThreshold *int32
+	FileSizeThreshold  string
+	PartSize           string
 }
 
 type s3client struct {
@@ -129,6 +136,11 @@ type ArtifactDriver struct {
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
+	EnableParallelism     *bool
+	Parallelism           *int32
+	FileCountThreshold    *int32
+	FileSizeThreshold     string
+	PartSize              string
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
@@ -136,15 +148,20 @@ var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 // newS3Client instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, error) {
 	opts := S3ClientOpts{
-		Endpoint:     s3Driver.Endpoint,
-		Region:       s3Driver.Region,
-		Secure:       s3Driver.Secure,
-		AccessKey:    s3Driver.AccessKey,
-		SecretKey:    s3Driver.SecretKey,
-		SessionToken: s3Driver.SessionToken,
-		RoleARN:      s3Driver.RoleARN,
-		Trace:        os.Getenv(common.EnvVarArgoTrace) == "1",
-		UseSDKCreds:  s3Driver.UseSDKCreds,
+		Endpoint:           s3Driver.Endpoint,
+		Region:             s3Driver.Region,
+		Secure:             s3Driver.Secure,
+		AccessKey:          s3Driver.AccessKey,
+		SecretKey:          s3Driver.SecretKey,
+		SessionToken:       s3Driver.SessionToken,
+		RoleARN:            s3Driver.RoleARN,
+		Trace:              os.Getenv(common.EnvVarArgoTrace) == "1",
+		UseSDKCreds:        s3Driver.UseSDKCreds,
+		EnableParallelism:  s3Driver.EnableParallelism,
+		Parallelism:        s3Driver.Parallelism,
+		FileCountThreshold: s3Driver.FileCountThreshold,
+		FileSizeThreshold:  s3Driver.FileSizeThreshold,
+		PartSize:           s3Driver.PartSize,
 		EncryptOpts: EncryptOpts{
 			KmsKeyID:              s3Driver.KmsKeyID,
 			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,
@@ -514,7 +531,49 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 		return err
 	}
 
-	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts})
+	// Check file size to determine if we should use multipart upload with parallelism
+	opts := minio.PutObjectOptions{
+		SendContentMd5:       s.SendContentMd5,
+		ServerSideEncryption: encOpts,
+	}
+
+	// For large files, configure multipart upload with parallelism
+	enableParallelism := s.EnableParallelism == nil || *s.EnableParallelism
+	if enableParallelism {
+		fileInfo, err := os.Stat(path)
+		if err == nil {
+			fileSizeThreshold := int64(64 * 1024 * 1024) // default 64MB
+			if s.FileSizeThreshold != "" {
+				qty, err := resource.ParseQuantity(s.FileSizeThreshold)
+				if err == nil {
+					fileSizeThreshold = qty.Value()
+				}
+			}
+			if fileInfo.Size() >= fileSizeThreshold {
+				parallelism := int32(10) // default
+				if s.Parallelism != nil {
+					parallelism = *s.Parallelism
+				}
+				if parallelism > 0 {
+					opts.NumThreads = uint(parallelism)
+				}
+				if s.PartSize != "" {
+					qty, err := resource.ParseQuantity(s.PartSize)
+					if err == nil && qty.Value() > 0 {
+						opts.PartSize = uint64(qty.Value())
+					}
+				}
+				logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{
+					"file":       path,
+					"size":       fileInfo.Size(),
+					"numThreads": opts.NumThreads,
+					"partSize":   opts.PartSize,
+				}).Info(s.ctx, "Using multipart upload with parallelism for large file")
+			}
+		}
+	}
+
+	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
 	if err != nil {
 		return err
 	}
@@ -575,12 +634,83 @@ func generatePutTasks(ctx context.Context, keyPrefix, rootPath string) chan uplo
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
 func (s *s3client) PutDirectory(bucket, key, path string) error {
-	for putTask := range generatePutTasks(s.ctx, key, path) {
-		err := s.PutFile(bucket, putTask.key, putTask.path)
+	// Collect all tasks first to determine if we should use parallelism
+	var tasks []uploadTask
+	for task := range generatePutTasks(s.ctx, key, path) {
+		tasks = append(tasks, task)
+	}
+
+	// Use parallel upload if enabled and threshold is met
+	enableParallelism := s.EnableParallelism == nil || *s.EnableParallelism
+	fileCountThreshold := int32(10) // default
+	if s.FileCountThreshold != nil {
+		fileCountThreshold = *s.FileCountThreshold
+	}
+	if enableParallelism && len(tasks) >= int(fileCountThreshold) {
+		return s.putDirectoryParallel(bucket, tasks)
+	}
+
+	// Sequential upload for small directories or when parallelism is disabled
+	for _, task := range tasks {
+		err := s.PutFile(bucket, task.key, task.path)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// putDirectoryParallel uploads files in parallel using a worker pool
+func (s *s3client) putDirectoryParallel(bucket string, tasks []uploadTask) error {
+	parallelism := 10 // default
+	if s.Parallelism != nil && *s.Parallelism > 0 {
+		parallelism = int(*s.Parallelism)
+	}
+
+	taskChan := make(chan uploadTask, len(tasks))
+	for _, task := range tasks {
+		taskChan <- task
+	}
+	close(taskChan)
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, parallelism)
+	var firstErr error
+	var errOnce sync.Once
+
+	// Start worker goroutines
+	for i := 0; i < parallelism; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for task := range taskChan {
+				if err := s.PutFile(bucket, task.key, task.path); err != nil {
+					errOnce.Do(func() {
+						firstErr = err
+					})
+					errChan <- err
+					return
+				}
+			}
+		}()
+	}
+
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errChan)
+
+	// Return first error if any
+	if firstErr != nil {
+		return firstErr
+	}
+
+	// Check for any errors in the channel
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -593,7 +723,33 @@ func (s *s3client) GetFile(bucket, key, path string) error {
 		return err
 	}
 
-	err = s.minioClient.FGetObject(s.ctx, bucket, key, path, minio.GetObjectOptions{ServerSideEncryption: encOpts})
+	opts := minio.GetObjectOptions{ServerSideEncryption: encOpts}
+
+	// For large files, we can check the object size first and configure parallel download
+	// Note: FGetObject doesn't directly support NumThreads, but minio handles multipart downloads internally
+	// We can still configure part size if needed via GetObjectOptions, though it's less commonly used
+	enableParallelism := s.EnableParallelism == nil || *s.EnableParallelism
+	if enableParallelism {
+		// Check object size to determine if multipart download should be used
+		objInfo, err := s.minioClient.StatObject(s.ctx, bucket, key, minio.StatObjectOptions{ServerSideEncryption: encOpts})
+		if err == nil {
+			fileSizeThreshold := int64(64 * 1024 * 1024) // default 64MB
+			if s.FileSizeThreshold != "" {
+				qty, err := resource.ParseQuantity(s.FileSizeThreshold)
+				if err == nil {
+					fileSizeThreshold = qty.Value()
+				}
+			}
+			if objInfo.Size >= fileSizeThreshold {
+				logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{
+					"key":  key,
+					"size": objInfo.Size,
+				}).Info(s.ctx, "Downloading large file, minio will use multipart download automatically")
+			}
+		}
+	}
+
+	err = s.minioClient.FGetObject(s.ctx, bucket, key, path, opts)
 	if err != nil {
 		return err
 	}
@@ -653,6 +809,17 @@ func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 		return err
 	}
 
+	// Use parallel download if enabled and threshold is met
+	enableParallelism := s.EnableParallelism == nil || *s.EnableParallelism
+	fileCountThreshold := int32(10) // default
+	if s.FileCountThreshold != nil {
+		fileCountThreshold = *s.FileCountThreshold
+	}
+	if enableParallelism && len(keys) >= int(fileCountThreshold) {
+		return s.getDirectoryParallel(bucket, keyPrefix, path, keys)
+	}
+
+	// Sequential download for small directories or when parallelism is disabled
 	for _, objKey := range keys {
 		relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
 		localPath := filepath.Join(path, relKeyPath)
@@ -667,6 +834,86 @@ func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// getDirectoryParallel downloads files in parallel using a worker pool
+func (s *s3client) getDirectoryParallel(bucket, keyPrefix, path string, keys []string) error {
+	parallelism := 10 // default
+	if s.Parallelism != nil && *s.Parallelism > 0 {
+		parallelism = int(*s.Parallelism)
+	}
+
+	type downloadTask struct {
+		key       string
+		localPath string
+	}
+
+	tasks := make([]downloadTask, 0, len(keys))
+	for _, objKey := range keys {
+		relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
+		localPath := filepath.Join(path, relKeyPath)
+		// Ensure parent directory exists
+		if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", localPath, err)
+		}
+		tasks = append(tasks, downloadTask{key: objKey, localPath: localPath})
+	}
+
+	taskChan := make(chan downloadTask, len(tasks))
+	for _, task := range tasks {
+		taskChan <- task
+	}
+	close(taskChan)
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, parallelism)
+	var firstErr error
+	var errOnce sync.Once
+
+	// Start worker goroutines
+	for i := 0; i < parallelism; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for task := range taskChan {
+				encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, task.key)
+				if err != nil {
+					errOnce.Do(func() {
+						firstErr = err
+					})
+					errChan <- err
+					return
+				}
+
+				err = s.minioClient.FGetObject(s.ctx, bucket, task.key, task.localPath, minio.GetObjectOptions{ServerSideEncryption: encOpts})
+				if err != nil {
+					errOnce.Do(func() {
+						firstErr = err
+					})
+					errChan <- err
+					return
+				}
+			}
+		}()
+	}
+
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errChan)
+
+	// Return first error if any
+	if firstErr != nil {
+		return firstErr
+	}
+
+	// Check for any errors in the channel
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

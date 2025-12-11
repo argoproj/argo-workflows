@@ -2752,6 +2752,25 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// EnableParallelism enables parallel upload/download for directories with many files or large files
+	EnableParallelism *bool `json:"enableParallelism,omitempty" protobuf:"varint,13,opt,name=enableParallelism"`
+
+	// Parallelism is the number of concurrent workers for parallel operations. Default is 10.
+	Parallelism *int32 `json:"parallelism,omitempty" protobuf:"varint,14,opt,name=parallelism"`
+
+	// FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.
+	FileCountThreshold *int32 `json:"fileCountThreshold,omitempty" protobuf:"varint,15,opt,name=fileCountThreshold"`
+
+	// FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files.
+	// Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism.
+	// Can be specified as a Kubernetes resource quantity string (e.g., "64Mi", "1Gi").
+	FileSizeThreshold string `json:"fileSizeThreshold,omitempty" protobuf:"bytes,16,opt,name=fileSizeThreshold"`
+
+	// PartSize is the part size for multipart uploads.
+	// Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded.
+	// Can be specified as a Kubernetes resource quantity string (e.g., "128Mi", "1Gi").
+	PartSize string `json:"partSize,omitempty" protobuf:"bytes,17,opt,name=partSize"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations

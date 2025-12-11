@@ -2833,6 +2833,21 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.EnableParallelism != nil {
+		in, out := &in.EnableParallelism, &out.EnableParallelism
+		*out = new(bool)
+		**out = **in
+	}
+	if in.Parallelism != nil {
+		in, out := &in.Parallelism, &out.Parallelism
+		*out = new(int32)
+		**out = **in
+	}
+	if in.FileCountThreshold != nil {
+		in, out := &in.FileCountThreshold, &out.FileCountThreshold
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 
