@@ -1720,6 +1720,11 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		case ctr.Name == common.WaitContainerName:
 			return wfv1.NodeError, msg
 		default:
+			// Check if sidecar was OOMKilled - this should be treated as a failure
+			// even if exit code is 137, because wait container may not be able to observe sidecar OOM
+			if t.Reason == "OOMKilled" {
+				return wfv1.NodeFailed, msg
+			}
 			if t.ExitCode == 137 || t.ExitCode == 143 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
 				// forcibly killed the container, which we ignore the error for.
