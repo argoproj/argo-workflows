@@ -28,9 +28,9 @@ const (
 	archiveTableName        = "argo_archived_workflows"
 	archiveLabelsTableName  = archiveTableName + "_labels"
 	postgresNullReplacement = "ARGO_POSTGRES_NULL_REPLACEMENT"
-	// Default timeout for database queries in GetWorkflowForEstimator to prevent blocking workflow execution
-	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT environment variable
-	defaultEstimationDBQueryTimeout = 5 * time.Second
+	// Default timeout in seconds for database queries in GetWorkflowForEstimator to prevent blocking workflow execution
+	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS environment variable
+	defaultEstimationDBQueryTimeoutSeconds = 5
 )
 
 type archivedWorkflowMetadata struct {
@@ -591,19 +591,11 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 	return wf, nil
 }
 
-//nolint:contextcheck // ctx may be nil, in which case we create a new context with logger
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
 	// Add timeout to database query to prevent blocking workflow execution
-	// if database is slow or locked. Check if context already has a deadline,
-	// if not, set a default timeout from environment variable or use default.
-	if ctx == nil {
-		// Create a context with logger to avoid panic in env.LookupEnvDurationOr
-		// First create a background context, then add logger to it
-		ctx = context.Background()
-		ctx = logging.WithLogger(ctx, logging.InitLogger())
-	}
-	queryTimeout := env.LookupEnvDurationOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT", defaultEstimationDBQueryTimeout)
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	// if database is slow or locked.
+	queryTimeoutSeconds := env.LookupEnvIntOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS", defaultEstimationDBQueryTimeoutSeconds)
+	queryCtx, cancel := context.WithTimeout(ctx, time.Duration(queryTimeoutSeconds)*time.Second)
 	defer cancel()
 
 	selector := r.session.WithContext(queryCtx).SQL().
