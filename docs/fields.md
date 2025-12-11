@@ -1723,7 +1723,7 @@ PodGC describes how to delete completed pods as they complete
 
 ## Metadata
 
-Pod metdata
+Pod metadata
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -1840,7 +1840,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
-|`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
+|`metadata`|[`Metadata`](#metadata)|Metadata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
 |`name`|`string`|Name is the name of the template|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
