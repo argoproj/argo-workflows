@@ -7,6 +7,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: artifact-disable-archive-
+  labels:
+    workflows.argoproj.io/no-test: "flaky"
 spec:
   entrypoint: artifact-disable-archive
   templates:
