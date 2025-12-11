@@ -116,7 +116,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			if err != nil {
 				continue
 			}
-			if !sm.isWFDeleted(wfKey) {
+			if sm.isWFDeleted(wfKey) {
 				lock.release(ctx, holderKeys)
 				if err := lock.removeFromQueue(ctx, holderKeys); err != nil {
 					sm.log.WithField("holderKeys", holderKeys).WithError(err).Warn(ctx, "failed to remove from queue")
