@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: archive-container-type-tmpl-logs-
+spec:
+  entrypoint: hello-world
+  templates:
+    - name: hello-world
+      container:
+        name: hello-world
+        image: busybox
+        command: [echo]
+        args: ["hello world"]
+      archiveLocation:
+        archiveLogs: true
