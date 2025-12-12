@@ -174,6 +174,7 @@ errored
 expr
 fibonacci
 finalizer
+gRPC
 gitops
 goroutine
 goroutines
@@ -191,6 +192,7 @@ k8s-jobs
 kube
 kube-apiserver
 kube-scheduler
+kubeconfig
 kubectl
 kubelet
 kubernetes
