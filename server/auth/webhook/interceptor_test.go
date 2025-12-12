@@ -74,6 +74,41 @@ func TestInterceptor(t *testing.T) {
 		})
 		assert.Equal(t, []string{"Bearer my-gitlab-token"}, r.Header["Authorization"])
 	})
+	// x-hub: default values
+	t.Run("X-Hub-default", func(t *testing.T) {
+		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+			"X-Hub-Signature-256": "sha256=43922693c6a1c6b72cb3e006184e093b5eb01cb9df3569fa39ab75eff8495e5a",
+		})
+		assert.Equal(t, []string{"Bearer my-x-hub-default-token"}, r.Header["Authorization"])
+	})
+	// x-hub: default values, unprefixed header value
+	t.Run("X-Hub-default-no-value-prefix", func(t *testing.T) {
+		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+			"X-Hub-Signature-256": "43922693c6a1c6b72cb3e006184e093b5eb01cb9df3569fa39ab75eff8495e5a",
+		})
+		assert.Equal(t, []string{"Bearer my-x-hub-default-token"}, r.Header["Authorization"])
+	})
+	// x-hub: custom header name
+	t.Run("X-Hub-custom-header", func(t *testing.T) {
+		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+			"X-Custom-Header": "sha256=43922693c6a1c6b72cb3e006184e093b5eb01cb9df3569fa39ab75eff8495e5a",
+		})
+		assert.Equal(t, []string{"Bearer my-x-hub-custom-header-token"}, r.Header["Authorization"])
+	})
+	// x-hub: custom hash algo
+	t.Run("X-Hub-custom-hash", func(t *testing.T) {
+		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+			"X-Hub-Signature": "sha1=956497d238fdac40c567570cb1a614e7d399875a",
+		})
+		assert.Equal(t, []string{"Bearer my-x-hub-custom-hash-token"}, r.Header["Authorization"])
+	})
+	// x-hub: base64 signature
+	t.Run("X-Hub-base64-signature", func(t *testing.T) {
+		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+			"X-Hub-Signature-256": "Q5Imk8ahxrcss+AGGE4JO16wHLnfNWn6Oat17/hJXlo=",
+		})
+		assert.Equal(t, []string{"Bearer my-x-hub-base64-signature-token"}, r.Header["Authorization"])
+	})
 }
 
 func intercept(ctx context.Context, method string, target string, headers map[string]string) (*http.Request, *httptest.ResponseRecorder) {
@@ -82,10 +117,14 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "argo-workflows-webhook-clients", Namespace: "my-ns"},
 			Data: map[string][]byte{
-				"bitbucket":       []byte("type: bitbucket\nsecret: sh!"),
-				"bitbucketserver": []byte("type: bitbucketserver\nsecret: sh!"),
-				"github":          []byte("type: github\nsecret: sh!"),
-				"gitlab":          []byte("type: gitlab\nsecret: sh!"),
+				"bitbucket":              []byte("type: bitbucket\nsecret: sh!"),
+				"bitbucketserver":        []byte("type: bitbucketserver\nsecret: sh!"),
+				"github":                 []byte("type: github\nsecret: sh!"),
+				"gitlab":                 []byte("type: gitlab\nsecret: sh!"),
+				"x-hub-default":          []byte("type: x-hub\nsecret: sh!sh!"),
+				"x-hub-custom-header":    []byte("type: x-hub\nsecret: sh!sh!\nx-hub-header-name: X-Custom-Header"),
+				"x-hub-custom-hash":      []byte("type: x-hub\nsecret: sh!sh!\nx-hub-header-name: X-Hub-Signature\nx-hub-hash: sha1"),
+				"x-hub-base64-signature": []byte("type: x-hub\nsecret: sh!sh!\nx-hub-encoding: base64"),
 			},
 		},
 		// bitbucket
@@ -123,6 +162,42 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "gitlab-token", Namespace: "my-ns"},
 			Data:       map[string][]byte{"token": []byte("my-gitlab-token")},
+		},
+		// x-hub default
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-default", Namespace: "my-ns"},
+			Secrets:    []corev1.ObjectReference{{Name: "x-hub-default-token"}},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-default-token", Namespace: "my-ns"},
+			Data:       map[string][]byte{"token": []byte("my-x-hub-default-token")},
+		},
+		// x-hub custom header
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-custom-header", Namespace: "my-ns"},
+			Secrets:    []corev1.ObjectReference{{Name: "x-hub-custom-header-token"}},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-custom-header-token", Namespace: "my-ns"},
+			Data:       map[string][]byte{"token": []byte("my-x-hub-custom-header-token")},
+		},
+		// x-hub custom hash
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-custom-hash", Namespace: "my-ns"},
+			Secrets:    []corev1.ObjectReference{{Name: "x-hub-custom-hash-token"}},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-custom-hash-token", Namespace: "my-ns"},
+			Data:       map[string][]byte{"token": []byte("my-x-hub-custom-hash-token")},
+		},
+		// x-hub base64 signature
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-base64-signature", Namespace: "my-ns"},
+			Secrets:    []corev1.ObjectReference{{Name: "x-hub-base64-signature-token"}},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "x-hub-base64-signature-token", Namespace: "my-ns"},
+			Data:       map[string][]byte{"token": []byte("my-x-hub-base64-signature-token")},
 		},
 	)
 	i := NewWebhookInterceptor(logging.RequireLoggerFromContext(ctx)).Interceptor(k)
