@@ -24,7 +24,10 @@ func NewTolerantClusterWorkflowTemplateInformer(dynamicInterface dynamic.Interfa
 	return &tolerantClusterWorkflowTemplateInformer{delegate: dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicInterface, defaultResync, "", func(options *metav1.ListOptions) {
 		// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
 		// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-		options.ResourceVersion = ""
+		// Check if ResourceVersion is "0" and reset it to empty string to ensure proper pagination behavior
+		if options.ResourceVersion == "0" {
+			options.ResourceVersion = ""
+		}
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural})}
 }
 
