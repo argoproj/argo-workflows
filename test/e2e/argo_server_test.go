@@ -508,6 +508,57 @@ func (s *ArgoServerSuite) TestPermission() {
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 
+	clusterSaName := "argotestcluster"
+	s.createServiceAccount(clusterSaName)
+
+	// Load ClusterRole from testdata
+	var clusterRoleName string
+	s.Run("LoadClusterRoleYaml", func() {
+		obj, err := fixtures.LoadObject("@testdata/argo-server-test-clusterrole.yaml")
+		s.Require().NoError(err)
+		clusterRole, _ := obj.(*rbacv1.ClusterRole)
+		clusterRoleName = clusterRole.Name
+		_, err = s.KubeClient.RbacV1().ClusterRoles().Create(ctx, clusterRole, metav1.CreateOptions{})
+		s.Require().NoError(err)
+	})
+	defer func() {
+		_ = s.KubeClient.RbacV1().ClusterRoles().Delete(ctx, clusterRoleName, metav1.DeleteOptions{})
+	}()
+
+	// Create ClusterRoleBinding
+	clusterRoleBindingName := "argotest-clusterrole-binding"
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: clusterRoleBindingName},
+		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: clusterSaName, Namespace: nsName}},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     clusterRoleName,
+		},
+	}
+	s.Run("CreateClusterRoleBinding", func() {
+		_, err := s.KubeClient.RbacV1().ClusterRoleBindings().Create(ctx, clusterRoleBinding, metav1.CreateOptions{})
+		s.Require().NoError(err)
+	})
+	defer func() {
+		_ = s.KubeClient.RbacV1().ClusterRoleBindings().Delete(ctx, clusterRoleBindingName, metav1.DeleteOptions{})
+	}()
+
+	// Sleep 2 seconds to wait for serviceaccount token created.
+	// The secret creation slowness is seen in k3d.
+	time.Sleep(2 * time.Second)
+
+	// Get token of cluster serviceaccount
+	var clusterSaToken string
+	s.Run("GetClusterSAToken", func() {
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, clusterSaName, metav1.GetOptions{})
+		s.Require().NoError(err)
+		secretName := secrets.TokenNameForServiceAccount(sAccount)
+		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
+		s.Require().NoError(err)
+		clusterSaToken = string(secret.Data["token"])
+	})
+
 	// Test creating workflow with good token
 	var uid string
 	s.bearerToken = goodToken
@@ -554,6 +605,52 @@ func (s *ArgoServerSuite) TestPermission() {
 			IsEqual(1)
 	})
 
+	// Test list workflows with good token and NotEquals namespace
+	s.Run("ListWFsGoodTokenNotEqualsNamespace", func() {
+		token := s.bearerToken
+		defer func() { s.bearerToken = token }()
+		s.bearerToken = clusterSaToken
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	// Test list workflows with good token and NotEquals excluded namespace
+	s.Run("ListWFsGoodTokenNotEqualsNamespaceExcluded", func() {
+		token := s.bearerToken
+		defer func() { s.bearerToken = token }()
+		s.bearerToken = clusterSaToken
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
+	// Test list workflows with good token and NotEquals namespace
+	s.Run("ListWFsGoodTokenDoubleEqualsNamespace", func() {
+		token := s.bearerToken
+		defer func() { s.bearerToken = token }()
+		s.bearerToken = clusterSaToken
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
 	s.Given().
 		When().
 		WaitForWorkflow(fixtures.ToBeArchived)
@@ -583,6 +680,13 @@ func (s *ArgoServerSuite) TestPermission() {
     }
   }
 }`)).
+			Expect().
+			Status(403)
+	})
+
+	s.Run("ListWFsBadTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
 			Expect().
 			Status(403)
 	})

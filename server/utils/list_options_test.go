@@ -131,6 +131,67 @@ func TestBuildListOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "Field selector with metadata.namespace!=",
+			options: metav1.ListOptions{
+				FieldSelector: "metadata.namespace!=excluded",
+			},
+			expected: ListOptions{
+				Namespace:       "excluded",
+				NamespaceFilter: "NotEquals",
+			},
+		},
+		{
+			name: "Field selector with metadata.namespace==",
+			options: metav1.ListOptions{
+				FieldSelector: "metadata.namespace==included",
+			},
+			expected: ListOptions{
+				Namespace: "included",
+			},
+		},
+		{
+			name: "Field selector with metadata.namespace!= and metadata.namespace==",
+			options: metav1.ListOptions{
+				FieldSelector: "metadata.namespace!=excluded,metadata.namespace==included",
+			},
+			// Logic: != sets ns=excluded, filter=NotEquals.
+			// Then == sets ns=included.
+			// Conflict check for ==: ns=excluded (from prev) vs included. Conflict!
+			expectedError: status.Errorf(codes.InvalidArgument,
+				"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", "excluded", "included"),
+		},
+		{
+			name: "Field selector with metadata.namespace== and metadata.namespace!=",
+			options: metav1.ListOptions{
+				FieldSelector: "metadata.namespace==included,metadata.namespace!=excluded",
+			},
+			// Logic: == sets ns=included.
+			// Then != sets ns=excluded, filter=NotEquals.
+			expected: ListOptions{
+				Namespace:       "excluded",
+				NamespaceFilter: "NotEquals",
+			},
+		},
+		{
+			name: "Conflict metadata.namespace== and ns param",
+			options: metav1.ListOptions{
+				FieldSelector: "metadata.namespace==included",
+			},
+			ns: "other",
+			expectedError: status.Errorf(codes.InvalidArgument,
+				"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", "other", "included"),
+		},
+		{
+			name: "Valid metadata.namespace== and ns param",
+			options: metav1.ListOptions{
+				FieldSelector: "metadata.namespace==included",
+			},
+			ns: "included",
+			expected: ListOptions{
+				Namespace: "included",
+			},
+		},
+		{
 			name: "Invalid field selector",
 			options: metav1.ListOptions{
 				FieldSelector: "unsupported=value",

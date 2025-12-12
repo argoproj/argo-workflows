@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argotest-clusterrole
+rules:
+  - apiGroups:
+      - "argoproj.io"
+    resources:
+      - workflows
+      - workflowtemplates
+      - cronworkflows
+    verbs:
+      - create
+      - get
+      - list
+      - delete
