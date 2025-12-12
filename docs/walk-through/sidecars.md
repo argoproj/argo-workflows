@@ -2,6 +2,8 @@
 
 A sidecar is another container that executes concurrently in the same pod as the main container and is useful in creating multi-container pods.
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -22,5 +24,33 @@ spec:
       image: nginx:1.13
       command: [nginx, -g, daemon off;]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, UserContainer, Workflow
+
+with Workflow(
+    generate_name="sidecar-nginx-",
+    entrypoint="sidecar-nginx-example",
+) as w:
+    Container(
+        name="sidecar-nginx-example",
+        image="appropriate/curl",
+        command=["sh", "-c"],
+        args=["until `curl -G 'http://127.0.0.1/' >& /tmp/out`; do echo sleep && sleep 1; done && cat /tmp/out"],
+        sidecars=[
+            UserContainer(
+                name="nginx",
+                image="nginx:1.13",
+                command=["nginx", "-g", "daemon off;"],
+            )
+        ],
+    )
+```
+
+///
 
 In the above example, we create a sidecar container that runs Nginx as a simple web server. The order in which containers come up is random, so in this example the main container polls the Nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems: always wait for any services you need to come up before running your main code.

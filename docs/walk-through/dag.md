@@ -7,6 +7,8 @@ In the following workflow, step `A` runs first, as it has no dependencies.
 Once `A` has finished, steps `B` and `C` run in parallel.
 Finally, once `B` and `C` have completed, step `D` runs.
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -45,6 +47,33 @@ spec:
         arguments:
           parameters: [{name: message, value: D}]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import DAG, Container, Parameter, Workflow # (1)!
+
+with Workflow(generate_name="dag-diamond-", entrypoint="diamond") as w:
+    echo = Container(
+        name="echo",
+        image="alpine:3.7",
+        command=["echo", "{{inputs.parameters.message}}"],
+        inputs=[Parameter(name="message")],
+    )
+    with DAG(name="diamond"):
+        A = echo(name="A", arguments={"message": "A"})
+        B = echo(name="B", arguments={"message": "B"})
+        C = echo(name="C", arguments={"message": "C"})
+        D = echo(name="D", arguments={"message": "D"})
+        A >> [B, C] >> D # (2)!
+```
+
+1. Install the `hera` package to define your Workflows in Python. Learn more at [the Hera docs](https://hera.readthedocs.io/en/stable/).
+2. Hera uses [enhanced depends logic](../enhanced-depends-logic.md) when using `>>` to define dependencies.
+
+///
 
 The dependency graph may have [multiple roots](https://github.com/argoproj/argo-workflows/tree/main/examples/dag-multiroot.yaml).
 The templates called from a DAG or steps template can themselves be DAG or steps templates, allowing complex workflows to be split into manageable pieces.

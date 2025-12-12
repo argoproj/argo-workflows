@@ -2,6 +2,8 @@
 
 You can use the field `activeDeadlineSeconds` to limit the elapsed time for a workflow:
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -18,7 +20,31 @@ spec:
       args: ["echo sleeping for 1m; sleep 60; echo done"]
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, Workflow
+
+with Workflow(
+    generate_name="timeouts-",
+    active_deadline_seconds=10,
+    entrypoint="sleep",
+) as w:
+    Container(
+        name="sleep",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["echo sleeping for 1m; sleep 60; echo done"],
+    )
+```
+
+///
+
 You can limit the elapsed time for a specific template as well:
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -35,3 +61,24 @@ spec:
       command: [sh, -c]
       args: ["echo sleeping for 1m; sleep 60; echo done"]
 ```
+
+///
+/// tab | Python
+
+```python
+from hera.workflows import Container, Workflow
+
+with Workflow(
+    generate_name="timeouts-",
+    entrypoint="sleep",
+) as w:
+    Container(
+        name="sleep",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["echo sleeping for 1m; sleep 60; echo done"],
+        active_deadline_seconds=10,
+    )
+```
+
+///
