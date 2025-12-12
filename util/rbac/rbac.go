@@ -9,12 +9,12 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
-func HasAccessToClusterWorkflowTemplates(ctx context.Context, kubeclientset kubernetes.Interface, namespace string) bool {
-	cwftGetAllowed, err := authutil.CanIArgo(ctx, kubeclientset, "get", "clusterworkflowtemplates", namespace, "")
+func HasAccessToClusterWorkflowTemplates(ctx context.Context, kubeclientset kubernetes.Interface) bool {
+	cwftGetAllowed, err := authutil.CanIArgo(ctx, kubeclientset, "get", "clusterworkflowtemplates", "", "")
 	errorsutil.CheckError(ctx, err)
-	cwftListAllowed, err := authutil.CanIArgo(ctx, kubeclientset, "list", "clusterworkflowtemplates", namespace, "")
+	cwftListAllowed, err := authutil.CanIArgo(ctx, kubeclientset, "list", "clusterworkflowtemplates", "", "")
 	errorsutil.CheckError(ctx, err)
-	cwftWatchAllowed, err := authutil.CanIArgo(ctx, kubeclientset, "watch", "clusterworkflowtemplates", namespace, "")
+	cwftWatchAllowed, err := authutil.CanIArgo(ctx, kubeclientset, "watch", "clusterworkflowtemplates", "", "")
 	errorsutil.CheckError(ctx, err)
 
 	if !cwftGetAllowed || !cwftListAllowed || !cwftWatchAllowed {
