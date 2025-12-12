@@ -7102,6 +7102,134 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.Equal(t, "Pod failed before main container starts due to ContainerCreating: Container is creating", msg)
 }
 
+// Test that when containers are in Running state (not Terminated) on a Failed pod,
+// we correctly return Failed instead of incorrectly returning Succeeded.
+// This can happen during node eviction or other pod-level failures.
+var podFailedWithRunningContainers = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  reason: Evicted
+  message: "The node was low on resource: memory."
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+`
+
+func TestPodFailureWithRunningContainers(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithRunningContainers, &pod)
+	assert.NotNil(t, pod)
+
+	// Pod has a message, so it should return that
+	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Equal(t, "The node was low on resource: memory.", msg)
+}
+
+// Test that when containers don't have terminated state and there's no pod message,
+// we correctly return Failed with information about which containers couldn't be confirmed.
+var podFailedWithRunningContainersNoMessage = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+`
+
+func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithRunningContainersNoMessage, &pod)
+	assert.NotNil(t, pod)
+	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Equal(t, "pod failed: neither main nor wait container completed successfully", msg)
+}
+
+// Test that sidecar SIGKILL still results in success when main and wait succeeded
+var podFailedWithSidecarSigkill = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+  - name: wait
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+  - name: sidecar
+    ready: false
+    state:
+      terminated:
+        exitCode: 137
+        reason: Error
+`
+
+func TestPodFailureWithSidecarSigkill(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithSidecarSigkill, &pod)
+	assert.NotNil(t, pod)
+	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
+	// Main and wait succeeded, sidecar was SIGKILL'd - this should be success
+	assert.Equal(t, wfv1.NodeSucceeded, nodeStatus)
+	assert.Empty(t, msg)
+}
+
 var podWithWaitContainerOOM = `
 apiVersion: v1
 kind: Pod
