@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+
+reviews:
+  # Disable review status comments on PRs
+  review_status: false
+
+  # Request changes when issues are found (vs just commenting)
+  request_changes_workflow: false
+
+  # Enable high-level summary of changes
+  high_level_summary: true
+
+  # Add a poem to the review (fun but optional - set false if you prefer serious reviews)
+  poem: false
+
+  # Review profile - choose from: chill, assertive, or default
+  # "chill" = fewer nitpicks, "assertive" = stricter reviews
+  profile: chill
+
+  # Collapse walkthrough comments to reduce noise
+  collapse_walkthrough: true
+
+  # Paths to ignore during reviews
+  path_filters:
+    - "!**/*.generated.go"
+    - "!**/*_generated.go"
+    - "!**/zz_generated.*.go"
+    - "!**/mocks/**"
+    - "!**/vendor/**"
+    - "!**/*.pb.go"
+    - "!**/node_modules/**"
+    - "!**/*.snap"
+    - "!**/dist/**"
+    - "!**/api/openapi-spec/*.json"
+    - "!**/sdks/java/client/**"
+    - "!**/sdks/python/client/**"
+
+  auto_review:
+    enabled: false
+
+  # Tools configuration
+  tools:
+    # Go linting
+    golangci-lint:
+      enabled: true
+
+    # Shell script analysis
+    shellcheck:
+      enabled: true
+
+    # YAML validation (great for K8s manifests)
+    yamllint:
+      enabled: true
+
+    # Markdown linting for docs
+    markdownlint:
+      enabled: true
+
+    # GitHub Actions workflow validation
+    actionlint:
+      enabled: true
+
+chat:
+  # Enable chat interactions on PRs
+  auto_reply: true
+
+# Knowledge base - helps CodeRabbit understand project context
+knowledge_base:
+  # Learn from merged PRs
+  learnings:
+    scope: auto

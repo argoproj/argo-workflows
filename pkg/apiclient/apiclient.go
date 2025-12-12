@@ -48,27 +48,6 @@ func (o Opts) String() string {
 	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
 }
 
-// DEPRECATED: use NewClientFromOptsWithContext
-func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	return NewClientFromOptsWithContext(context.Background(), Opts{
-		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
-		AuthSupplier:   authSupplier,
-		ClientConfigSupplier: func() clientcmd.ClientConfig {
-			return clientConfig
-		},
-	})
-}
-
-// DEPRECATED: use NewClientFromOptsWithContext
-func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	ctx := opts.Context
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	return NewClientFromOptsWithContext(ctx, opts)
-}
-
 func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Context, Client, error) {
 	log := logging.GetLoggerFromContextOrNil(ctx)
 	if log == nil {
