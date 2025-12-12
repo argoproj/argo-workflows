@@ -1054,13 +1054,33 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 
+		// Pre-state: mutex has 1 holder (hello-world) and 1 pending (test1)
 		holders, err := mutex.getCurrentHolders(ctx)
 		require.NoError(t, err)
 		assert.Len(t, holders, 1)
 		pending, err := mutex.getCurrentPending(ctx)
 		require.NoError(t, err)
 		assert.Len(t, pending, 1)
+
+		// Pre-state: semaphore has 1 holder (hello-world) and 1 pending (test2)
+		holders, err = semaphore.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Len(t, holders, 1)
+		pending, err = semaphore.getCurrentPending(ctx)
+		require.NoError(t, err)
+		assert.Len(t, pending, 1)
+
 		syncManager.CheckWorkflowExistence(ctx)
+
+		// Post-state: mutex holder (hello-world) removed, pending (test1) remains
+		holders, err = mutex.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, holders)
+		pending, err = mutex.getCurrentPending(ctx)
+		require.NoError(t, err)
+		assert.Len(t, pending, 1)
+
+		// Post-state: semaphore holder (hello-world) and pending (test2) both removed
 		holders, err = semaphore.getCurrentHolders(ctx)
 		require.NoError(t, err)
 		assert.Empty(t, holders)
