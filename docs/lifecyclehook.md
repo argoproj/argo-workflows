@@ -52,7 +52,7 @@ spec:
 
    - name: heads
      container:
-       image: alpine:3.6
+       image: alpine:latest
        command: [sh, -c]
        args: ["echo \"it was heads\""]
 

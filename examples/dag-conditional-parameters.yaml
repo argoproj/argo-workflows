@@ -35,7 +35,7 @@ spec:
     
     - name: flip-coin
       script:
-        image: python:alpine3.6
+        image: python:alpine
         command: [python]
         source: |
           import random
@@ -43,14 +43,14 @@ spec:
     
     - name: heads
       script:
-        image: python:alpine3.6
+        image: python:alpine
         command: [python]
         source: |
           print("heads")
     
     - name: tails
       script:
-        image: python:alpine3.6
+        image: python:alpine
         command: [python]
         source: |
           print("tails")

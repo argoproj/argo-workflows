@@ -10,7 +10,7 @@ spec:
   templates:
   - name: print-colors
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: ["python"]
       source: |
         import time

@@ -80,6 +80,6 @@ spec:
           #   key: krb5.conf
           # krbServicePrincipalName: hdfs/_HOST
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["cat /tmp/message"]

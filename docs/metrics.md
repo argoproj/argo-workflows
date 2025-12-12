@@ -711,7 +711,7 @@ An example of a `Template`-level Counter metric that will increase a counter eve
             counter:
               value: "1"                            # This increments the counter by 1
       container:
-        image: python:alpine3.6
+        image: python:alpine
         command: ["python", -c]
         # fail with a 66% probability
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
@@ -738,7 +738,7 @@ A similar example of such a Counter metric that will increase for every step sta
             counter:
               value: "1"
       container:
-        image: python:alpine3.6
+        image: python:alpine
         command: ["python", -c]
         # fail with a 66% probability
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

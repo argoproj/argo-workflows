@@ -27,6 +27,6 @@ spec:
         - database: # v3.7 and after
             key: template
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 10; echo acquired lock"]

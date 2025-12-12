@@ -25,7 +25,7 @@ spec:
     templates:
     - name: date
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["date; sleep 90"]
 ```

@@ -16,6 +16,6 @@ spec:
             the raw file
             contents
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["cat /tmp/file"]

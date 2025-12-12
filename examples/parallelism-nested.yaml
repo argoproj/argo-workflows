@@ -60,6 +60,6 @@ spec:
       - name: seq-id
       - name: parallel-id
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: ['/bin/sh', '-c']
       args: ["echo {{inputs.parameters.parallel-id}} {{inputs.parameters.seq-id}}; sleep 10"]

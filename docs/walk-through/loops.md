@@ -190,7 +190,7 @@ spec:
   # Generate a list of numbers in JSON format
   - name: gen-number-list
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: [python]
       source: |
         import json

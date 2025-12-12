@@ -33,7 +33,7 @@ spec:
         - name: welcome
           database: true # v3.7 and after
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 20; echo acquired lock"]
 
@@ -43,6 +43,6 @@ spec:
         - name: test
           database: true # v3.7 and after
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 50; echo acquired lock"]

@@ -146,7 +146,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine
       name: ""
       resources: {}
       source: |

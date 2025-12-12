@@ -14,7 +14,7 @@ spec:
   templates:
   - name: volumes-emptydir-example
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: ["/bin/sh", "-c"]
       args: ["
         vol_found=`mount | grep /mnt/vol` && \

@@ -74,7 +74,7 @@ Example:
 ```yaml
   - name: gen-random-int
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: [python]
       source: |
         import random

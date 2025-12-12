@@ -44,7 +44,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
+          image: python:alpine
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]`, &cronWf)

@@ -886,7 +886,7 @@ spec:
       command:
       - sh
       - -c
-      image: python:alpine3.6
+      image: python:alpine
       name: ""
     name: output
     outputs:
@@ -902,7 +902,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine
       name: ""
       source: |
         print("{{inputs.parameters.message}}")
@@ -1022,7 +1022,7 @@ spec:
                       value: "{{steps.main.status}}"
     - name: echo
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["echo hi"]
     - name: hook
@@ -1030,7 +1030,7 @@ spec:
         parameters:
           - name: status
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["echo {{inputs.parameters.status}}"]
 `)

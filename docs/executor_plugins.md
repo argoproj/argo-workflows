@@ -157,7 +157,7 @@ spec:
         - python
         - -u # disables output buffering
         - -c
-      image: python:alpine3.6
+      image: python:alpine
       name: hello-executor-plugin
       ports:
         - containerPort: 4355

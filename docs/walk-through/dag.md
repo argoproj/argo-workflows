@@ -20,7 +20,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [echo, "{{inputs.parameters.message}}"]
   - name: diamond
     dag:

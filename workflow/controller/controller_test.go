@@ -228,7 +228,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine
       source: |
         print("{{inputs.parameters.message}}")`
 

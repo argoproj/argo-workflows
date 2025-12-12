@@ -24,18 +24,18 @@ spec:
 
     - name: flakey-container
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["exit 1"]
 
     - name: failed
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["echo \"the flakey container failed\""]
 
     - name: succeeded
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["echo \"the flakey container passed\""]

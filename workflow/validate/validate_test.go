@@ -410,7 +410,7 @@ spec:
   templates:
   - name: generate
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [echo, generate]
     outputs:
       artifacts:
@@ -425,7 +425,7 @@ spec:
       - name: passthrough
         path: /tmp/passthrough
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -609,7 +609,7 @@ spec:
 
   - name: output-global
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 1; echo -n art > /tmp/art.txt; echo -n param > /tmp/param.txt"]
     outputs:
@@ -624,7 +624,7 @@ spec:
       - name: art
         path: /art
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [sh, -c]
       args: ["cat /art"]
 `
@@ -999,7 +999,7 @@ spec:
       command: [sh, -c]
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: [python]
       source: |
         import random
@@ -1554,7 +1554,7 @@ spec:
       parameters:
         - name: message
     container:
-      image: alpine:3.11
+      image: alpine:latest
       command: [sh, -c]
       args: ["echo {{inputs.parameters.message}}"]
 `
@@ -1860,7 +1860,7 @@ spec:
       - name: global-parameter-name
       - name: global-parameter-value
     container:
-      image: alpine:3.11
+      image: alpine:latest
       command: [sh, -c]
       args: ["exit 0"]
     outputs:
@@ -1874,7 +1874,7 @@ spec:
       parameters:
       - name: parameter
     container:
-      image: alpine:3.11
+      image: alpine:latest
       command: [sh, -c]
       args: ["echo {{inputs.parameters.parameter}}"]
 `
@@ -3032,7 +3032,7 @@ spec:
 
     - name: wait
       container:
-        image: alpine:3.7
+        image: alpine:latest
         command: [sleep, "5"]
 
     - name: printer
@@ -3042,7 +3042,7 @@ spec:
           - name: finishedat
           - name: id
       container:
-        image: alpine:3.7
+        image: alpine:latest
         command: [echo, "{{inputs.parameters.startedat}}"]`
 	err := validate(logging.TestContext(t.Context()), wf)
 	require.NoError(t, err)
@@ -3356,7 +3356,7 @@ spec:
   templates:
   - name: helloworld
     container:
-      image: "alpine:3.18"
+      image: "alpine:latest"
       command: ["echo", "{{  workflow.thisdoesnotexist  }}"]
 `
 

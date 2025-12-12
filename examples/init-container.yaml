@@ -7,14 +7,14 @@ spec:
   templates:
   - name: init-container-example
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: ["echo", "bye"]
       volumeMounts:
       - name: foo
         mountPath: /foo
     initContainers:
     - name: hello
-      image: alpine:3.6
+      image: alpine:latest
       command: ["echo", "hello"]
       mirrorVolumeMounts: true
   volumes:

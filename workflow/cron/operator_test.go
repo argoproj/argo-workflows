@@ -449,7 +449,7 @@ spec:
         command:
         - sh
         - -c
-        image: alpine:3.6
+        image: alpine:latest
         name: ""
         resources: {}
       inputs: {}

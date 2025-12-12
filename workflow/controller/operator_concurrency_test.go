@@ -73,7 +73,7 @@ spec:
             key: template
             name: my-config
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: ["python"]
       # fail with a 66% probability
       source: |
@@ -100,7 +100,7 @@ spec:
             key: template
             name: my-config
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: ["python"]
       # fail with a 66% probability
       source: |
@@ -455,7 +455,7 @@ spec:
      mutexes:
        - name: welcome
    container:
-     image: alpine:3.7
+     image: alpine:latest
      command: [sh, -c, "exit 0"]
 `
 
@@ -527,7 +527,7 @@ spec:
      parameters:
      - name: message
    container:
-     image: alpine:3.7
+     image: alpine:latest
      command: [sh, -c, "echo {{inputs.parameters.message}}"]
 `
 
@@ -877,7 +877,7 @@ spec:
               name: my-config
               key: template
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["sleep 300"]`
 

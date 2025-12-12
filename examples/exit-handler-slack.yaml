@@ -14,7 +14,7 @@ spec:
   templates:
   - name: say-hello
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["echo hello"]
 

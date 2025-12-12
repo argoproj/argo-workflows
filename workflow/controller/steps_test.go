@@ -221,7 +221,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:latest
       name: ""
       resources: {}
     inputs: {}
@@ -238,7 +238,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:latest
       name: ""
       resources: {}
     inputs:

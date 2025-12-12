@@ -72,17 +72,17 @@ spec:
 
  - name: Succeeded
    container:
-     image: alpine:3.7
+     image: alpine:latest
      command: [sh, -c, "exit 0"]
 
  - name: Failed
    container:
-     image: alpine:3.7
+     image: alpine:latest
      command: [sh, -c, "exit 1"]
 
  - name: Skipped
    container:
-     image: alpine:3.7
+     image: alpine:latest
      command: [sh, -c, "echo Hello"]
 `
 
@@ -638,7 +638,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine
       name: ""
       resources: {}
       source: |
@@ -1148,7 +1148,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:latest
       name: ""
       resources: {}
     inputs: {}
@@ -1374,7 +1374,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:latest
       name: ""
       resources: {}
     inputs: {}
@@ -1736,7 +1736,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:latest
       name: ""
       resources: {}
     inputs: {}
@@ -1750,7 +1750,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:latest
       name: ""
       resources: {}
     inputs: {}
@@ -2025,7 +2025,7 @@ spec:
     container:
       args: ['mkdir -p /tmp/outputs/A && echo "exist" > /tmp/outputs/A/data']
       command: [sh, -c]
-      image: alpine:3.7
+      image: alpine:latest
     outputs:
       artifacts:
       - {name: A-out, path: /tmp/outputs/A/data}
@@ -2033,7 +2033,7 @@ spec:
     container:
       args: ['[ -f /tmp/outputs/condition/data ] && cat /tmp/outputs/condition/data || echo not exist']
       command: [sh, -c]
-      image: alpine:3.7
+      image: alpine:latest
     inputs:
       artifacts:
       - {name: B-in, optional: true,  path: /tmp/outputs/condition/data}

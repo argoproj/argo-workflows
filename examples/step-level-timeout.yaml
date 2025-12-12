@@ -29,6 +29,6 @@ spec:
       parameters:
       - name: timeout
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 30s"]

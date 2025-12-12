@@ -90,7 +90,7 @@ spec:
       - name: in-artifact
         path: /tmp/art
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [sh, -c]
       args: ["
         echo 'input parameter value: {{inputs.parameters.in-parameter}}' &&

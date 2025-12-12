@@ -44,7 +44,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.6
+      image: alpine:latest
       name: ""
     name: heads
   - http:
@@ -179,7 +179,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.6
+      image: alpine:latest
     name: echo
   - http:
       url: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
@@ -308,7 +308,7 @@ spec:
 
     - name: echo
       container:
-        image: alpine:3.6
+        image: alpine:latest
         command: [sh, -c]
         args: ["echo \"it was heads\""]
 
@@ -459,7 +459,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:3.6
+        image: alpine:latest
         name: ""
         resources: {}
       inputs: {}
@@ -531,7 +531,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:3.6
+        image: alpine:latest
         name: ""
       name: echo
     - http:
@@ -724,7 +724,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:3.6
+        image: alpine:latest
         name: ""
         resources: {}
       inputs: {}
@@ -870,7 +870,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:3.6
+        image: alpine:latest
         name: ""
         resources: {}
       inputs: {}
@@ -915,7 +915,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:3.6
+        image: alpine:latest
         name: ""
         resources: {}
       inputs: {}

@@ -45,7 +45,7 @@ spec:
 
   - name: create-output-dir
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: ["mkdir", "/mnt/data/output"]
       volumeMounts:
       - name: workdir
@@ -101,7 +101,7 @@ spec:
 
   - name: bundle-up
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: ["ls"]
       volumeMounts:
       - name: workdir

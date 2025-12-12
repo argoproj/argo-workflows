@@ -167,7 +167,7 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
 			(isExample && (image == "busybox" ||
-				image == "python:alpine3.6" ||
+				image == "python:alpine" ||
 				image == "golang:1.18" ||
 				image == "nginx:1.13" ||
 				image == "curlimages/curl:latest" ||
@@ -175,7 +175,7 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 				image == "docker:19.03.13" ||
 				image == "docker:19.03.13-dind" ||
 				image == "alpine/git:v2.26.2" ||
-				image == "alpine:3.6" ||
+				image == "alpine:latest" ||
 				image == "stedolan/jq:latest" ||
 				image == "influxdb:1.2"))
 	}

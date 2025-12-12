@@ -17,7 +17,7 @@ spec:
       parameters:
       - name: cmd
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [sh, -c]
       args: ["{{inputs.parameters.cmd}}"]
   - name: diamond

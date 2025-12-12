@@ -66,7 +66,7 @@ spec:
   # Generate a list of numbers in JSON format
   - name: gen-number-list1
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: [python]
       source: |
         import json
@@ -75,7 +75,7 @@ spec:
   
   - name: gen-number-list2
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: [python]
       source: |
         import json
@@ -84,7 +84,7 @@ spec:
   
   - name: gen-number-list3
     script:
-      image: python:alpine3.6
+      image: python:alpine
       command: [python]
       source: |
         import json

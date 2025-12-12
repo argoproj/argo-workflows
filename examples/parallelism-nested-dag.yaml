@@ -84,6 +84,6 @@ spec:
       parameters:
       - name: msg
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: ['/bin/sh', '-c']
       args: ["echo {{inputs.parameters.msg}}; sleep 10"]

@@ -17,7 +17,7 @@ spec:
   # Template which produces a global parameter and artifact
   - name: global-output
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
@@ -55,7 +55,7 @@ spec:
         - name: param
           value: "{{workflow.outputs.parameters.my-global-param}}"
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["echo {{inputs.parameters.param}}"]
 
@@ -65,6 +65,6 @@ spec:
       - name: art
         path: /art
     container:
-      image: alpine:3.6
+      image: alpine:latest
       command: [sh, -c]
       args: ["cat /art"]

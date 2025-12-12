@@ -46,7 +46,7 @@ spec:
             spec:
               containers:
               - name: rand
-                image: python:alpine3.6
+                image: python:alpine
                 command: ["python", "-c", "import random; import time; print(random.randint(1, 1000)); time.sleep(10)"]
               restartPolicy: Never
     # Resource templates can have output parameters extracted from fields of the

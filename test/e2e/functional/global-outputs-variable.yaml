@@ -21,7 +21,7 @@ spec:
       parameters:
       - name: globalname
     container:
-      image: alpine:3.7
+      image: alpine:latest
       command: [sh, -c]
       args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
