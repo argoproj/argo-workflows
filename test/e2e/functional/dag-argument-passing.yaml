@@ -14,7 +14,7 @@ spec:
       - name: passthrough
         path: /tmp/passthrough
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, -x]
       args: ['sleep 1; echo "{{inputs.parameters.message}}"; cat /tmp/passthrough']
     outputs:

@@ -525,7 +525,7 @@ spec:
       - set -xe && ls -ltr /
       command:
       - sh
-      image: alpine:latest
+      image: alpine:3.23
     inputs:
       parameters:
       - name: IMAGE
@@ -536,7 +536,7 @@ spec:
       - set -xe && ls -ltr /
       command:
       - sh
-      image: alpine:latest
+      image: alpine:3.23
     name: LinuxJobBase
     retryStrategy:
       limit: "3"
@@ -548,7 +548,7 @@ spec:
             arguments:
               parameters:
               - name: IMAGE
-                value: alpine:latest
+                value: alpine:3.23
             template: LinuxExitHandler
         name: Python2Compile
         template: LinuxJobBase
@@ -558,7 +558,7 @@ spec:
             arguments:
               parameters:
               - name: IMAGE
-                value: alpine:latest
+                value: alpine:3.23
             template: LinuxExitHandler
         name: DependencyTesting
         template: LinuxJobBase
@@ -650,7 +650,7 @@ status:
       inputs:
         parameters:
         - name: IMAGE
-          value: alpine:latest
+          value: alpine:3.23
       name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile.onExit
       phase: Succeeded
       startedAt: "2021-07-29T16:16:27Z"
@@ -679,7 +679,7 @@ status:
       inputs:
         parameters:
         - name: IMAGE
-          value: alpine:latest
+          value: alpine:3.23
       name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting.onExit
       phase: Succeeded
       startedAt: "2021-07-29T16:16:27Z"
@@ -886,7 +886,7 @@ spec:
       command:
       - sh
       - -c
-      image: python:alpine
+      image: python:alpine3.23
       name: ""
     name: output
     outputs:
@@ -902,7 +902,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine
+      image: python:alpine3.23
       name: ""
       source: |
         print("{{inputs.parameters.message}}")
@@ -1022,7 +1022,7 @@ spec:
                       value: "{{steps.main.status}}"
     - name: echo
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo hi"]
     - name: hook
@@ -1030,7 +1030,7 @@ spec:
         parameters:
           - name: status
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo {{inputs.parameters.status}}"]
 `)

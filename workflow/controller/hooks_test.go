@@ -44,7 +44,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
     name: heads
   - http:
@@ -179,7 +179,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
     name: echo
   - http:
       url: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
@@ -308,7 +308,7 @@ spec:
 
     - name: echo
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo \"it was heads\""]
 
@@ -459,7 +459,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:latest
+        image: alpine:3.23
         name: ""
         resources: {}
       inputs: {}
@@ -531,7 +531,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:latest
+        image: alpine:3.23
         name: ""
       name: echo
     - http:
@@ -724,7 +724,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:latest
+        image: alpine:3.23
         name: ""
         resources: {}
       inputs: {}
@@ -870,7 +870,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:latest
+        image: alpine:3.23
         name: ""
         resources: {}
       inputs: {}
@@ -915,7 +915,7 @@ status:
         command:
         - sh
         - -c
-        image: alpine:latest
+        image: alpine:3.23
         name: ""
         resources: {}
       inputs: {}
@@ -965,7 +965,7 @@ spec:
   templates:
     - name: intentional-fail
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo intentional failure; exit 1"]
     - name: message
@@ -973,7 +973,7 @@ spec:
         parameters:
           - name: message
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh]
         source: |
           echo {{ inputs.parameters.message }}
@@ -1021,7 +1021,7 @@ spec:
   templates:
     - name: message
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh]
         source: |
           echo Hi
@@ -1060,7 +1060,7 @@ spec:
                 template: message
     - name: message
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh]
         source: |
           echo Hi
@@ -1101,12 +1101,12 @@ spec:
   templates:
     - name: main
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo", "This template finish fastest"]
     - name: sleep
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh]
         source: |
           sleep 10
@@ -1190,13 +1190,13 @@ spec:
                 template: hook
     - name: hook
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [/bin/sh]
         source: |
           sleep 5
     - name: exit0
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [/bin/sh]
         source: |
           exit 0

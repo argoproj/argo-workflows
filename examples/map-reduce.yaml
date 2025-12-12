@@ -49,7 +49,7 @@ spec:
         parameters:
           - name: numParts
       script:
-        image: python:alpine
+        image: python:alpine3.23
         command:
           - python
         source: |
@@ -80,7 +80,7 @@ spec:
           - name: part
             path: /mnt/in/part.json
       script:
-        image: python:alpine
+        image: python:alpine3.23
         command:
           - python
         source: |
@@ -109,7 +109,7 @@ spec:
             s3:
               key: "{{workflow.name}}/results"
       script:
-        image: python:alpine
+        image: python:alpine3.23
         command:
           - python
         source: |

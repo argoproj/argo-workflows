@@ -91,7 +91,7 @@ spec:
       - name: coincidental-prefix
         path: /coincidental-prefix.txt
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -xe]
       source: |
         cat /outer/outer.txt

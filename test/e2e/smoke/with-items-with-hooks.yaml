@@ -16,7 +16,7 @@ spec:
           - name: 'foo'
       script:
         image: >-
-          alpine:latest
+          alpine:3.23
         command:
           - sh
         source: >-
@@ -27,7 +27,7 @@ spec:
           - name: fanoutValue
       script:
         image: >-
-          alpine:latest
+          alpine:3.23
         command:
           - sh
         source: >-

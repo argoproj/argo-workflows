@@ -46,6 +46,6 @@ spec:
           - name: exit_code
           - name: message
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [ '/bin/sh', '-c' ]
         args: [ "echo {{inputs.parameters.message}}; exit {{inputs.parameters.exit_code}}" ]

@@ -45,7 +45,7 @@ spec:
         parameters:
           - name: counter
       script:
-        image: python:alpine
+        image: python:alpine3.23
         command: [python]
         source: |
           print({{inputs.parameters.counter}} + 1)

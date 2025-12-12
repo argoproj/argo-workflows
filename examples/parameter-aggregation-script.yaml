@@ -30,7 +30,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: python:alpine
+      image: python:alpine3.23
       command: [python]
       source: |
         import json
@@ -47,7 +47,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -x]
       source: |
         echo $(({{inputs.parameters.num}}/2))

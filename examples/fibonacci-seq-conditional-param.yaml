@@ -99,7 +99,7 @@ spec:
               parameter: "{{steps.add.outputs.result}}"
     - name: return-1
       script:
-        image: python:alpine
+        image: python:alpine3.23
         command: [ python ]
         source: print(1)
 
@@ -110,7 +110,7 @@ spec:
           - name: op
           - name: b
       script:
-        image: python:alpine
+        image: python:alpine3.23
         command: [ python ]
         source: |
           print({{inputs.parameters.a}} {{inputs.parameters.op}} {{inputs.parameters.b}})

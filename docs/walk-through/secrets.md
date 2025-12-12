@@ -20,7 +20,7 @@ spec:
   templates:
   - name: print-secrets
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ['
         echo "secret from env: $MYSECRETPASSWORD";

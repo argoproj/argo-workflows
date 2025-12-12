@@ -20,7 +20,7 @@ spec:
 
     - name: failing-container
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["exit 123"]
 
@@ -29,6 +29,6 @@ spec:
         parameters:
         - name: exitCode
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo \"Exit code was: {{inputs.parameters.exitCode}}\""]

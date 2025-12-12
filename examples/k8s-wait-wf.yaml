@@ -32,7 +32,7 @@ spec:
           templates:
           - name: sleep
             container:
-              image: alpine:latest
+              image: alpine:3.23
               command: [sleep, "20"]
     outputs:
       parameters:

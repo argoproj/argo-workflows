@@ -30,7 +30,7 @@ spec:
               count: "{{steps.get-items.outputs.parameters.count}}"
     - name: get-items
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: ["/bin/sh", "-c"]
         # This small array is just for an example. Make sure the count matches the actual size of
         # your JSON array.

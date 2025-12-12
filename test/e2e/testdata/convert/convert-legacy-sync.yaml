@@ -14,7 +14,7 @@ spec:
   templates:
   - name: main
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo]
       args: ["hello"]
     synchronization:

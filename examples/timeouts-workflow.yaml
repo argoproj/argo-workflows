@@ -36,4 +36,4 @@ spec:
     nodeSelector:
       beta.kubernetes.io/arch: no-such-arch
     container:
-      image: alpine:latest
+      image: alpine:3.23

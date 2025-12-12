@@ -22,7 +22,7 @@ spec:
 
   - name: pass
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, exit 0]
 
   - name: approve

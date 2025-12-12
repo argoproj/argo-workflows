@@ -49,6 +49,6 @@ spec:
       parameters:
       - name: seq-id
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: ['/bin/sh', '-c']
       args: ["echo {{inputs.parameters.seq-id}}; sleep 30"]

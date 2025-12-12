@@ -918,7 +918,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: python:alpine
+        image: python:alpine3.23
         command:
           - python
         resources: {}
@@ -934,7 +934,7 @@ spec:
       metadata: {}
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'
@@ -1511,7 +1511,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -2375,7 +2375,7 @@ spec:
       command:
       - echo
       - '{{inputs.parameters.message}}'
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3048,7 +3048,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3061,7 +3061,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3191,7 +3191,7 @@ spec:
       command:
       - echo
       - '{{inputs.parameters.message}}'
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3951,7 +3951,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3981,7 +3981,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3994,7 +3994,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -4007,7 +4007,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
