@@ -78,7 +78,7 @@ spec:
 
   - name: release-artifact
     container:
-      image: alpine:3.8
+      image: alpine:3.23
       volumeMounts:
       - name: workdir
         mountPath: /go

@@ -81,7 +81,7 @@ spec:
 
   - name: flip-coin
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import random
@@ -90,7 +90,7 @@ spec:
 
   - name: heads
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo \"it was heads\""]
 `

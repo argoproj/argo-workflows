@@ -711,7 +711,7 @@ An example of a `Template`-level Counter metric that will increase a counter eve
             counter:
               value: "1"                            # This increments the counter by 1
       container:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: ["python", -c]
         # fail with a 66% probability
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
@@ -738,7 +738,7 @@ A similar example of such a Counter metric that will increase for every step sta
             counter:
               value: "1"
       container:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: ["python", -c]
         # fail with a 66% probability
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
@@ -771,7 +771,7 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
             valueFrom:
               path: /tmp/rand_int.txt
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
 ...

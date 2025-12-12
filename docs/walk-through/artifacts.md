@@ -52,7 +52,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/message"]
 ```
@@ -85,7 +85,7 @@ Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec
       - name: data
         path: /tmp/large-file
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/large-file"]
 # <... snipped ...>

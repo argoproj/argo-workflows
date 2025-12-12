@@ -39,7 +39,7 @@ spec:
             valueFrom:
               path: /tmp/rand_int.txt
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
 `
@@ -386,7 +386,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -424,7 +424,7 @@ spec:
       command:
       - python
       - -c
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
     inputs: {}
@@ -856,7 +856,7 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 

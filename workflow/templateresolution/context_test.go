@@ -386,7 +386,7 @@ spec:
   templates:
   - name: existing-template
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, hello]
 `
 

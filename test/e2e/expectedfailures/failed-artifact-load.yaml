@@ -16,6 +16,6 @@ spec:
         http:
           url: https://non-existent-http-location.com/doesnt-exist.txt
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'we shouldn't get here'"]

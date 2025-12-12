@@ -267,7 +267,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	t.Run("Labelled", func(t *testing.T) {
 		var wftObj1 v1alpha1.WorkflowTemplate
 		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
-		wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
+		wftObj1.Spec.Templates[0].Container.Image = "alpine:3.23"
 		wftRsp, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
 			Namespace: "default",
 			Template:  &wftObj1,
@@ -276,7 +276,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 		assert.Contains(t, wftRsp.Labels, common.LabelKeyActor)
 		assert.Equal(t, string(creator.ActionUpdate), wftRsp.Labels[common.LabelKeyAction])
 		assert.Equal(t, userEmailLabel, wftRsp.Labels[common.LabelKeyActorEmail])
-		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
+		assert.Equal(t, "alpine:3.23", wftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{

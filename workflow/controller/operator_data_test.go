@@ -91,7 +91,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
     inputs:
       artifacts:
@@ -111,7 +111,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
     inputs:
       parameters:
       - name: file

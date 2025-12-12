@@ -203,7 +203,7 @@ spec:
       - sh
       - -c
       - sleep 10
-      image: alpine:latest
+      image: alpine:3.23
     name: sleep
 status:
   conditions:

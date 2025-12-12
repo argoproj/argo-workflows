@@ -10,7 +10,7 @@ spec:
     retryStrategy:
       limit: "10"
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python"]
       # fail with a 66% probability
       source: |

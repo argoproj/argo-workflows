@@ -228,7 +228,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("{{inputs.parameters.message}}")`
 
@@ -841,7 +841,7 @@ spec:
   templates:
   - name: test-container
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: ["echo", "bye"]
 `
 
@@ -859,7 +859,7 @@ spec:
   templates:
   - name: test-container
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: ["echo", "bye"]
 `
 

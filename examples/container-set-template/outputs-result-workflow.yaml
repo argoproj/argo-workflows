@@ -28,7 +28,7 @@ spec:
       containerSet:
         containers:
           - name: main
-            image: python:alpine3.6
+            image: python:alpine3.23
             command:
               - python
               - -c
@@ -41,7 +41,7 @@ spec:
         parameters:
           - name: x
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command:
           - python
         source: |

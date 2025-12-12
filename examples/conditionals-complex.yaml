@@ -42,7 +42,7 @@ spec:
   # Return heads or tails based on a random number
   - name: flip-coin
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import random
