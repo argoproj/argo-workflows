@@ -982,22 +982,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 
-					// Remove finalizers from Pods if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
-					if err != nil {
-						logger.WithError(err).Error(ctx, "Failed to list pods")
-					}
-					for _, p := range podList.Items {
-						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
-						}
-					}
-
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
+						wfc.removeAllPodFinalizer(ctx, obj)
 						wfc.releaseAllWorkflowLocks(ctx, obj)
 						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
@@ -1240,6 +1227,25 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
 		Temporality:  wfc.Config.MetricsConfig.GetTemporality(),
 	}
 	return &metricsConfig
+}
+
+func (wfc *WorkflowController) removeAllPodFinalizer(ctx context.Context, obj interface{}) {
+	un, ok := obj.(*unstructured.Unstructured)
+	logger := logging.RequireLoggerFromContext(ctx)
+	if !ok {
+		logger.WithField("key", obj).Warn(ctx, "Key in index is not an unstructured")
+		return
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		logger.WithField("key", obj).Warn(ctx, "Invalid workflow object")
+		return
+	}
+	for _, node := range wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			wfc.PodController.RemoveFinalizer(ctx, wf.Namespace, node.ID)
+		}
+	}
 }
 
 func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj interface{}) {
