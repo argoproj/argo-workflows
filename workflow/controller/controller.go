@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"slices"
 	"strconv"
 	gosync "sync"
@@ -980,25 +979,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 
-					// Remove finalizers from Pods if they exist before deletion
-					wf := obj.(*unstructured.Unstructured)
-					podObjs, err := wfc.PodController.GetPodsByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(wf.GetNamespace(), wf.GetName()))
-					if err != nil {
-						logger.WithError(err).Error(ctx, "Failed to get pods by index")
-					}
-					for _, podObj := range podObjs {
-						p, ok := podObj.(*apiv1.Pod)
-						if !ok {
-							logger.WithError(err).Error(ctx, "expected \"*apiv1.Pod\", got "+reflect.TypeOf(podObj).String())
-							continue
-						}
-						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
-						}
-					}
-
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
+						wfc.removeAllPodFinalizer(ctx, obj)
 						wfc.releaseAllWorkflowLocks(ctx, obj)
 						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
@@ -1241,6 +1224,25 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
 		Temporality:  wfc.Config.MetricsConfig.GetTemporality(),
 	}
 	return &metricsConfig
+}
+
+func (wfc *WorkflowController) removeAllPodFinalizer(ctx context.Context, obj interface{}) {
+	un, ok := obj.(*unstructured.Unstructured)
+	logger := logging.RequireLoggerFromContext(ctx)
+	if !ok {
+		logger.WithField("key", obj).Warn(ctx, "Key in index is not an unstructured")
+		return
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		logger.WithField("key", obj).Warn(ctx, "Invalid workflow object")
+		return
+	}
+	for _, node := range wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			wfc.PodController.RemoveFinalizer(ctx, wf.Namespace, node.ID)
+		}
+	}
 }
 
 func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj interface{}) {
