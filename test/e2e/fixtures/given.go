@@ -16,8 +16,39 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
+
+func NewGiven(
+	t *testing.T,
+	client v1alpha1.WorkflowInterface,
+	wfebClient v1alpha1.WorkflowEventBindingInterface,
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface,
+	wftsClient v1alpha1.WorkflowTaskSetInterface,
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface,
+	cronClient v1alpha1.CronWorkflowInterface,
+	hydrator hydrator.Interface,
+	kubeClient kubernetes.Interface,
+	bearerToken string,
+	restConfig *rest.Config,
+	config *config.Config,
+) *Given {
+	return &Given{
+		t:                 t,
+		client:            client,
+		wfebClient:        wfebClient,
+		wfTemplateClient:  wfTemplateClient,
+		wftsClient:        wftsClient,
+		cwfTemplateClient: cwfTemplateClient,
+		cronClient:        cronClient,
+		hydrator:          hydrator,
+		kubeClient:        kubeClient,
+		bearerToken:       bearerToken,
+		restConfig:        restConfig,
+		config:            config,
+	}
+}
 
 type Given struct {
 	t                 *testing.T
@@ -71,14 +102,14 @@ func (g *Given) WorkflowWorkflow(wf *wfv1.Workflow) *Given {
 func (g *Given) readResource(text string, v metav1.Object) {
 	g.t.Helper()
 	var file string
-	if strings.HasPrefix(text, "@") {
-		file = strings.TrimPrefix(text, "@")
+	if after, ok := strings.CutPrefix(text, "@"); ok {
+		file = after
 	} else {
 		f, err := os.CreateTemp("", "argo_e2e")
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		_, err = f.Write([]byte(text))
+		_, err = f.WriteString(text)
 		if err != nil {
 			g.t.Fatal(err)
 		}
@@ -135,7 +166,18 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
-			(isExample && (image == "busybox" || image == "python:alpine3.6"))
+			(isExample && (image == "busybox" ||
+				image == "python:alpine3.6" ||
+				image == "golang:1.18" ||
+				image == "nginx:1.13" ||
+				image == "curlimages/curl:latest" ||
+				image == "node:9.1-alpine" ||
+				image == "docker:19.03.13" ||
+				image == "docker:19.03.13-dind" ||
+				image == "alpine/git:v2.26.2" ||
+				image == "alpine:3.6" ||
+				image == "stedolan/jq:latest" ||
+				image == "influxdb:1.2"))
 	}
 	for _, t := range templates {
 		container := t.Container
@@ -220,9 +262,10 @@ var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) 
 	}
 }
 
-func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
+func (g *Given) Exec(name string, args []string, stdin string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	output, err := Exec(name, args...)
+	ctx := logging.TestContext(g.t.Context())
+	output, err := Exec(ctx, name, stdin, args...)
 	block(g.t, output, err)
 	return g
 }
@@ -230,11 +273,15 @@ func (g *Given) Exec(name string, args []string, block func(t *testing.T, output
 // Use Kubectl to server-side apply the given file
 func (g *Given) KubectlApply(file string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), block)
+	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), "", block)
 }
 
 func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
-	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
+	return g.RunCliStdin(args, "", block)
+}
+
+func (g *Given) RunCliStdin(args []string, stdin string, block func(t *testing.T, output string, err error)) *Given {
+	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), stdin, block)
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {

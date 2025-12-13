@@ -16,6 +16,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,7 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	executorretry "github.com/argoproj/argo-workflows/v3/workflow/executor/retry"
@@ -170,12 +171,20 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 	}
 }
 
-// LoadArtifacts loads artifacts from location to a container path
-func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Info(ctx, "Start loading input artifacts...")
-	for _, art := range we.Template.Inputs.Artifacts {
+func (we *WorkflowExecutor) LoadArtifactsWithoutPlugins(ctx context.Context) error {
+	return we.loadArtifacts(ctx, "")
+}
 
+func (we *WorkflowExecutor) LoadArtifactsFromPlugin(ctx context.Context, pluginName wfv1.ArtifactPluginName) error {
+	return we.loadArtifacts(ctx, pluginName)
+}
+
+// loadArtifacts loads artifacts from location to a container path
+// pluginName is the name of the plugin to load artifacts from, only one plugin can be used at a time
+func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.ArtifactPluginName) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"pluginName": pluginName}).Info(ctx, "Start loading input artifacts...")
+	for _, art := range we.Template.Inputs.Artifacts {
 		logger.WithField("name", art.Name).Info(ctx, "Downloading artifact")
 
 		if !art.HasLocationOrKey() {
@@ -194,6 +203,21 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
 		}
+		switch pluginName {
+		// If no plugin is specified only load non-plugin artifacts
+		case "":
+			if driverArt.Plugin != nil {
+				logger.Info(ctx, "Skipping artifact that is from a plugin")
+				continue
+			}
+			// If a plugin is specified only load artifacts from that plugin
+		default:
+			if driverArt.Plugin == nil || driverArt.Plugin.Name != pluginName {
+				logger.WithFields(logging.Fields{"name": driverArt.Name, "plugin": driverArt.Plugin}).Info(ctx, "Skipping artifact that is not from the specified plugin")
+				continue
+			}
+		}
+
 		artDriver, err := we.InitDriver(ctx, driverArt)
 		if err != nil {
 			return err
@@ -269,6 +293,14 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		if art.Mode != nil {
 			err = chmod(artPath, *art.Mode, art.RecurseMode)
 			if err != nil {
+				return err
+			}
+		} else if driverArt.Plugin != nil {
+			// For plugin artifacts without explicit mode, ensure the file is writable
+			// by setting mode to 0666 so the main container can read/write it
+			err = chmod(artPath, 0666, art.RecurseMode)
+			if err != nil {
+				logger.WithError(err).Error(ctx, "Failed to chmod plugin artifact")
 				return err
 			}
 		}
@@ -707,8 +739,8 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
-	driver, err := artifact.NewDriver(ctx, art, we)
-	if err == artifact.ErrUnsupportedDriver {
+	driver, err := artifacts.NewDriver(ctx, art, we)
+	if err == artifacts.ErrUnsupportedDriver {
 		return nil, argoerrs.Errorf(argoerrs.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
 	return driver, err
@@ -991,11 +1023,23 @@ func untar(tarPath string, destPath string) error {
 				continue
 			}
 			target := filepath.Join(dest, filepath.Clean(header.Name))
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil && os.IsExist(err) {
-				return err
+			if !strings.HasPrefix(target, filepath.Clean(dest)+string(os.PathSeparator)) {
+				return fmt.Errorf("illegal file path: %s", header.Name)
 			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:
+				// Validate symlink target before creating it
+				linkTarget := header.Linkname
+				if !filepath.IsAbs(linkTarget) {
+					linkTarget = filepath.Join(filepath.Dir(target), header.Linkname)
+				}
+				if !strings.HasPrefix(filepath.Clean(linkTarget), filepath.Clean(dest)+string(os.PathSeparator)) {
+					return fmt.Errorf("illegal symlink target: %s -> %s", header.Name, header.Linkname)
+				}
+				// Create parent directory if needed
+				if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+					return err
+				}
 				err := os.Symlink(header.Linkname, target)
 				if err != nil {
 					return err
@@ -1005,6 +1049,35 @@ func untar(tarPath string, destPath string) error {
 					return err
 				}
 			case tar.TypeReg:
+				// Before writing the file, check if the parent directory resolves outside dest
+				parentDir := filepath.Dir(target)
+
+				// Resolve the destination directory
+				resolvedDest, err := filepath.EvalSymlinks(dest)
+				if err != nil {
+					return err
+				}
+
+				// Check if parent exists and if so, verify it doesn't resolve outside dest
+				if _, err := os.Lstat(parentDir); err == nil {
+					// Parent exists, resolve it to check for symlink traversal
+					resolvedParent, err := filepath.EvalSymlinks(parentDir)
+					if err != nil {
+						return err
+					}
+					// Check if resolved parent is outside dest
+					if !strings.HasPrefix(resolvedParent+string(os.PathSeparator), resolvedDest+string(os.PathSeparator)) && resolvedParent != resolvedDest {
+						return fmt.Errorf("illegal file path after symlink resolution: %s resolves outside destination", header.Name)
+					}
+				} else if !os.IsNotExist(err) {
+					return err
+				} else {
+					// Parent doesn't exist, create it
+					if err := os.MkdirAll(parentDir, 0o755); err != nil {
+						return err
+					}
+				}
+
 				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 				if err != nil {
 					return err
@@ -1051,7 +1124,7 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 				}
 			}()
 
-			path := filepath.Join(dest, f.Name) //nolint:gosec
+			path := filepath.Join(dest, f.Name)
 			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
 				return fmt.Errorf("%s: Illegal file path", path)
 			}
@@ -1074,7 +1147,7 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 					}
 				}()
 
-				_, err = io.Copy(f, rc) //nolint:gosec
+				_, err = io.Copy(f, rc)
 				if err != nil {
 					return err
 				}
@@ -1255,7 +1328,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 
 	var message string
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Info(ctx, "Starting deadline monitor")
+	logger.WithField("containers", containerNames).Info(ctx, "Starting deadline monitor")
 	select {
 	case <-ctx.Done():
 		logger.Info(ctx, "Deadline monitor stopped")
@@ -1265,12 +1338,16 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 	}
 	logger.Info(ctx, message)
 	util.WriteTerminateMessage(message)
+
+	containerNames = slices.DeleteFunc(containerNames, func(containerName string) bool {
+		return common.IsArtifactPluginSidecar(containerName)
+	})
 	we.killContainers(ctx, containerNames)
 }
 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Info(ctx, "Killing containers")
+	logger.WithField("containerNames", containerNames).Info(ctx, "Killing containers")
 	terminationGracePeriodDuration := GetTerminationGracePeriodDuration()
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
 		logger.WithField("containerNames", containerNames).WithError(err).Warn(ctx, "Failed to kill")
@@ -1281,5 +1358,23 @@ func (we *WorkflowExecutor) Init() error {
 	if i, ok := we.RuntimeExecutor.(Initializer); ok {
 		return i.Init(we.Template)
 	}
+	return nil
+}
+
+func (we *WorkflowExecutor) KillArtifactSidecars(ctx context.Context) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	pluginNamesEnv := os.Getenv(common.EnvVarArtifactPluginNames)
+	if pluginNamesEnv == "" {
+		logger.Info(ctx, "no artifact sidecars to kill")
+		return nil
+	}
+	artifactSidecars := strings.Split(pluginNamesEnv, ",")
+	logger.WithFields(logging.Fields{"numSidecars": len(artifactSidecars), "artifactSidecars": artifactSidecars}).Info(ctx, "killing artifact sidecars")
+	err := we.RuntimeExecutor.Kill(ctx, artifactSidecars, GetTerminationGracePeriodDuration())
+	if err != nil {
+		logger.WithError(err).WithFields(logging.Fields{"artifactSidecars": artifactSidecars}).Error(ctx, "failed to kill artifact sidecars")
+		return err
+	}
+	logger.WithFields(logging.Fields{"artifactSidecars": artifactSidecars}).Info(ctx, "artifact sidecars killed")
 	return nil
 }

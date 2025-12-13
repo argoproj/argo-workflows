@@ -774,6 +774,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
 		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
+			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
 			return
 		}
@@ -797,14 +798,15 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
-	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
+	// this does not reduce errors, but does reduce
 	// conflicts and therefore we log fewer warning messages.
-	case "", "true":
+	case "true":
 		if err := woc.writeBackToInformer(); err != nil {
 			woc.markWorkflowError(ctx, err)
 			return
 		}
-	case "false":
+	// no longer write back to informer cache as default (as per v4.0)
+	case "", "false":
 		time.Sleep(1 * time.Second)
 	}
 
@@ -837,7 +839,13 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 		DeleteCollection(
 			ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
-			metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name},
+			metav1.ListOptions{
+				LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name,
+				// DeleteCollection does a "list" operation to get the resources to delete, which by default does a strongly consistent read of the most recent version.
+				// This can be slow for Kubernetes versions before 1.34, so we set resourceVersion=0 to relax consistency and tell the k8s API to return any resource version.
+				// It's possible for this to miss some resources, but those should be GC'd when the parent workflow is deleted.
+				ResourceVersion: "0",
+			},
 		)
 }
 
@@ -1374,7 +1382,7 @@ func (woc *wfOperationCtx) printPodSpecLog(ctx context.Context, pod *apiv1.Pod, 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
-	new := old.DeepCopy()
+	updated := old.DeepCopy()
 	tmpl, err := woc.GetNodeTemplate(ctx, old)
 	if err != nil {
 		woc.log.Error(ctx, err.Error())
@@ -1382,28 +1390,28 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
-		new.Phase = wfv1.NodePending
-		new.Message = getPendingReason(pod)
-		new.Daemoned = nil
-		if old.Phase != new.Phase || old.Message != new.Message {
-			woc.controller.metrics.ChangePodPending(ctx, new.Message, pod.Namespace)
+		updated.Phase = wfv1.NodePending
+		updated.Message = getPendingReason(pod)
+		updated.Daemoned = nil
+		if old.Phase != updated.Phase || old.Message != updated.Message {
+			woc.controller.metrics.ChangePodPending(ctx, updated.Message, pod.Namespace)
 		}
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
 		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
 		if tmpl.IsDaemon() {
 			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
-			new.Phase = wfv1.NodeFailed
+			updated.Phase = wfv1.NodeFailed
 		} else {
-			new.Phase = wfv1.NodeSucceeded
+			updated.Phase = wfv1.NodeSucceeded
 		}
 
-		new.Daemoned = nil
+		updated.Daemoned = nil
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
-		new.Phase, new.Message = woc.inferFailedReason(ctx, pod, tmpl)
-		woc.log.WithFields(logging.Fields{"message": new.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
-		new.Daemoned = nil
+		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
+		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
+		updated.Daemoned = nil
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
 		// A node transitions into "daemoned" only if it's a daemon template and it becomes running AND ready.
@@ -1417,24 +1425,24 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 					}
 				}
 				// proceed to mark node as running and daemoned
-				new.Phase = wfv1.NodeRunning
-				new.Daemoned = ptr.To(true)
+				updated.Phase = wfv1.NodeRunning
+				updated.Daemoned = ptr.To(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info(ctx, "Node became daemoned")
 				}
 			}
 		} else {
-			new.Phase = wfv1.NodeRunning
+			updated.Phase = wfv1.NodeRunning
 		}
 		if tmpl != nil {
 			woc.cleanUpPod(ctx, pod, *tmpl)
 		}
 	default:
-		new.Phase = wfv1.NodeError
-		new.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
+		updated.Phase = wfv1.NodeError
+		updated.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
 	}
-	if old.Phase != new.Phase {
-		woc.controller.metrics.ChangePodPhase(ctx, string(new.Phase), pod.Namespace)
+	if old.Phase != updated.Phase {
+		woc.controller.metrics.ChangePodPhase(ctx, string(updated.Phase), pod.Namespace)
 	}
 
 	// if it's ContainerSetTemplate pod then the inner container names should match to some node names,
@@ -1468,24 +1476,24 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 
 	// only update Pod IP for daemoned nodes to reduce number of updates
-	if !new.Completed() && new.IsDaemoned() {
-		new.PodIP = pod.Status.PodIP
+	if !updated.Completed() && updated.IsDaemoned() {
+		updated.PodIP = pod.Status.PodIP
 	}
 
-	new.HostNodeName = pod.Spec.NodeName
+	updated.HostNodeName = pod.Spec.NodeName
 
-	if !new.Progress.IsValid() {
-		new.Progress = wfv1.ProgressDefault
+	if !updated.Progress.IsValid() {
+		updated.Progress = wfv1.ProgressDefault
 	}
 
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
 	if exitCode := getExitCode(pod); exitCode != nil {
-		if new.Outputs == nil {
-			new.Outputs = &wfv1.Outputs{}
+		if updated.Outputs == nil {
+			updated.Outputs = &wfv1.Outputs{}
 		}
-		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
+		updated.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 	}
 
 	waitContainerCleanedUp := true
@@ -1495,9 +1503,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if c.Name == common.WaitContainerName {
 			waitContainerCleanedUp = false
 			switch {
-			case c.State.Running != nil && new.Phase.Completed() && pod.Status.Phase != apiv1.PodFailed:
-				woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: wait container is not yet terminated ")
-				new.Phase = old.Phase
+			case c.State.Running != nil && updated.Phase.Completed() && pod.Status.Phase != apiv1.PodFailed:
+				woc.log.WithField("updated.phase", updated.Phase).Info(ctx, "leaving phase un-changed: wait container is not yet terminated ")
+				updated.Phase = old.Phase
 			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
 				// Mark its taskResult as completed directly since wait container did not exit normally,
 				// and it will never have a chance to report taskResult correctly.
@@ -1518,46 +1526,46 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 
 	// If the node template has outputs Parameters/Artifacts/Result, we should not change the phase to Succeeded until the outputs are set.
-	if tmpl != nil && tmpl.Outputs.HasOutputs() && new.Outputs != nil && new.Phase == wfv1.NodeSucceeded {
+	if tmpl != nil && tmpl.Outputs.HasOutputs() && updated.Outputs != nil && updated.Phase == wfv1.NodeSucceeded {
 		outputsNotReady := false
 		// Check Parameters - all parameters are considered required
-		if tmpl.Outputs.Parameters != nil && new.Outputs.Parameters == nil {
+		if tmpl.Outputs.Parameters != nil && updated.Outputs.Parameters == nil {
 			outputsNotReady = true
 		}
 		// Check Artifacts - only check if there are required (non-optional) artifacts
-		if hasRequiredArtifacts(tmpl.Outputs.Artifacts) && new.Outputs.Artifacts == nil {
+		if hasRequiredArtifacts(tmpl.Outputs.Artifacts) && updated.Outputs.Artifacts == nil {
 			outputsNotReady = true
 		}
 		// Check Result
-		if tmpl.Outputs.Result != nil && new.Outputs.Result == nil {
+		if tmpl.Outputs.Result != nil && updated.Outputs.Result == nil {
 			outputsNotReady = true
 		}
 		if outputsNotReady {
-			woc.log.WithField("new.phase", new.Phase).Info(ctx, "leaving phase un-changed: required outputs are not yet set")
-			new.Phase = old.Phase
+			woc.log.WithField("updated.phase", updated.Phase).Info(ctx, "leaving phase un-changed: required outputs are not yet set")
+			updated.Phase = old.Phase
 		}
 	}
 
 	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
-	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && new.Phase != wfv1.NodeFailed && new.Phase != wfv1.NodeError && old.Message == new.Message {
-		new.Message = ""
+	if old.Phase == wfv1.NodePending && updated.Phase != wfv1.NodePending && updated.Phase != wfv1.NodeFailed && updated.Phase != wfv1.NodeError && old.Message == updated.Message {
+		updated.Message = ""
 	}
 
-	if new.Fulfilled() && new.FinishedAt.IsZero() {
-		new.FinishedAt = getLatestFinishedAt(pod)
-		new.ResourcesDuration = resource.DurationForPod(pod)
+	if updated.Fulfilled() && updated.FinishedAt.IsZero() {
+		updated.FinishedAt = getLatestFinishedAt(pod)
+		updated.ResourcesDuration = resource.DurationForPod(pod)
 	}
 
-	if !reflect.DeepEqual(old, new) {
+	if !reflect.DeepEqual(old, updated) {
 		woc.log.WithField("nodeID", old.ID).
 			WithField("old.phase", old.Phase).
-			WithField("new.phase", new.Phase).
+			WithField("updated.phase", updated.Phase).
 			WithField("old.message", old.Message).
-			WithField("new.message", new.Message).
+			WithField("updated.message", updated.Message).
 			WithField("old.progress", old.Progress).
-			WithField("new.progress", new.Progress).
+			WithField("updated.progress", updated.Progress).
 			Debug(ctx, "node changed")
-		return new
+		return updated
 	}
 	woc.log.WithField("nodeID", old.ID).
 		Debug(ctx, "node unchanged")
@@ -1679,6 +1687,12 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		return wfv1.NodeFailed, fmt.Sprintf("can't find failed message for pod %s namespace %s", pod.Name, pod.Namespace)
 	}
 
+	// Track whether critical containers completed successfully (terminated with exit code 0).
+	// We must confirm both to return success—otherwise a pod-level failure (eviction, node death)
+	// could be incorrectly reported as success.
+	mainContainerSucceeded := false
+	waitContainerSucceeded := false
+
 	for _, ctr := range ctrs {
 
 		// Virtual Kubelet environment will not set the terminate on waiting container
@@ -1690,11 +1704,15 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		}
 		t := ctr.State.Terminated
 		if t == nil {
-			// We should never get here
 			woc.log.WithFields(logging.Fields{"podName": pod.Name, "containerName": ctr.Name}).Warn(ctx, "Pod phase was Failed but container did not have terminated state")
 			continue
 		}
 		if t.ExitCode == 0 {
+			if tmpl.IsMainContainerName(ctr.Name) {
+				mainContainerSucceeded = true
+			} else if ctr.Name == common.WaitContainerName {
+				waitContainerSucceeded = true
+			}
 			continue
 		}
 
@@ -1723,11 +1741,22 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		}
 	}
 
-	// If we get here, we have detected that the main/wait containers succeed but the sidecar(s)
-	// were  SIGKILL'd. The executor may have had to forcefully terminate the sidecar (kill -9),
-	// resulting in a 137 exit code (which we had ignored earlier). If failMessages is empty, it
-	// indicates that this is the case and we return Success instead of Failure.
-	return wfv1.NodeSucceeded, ""
+	// Determine final status based on whether we confirmed main and wait succeeded
+	// Slightly convulted approach to avoid the exhaustive linter getting upset
+	if mainContainerSucceeded {
+		if waitContainerSucceeded {
+			// Both succeeded - sidecars may have been force-killed (137/143), which is fine
+			return wfv1.NodeSucceeded, ""
+		} else {
+			return wfv1.NodeFailed, "pod failed: wait container did not complete successfully"
+		}
+	} else {
+		if waitContainerSucceeded {
+			return wfv1.NodeFailed, "pod failed: main container did not complete successfully"
+		} else {
+			return wfv1.NodeFailed, "pod failed: neither main nor wait container completed successfully"
+		}
+	}
 }
 
 func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
@@ -2572,21 +2601,38 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-// check if all of the nodes children are fulffilled
-func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
+func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache map[string]bool) bool {
+
+	res, has := cache[node.ID]
+	if has {
+		return res
+	}
+
 	if len(node.Children) == 0 {
+		cache[node.ID] = node.Fulfilled()
 		return node.Fulfilled()
 	}
+
 	for _, childID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childID)
 		if err != nil {
 			continue
 		}
-		if !woc.childrenFulfilled(childNode) {
+		isChildrenFulfilled := woc.childrenFulfilledHelper(childNode, cache)
+		if !isChildrenFulfilled {
+			cache[node.ID] = false
 			return false
 		}
 	}
+
+	cache[node.ID] = true
 	return true
+}
+
+// check if all of the nodes children are fulffilled
+func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
+	m := make(map[string]bool)
+	return woc.childrenFulfilledHelper(node, m)
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
@@ -2871,13 +2917,13 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(ctx context.Context, node *wfv1.
 
 // recordNodePhaseChangeEvents creates WorkflowNode Kubernetes events for each node
 // that has changes logged during this execution of the operator loop.
-func (woc *wfOperationCtx) recordNodePhaseChangeEvents(ctx context.Context, old wfv1.Nodes, new wfv1.Nodes) {
+func (woc *wfOperationCtx) recordNodePhaseChangeEvents(ctx context.Context, old wfv1.Nodes, newNodes wfv1.Nodes) {
 	if !woc.controller.Config.NodeEvents.IsEnabled() {
 		return
 	}
 
 	// Check for newly added nodes; send an event for new nodes
-	for nodeName, newNode := range new {
+	for nodeName, newNode := range newNodes {
 		oldNode, exists := old[nodeName]
 		if exists {
 			if oldNode.Phase == newNode.Phase {
@@ -3190,7 +3236,7 @@ func (woc *wfOperationCtx) hasOutputResultRef(ctx context.Context, name string, 
 	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
 	// This is most common, so should be done first.
 	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
-	contains, err := regexp.MatchString(referenceRegex, string(jsonValue))
+	contains, err := regexp.Match(referenceRegex, jsonValue)
 	if err != nil {
 		woc.log.WithField("regex", referenceRegex).WithError(err).Warn(ctx, "Error in regex compilation")
 	}
@@ -3200,7 +3246,7 @@ func (woc *wfOperationCtx) hasOutputResultRef(ctx context.Context, name string, 
 	}
 
 	// Next, consider expression case (e.g.: `expression: "steps['generate-random-1'].outputs.result"`)
-	contains, err = regexp.MatchString(expressionRegex, string(jsonValue))
+	contains, err = regexp.Match(expressionRegex, jsonValue)
 	if err != nil {
 		woc.log.WithField("regex", expressionRegex).WithError(err).Warn(ctx, "Error in regex compilation")
 	}
@@ -3321,7 +3367,7 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	}
 	if node.HostNodeName != "" {
 		key := fmt.Sprintf("%s.hostNodeName", prefix)
-		scope.addParamToScope(key, string(node.HostNodeName))
+		scope.addParamToScope(key, node.HostNodeName)
 	}
 	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }
@@ -3565,11 +3611,9 @@ func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, chil
 	if err != nil {
 		woc.log.WithPanic().WithField("nodeID", parentID).Error(ctx, "was unable to obtain node for nodeID")
 	}
-	for _, nodeID := range node.Children {
-		if childID == nodeID {
-			// already exists
-			return
-		}
+	if slices.Contains(node.Children, childID) {
+		// already exists
+		return
 	}
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes.Set(ctx, parentID, *node)
@@ -3730,8 +3774,12 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
+func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string, globalScope map[string]string) (string, error) {
 	replaceMap := make(map[string]interface{})
+	// Start with the global scope
+	for k, v := range globalScope {
+		replaceMap[k] = v
+	}
 	var newName string
 
 	switch item.GetType() {

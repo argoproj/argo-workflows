@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,8 +18,15 @@ func errorln(args ...interface{}) {
 	_, _ = fmt.Fprint(os.Stderr, args...)
 }
 
-func Exec(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+func Exec(ctx context.Context, name string, stdin string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	if stdin != "" {
+		data, err := os.ReadFile(stdin)
+		if err != nil {
+			return "", err
+		}
+		cmd.Stdin = bytes.NewReader(data)
+	}
 	cmd.Env = os.Environ()
 	_, _ = fmt.Println(cmd.String())
 	output, err := runWithTimeout(cmd)
@@ -26,7 +34,7 @@ func Exec(name string, args ...string) (string, error) {
 	if err != nil {
 		errorln(err)
 	}
-	for _, s := range strings.Split(output, "\n") {
+	for s := range strings.SplitSeq(output, "\n") {
 		_, _ = fmt.Println(s)
 	}
 	return output, err
@@ -56,8 +64,8 @@ func runWithTimeout(cmd *exec.Cmd) (string, error) {
 // LoadObject is used to load yaml to runtime.Object
 func LoadObject(text string) (runtime.Object, error) {
 	var yaml string
-	if strings.HasPrefix(text, "@") {
-		file := strings.TrimPrefix(text, "@")
+	if after, ok := strings.CutPrefix(text, "@"); ok {
+		file := after
 		f, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return nil, err

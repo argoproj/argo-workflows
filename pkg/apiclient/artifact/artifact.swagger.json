@@ -1,0 +1,460 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Artifact Service",
+    "description": "Artifact Service API provides GRPC access to artifact operations",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/artifacts/delete": {
+      "post": {
+        "operationId": "ArtifactService_Delete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/artifact.DeleteArtifactResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/artifact.DeleteArtifactRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArtifactService"
+        ]
+      }
+    },
+    "/api/v1/artifacts/is-directory": {
+      "post": {
+        "operationId": "ArtifactService_IsDirectory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/artifact.IsDirectoryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/artifact.IsDirectoryRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArtifactService"
+        ]
+      }
+    },
+    "/api/v1/artifacts/list": {
+      "post": {
+        "operationId": "ArtifactService_ListObjects",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/artifact.ListObjectsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/artifact.ListObjectsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArtifactService"
+        ]
+      }
+    },
+    "/api/v1/artifacts/load": {
+      "post": {
+        "operationId": "ArtifactService_Load",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/artifact.LoadArtifactResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/artifact.LoadArtifactRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArtifactService"
+        ]
+      }
+    },
+    "/api/v1/artifacts/save": {
+      "post": {
+        "operationId": "ArtifactService_Save",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/artifact.SaveArtifactResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/artifact.SaveArtifactRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArtifactService"
+        ]
+      }
+    },
+    "/api/v1/artifacts/stream": {
+      "post": {
+        "operationId": "ArtifactService_OpenStream",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/artifact.OpenStreamResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of artifact.OpenStreamResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/artifact.OpenStreamRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArtifactService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "artifact.Artifact": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "from": {
+          "type": "string"
+        },
+        "plugin": {
+          "$ref": "#/definitions/artifact.PluginArtifact"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "sub_path": {
+          "type": "string"
+        },
+        "recurse_mode": {
+          "type": "boolean"
+        },
+        "from_expression": {
+          "type": "string"
+        },
+        "deleted": {
+          "type": "boolean"
+        }
+      },
+      "title": "Artifact representation for gRPC"
+    },
+    "artifact.DeleteArtifactRequest": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "$ref": "#/definitions/artifact.Artifact"
+        }
+      }
+    },
+    "artifact.DeleteArtifactResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact.IsDirectoryRequest": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "$ref": "#/definitions/artifact.Artifact"
+        }
+      }
+    },
+    "artifact.IsDirectoryResponse": {
+      "type": "object",
+      "properties": {
+        "is_directory": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact.ListObjectsRequest": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "$ref": "#/definitions/artifact.Artifact"
+        }
+      }
+    },
+    "artifact.ListObjectsResponse": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact.LoadArtifactRequest": {
+      "type": "object",
+      "properties": {
+        "input_artifact": {
+          "$ref": "#/definitions/artifact.Artifact"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact.LoadArtifactResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact.OpenStreamRequest": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "$ref": "#/definitions/artifact.Artifact"
+        }
+      }
+    },
+    "artifact.OpenStreamResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte"
+        },
+        "is_end": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact.PluginArtifact": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "configuration": {
+          "type": "string"
+        },
+        "connection_timeout_seconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "title": "Plugin Artifact configuration"
+    },
+    "artifact.SaveArtifactRequest": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "output_artifact": {
+          "$ref": "#/definitions/artifact.Artifact"
+        }
+      }
+    },
+    "artifact.SaveArtifactResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    },
+    "grpc.gateway.runtime.StreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    }
+  }
+}

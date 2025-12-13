@@ -8,6 +8,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 )
 
 func NewResourceCommand() *cobra.Command {
@@ -28,16 +30,16 @@ func NewResourceCommand() *cobra.Command {
 
 // nolint: contextcheck
 func execResource(ctx context.Context, action string) error {
-	wfExecutor := initExecutor(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	// nolint:contextcheck
+	//nolint:contextcheck
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)
 	if !wfExecutor.Template.SaveLogsAsArtifact() {
-		defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+		defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	}
 	err := wfExecutor.StageFiles(ctx)
 	if err != nil {

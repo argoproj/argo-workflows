@@ -19,6 +19,8 @@ Workflow is the definition of a workflow resource
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing.yaml)
@@ -335,11 +337,7 @@ Workflow is the definition of a workflow resource
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 
@@ -502,6 +500,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing.yaml)
@@ -822,11 +822,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 
@@ -915,7 +911,7 @@ WorkflowSpec is the specification of a Workflow.
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templateDefaults`|[`Template`](#template)|TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level|
-|`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
+|`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows|
@@ -969,6 +965,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
@@ -1290,11 +1288,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 
@@ -1352,7 +1346,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
 |`failedJobsHistoryLimit`|`integer`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
-|`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules|
 |`schedules`|`Array< string >`|v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
 |`stopStrategy`|[`StopStrategy`](#stopstrategy)|v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition|
@@ -1422,6 +1415,8 @@ Arguments to a template
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
@@ -1586,8 +1581,6 @@ Arguments to a template
 - [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
 
 - [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
-
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
@@ -1707,7 +1700,7 @@ Metrics are a list of metrics emitted from a Workflow/Template
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`prometheus`|`Array<`[`Prometheus`](#prometheus)`>`|Prometheus is a list of prometheus metrics to be emitted|
+|`prometheus`|`Array<`[`Prometheus`](#prometheus)`>`|Prometheus is a list of prometheus metrics to be emitted MaxItems is an artificial limit to limit CEL validation costs - see note at top of file|
 
 ## PodGC
 
@@ -1730,7 +1723,7 @@ PodGC describes how to delete completed pods as they complete
 
 ## Metadata
 
-Pod metdata
+Pod metadata
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -1806,11 +1799,7 @@ Synchronization holds synchronization lock configuration
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 </details>
@@ -1818,9 +1807,7 @@ Synchronization holds synchronization lock configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`mutex`|[`Mutex`](#mutex)|Mutex holds the Mutex lock details - deprecated, use mutexes instead|
 |`mutexes`|`Array<`[`Mutex`](#mutex)`>`|v3.6 and after: Mutexes holds the list of Mutex lock details|
-|`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration - deprecated, use semaphores instead|
 |`semaphores`|`Array<`[`SemaphoreRef`](#semaphoreref)`>`|v3.6 and after: Semaphores holds the list of Semaphores configuration|
 
 ## Template
@@ -1853,7 +1840,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
-|`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
+|`metadata`|[`Metadata`](#metadata)|Metadata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
 |`name`|`string`|Name is the name of the template|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
@@ -2037,6 +2024,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing.yaml)
@@ -2064,8 +2053,6 @@ Outputs hold parameters, artifacts, and results from a step
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-conditional-artifacts.yaml)
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-conditional-parameters.yaml)
-
-- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
@@ -2143,11 +2130,7 @@ SynchronizationStatus stores the status of semaphore and mutex.
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 </details>
@@ -2215,6 +2198,8 @@ Artifact indicates an artifact to place at a specified path
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
@@ -2301,11 +2286,12 @@ Artifact indicates an artifact to place at a specified path
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
 |`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
-|`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.|
+|`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.|
 |`name`|`string`|name of the artifact. must be unique within a template's inputs/outputs.|
 |`optional`|`boolean`|Make Artifacts optional, if Artifacts doesn't generate or exist|
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`path`|`string`|Path is the container path to the artifact|
+|`plugin`|[`PluginArtifact`](#pluginartifact)|Plugin contains plugin artifact location details|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
 |`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
@@ -2486,8 +2472,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
@@ -2618,11 +2602,11 @@ Mutex holds Mutex configuration
 
 - [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
+- [`synchronization-db-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-tmpl-level.yaml)
+
+- [`synchronization-db-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-mutex-wf-level.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 </details>
@@ -2637,6 +2621,14 @@ Mutex holds Mutex configuration
 ## SemaphoreRef
 
 SemaphoreRef is a reference of Semaphore
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
+
+- [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2666,6 +2658,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
 |`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
+|`plugin`|[`PluginArtifact`](#pluginartifact)|Plugin contains plugin artifact location details|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 
@@ -2777,7 +2770,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 |:----------:|:----------:|---------------|
 |`failFast`|`boolean`|This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true, if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442|
 |`target`|`string`|Target are one or more names of targets to execute in a DAG|
-|`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks|
+|`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks MaxItems is an artificial limit to limit CEL validation costs - see note at top of file|
 
 ## Data
 
@@ -2908,6 +2901,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
@@ -3088,7 +3083,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifact are a list of artifacts passed as inputs|
-|`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters are a list of parameters passed as inputs|
+|`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters are a list of parameters passed as inputs MaxItems is an artificial limit to limit CEL validation costs - see note at top of file|
 
 ## Memoize
 
@@ -3110,6 +3105,12 @@ Memoization enables caching for the Outputs of the template
 ## Plugin
 
 Plugin is an Object with exactly one key
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+</details>
 
 ## ResourceTemplate
 
@@ -3244,12 +3245,14 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 ## WorkflowStep
 
-WorkflowStep is a reference to a template to execute in a series of step
+WorkflowStep is a reference to a template to execute in a series of step Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
@@ -3397,8 +3400,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`synchronization-db-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-tmpl-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
@@ -3497,6 +3498,7 @@ ArtifactRepository represents an artifact repository in which a controller will 
 |`gcs`|[`GCSArtifactRepository`](#gcsartifactrepository)|GCS stores artifact in a GCS object store|
 |`hdfs`|[`HDFSArtifactRepository`](#hdfsartifactrepository)|HDFS stores artifacts in HDFS|
 |`oss`|[`OSSArtifactRepository`](#ossartifactrepository)|OSS stores artifact in a OSS-compliant object store|
+|`plugin`|[`PluginArtifactRepository`](#pluginartifactrepository)|Plugin stores artifact in a plugin-specific artifact repository|
 |`s3`|[`S3ArtifactRepository`](#s3artifactrepository)|S3 stores artifact in a S3-compliant object store|
 
 ## MemoizationStatus
@@ -3536,15 +3538,7 @@ MutexStatus contains which objects hold mutex locks, and which objects this work
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
-- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
-
-- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
-
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 </details>
@@ -3628,7 +3622,7 @@ ArtifactoryArtifact is the location of an artifactory artifact
 
 ## AzureArtifact
 
-AzureArtifact is the location of a an Azure Storage artifact
+AzureArtifact is the location of an Azure Storage artifact
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -3668,7 +3662,7 @@ GCSArtifact is the location of a GCS artifact
 
 ## GitArtifact
 
-GitArtifact is the location of an git artifact
+GitArtifact is the location of a git artifact
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -3798,6 +3792,24 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
+
+## PluginArtifact
+
+PluginArtifact is the location of a plugin artifact
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configuration`|`string`|Configuration is the plugin defined configuration for the artifact driver plugin|
+|`connectionTimeoutSeconds`|`integer`|ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout|
+|`key`|`string`|Key is the path in the artifact repository where the artifact resides|
+|`name`|`string`|Name is the name of the artifact driver plugin|
 
 ## RawArtifact
 
@@ -3940,7 +3952,7 @@ Gauge is a Gauge prometheus metric
 |:----------:|:----------:|---------------|
 |`operation`|`string`|Operation defines the operation to apply with value and the metrics' current value|
 |`realtime`|`boolean`|Realtime emits this metric in real time if applicable|
-|`value`|`string`|Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric|
+|`value`|`string`|Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric MaxLength is an artificial limit to limit CEL validation costs - see note at top of file|
 
 ## Histogram
 
@@ -3963,63 +3975,11 @@ Histogram is a Histogram prometheus metric
 MetricLabel is a single label for a prometheus metric
 
 <details markdown>
-<summary>Examples with this field (click to open)</summary>
-
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
-
-- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-artifacts.yaml)
-
-- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditional-parameters.yaml)
-
-- [`graph-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/graph-workflow.yaml)
-
-- [`outputs-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/outputs-result-workflow.yaml)
-
-- [`parallel-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/parallel-workflow.yaml)
-
-- [`sequence-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/sequence-workflow.yaml)
-
-- [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/workspace-workflow.yaml)
+<summary>Examples (click to open)</summary>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
-- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-conditional-artifacts.yaml)
-
-- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-conditional-parameters.yaml)
-
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
-
-- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-inline-workflow.yaml)
-
-- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
-
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
-
-- [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-tag-template-workflow.yaml)
-
-- [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
-
-- [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
-
-- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
-
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
-
-- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
-
-- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
-
-- [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
-
-- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata-wf-field.yaml)
-
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata.yaml)
-
-- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
-
-- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 </details>
 
 ### Fields
@@ -4148,7 +4108,7 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 
 ## DAGTask
 
-DAGTask represents a node in the graph during DAG execution
+DAGTask represents a node in the graph during DAG execution Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -4369,7 +4329,7 @@ Cache is the configuration for the type of cache to be used
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMap sets a ConfigMap-based cache|
+|`configMap`|[`LocalObjectReference`](#localobjectreference)|ConfigMap sets a ConfigMap-based cache|
 
 ## ManifestFrom
 
@@ -4574,6 +4534,23 @@ OSSArtifactRepository defines the controller configuration for an OSS artifact r
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
+## PluginArtifactRepository
+
+PluginArtifactRepository defines the controller configuration for a plugin artifact repository
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configuration`|`string`|_No description available_|
+|`keyFormat`|`string`|_No description available_|
+|`name`|`string`|_No description available_|
+
 ## S3ArtifactRepository
 
 S3ArtifactRepository defines the controller configuration for an S3 artifact repository
@@ -4767,11 +4744,12 @@ ArtifactPaths expands a step from a collection of artifacts
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
 |`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
-|`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.|
+|`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.|
 |`name`|`string`|name of the artifact. must be unique within a template's inputs/outputs.|
 |`optional`|`boolean`|Make Artifacts optional, if Artifacts doesn't generate or exist|
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`path`|`string`|Path is the container path to the artifact|
+|`plugin`|[`PluginArtifact`](#pluginartifact)|Plugin contains plugin artifact location details|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
 |`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
@@ -4914,6 +4892,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
+
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
@@ -5235,11 +5215,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 
@@ -5596,6 +5572,8 @@ A single application container that you want to run within a pod.
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing.yaml)
@@ -5854,11 +5832,7 @@ A single application container that you want to run within a pod.
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 
@@ -6565,6 +6539,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 
+- [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing.yaml)
@@ -6865,11 +6841,7 @@ ImageVolumeSource represents a image volume resource.
 
 - [`synchronization-db-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-db-wf-level.yaml)
 
-- [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 

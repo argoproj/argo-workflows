@@ -245,8 +245,13 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName s
 	n, err := t.wf.GetNodeByName(nodeName)
 	if err != nil {
 		t.t.Error("was unable to get node by name")
+		return
 	}
 	a := n.GetOutputs().GetArtifactByName(artifactName)
+	if a == nil {
+		t.t.Error("was unable to get artifact by name")
+		return
+	}
 	key, _ := a.GetKey()
 
 	t.ExpectArtifactByKey(key, bucketName, f)
@@ -315,7 +320,8 @@ func (t *Then) ExpectWorkflowTaskSet(block func(t *testing.T, wfts *wfv1.Workflo
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
-	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	ctx := logging.TestContext(t.t.Context())
+	output, err := Exec(ctx, "../../dist/argo", "", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	return t
 }

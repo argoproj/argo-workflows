@@ -17,7 +17,7 @@ var (
 
 type k8sLogRoundTripper struct {
 	roundTripper http.RoundTripper
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx context.Context
 }
 

@@ -758,13 +758,17 @@ spec:
                       type: object
                     mode:
                       description: |-
-                        mode bits to use on this file, must be a value between 0 and 0777
-                        set when loading input artifacts.
+                        mode bits to use on this file, must be a value between 0 and 0777.
+                        Set when loading input artifacts. It is recommended to set the mode value
+                        to ensure the artifact has the expected permissions in your container.
                       format: int32
+                      maximum: 511
+                      minimum: 0
                       type: integer
                     name:
                       description: name of the artifact. must be unique within a template's
                         inputs/outputs.
+                      pattern: ^[-a-zA-Z0-9_{}.]+$
                       type: string
                     optional:
                       description: Make Artifacts optional, if Artifacts doesn't generate
@@ -868,6 +872,29 @@ spec:
                     path:
                       description: Path is the container path to the artifact
                       type: string
+                    plugin:
+                      description: Plugin contains plugin artifact location details
+                      properties:
+                        configuration:
+                          description: Configuration is the plugin defined configuration
+                            for the artifact driver plugin
+                          type: string
+                        connectionTimeoutSeconds:
+                          description: ConnectionTimeoutSeconds is the timeout for
+                            the artifact driver connection, overriding the driver's
+                            timeout
+                          format: int32
+                          type: integer
+                        key:
+                          description: Key is the path in the artifact repository
+                            where the artifact resides
+                          type: string
+                        name:
+                          description: Name is the name of the artifact driver plugin
+                          type: string
+                      required:
+                      - key
+                      type: object
                     raw:
                       description: Raw contains raw artifact location details
                       properties:
@@ -1072,6 +1099,13 @@ spec:
                   required:
                   - name
                   type: object
+                  x-kubernetes-validations:
+                  - message: at most one artifact location can be specified
+                    rule: '(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http)
+                      ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs)
+                      ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 : 0)
+                      + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin)
+                      ? 1 : 0) <= 1'
                 type: array
               exitCode:
                 description: ExitCode holds the exit code of a script template
@@ -1099,6 +1133,7 @@ spec:
                           * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
                           * It will marshall back to string - marshalling is not symmetric.
                         type: string
+                      minItems: 1
                       type: array
                     globalName:
                       description: |-
@@ -1107,6 +1142,7 @@ spec:
                       type: string
                     name:
                       description: Name is the parameter name
+                      pattern: ^[-a-zA-Z0-9_]+$
                       type: string
                     value:
                       description: |-

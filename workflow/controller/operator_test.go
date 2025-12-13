@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -2689,7 +2688,7 @@ func TestExpandWithItems(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 5)
 	woc.operate(ctx)
@@ -2739,7 +2738,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0])
+	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
 	require.NoError(t, err)
 	assert.Len(t, newSteps, 3)
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
@@ -6959,7 +6958,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "")
+	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
 	require.NoError(t, err)
 	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 }
@@ -7185,6 +7184,136 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Equal(t, "Pod failed before main container starts due to ContainerCreating: Container is creating", msg)
+}
+
+// Test that when containers are in Running state (not Terminated) on a Failed pod,
+// we correctly return Failed instead of incorrectly returning Succeeded.
+// This can happen during node eviction or other pod-level failures.
+var podFailedWithRunningContainers = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  reason: Evicted
+  message: "The node was low on resource: memory."
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+`
+
+func TestPodFailureWithRunningContainers(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithRunningContainers, &pod)
+	assert.NotNil(t, pod)
+	ctx := logging.TestContext(t.Context())
+	// Pod has a message, so it should return that
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Equal(t, "The node was low on resource: memory.", msg)
+}
+
+// Test that when containers don't have terminated state and there's no pod message,
+// we correctly return Failed with information about which containers couldn't be confirmed.
+var podFailedWithRunningContainersNoMessage = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+`
+
+func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithRunningContainersNoMessage, &pod)
+	assert.NotNil(t, pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Equal(t, "pod failed: neither main nor wait container completed successfully", msg)
+}
+
+// Test that sidecar SIGKILL still results in success when main and wait succeeded
+var podFailedWithSidecarSigkill = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+  - name: wait
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+  - name: sidecar
+    ready: false
+    state:
+      terminated:
+        exitCode: 137
+        reason: Error
+`
+
+func TestPodFailureWithSidecarSigkill(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithSidecarSigkill, &pod)
+	assert.NotNil(t, pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	// Main and wait succeeded, sidecar was SIGKILL'd - this should be success
+	assert.Equal(t, wfv1.NodeSucceeded, nodeStatus)
+	assert.Empty(t, msg)
 }
 
 var podWithWaitContainerOOM = `
@@ -11308,9 +11437,7 @@ spec:
 
 // TestContainerSetWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet is used.
 func TestContainerSetWhenPodDeleted(t *testing.T) {
-	// use local-scoped env vars in test to avoid long waits
-	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
-	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -11392,9 +11519,7 @@ spec:
 
 // TestContainerSetWithDependenciesWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet with dependencies is used.
 func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
-	// use local-scoped env vars in test to avoid long waits
-	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
-	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -12154,4 +12279,66 @@ func TestMarksWFSucceeded(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var wfWithSequenceIssue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: withsequence-expr-test-
+spec:
+  entrypoint: start
+  templates:
+    - name: start
+      inputs:
+        parameters:
+          - name: someInt
+            value: "12"
+      steps:
+        - - name: create-sequence
+            template: print-argument
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{= int(item) + int(inputs.parameters.someInt) }}"
+            withSequence:
+              count: "2"
+    - name: print-argument
+      inputs:
+        parameters:
+          - name: arg
+      container:
+        image: alpine:latest
+        command: [echo]
+        args: ["{{inputs.parameters.arg}}"]
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion
+`
+
+func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithSequenceIssue)
+	t.Run("CheckExpressionWithItemAndInputs", func(t *testing.T) {
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Operate to trigger step expansion
+		woc.operate(ctx)
+
+		// The key test is that the workflow should be Running (not Failed)
+		// If the expression failed, the workflow would be in Failed state
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+			"Workflow should be running, indicating expressions were evaluated successfully")
+
+		// Verify no error occurred during expansion
+		assert.Empty(t, woc.wf.Status.Message, "No error message should be present")
+
+		// Check that we have the expected number of nodes
+		// Should have at least: workflow root + start template + step group + expanded steps
+		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
+			"Should have created multiple nodes for expanded sequence")
+	})
 }

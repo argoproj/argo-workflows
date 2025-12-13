@@ -9,11 +9,9 @@ func AddDeprecationCounter(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) DeprecatedFeature(ctx context.Context, deprecation string, namespace string) {
-	attribs := InstAttribs{
-		{Name: AttribDeprecatedFeature, Value: deprecation},
-	}
 	if namespace != "" {
-		attribs = append(attribs, InstAttrib{Name: AttribWorkflowNamespace, Value: namespace})
+		m.AddDeprecatedFeature(ctx, 1, deprecation, WithWorkflowNamespace(namespace))
+	} else {
+		m.AddDeprecatedFeature(ctx, 1, deprecation)
 	}
-	m.AddInt(ctx, InstrumentDeprecatedFeature.Name(), 1, attribs)
 }

@@ -1,0 +1,132 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/artifact";
+
+import "google/api/annotations.proto";
+
+// Artifact Service
+//
+// Artifact Service API provides GRPC access to artifact operations
+package artifact;
+
+// Plugin Artifact configuration
+message PluginArtifact {
+  string name = 1;
+  string configuration = 2;
+  int32 connection_timeout_seconds = 3;
+  string key = 4;
+}
+
+// Artifact representation for gRPC
+message Artifact {
+  string name = 1;
+  string path = 2;
+  int32 mode = 3;
+  string from = 4;
+  PluginArtifact plugin = 5;
+  bool optional = 6;
+  string sub_path = 7;
+  bool recurse_mode = 8;
+  string from_expression = 9;
+  bool deleted = 10;
+}
+
+message LoadArtifactRequest {
+  Artifact input_artifact = 1;
+  string path = 2;
+}
+
+message LoadArtifactResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message OpenStreamRequest {
+  Artifact artifact = 1;
+}
+
+message OpenStreamResponse {
+  bytes data = 1;
+  bool is_end = 2;
+  string error = 3;
+}
+
+message SaveArtifactRequest {
+  string path = 1;
+  Artifact output_artifact = 2;
+}
+
+message SaveArtifactResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message DeleteArtifactRequest {
+  Artifact artifact = 1;
+}
+
+message DeleteArtifactResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message ListObjectsRequest {
+  Artifact artifact = 1;
+}
+
+message ListObjectsResponse {
+  repeated string objects = 1;
+  string error = 2;
+}
+
+message IsDirectoryRequest {
+  Artifact artifact = 1;
+}
+
+message IsDirectoryResponse {
+  bool is_directory = 1;
+  string error = 2;
+}
+
+service ArtifactService {
+  rpc Load(LoadArtifactRequest) returns (LoadArtifactResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/artifacts/load"
+      body : "*"
+    };
+  }
+
+  rpc OpenStream(OpenStreamRequest) returns (stream OpenStreamResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/artifacts/stream"
+      body : "*"
+    };
+  }
+
+  rpc Save(SaveArtifactRequest) returns (SaveArtifactResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/artifacts/save"
+      body : "*"
+    };
+  }
+
+  rpc Delete(DeleteArtifactRequest) returns (DeleteArtifactResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/artifacts/delete"
+      body : "*"
+    };
+  }
+
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/artifacts/list"
+      body : "*"
+    };
+  }
+
+  rpc IsDirectory(IsDirectoryRequest) returns (IsDirectoryResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/artifacts/is-directory"
+      body : "*"
+    };
+  }
+}

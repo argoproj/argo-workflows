@@ -92,14 +92,14 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 		}
 	}
 	showRemainingItemCount := false
-	for _, selector := range strings.Split(options.FieldSelector, ",") {
+	for selector := range strings.SplitSeq(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
 		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
+		if after, ok := strings.CutPrefix(selector, "metadata.namespace="); ok {
 			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
 			// of the new 'namespace' query parameter, which is what the UI uses
-			fieldSelectedNamespace := strings.TrimPrefix(selector, "metadata.namespace=")
+			fieldSelectedNamespace := after
 			switch namespace {
 			case "":
 				namespace = fieldSelectedNamespace
@@ -109,16 +109,21 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
-		} else if strings.HasPrefix(selector, "metadata.name=") {
-			name = strings.TrimPrefix(selector, "metadata.name=")
-		} else if strings.HasPrefix(selector, "spec.startedAt>") {
-			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name!="); ok {
+			name = after
+			nameFilter = "NotEquals"
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name=="); ok {
+			name = after
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name="); ok {
+			name = after
+		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt>"); ok {
+			minStartedAt, err = time.Parse(time.RFC3339, after)
 			if err != nil {
 				// startedAt is populated by us, it should therefore be valid.
 				return ListOptions{}, ToStatusError(err, codes.Internal)
 			}
-		} else if strings.HasPrefix(selector, "spec.startedAt<") {
-			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
+		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt<"); ok {
+			maxStartedAt, err = time.Parse(time.RFC3339, after)
 			if err != nil {
 				// no need to use sutils here
 				return ListOptions{}, ToStatusError(err, codes.Internal)

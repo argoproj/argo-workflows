@@ -13,12 +13,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	executor "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -28,15 +30,27 @@ func NewArtifactDeleteCommand() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			logger := logging.RequireLoggerFromContext(ctx)
 			namespace := client.Namespace(ctx)
 			clientConfig := client.GetConfig()
+			wfExecutor := executor.Init(ctx, clientConfig, common.VarRunArgoPath)
+
+			defer wfExecutor.HandleError(ctx)
+			defer wfExecutor.FinalizeOutput(ctx)
+			defer func() {
+				err := wfExecutor.KillArtifactSidecars(ctx)
+				if err != nil {
+					wfExecutor.AddError(ctx, err)
+				}
+			}()
 
 			if podName, ok := os.LookupEnv(common.EnvVarArtifactGCPodHash); ok {
 
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
 				if err != nil {
-					return err
+					wfExecutor.AddError(ctx, err)
+					return wfExecutor.HasError()
 				}
 
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
@@ -44,10 +58,12 @@ func NewArtifactDeleteCommand() *cobra.Command {
 
 				err = deleteArtifacts(labelSelector, ctx, artifactGCTaskInterface)
 				if err != nil {
-					return err
+					wfExecutor.AddError(ctx, err)
+					return wfExecutor.HasError()
 				}
+				logger.Info(ctx, "artifacts deleted")
 			}
-			return nil
+			return wfExecutor.HasError()
 		},
 	}
 }
@@ -79,7 +95,7 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 					}
 				}
 
-				drv, err := executor.NewDriver(ctx, &artifact, resources)
+				drv, err := artifacts.NewDriver(ctx, &artifact, resources)
 				if err != nil {
 					return err
 				}

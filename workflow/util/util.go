@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math/rand"
 	"net/http"
 	"os"
@@ -269,9 +270,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		if err != nil {
 			return fmt.Errorf("expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
-		for k, v := range passedLabels {
-			wfLabels[k] = v
-		}
+		maps.Copy(wfLabels, passedLabels)
 	}
 	wf.SetLabels(wfLabels)
 	wfAnnotations := wf.GetAnnotations()
@@ -283,9 +282,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		if err != nil {
 			return fmt.Errorf("expected Annotations of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
-		for k, v := range passedAnnotations {
-			wfAnnotations[k] = v
-		}
+		maps.Copy(wfAnnotations, passedAnnotations)
 	}
 	wf.SetAnnotations(wfAnnotations)
 	err := overrideParameters(wf, opts.Parameters)
@@ -332,11 +329,11 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 	return nil
 }
 
-func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
+func ReadParametersFile(ctx context.Context, file string, opts *wfv1.SubmitOpts) error {
 	var body []byte
 	var err error
 	if cmdutil.IsURL(file) {
-		body, err = ReadFromURL(file)
+		body, err = ReadFromURL(ctx, file)
 		if err != nil {
 			return err
 		}
@@ -627,7 +624,7 @@ const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))] //nolint:gosec
+		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
 }
@@ -693,9 +690,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	if newWF.Annotations == nil {
 		newWF.Annotations = make(map[string]string)
 	}
-	for key, val := range wf.Annotations {
-		newWF.Annotations[key] = val
-	}
+	maps.Copy(newWF.Annotations, wf.Annotations)
 
 	// Setting OwnerReference from original Workflow
 	newWF.OwnerReferences = append(newWF.OwnerReferences, wf.OwnerReferences...)
@@ -766,9 +761,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
-	for id, tmpl := range wf.Status.StoredTemplates {
-		newWF.Status.StoredTemplates[id] = tmpl
-	}
+	maps.Copy(newWF.Status.StoredTemplates, wf.Status.StoredTemplates)
 
 	newWF.Status.Conditions = wfv1.Conditions{{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted}}
 	newWF.Status.Phase = wfv1.WorkflowUnknown
@@ -816,8 +809,7 @@ func createNewRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, parameters [
 	delete(newWF.Labels, common.LabelKeyCompleted)
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
-	newWF.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
-	newWF.Status.Phase = wfv1.WorkflowRunning
+	newWF.Status.Phase = wfv1.WorkflowUnknown
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
 	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
@@ -1091,9 +1083,7 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 func setUnion[T comparable](m1 map[T]bool, m2 map[T]bool) map[T]bool {
 	res := make(map[T]bool)
 
-	for k, v := range m1 {
-		res[k] = v
-	}
+	maps.Copy(res, m1)
 
 	for k, v := range m2 {
 		if _, ok := m1[k]; !ok {
@@ -1468,8 +1458,12 @@ func ReadFromStdin() ([]byte, error) {
 }
 
 // Reads the content of a url
-func ReadFromURL(url string) ([]byte, error) {
-	response, err := http.Get(url) //nolint:gosec
+func ReadFromURL(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1482,13 +1476,13 @@ func ReadFromURL(url string) ([]byte, error) {
 }
 
 // ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
-func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
+func ReadFromFilePathsOrUrls(ctx context.Context, filePathsOrUrls ...string) ([][]byte, error) {
 	var fileContents [][]byte
 	var body []byte
 	var err error
 	for _, filePathOrURL := range filePathsOrUrls {
 		if cmdutil.IsURL(filePathOrURL) {
-			body, err = ReadFromURL(filePathOrURL)
+			body, err = ReadFromURL(ctx, filePathOrURL)
 			if err != nil {
 				return [][]byte{}, err
 			}
@@ -1504,7 +1498,7 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 }
 
 // ReadManifest reads from stdin, a single file/url, or a list of files and/or urls
-func ReadManifest(manifestPaths ...string) ([][]byte, error) {
+func ReadManifest(ctx context.Context, manifestPaths ...string) ([][]byte, error) {
 	var manifestContents [][]byte
 	var err error
 	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
@@ -1514,7 +1508,7 @@ func ReadManifest(manifestPaths ...string) ([][]byte, error) {
 		}
 		manifestContents = append(manifestContents, body)
 	} else {
-		manifestContents, err = ReadFromFilePathsOrUrls(manifestPaths...)
+		manifestContents, err = ReadFromFilePathsOrUrls(ctx, manifestPaths...)
 		if err != nil {
 			return [][]byte{}, err
 		}

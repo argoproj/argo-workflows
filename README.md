@@ -71,7 +71,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 ## Client Libraries
 
-Check out our [Java, Golang and Python clients](docs/client-libraries.md).
+Check out our [Java, Golang, and Python (Hera) clients](docs/client-libraries.md).
 
 ## Quickstart
 
@@ -84,10 +84,10 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Features
 
-An incomplete list of features Argo Workflows provide:
+An incomplete list of features Argo Workflows provides:
 
 * UI to visualize and manage Workflows
-* Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)
+* Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw, plugins)
 * Workflow templating to store commonly used Workflows in the cluster
 * Archiving Workflows after executing for later access
 * Scheduled workflows using cron
@@ -116,7 +116,7 @@ An incomplete list of features Argo Workflows provide:
 * Multiple executors
 * Multiple pod and workflow garbage collection strategies
 * Automatically calculated resource usage per step
-* Java/Golang/Python SDKs
+* Java, Golang, and Python (Hera) SDKs
 * Pod Disruption Budget support
 * Single-sign on (OAuth2/OIDC)
 * Webhook triggering
@@ -146,6 +146,7 @@ Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https:
 * [Distributed Machine Learning Patterns from Manning Publication](https://github.com/terrytangyuan/distributed-ml-patterns)
 * [Engineering Cloud Native AI Platform](https://github.com/terrytangyuan/public-talks/tree/main/talks/platform-con-2024-engineering-cloud-native-ai-platform)
 * [Managing Thousands of Automatic Machine Learning Experiments with Argo and Katib](https://github.com/terrytangyuan/public-talks/blob/main/talks/argocon-automl-experiments-2022)
+* [Autonomous Driving Data Pipelines Reconstruction With Argo Workflows](https://www.youtube.com/watch?v=oTgIQxbsLhU)
 * [Revolutionizing Scientific Simulations with Argo Workflows](https://www.youtube.com/watch?v=BYVf7GhfiRg)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Scaling Kubernetes: Best Practices for Managing Large-Scale Batch Jobs with Spark and Argo Workflow](https://www.youtube.com/watch?v=KqEKRPjy4aE)

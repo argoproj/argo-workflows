@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/expr-lang/expr"
 
@@ -61,9 +62,7 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	m := make(map[string]interface{})
-	for k, v := range s.scope {
-		m[k] = v
-	}
+	maps.Copy(m, s.scope)
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts
@@ -116,7 +115,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		//If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
+		// If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
 		ptArt, ok := val.(*wfv1.Artifact)
 		if ok {
 			valArt = *ptArt
@@ -146,7 +145,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 		}
 
 		err = copyArt.AppendToKey(resolvedSubPath)
-		if err != nil && copyArt.Optional { //Ignore error when artifact optional
+		if err != nil && copyArt.Optional { // Ignore error when artifact optional
 			return copyArt, nil
 		}
 		return copyArt, err

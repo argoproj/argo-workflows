@@ -30,6 +30,15 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
+// Note on CEL validation costs
+// The CEL validation rules are written as comments starting +kubebuilder:validation
+// These are evaluated by kubernetes every time the object in question is changed, and there is no way around that.
+// Kubernetes has a budget when you inject a CRD and estimates the cost of evaluating these rules
+// and will reject CRDs which exceed the budget.
+// Some rules are in here just to get under budget, and are not limitations of argo itself. They may need
+// adjusting and may need you to use the minimized CRDs if they are preventing real-world workflows from
+// being used.
+
 // TemplateType is the type of a template
 type TemplateType string
 
@@ -104,6 +113,7 @@ var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
 }
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
+// +kubebuilder:validation:Enum="";OnPodCompletion;OnPodSuccess;OnWorkflowCompletion;OnWorkflowSuccess
 type PodGCStrategy string
 
 func (s PodGCStrategy) IsValid() bool {
@@ -269,8 +279,13 @@ type TTLStrategy struct {
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
 	// Templates is a list of workflow templates used in a workflow
+	// MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 	// +patchStrategy=merge
 	// +patchMergeKey=name
+	// +kubebuilder:validation:MaxItems=200
+	// +kubebuilder:validation:XValidation:rule="self.all(t, (has(t.container) ? 1 : 0) + (has(t.script) ? 1 : 0) + (has(t.dag) ? 1 : 0) + (has(t.steps) ? 1 : 0) + (has(t.resource) ? 1 : 0) + (has(t.suspend) ? 1 : 0) + (has(t.containerSet) ? 1 : 0) + (has(t.data) ? 1 : 0) + (has(t.http) ? 1 : 0) + (has(t.plugin) ? 1 : 0) <= 1)",message="template must have at most one template type"
+	// +kubebuilder:validation:XValidation:rule="self.all(t, !(has(t.timeout) && t.timeout != \"\" && (has(t.steps) || has(t.dag))))",message="timeout cannot be applied to steps or dag templates"
+	// +kubebuilder:validation:XValidation:rule="self.all(t, !(has(t.activeDeadlineSeconds) && (has(t.steps) || has(t.dag))))",message="activeDeadlineSeconds is only valid for leaf templates"
 	Templates []Template `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
 	// Entrypoint is a template reference to the starting point of the workflow.
@@ -302,6 +317,7 @@ type WorkflowSpec struct {
 	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
+	// +kubebuilder:validation:Minimum=1
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,7,opt,name=parallelism"`
 
 	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
@@ -613,6 +629,8 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
+	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
@@ -629,13 +647,14 @@ type Template struct {
 	// Overrides the affinity set at the workflow level (if any)
 	Affinity *apiv1.Affinity `json:"affinity,omitempty" protobuf:"bytes,8,opt,name=affinity"`
 
-	// Metdata sets the pods's metadata, i.e. annotations and labels
+	// Metadata sets the pods's metadata, i.e. annotations and labels
 	Metadata Metadata `json:"metadata,omitempty" protobuf:"bytes,9,opt,name=metadata"`
 
 	// Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty" protobuf:"bytes,10,opt,name=daemon"`
 
 	// Steps define a series of sequential/parallel workflow steps
+	// +kubebuilder:validation:MinItems=1
 	Steps []ParallelSteps `json:"steps,omitempty" protobuf:"bytes,11,opt,name=steps"`
 
 	// Container is the main container image to run in the pod
@@ -701,6 +720,7 @@ type Template struct {
 	// Parallelism limits the max total parallel pods that can execute at the same time within the
 	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
 	// pods created by those templates will not be counted towards this total.
+	// +kubebuilder:validation:Minimum=1
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
 
 	// FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
@@ -860,11 +880,86 @@ func (a Artifacts) GetArtifactByName(name string) *Artifact {
 	return nil
 }
 
+type ArtifactPluginLogs int
+
+const (
+	IncludeLogs ArtifactPluginLogs = iota
+	ExcludeLogs
+)
+
+func (a Artifacts) GetPluginNames(ctx context.Context, defaultRepo *ArtifactRepository, includeLogs ArtifactPluginLogs, archiveLocation *ArtifactLocation) []ArtifactPluginName {
+	log := logging.RequireLoggerFromContext(ctx)
+	plugins := make(map[ArtifactPluginName]bool, 0)
+	defaultPluginName := ArtifactPluginName("")
+	if defaultRepo != nil &&
+		defaultRepo.Plugin != nil {
+		defaultPluginName = defaultRepo.Plugin.Name
+	}
+
+	// Check if the template's archiveLocation specifies a plugin
+	archiveLocationPluginName := ArtifactPluginName("")
+	if archiveLocation != nil && archiveLocation.Plugin != nil {
+		archiveLocationPluginName = archiveLocation.Plugin.Name
+		log.WithFields(logging.Fields{"plugin": archiveLocationPluginName}).Debug(ctx, "template archiveLocation has plugin")
+	}
+
+	for _, art := range a {
+		artifactPluginName := ArtifactPluginName("")
+		if art.Plugin != nil {
+			artifactPluginName = art.Plugin.Name
+		}
+		log.WithField("artifact", art).Debug(ctx, "checking artifact")
+		switch {
+		// if the artifact has a plugin name, add it
+		case artifactPluginName != "":
+			log.WithFields(logging.Fields{"plugin": artifactPluginName}).Debug(ctx, "adding plugin")
+			plugins[artifactPluginName] = true
+		// if the artifact has no plugin name but archiveLocation has a plugin, use that
+		case artifactPluginName == "" && archiveLocationPluginName != "":
+			log.WithFields(logging.Fields{"artifact": art, "plugin": archiveLocationPluginName}).Debug(ctx, "no plugin name, using archiveLocation plugin")
+			plugins[archiveLocationPluginName] = true
+		// if the artifact has no plugin name, but the default repo has a plugin name, add it. This is valid, for example an Input From.
+		case artifactPluginName == "" &&
+			defaultPluginName != "":
+			log.WithFields(logging.Fields{"artifact": art, "defaultRepo": defaultRepo}).Debug(ctx, "no plugin name, using default repo plugin")
+			plugins[defaultPluginName] = true
+		// if the default repo has a plugin name, add it
+		case defaultPluginName != "":
+			log.WithFields(logging.Fields{"plugin": defaultPluginName}).Debug(ctx, "adding default repo plugin")
+			plugins[defaultPluginName] = true
+		default:
+			log.WithFields(logging.Fields{"artifact": art.Name, "defaultRepo": defaultRepo}).Debug(ctx, "no plugin")
+		}
+	}
+
+	if needDefaultLoggingPlugin(includeLogs, defaultRepo) {
+		log.WithField("plugin", defaultRepo.Plugin.Name).Debug(ctx, "adding logging plugin")
+		plugins[defaultRepo.Plugin.Name] = true
+	}
+	pluginNames := make([]ArtifactPluginName, 0)
+	for name := range plugins {
+		if name != "" {
+			pluginNames = append(pluginNames, name)
+		}
+	}
+	return pluginNames
+}
+
+func needDefaultLoggingPlugin(includeLogs ArtifactPluginLogs, defaultRepo *ArtifactRepository) bool {
+	return includeLogs == IncludeLogs &&
+		defaultRepo != nil &&
+		defaultRepo.ArchiveLogs != nil &&
+		*defaultRepo.ArchiveLogs &&
+		defaultRepo.Plugin != nil
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
+	// MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 	// +patchStrategy=merge
 	// +patchMergeKey=name
+	// +kubebuilder:validation:MaxItems=500
 	Parameters []Parameter `json:"parameters,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=parameters"`
 
 	// Artifact are a list of artifacts passed as inputs
@@ -877,7 +972,7 @@ func (in Inputs) IsEmpty() bool {
 	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
-// Pod metdata
+// Pod metadata
 type Metadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,opt,name=annotations"`
 	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
@@ -886,6 +981,7 @@ type Metadata struct {
 // Parameter indicate a passed string parameter to a service template with an optional default value
 type Parameter struct {
 	// Name is the parameter name
+	// +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
@@ -903,6 +999,7 @@ type Parameter struct {
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
+	// +kubebuilder:validation:MinItems=1
 	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 
 	// Description is the parameter description
@@ -960,13 +1057,17 @@ type SuppliedValueFrom struct{}
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
 	// name of the artifact. must be unique within a template's inputs/outputs.
+	// +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Path is the container path to the artifact
 	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
 
-	// mode bits to use on this file, must be a value between 0 and 0777
-	// set when loading input artifacts.
+	// mode bits to use on this file, must be a value between 0 and 0777.
+	// Set when loading input artifacts. It is recommended to set the mode value
+	// to ensure the artifact has the expected permissions in your container.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=511
 	Mode *int32 `json:"mode,omitempty" protobuf:"varint,3,opt,name=mode"`
 
 	// From allows an artifact to reference an artifact from a previous step
@@ -1165,6 +1266,7 @@ type ArtifactLocationType interface {
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
+// +kubebuilder:validation:XValidation:rule="(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1",message="at most one artifact location can be specified"
 type ArtifactLocation struct {
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,1,opt,name=archiveLogs"`
@@ -1195,6 +1297,9 @@ type ArtifactLocation struct {
 
 	// Azure contains Azure Storage artifact location details
 	Azure *AzureArtifact `json:"azure,omitempty" protobuf:"bytes,10,opt,name=azure"`
+
+	// Plugin contains plugin artifact location details
+	Plugin *PluginArtifact `json:"plugin,omitempty" protobuf:"bytes,11,opt,name=plugin"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1218,6 +1323,8 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 		return a.Raw, nil
 	} else if a.S3 != nil {
 		return a.S3, nil
+	} else if a.Plugin != nil {
+		return a.Plugin, nil
 	}
 	return nil, fmt.Errorf("artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
@@ -1242,6 +1349,8 @@ func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
 		a.Raw = &RawArtifact{}
 	case *S3Artifact:
 		a.S3 = &S3Artifact{}
+	case *PluginArtifact:
+		a.Plugin = &PluginArtifact{}
 	default:
 		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
 	}
@@ -1519,8 +1628,11 @@ func (out *Outputs) GetArtifacts() Artifacts {
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
+// Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
 type WorkflowStep struct {
 	// Name of the step
+	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Template is the name of the template to execute as the step
@@ -1656,6 +1768,7 @@ func (s *WorkflowStep) ShouldExpand() bool {
 }
 
 // Sequence expands a workflow step into numeric range
+// +kubebuilder:validation:XValidation:rule="!(has(self.count) && has(self.end))",message="only one of count or end can be defined"
 type Sequence struct {
 	// Count is number of elements in the sequence (default: 0). Not to be used with end
 	Count *intstr.IntOrString `json:"count,omitempty" protobuf:"bytes,1,opt,name=count"`
@@ -1682,10 +1795,6 @@ type TemplateRef struct {
 
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
-	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Mutex holds the Mutex lock details - deprecated, use mutexes instead
-	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 	// v3.6 and after: Semaphores holds the list of Semaphores configuration
 	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
 	// v3.6 and after: Mutexes holds the list of Mutex lock details
@@ -1694,10 +1803,6 @@ type Synchronization struct {
 
 func (s *Synchronization) getSemaphoreConfigMapRefs() []*apiv1.ConfigMapKeySelector {
 	selectors := make([]*apiv1.ConfigMapKeySelector, 0)
-	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
-		selectors = append(selectors, s.Semaphore.ConfigMapKeyRef)
-	}
-
 	for _, semaphore := range s.Semaphores {
 		if semaphore.ConfigMapKeyRef != nil {
 			selectors = append(selectors, semaphore.ConfigMapKeyRef)
@@ -2108,6 +2213,7 @@ func (w *Workflow) GetOffloadNodeStatusVersion() string {
 	return w.Status.GetOffloadNodeStatusVersion()
 }
 
+// +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
 type RetryPolicy string
 
 const (
@@ -2607,12 +2713,7 @@ func (n NodeStatus) GetDuration() time.Duration {
 }
 
 func (n NodeStatus) HasChild(childID string) bool {
-	for _, nodeID := range n.Children {
-		if childID == nodeID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(n.Children, childID)
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -2695,7 +2796,7 @@ func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 type GitArtifact struct {
 	// Repo is the git repository
 	Repo string `json:"repo" protobuf:"bytes,1,opt,name=repo"`
@@ -2810,7 +2911,7 @@ type AzureBlobContainer struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,4,opt,name=useSDKCreds"`
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 type AzureArtifact struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
 
@@ -3085,6 +3186,71 @@ func (o *OSSArtifact) HasLocation() bool {
 	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
 }
 
+// ArtifactPluginName is the name of an artifact plugin
+type ArtifactPluginName string
+
+func (a ArtifactPluginName) SocketDir() string {
+	return `/tmp/artifact-plugins/` + string(a)
+}
+
+func (a ArtifactPluginName) SocketPath() string {
+	return a.SocketDir() + "/socket"
+}
+
+func (a ArtifactPluginName) volumeName() string {
+	return "artifact-plugin-" + string(a)
+}
+
+func (a ArtifactPluginName) VolumeMount() apiv1.VolumeMount {
+	return apiv1.VolumeMount{
+		Name:      a.volumeName(),
+		MountPath: a.SocketDir(),
+	}
+}
+
+func (a ArtifactPluginName) Volume() apiv1.Volume {
+	return apiv1.Volume{
+		Name: a.volumeName(),
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+}
+
+// PluginArtifact is the location of a plugin artifact
+type PluginArtifact struct {
+	// Name is the name of the artifact driver plugin
+	Name ArtifactPluginName `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// Configuration is the plugin defined configuration for the artifact driver plugin
+	Configuration string `json:"configuration,omitempty" protobuf:"bytes,2,opt,name=configuration"`
+	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty" protobuf:"varint,3,opt,name=connectionTimeoutSeconds"`
+
+	// Key is the path in the artifact repository where the artifact resides
+	Key string `json:"key" protobuf:"bytes,4,opt,name=key"`
+}
+
+func (p *PluginArtifact) ConnectionTimeout() time.Duration {
+	if p.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(p.ConnectionTimeoutSeconds) * time.Second
+	}
+	return 5 * time.Second
+}
+
+func (p *PluginArtifact) GetKey() (string, error) {
+	return p.Key, nil
+}
+
+func (p *PluginArtifact) SetKey(key string) error {
+	p.Key = key
+	return nil
+}
+
+// HasLocation returns true if the plugin artifact has a name, configuration and key
+func (p *PluginArtifact) HasLocation() bool {
+	return p != nil && p.Name != "" && p.Configuration != "" && p.Key != ""
+}
+
 // ExecutorConfig holds configurations of an executor container.
 type ExecutorConfig struct {
 	// ServiceAccountName specifies the service account name of the executor container.
@@ -3101,13 +3267,16 @@ type ScriptTemplate struct {
 }
 
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
+// +kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
 type ResourceTemplate struct {
 	// Action is the action to perform to the resource.
 	// Must be one of: get, create, apply, delete, replace, patch
+	// +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
 	Action string `json:"action" protobuf:"bytes,1,opt,name=action"`
 
 	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
 	// Must be one of: strategic, merge, json
+	// +kubebuilder:validation:Enum=strategic;merge;json
 	MergeStrategy string `json:"mergeStrategy,omitempty" protobuf:"bytes,2,opt,name=mergeStrategy"`
 
 	// Manifest contains the kubernetes manifest
@@ -3215,12 +3384,7 @@ func (tmpl *Template) IsLeaf() bool {
 }
 
 func (tmpl *Template) IsMainContainerName(containerName string) bool {
-	for _, c := range tmpl.GetMainContainerNames() {
-		if c == containerName {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(tmpl.GetMainContainerNames(), containerName)
 }
 
 func (tmpl *Template) GetMainContainerNames() []string {
@@ -3279,8 +3443,11 @@ type DAGTemplate struct {
 	Target string `json:"target,omitempty" protobuf:"bytes,1,opt,name=target"`
 
 	// Tasks are a list of DAG tasks
+	// MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
 	// +patchStrategy=merge
 	// +patchMergeKey=name
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=200
 	Tasks []DAGTask `json:"tasks" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=tasks"`
 
 	// This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
@@ -3293,8 +3460,14 @@ type DAGTemplate struct {
 }
 
 // DAGTask represents a node in the graph during DAG execution
+// Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
+// +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.dependencies)",message="cannot use both 'depends' and 'dependencies'"
+// +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.continueOn)",message="cannot use 'continueOn' when using 'depends'"
+// +kubebuilder:validation:XValidation:rule="!(has(self.depends) || has(self.dependencies)) || !self.name.matches('^[0-9]')",message="task name cannot begin with a digit when using 'depends' or 'dependencies'"
 type DAGTask struct {
 	// Name is the name of the target
+	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
@@ -3684,16 +3857,20 @@ const (
 // Metrics are a list of metrics emitted from a Workflow/Template
 type Metrics struct {
 	// Prometheus is a list of prometheus metrics to be emitted
+	// MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
+	// +kubebuilder:validation:MaxItems=100
 	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
 }
 
 // Prometheus is a prometheus metric to be emitted
 type Prometheus struct {
 	// Name is the name of the metric
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// Labels is a list of metric labels
 	Labels []*MetricLabel `json:"labels,omitempty" protobuf:"bytes,2,rep,name=labels"`
 	// Help is a string that describes the metric
+	// +kubebuilder:validation:MinLength=1
 	Help string `json:"help" protobuf:"bytes,3,opt,name=help"`
 	// When is a conditional statement that decides when to emit the metric
 	When string `json:"when,omitempty" protobuf:"bytes,4,opt,name=when"`
@@ -3784,14 +3961,19 @@ func (p *Prometheus) IsRealtime() bool {
 
 // MetricLabel is a single label for a prometheus metric
 type MetricLabel struct {
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
 	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
 	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
 // Gauge is a Gauge prometheus metric
+// +kubebuilder:validation:XValidation:rule="!has(self.realtime) || !self.realtime || !self.value.contains('resourcesDuration.')",message="'resourcesDuration.*' metrics cannot be used in real-time gauges"
 type Gauge struct {
 	// Value is the value to be used in the operation with the metric's current value. If no operation is set,
 	// value is the value of the metric
+	// MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
@@ -3801,6 +3983,7 @@ type Gauge struct {
 }
 
 // A GaugeOperation is the set of operations that can be used in a gauge metric.
+// +kubebuilder:validation:Enum=Set;Add;Sub
 type GaugeOperation string
 
 const (
@@ -3812,6 +3995,7 @@ const (
 // Histogram is a Histogram prometheus metric
 type Histogram struct {
 	// Value is the value of the metric
+	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
 	Buckets []Amount `json:"buckets" protobuf:"bytes,4,rep,name=buckets"`
@@ -3828,6 +4012,7 @@ func (in *Histogram) GetBuckets() []float64 {
 // Counter is a Counter prometheus metric
 type Counter struct {
 	// Value is the value of the metric
+	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
@@ -3855,7 +4040,7 @@ type MemoizationStatus struct {
 // Cache is the configuration for the type of cache to be used
 type Cache struct {
 	// ConfigMap sets a ConfigMap-based cache
-	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
+	ConfigMap *apiv1.LocalObjectReference `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
 }
 
 type SynchronizationAction interface {

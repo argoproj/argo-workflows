@@ -160,23 +160,7 @@ func NewEmissaryCommand() *cobra.Command {
 				pid := command.Process.Pid
 				ctx, cancel := context.WithCancel(ctx)
 				defer cancel()
-				go func() {
-					for {
-						select {
-						case <-ctx.Done():
-							return
-						default:
-							data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
-							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
-							s, _ := strconv.Atoi(string(data))
-							if s > 0 {
-								_ = osspecific.Kill(pid, syscall.Signal(s))
-							}
-							time.Sleep(2 * time.Second)
-						}
-					}
-				}()
-
+				startFileSignalHandler(ctx, pid)
 				for _, sidecarName := range template.GetSidecarNames() {
 					if sidecarName == containerName {
 						em, err := emissary.New()
@@ -262,7 +246,7 @@ func NewEmissaryCommand() *cobra.Command {
 func startCommand(ctx context.Context, name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
-	command := exec.Command(name, args...)
+	command := exec.CommandContext(ctx, name, args...)
 	command.Env = os.Environ()
 
 	var closer = func() {}

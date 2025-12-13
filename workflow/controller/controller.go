@@ -158,7 +158,6 @@ type WorkflowController struct {
 const (
 	workflowResyncPeriod                = 20 * time.Minute
 	workflowTemplateResyncPeriod        = 20 * time.Minute
-	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
@@ -428,7 +427,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
 
-	isWFDeleted := func(key string) bool {
+	workflowExists := func(key string) bool {
 		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
@@ -437,7 +436,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, isWFDeleted)
+	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists)
 }
 
 // list all running workflows to initialize throttler and syncManager
@@ -763,7 +762,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if !reconciliationNeeded(woc.wf) {
+		if !reconciliationNeeded(woc.wf) && !reapplyFailed(woc.wf) {
 			wfc.throttler.Remove(key)
 		}
 	}()
@@ -825,6 +824,10 @@ func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string)
 
 func reconciliationNeeded(wf metav1.Object) bool {
 	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
+}
+
+func reapplyFailed(wf metav1.Object) bool {
+	return wf.GetLabels()[common.LabelKeyReApplyFailed] == "true"
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
@@ -960,16 +963,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				},
 				// This function is called when an updated (we already know about this object)
 				// is to be updated in the informer
-				UpdateFunc: func(old, new interface{}) {
-					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+				UpdateFunc: func(old, newObj interface{}) {
+					oldWf, newWf := old.(*unstructured.Unstructured), newObj.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
-					key, err := cache.MetaNamespaceKeyFunc(new)
+					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
 						wfc.wfQueue.AddRateLimited(key)
-						priority, creation := getWfPriority(new)
+						priority, creation := getWfPriority(newObj)
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
@@ -1313,8 +1316,8 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
+			UpdateFunc: func(old, newObj interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				if err == nil {
 					wfc.wfQueue.AddRateLimited(key)
 				}
@@ -1335,8 +1338,8 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
+			UpdateFunc: func(old, newObj interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				if err == nil {
 					wfc.wfQueue.AddRateLimited(key)
 				}

@@ -10,9 +10,11 @@ approvers:
 - isubasinghe
 - jessesuen
 - juliev0
+- masonm
 - tczhao
 
 reviewers:
 - blkperl
+- eduardodbr
 - jswxstw
 - shuangkun

@@ -95,9 +95,9 @@ func (mb *MetricBaseline) ExpectIncrease() {
 func parseMetricValue(body, metricPattern string) float64 {
 	// Escape special regex characters in the metric pattern, but keep the spaces
 	// We'll look for lines that match the pattern and extract the value
-	lines := strings.Split(body, "\n")
+	lines := strings.SplitSeq(body, "\n")
 
-	for _, line := range lines {
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue

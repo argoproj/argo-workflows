@@ -5,17 +5,18 @@ repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
 and MinIO. This section shows how to configure the artifact repository.
 Subsequent sections will show how to use it.
 
-| Name | Inputs | Outputs | Garbage Collection | Usage (Feb 2020) |
-|---|---|---|---|---|
-| Artifactory | Yes | Yes | No | 11% |
-| Azure Blob | Yes | Yes | Yes | - |
-| GCS | Yes | Yes | Yes | - |
-| Git | Yes | No | No | - |
-| HDFS | Yes | Yes | No | 3% |
-| HTTP | Yes | Yes | No | 2% |
-| OSS | Yes | Yes | No | - |
-| Raw | Yes | No | No | 5% |
-| S3 | Yes | Yes | Yes | 86% |
+| Name | Inputs | Outputs | Garbage Collection |
+|---|---|---|---|
+| Artifactory | Yes | Yes | No |
+| Azure Blob | Yes | Yes | Yes |
+| GCS | Yes | Yes | Yes |
+| Git | Yes | No | No |
+| HDFS | Yes | Yes | No |
+| HTTP | Yes | Yes | No |
+| OSS | Yes | Yes | Yes |
+| Plugin | Yes | Yes | Possible |
+| Raw | Yes | No | No |
+| S3 | Yes | Yes | Yes |
 
 The actual repository used by a workflow is chosen by the following rules:
 
@@ -461,7 +462,7 @@ metadata:
   namespace: rrsa-demo
   annotations:
     pod-identity.alibabacloud.com/role-name: $your_ram_role_name
-    
+
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -509,7 +510,7 @@ artifacts:
       # workflow (for example, https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
       # then useSDKCreds should be set to true. The accountKeySecret is not required
       # and will not be used in this case.
-      useSDKCreds: true  
+      useSDKCreds: true
 ```
 
 ### Using Azure Access Keys
@@ -552,7 +553,7 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
           # containing the base64 encoded credentials to the storage account.
           accountKeySecret:
             name: my-azure-storage-credentials
-            key: account-access-key     
+            key: account-access-key
     ```
 
 ### Using Azure Shared Access Signatures (SAS)
@@ -762,11 +763,174 @@ configuring the default artifact repository described previously.
       args: ["cp -r /my-input-artifact /my-output-artifact"]
 ```
 
+## Using Artifact Plugins
+
+> v4.0 and after
+
+Argo Workflows supports extensible artifact drivers through a plugin system.
+Artifact plugins allow you to integrate with alternative storage solutions or implement specialized artifact handling logic.
+
+### What are Artifact Plugins?
+
+Artifact plugins are containerized extensions that implement the artifact driver interface via GRPC.
+They run as sidecars and init containers alongside your workflow pods to handle artifact operations.
+Each plugin is distributed as a Docker image that contains all necessary dependencies.
+
+### Plugin Configuration
+
+To use artifact plugins, you must configure them in three places:
+
+1. **System Configuration**: Register available plugins in the workflow controller ConfigMap.
+1. **Argo Server Configuration**: Add available plugins as sidecars in the argo-server Deployment.
+1. **Workflow Usage**: Reference plugins in your workflow artifact definitions
+
+#### System Configuration
+
+Plugins must be registered in the workflow controller ConfigMap under the [`artifactDrivers`](workflow-controller-configmap.md#artifactdriver) section.
+This allows the system administrator to control which plugins are available and their versions.
+
+See the [Workflow Controller ConfigMap documentation](workflow-controller-configmap.md#artifactdriver) for detailed configuration of the `artifactDrivers` field.
+
+Example workflow controller ConfigMap configuration:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  artifactDrivers: |
+    - name: my-custom-plugin
+      image: quay.io/myorg/my-artifact-plugin:v1.0.0
+    - name: another-plugin
+      image: docker.io/myorg/another-plugin:v2.1.0
+```
+
+#### Argo Server Configuration
+
+Plugins must be added as sidecars in the argo-server Deployment.
+Each plugin sidecar communicates with the argo-server container via a Unix socket on a shared volume.
+
+The plugin sidecar receives the socket path as its first and only command-line argument.
+Both the plugin sidecar and the main argo-server container must mount a shared volume at the same location to enable socket communication.
+The socket must be located at `/tmp/artifact-plugins/{plugin-name}/socket` where `{plugin-name}` matches the plugin name configured in the workflow controller ConfigMap.
+
+Example configuration for adding two plugin sidecars to argo-server:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  template:
+    spec:
+      containers:
+        - name: argo-server
+          image: quay.io/argoproj/argocli:latest
+          volumeMounts:
+            - name: my-custom-plugin
+              mountPath: /tmp/artifact-plugins/my-custom-plugin
+            - name: another-plugin
+              mountPath: /tmp/artifact-plugins/another-plugin
+        - name: my-custom-plugin-artifact-driver
+          image: quay.io/myorg/my-artifact-plugin:v1.0.0
+          args:
+            - /tmp/artifact-plugins/my-custom-plugin/socket
+          volumeMounts:
+            - name: my-custom-plugin
+              mountPath: /tmp/artifact-plugins/my-custom-plugin
+        - name: another-plugin-artifact-driver
+          image: docker.io/myorg/another-plugin:v2.1.0
+          args:
+            - /tmp/artifact-plugins/another-plugin/socket
+          volumeMounts:
+            - name: another-plugin
+              mountPath: /tmp/artifact-plugins/another-plugin
+      volumes:
+        - name: my-custom-plugin
+          emptyDir: {}
+        - name: another-plugin
+          emptyDir: {}
+```
+
+Key requirements for the configuration:
+
+- Each plugin requires its own dedicated volume and mount path at `/tmp/artifact-plugins/{plugin-name}`.
+- The socket path must be `/tmp/artifact-plugins/{plugin-name}/socket` where `{plugin-name}` exactly matches the `name` field in the workflow controller's `artifactDrivers` configuration.
+- Both the argo-server container and the plugin sidecar must mount the same volume at the same path.
+- The socket file name must be `socket` (not arbitrary) to match what the code expects.
+- Use `emptyDir` volumes as they provide efficient shared storage for Unix sockets.
+
+#### Workflow Usage
+
+Once registered, you can use plugins in your workflows by specifying the `plugin` field in artifact definitions:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  templates:
+  - name: plugin-example
+    inputs:
+      artifacts:
+      - name: my-input
+        path: /tmp/input
+        plugin:
+          name: my-custom-plugin
+          configuration: |
+            endpoint: https://my-storage.example.com
+            bucket: my-bucket
+            credentials:
+              username: myuser
+              password: mypass
+          key: path/to/my-artifact
+    outputs:
+      artifacts:
+      - name: my-output
+        path: /tmp/output
+        plugin:
+          name: my-custom-plugin
+          configuration: |
+            endpoint: https://my-storage.example.com
+            bucket: my-bucket
+            credentials:
+              username: myuser
+              password: mypass
+          key: path/to/output-artifact
+```
+
+You can configure a plugin as the [default artifact repository](#configure-the-default-artifact-repository) for system-wide plugin configuration.
+This also allows you to use [key only artifacts](key-only-artifacts.md) just a with any other artifact store.
+
+### Plugin Parameters
+
+The `plugin` artifact type supports the following parameters:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | `string` | Yes | The name of the plugin as configured in `artifactDrivers` |
+| `configuration` | `string` | Yes | Plugin-specific configuration passed to the plugin as-is |
+| `key` | `string` | Yes | The path/key where the artifact is stored in the plugin's storage system, how this is used is plugin specific |
+| `connectionTimeoutSeconds` | `int32` | No | Timeout for GRPC client connection once image has started (default: 5 seconds) |
+
+#### Configuration Format
+
+The `configuration` field is a free-form string that gets passed directly to the plugin.
+While plugins can use any format, YAML is strongly recommended for consistency and readability.
+Each plugin defines its own configuration schema - consult the plugin's documentation for specific requirements.
+
+### Available Plugins
+
+Plugins are developed and maintained separately from Argo Workflows core.
+Check the plugin's documentation for instructions, configuration options, and usage examples.
+
+For developers wanting to create their own artifact plugins, see the [Artifact Plugin Development Guide](artifact-plugin.md).
+
 ## Artifact Streaming
 
-With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming is only supported in the following
-artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), Artifactory (v3.5+), and OSS (v3.6+).
+With artifact streaming, artifacts don't need to be saved to disk first. Artifact streaming is only supported in the following
+artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), Artifactory (v3.5+), OSS (v3.6+), and Plugin (v4.0+).
 
-Previously, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the
-Argo Server’s disk first before downloading. If many users tried to download simultaneously, they would take up
-disk space and fail the download.
+Without artifact streaming, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the Argo Server's disk first before downloading.
+If many users tried to download simultaneously, they would take up disk space and fail the download.

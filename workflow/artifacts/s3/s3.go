@@ -108,7 +108,7 @@ type S3ClientOpts struct {
 type s3client struct {
 	S3ClientOpts
 	minioClient *minio.Client
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx context.Context
 }
 
@@ -216,7 +216,7 @@ func loadS3Artifact(ctx context.Context, s3cli S3Client, inputArtifact *wfv1.Art
 func (s3Driver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	log.WithField("key", inputArtifact.S3.Key).Info(ctx, "S3 OpenStream")
-	// nolint:contextcheck
+	//nolint:contextcheck
 	s3cli, err := s3Driver.newS3Client(log.NewBackgroundContext())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new S3 client: %v", err)

@@ -31,7 +31,7 @@ func NewCreateCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if parametersFile != "" {
-				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				err := util.ReadParametersFile(cmd.Context(), parametersFile, &submitOpts)
 				if err != nil {
 					return err
 				}
@@ -61,7 +61,8 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 
 	for _, cronWf := range cronWorkflows {
 		if cliOpts.schedule != "" {
-			cronWf.Spec.Schedule = cliOpts.schedule
+			// This option replaces the schedule
+			cronWf.Spec.Schedules = []string{cliOpts.schedule}
 		}
 
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}

@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/robfig/cron/v3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,7 +113,7 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 	var substitutions = make(map[string]string)
 	pattern, _ := regexp.Compile(`{{\s*=\s*(.+?)\s*}}`)
 	for _, match := range pattern.FindAllStringSubmatch(manifest, -1) {
-		substitutions[string(match[1])] = placeholderGenerator.NextPlaceholder()
+		substitutions[match[1]] = placeholderGenerator.NextPlaceholder()
 	}
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement
@@ -207,19 +207,19 @@ func ValidateWorkflow(ctx context.Context, wftmplGetter templateresolution.Workf
 		}
 	}
 
-	annotationSources := [][]string{maps.Keys(wf.Annotations)}
-	labelSources := [][]string{maps.Keys(wf.Labels)}
+	annotationSources := [][]string{slices.Collect(maps.Keys(wf.Annotations))}
+	labelSources := [][]string{slices.Collect(maps.Keys(wf.Labels))}
 	if wf.Spec.WorkflowMetadata != nil {
-		annotationSources = append(annotationSources, maps.Keys(wf.Spec.WorkflowMetadata.Annotations))
-		labelSources = append(labelSources, maps.Keys(wf.Spec.WorkflowMetadata.Labels), maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom))
+		annotationSources = append(annotationSources, slices.Collect(maps.Keys(wf.Spec.WorkflowMetadata.Annotations)))
+		labelSources = append(labelSources, slices.Collect(maps.Keys(wf.Spec.WorkflowMetadata.Labels)), slices.Collect(maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom)))
 	}
 	if wfDefaults != nil && wfDefaults.Spec.WorkflowMetadata != nil {
-		annotationSources = append(annotationSources, maps.Keys(wfDefaults.Spec.WorkflowMetadata.Annotations))
-		labelSources = append(labelSources, maps.Keys(wfDefaults.Spec.WorkflowMetadata.Labels), maps.Keys(wfDefaults.Spec.WorkflowMetadata.LabelsFrom))
+		annotationSources = append(annotationSources, slices.Collect(maps.Keys(wfDefaults.Spec.WorkflowMetadata.Annotations)))
+		labelSources = append(labelSources, slices.Collect(maps.Keys(wfDefaults.Spec.WorkflowMetadata.Labels)), slices.Collect(maps.Keys(wfDefaults.Spec.WorkflowMetadata.LabelsFrom)))
 	}
 	if wf.Spec.WorkflowTemplateRef != nil && wfSpecHolder.GetWorkflowSpec().WorkflowMetadata != nil {
-		annotationSources = append(annotationSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations))
-		labelSources = append(labelSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels), maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom))
+		annotationSources = append(annotationSources, slices.Collect(maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations)))
+		labelSources = append(labelSources, slices.Collect(maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels)), slices.Collect(maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom)))
 	}
 	mergedAnnotations := getUniqueKeys(annotationSources...)
 	mergedLabels := getUniqueKeys(labelSources...)
@@ -279,6 +279,38 @@ func ValidateWorkflow(ctx context.Context, wftmplGetter templateresolution.Workf
 	}
 	if tmplHolder != nil {
 		tctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
+
+		// Check if any template has parametrized global artifacts, if so enable global artifact resolution for exit handlers
+		hasParametrizedGlobalArtifacts := false
+		for _, tmpl := range wf.Spec.Templates {
+			for _, art := range tmpl.Outputs.Artifacts {
+				if art.GlobalName != "" && isParameter(art.GlobalName) {
+					hasParametrizedGlobalArtifacts = true
+					break
+				}
+			}
+			if hasParametrizedGlobalArtifacts {
+				break
+			}
+		}
+		if hasWorkflowTemplateRef && !hasParametrizedGlobalArtifacts {
+			// Also check the referenced workflow template
+			for _, tmpl := range wfSpecHolder.GetWorkflowSpec().Templates {
+				for _, art := range tmpl.Outputs.Artifacts {
+					if art.GlobalName != "" && isParameter(art.GlobalName) {
+						hasParametrizedGlobalArtifacts = true
+						break
+					}
+				}
+				if hasParametrizedGlobalArtifacts {
+					break
+				}
+			}
+		}
+		if hasParametrizedGlobalArtifacts {
+			tctx.globalParams[anyWorkflowOutputArtifactMagicValue] = "true"
+		}
+
 		_, err = tctx.validateTemplateHolder(ctx, tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
@@ -373,9 +405,6 @@ func ValidateClusterWorkflowTemplate(ctx context.Context, wftmplGetter templater
 
 // ValidateCronWorkflow validates a CronWorkflow
 func ValidateCronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow, wfDefaults *wfv1.Workflow) error {
-	if len(cronWf.Spec.Schedules) > 0 && cronWf.Spec.Schedule != "" {
-		return fmt.Errorf("cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
-	}
 	// CronWorkflows have fewer max chars allowed in their name because when workflows are created from them, they
 	// are appended with the unix timestamp (`-1615836720`). This lower character allowance allows for that timestamp
 	// to still fit within the 63 character maximum.
@@ -383,7 +412,11 @@ func ValidateCronWorkflow(ctx context.Context, wftmplGetter templateresolution.W
 		return fmt.Errorf("cron workflow name %q must not be more than 52 characters long (currently %d)", cronWf.Name, len(cronWf.Name))
 	}
 
-	for _, schedule := range cronWf.Spec.GetSchedules(ctx) {
+	if len(cronWf.Spec.Schedules) == 0 {
+		return fmt.Errorf("cron workflow must have at least one schedule")
+	}
+
+	for _, schedule := range cronWf.Spec.GetSchedules() {
 		if _, err := cron.ParseStandard(schedule); err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "cron schedule %s is malformed: %s", schedule, err)
 		}
@@ -574,6 +607,10 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(ctx, tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
+			if tmplRef != nil && strings.Contains(tmplRef.Template, "placeholder") {
+				// placeholder indicate this is a dynamic template, skip validation
+				return nil, nil
+			}
 			if tmplRef != nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "template reference %s.%s not found", tmplRef.Name, tmplRef.Template)
 			}
@@ -910,14 +947,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 				}
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 			}
-			valueSpecifiedInEnumList := false
-			for _, enum := range param.Enum {
-				if enum == *param.Value {
-					valueSpecifiedInEnumList = true
-					break
-				}
-			}
-			if !valueSpecifiedInEnumList {
+			if !slices.Contains(param.Enum, *param.Value) {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
 			}
 		}
@@ -984,9 +1014,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 			}
 
 			stepScope := make(map[string]interface{})
-			for k, v := range scope {
-				stepScope[k] = v
-			}
+			maps.Copy(stepScope, scope)
 
 			if i := step.Inline; i != nil {
 				for _, p := range i.Inputs.Parameters {
@@ -1415,9 +1443,7 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 			return errors.InternalWrapError(err)
 		}
 		taskScope := make(map[string]interface{})
-		for k, v := range scope {
-			taskScope[k] = v
-		}
+		maps.Copy(taskScope, scope)
 		ancestry := common.GetTaskAncestry(ctx, dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
 			ancestorTask := dagValidationCtx.GetTask(ctx, ancestor)
@@ -1494,7 +1520,7 @@ func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask)
 	if tmpl.DAG.Target == "" {
 		return nil
 	}
-	for _, targetName := range strings.Split(tmpl.DAG.Target, " ") {
+	for targetName := range strings.SplitSeq(tmpl.DAG.Target, " ") {
 		if isParameter(targetName) {
 			continue
 		}
@@ -1572,7 +1598,7 @@ func sortDAGTasks(ctx context.Context, tmpl *wfv1.Template, tctx *dagValidationC
 var (
 	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
-	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+[-a-zA-Z0-9_]*$`)
+	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+$`)
 	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
 )
 

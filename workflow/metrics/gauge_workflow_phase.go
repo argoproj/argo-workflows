@@ -13,7 +13,7 @@ type WorkflowPhaseCallback func(ctx context.Context) map[string]int64
 
 type workflowPhaseGauge struct {
 	callback WorkflowPhaseCallback
-	gauge    *telemetry.Instrument
+	observe  func(ctx context.Context, o metric.Observer, val int64, workflowStatus string)
 }
 
 func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
@@ -22,13 +22,13 @@ func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
 		return err
 	}
 
-	name := telemetry.InstrumentGauge.Name()
 	if m.callbacks.WorkflowPhase != nil {
+		inst := m.GetInstrument(telemetry.InstrumentGauge.Name())
 		wfpGauge := workflowPhaseGauge{
 			callback: m.callbacks.WorkflowPhase,
-			gauge:    m.GetInstrument(name),
+			observe:  m.ObserveGauge,
 		}
-		return wfpGauge.gauge.RegisterCallback(m.Metrics, wfpGauge.update)
+		return inst.RegisterCallback(m.Metrics, wfpGauge.update)
 	}
 	return nil
 	// TODO init all phases?
@@ -37,7 +37,7 @@ func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
 func (p *workflowPhaseGauge) update(ctx context.Context, o metric.Observer) error {
 	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(ctx, o, val, telemetry.InstAttribs{{Name: telemetry.AttribWorkflowStatus, Value: phase}})
+		p.observe(ctx, o, val, phase)
 	}
 	return nil
 }

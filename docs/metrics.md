@@ -31,6 +31,8 @@ It will not be enabled if left blank, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
+By default, GRPC is used; to switch to HTTP, set either the `OTEL_EXPORTER_OTLP_PROTOCOL` or `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL` environment variable to `http/protobuf`.
+
 The [configuration options](#common) in the controller ConfigMap `metricsTTL`, `modifiers` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
 
 To use the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/) you can configure it
@@ -123,6 +125,9 @@ Assuming you only have one controller replica, you can port-forward with:
 ```bash
 kubectl -n argo port-forward deploy/workflow-controller 9090:9090
 ```
+
+!!! Note "UTF-8 in Prometheus metrics"
+    Version `v3.7` upgraded the `github.com/prometheus/client_golang` library, changing the `NameValidationScheme` to `UTF8Validation`. This allows metric names to retain their original delimiters (e.g., .), instead of replacing them with underscores. To maintain the legacy behavior, you can set the environment variable `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME`. For more details, refer to the official [Prometheus documentation](https://prometheus.io/docs/guides/utf8/).
 
 ### Common
 
@@ -297,9 +302,9 @@ A gauge of the number of workflows currently in the cluster in each phase.
 The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them.
 A workflow can be stuck in `Running` with pending pods for a long time.
 
-| attribute |        explanation         |
-|-----------|----------------------------|
-| `status`  | Boolean: `true` or `false` |
+| attribute |               explanation               |
+|-----------|-----------------------------------------|
+| `phase`   | The phase that the Workflow has entered |
 
 #### `is_leader`
 
@@ -603,6 +608,7 @@ Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 | `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
 | `namespace`     | The namespace that the WorkflowTemplate is in               |
 | `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate     |
+| `phase`         | The phase that the Workflow has entered                     |
 <!-- Generated documentation END -->
 
 ### Metric types

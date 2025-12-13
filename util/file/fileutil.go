@@ -75,7 +75,7 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 }
 
 // Close the file
-func close(ctx context.Context, f io.Closer) {
+func closeFile(ctx context.Context, f io.Closer) {
 	err := f.Close()
 	if err != nil {
 		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Failed to close the file/writer/reader")
@@ -115,7 +115,7 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 	if err != nil {
 		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Error in compressing")
 	}
-	close(ctx, gzipWriter)
+	closeFile(ctx, gzipWriter)
 	return buf.Bytes()
 }
 
@@ -126,7 +126,7 @@ func DecompressContent(ctx context.Context, content []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
-	defer close(ctx, gzipReader)
+	defer closeFile(ctx, gzipReader)
 	return io.ReadAll(gzipReader)
 }
 

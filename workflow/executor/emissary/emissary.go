@@ -134,10 +134,23 @@ func (e emissary) isComplete(containerNames []string) bool {
 }
 
 func (e emissary) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"terminationGracePeriodDuration": terminationGracePeriodDuration, "containerNames": containerNames}).Info(ctx, "emissary: killing containers")
 	for _, containerName := range containerNames {
+
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := os.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
+		signalPath := filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal")
+		signalDir := filepath.Dir(signalPath)
+		logger.WithFields(logging.Fields{
+			"containerName": containerName,
+			"signalPath":    signalPath,
+		}).Debug(ctx, "Sending SIGTERM to container")
+		if err := os.MkdirAll(signalDir, 0o777); err != nil {
+			logger.WithField("signalDir", signalDir).WithError(err).Error(ctx, "failed to create signal directory")
+			return err
+		}
+		if err := os.WriteFile(signalPath, []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil {
 			return err
 		}
 	}
@@ -150,7 +163,12 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := os.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
+		signalPath := filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal")
+		logger.WithFields(logging.Fields{
+			"containerName": containerName,
+			"signalPath":    signalPath,
+		}).Debug(ctx, "Sending SIGKILL to container")
+		if err := os.WriteFile(signalPath, []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil {
 			return err
 		}
 	}

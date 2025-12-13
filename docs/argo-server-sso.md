@@ -212,3 +212,42 @@ sso:
     - ".*argo-wf.*"
     - ".*argo-workflow.*"
 ```
+
+## Custom TLS Configuration
+
+> v 3.8 and after
+
+You can configure custom TLS settings for OIDC provider connections. This is useful when your OIDC provider uses self-signed certificates or custom Certificate Authorities.
+
+### Custom CA Certificate
+
+You can specify a custom CA certificate in several ways:
+
+**Default system CA path** - The system automatically loads CA certificates from paths specified by the `SSL_CERT_DIR` and `SSL_CERT_FILE` environment variables. See the [Go documentation](https://pkg.go.dev/crypto/x509#SystemCertPool) for more details.
+
+**Explicit configuration** - You can also explicitly specify custom CA certificates:
+
+- **Inline PEM content** - Provide the CA certificate content directly in the configuration:
+
+```yaml
+sso:
+  # Custom PEM encoded CA certificate file contents
+  rootCA: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDXTCCAkWgAwIBAgIJAKoK/heBjcOuMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+    ...
+    -----END CERTIFICATE-----
+```
+
+### Skip TLS Verification
+
+For development or testing environments, you can disable TLS certificate verification:
+
+```yaml
+sso:
+  # Skip TLS certificate verification (not recommended for production)
+  insecureSkipVerify: true
+```
+
+!!! Warning
+Using `insecureSkipVerify: true` disables TLS certificate verification and should only be used in development environments. For production, always use proper CA certificates.

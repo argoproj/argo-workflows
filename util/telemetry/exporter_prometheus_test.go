@@ -31,7 +31,8 @@ func TestDisablePrometheusServer(t *testing.T) {
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
 	m.RunPrometheusServer(ctx, false)
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
+	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -56,7 +57,8 @@ func TestPrometheusServer(t *testing.T) {
 		wg.Done()
 	}()
 	time.Sleep(1 * time.Second)
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -90,7 +92,8 @@ func TestDummyPrometheusServer(t *testing.T) {
 		wg.Done()
 	}()
 	time.Sleep(1 * time.Second)
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 

@@ -3,6 +3,7 @@ package templateresolution
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,13 +111,13 @@ func (tplCtx *TemplateContext) GetTemplateByName(ctx context.Context, name strin
 	tplCtx.log.WithField("name", name).Debug(ctx, "Getting the template by name")
 
 	tmpl := tplCtx.tmplBase.GetTemplateByName(name)
+	if tmpl == nil {
+		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
+	}
 
 	podMetadata := tplCtx.tmplBase.GetPodMetadata()
 	tplCtx.addPodMetadata(podMetadata, tmpl)
 
-	if tmpl == nil {
-		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
-	}
 	return tmpl.DeepCopy(), nil
 }
 
@@ -148,12 +149,13 @@ func (tplCtx *TemplateContext) GetTemplateFromRef(ctx context.Context, tmplRef *
 
 	template = wftmpl.GetTemplateByName(tmplRef.Template)
 
-	podMetadata := wftmpl.GetPodMetadata()
-	tplCtx.addPodMetadata(podMetadata, template)
-
 	if template == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
 	}
+
+	podMetadata := wftmpl.GetPodMetadata()
+	tplCtx.addPodMetadata(podMetadata, template)
+
 	return template.DeepCopy(), nil
 }
 
@@ -288,15 +290,11 @@ func (tplCtx *TemplateContext) addPodMetadata(podMetadata *wfv1.Metadata, tmpl *
 		if tmpl.Metadata.Annotations == nil {
 			tmpl.Metadata.Annotations = make(map[string]string)
 		}
-		for k, v := range podMetadata.Annotations {
-			tmpl.Metadata.Annotations[k] = v
-		}
+		maps.Copy(tmpl.Metadata.Annotations, podMetadata.Annotations)
 		if tmpl.Metadata.Labels == nil {
 			tmpl.Metadata.Labels = make(map[string]string)
 		}
-		for k, v := range podMetadata.Labels {
-			tmpl.Metadata.Labels[k] = v
-		}
+		maps.Copy(tmpl.Metadata.Labels, podMetadata.Labels)
 	}
 }
 

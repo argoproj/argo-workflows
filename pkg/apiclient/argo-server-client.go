@@ -12,6 +12,7 @@ import (
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -62,6 +63,10 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 	return infopkg.NewInfoServiceClient(a.ClientConn), nil
 }
 
+func (a *argoServerClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
+	return syncpkg.NewSyncServiceClient(a.ClientConn), nil
+}
+
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if opts.Secure {
@@ -79,7 +84,7 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 }
 
 func newContext(ctx context.Context, auth string) context.Context {
-	// nolint:contextcheck
+
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	if auth == "" {
 		return ctx

@@ -1,6 +1,6 @@
 module github.com/argoproj/argo-workflows/v3
 
-go 1.24.4
+go 1.24.10
 
 require (
 	cloud.google.com/go/storage v1.55.0
@@ -60,21 +60,22 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.61.0
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.36.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.36.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.58.0
 	go.opentelemetry.io/otel/metric v1.36.0
 	go.opentelemetry.io/otel/sdk v1.36.0
 	go.opentelemetry.io/otel/sdk/metric v1.36.0
 	go.uber.org/mock v0.5.2
-	golang.org/x/crypto v0.38.0
-	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
+	golang.org/x/crypto v0.45.0
 	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.14.0
+	golang.org/x/sync v0.18.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.236.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822
 	google.golang.org/grpc v1.72.2
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	k8s.io/api v0.33.1
+	k8s.io/apiextensions-apiserver v0.33.1
 	k8s.io/apimachinery v0.33.1
 	k8s.io/cli-runtime v0.33.1
 	k8s.io/client-go v0.33.1
@@ -88,11 +89,16 @@ require (
 )
 
 require (
+	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/google/cel-go v0.23.2 // indirect
 	github.com/olekukonko/cat v0.0.0-20250817074551-3280053e4e00 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
 	github.com/olekukonko/ll v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/stoewer/go-strcase v1.3.0 // indirect
+	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b // indirect
+	k8s.io/apiserver v0.33.1 // indirect
 )
 
 require (
@@ -127,7 +133,7 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -305,7 +311,7 @@ require (
 	github.com/moby/spdystream v0.5.0 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
@@ -336,10 +342,10 @@ require (
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0 // indirect
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
-	golang.org/x/net v0.40.0
-	golang.org/x/sys v0.35.0
-	golang.org/x/term v0.32.0
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/net v0.47.0
+	golang.org/x/sys v0.38.0
+	golang.org/x/term v0.37.0
+	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

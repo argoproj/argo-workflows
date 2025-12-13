@@ -33,5 +33,5 @@ func addOperationDurationHistogram(ctx context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) OperationCompleted(ctx context.Context, durationSeconds float64) {
-	m.Record(ctx, telemetry.InstrumentOperationDurationSeconds.Name(), durationSeconds, telemetry.InstAttribs{})
+	m.RecordOperationDurationSeconds(ctx, durationSeconds)
 }

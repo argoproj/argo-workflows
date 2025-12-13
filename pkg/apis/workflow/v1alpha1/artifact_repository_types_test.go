@@ -48,6 +48,13 @@ func TestArtifactRepository(t *testing.T) {
 		require.NotNil(t, l.HDFS)
 		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.HDFS.Path)
 	})
+	t.Run("Plugin", func(t *testing.T) {
+		r := &ArtifactRepository{Plugin: &PluginArtifactRepository{}}
+		assert.IsType(t, &PluginArtifactRepository{}, r.Get())
+		l := r.ToArtifactLocation()
+		require.NotNil(t, l.Plugin)
+		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.Plugin.Key)
+	})
 	t.Run("OSS", func(t *testing.T) {
 		r := &ArtifactRepository{OSS: &OSSArtifactRepository{}}
 		assert.IsType(t, &OSSArtifactRepository{}, r.Get())

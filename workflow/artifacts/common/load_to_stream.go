@@ -30,7 +30,7 @@ func (w selfDestructingFile) Close() error {
 func LoadToStream(ctx context.Context, a *wfv1.Artifact, g ArtifactDriver) (io.ReadCloser, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("type", reflect.TypeOf(g)).Info(ctx, "Efficient artifact streaming is not supported")
-	filename := "/tmp/" + loadToStreamPrefix + rand.String(32)
+	filename := os.TempDir() + string(os.PathSeparator) + loadToStreamPrefix + rand.String(32)
 	if err := g.Load(ctx, a, filename); err != nil {
 		return nil, err
 	}

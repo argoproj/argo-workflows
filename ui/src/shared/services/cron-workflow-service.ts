@@ -2,17 +2,10 @@ import {CronWorkflow, CronWorkflowList} from '../models';
 import requests from './requests';
 import {queryParams} from './utils';
 
-// Handle CronWorkflows using the deprecated "schedule" field by automatically
-// migrating them to use "schedules".
-// Also, gracefully handle invalid CronWorkflows that are missing both
+// Gracefully handle invalid CronWorkflows that are missing both
 // "schedule" and "schedules".
 function normalizeSchedules(cronWorkflow: any): CronWorkflow {
     cronWorkflow.spec.schedules ??= [];
-    // TODO: Delete this once we drop support for "schedule"
-    if ((cronWorkflow.spec.schedule ?? '') != '') {
-        cronWorkflow.spec.schedules.push(cronWorkflow.spec.schedule);
-        delete cronWorkflow.spec.schedule;
-    }
     return cronWorkflow as CronWorkflow;
 }
 

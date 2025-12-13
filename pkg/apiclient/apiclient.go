@@ -9,6 +9,7 @@ import (
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -23,6 +24,7 @@ type Client interface {
 	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)
 	NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error)
 	NewInfoServiceClient() (infopkg.InfoServiceClient, error)
+	NewSyncServiceClient(ctx context.Context) (syncpkg.SyncServiceClient, error)
 }
 
 type Opts struct {
@@ -36,7 +38,7 @@ type Opts struct {
 	Offline              bool
 	OfflineFiles         []string
 	// DEPRECATED: use NewClientFromOptsWithContext
-	// nolint: containedctx
+	//nolint: containedctx
 	Context   context.Context
 	LogLevel  string
 	LogFormat string
@@ -44,27 +46,6 @@ type Opts struct {
 
 func (o Opts) String() string {
 	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
-}
-
-// DEPRECATED: use NewClientFromOptsWithContext
-func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	return NewClientFromOptsWithContext(context.Background(), Opts{
-		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
-		AuthSupplier:   authSupplier,
-		ClientConfigSupplier: func() clientcmd.ClientConfig {
-			return clientConfig
-		},
-	})
-}
-
-// DEPRECATED: use NewClientFromOptsWithContext
-func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	ctx := opts.Context
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	return NewClientFromOptsWithContext(ctx, opts)
 }
 
 func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Context, Client, error) {

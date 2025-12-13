@@ -318,7 +318,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		outputFormat := ""
+		var outputFormat string
 		if param.ValueFrom.JSONPath != "" {
 			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
 		} else if param.ValueFrom.JQFilter != "" {

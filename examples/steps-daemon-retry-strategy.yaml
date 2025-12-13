@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: steps-daemon-retry-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: main
 
@@ -24,7 +26,7 @@ spec:
       limit: "10"
     daemon: true
     container:
-      image: nginx:latest
+      image: nginx:1.13
       command: ["nginx"]
       args: ["-g", "daemon off;"]
       readinessProbe:
@@ -39,10 +41,9 @@ spec:
       parameters:
       - name: server-ip
     synchronization:
-      mutex:
-        name: client-{{workflow.uid}}
+      mutexes:
+        - name: client-{{workflow.uid}}
     container:
-      image: appropriate/curl:latest
+      image: curlimages/curl:latest
       command: ["/bin/sh", "-c"]
       args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
-

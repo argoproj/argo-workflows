@@ -84,11 +84,8 @@ func (s *prioritySemaphore) getCurrentHolders(_ context.Context) ([]string, erro
 }
 
 func (s *prioritySemaphore) resize(ctx context.Context, n int) bool {
-	cur := len(s.lockHolder)
 	// downward case, acquired n locks
-	if cur > n {
-		cur = n
-	}
+	cur := min(len(s.lockHolder), n)
 
 	semaphore := sema.NewWeighted(int64(n))
 	status := semaphore.TryAcquire(int64(cur))
@@ -129,10 +126,7 @@ func (s *prioritySemaphore) release(ctx context.Context, key string) bool {
 // notifyWaiters enqueues the next N workflows who are waiting for the semaphore to the workqueue,
 // where N is the availability of the semaphore. If semaphore is out of capacity, this does nothing.
 func (s *prioritySemaphore) notifyWaiters(ctx context.Context) {
-	triggerCount := s.getLimit(ctx) - len(s.lockHolder)
-	if s.pending.Len() < triggerCount {
-		triggerCount = s.pending.Len()
-	}
+	triggerCount := min(s.pending.Len(), s.getLimit(ctx)-len(s.lockHolder))
 	for idx := 0; idx < triggerCount; idx++ {
 		item := s.pending.items[idx]
 		wfKey := workflowKey(item.key)

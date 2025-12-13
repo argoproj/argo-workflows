@@ -69,9 +69,10 @@ jobs:
               - docs/fields.md
               - docs/executor_swagger.md
               - docs/cli/**
+              - docs/workflow-controller-configmap.md
+              - docs/metrics.md
               - pkg/**
               - sdks/java/**
-              - sdks/python/**
               # files that generation is based off
               - pkg/**
               - cmd/**
@@ -228,6 +229,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - test: test-artifacts
+            profile: minimal
+            use-api: false
           - test: test-executor
             profile: minimal
             use-api: false
@@ -252,7 +256,7 @@ jobs:
           - test: test-cli
             profile: mysql
             use-api: true
-          # Cron tests are not retryable withou a controller restart
+          # Cron tests are not retryable without a controller restart
           - test: test-cron
             profile: minimal
             use-api: false
@@ -260,15 +264,17 @@ jobs:
           - test: test-examples
             profile: minimal
             use-api: false
+            retries: 0
           - test: test-plugins
             profile: plugins
             use-api: false
           - test: test-java-sdk
             profile: minimal
             use-api: true
-          - test: test-python-sdk
+          - test: test-artifacts
+            k8s_version: min
             profile: minimal
-            use-api: true
+            use-api: false
           - test: test-executor
             k8s_version: min
             profile: minimal
@@ -310,12 +316,6 @@ jobs:
           java-version: '8'
           distribution: adopt
           cache: maven
-      - name: Install Python for the SDK
-        if: ${{matrix.test == 'test-python-sdk'}}
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
-        with:
-          python-version: '3.x'
-          cache: pip
       - name: Install socat (needed by Kubernetes) and kit
         # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
         # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
@@ -383,7 +383,7 @@ jobs:
       - name: Validate release manifests
         run: make manifests-validate
       - name: Run tests ${{matrix.test}}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false
 
       # failure debugging below
       - name: Failure debug - k3s logs
