@@ -20,9 +20,9 @@ import (
 )
 
 type (
-	NextWorkflow      func(string)
-	GetSyncLimit      func(context.Context, string) (int, error)
-	IsWorkflowDeleted func(string) bool
+	NextWorkflow   func(string)
+	GetSyncLimit   func(context.Context, string) (int, error)
+	WorkflowExists func(string) bool
 )
 
 type Manager struct {
@@ -31,7 +31,7 @@ type Manager struct {
 	nextWorkflow      NextWorkflow
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
-	isWFDeleted       IsWorkflowDeleted
+	workflowExists    WorkflowExists
 	dbInfo            syncdb.DBInfo
 	queries           syncdb.SyncQueries
 	log               logging.Logger
@@ -44,11 +44,11 @@ const (
 	lockTypeMutex     lockTypeName = "mutex"
 )
 
-func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
-	return createLockManager(ctx, syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, isWFDeleted)
+func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
+	return createLockManager(ctx, syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, workflowExists)
 }
 
-func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
+func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -66,7 +66,7 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 		nextWorkflow:      nextWorkflow,
 		getSyncLimit:      getSyncLimit,
 		syncLimitCacheTTL: syncLimitCacheTTL,
-		isWFDeleted:       isWFDeleted,
+		workflowExists:    workflowExists,
 		dbInfo:            dbInfo,
 		queries:           syncdb.NewSyncQueries(dbSession, dbInfo.Config),
 		log:               log,
@@ -116,7 +116,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			if err != nil {
 				continue
 			}
-			if !sm.isWFDeleted(wfKey) {
+			if !sm.workflowExists(wfKey) {
 				lock.release(ctx, holderKeys)
 				if err := lock.removeFromQueue(ctx, holderKeys); err != nil {
 					sm.log.WithField("holderKeys", holderKeys).WithError(err).Warn(ctx, "failed to remove from queue")
