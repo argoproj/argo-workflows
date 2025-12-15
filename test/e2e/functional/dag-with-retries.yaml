@@ -18,6 +18,6 @@ spec:
     retryStrategy:
       limit: 20
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit $(( ${RANDOM} % 5 ))"]

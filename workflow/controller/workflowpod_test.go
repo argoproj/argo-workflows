@@ -63,7 +63,7 @@ spec:
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh]
       source: |
         ls /bin/kubectl
@@ -78,7 +78,7 @@ inputs:
     http:
       url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
 script:
-  image: alpine:latest
+  image: alpine:3.23
   command: [sh]
   source: |
     ls /bin/kubectl
@@ -103,7 +103,7 @@ inputs:
     http:
         url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 script:
-  image: alpine:latest
+  image: alpine:3.23
   command: [sh]
   source: |
     ls -al
@@ -122,7 +122,7 @@ script:
   volumeMounts:
   - mountPath: /manifest
     name: my-mount
-  image: alpine:latest
+  image: alpine:3.23
   command: [sh]
   source: |
     ls -al

@@ -19,7 +19,7 @@ spec:
   # primary workflow template
   - name: intentional-fail
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo intentional failure; exit 1"]
 
@@ -39,7 +39,7 @@ spec:
         when: "{{workflow.status}} != Succeeded"
   - name: send-email
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       # Tip: {{workflow.failures}} is a JSON list. If you're using bash to read it, we recommend using jq to manipulate
       # it. For example:
@@ -47,15 +47,15 @@ spec:
       # echo "{{workflow.failures}}" | jq -r '.[] | "Failed Step: \(.displayName)\tMessage: \(.message)"'
       #
       # Will print a list of all the failed steps and their messages. For more info look up the jq docs.
-      # Note: jq is not installed by default on the "alpine:latest" image, however it can be installed with "apk add jq"
+      # Note: jq is not installed by default on the "alpine:3.23" image, however it can be installed with "apk add jq"
       args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
   - name: celebrate
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo hooray!"]
   - name: cry
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo boohoo!"]

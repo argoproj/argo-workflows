@@ -38,7 +38,7 @@ spec:
 
   - name: print-message-from-file
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
       # Mount workdir volume at /mnt/vol before invoking the container
@@ -97,7 +97,7 @@ spec:
 
   - name: print-message-from-file
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
       volumeMounts:
@@ -186,7 +186,7 @@ spec:
         persistentVolumeClaim:
           claimName: '{{inputs.parameters.pvc-name}}'
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
       volumeMounts:

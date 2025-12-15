@@ -28,7 +28,7 @@ spec:
 
   - name: append-to-accesslog
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
       volumeMounts:
@@ -37,7 +37,7 @@ spec:
 
   - name: print-accesslog
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'Volume access log:'; cat /mnt/vol/accesslog"]
       volumeMounts:

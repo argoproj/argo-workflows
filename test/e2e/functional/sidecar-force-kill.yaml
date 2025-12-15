@@ -7,9 +7,9 @@ spec:
   templates:
   - name: sidecar-force-kill
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sleep, 5s]
     sidecars:
     - name: sleep
-      image: alpine:latest
+      image: alpine:3.23
       command: [sleep, 1d]
