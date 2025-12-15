@@ -349,7 +349,7 @@ spec:
       - name: message
         value: "value"
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo {{inputs.parameters.message}}"]
 `
@@ -388,7 +388,7 @@ spec:
       - name: message
         value: "value"
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo {{inputs.parameters.message}}"]
 `
@@ -410,7 +410,7 @@ spec:
   templates:
   - name: generate
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, generate]
     outputs:
       artifacts:
@@ -425,7 +425,7 @@ spec:
       - name: passthrough
         path: /tmp/passthrough
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -609,7 +609,7 @@ spec:
 
   - name: output-global
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [sh, -c]
       args: ["sleep 1; echo -n art > /tmp/art.txt; echo -n param > /tmp/param.txt"]
     outputs:
@@ -624,7 +624,7 @@ spec:
       - name: art
         path: /art
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /art"]
 `
@@ -999,7 +999,7 @@ spec:
       command: [sh, -c]
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import random
@@ -1023,12 +1023,12 @@ spec:
   templates:
   - name: pass
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 0"]
   - name: fail
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo {{workflow.status}} {{workflow.uid}} {{workflow.duration}}"]
 `
@@ -1043,7 +1043,7 @@ spec:
   templates:
   - name: pass
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo {{workflow.failures}}"]
 `
@@ -1103,7 +1103,7 @@ spec:
         git:
           repo: https://github.com/argoproj/argo-workflows.git
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 0"]
       volumeMounts:
@@ -1139,7 +1139,7 @@ spec:
   - name: pass
     activeDeadlineSeconds: -1
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 0"]
 `
@@ -1434,7 +1434,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.num}}"]
 `
 
@@ -1474,7 +1474,7 @@ spec:
   templates:
   - name: A
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, hello]
 `
 
@@ -1492,7 +1492,7 @@ spec:
   templates:
   - name: A
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, "{{workflow.parameters.something}}"]
 `
 
@@ -1554,7 +1554,7 @@ spec:
       parameters:
         - name: message
     container:
-      image: alpine:3.11
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo {{inputs.parameters.message}}"]
 `
@@ -1860,7 +1860,7 @@ spec:
       - name: global-parameter-name
       - name: global-parameter-value
     container:
-      image: alpine:3.11
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 0"]
     outputs:
@@ -1874,7 +1874,7 @@ spec:
       parameters:
       - name: parameter
     container:
-      image: alpine:3.11
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo {{inputs.parameters.parameter}}"]
 `
@@ -2185,7 +2185,7 @@ spec:
   templates:
   - name: A
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, hello]
 `
 
@@ -2245,7 +2245,7 @@ spec:
   templates:
   - name: A
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, hello]
 `
 
@@ -2326,7 +2326,7 @@ spec:
   entrypoint: whalesay
   templateDefaults:
     script:
-      image: alpine:latest
+      image: alpine:3.23
   templates:
   - name: whalesay
     script:
@@ -2349,7 +2349,7 @@ spec:
   entrypoint: whalesay
   templateDefaults:
     container:
-      image: alpine:latest
+      image: alpine:3.23
   templates:
   - name: whalesay
     container:
@@ -2373,7 +2373,7 @@ spec:
   entrypoint: whalesay
   templateDefaults:
     script:
-      image: alpine:latest
+      image: alpine:3.23
   templates:
   - name: whalesay
     script:
@@ -2409,7 +2409,7 @@ spec:
   entrypoint: whalesay
   templateDefaults:
     container:
-      image: alpine:latest
+      image: alpine:3.23
   templates:
   - name: whalesay
     container:
@@ -2449,7 +2449,7 @@ spec:
   templates:
   - name: A
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, hello]
 `
 
@@ -2526,7 +2526,7 @@ spec:
         path: /usr/local/bin/binfile
         mode: 0755
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, hello]
 `
 
@@ -3032,7 +3032,7 @@ spec:
 
     - name: wait
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command: [sleep, "5"]
 
     - name: printer
@@ -3042,7 +3042,7 @@ spec:
           - name: finishedat
           - name: id
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command: [echo, "{{inputs.parameters.startedat}}"]`
 	err := validate(logging.TestContext(t.Context()), wf)
 	require.NoError(t, err)
@@ -3221,13 +3221,13 @@ spec:
     retryStrategy:
       retryPolicy: Always
     initContainers:
-    - image: alpine:latest
+    - image: alpine:3.23
       # name: sleep
       command:
       - sleep
       - "15"
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command:
       - echo
       - "i am running"
@@ -3356,7 +3356,7 @@ spec:
   templates:
   - name: helloworld
     container:
-      image: "alpine:3.18"
+      image: "alpine:3.23"
       command: ["echo", "{{  workflow.thisdoesnotexist  }}"]
 `
 
@@ -3451,7 +3451,7 @@ spec:
   templates:
   - name: main
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'test data' > /tmp/result.txt"]
     outputs:
@@ -3463,7 +3463,7 @@ spec:
           none: {}
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'Access artifact: {{workflow.outputs.artifacts.output-result-car}}'"]
 `
@@ -3494,7 +3494,7 @@ spec:
   templates:
   - name: main
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'test data' > /tmp/result.txt"]
     outputs:
@@ -3506,7 +3506,7 @@ spec:
           none: {}
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'Access artifact: {{workflow.outputs.artifacts.output-result-test}}'"]
 `
@@ -3540,7 +3540,7 @@ spec:
   templates:
   - name: main
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'test data' > /tmp/result.txt"]
     outputs:
@@ -3552,7 +3552,7 @@ spec:
           none: {}
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'Access artifact: {{workflow.outputs.artifacts.nonexistent}}'"]
 `

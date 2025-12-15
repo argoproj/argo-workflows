@@ -23,7 +23,7 @@ spec:
 
   - name: gen-number-list
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import json
@@ -35,6 +35,6 @@ spec:
       parameters:
       - name: seconds
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]

@@ -337,7 +337,7 @@ spec:
   templates:
   - name: sidecar-with-volumes
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         print("hello world")
@@ -442,7 +442,7 @@ spec:
   templates:
   - name: workflow-with-volumes
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       volumeMounts:
       - name: claim-vol
@@ -1204,7 +1204,7 @@ spec:
       command:
       - python
       - -c
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
     inputs: {}
@@ -1536,7 +1536,7 @@ spec:
             limits:
               memory: "{{= (sprig.int(lastRetry.exitCode)==1 ? (sprig.int(retries)+1) : 1)* 100}}Mi"
     container:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python", -c]
       args: ["import sys; sys.exit(1)"]
 `
@@ -2144,7 +2144,7 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, sleep 10]
 `
 
@@ -2198,7 +2198,7 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, sleep 10]
 `
 
@@ -2258,7 +2258,7 @@ spec:
         template: sleep
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, sleep 10]
 `
 
@@ -2552,7 +2552,7 @@ spec:
       parameters:
       - name: msg
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.msg}}"]
 `
 
@@ -3021,7 +3021,7 @@ spec:
   templates:
   - name: append-to-accesslog
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
       volumeMounts:
@@ -3661,7 +3661,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -3853,7 +3853,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -3971,7 +3971,7 @@ spec:
       parameters:
       - name: message
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -4054,12 +4054,12 @@ spec:
   templates:
   - name: intentional-fail
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo intentional failure; exit 1"]
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
 `
@@ -4098,7 +4098,7 @@ spec:
     suspend: {}
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}."]
 `
@@ -4791,7 +4791,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo]
       args: ["{{pod.name}}: {{inputs.parameters.message}}"]
 `
@@ -4846,7 +4846,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -5108,7 +5108,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -5186,7 +5186,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -5852,7 +5852,7 @@ spec:
 
   - name: hello
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo Hello"]
 `
@@ -5891,7 +5891,7 @@ spec:
 
   - name: hello
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo Hello"]
 `
@@ -6857,7 +6857,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       resources:
         requests:
           memory: 1Gi
@@ -7207,7 +7207,7 @@ status:
     type: PodScheduled
   containerStatuses:
   - containerID: docker://502dda61a8f05e08d10cffc972d2fb9226e82af7daaacff98e84727bb96f11e6
-    image: python:alpine3.6
+    image: python:alpine3.23
     imageID: docker-pullable://python@sha256:766a961bf699491995cc29e20958ef11fd63741ff41dcc70ec34355b39d52971
     lastState:
       waiting: {}
@@ -7579,7 +7579,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -x]
       source: |
         #!/bin/sh
@@ -7676,7 +7676,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -7990,7 +7990,7 @@ spec:
       affinity:
         nodeAntiAffinity: {}
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         exit(1)
@@ -8315,7 +8315,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -8891,7 +8891,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
     name: global-output
     outputs:
       artifacts:
@@ -8919,7 +8919,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
     inputs:
       parameters:
       - name: param
@@ -8931,7 +8931,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
     inputs:
       artifacts:
       - name: art
@@ -9000,7 +9000,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.13.5
+      image: alpine:3.23
     inputs:
       parameters:
       - name: job_name
@@ -9013,7 +9013,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import json
   - name: materializations
@@ -9024,7 +9024,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
       source: |
@@ -9099,7 +9099,7 @@ spec:
         - -c
         - |
           print("hi")
-        image: python:alpine3.6
+        image: python:alpine3.23
         name: main
     name: group
   - inputs:
@@ -9107,7 +9107,7 @@ spec:
       - name: x
     name: verify
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         assert "{{inputs.parameters.x}}" == "hi"
 status:
@@ -9155,7 +9155,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("true")
   - inputs:
@@ -9169,7 +9169,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import random;
         import sys;
@@ -9348,7 +9348,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("true")
   - inputs:
@@ -9361,7 +9361,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import random;
         import sys;
@@ -9523,7 +9523,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("true")
   - inputs:
@@ -9535,7 +9535,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import random;
         import sys;
@@ -9707,7 +9707,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -9737,7 +9737,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
       source: ""
@@ -9993,7 +9993,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: 'alpine:3.7'
+        image: 'alpine:3.23'
         command:
           - /bin/sh
         resources: {}
@@ -10011,7 +10011,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: 'alpine:3.7'
+        image: 'alpine:3.23'
         command:
           - /bin/sh
         resources: {}
@@ -10034,7 +10034,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: 'alpine:3.7'
+        image: 'alpine:3.23'
         command:
           - /bin/sh
         resources: {}
@@ -10823,7 +10823,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
 `
@@ -11149,7 +11149,7 @@ spec:
       - name: workflow_artifact_key
         value: '{{workflow.name}}'
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       env:
       - name: message
@@ -11268,7 +11268,7 @@ spec:
       command:
       - sleep
       - "10"
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -11484,14 +11484,14 @@ spec:
       containerSet:
         containers:
           - name: main
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
               - '-c'
               - sleep 9000
           - name: main2
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
@@ -11564,14 +11564,14 @@ spec:
       containerSet:
         containers:
           - name: main
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
               - '-c'
               - sleep 9000
           - name: main2
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
@@ -11815,7 +11815,7 @@ spec:
             optional: true
             path: /tmp/message
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
 
@@ -11876,7 +11876,7 @@ spec:
             optional: true
             path: /tmp/message
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
 
@@ -12371,7 +12371,7 @@ spec:
         parameters:
           - name: arg
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [echo]
         args: ["{{inputs.parameters.arg}}"]
   ttlStrategy:

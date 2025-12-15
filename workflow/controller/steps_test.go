@@ -59,7 +59,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/message"]
 
@@ -310,7 +310,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -327,7 +327,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
