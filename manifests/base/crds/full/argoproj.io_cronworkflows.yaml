@@ -16229,7 +16229,7 @@ spec:
                         - maxAge
                         type: object
                       metadata:
-                        description: Metdata sets the pods's metadata, i.e. annotations
+                        description: Metadata sets the pods's metadata, i.e. annotations
                           and labels
                         properties:
                           annotations:
@@ -38734,7 +38734,7 @@ spec:
                           - maxAge
                           type: object
                         metadata:
-                          description: Metdata sets the pods's metadata, i.e. annotations
+                          description: Metadata sets the pods's metadata, i.e. annotations
                             and labels
                           properties:
                             annotations:

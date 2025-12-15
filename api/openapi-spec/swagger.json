@@ -10175,7 +10175,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
-      "description": "Pod metdata",
+      "description": "Pod metadata",
       "type": "object",
       "properties": {
         "annotations": {
@@ -11547,7 +11547,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize"
         },
         "metadata": {
-          "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
+          "description": "Metadata sets the pods's metadata, i.e. annotations and labels",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "metrics": {
