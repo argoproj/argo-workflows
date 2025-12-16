@@ -531,7 +531,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset, wfc.namespace) {
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset) {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
