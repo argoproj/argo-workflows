@@ -1026,14 +1026,19 @@ func untar(tarPath string, destPath string) error {
 			if !strings.HasPrefix(target, filepath.Clean(dest)+string(os.PathSeparator)) {
 				return fmt.Errorf("illegal file path: %s", header.Name)
 			}
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil && os.IsExist(err) {
-				return err
-			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:
-				linkTarget := filepath.Join(filepath.Dir(target), header.Linkname)
+				// Validate symlink target before creating it
+				linkTarget := header.Linkname
+				if !filepath.IsAbs(linkTarget) {
+					linkTarget = filepath.Join(filepath.Dir(target), header.Linkname)
+				}
 				if !strings.HasPrefix(filepath.Clean(linkTarget), filepath.Clean(dest)+string(os.PathSeparator)) {
 					return fmt.Errorf("illegal symlink target: %s -> %s", header.Name, header.Linkname)
+				}
+				// Create parent directory if needed
+				if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+					return err
 				}
 				err := os.Symlink(header.Linkname, target)
 				if err != nil {
@@ -1044,6 +1049,35 @@ func untar(tarPath string, destPath string) error {
 					return err
 				}
 			case tar.TypeReg:
+				// Before writing the file, check if the parent directory resolves outside dest
+				parentDir := filepath.Dir(target)
+
+				// Resolve the destination directory
+				resolvedDest, err := filepath.EvalSymlinks(dest)
+				if err != nil {
+					return err
+				}
+
+				// Check if parent exists and if so, verify it doesn't resolve outside dest
+				if _, err := os.Lstat(parentDir); err == nil {
+					// Parent exists, resolve it to check for symlink traversal
+					resolvedParent, err := filepath.EvalSymlinks(parentDir)
+					if err != nil {
+						return err
+					}
+					// Check if resolved parent is outside dest
+					if !strings.HasPrefix(resolvedParent+string(os.PathSeparator), resolvedDest+string(os.PathSeparator)) && resolvedParent != resolvedDest {
+						return fmt.Errorf("illegal file path after symlink resolution: %s resolves outside destination", header.Name)
+					}
+				} else if !os.IsNotExist(err) {
+					return err
+				} else {
+					// Parent doesn't exist, create it
+					if err := os.MkdirAll(parentDir, 0o755); err != nil {
+						return err
+					}
+				}
+
 				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 				if err != nil {
 					return err

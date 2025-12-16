@@ -3,6 +3,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: retry-backoff-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
 spec:
   entrypoint: retry-backoff
   templates:
@@ -15,7 +17,7 @@ spec:
         maxDuration: "1m" # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h"
         cap: "5" # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h"
     container:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python", -c]
       # fail with a 66% probability
       args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

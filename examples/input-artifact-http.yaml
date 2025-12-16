@@ -2,6 +2,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: input-artifact-http-
 spec:
   entrypoint: http-artifact-example
@@ -15,6 +17,6 @@ spec:
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
     container:
-      image: debian:9.4
+      image: alpine:3.23
       command: [sh, -c]
       args: ["kubectl version"]

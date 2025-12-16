@@ -427,7 +427,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
 
-	isWFDeleted := func(key string) bool {
+	workflowExists := func(key string) bool {
 		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
@@ -436,7 +436,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, isWFDeleted)
+	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists)
 }
 
 // list all running workflows to initialize throttler and syncManager
@@ -531,7 +531,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset, wfc.namespace) {
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset) {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 

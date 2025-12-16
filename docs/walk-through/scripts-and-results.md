@@ -30,7 +30,7 @@ spec:
 
   - name: gen-random-int-python
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import random
@@ -50,7 +50,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 ```

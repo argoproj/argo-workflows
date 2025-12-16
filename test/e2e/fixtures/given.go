@@ -20,6 +20,36 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
+func NewGiven(
+	t *testing.T,
+	client v1alpha1.WorkflowInterface,
+	wfebClient v1alpha1.WorkflowEventBindingInterface,
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface,
+	wftsClient v1alpha1.WorkflowTaskSetInterface,
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface,
+	cronClient v1alpha1.CronWorkflowInterface,
+	hydrator hydrator.Interface,
+	kubeClient kubernetes.Interface,
+	bearerToken string,
+	restConfig *rest.Config,
+	config *config.Config,
+) *Given {
+	return &Given{
+		t:                 t,
+		client:            client,
+		wfebClient:        wfebClient,
+		wfTemplateClient:  wfTemplateClient,
+		wftsClient:        wftsClient,
+		cwfTemplateClient: cwfTemplateClient,
+		cronClient:        cronClient,
+		hydrator:          hydrator,
+		kubeClient:        kubeClient,
+		bearerToken:       bearerToken,
+		restConfig:        restConfig,
+		config:            config,
+	}
+}
+
 type Given struct {
 	t                 *testing.T
 	client            v1alpha1.WorkflowInterface
@@ -136,7 +166,18 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
-			(isExample && (image == "busybox" || image == "python:alpine3.6"))
+			(isExample && (image == "busybox" ||
+				image == "python:alpine3.23" ||
+				image == "golang:1.18" ||
+				image == "nginx:1.13" ||
+				image == "curlimages/curl:latest" ||
+				image == "node:9.1-alpine" ||
+				image == "docker:19.03.13" ||
+				image == "docker:19.03.13-dind" ||
+				image == "alpine/git:v2.26.2" ||
+				image == "alpine:3.23" ||
+				image == "stedolan/jq:latest" ||
+				image == "influxdb:1.2"))
 	}
 	for _, t := range templates {
 		container := t.Container

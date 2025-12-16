@@ -5,6 +5,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: retry-script-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: main
   templates:
@@ -21,7 +23,7 @@ spec:
 
     - name: safe-to-retry
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: ["python"]
         source: |
           print("true")
@@ -42,7 +44,7 @@ spec:
           asInt(lastRetry.duration) < 120 &&
           ({{inputs.parameters.safe-to-retry}} == true || lastRetry.message matches 'imminent node shutdown|pod deleted')
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: ["python"]
         # Exit 1 with 50% probability and 2 with 50%
         source: |

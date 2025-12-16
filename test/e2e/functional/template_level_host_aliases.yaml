@@ -12,6 +12,6 @@ spec:
         hostnames:
           - "argo.io"
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: [" nslookup argo.io"]

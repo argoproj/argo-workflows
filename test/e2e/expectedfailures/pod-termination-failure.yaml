@@ -32,7 +32,7 @@ spec:
         parameters:
           - name: seconds
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
     - name: check-status

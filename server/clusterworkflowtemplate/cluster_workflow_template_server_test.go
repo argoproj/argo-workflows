@@ -269,13 +269,13 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 		req := &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
 			Template: cwftObj2.DeepCopy(),
 		}
-		req.Template.Spec.Templates[0].Container.Image = "alpine:latest"
+		req.Template.Spec.Templates[0].Container.Image = "alpine:3.23"
 		cwftRsp, err := server.UpdateClusterWorkflowTemplate(ctx, req)
 		require.NoError(t, err)
 		assert.Contains(t, cwftRsp.Labels, common.LabelKeyActor)
 		assert.Equal(t, string(creator.ActionUpdate), cwftRsp.Labels[common.LabelKeyAction])
 		assert.Equal(t, userEmailLabel, cwftRsp.Labels[common.LabelKeyActorEmail])
-		assert.Equal(t, "alpine:latest", cwftRsp.Spec.Templates[0].Container.Image)
+		assert.Equal(t, "alpine:3.23", cwftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{

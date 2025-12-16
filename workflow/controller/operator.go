@@ -839,7 +839,13 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 		DeleteCollection(
 			ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
-			metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name},
+			metav1.ListOptions{
+				LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name,
+				// DeleteCollection does a "list" operation to get the resources to delete, which by default does a strongly consistent read of the most recent version.
+				// This can be slow for Kubernetes versions before 1.34, so we set resourceVersion=0 to relax consistency and tell the k8s API to return any resource version.
+				// It's possible for this to miss some resources, but those should be GC'd when the parent workflow is deleted.
+				ResourceVersion: "0",
+			},
 		)
 }
 
@@ -1681,6 +1687,12 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		return wfv1.NodeFailed, fmt.Sprintf("can't find failed message for pod %s namespace %s", pod.Name, pod.Namespace)
 	}
 
+	// Track whether critical containers completed successfully (terminated with exit code 0).
+	// We must confirm both to return success—otherwise a pod-level failure (eviction, node death)
+	// could be incorrectly reported as success.
+	mainContainerSucceeded := false
+	waitContainerSucceeded := false
+
 	for _, ctr := range ctrs {
 
 		// Virtual Kubelet environment will not set the terminate on waiting container
@@ -1692,11 +1704,15 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		}
 		t := ctr.State.Terminated
 		if t == nil {
-			// We should never get here
 			woc.log.WithFields(logging.Fields{"podName": pod.Name, "containerName": ctr.Name}).Warn(ctx, "Pod phase was Failed but container did not have terminated state")
 			continue
 		}
 		if t.ExitCode == 0 {
+			if tmpl.IsMainContainerName(ctr.Name) {
+				mainContainerSucceeded = true
+			} else if ctr.Name == common.WaitContainerName {
+				waitContainerSucceeded = true
+			}
 			continue
 		}
 
@@ -1725,11 +1741,22 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		}
 	}
 
-	// If we get here, we have detected that the main/wait containers succeed but the sidecar(s)
-	// were  SIGKILL'd. The executor may have had to forcefully terminate the sidecar (kill -9),
-	// resulting in a 137 exit code (which we had ignored earlier). If failMessages is empty, it
-	// indicates that this is the case and we return Success instead of Failure.
-	return wfv1.NodeSucceeded, ""
+	// Determine final status based on whether we confirmed main and wait succeeded
+	// Slightly convulted approach to avoid the exhaustive linter getting upset
+	if mainContainerSucceeded {
+		if waitContainerSucceeded {
+			// Both succeeded - sidecars may have been force-killed (137/143), which is fine
+			return wfv1.NodeSucceeded, ""
+		} else {
+			return wfv1.NodeFailed, "pod failed: wait container did not complete successfully"
+		}
+	} else {
+		if waitContainerSucceeded {
+			return wfv1.NodeFailed, "pod failed: main container did not complete successfully"
+		} else {
+			return wfv1.NodeFailed, "pod failed: neither main nor wait container completed successfully"
+		}
+	}
 }
 
 func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
@@ -3756,8 +3783,11 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 	var newName string
 
 	switch item.GetType() {
-	case wfv1.String, wfv1.Number, wfv1.Bool:
+	case wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", item)
+		newName = generateNodeName(name, index, item)
+	case wfv1.String:
+		replaceMap["item"] = item.GetStrVal()
 		newName = generateNodeName(name, index, item)
 	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.

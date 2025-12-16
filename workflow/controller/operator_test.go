@@ -337,7 +337,7 @@ spec:
   templates:
   - name: sidecar-with-volumes
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         print("hello world")
@@ -442,7 +442,7 @@ spec:
   templates:
   - name: workflow-with-volumes
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       volumeMounts:
       - name: claim-vol
@@ -1204,7 +1204,7 @@ spec:
       command:
       - python
       - -c
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
     inputs: {}
@@ -1536,7 +1536,7 @@ spec:
             limits:
               memory: "{{= (sprig.int(lastRetry.exitCode)==1 ? (sprig.int(retries)+1) : 1)* 100}}Mi"
     container:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python", -c]
       args: ["import sys; sys.exit(1)"]
 `
@@ -2144,7 +2144,7 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, sleep 10]
 `
 
@@ -2198,7 +2198,7 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, sleep 10]
 `
 
@@ -2258,7 +2258,7 @@ spec:
         template: sleep
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c, sleep 10]
 `
 
@@ -2552,7 +2552,7 @@ spec:
       parameters:
       - name: msg
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.msg}}"]
 `
 
@@ -3021,7 +3021,7 @@ spec:
   templates:
   - name: append-to-accesslog
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
       volumeMounts:
@@ -3661,7 +3661,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -3853,7 +3853,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -3971,7 +3971,7 @@ spec:
       parameters:
       - name: message
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -4054,12 +4054,12 @@ spec:
   templates:
   - name: intentional-fail
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo intentional failure; exit 1"]
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
 `
@@ -4098,7 +4098,7 @@ spec:
     suspend: {}
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}."]
 `
@@ -4791,7 +4791,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo]
       args: ["{{pod.name}}: {{inputs.parameters.message}}"]
 `
@@ -4846,7 +4846,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -5108,7 +5108,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -5186,7 +5186,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -5852,7 +5852,7 @@ spec:
 
   - name: hello
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo Hello"]
 `
@@ -5891,7 +5891,7 @@ spec:
 
   - name: hello
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo Hello"]
 `
@@ -6857,7 +6857,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       resources:
         requests:
           memory: 1Gi
@@ -6948,19 +6948,82 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 
 func Test_processItem(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	task := wfv1.DAGTask{
-		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
-	}
-	taskBytes, err := json.Marshal(task)
-	require.NoError(t, err)
-	var items []wfv1.Item
-	wfv1.MustUnmarshal([]byte(task.WithParam), &items)
 
-	var newTask wfv1.DAGTask
-	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
-	require.NoError(t, err)
-	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
+	tests := []struct {
+		name          string
+		withParam     string
+		expectedName  string
+		expectedParam string
+	}{
+		{
+			name:          "Test string",
+			withParam:     `["string"]`,
+			expectedName:  `task-name(0:string)`,
+			expectedParam: `string`,
+		},
+		{
+			name:          "Test multiline string",
+			withParam:     `["alpha\nbeta"]`,
+			expectedName:  `task-name(0:alpha\nbeta)`,
+			expectedParam: "alpha\nbeta",
+		},
+		{
+			name:          "Test number",
+			withParam:     `[42]`,
+			expectedName:  `task-name(0:42)`,
+			expectedParam: `42`,
+		},
+		{
+			name:          "Test boolean",
+			withParam:     `[true]`,
+			expectedName:  `task-name(0:true)`,
+			expectedParam: `true`,
+		},
+		{
+			name:          "Test map",
+			withParam:     `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+			expectedName:  `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`,
+			expectedParam: `{"json":{"list":[0,"1"],"number":2,"string":"foo"},"list":[0,"1"],"number":2,"string":"foo"}`,
+		},
+		{
+			name:          "Test list",
+			withParam:     `[[1, "two", 3]]`,
+			expectedName:  `task-name(0:[1 two 3])`,
+			expectedParam: `[1,"two",3]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			task := wfv1.DAGTask{
+				WithParam: tt.withParam,
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:  "item",
+							Value: wfv1.AnyStringPtr("{{item}}"),
+						},
+					},
+				},
+			}
+
+			taskBytes, err := json.Marshal(task)
+			require.NoError(t, err)
+
+			tmpl, err := template.NewTemplate(string(taskBytes))
+			require.NoError(t, err)
+
+			var items []wfv1.Item
+			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
+
+			var newTask wfv1.DAGTask
+			newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedName, newTaskName)
+			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())
+		})
+	}
 }
 
 var stepTimeoutWf = `
@@ -7144,7 +7207,7 @@ status:
     type: PodScheduled
   containerStatuses:
   - containerID: docker://502dda61a8f05e08d10cffc972d2fb9226e82af7daaacff98e84727bb96f11e6
-    image: python:alpine3.6
+    image: python:alpine3.23
     imageID: docker-pullable://python@sha256:766a961bf699491995cc29e20958ef11fd63741ff41dcc70ec34355b39d52971
     lastState:
       waiting: {}
@@ -7184,6 +7247,136 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Equal(t, "Pod failed before main container starts due to ContainerCreating: Container is creating", msg)
+}
+
+// Test that when containers are in Running state (not Terminated) on a Failed pod,
+// we correctly return Failed instead of incorrectly returning Succeeded.
+// This can happen during node eviction or other pod-level failures.
+var podFailedWithRunningContainers = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  reason: Evicted
+  message: "The node was low on resource: memory."
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+`
+
+func TestPodFailureWithRunningContainers(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithRunningContainers, &pod)
+	assert.NotNil(t, pod)
+	ctx := logging.TestContext(t.Context())
+	// Pod has a message, so it should return that
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Equal(t, "The node was low on resource: memory.", msg)
+}
+
+// Test that when containers don't have terminated state and there's no pod message,
+// we correctly return Failed with information about which containers couldn't be confirmed.
+var podFailedWithRunningContainersNoMessage = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2021-01-22T09:50:16Z"
+`
+
+func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithRunningContainersNoMessage, &pod)
+	assert.NotNil(t, pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Equal(t, "pod failed: neither main nor wait container completed successfully", msg)
+}
+
+// Test that sidecar SIGKILL still results in success when main and wait succeeded
+var podFailedWithSidecarSigkill = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+  - name: wait
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+  - name: sidecar
+    ready: false
+    state:
+      terminated:
+        exitCode: 137
+        reason: Error
+`
+
+func TestPodFailureWithSidecarSigkill(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podFailedWithSidecarSigkill, &pod)
+	assert.NotNil(t, pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	// Main and wait succeeded, sidecar was SIGKILL'd - this should be success
+	assert.Equal(t, wfv1.NodeSucceeded, nodeStatus)
+	assert.Empty(t, msg)
 }
 
 var podWithWaitContainerOOM = `
@@ -7386,7 +7579,7 @@ spec:
       parameters:
       - name: num
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -x]
       source: |
         #!/bin/sh
@@ -7483,7 +7676,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -7797,7 +7990,7 @@ spec:
       affinity:
         nodeAntiAffinity: {}
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         exit(1)
@@ -8122,7 +8315,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
@@ -8698,7 +8891,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
     name: global-output
     outputs:
       artifacts:
@@ -8726,7 +8919,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
     inputs:
       parameters:
       - name: param
@@ -8738,7 +8931,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
     inputs:
       artifacts:
       - name: art
@@ -8807,7 +9000,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.13.5
+      image: alpine:3.23
     inputs:
       parameters:
       - name: job_name
@@ -8820,7 +9013,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import json
   - name: materializations
@@ -8831,7 +9024,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
       source: |
@@ -8906,7 +9099,7 @@ spec:
         - -c
         - |
           print("hi")
-        image: python:alpine3.6
+        image: python:alpine3.23
         name: main
     name: group
   - inputs:
@@ -8914,7 +9107,7 @@ spec:
       - name: x
     name: verify
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         assert "{{inputs.parameters.x}}" == "hi"
 status:
@@ -8962,7 +9155,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("true")
   - inputs:
@@ -8976,7 +9169,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import random;
         import sys;
@@ -9155,7 +9348,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("true")
   - inputs:
@@ -9168,7 +9361,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import random;
         import sys;
@@ -9330,7 +9523,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         print("true")
   - inputs:
@@ -9342,7 +9535,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       source: |
         import random;
         import sys;
@@ -9514,7 +9707,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -9544,7 +9737,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
       source: ""
@@ -9800,7 +9993,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: 'alpine:3.7'
+        image: 'alpine:3.23'
         command:
           - /bin/sh
         resources: {}
@@ -9818,7 +10011,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: 'alpine:3.7'
+        image: 'alpine:3.23'
         command:
           - /bin/sh
         resources: {}
@@ -9841,7 +10034,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: 'alpine:3.7'
+        image: 'alpine:3.23'
         command:
           - /bin/sh
         resources: {}
@@ -10630,7 +10823,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
 `
@@ -10956,7 +11149,7 @@ spec:
       - name: workflow_artifact_key
         value: '{{workflow.name}}'
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       env:
       - name: message
@@ -11075,7 +11268,7 @@ spec:
       command:
       - sleep
       - "10"
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -11291,14 +11484,14 @@ spec:
       containerSet:
         containers:
           - name: main
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
               - '-c'
               - sleep 9000
           - name: main2
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
@@ -11371,14 +11564,14 @@ spec:
       containerSet:
         containers:
           - name: main
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
               - '-c'
               - sleep 9000
           - name: main2
-            image: alpine:latest
+            image: alpine:3.23
             command:
               - /bin/sh
             args:
@@ -11622,7 +11815,7 @@ spec:
             optional: true
             path: /tmp/message
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
 
@@ -11683,7 +11876,7 @@ spec:
             optional: true
             path: /tmp/message
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
 
@@ -12178,7 +12371,7 @@ spec:
         parameters:
           - name: arg
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [echo]
         args: ["{{inputs.parameters.arg}}"]
   ttlStrategy:

@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: dag-conditional-parameter-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       Conditional parameters provide a way to choose the output parameters based on expression.
@@ -37,7 +35,7 @@ spec:
     
     - name: flip-coin
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [python]
         source: |
           import random
@@ -45,14 +43,14 @@ spec:
     
     - name: heads
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [python]
         source: |
           print("heads")
     
     - name: tails
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [python]
         source: |
           print("tails")

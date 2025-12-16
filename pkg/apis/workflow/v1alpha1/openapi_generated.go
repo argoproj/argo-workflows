@@ -3911,7 +3911,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Pod metdata",
+				Description: "Pod metadata",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"annotations": {
@@ -6495,7 +6495,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
+							Description: "Metadata sets the pods's metadata, i.e. annotations and labels",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
