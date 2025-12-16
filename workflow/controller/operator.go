@@ -4306,30 +4306,49 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 	return nil
 }
 
+// mergedTemplateDefaultsInto modifies originalTmpl, setting any applicable default values.
 func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Template) error {
-	if woc.execWf.Spec.TemplateDefaults != nil {
-		originalTmplType := originalTmpl.GetType()
-
-		tmplDefaultsJSON, err := json.Marshal(woc.execWf.Spec.TemplateDefaults)
-		if err != nil {
-			return err
-		}
-
-		targetTmplJSON, err := json.Marshal(originalTmpl)
-		if err != nil {
-			return err
-		}
-
-		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJSON, targetTmplJSON, wfv1.Template{})
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(resultTmpl, originalTmpl)
-		if err != nil {
-			return err
-		}
-		originalTmpl.SetType(originalTmplType)
+	if woc.execWf.Spec.TemplateDefaults == nil {
+		return nil
 	}
+
+	originalTmplType := originalTmpl.GetType()
+	applicableDefaults := woc.execWf.Spec.TemplateDefaults.DeepCopy()
+
+	v := reflect.ValueOf(applicableDefaults).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+		// Check if the field is a pointer to a struct.
+		if field.Type.Kind() != reflect.Ptr || field.Type.Elem().Kind() != reflect.Struct {
+			continue
+		}
+
+		// Unset any Template-type defaults not applicable to the target type.
+		if t := wfv1.TemplateType(field.Name); t.IsValid() && t != originalTmplType {
+			v.Field(i).Set(reflect.Zero(v.Field(i).Type()))
+		}
+	}
+
+	tmplDefaultsJSON, err := json.Marshal(applicableDefaults)
+	if err != nil {
+		return err
+	}
+
+	targetTmplJSON, err := json.Marshal(originalTmpl)
+	if err != nil {
+		return err
+	}
+
+	resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJSON, targetTmplJSON, wfv1.Template{})
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(resultTmpl, originalTmpl); err != nil {
+		return err
+	}
+
+	originalTmpl.SetType(originalTmplType)
 	return nil
 }
 
