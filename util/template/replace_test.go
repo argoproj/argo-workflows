@@ -29,7 +29,7 @@ func Test_Replace(t *testing.T) {
 				_, err := Replace(toJsonString("{{foo}}"), nil, true)
 				require.NoError(t, err)
 			})
-			t.Run("Disallowed", func(t *testing.T) {
+			t.Run("Disallowed", func(t *tes46ting.T) {
 				_, err := Replace(toJsonString("{{foo}}"), nil, false)
 				require.EqualError(t, err, "failed to resolve {{foo}}")
 			})
@@ -40,6 +40,11 @@ func Test_Replace(t *testing.T) {
 			r, err := Replace(toJsonString("{{=foo}}"), map[string]string{"foo": "bar"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJsonString("bar"), r)
+		})
+		t.Run("Valid With Variadic Sprig Expression", func(t *testing.T) {
+			r, err := Replace(toJsonString("{{=sprig.dig('status', nil, workflow)}}"), map[string]string{"workflow.status": "Succeeded"}, false)
+			require.NoError(t, err)
+			assert.Equal(t, toJSONString("Succeeded"), r)
 		})
 		t.Run("Valid WorkflowStatus", func(t *testing.T) {
 			replaced, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Succeeded"}, false)
