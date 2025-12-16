@@ -20,7 +20,7 @@ func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
 		allowedVerbs := []string{"get", "list", "watch"}
 		kubeclientset.AddReactor("create", "selfsubjectaccessreviews", reactionFuncWithAllowedVerbs(allowedVerbs))
 		ctx := context.Background()
-		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, "")
+		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset)
 		assert.True(t, allowed)
 	})
 
@@ -29,7 +29,7 @@ func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
 		allowedVerbs := []string{"get", "list"}
 		kubeclientset.AddReactor("create", "selfsubjectaccessreviews", reactionFuncWithAllowedVerbs(allowedVerbs))
 		ctx := context.Background()
-		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, "")
+		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset)
 		assert.False(t, allowed)
 	})
 
@@ -38,7 +38,7 @@ func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
 		allowedVerbs := []string{"get"}
 		kubeclientset.AddReactor("create", "selfsubjectaccessreviews", reactionFuncWithAllowedVerbs(allowedVerbs))
 		ctx := context.Background()
-		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, "")
+		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset)
 		assert.False(t, allowed)
 	})
 }

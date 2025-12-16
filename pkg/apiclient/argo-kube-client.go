@@ -157,7 +157,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
 	}
 
-	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, a.kubeClient, a.namespace) {
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, a.kubeClient) {
 		if a.opts.CacheClusterWorkflowTemplates {
 			cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
 			if err != nil {
