@@ -48,6 +48,24 @@ const (
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
+// IsValid returns true if t exists in the set of possible template types.
+func (t TemplateType) IsValid() bool {
+	switch t {
+	case TemplateTypeContainer,
+		TemplateTypeContainerSet,
+		TemplateTypeSteps,
+		TemplateTypeScript,
+		TemplateTypeResource,
+		TemplateTypeDAG,
+		TemplateTypeSuspend,
+		TemplateTypeData,
+		TemplateTypeHTTP,
+		TemplateTypePlugin:
+		return true
+	}
+	return false
+}
+
 // NodePhase is a label for the condition of a node at the current time.
 type NodePhase string
 
