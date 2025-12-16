@@ -13,7 +13,7 @@ Subsequent sections will show how to use it.
 | Git | Yes | No | No | - |
 | HDFS | Yes | Yes | No | 3% |
 | HTTP | Yes | Yes | No | 2% |
-| OSS | Yes | Yes | No | - |
+| OSS | Yes | Yes | Yes | - |
 | Raw | Yes | No | No | 5% |
 | S3 | Yes | Yes | Yes | 86% |
 
