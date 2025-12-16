@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetNestedField(t *testing.T) {
@@ -71,7 +72,8 @@ func TestOpenAPIV3Schema(t *testing.T) {
 func TestWriteYamlAndRead(t *testing.T) {
 	o := &obj{"foo": "bar"}
 	tempFile := filepath.Join(t.TempDir(), "test.yaml")
-	o.WriteYaml(tempFile)
+	err := o.WriteYaml(tempFile)
+	require.NoError(t, err)
 	data := Read(tempFile)
 	assert.Equal(t, o, ParseYaml(data))
 }

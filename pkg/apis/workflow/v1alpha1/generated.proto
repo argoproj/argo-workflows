@@ -522,7 +522,7 @@ message CronWorkflowSpec {
 
   // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   // +kubebuilder:validation:MinItems=1
-  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/-?]+\s+){4}[0-9*,/-?]+)$`
+  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/?-]+\s+){4}[0-9*,/?-]+)$`
   repeated string schedules = 11;
 
   // v3.6 and after: When is an expression that determines if a run should be scheduled.
