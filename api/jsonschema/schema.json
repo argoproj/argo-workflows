@@ -6644,11 +6644,23 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is."
         },
+        "enableParallelism": {
+          "description": "EnableParallelism enables parallel upload/download for directories with many files or large files",
+          "type": "boolean"
+        },
         "encryptionOptions": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3EncryptionOptions"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "fileCountThreshold": {
+          "description": "FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.",
+          "type": "integer"
+        },
+        "fileSizeThreshold": {
+          "description": "FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").",
           "type": "string"
         },
         "insecure": {
@@ -6657,6 +6669,14 @@
         },
         "key": {
           "description": "Key is the key in the bucket where the artifact resides",
+          "type": "string"
+        },
+        "parallelism": {
+          "description": "Parallelism is the number of concurrent workers for parallel operations. Default is 10.",
+          "type": "integer"
+        },
+        "partSize": {
+          "description": "PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").",
           "type": "string"
         },
         "region": {
@@ -6701,11 +6721,23 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is."
         },
+        "enableParallelism": {
+          "description": "EnableParallelism enables parallel upload/download for directories with many files or large files",
+          "type": "boolean"
+        },
         "encryptionOptions": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3EncryptionOptions"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "fileCountThreshold": {
+          "description": "FileCountThreshold is the minimum number of files in a directory to trigger parallel operations. Default is 10.",
+          "type": "integer"
+        },
+        "fileSizeThreshold": {
+          "description": "FileSizeThreshold is the minimum file size to trigger multipart upload/download for single files. Default is 64MB. Files larger than this threshold will use multipart uploads with NumThreads parallelism. Can be specified as a Kubernetes resource quantity string (e.g., \"64Mi\", \"1Gi\").",
           "type": "string"
         },
         "insecure": {
@@ -6718,6 +6750,14 @@
         },
         "keyPrefix": {
           "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+          "type": "string"
+        },
+        "parallelism": {
+          "description": "Parallelism is the number of concurrent workers for parallel operations. Default is 10.",
+          "type": "integer"
+        },
+        "partSize": {
+          "description": "PartSize is the part size for multipart uploads. Default is minio default, typically 128MB. Only used when FileSizeThreshold is exceeded. Can be specified as a Kubernetes resource quantity string (e.g., \"128Mi\", \"1Gi\").",
           "type": "string"
         },
         "region": {
