@@ -381,6 +381,28 @@ Total number of pods that started pending by reason.
 | `reason`    | Summary of the kubernetes Reason for pending |
 | `namespace` | The namespace that the pod is in             |
 
+#### `pod_restarts_total`
+
+Total number of pods automatically restarted due to infrastructure failures before the main container started.
+This counter tracks pods that were automatically restarted by the [failed pod restart](pod-restarts.md) feature.
+These are infrastructure-level failures (like node eviction) that occur before the main container enters the Running state.
+
+|  attribute  |                                                 explanation                                                 |
+|-------------|-------------------------------------------------------------------------------------------------------------|
+| `reason`    | The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError` |
+| `condition` | The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`                      |
+| `namespace` | The namespace that the pod is in                                                                            |
+
+`reason` will be one of:
+
+- `Evicted`: Node pressure eviction (`DiskPressure`, `MemoryPressure`, etc.)
+- `NodeShutdown`: Graceful node shutdown
+- `NodeAffinity`: Node affinity/selector no longer matches
+- `UnexpectedAdmissionError`: Unexpected error during pod admission
+
+`condition` is extracted from the pod status message when available (e.g., `DiskPressure`, `MemoryPressure`).
+It will be empty if the condition cannot be determined.
+
 #### `pods_gauge`
 
 A gauge of the number of workflow created pods currently in the cluster in each phase.

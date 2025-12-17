@@ -178,6 +178,25 @@ var InstrumentPodPendingCount = BuiltinInstrument{
 	},
 }
 
+var InstrumentPodRestartsTotal = BuiltinInstrument{
+	name:        "pod_restarts_total",
+	description: "Total number of pods automatically restarted due to infrastructure failures before the main container started",
+	unit:        "{pod}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribPodRestartReason,
+		},
+		{
+			name:     AttribPodRestartCondition,
+			optional: true,
+		},
+		{
+			name: AttribPodNamespace,
+		},
+	},
+}
+
 var InstrumentPodsGauge = BuiltinInstrument{
 	name:        "pods_gauge",
 	description: "A gauge of the number of workflow created pods currently in the cluster in each phase",
@@ -415,6 +434,9 @@ var InstrumentWorkflowtemplateTriggeredTotal = BuiltinInstrument{
 		},
 		{
 			name: AttribTemplateCluster,
+		},
+		{
+			name: AttribWorkflowPhase,
 		},
 	},
 }
