@@ -863,7 +863,7 @@ endif
 .PHONY: docs-lint
 docs-lint: $(TOOL_MARKDOWNLINT) docs/metrics.md
 	# lint docs
-	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/new-features.md --ignore docs/go-sdk-guide.md
+	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/go-sdk-guide.md
 
 $(TOOL_MKDOCS): docs/requirements.txt
 # update this in Nix when upgrading it here
@@ -935,16 +935,18 @@ features-preview: hack/featuregen/featuregen
 	$< update --dry
 
 .PHONY: features-update
-features-update: hack/featuregen/featuregen
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
 	# Update the features documentation, but keep the feature files in the pending directory
 	# Updates docs/new-features.md for release-candidates
 	$< update --version $(VERSION)
+	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 .PHONY: features-release
-features-release: hack/featuregen/featuregen
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
 	# Update the features documentation AND move the feature files to the released directory
 	# Use this for the final update when releasing a version
 	$< update --version $(VERSION) --final
+	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
 	go test ./hack/featuregen
