@@ -41,6 +41,11 @@ func Test_Replace(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, toJsonString("bar"), r)
 		})
+		t.Run("Valid With Variadic Sprig Expression", func(t *testing.T) {
+			r, err := Replace(toJsonString("{{=sprig.dig('status', nil, workflow)}}"), map[string]string{"workflow.status": "Succeeded"}, false)
+			require.NoError(t, err)
+			assert.Equal(t, toJsonString("Succeeded"), r)
+		})
 		t.Run("Valid WorkflowStatus", func(t *testing.T) {
 			replaced, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Succeeded"}, false)
 			require.NoError(t, err)
