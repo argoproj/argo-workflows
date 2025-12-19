@@ -11,7 +11,7 @@ If this file and that one differ, then the argoproj file is the authoritative ve
 |---------------------------|---------------------------------------------------|----------------------------|------------------------------------------------|
 | Saravanan Balasubramanian | [sarabala1979](https://github.com/sarabala1979)   | Lead - Workflows           | [Intuit](https://www.github.com/intuit/)       |
 | Alan Clucas               | [Joibel](https://github.com/Joibel)               | Lead - Workflows           | [Pipekit](https://pipekit.io/)                 |
-| Yuan Tang                 | [terrytangyuan](https://github.com/terrytangyuan) | Lead - Workflows           | [Red Hat](https://www.github.com/redhat/)      |
+| Yuan Tang                 | [terrytangyuan](https://github.com/terrytangyuan) | Lead - Workflows           | [Red Hat](https://www.redhat.com)              |
 | Alex Collins              | [alexec](https://github.com/alexec)               | Approver - Workflows       | [Intuit](https://www.github.com/intuit/)       |
 | Ed Lee                    | [edlee2121](https://github.com/edlee2121)         | Approver - Workflows       | [Intuit](https://www.github.com/intuit/)       |
 | Mason Malone              | [MasonM](https://github.com/MasonM)               | Approver - Workflows       | [Adobe](https://www.github.com/adobe/)         |
