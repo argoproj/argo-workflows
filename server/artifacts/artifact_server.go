@@ -376,13 +376,15 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	ctx, err := a.gatekeeper.ContextWithRequest(ctx, ns)
-	if err != nil {
-		return nil, err
-	}
+
 	// Ensure context has a logger for artifact operations
 	if logging.GetLoggerFromContextOrNil(ctx) == nil {
 		ctx = logging.WithLogger(ctx, a.logger)
+	}
+
+	ctx, err := a.gatekeeper.ContextWithRequest(ctx, ns)
+	if err != nil {
+		return nil, err
 	}
 	return ctx, nil
 }
