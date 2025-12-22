@@ -9,6 +9,8 @@ You can use DIND to run Docker commands inside a container, such as to build and
 
 In the following example, use the `docker:dind` image to run a Docker daemon in a sidecar and give the main container access to the daemon:
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -40,3 +42,38 @@ spec:
       # order to use features such as docker volume binding.
       mirrorVolumeMounts: true
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, UserContainer, Workflow
+from hera.workflows.models import EnvVar, SecurityContext
+
+with Workflow(
+    generate_name="sidecar-dind-",
+    entrypoint="dind-sidecar-example",
+) as w:
+    Container(
+        name="dind-sidecar-example",
+        image="docker:19.03.13",
+        command=["sh", "-c"],
+        args=[
+            "until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"
+        ],
+        sidecars=[
+            UserContainer(
+                name="dind",
+                image="docker:19.03.13-dind",
+                command=["dockerd-entrypoint.sh"],
+                env=[EnvVar(name="DOCKER_TLS_CERTDIR", value="")],
+                mirror_volume_mounts=True,
+                security_context=SecurityContext(privileged=True),
+            )
+        ],
+        env=[EnvVar(name="DOCKER_HOST", value="127.0.0.1")],
+    )
+```
+
+///

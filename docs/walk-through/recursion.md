@@ -2,6 +2,8 @@
 
 Templates can recursively invoke each other! In this variation of the above coin-flip template, we continue to flip coins until it comes up heads.
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -38,6 +40,47 @@ spec:
       command: [sh, -c]
       args: ["echo \"it was heads\""]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, Steps, Workflow, script
+
+
+@script(image="python:alpine3.6")
+def flip_coin():
+    import random
+    result = "heads" if random.randint(0,1) == 0 else "tails"
+    print(result)
+    
+
+with Workflow(
+    generate_name="coinflip-recursive-",
+    entrypoint="coinflip",
+) as w:
+    heads = Container(
+        name="heads",
+        args=['echo "it was heads"'],
+        command=["sh", "-c"],
+        image="alpine:3.6",
+    )
+
+    with Steps(name="coinflip") as coinflip:
+        flip_coin_step = flip_coin(name="flip-coin")
+        with coinflip.parallel():
+            heads(
+                name="heads",
+                when=f"{flip_coin_step.result} == heads",
+            )
+            coinflip(
+                name="tails",
+                when=f"{flip_coin_step.result} == tails",
+            )
+```
+
+///
 
 Here's the result of a couple of runs of coin-flip for comparison.
 
