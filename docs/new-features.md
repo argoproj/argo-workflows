@@ -1,4 +1,4 @@
-# New features in latest (2025-12-11)
+# New features in v4.0.0-rc2 (2025-12-22)
 
 This is a concise list of new features.
 
@@ -111,6 +111,11 @@ This is a concise list of new features.
   Field selectors for `metadata.name` now support the `==` and `!=` operators, giving you more flexible control over resource filtering.
   Use the `==` operator to match resources with an exact name, or use `!=` to exclude resources by name.
   This brings field selector behavior in line with native Kubernetes functionality and enables more precise resource queries.
+
+- Restart pods that fail before starting by [Alan Clucas](https://github.com/Joibel) ([#12572](https://github.com/argoproj/argo-workflows/issues/12572))
+  Automatically restart pods that fail before starting for reasons like node eviction.
+  This is safe to do even for non-idempotent workloads.
+  You need to configure this in your workflow controller configmap for it to take effect.
 
 - Removal of logrus and more structured logging by [Alan Clucas](https://github.com/Joibel) ([#11120](https://github.com/argoproj/argo-workflows/issues/11120), [#2308](https://github.com/argoproj/argo-workflows/issues/2308))
   Complete context passing so all logs should have correct context and enable remaining logs to be fully structured logs.
