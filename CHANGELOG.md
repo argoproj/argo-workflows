@@ -1,5 +1,48 @@
 # Changelog
 
+## v4.0.0-rc2 (2025-12-22)
+
+Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc1...v4.0.0-rc2)
+
+### Selected Changes
+
+* [5f7c7ec6f](https://github.com/argoproj/argo-workflows/commit/5f7c7ec6f5f6d6589a2c0cbc20acd79ca078f76f) fix: move logger context population before access (#15193)
+* [4bece58be](https://github.com/argoproj/argo-workflows/commit/4bece58bee16720874a9571583df853155fa64ab) fix: test CheckWorkflowExistence check both mutex and sem (#15158)
+* [7bfb4f26d](https://github.com/argoproj/argo-workflows/commit/7bfb4f26df7f90381b5d015b2da0fa18b9fe66be) fix: remove pod finalizer in abnormal scenarios (#15164)
+* [7fd533ac2](https://github.com/argoproj/argo-workflows/commit/7fd533ac2dd6fb663d82b8f14ee9da9220cdf212) fix: make CRDs smaller (in general) and fix cron schedule regex (#15175)
+* [9c59a607a](https://github.com/argoproj/argo-workflows/commit/9c59a607abb92078003807d32a22ba9e4c1aea0e) feat(controller): auto-restart pods that failed before starting (#15086)
+* [64caebb59](https://github.com/argoproj/argo-workflows/commit/64caebb59a033fdf9ddb5d76a39e6934ea65381b) fix(ui): fix column alignment in workflow list (#15185)
+* [0c774328a](https://github.com/argoproj/argo-workflows/commit/0c774328ae758b0257582a59fbe874067be153f9) fix: add timeout for database query in workflow estimation to prevent blocking. (#15116)
+* [4a9227b27](https://github.com/argoproj/argo-workflows/commit/4a9227b27e3624914f6d864e3e3ed613e54feec0) chore(deps): bump the go_modules group across 2 directories with 1 update (#15172)
+* [c8b66b244](https://github.com/argoproj/argo-workflows/commit/c8b66b244339803c16dbe78e43822fff085d040e) fix: type-aware application of template defaults (#14899) (#15144)
+* [e621d1f34](https://github.com/argoproj/argo-workflows/commit/e621d1f34c5a618fde453610ef0519cd231a4cda) fix: check ClusterWorkflowTemplate RBAC cluster wide instead of namespaced. Fixes #15071 (#15162)
+* [4117a1ec1](https://github.com/argoproj/argo-workflows/commit/4117a1ec14d34c8b0587f89b9f8a47e067fb1355) fix: upgrade expr to bring in bugfix. Fixes #15093 (#15168)
+* [e991e6dc4](https://github.com/argoproj/argo-workflows/commit/e991e6dc49c45ac00d2388b60abb9f5b21ce4247) fix: use alpine 3.23 version in tests, examples, workflows (#15160)
+* [67db97f2e](https://github.com/argoproj/argo-workflows/commit/67db97f2eaca3f45ed20c5c6497df97d3ba37db8) fix: set current platform as default platform when retrieving image entrypoint. Fixes #15058 (#15059)
+* [76eda6f83](https://github.com/argoproj/argo-workflows/commit/76eda6f83d6ab0567806ca359151205fd35df124) fix: handle escape chars in withParam/withItems. Fixes #13718 (#14864)
+* [46b0dddf9](https://github.com/argoproj/argo-workflows/commit/46b0dddf970953b42d67ce7fad3c5f32199548fb) fix: if pod fails without container termination, don't mark node succeeded always (#15150)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* AlbeeSo
+* Claude
+* Eduardo Rodrigues
+* Giovanni Campagna
+* guamian-delicious
+* Isitha Subasinghe
+* jiazhen.liu
+* Joibel
+* jswxstw
+* Lars F. Karlström
+* Mason Malone
+* shuangkun tian
+* Tzu-Ting
+* Wael
+* Yuan Tang
+
+</details>
+
 ## v4.0.0-rc1 (2025-12-11)
 
 Full Changelog: [v3.7.6...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.6...v4.0.0-rc1)
