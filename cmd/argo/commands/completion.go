@@ -141,7 +141,7 @@ For fish, output to a file in ~/.config/fish/completions
 			}
 			completion, ok := availableCompletions[shell]
 			if !ok {
-				return fmt.Errorf("Invalid shell '%s'. The supported shells are bash and zsh.\n", shell)
+				return fmt.Errorf("Invalid shell '%s'. The supported shells are bash, zsh, and fish.\n", shell)
 			}
 			return completion(os.Stdout, rootCommand)
 		},
