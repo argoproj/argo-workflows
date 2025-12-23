@@ -21,6 +21,6 @@ If this file and that one differ, then the argoproj file is the authoritative ve
 | Tianchu Zhao              | [tczhao](https://github.com/tczhao)               | Approver       | [Atlan](https://atlan.com/)                    |
 | Tim Collins               | [tico24](https://github.com/tico24)               | Reviewer(docs) | [Pipekit](https://pipekit.io/)                 |
 | William Van Hevelingen    | [blkperl](https://github.com/blkperl)             | Reviewer       | [Acquia](https://www.acquia.com/)              |
-| jswxstw                   | [jswxstw](https://github.com/jswxstw)             | Reviewer       | Independent                                    |
+| Yucong Wang               | [jswxstw](https://github.com/jswxstw)             | Reviewer       | Independent                                    |
 | Eduardo Rodrigues         | [eduardodbr](https://github.com/eduardodbr)       | Reviewer       | Independent                                    |
 | Shuangkun Tian            | [shuangkun](https://github.com/shuangkun)         | Reviewer       | [Alibaba Cloud](https://www.alibabacloud.com/) |
