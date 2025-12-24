@@ -20,6 +20,7 @@ const (
 	ActionStop      ActionType = "Stop"
 	ActionTerminate ActionType = "Terminate"
 	ActionResume    ActionType = "Resume"
+	ActionRetry     ActionType = "Retry"
 	ActionNone      ActionType = ""
 )
 
