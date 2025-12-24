@@ -20,6 +20,12 @@ type webhookClient struct {
 	Type string `json:"type"`
 	// e.g. "shh!"
 	Secret string `json:"secret"`
+	// XHubHeaderName specifies the header name for x-hub type (default: "X-Hub-Signature-256")
+	XHubHeaderName string `json:"x-hub-header-name,omitempty"`
+	// XHubHashAlgorithm specifies the hash algorithm for x-hub type (default: "sha256")
+	XHubHashAlgorithm string `json:"x-hub-hash,omitempty"`
+	// XHubEncoding specifies the signature encoding for x-hub type (default: "hex")
+	XHubEncoding string `json:"x-hub-encoding,omitempty"`
 }
 
 type matcher = func(secret string, r *http.Request) bool
@@ -87,7 +93,17 @@ func (i *WebhookInterceptor) addWebhookAuthorization(r *http.Request, kube kuber
 			return fmt.Errorf("failed to unmarshal webhook client \"%s\": %w", serviceAccountName, err)
 		}
 		i.logger.WithFields(logging.Fields{"serviceAccountName": serviceAccountName, "webhookType": client.Type}).Debug(r.Context(), "Attempting to match webhook request")
-		ok := webhookParsers[client.Type](client.Secret, r)
+		var ok bool
+		if client.Type == "x-hub" {
+			config := &XHubConfig{
+				HashAlgorithm: client.XHubHashAlgorithm,
+				HeaderName:    client.XHubHeaderName,
+				Encoding:      client.XHubEncoding,
+			}
+			ok = xHubMatch(client.Secret, r, config)
+		} else {
+			ok = webhookParsers[client.Type](client.Secret, r)
+		}
 		if ok {
 			i.logger.WithField("serviceAccountName", serviceAccountName).Debug(r.Context(), "Matched webhook request")
 			serviceAccount, err := serviceAccountInterface.Get(ctx, serviceAccountName, metav1.GetOptions{})
