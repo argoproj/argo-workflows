@@ -802,6 +802,7 @@ func TestRetryWorkflow(t *testing.T) {
 		retried, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
 		require.NoError(t, err)
 		assert.NotNil(t, retried)
+		assert.Equal(t, string(creator.ActionRetry), retried.Labels[common.LabelKeyAction])
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})
