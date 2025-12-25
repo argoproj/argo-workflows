@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/util/retry"
+	retryk8s "k8s.io/client-go/util/retry"
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
 	kubectlcmd "k8s.io/kubectl/pkg/cmd"
@@ -31,6 +31,7 @@ import (
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -41,7 +42,7 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	}
 
 	var out []byte
-	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+	err = retryk8s.OnError(retry.DefaultRetry(ctx), func(err error) bool {
 		return argoerr.IsTransientErr(ctx, err)
 	}, func() error {
 		out, err = runKubectl(ctx, args...)
