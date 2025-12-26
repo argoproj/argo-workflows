@@ -59,7 +59,8 @@ func isTransientErr(err error) bool {
 		isTransientEtcdErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
-		isTransientSqbErr(err)
+		isTransientSqbErr(err) ||
+		isTransientContainerRuntimeErr(err)
 }
 
 func matchTransientErrPattern(err error) bool {
@@ -136,6 +137,32 @@ func isTransientNetworkErr(err error) bool {
 		return true
 	}
 
+	return false
+}
+
+// isTransientContainerRuntimeErr checks for transient container runtime errors.
+// These errors occur due to race conditions in Kubernetes, particularly with
+// projected/secret volumes using subPath mounts. See:
+// - kubernetes/kubernetes#63726
+// - kubernetes/kubernetes#68211
+// - https://github.com/argoproj/argo-workflows/issues/12793
+func isTransientContainerRuntimeErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	errorString := generateErrorString(err)
+	// OCI runtime create failed: These errors typically occur when mounting projected
+	// volumes (secrets, configmaps) with subPath. The kubelet may not have finished
+	// projecting the volume contents when the container runtime tries to create the
+	// container. Kubernetes will automatically retry the container, and subsequent
+	// attempts usually succeed.
+	if strings.Contains(errorString, "OCI runtime create failed") {
+		return true
+	}
+	// Container runtime errors that indicate transient mount issues
+	if strings.Contains(errorString, "error mounting") && strings.Contains(errorString, "no such file or directory") {
+		return true
+	}
 	return false
 }
 

@@ -118,6 +118,24 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("ConnectionRefusedTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(ctx, connectionRefusedErr))
 	})
+	t.Run("OCIRuntimeCreateFailedErr", func(t *testing.T) {
+		// This error occurs when projected volumes (secrets, configmaps) with subPath
+		// are not ready when the container runtime tries to create the container.
+		// See kubernetes/kubernetes#63726, kubernetes/kubernetes#68211
+		ociErr := errors.New(`OCI runtime create failed: error mounting "/var/lib/kubelet/pods/.../volume-subpaths/jfs-check-mount/jfs-mount/3" to rootfs at "/check_mount.sh": mount src=..., dst=/check_mount.sh: no such file or directory`)
+		assert.True(t, IsTransientErr(ctx, ociErr))
+		assert.Contains(t, hook.LastEntry().Msg, "Transient error")
+	})
+	t.Run("MountErrorNoSuchFileErr", func(t *testing.T) {
+		// Generic mount error with "no such file or directory"
+		mountErr := errors.New(`error mounting "/some/path" to rootfs: no such file or directory`)
+		assert.True(t, IsTransientErr(ctx, mountErr))
+	})
+	t.Run("NonTransientOCIErr", func(t *testing.T) {
+		// OCI errors without "create failed" should not be transient
+		nonTransientOCIErr := errors.New(`OCI runtime error: permission denied`)
+		assert.False(t, IsTransientErr(ctx, nonTransientOCIErr))
+	})
 }
 
 func TestIsTransientUErr(t *testing.T) {
