@@ -166,7 +166,7 @@ TOOL_SNIPDOC                := $(HOME)/.local/bin/snipdoc
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
 TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
-TOOL_MDSPELL                := $(NVM_BIN)/mdspell
+TOOL_CODESPELL              := /usr/bin/codespell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
 TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
 TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
@@ -830,16 +830,27 @@ docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.g
 docs/go-sdk-guide.md: $(TOOL_SNIPDOC)
 	$(TOOL_SNIPDOC) run
 
-$(TOOL_MDSPELL): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1
 endif
 
+$(TOOL_CODESPELL): Makefile
+
+$(TOOL_CODESPELL):
+ifeq (, $(shell which codespell))
+ifeq ($(shell uname),Darwin)
+	brew install codespell
+else
+	sudo apt update
+	sudo apt install -y codespell
+endif
+endif
+
 .PHONY: docs-spellcheck
-docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md ## Spell check docs
+docs-spellcheck: $(TOOL_CODESPELL) docs/metrics.md ## Spell check docs
 	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md -not -name new-features.md)
+	$(TOOL_CODESPELL) --quiet-level=2 --check-filenames --ignore-words=.codespell-ignore --check-hidden "docs/**/*.md"
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
 
