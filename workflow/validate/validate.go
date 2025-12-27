@@ -245,6 +245,14 @@ func ValidateWorkflow(ctx context.Context, wftmplGetter templateresolution.Workf
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
+	// if resource templates are present, workflow failure variables may appear in the manifest
+	for _, tmpl := range wf.Spec.Templates {
+		if tmpl.Resource != nil && tmpl.Resource.Manifest != "" {
+			ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
+			break
+		}
+	}
+
 	if !opts.IgnoreEntrypoint {
 		var args wfv1.ArgumentsProvider
 		args = &wfArgs
