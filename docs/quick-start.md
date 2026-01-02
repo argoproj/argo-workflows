@@ -82,6 +82,9 @@ argo logs -n argo @latest
     kubectl -n argo port-forward service/argo-server 2746:2746
     ```
 
+    !!! Note "Helm installations"
+        If you installed Argo Workflows using the [Helm chart](https://github.com/argoproj/argo-helm/tree/main/charts/argo-workflows), use `service/argo-workflows-server` instead of `service/argo-server`.
+
 1. Navigate your browser to <https://localhost:2746>.
     * **Note**: The URL uses `https` and not `http`. Navigating to `http` will result in a server-side error.
     * Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.
