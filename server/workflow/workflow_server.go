@@ -486,6 +486,8 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	creator.LabelActor(ctx, wf, creator.ActionRetry)
+
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
