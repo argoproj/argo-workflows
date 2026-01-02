@@ -242,7 +242,8 @@ func (c *Controller) addPodEvent(pod *apiv1.Pod) {
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn("callback for pod add failed")
 	}
-	c.commonPodEvent(pod, false)
+	deleting := pod.DeletionTimestamp != nil
+	c.commonPodEvent(pod, deleting)
 }
 
 func (c *Controller) updatePodEvent(old *apiv1.Pod, new *apiv1.Pod) {
@@ -252,7 +253,8 @@ func (c *Controller) updatePodEvent(old *apiv1.Pod, new *apiv1.Pod) {
 	if err != nil {
 		c.log.WithField("pod", new.Name).Warn("callback for pod update failed")
 	}
-	c.commonPodEvent(new, false)
+	deleting := new.DeletionTimestamp != nil
+	c.commonPodEvent(new, deleting)
 }
 
 func (c *Controller) deletePodEvent(obj interface{}) {
