@@ -253,7 +253,7 @@ func (c *Controller) updatePodEvent(old *apiv1.Pod, new *apiv1.Pod) {
 	if err != nil {
 		c.log.WithField("pod", new.Name).Warn("callback for pod update failed")
 	}
-	deleting := newPod.DeletionTimestamp != nil
+	deleting := new.DeletionTimestamp != nil
 	c.commonPodEvent(new, deleting)
 }
 
