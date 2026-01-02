@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
@@ -71,14 +70,14 @@ type E2ESuite struct {
 func (s *E2ESuite) SetupSuite() {
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
-	s.CheckError(err)
+	CheckError(s.T(), err)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
-	s.CheckError(err)
+	CheckError(s.T(), err)
 	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
 	ctx := logging.TestContext(s.T().Context())
 	c, err := configController.Get(ctx)
-	s.CheckError(err)
+	CheckError(s.T(), err)
 	s.Config = c
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
@@ -150,24 +149,24 @@ func (s *E2ESuite) DeleteResources() {
 	for _, r := range resources {
 		for {
 			// remove finalizer from all the resources of the given GroupVersionResource
-			resourceInf := s.dynamicFor(pods)
+			resourceInf := DynamicFor(s.RestConfig, pods)
 			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
-			s.CheckError(err)
+			CheckError(s.T(), err)
 			for _, item := range resourceList.Items {
 				patch, err := json.Marshal(map[string]interface{}{
 					"metadata": map[string]interface{}{
 						"finalizers": []string{},
 					},
 				})
-				s.CheckError(err)
+				CheckError(s.T(), err)
 				_, err = resourceInf.Patch(ctx, item.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
 				if err != nil && !apierr.IsNotFound(err) {
-					s.CheckError(err)
+					CheckError(s.T(), err)
 				}
 			}
-			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
-			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
-			s.CheckError(err)
+			CheckError(s.T(), DynamicFor(s.RestConfig, r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
+			ls, err := DynamicFor(s.RestConfig, r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
+			CheckError(s.T(), err)
 			if len(ls.Items) == 0 {
 				break
 			}
@@ -179,43 +178,32 @@ func (s *E2ESuite) DeleteResources() {
 	if s.Persistence.IsEnabled() {
 		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
-		s.CheckError(err)
+		CheckError(s.T(), err)
 		workflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
-		s.CheckError(err)
+		CheckError(s.T(), err)
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(ctx, string(w.UID))
-			s.CheckError(err)
+			CheckError(s.T(), err)
 		}
 		parse, err = labels.ParseToRequirements(Backfill)
-		s.CheckError(err)
+		CheckError(s.T(), err)
 		backfillWorkflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
-		s.CheckError(err)
+		CheckError(s.T(), err)
 		for _, w := range backfillWorkflows {
 			err := archive.DeleteWorkflow(ctx, string(w.UID))
-			s.CheckError(err)
+			CheckError(s.T(), err)
 		}
 	}
 }
 
-func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
-	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
-	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
-		return resourceInterface
-	}
-	return resourceInterface.Namespace(Namespace)
-}
-
 func (s *E2ESuite) CheckError(err error) {
-	s.T().Helper()
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	CheckError(s.T(), err)
 }
 
 func (s *E2ESuite) GetBasicAuthToken() string {
