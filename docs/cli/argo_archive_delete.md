@@ -3,14 +3,20 @@
 delete a workflow in the archive
 
 ```
-argo archive delete UID... [flags]
+argo archive delete WORKFLOW... [flags]
 ```
 
 ### Examples
 
 ```
-# Delete an archived workflow by its UID:
-  argo archive delete abc123-def456-ghi789-jkl012
+# Delete an archived workflow by name:
+  argo archive delete my-workflow
+
+# Delete an archived workflow by UID (auto-detected):
+  argo archive delete a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+# Delete multiple archived workflows:
+  argo archive delete my-workflow my-other-workflow
 
 ```
 
@@ -18,6 +24,8 @@ argo archive delete UID... [flags]
 
 ```
   -h, --help   help for delete
+      --name   force the argument to be treated as a name
+      --uid    force the argument to be treated as a UID
 ```
 
 ### Options inherited from parent commands

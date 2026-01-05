@@ -16,22 +16,29 @@ import (
 )
 
 func NewGetCommand() *cobra.Command {
-	var output = common.EnumFlagValue{
-		AllowedValues: []string{"json", "yaml", "wide"},
-		Value:         "wide",
-	}
+	var (
+		output = common.EnumFlagValue{
+			AllowedValues: []string{"json", "yaml", "wide"},
+			Value:         "wide",
+		}
+		forceName bool
+		forceUID  bool
+	)
 	command := &cobra.Command{
-		Use:   "get UID",
+		Use:   "get WORKFLOW",
 		Short: "get a workflow in the archive",
 		Args:  cobra.ExactArgs(1),
-		Example: `# Get information about an archived workflow by its UID:
-  argo archive get abc123-def456-ghi789-jkl012
+		Example: `# Get information about an archived workflow by name:
+  argo archive get my-workflow
+
+# Get information about an archived workflow by UID (auto-detected):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 
 # Get information about an archived workflow in YAML format:
-  argo archive get abc123-def456-ghi789-jkl012 -o yaml
+  argo archive get my-workflow -o yaml
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			uid := args[0]
+			identifier := args[0]
 
 			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
@@ -41,7 +48,25 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
+
+			var wf *wfv1.Workflow
+			isUID := isUID(identifier)
+			if forceUID {
+				isUID = true
+			} else if forceName {
+				isUID = false
+			}
+			if isUID {
+				// Lookup by UID
+				wf, err = serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: identifier})
+			} else {
+				// Lookup by Name
+				namespace := client.Namespace(ctx)
+				wf, err = serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{
+					Name:      identifier,
+					Namespace: namespace,
+				})
+			}
 			if err != nil {
 				return err
 			}
@@ -50,6 +75,9 @@ func NewGetCommand() *cobra.Command {
 		},
 	}
 	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
+	command.Flags().BoolVar(&forceName, "name", false, "force the argument to be treated as a name")
+	command.Flags().BoolVar(&forceUID, "uid", false, "force the argument to be treated as a UID")
+	command.MarkFlagsMutuallyExclusive("name", "uid")
 	return command
 }
 
