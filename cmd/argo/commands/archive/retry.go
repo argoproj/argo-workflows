@@ -74,6 +74,14 @@ func NewRetryCommand() *cobra.Command {
 # Retry and tail logs until completion:
 
   argo archive retry --log my-workflow
+
+# Retry a workflow by name (forced):
+
+  argo archive retry my-workflow --name
+
+# Retry a workflow by UID (forced):
+
+  argo archive retry a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
 `,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && !retryOpts.hasSelector() {

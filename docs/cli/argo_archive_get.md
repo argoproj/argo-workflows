@@ -18,6 +18,12 @@ argo archive get WORKFLOW [flags]
 # Get information about an archived workflow in YAML format:
   argo archive get my-workflow -o yaml
 
+# Get information about an archived workflow by name (forced):
+  argo archive get my-workflow --name
+
+# Get information about an archived workflow by UID (forced):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
+
 ```
 
 ### Options

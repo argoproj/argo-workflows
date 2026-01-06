@@ -41,6 +41,14 @@ argo archive resubmit [WORKFLOW...] [flags]
 
   argo archive resubmit --log my-workflow
 
+# Resubmit a workflow by name (forced):
+
+  argo archive resubmit my-workflow --name
+
+# Resubmit a workflow by UID (forced):
+
+  argo archive resubmit a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
+
 ```
 
 ### Options
