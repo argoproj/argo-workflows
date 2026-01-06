@@ -27,6 +27,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
@@ -4111,12 +4112,32 @@ func (ss *SemaphoreStatus) GetWaiting(semaphoreName string) (int, SemaphoreHoldi
 	return -1, SemaphoreHolding{}
 }
 
+// getSemaphoreWaitingHoldersDisplayLimit returns the maximum number of holders to display in waiting status
+// This helps reduce memory usage when many workflows are holding the same semaphore
+// Default is 10, can be configured via SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT environment variable
+// Set to 0 or negative to disable limit (show all holders)
+func getSemaphoreWaitingHoldersDisplayLimit() int {
+	limit := env.LookupEnvIntOr("SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT", 10)
+	if limit <= 0 {
+		return 0 // 0 means no limit
+	}
+	return limit
+}
+
 func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreWaiting := ss.GetWaiting(lockKey)
+
+	// Apply display limit to reduce memory usage
+	displayHolders := currentHolders
+	displayLimit := getSemaphoreWaitingHoldersDisplayLimit()
+	if displayLimit > 0 && len(currentHolders) > displayLimit {
+		displayHolders = currentHolders[:displayLimit]
+	}
+
 	if i < 0 {
-		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: currentHolders})
+		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: displayHolders})
 	} else {
-		semaphoreWaiting.Holders = currentHolders
+		semaphoreWaiting.Holders = displayHolders
 		ss.Waiting[i] = semaphoreWaiting
 	}
 	return true
