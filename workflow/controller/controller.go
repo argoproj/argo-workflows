@@ -1014,8 +1014,14 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
-			wf, ok := obj.(*unstructured.Unstructured)
-			if ok { // maybe cache.DeletedFinalStateUnknown
+			var wf *unstructured.Unstructured
+			switch x := obj.(type) {
+			case *unstructured.Unstructured:
+				wf = x
+			case cache.DeletedFinalStateUnknown:
+				wf, _ = x.Obj.(*unstructured.Unstructured)
+			}
+			if wf != nil {
 				wfc.metrics.DeleteRealtimeMetricsForWfUID(string(wf.GetUID()))
 			}
 		},

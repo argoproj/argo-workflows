@@ -227,20 +227,21 @@ func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prome
 }
 
 func (m *Metrics) attachCustomMetricToWorkflow(metricSpec *wfv1.Prometheus, ownerKey string) {
-	if metricSpec.IsRealtime() {
-		m.realtimeMutex.Lock()
-		defer m.realtimeMutex.Unlock()
-		// Must move to run each workflowkey
-		for key := range m.realtimeWorkflows {
-			if key == ownerKey {
-				return
-			}
-		}
-		m.realtimeWorkflows[ownerKey] = append(m.realtimeWorkflows[ownerKey], realtimeTracker{
-			inst: m.GetInstrument(metricSpec.Name),
-			key:  metricSpec.GetKey(),
-		})
+	if !metricSpec.IsRealtime() {
+		return
 	}
+	m.realtimeMutex.Lock()
+	defer m.realtimeMutex.Unlock()
+	metricKey := metricSpec.GetKey()
+	for _, tracker := range m.realtimeWorkflows[ownerKey] {
+		if tracker.key == metricKey {
+			return
+		}
+	}
+	m.realtimeWorkflows[ownerKey] = append(m.realtimeWorkflows[ownerKey], realtimeTracker{
+		inst: m.GetInstrument(metricSpec.Name),
+		key:  metricSpec.GetKey(),
+	})
 }
 
 func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
