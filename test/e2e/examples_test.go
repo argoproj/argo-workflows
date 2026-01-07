@@ -27,29 +27,7 @@ func TestExampleWorkflows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//kubeClient, err := kubernetes.NewForConfig(restConfig)
-	//if err != nil {
-	//t.Fatal(err)
-	//}
 	dyn := dynamic.NewForConfigOrDie(restConfig)
-
-	//configController := config.NewController(fixtures.Namespace, common.ConfigMapName, kubeClient)
-	//ctx := logging.TestContext(t.Context())
-	//config, err := configController.Get(ctx)
-	//if err != nil {
-	//t.Fatal(err)
-	//}
-	//persistence := fixtures.NewPersistence(ctx, kubeClient, config)
-
-	//clientset, err := kubernetes.NewForConfig(restConfig)
-	//if err != nil {
-	//t.Fatal(err)
-	//}
-	//sec, err := clientset.CoreV1().Secrets(fixtures.Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
-	//if err != nil {
-	//t.Fatal(err)
-	//}
-
 	kindToApply := map[string]bool{
 		"ConfigMap":               true,
 		"PersistentVolumeClaim":   true,

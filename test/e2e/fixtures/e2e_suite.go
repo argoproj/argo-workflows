@@ -70,14 +70,14 @@ type E2ESuite struct {
 func (s *E2ESuite) SetupSuite() {
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
-	CheckError(s.T(), err)
+	s.CheckError(err)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
-	CheckError(s.T(), err)
+	s.CheckError(err)
 	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
 	ctx := logging.TestContext(s.T().Context())
 	c, err := configController.Get(ctx)
-	CheckError(s.T(), err)
+	s.CheckError(err)
 	s.Config = c
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
@@ -151,22 +151,22 @@ func (s *E2ESuite) DeleteResources() {
 			// remove finalizer from all the resources of the given GroupVersionResource
 			resourceInf := DynamicFor(s.RestConfig, pods)
 			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
-			CheckError(s.T(), err)
+			s.CheckError(err)
 			for _, item := range resourceList.Items {
 				patch, err := json.Marshal(map[string]interface{}{
 					"metadata": map[string]interface{}{
 						"finalizers": []string{},
 					},
 				})
-				CheckError(s.T(), err)
+				s.CheckError(err)
 				_, err = resourceInf.Patch(ctx, item.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
 				if err != nil && !apierr.IsNotFound(err) {
-					CheckError(s.T(), err)
+					s.CheckError(err)
 				}
 			}
-			CheckError(s.T(), DynamicFor(s.RestConfig, r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
+			s.CheckError(DynamicFor(s.RestConfig, r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
 			ls, err := DynamicFor(s.RestConfig, r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
-			CheckError(s.T(), err)
+			s.CheckError(err)
 			if len(ls.Items) == 0 {
 				break
 			}
@@ -178,26 +178,26 @@ func (s *E2ESuite) DeleteResources() {
 	if s.Persistence.IsEnabled() {
 		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
-		CheckError(s.T(), err)
+		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
-		CheckError(s.T(), err)
+		s.CheckError(err)
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(ctx, string(w.UID))
-			CheckError(s.T(), err)
+			s.CheckError(err)
 		}
 		parse, err = labels.ParseToRequirements(Backfill)
-		CheckError(s.T(), err)
+		s.CheckError(err)
 		backfillWorkflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
-		CheckError(s.T(), err)
+		s.CheckError(err)
 		for _, w := range backfillWorkflows {
 			err := archive.DeleteWorkflow(ctx, string(w.UID))
-			CheckError(s.T(), err)
+			s.CheckError(err)
 		}
 	}
 }

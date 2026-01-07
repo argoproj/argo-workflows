@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -29,9 +30,17 @@ type Runner struct {
 	given       *Given
 	persistence *Persistence
 	restConfig  *rest.Config
+
+	testResourceCleanupEnabled bool
 }
 
-func NewRunner(t *testing.T) *Runner {
+func WithTestResourceCleanupEnabled(v bool) func(*Runner) {
+	return func(s *Runner) {
+		s.testResourceCleanupEnabled = true
+	}
+}
+
+func NewRunner(t *testing.T, options ...func(*Runner)) *Runner {
 	restConfig, err := kubeconfig.DefaultRestConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +69,9 @@ func NewRunner(t *testing.T) *Runner {
 		persistence: persistence,
 		restConfig:  restConfig,
 	}
+	for _, o := range options {
+		o(runner)
+	}
 	runner.given = NewGiven(
 		t,
 		versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().Workflows(Namespace),
@@ -73,6 +85,12 @@ func NewRunner(t *testing.T) *Runner {
 		string(sec.Data["token"]),
 		restConfig,
 		config)
+	if runner.testResourceCleanupEnabled {
+		t.Cleanup(func() {
+			// we need to use a new context because in t.Cleanup the test context (t.Context) is cancelled
+			runner.DeleteResources(t, context.Background())
+		})
+	}
 	return runner
 }
 
@@ -80,8 +98,8 @@ func (r *Runner) Given() *Given {
 	return r.given
 }
 
-func (r *Runner) DeleteResources(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
+func (r *Runner) DeleteResources(t *testing.T, ctx context.Context) {
+	ctx = logging.TestContext(ctx)
 
 	l := func(r schema.GroupVersionResource) string {
 		if r.Resource == "pods" {

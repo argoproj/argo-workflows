@@ -17,8 +17,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -51,6 +50,7 @@ spec:
 			assert.Greater(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
 		})
 }
+
 func TestBasicTimezone(t *testing.T) {
 	// This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
 	// then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
@@ -65,8 +65,7 @@ func TestBasicTimezone(t *testing.T) {
 		hour = (hour + 1) % 24
 	}
 	scheduleInTestTimezone := strconv.Itoa(minute) + " " + strconv.Itoa(hour) + " * * *"
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(fmt.Sprintf(`
 apiVersion: argoproj.io/v1alpha1
@@ -95,9 +94,9 @@ spec:
 			assert.Greater(t, cronWf.Status.LastScheduledTime.Time, time.Now().Add(-1*time.Minute))
 		})
 }
+
 func TestSuspend(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -131,8 +130,7 @@ spec:
 }
 
 func TestResume(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -166,8 +164,7 @@ spec:
 }
 
 func TestBasicForbid(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -203,8 +200,7 @@ spec:
 		})
 }
 func TestBasicAllow(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -241,8 +237,7 @@ spec:
 }
 
 func TestBasicReplace(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -281,8 +276,7 @@ spec:
 }
 
 func TestSuccessfulJobHistoryLimit(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -319,8 +313,7 @@ spec:
 }
 
 func TestFailedJobHistoryLimit(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -358,8 +351,7 @@ spec:
 }
 
 func TestStoppingConditionWithSucceeded(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -398,8 +390,7 @@ spec:
 		})
 }
 func TestStoppingConditionWithFailed(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -436,8 +427,7 @@ spec:
 }
 
 func TestMultipleWithTimezone(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -474,7 +464,6 @@ spec:
 }
 
 func TestMalformedCronWorkflow(t *testing.T) {
-	runner := fixtures.NewRunner(t)
-	defer runner.DeleteResources(t)
+	runner := fixtures.NewRunner(t, fixtures.WithTestResourceCleanupEnabled(true))
 	runner.Given().KubectlApply("testdata/malformed/malformed-cronworkflow.yaml", fixtures.ErrorOutput(".spec.workflowSpec.arguments.parameters: expected list"))
 }
