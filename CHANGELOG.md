@@ -1,5 +1,32 @@
 # Changelog
 
+## v4.0.0-rc3 (2026-01-08)
+
+Full Changelog: [v4.0.0-rc2...v4.0.0-rc3](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc2...v4.0.0-rc3)
+
+### Selected Changes
+
+* [9f3f13c58](https://github.com/argoproj/argo-workflows/commit/9f3f13c5803249a028361d419c96f744cbbdc2a2) fix: quick-start should not include artifact plugin (#15223)
+* [ec0f3619c](https://github.com/argoproj/argo-workflows/commit/ec0f3619ca46004ed82aaabb089902b48e3d17ed) fix: dedupe realtime metrics and handle delete tombstone (#15216)
+* [9febcd280](https://github.com/argoproj/argo-workflows/commit/9febcd2802eb4960c3037298ed643f4eeafe598c) fix: server, label actor on retrywf (#15201)
+* [980e99eaa](https://github.com/argoproj/argo-workflows/commit/980e99eaa67af25ecc7c4a5e7ec8e59e697c3b48) fix: Docs reference a UI service that does not exist (#15204)
+* [caed4ae01](https://github.com/argoproj/argo-workflows/commit/caed4ae01894d62a2eea243bb04fb58cea93ae69) fix: Avoid resetting resourceVersion for watch. Fixes #15106 (#15107)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.5
+* Jack Cui
+* Jake Leahy
+* Joibel
+* jswxstw
+* lif
+* oninowang
+* Tianchu Zhao
+* Yuan Tang
+
+</details>
+
 ## v4.0.0-rc2 (2025-12-22)
 
 Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc1...v4.0.0-rc2)
@@ -45,7 +72,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.6...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.6...v4.0.0-rc1)
+Full Changelog: [v3.7.7...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.7...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -232,6 +259,45 @@ Full Changelog: [v3.7.6...v4.0.0-rc1](https://github.com/argoproj/argo-workflows
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.7 (2026-01-08)
+
+Full Changelog: [v3.7.6...v3.7.7](https://github.com/argoproj/argo-workflows/compare/v3.7.6...v3.7.7)
+
+### Selected Changes
+
+* [26c24fd59](https://github.com/argoproj/argo-workflows/commit/26c24fd5909b1eca470cfaad76d48cb24af27433) fix: dedupe realtime metrics and handle delete tombstone (cherry-pick #15216 for 3.7) (#15224)
+* [ce81da30b](https://github.com/argoproj/argo-workflows/commit/ce81da30b7a3d768329ab38612b1af981270d6b0) fix(ui): fix BASE_HREF in production index.html. Fixes #15046 (cherry-pick #15066 for 3.7) (#15215)
+* [fe0853d16](https://github.com/argoproj/argo-workflows/commit/fe0853d16c6c3cccef1cb2dc63d2c6c20ad9ba19) fix: remove pod finalizer in abnormal scenarios (cherry-pick #15164 for 3.7) (#15211)
+* [71f71e147](https://github.com/argoproj/argo-workflows/commit/71f71e14710058eede467c513dd1241e13e279b5) fix: Avoid resetting resourceVersion for watch. Fixes #15106 (cherry-pick #15107 for 3.7) (#15207)
+* [3208e1b8f](https://github.com/argoproj/argo-workflows/commit/3208e1b8fe9de2ca1006a1257a5e972ae85a6d88) fix: server, label actor on retrywf (cherry-pick #15201 for 3.7) (#15209)
+* [0249b17d0](https://github.com/argoproj/argo-workflows/commit/0249b17d0bbad77e182863bcba4dc021b3f28073) fix: Docs reference a UI service that does not exist (cherry-pick #15204 for 3.7) (#15208)
+* [2b07188f4](https://github.com/argoproj/argo-workflows/commit/2b07188f4aae447b7a7f21dc84f4534ab53db837) fix(ui): fix column alignment in workflow list (cherry-pick #15185 for 3.7) (#15187)
+* [197b96cba](https://github.com/argoproj/argo-workflows/commit/197b96cba7eab489c989d30614d66455a45012e6) fix: add timeout for database query in workflow estimation to prevent blocking. (cherry-pick #15116 for 3.7) (#15180)
+* [7ff6dde1b](https://github.com/argoproj/argo-workflows/commit/7ff6dde1b9831dde550c97896385ed21a8664d01) fix: upgrade expr to bring in bugfix. Fixes #15093 (cherry-pick #15168 for 3.7) (#15171)
+* [5f59cb3b0](https://github.com/argoproj/argo-workflows/commit/5f59cb3b08af163f801b144cf4e8f4d46e98f699) fix: check ClusterWorkflowTemplate RBAC cluster wide instead of namespaced. Fixes #15071 (cherry-pick #15162 for 3.7) (#15179)
+* [f7e452383](https://github.com/argoproj/argo-workflows/commit/f7e452383d641d05cca3615c2869ae4661359e1f) fix: type-aware application of template defaults (#14899) (cherry-pick #15144 for 3.7) (#15173)
+* [d24f6b5b0](https://github.com/argoproj/argo-workflows/commit/d24f6b5b093c5fff0ac2fb8fc3e4902daa9c1374) fix: if pod fails without container termination, don't mark node succeeded always (cherry-pick #15150 for 3.7) (#15155)
+* [faf5933ce](https://github.com/argoproj/argo-workflows/commit/faf5933cebb8526321618fcf5532c5372f67690f) perf: set ResourceVersion=0 in deleteTaskResults to reduce etcd pressure. (cherry-pick #15115 for 3.7) (#15151)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.5
+* Eduardo Rodrigues
+* Giovanni Campagna
+* Jack Cui
+* Jake Leahy
+* jiazhen.liu
+* jswxstw
+* Lars F. Karlström
+* lif
+* Mason Malone
+* oninowang
+* shuangkun tian
+* Tianchu Zhao
 
 </details>
 
@@ -494,7 +560,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.15...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.15...v3.7.0-rc1)
+Full Changelog: [v3.6.16...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.16...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -701,6 +767,34 @@ Full Changelog: [v3.6.15...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.16 (2026-01-08)
+
+Full Changelog: [v3.6.15...v3.6.16](https://github.com/argoproj/argo-workflows/compare/v3.6.15...v3.6.16)
+
+### Selected Changes
+
+* [1c2f347d1](https://github.com/argoproj/argo-workflows/commit/1c2f347d12b6eaf8891f635b524c6583dbe94b6f) fix: dedupe realtime metrics and handle delete tombstone (cherry-pick #15216 for 3.6) (#15225)
+* [40c52bccc](https://github.com/argoproj/argo-workflows/commit/40c52bccc7f0cb0ee4aa4ec19c07ae502f131972) fix: remove pod finalizer in abnormal scenarios (cherry-pick #15164 for 3.6) (#15212)
+* [91c1c2114](https://github.com/argoproj/argo-workflows/commit/91c1c2114195701d0f239e27a74496003573021c) fix: Avoid resetting resourceVersion for watch. Fixes #15106 (cherry-pick #15107 for 3.6) (#15206)
+* [bc0779b8f](https://github.com/argoproj/argo-workflows/commit/bc0779b8f15867c493aaca072a2373036d6f07d0) fix: type-aware application of template defaults (#14899) (cherry-pick #15144 for 3.6) (#15181)
+* [158b47b69](https://github.com/argoproj/argo-workflows/commit/158b47b69618afe03ca9cd3a82eeee29728dbfb1) fix: upgrade expr to bring in bugfix. Fixes #15093 (cherry-pick #15168 for 3.6) (#15182)
+* [2a242b65e](https://github.com/argoproj/argo-workflows/commit/2a242b65eaf2b1a3113602e64cc41d32fb43b481) fix: if pod fails without container termination, don't mark node succeeded always (cherry-pick #15150 for 3.6) (#15157)
+* [cdbd8b0ec](https://github.com/argoproj/argo-workflows/commit/cdbd8b0ec6c7e548b66386e28f54fcdf5ebc835e) perf: set ResourceVersion=0 in deleteTaskResults to reduce etcd pressure. (cherry-pick #15115 for 3.6) (#15152)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Isitha Subasinghe
+* Jack Cui
+* jiazhen.liu
+* jswxstw
+* Lars F. Karlström
+* Mason Malone
+* oninowang
+* shuangkun tian
 
 </details>
 
