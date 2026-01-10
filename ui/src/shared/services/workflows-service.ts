@@ -68,6 +68,10 @@ export const WorkflowsService = {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     },
 
+    getByUID(namespace: string, name: string, uid: string) {
+        return requests.get(`api/v1/workflows/${namespace}/${name}/${uid}`).then(res => res.body as Workflow);
+    },
+
     getArchived(namespace: string, uid: string) {
         return requests.get(`api/v1/archived-workflows/${uid}?namespace=${namespace}`).then(res => res.body as models.Workflow);
     },

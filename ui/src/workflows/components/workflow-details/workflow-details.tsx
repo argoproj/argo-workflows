@@ -100,7 +100,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     const isFirstRender = useRef(true);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
-    const [uid, setUid] = useState(queryParams.get('uid') || '');
+    const [uid, setUid] = useState(match.params.uid || queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -125,13 +125,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     useEffect(
         useQueryParams(history, p => {
-            setUid(p.get('uid'));
+            setUid(match.params.uid || p.get('uid') || '');
             setTab(p.get('tab') || 'workflow');
             setNodeId(p.get('nodeId'));
             setNodePanelView(p.get('nodePanelView'));
             setSidePanel(p.get('sidePanel'));
         }),
-        [history]
+        [history, match.params.uid]
     );
 
     function getInputParametersForNode(selectedWorkflowNodeId: string): Parameter[] {
@@ -394,8 +394,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     useEffect(() => {
         (async () => {
             try {
-                const wf = await services.workflows.get(namespace, name);
-                setUid(wf.metadata.uid);
+                const wf = await services.workflows.getByUID(namespace, name, uid);
                 setWorkflow(wf);
                 setError(null);
                 return;
