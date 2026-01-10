@@ -26,6 +26,10 @@ func (o OfflineWorkflowServiceClient) GetWorkflow(context.Context, *workflowpkg.
 	return nil, ErrOffline
 }
 
+func (o OfflineWorkflowServiceClient) GetWorkflowByUID(context.Context, *workflowpkg.WorkflowGetByUIDRequest, ...grpc.CallOption) (*wfv1.Workflow, error) {
+	return nil, ErrOffline
+}
+
 func (o OfflineWorkflowServiceClient) ListWorkflows(context.Context, *workflowpkg.WorkflowListRequest, ...grpc.CallOption) (*wfv1.WorkflowList, error) {
 	return nil, ErrOffline
 }

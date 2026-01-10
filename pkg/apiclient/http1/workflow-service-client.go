@@ -21,6 +21,11 @@ func (h WorkflowServiceClient) GetWorkflow(ctx context.Context, in *workflowpkg.
 	return out, h.Get(ctx, in, out, "/api/v1/workflows/{namespace}/{name}")
 }
 
+func (h WorkflowServiceClient) GetWorkflowByUID(ctx context.Context, in *workflowpkg.WorkflowGetByUIDRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
+	out := &wfv1.Workflow{}
+	return out, h.Get(ctx, in, out, "/api/v1/workflows/{namespace}/{name}/{uid}")
+}
+
 func (h WorkflowServiceClient) ListWorkflows(ctx context.Context, in *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowList, error) {
 	out := &wfv1.WorkflowList{}
 	return out, h.Get(ctx, in, out, "/api/v1/workflows/{namespace}")

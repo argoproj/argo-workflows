@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**workflowServiceCreateWorkflow**](WorkflowServiceApi.md#workflowServiceCreateWorkflow) | **POST** /api/v1/workflows/{namespace} | 
 [**workflowServiceDeleteWorkflow**](WorkflowServiceApi.md#workflowServiceDeleteWorkflow) | **DELETE** /api/v1/workflows/{namespace}/{name} | 
 [**workflowServiceGetWorkflow**](WorkflowServiceApi.md#workflowServiceGetWorkflow) | **GET** /api/v1/workflows/{namespace}/{name} | 
+[**workflowServiceGetWorkflowByUID**](WorkflowServiceApi.md#workflowServiceGetWorkflowByUID) | **GET** /api/v1/workflows/{namespace}/{name}/{uid} | 
 [**workflowServiceLintWorkflow**](WorkflowServiceApi.md#workflowServiceLintWorkflow) | **POST** /api/v1/workflows/{namespace}/lint | 
 [**workflowServiceListWorkflows**](WorkflowServiceApi.md#workflowServiceListWorkflows) | **GET** /api/v1/workflows/{namespace} | 
 [**workflowServicePodLogs**](WorkflowServiceApi.md#workflowServicePodLogs) | **GET** /api/v1/workflows/{namespace}/{name}/{podName}/log | DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
@@ -231,6 +232,82 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
  **name** | **String**|  |
+ **getOptionsResourceVersion** | **String**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
+ **fields** | **String**| Fields to be included or excluded in the response. e.g. \&quot;spec,status.phase\&quot;, \&quot;-status.nodes\&quot;. | [optional]
+
+### Return type
+
+[**IoArgoprojWorkflowV1alpha1Workflow**](IoArgoprojWorkflowV1alpha1Workflow.md)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response. |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="workflowServiceGetWorkflowByUID"></a>
+# **workflowServiceGetWorkflowByUID**
+> IoArgoprojWorkflowV1alpha1Workflow workflowServiceGetWorkflowByUID(namespace, name, uid, getOptionsResourceVersion, fields)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.WorkflowServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
+
+    WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | 
+    String name = "name_example"; // String | 
+    String uid = "uid_example"; // String | 
+    String getOptionsResourceVersion = "getOptionsResourceVersion_example"; // String | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+    String fields = "fields_example"; // String | Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".
+    try {
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.workflowServiceGetWorkflowByUID(namespace, name, uid, getOptionsResourceVersion, fields);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling WorkflowServiceApi#workflowServiceGetWorkflowByUID");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**|  |
+ **name** | **String**|  |
+ **uid** | **String**|  |
  **getOptionsResourceVersion** | **String**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **fields** | **String**| Fields to be included or excluded in the response. e.g. \&quot;spec,status.phase\&quot;, \&quot;-status.nodes\&quot;. | [optional]
 

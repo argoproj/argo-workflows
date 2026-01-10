@@ -28,6 +28,15 @@ message WorkflowGetRequest {
   string fields = 4;
 }
 
+message WorkflowGetByUIDRequest {
+  string name = 1;
+  string namespace = 2;
+  string uid = 3;
+  k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 4;
+  // Fields to be included or excluded in the response. e.g. "spec,status.phase", "-status.nodes"
+  string fields = 5;
+}
+
 message WorkflowListRequest {
   string namespace = 1;
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
@@ -149,6 +158,10 @@ service WorkflowService {
 
   rpc GetWorkflow(WorkflowGetRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}";
+  }
+
+  rpc GetWorkflowByUID(WorkflowGetByUIDRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+    option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/{uid}";
   }
 
   rpc ListWorkflows(WorkflowListRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowList) {

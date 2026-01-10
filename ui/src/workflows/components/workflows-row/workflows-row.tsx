@@ -56,8 +56,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                 <div className='small-11 row'>
                     <Link
                         to={{
-                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
-                            search: `?uid=${wf.metadata.uid}`
+                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}/${wf.metadata.uid}`)
                         }}
                         className='columns small-2'>
                         <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
