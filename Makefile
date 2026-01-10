@@ -586,7 +586,7 @@ lint-ui: ui/dist/app/index.html
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) ## Run tests
+test: ui/dist/app/index.html $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) ## Run tests
 	go build ./...
 	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
@@ -730,22 +730,12 @@ clean: ## Clean the directory of build files
 	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
+# Telemetry Go files generated via go generate, run as part of codegen.
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
+
 docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --metricsDocs $@
-
-util/telemetry/metrics_list.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
-	@echo Rebuilding $@
-	go run ./util/telemetry/builder --metricsListGo $@
-
-util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
-	@echo Rebuilding $@
-	go run ./util/telemetry/builder --attributesGo $@
-
-util/telemetry/metrics_helpers.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
-	@echo Rebuilding $@
-	go run ./util/telemetry/builder --metricsHelpersGo $@
 
 # swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
