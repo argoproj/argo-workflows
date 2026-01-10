@@ -781,7 +781,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 
 	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
 	// fallback to retrieve from archived workflows
-	if wf == nil || origErr != nil {
+	if wf == nil || origErr != nil || (wf != nil && string(wf.UID) != uid) {
 		allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 		if err != nil {
 			return nil, getWorkflowOrigErr(ctx, origErr, err)
