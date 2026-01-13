@@ -1,0 +1,111 @@
+.artifacts-input {
+    width: 100%;
+
+    &__dropzone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+
+        &:hover {
+            border-color: #0dadea;
+            background-color: rgba(13, 173, 234, 0.05);
+        }
+
+        i {
+            font-size: 32px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        span {
+            color: #666;
+        }
+    }
+
+    &__progress {
+        padding: 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #fafafa;
+    }
+
+    &__file-name {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        font-weight: 500;
+
+        i {
+            margin-right: 8px;
+            color: #0dadea;
+        }
+    }
+
+    &__progress-bar {
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    &__progress-fill {
+        height: 100%;
+        background-color: #0dadea;
+        transition: width 0.2s ease-out;
+    }
+
+    &__progress-text {
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+    }
+
+    &__success {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+        border: 1px solid #4caf50;
+        border-radius: 8px;
+        background-color: rgba(76, 175, 80, 0.1);
+
+        i {
+            font-size: 32px;
+            color: #4caf50;
+            margin-bottom: 12px;
+        }
+
+        span {
+            margin-bottom: 16px;
+            color: #4caf50;
+        }
+    }
+
+    &__error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+        border: 1px solid #f44336;
+        border-radius: 8px;
+        background-color: rgba(244, 67, 54, 0.1);
+
+        i {
+            font-size: 32px;
+            color: #f44336;
+            margin-bottom: 12px;
+        }
+
+        span {
+            margin-bottom: 16px;
+            color: #f44336;
+        }
+    }
+}
