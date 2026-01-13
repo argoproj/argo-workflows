@@ -136,6 +136,7 @@ export function SubmitWorkflowPanel(props: Props) {
                                 <label style={{ fontWeight: 'normal', fontSize: '0.9em' }}>{artifact.name}</label>
                                 <ArtifactsInput
                                     namespace={props.namespace}
+                                    workflowTemplateName={props.name}
                                     artifactName={artifact.name}
                                     onUploadComplete={response => handleArtifactUpload(artifact.name, response)}
                                     onError={setError}
