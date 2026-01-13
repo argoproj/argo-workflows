@@ -821,6 +821,22 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	s.instanceIDService.Label(wf)
 	creator.LabelCreator(ctx, wf)
+
+	// Debug: Log SubmitOptions
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{
+		"submitOptions":    req.SubmitOptions,
+		"hasSubmitOptions": req.SubmitOptions != nil,
+		"artifactsCount": func() int {
+			if req.SubmitOptions != nil {
+				return len(req.SubmitOptions.Artifacts)
+			} else {
+				return -1
+			}
+		}(),
+		"hasWorkflowTemplateRef": wf.Spec.WorkflowTemplateRef != nil,
+	}).Debug(ctx, "SubmitWorkflow: checking conditions")
+
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -830,6 +846,10 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	// When using workflowTemplateRef, wf.Spec.Arguments.Artifacts is empty,
 	// so we need to copy artifacts from the template and override the keys
 	if req.SubmitOptions != nil && len(req.SubmitOptions.Artifacts) > 0 && wf.Spec.WorkflowTemplateRef != nil {
+		logger.WithFields(logging.Fields{
+			"artifacts":           req.SubmitOptions.Artifacts,
+			"workflowTemplateRef": wf.Spec.WorkflowTemplateRef.Name,
+		}).Debug(ctx, "Processing artifact overrides for workflowTemplateRef")
 		var tmplArtifacts []wfv1.Artifact
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			cwftmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
@@ -854,6 +874,11 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			}
 		}
 
+		logger.WithFields(logging.Fields{
+			"overrides":         overrides,
+			"templateArtifacts": len(tmplArtifacts),
+		}).Debug(ctx, "Parsed artifact overrides")
+
 		// Copy artifacts from template and override keys
 		for _, tmplArt := range tmplArtifacts {
 			if newKey, ok := overrides[tmplArt.Name]; ok {
@@ -863,8 +888,20 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err), codes.Internal)
 				}
 				wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, *artCopy)
+
+				// Log the artifact override
+				overriddenKey, _ := artCopy.GetKey()
+				logger.WithFields(logging.Fields{
+					"artifactName": tmplArt.Name,
+					"originalKey":  func() string { k, _ := tmplArt.ArtifactLocation.GetKey(); return k }(),
+					"newKey":       overriddenKey,
+				}).Debug(ctx, "Applied artifact key override")
 			}
 		}
+
+		logger.WithFields(logging.Fields{
+			"totalArtifacts": len(wf.Spec.Arguments.Artifacts),
+		}).Debug(ctx, "Completed artifact override processing")
 	}
 
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
@@ -889,6 +926,22 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 		}
 		return workflow, nil
+	}
+
+	// Log final workflow artifacts before creation
+	if len(wf.Spec.Arguments.Artifacts) > 0 {
+		logger := logging.RequireLoggerFromContext(ctx)
+		artifactDetails := make([]map[string]string, 0, len(wf.Spec.Arguments.Artifacts))
+		for _, art := range wf.Spec.Arguments.Artifacts {
+			key, _ := art.GetKey()
+			artifactDetails = append(artifactDetails, map[string]string{
+				"name": art.Name,
+				"key":  key,
+			})
+		}
+		logger.WithFields(logging.Fields{
+			"artifacts": artifactDetails,
+		}).Debug(ctx, "Final workflow artifacts before creation")
 	}
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})

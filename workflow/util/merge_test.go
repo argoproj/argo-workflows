@@ -549,3 +549,77 @@ func TestMergeLabelsFrom(t *testing.T) {
 		assert.Equal(t, "BASE", targetWf.Spec.WorkflowMetadata.LabelsFrom[`baz`].Expression)
 	})
 }
+
+var wfWithArtifactOverride = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-with-artifact-override-
+spec:
+  workflowTemplateRef:
+    name: template-with-artifact
+  arguments:
+    artifacts:
+      - name: my-uploaded-file
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: panicboat-sandbox-723535945756
+          key: uploads/argo/12345678-1234-1234-1234-123456789012/file.zip
+          accessKeySecret:
+            name: debug-s3-creds
+            key: accessKey
+          secretKeySecret:
+            name: debug-s3-creds
+            key: secretKey
+`
+
+var wftWithArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-artifact
+spec:
+  entrypoint: argosay
+  arguments:
+    artifacts:
+      - name: my-uploaded-file
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: panicboat-sandbox-723535945756
+          key: input-file/placeholder
+          accessKeySecret:
+            name: debug-s3-creds
+            key: accessKey
+          secretKeySecret:
+            name: debug-s3-creds
+            key: secretKey
+  templates:
+    - name: argosay
+      inputs:
+        artifacts:
+          - name: my-uploaded-file
+            path: /tmp/file
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo 'artifact loaded'"]
+`
+
+func TestJoinWorkflowSpecWithArtifactOverride(t *testing.T) {
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(wfWithArtifactOverride)
+	wft := wfv1.MustUnmarshalWorkflowTemplate(wftWithArtifact)
+
+	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
+	require.NoError(t, err)
+
+	// Should have 1 artifact (my-uploaded-file)
+	assert.Len(targetWf.Spec.Arguments.Artifacts, 1)
+	assert.Equal("my-uploaded-file", targetWf.Spec.Arguments.Artifacts[0].Name)
+
+	// The key should be from the workflow (overridden), not from the template
+	key, err := targetWf.Spec.Arguments.Artifacts[0].S3.GetKey()
+	require.NoError(t, err)
+	assert.Equal("uploads/argo/12345678-1234-1234-1234-123456789012/file.zip", key)
+	assert.NotEqual("input-file/placeholder", key)
+}
