@@ -186,6 +186,9 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+	// EnvVarSemaphoreWaitingHoldersDisplayLimit limits the number of holders displayed in semaphore waiting status
+	// This helps reduce memory usage when many workflows are holding the same semaphore
+	EnvVarSemaphoreWaitingHoldersDisplayLimit = "SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT"
 
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
