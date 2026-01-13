@@ -115,6 +115,10 @@ func (a *fakeArtifactDriver) Save(_ context.Context, _ string, _ *wfv1.Artifact)
 	return fmt.Errorf("not implemented")
 }
 
+func (a *fakeArtifactDriver) SaveStream(_ context.Context, _ io.Reader, _ *wfv1.Artifact) error {
+	return nil
+}
+
 func (a *fakeArtifactDriver) IsDirectory(_ context.Context, artifact *wfv1.Artifact) (bool, error) {
 	key, err := artifact.GetKey()
 	if err != nil {

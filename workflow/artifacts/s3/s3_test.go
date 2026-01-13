@@ -127,6 +127,11 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 	return s.getMockedErr("MakeBucket")
 }
 
+// PutStream uploads data from a reader to a bucket at the specified key
+func (s *mockS3Client) PutStream(bucket, key string, reader io.Reader, size int64) error {
+	return s.getMockedErr("PutStream")
+}
+
 func TestOpenStreamS3Artifact(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
