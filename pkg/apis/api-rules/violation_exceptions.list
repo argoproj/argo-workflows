@@ -27,6 +27,7 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,ResourceTemplate,Flags
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SemaphoreStatus,Holding
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SemaphoreStatus,Waiting
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SubmitOpts,Artifacts
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SubmitOpts,Parameters
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Synchronization,Mutexes
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Synchronization,Semaphores
