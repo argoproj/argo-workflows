@@ -4117,7 +4117,7 @@ func (ss *SemaphoreStatus) GetWaiting(semaphoreName string) (int, SemaphoreHoldi
 // Default is 10, can be configured via SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT environment variable
 // Set to 0 or negative to disable limit (show all holders)
 func getSemaphoreWaitingHoldersDisplayLimit() int {
-	limit := env.LookupEnvIntOr("SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT", 10)
+	limit := env.LookupEnvIntOr(logging.InitLoggerInContext(), "SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT", 10)
 	if limit <= 0 {
 		return 0 // 0 means no limit
 	}
