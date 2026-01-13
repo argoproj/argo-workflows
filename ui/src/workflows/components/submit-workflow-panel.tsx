@@ -69,13 +69,24 @@ export function SubmitWorkflowPanel(props: Props) {
     async function submit() {
         setIsSubmitting(true);
         try {
+            // Build artifacts array from uploaded artifacts
+            const artifactOverrides = Object.entries(uploadedArtifacts).map(([name, response]) => {
+                // Format: name=s3://bucket/key (the API expects this format)
+                if (response.location?.s3) {
+                    return `${name}=s3://${response.location.s3.bucket}/${response.location.s3.key}`;
+                }
+                // Fallback: use the key directly if location format is unknown
+                return `${name}=${response.key}`;
+            });
+
             const submitted = await services.workflows.submit(props.kind, props.name, props.namespace, {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
                 parameters: [
                     ...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p)),
                     ...parameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))
                 ],
-                labels: labels.join(',')
+                labels: labels.join(','),
+                artifacts: artifactOverrides.length > 0 ? artifactOverrides : undefined
             });
             navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`));
         } catch (err) {
