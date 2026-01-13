@@ -289,6 +289,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if err != nil {
 		return err
 	}
+	err = overrideArtifacts(wf, opts.Artifacts)
+	if err != nil {
+		return err
+	}
 	if opts.GenerateName != "" {
 		wf.GenerateName = opts.GenerateName
 	}
@@ -326,6 +330,44 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 			wf.Status.StoredWorkflowSpec.Arguments.Parameters = newParams
 		}
 	}
+	return nil
+}
+
+func overrideArtifacts(wf *wfv1.Workflow, artifacts []string) error {
+	if len(artifacts) == 0 {
+		return nil
+	}
+
+	// Parse artifact overrides: name=key format
+	overrides := make(map[string]string)
+	for _, artifactStr := range artifacts {
+		parts := strings.SplitN(artifactStr, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("expected artifact of the form: NAME=KEY. Received: %s", artifactStr)
+		}
+		overrides[parts[0]] = parts[1]
+	}
+
+	// Override artifact keys in workflow arguments
+	for i, artifact := range wf.Spec.Arguments.Artifacts {
+		if newKey, ok := overrides[artifact.Name]; ok {
+			if err := wf.Spec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+				return fmt.Errorf("failed to set key for artifact %s: %w", artifact.Name, err)
+			}
+		}
+	}
+
+	// Also update StoredWorkflowSpec if present
+	if wf.Status.StoredWorkflowSpec != nil {
+		for i, artifact := range wf.Status.StoredWorkflowSpec.Arguments.Artifacts {
+			if newKey, ok := overrides[artifact.Name]; ok {
+				if err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+					return fmt.Errorf("failed to set key for artifact %s in stored spec: %w", artifact.Name, err)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
