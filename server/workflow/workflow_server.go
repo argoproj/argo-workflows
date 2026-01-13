@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -823,6 +824,47 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	// Handle artifact overrides for workflowTemplateRef workflows
+	// When using workflowTemplateRef, wf.Spec.Arguments.Artifacts is empty,
+	// so we need to copy artifacts from the template and override the keys
+	if req.SubmitOptions != nil && len(req.SubmitOptions.Artifacts) > 0 && wf.Spec.WorkflowTemplateRef != nil {
+		var tmplArtifacts []wfv1.Artifact
+		if wf.Spec.WorkflowTemplateRef.ClusterScope {
+			cwftmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("failed to get ClusterWorkflowTemplate for artifact override: %w", err), codes.Internal)
+			}
+			tmplArtifacts = cwftmpl.Spec.Arguments.Artifacts
+		} else {
+			wftmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("failed to get WorkflowTemplate for artifact override: %w", err), codes.Internal)
+			}
+			tmplArtifacts = wftmpl.Spec.Arguments.Artifacts
+		}
+
+		// Parse artifact overrides: name=key format
+		overrides := make(map[string]string)
+		for _, artifactStr := range req.SubmitOptions.Artifacts {
+			parts := strings.SplitN(artifactStr, "=", 2)
+			if len(parts) == 2 {
+				overrides[parts[0]] = parts[1]
+			}
+		}
+
+		// Copy artifacts from template and override keys
+		for _, tmplArt := range tmplArtifacts {
+			if newKey, ok := overrides[tmplArt.Name]; ok {
+				// Deep copy the artifact and set the new key
+				artCopy := tmplArt.DeepCopy()
+				if err := artCopy.SetKey(newKey); err != nil {
+					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err), codes.Internal)
+				}
+				wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, *artCopy)
+			}
+		}
 	}
 
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
