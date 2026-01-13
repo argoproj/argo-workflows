@@ -72,4 +72,6 @@ type SubmitOpts struct {
 	// Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
 	// are processed first.
 	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
+	// Artifacts overrides input artifact locations. Format: name=s3://bucket/key or name=key
+	Artifacts []string `json:"artifacts,omitempty" protobuf:"bytes,15,rep,name=artifacts"`
 }
