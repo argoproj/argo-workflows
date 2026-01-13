@@ -5,6 +5,7 @@ import './artifacts-input.scss';
 
 interface ArtifactsInputProps {
     namespace: string;
+    workflowTemplateName: string;
     artifactName: string;
     onUploadComplete?: (response: ArtifactUploadResponse) => void;
     onError?: (error: Error) => void;
@@ -18,7 +19,7 @@ export interface ArtifactUploadResponse {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-export function ArtifactsInput({namespace, artifactName, onUploadComplete, onError}: ArtifactsInputProps) {
+export function ArtifactsInput({namespace, workflowTemplateName, artifactName, onUploadComplete, onError}: ArtifactsInputProps) {
     const [status, setStatus] = useState<UploadStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function ArtifactsInput({namespace, artifactName, onUploadComplete, onErr
                     reject(new Error('Network error'));
                 };
 
-                xhr.open('POST', `/upload-artifacts/${namespace}/${artifactName}`);
+                xhr.open('POST', `/upload-artifacts/${namespace}/${workflowTemplateName}/${artifactName}`);
                 xhr.send(formData);
             });
         } catch (error) {
