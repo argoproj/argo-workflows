@@ -70,12 +70,8 @@ export function SubmitWorkflowPanel(props: Props) {
         setIsSubmitting(true);
         try {
             // Build artifacts array from uploaded artifacts
+            // Format: name=key (the key only, not the full S3 URL)
             const artifactOverrides = Object.entries(uploadedArtifacts).map(([name, response]) => {
-                // Format: name=s3://bucket/key (the API expects this format)
-                if (response.location?.s3) {
-                    return `${name}=s3://${response.location.s3.bucket}/${response.location.s3.key}`;
-                }
-                // Fallback: use the key directly if location format is unknown
                 return `${name}=${response.key}`;
             });
 
