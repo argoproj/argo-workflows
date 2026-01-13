@@ -4125,6 +4125,20 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	holdingName := holderKey
+
+	// Remove from waiting list if present
+	waitingIdx, semaphoreWaiting := ss.GetWaiting(lockKey)
+	if waitingIdx >= 0 {
+		semaphoreWaiting.Holders = slices.DeleteFunc(semaphoreWaiting.Holders,
+			func(x string) bool { return x == holdingName })
+		if len(semaphoreWaiting.Holders) == 0 {
+			// Remove the entire waiting entry if no holders left
+			ss.Waiting = append(ss.Waiting[:waitingIdx], ss.Waiting[waitingIdx+1:]...)
+		} else {
+			ss.Waiting[waitingIdx] = semaphoreWaiting
+		}
+	}
+
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
