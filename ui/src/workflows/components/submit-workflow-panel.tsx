@@ -1,15 +1,16 @@
-import {Select} from 'argo-ui/src/components/select/select';
-import {History} from 'history';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import { Select } from 'argo-ui/src/components/select/select';
+import { History } from 'history';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 
-import {uiUrl} from '../../shared/base';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
-import {TagsInput} from '../../shared/components/tags-input/tags-input';
-import {Context} from '../../shared/context';
-import {getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
-import {Parameter, Template} from '../../shared/models';
-import {services} from '../../shared/services';
+import { uiUrl } from '../../shared/base';
+import { ArtifactsInput, ArtifactUploadResponse } from '../../shared/components/artifacts-input';
+import { ErrorNotice } from '../../shared/components/error-notice';
+import { getValueFromParameter, ParametersInput } from '../../shared/components/parameters-input';
+import { TagsInput } from '../../shared/components/tags-input/tags-input';
+import { Context } from '../../shared/context';
+import { getWorkflowParametersFromQuery } from '../../shared/get_workflow_params';
+import { Artifact, Parameter, Template } from '../../shared/models';
+import { services } from '../../shared/services';
 
 interface Props {
     kind: string;
@@ -18,6 +19,7 @@ interface Props {
     entrypoint: string;
     templates: Template[];
     workflowParameters: Parameter[];
+    workflowArtifacts?: Artifact[];
     history: History;
 }
 
@@ -30,13 +32,18 @@ const defaultTemplate: Template = {
 };
 
 export function SubmitWorkflowPanel(props: Props) {
-    const {navigation} = useContext(Context);
+    const { navigation } = useContext(Context);
     const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadedArtifacts, setUploadedArtifacts] = useState<Record<string, ArtifactUploadResponse>>({});
+
+    const handleArtifactUpload = (artifactName: string, response: ArtifactUploadResponse) => {
+        setUploadedArtifacts(prev => ({ ...prev, [artifactName]: response }));
+    };
 
     useEffect(() => {
         const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
@@ -85,7 +92,7 @@ export function SubmitWorkflowPanel(props: Props) {
             </h5>
             {error && <ErrorNotice error={error} />}
             <div className='white-box'>
-                <div key='entrypoint' title='Entrypoint' style={{marginBottom: 25}}>
+                <div key='entrypoint' title='Entrypoint' style={{ marginBottom: 25 }}>
                     <label>Entrypoint</label>
                     <Select
                         value={entrypoint}
@@ -97,7 +104,7 @@ export function SubmitWorkflowPanel(props: Props) {
                         }}
                     />
                 </div>
-                <div key='parameters' style={{marginBottom: 25}}>
+                <div key='parameters' style={{ marginBottom: 25 }}>
                     <label>Parameters</label>
                     {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
                     {parameters.length > 0 && <ParametersInput parameters={parameters} onChange={setParameters} />}
@@ -110,7 +117,26 @@ export function SubmitWorkflowPanel(props: Props) {
                         <></>
                     )}
                 </div>
-                <div key='labels' style={{marginBottom: 25}}>
+                {props.workflowArtifacts && props.workflowArtifacts.length > 0 && (
+                    <div key='artifacts' style={{ marginBottom: 25 }}>
+                        <label>Input Artifacts</label>
+                        {props.workflowArtifacts.map(artifact => (
+                            <div key={artifact.name} style={{ marginTop: 10 }}>
+                                <label style={{ fontWeight: 'normal', fontSize: '0.9em' }}>{artifact.name}</label>
+                                <ArtifactsInput
+                                    namespace={props.namespace}
+                                    artifactName={artifact.name}
+                                    onUploadComplete={response => handleArtifactUpload(artifact.name, response)}
+                                    onError={setError}
+                                />
+                                {uploadedArtifacts[artifact.name] && (
+                                    <small style={{ color: 'green' }}>✓ Uploaded: {uploadedArtifacts[artifact.name].key}</small>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div key='labels' style={{ marginBottom: 25 }}>
                     <label>Labels</label>
                     <TagsInput tags={labels} onChange={setLabels} />
                 </div>
