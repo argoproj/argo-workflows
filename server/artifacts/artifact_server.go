@@ -70,7 +70,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 }
 
 // UploadInputArtifact handles file uploads for workflow input artifacts
-// Path: /upload-artifacts/{namespace}/{artifactName}
+// Path: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}
 // Method: POST
 // Body: multipart/form-data with "file" field
 // Response: JSON with artifact location information
@@ -81,14 +81,15 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Parse path: /upload-artifacts/{namespace}/{artifactName}
-	requestPath := strings.SplitN(r.URL.Path, "/", 4)
-	if len(requestPath) < 4 {
-		a.httpBadRequestError(w)
+	// Parse path: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}
+	requestPath := strings.SplitN(r.URL.Path, "/", 5)
+	if len(requestPath) < 5 {
+		http.Error(w, "Invalid path. Expected: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}", http.StatusBadRequest)
 		return
 	}
 	namespace := requestPath[2]
-	artifactName := requestPath[3]
+	workflowTemplateName := requestPath[3]
+	artifactName := requestPath[4]
 
 	// Authenticate and authorize
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
@@ -98,8 +99,9 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}
 
 	a.logger.WithFields(logging.Fields{
-		"namespace":    namespace,
-		"artifactName": artifactName,
+		"namespace":            namespace,
+		"workflowTemplateName": workflowTemplateName,
+		"artifactName":         artifactName,
 	}).Info(ctx, "Upload artifact")
 
 	// Parse multipart form (max 32MB in memory, rest on disk)
@@ -120,69 +122,77 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		"size":     header.Size,
 	}).Info(ctx, "Received file for upload")
 
-	// Resolve artifact repository for the namespace
-	refStatus, err := a.artifactRepositories.Resolve(ctx, nil, namespace)
+	// Get WorkflowTemplate to find artifact configuration
+	wfClient := auth.GetWfClient(ctx)
+	wfTemplate, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, workflowTemplateName, metav1.GetOptions{})
 	if err != nil {
-		a.serverInternalError(ctx, fmt.Errorf("failed to resolve artifact repository: %w", err), w)
+		http.Error(w, fmt.Sprintf("Failed to get WorkflowTemplate %s/%s: %v", namespace, workflowTemplateName, err), http.StatusNotFound)
 		return
 	}
 
-	repo, err := a.artifactRepositories.Get(ctx, refStatus)
-	if err != nil {
-		a.serverInternalError(ctx, fmt.Errorf("failed to get artifact repository: %w", err), w)
+	// Find the artifact in the WorkflowTemplate's arguments.artifacts
+	var templateArtifact *wfv1.Artifact
+	if wfTemplate.Spec.Arguments.Artifacts != nil {
+		for i := range wfTemplate.Spec.Arguments.Artifacts {
+			if wfTemplate.Spec.Arguments.Artifacts[i].Name == artifactName {
+				templateArtifact = &wfTemplate.Spec.Arguments.Artifacts[i]
+				break
+			}
+		}
+	}
+
+	if templateArtifact == nil {
+		http.Error(w, fmt.Sprintf("Artifact '%s' not found in WorkflowTemplate %s/%s arguments.artifacts", artifactName, namespace, workflowTemplateName), http.StatusNotFound)
 		return
 	}
 
-	if repo == nil {
-		http.Error(w, "No artifact repository configured", http.StatusInternalServerError)
+	// Check if the artifact has a location configured (S3, GCS, etc.)
+	if !templateArtifact.HasLocation() {
+		http.Error(w, fmt.Sprintf("Artifact '%s' does not have a storage location configured (s3, gcs, azure, oss). Please configure a storage location in the WorkflowTemplate.", artifactName), http.StatusBadRequest)
 		return
 	}
 
 	// Generate unique key for the artifact
 	uuid := generateUUID()
-	key := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, header.Filename)
+	originalKey, _ := templateArtifact.GetKey()
+	// Replace the key with uploaded file path under uploads/
+	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, header.Filename)
 
-	// Create artifact with the repository location
-	archiveLocation := repo.ToArtifactLocation()
-	outputArtifact := &wfv1.Artifact{
-		Name: artifactName,
-	}
-
-	// Relocate artifact to use the repository's location
-	if err := outputArtifact.Relocate(archiveLocation); err != nil {
-		a.serverInternalError(ctx, fmt.Errorf("failed to relocate artifact: %w", err), w)
+	// Create a copy of the artifact for uploading
+	outputArtifact := templateArtifact.DeepCopy()
+	if err := outputArtifact.SetKey(newKey); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to set artifact key: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Set the key on the artifact
-	if err := outputArtifact.SetKey(key); err != nil {
-		a.serverInternalError(ctx, fmt.Errorf("failed to set artifact key: %w", err), w)
-		return
-	}
+	a.logger.WithFields(logging.Fields{
+		"originalKey": originalKey,
+		"newKey":      newKey,
+	}).Info(ctx, "Uploading artifact with new key")
 
 	// Get the driver for the artifact
 	kubeClient := auth.GetKubeClient(ctx)
 	driver, err := a.artDriverFactory(ctx, outputArtifact, resources{kubeClient, namespace})
 	if err != nil {
-		a.serverInternalError(ctx, fmt.Errorf("failed to create artifact driver: %w", err), w)
+		http.Error(w, fmt.Sprintf("Failed to create artifact driver: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Upload using SaveStream
 	if err := driver.SaveStream(ctx, file, outputArtifact); err != nil {
-		a.serverInternalError(ctx, fmt.Errorf("failed to save artifact: %w", err), w)
+		http.Error(w, fmt.Sprintf("Failed to save artifact: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	a.logger.WithFields(logging.Fields{
 		"artifactName": artifactName,
-		"key":          key,
+		"key":          newKey,
 	}).Info(ctx, "Successfully uploaded artifact")
 
 	// Return the artifact location as JSON
 	response := map[string]interface{}{
 		"name":     artifactName,
-		"key":      key,
+		"key":      newKey,
 		"location": outputArtifact.ArtifactLocation,
 	}
 
