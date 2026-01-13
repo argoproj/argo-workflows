@@ -348,13 +348,37 @@ func overrideArtifacts(wf *wfv1.Workflow, artifacts []string) error {
 		overrides[parts[0]] = parts[1]
 	}
 
+	// Track which overrides have been applied
+	appliedOverrides := make(map[string]bool)
+
 	// Override artifact keys in workflow arguments
 	for i, artifact := range wf.Spec.Arguments.Artifacts {
 		if newKey, ok := overrides[artifact.Name]; ok {
 			if err := wf.Spec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
 				return fmt.Errorf("failed to set key for artifact %s: %w", artifact.Name, err)
 			}
+			appliedOverrides[artifact.Name] = true
 		}
+	}
+
+	// For workflowTemplateRef workflows, wf.Spec.Arguments.Artifacts may be empty.
+	// We need to add artifacts with just the S3 key override so the controller
+	// can merge them with the template's artifacts.
+	for name, newKey := range overrides {
+		if appliedOverrides[name] {
+			continue
+		}
+		// Add a new artifact with just the S3 key set
+		// The controller should merge this with the template's artifact
+		newArtifact := wfv1.Artifact{
+			Name: name,
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					Key: newKey,
+				},
+			},
+		}
+		wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, newArtifact)
 	}
 
 	// Also update StoredWorkflowSpec if present
