@@ -3049,6 +3049,11 @@ func (in *SubmitOpts) DeepCopyInto(out *SubmitOpts) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.Artifacts != nil {
+		in, out := &in.Artifacts, &out.Artifacts
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
