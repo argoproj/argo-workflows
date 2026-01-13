@@ -2,6 +2,9 @@ package artifacts
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -64,6 +67,137 @@ func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Reques
 // nolint: contextcheck
 func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, true)
+}
+
+// UploadInputArtifact handles file uploads for workflow input artifacts
+// Path: /upload-artifacts/{namespace}/{artifactName}
+// Method: POST
+// Body: multipart/form-data with "file" field
+// Response: JSON with artifact location information
+// nolint: contextcheck
+func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse path: /upload-artifacts/{namespace}/{artifactName}
+	requestPath := strings.SplitN(r.URL.Path, "/", 4)
+	if len(requestPath) < 4 {
+		a.httpBadRequestError(w)
+		return
+	}
+	namespace := requestPath[2]
+	artifactName := requestPath[3]
+
+	// Authenticate and authorize
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
+	if err != nil {
+		a.unauthorizedError(w)
+		return
+	}
+
+	a.logger.WithFields(logging.Fields{
+		"namespace":    namespace,
+		"artifactName": artifactName,
+	}).Info(ctx, "Upload artifact")
+
+	// Parse multipart form (max 32MB in memory, rest on disk)
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		http.Error(w, "Failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to get file from form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	a.logger.WithFields(logging.Fields{
+		"filename": header.Filename,
+		"size":     header.Size,
+	}).Info(ctx, "Received file for upload")
+
+	// Resolve artifact repository for the namespace
+	refStatus, err := a.artifactRepositories.Resolve(ctx, nil, namespace)
+	if err != nil {
+		a.serverInternalError(ctx, fmt.Errorf("failed to resolve artifact repository: %w", err), w)
+		return
+	}
+
+	repo, err := a.artifactRepositories.Get(ctx, refStatus)
+	if err != nil {
+		a.serverInternalError(ctx, fmt.Errorf("failed to get artifact repository: %w", err), w)
+		return
+	}
+
+	if repo == nil {
+		http.Error(w, "No artifact repository configured", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate unique key for the artifact
+	uuid := generateUUID()
+	key := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, header.Filename)
+
+	// Create artifact with the repository location
+	archiveLocation := repo.ToArtifactLocation()
+	outputArtifact := &wfv1.Artifact{
+		Name: artifactName,
+	}
+
+	// Relocate artifact to use the repository's location
+	if err := outputArtifact.Relocate(archiveLocation); err != nil {
+		a.serverInternalError(ctx, fmt.Errorf("failed to relocate artifact: %w", err), w)
+		return
+	}
+
+	// Set the key on the artifact
+	if err := outputArtifact.SetKey(key); err != nil {
+		a.serverInternalError(ctx, fmt.Errorf("failed to set artifact key: %w", err), w)
+		return
+	}
+
+	// Get the driver for the artifact
+	kubeClient := auth.GetKubeClient(ctx)
+	driver, err := a.artDriverFactory(ctx, outputArtifact, resources{kubeClient, namespace})
+	if err != nil {
+		a.serverInternalError(ctx, fmt.Errorf("failed to create artifact driver: %w", err), w)
+		return
+	}
+
+	// Upload using SaveStream
+	if err := driver.SaveStream(ctx, file, outputArtifact); err != nil {
+		a.serverInternalError(ctx, fmt.Errorf("failed to save artifact: %w", err), w)
+		return
+	}
+
+	a.logger.WithFields(logging.Fields{
+		"artifactName": artifactName,
+		"key":          key,
+	}).Info(ctx, "Successfully uploaded artifact")
+
+	// Return the artifact location as JSON
+	response := map[string]interface{}{
+		"name":     artifactName,
+		"key":      key,
+		"location": outputArtifact.ArtifactLocation,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		a.logger.WithError(err).Error(ctx, "Failed to encode response")
+	}
+}
+
+// generateUUID generates a simple UUID for unique artifact keys
+func generateUUID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 // single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't

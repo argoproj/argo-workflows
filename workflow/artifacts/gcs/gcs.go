@@ -236,6 +236,31 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	return err
 }
 
+// SaveStream saves an artifact from an io.Reader to GCS compliant storage
+func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			key := filepath.Clean(outputArtifact.GCS.Key)
+			logging.RequireLoggerFromContext(ctx).WithField("key", key).Info(ctx, "GCS SaveStream")
+			client, err := h.newGCSClient(ctx)
+			if err != nil {
+				return !isTransientGCSErr(ctx, err), err
+			}
+			defer client.Close()
+
+			wc := client.Bucket(outputArtifact.GCS.Bucket).Object(key).NewWriter(ctx)
+			if _, err = io.Copy(wc, reader); err != nil {
+				wc.Close()
+				return !isTransientGCSErr(ctx, err), err
+			}
+			if err = wc.Close(); err != nil {
+				return !isTransientGCSErr(ctx, err), err
+			}
+			return true, nil
+		})
+	return err
+}
+
 // list all the file relative paths under a dir
 // path is suppoese to be a dir
 // relPath is a given relative path to be inserted in front
