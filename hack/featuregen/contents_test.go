@@ -260,7 +260,6 @@ This is a concise list of new features.
 
 - Test Description by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234))
   Test Details
-
 `,
 		},
 		{
@@ -285,7 +284,6 @@ This is a concise list of new features.
   Test Details
   - Point 1
   - Point 2
-
 `,
 		},
 		{
@@ -319,7 +317,6 @@ This is a concise list of new features.
 
 - Description 2 by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))
   Details 2
-
 `,
 		},
 		{
@@ -350,7 +347,6 @@ This is a concise list of new features.
 - First CLI feature by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234))
 
 - Second CLI feature by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))
-
 `,
 		},
 	}
