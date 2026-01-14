@@ -3018,13 +3018,13 @@ spec:
             value: "{{steps.wait.outputs.parameters.select}}"
   - name: wait
     suspend:
-      duration: "0s"
+      duration: "1s"
     inputs:
       parameters:
         - name: input
           default: "Hello World"
         - name: select
-          default: default
+          default: "default"
           enum:
             - default
             - option1
@@ -3067,7 +3067,7 @@ func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get the suspend node and verify outputs have defaults from inputs
-	waitNode := woc.wf.Status.Nodes.FindByDisplayName("wait")
+	waitNode := wf.Status.Nodes.FindByDisplayName("wait")
 	require.NotNil(t, waitNode)
 	require.NotNil(t, waitNode.Outputs)
 	require.Len(t, waitNode.Outputs.Parameters, 2)
@@ -3076,9 +3076,10 @@ func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
 	var inputParam, selectParam *wfv1.Parameter
 	for i := range waitNode.Outputs.Parameters {
 		p := &waitNode.Outputs.Parameters[i]
-		if p.Name == "input" {
+		switch p.Name {
+		case "input":
 			inputParam = p
-		} else if p.Name == "select" {
+		case "select":
 			selectParam = p
 		}
 	}
