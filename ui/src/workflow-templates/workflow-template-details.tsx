@@ -1,30 +1,30 @@
-import { NotificationType } from 'argo-ui/src/components/notifications/notifications';
-import { Page } from 'argo-ui/src/components/page/page';
-import { SlidingPanel } from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import { useContext, useEffect, useRef, useState } from 'react';
-import { RouteComponentProps } from 'react-router';
+import {useContext, useEffect, useRef, useState} from 'react';
+import {RouteComponentProps} from 'react-router';
 
-import { uiUrl } from '../shared/base';
-import { ErrorNotice } from '../shared/components/error-notice';
-import { Loading } from '../shared/components/loading';
-import { ZeroState } from '../shared/components/zero-state';
-import { Context } from '../shared/context';
-import { historyUrl } from '../shared/history';
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Loading} from '../shared/components/loading';
+import {ZeroState} from '../shared/components/zero-state';
+import {Context} from '../shared/context';
+import {historyUrl} from '../shared/history';
 import * as models from '../shared/models';
-import { Workflow, WorkflowTemplate } from '../shared/models';
-import { services } from '../shared/services';
-import { useCollectEvent } from '../shared/use-collect-event';
-import { useEditableObject } from '../shared/use-editable-object';
-import { useQueryParams } from '../shared/use-query-params';
-import { WidgetGallery } from '../widgets/widget-gallery';
-import { SubmitWorkflowPanel } from '../workflows/components/submit-workflow-panel';
-import { WorkflowDetailsList } from '../workflows/components/workflow-details-list/workflow-details-list';
-import { WorkflowTemplateEditor } from './workflow-template-editor';
+import {Workflow, WorkflowTemplate} from '../shared/models';
+import {services} from '../shared/services';
+import {useCollectEvent} from '../shared/use-collect-event';
+import {useEditableObject} from '../shared/use-editable-object';
+import {useQueryParams} from '../shared/use-query-params';
+import {WidgetGallery} from '../widgets/widget-gallery';
+import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
+import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
+import {WorkflowTemplateEditor} from './workflow-template-editor';
 
-export function WorkflowTemplateDetails({ history, location, match }: RouteComponentProps<any>) {
+export function WorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
-    const { notifications, navigation, popup } = useContext(Context);
+    const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
@@ -35,7 +35,7 @@ export function WorkflowTemplateDetails({ history, location, match }: RouteCompo
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
-    const { object: template, setObject: setTemplate, resetObject: resetTemplate, serialization, edited, lang, setLang } = useEditableObject<WorkflowTemplate>();
+    const {object: template, setObject: setTemplate, resetObject: resetTemplate, serialization, edited, lang, setLang} = useEditableObject<WorkflowTemplate>();
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -71,7 +71,7 @@ export function WorkflowTemplateDetails({ history, location, match }: RouteCompo
 
     useEffect(() => {
         (async () => {
-            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.workflowTemplate}=${name}`], { limit: 50 });
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.workflowTemplate}=${name}`], {limit: 50});
             const workflowsInfo = await services.info.getInfo();
 
             setWorkflows(workflowList.items);
@@ -86,9 +86,9 @@ export function WorkflowTemplateDetails({ history, location, match }: RouteCompo
             title='Workflow Template Details'
             toolbar={{
                 breadcrumbs: [
-                    { title: 'Workflow Templates', path: uiUrl('workflow-templates') },
-                    { title: namespace, path: uiUrl('workflow-templates/' + namespace) },
-                    { title: name, path: uiUrl('workflow-templates/' + namespace + '/' + name) }
+                    {title: 'Workflow Templates', path: uiUrl('workflow-templates')},
+                    {title: namespace, path: uiUrl('workflow-templates/' + namespace)},
+                    {title: name, path: uiUrl('workflow-templates/' + namespace + '/' + name)}
                 ],
                 actionMenu: {
                     items: [
@@ -106,7 +106,7 @@ export function WorkflowTemplateDetails({ history, location, match }: RouteCompo
                                 services.workflowTemplate
                                     .update(template, name, namespace)
                                     .then(resetTemplate)
-                                    .then(() => notifications.show({ content: 'Updated', type: NotificationType.Success }))
+                                    .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },
