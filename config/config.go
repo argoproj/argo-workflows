@@ -128,6 +128,63 @@ type Config struct {
 	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
 	// infrastructure issues without requiring a retryStrategy on templates.
 	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+
+	// Agent contains configuration for agent pods
+	Agent *AgentConfig `json:"agent,omitempty"`
+}
+
+// AgentConfig contains configuration for the agent pod
+type AgentConfig struct {
+	// Main container resource configuration
+	Resources *apiv1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Main container security context
+	SecurityContext *apiv1.SecurityContext `json:"securityContext,omitempty"`
+
+	// RunMultipleWorkflow enables sharing agent pod between workflows
+	// When true, agent pod is named: argo-agent-${serviceAccountName}
+	// When false, agent pod is named: ${workflowName}-agent
+	RunMultipleWorkflow bool `json:"runMultipleWorkflow,omitempty"`
+
+	// DeleteAfterCompletion determines if agent pod should be deleted after workflow completes
+	// Only applies when RunMultipleWorkflow is true
+	// When false, agent pod persists for subsequent workflows
+	DeleteAfterCompletion *bool `json:"deleteAfterCompletion,omitempty"`
+
+	// CreatePod determines if controller should create agent pods
+	// When false, external operator/agent manages pods, controller only updates TaskSets
+	CreatePod *bool `json:"createPod,omitempty"`
+}
+
+// SetDefaults sets default values for AgentConfig
+func (a *AgentConfig) SetDefaults() {
+	// Default: backward compatible behavior (per-workflow agent)
+	if a.CreatePod == nil {
+		createPod := true
+		a.CreatePod = &createPod
+	}
+
+	// Default: delete after completion when using per-workflow agent
+	if !a.RunMultipleWorkflow && a.DeleteAfterCompletion == nil {
+		deleteAfter := true
+		a.DeleteAfterCompletion = &deleteAfter
+	}
+}
+
+// ShouldCreatePod returns whether controller should create agent pods
+func (a *AgentConfig) ShouldCreatePod() bool {
+	if a == nil || a.CreatePod == nil {
+		return true
+	}
+	return *a.CreatePod
+}
+
+// ShouldDeleteAfterCompletion returns whether agent pod should be deleted after workflow completes
+func (a *AgentConfig) ShouldDeleteAfterCompletion() bool {
+	if a == nil || a.DeleteAfterCompletion == nil {
+		return true
+	}
+	return *a.DeleteAfterCompletion
 }
 
 // FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.

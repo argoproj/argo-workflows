@@ -186,6 +186,20 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+	// EnvVarTaskSetLabelSelector is the label selector for filtering WorkflowTaskSets
+	EnvVarTaskSetLabelSelector = "ARGO_TASKSET_LABEL_SELECTOR"
+
+	// AnnotationKeyAgentPodSpecHash stores hash of agent pod spec
+	AnnotationKeyAgentPodSpecHash = workflow.WorkflowFullName + "/agent-pod-spec-hash"
+
+	// LabelKeyAgentServiceAccount identifies which SA the agent pod serves
+	LabelKeyAgentServiceAccount = workflow.WorkflowFullName + "/agent-service-account"
+
+	// LabelKeyWorkflowServiceAccount identifies which SA the workflow uses (for TaskSet)
+	LabelKeyWorkflowServiceAccount = workflow.WorkflowFullName + "/workflow-service-account"
+
+	// LabelKeyWorkflowName identifies the workflow name (for TaskSet in single-workflow mode)
+	LabelKeyWorkflowName = workflow.WorkflowFullName + "/workflow-name"
 
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"

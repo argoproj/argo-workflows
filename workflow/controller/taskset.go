@@ -172,6 +172,19 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	}
 
 	woc.log.Info(ctx, "Creating TaskSet")
+
+	// Get service account name for labeling
+	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	if serviceAccountName == "" {
+		serviceAccountName = "default"
+	}
+
+	// Create labels for TaskSet
+	taskSetLabels := map[string]string{
+		common.LabelKeyWorkflowServiceAccount: serviceAccountName,
+		common.LabelKeyWorkflowName:           woc.wf.Name,
+	}
+
 	taskSet := wfv1.WorkflowTaskSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowTaskSetKind,
@@ -180,6 +193,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: woc.wf.Namespace,
 			Name:      woc.wf.Name,
+			Labels:    taskSetLabels,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: woc.wf.APIVersion,
@@ -202,7 +216,9 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		spec := map[string]interface{}{
 			"metadata": metav1.ObjectMeta{
 				Labels: map[string]string{
-					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),
+					common.LabelKeyCompleted:              strconv.FormatBool(woc.wf.Status.Fulfilled()),
+					common.LabelKeyWorkflowServiceAccount: serviceAccountName,
+					common.LabelKeyWorkflowName:           woc.wf.Name,
 				},
 			},
 			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},

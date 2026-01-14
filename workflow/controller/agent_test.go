@@ -9,6 +9,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -171,4 +172,147 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		assert.Empty(t, msg)
 	})
 
+}
+
+func TestGetAgentPodName(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-workflow",
+			Namespace: "default",
+		},
+		Spec: wfv1.WorkflowSpec{
+			ServiceAccountName: "custom-sa",
+		},
+	}
+
+	t.Run("Per-workflow agent name", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		controller.Config.Agent = nil // Default behavior
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		podName := woc.getAgentPodName()
+		assert.True(t, strings.HasSuffix(podName, "-agent"))
+	})
+
+	t.Run("Global agent name with custom SA", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		controller.Config.Agent = &config.AgentConfig{
+			RunMultipleWorkflow: true,
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		podName := woc.getAgentPodName()
+		assert.Equal(t, "argo-agent-custom-sa", podName)
+	})
+
+	t.Run("Global agent name with default SA", func(t *testing.T) {
+		wfNoSA := wf.DeepCopy()
+		wfNoSA.Spec.ServiceAccountName = ""
+
+		cancel, controller := newController(ctx, wfNoSA)
+		defer cancel()
+		controller.Config.Agent = &config.AgentConfig{
+			RunMultipleWorkflow: true,
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wfNoSA, controller)
+		podName := woc.getAgentPodName()
+		assert.Equal(t, "argo-agent-default", podName)
+	})
+}
+
+func TestComputeAgentPodSpecHash(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-workflow",
+			Namespace: "default",
+		},
+	}
+
+	t.Run("Computes hash successfully", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		hash, err := woc.computeAgentPodSpecHash(ctx)
+		require.NoError(t, err)
+		assert.NotEmpty(t, hash)
+		assert.Len(t, hash, 64) // SHA256 hex string length
+	})
+
+	t.Run("Same config produces same hash", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		hash1, err := woc.computeAgentPodSpecHash(ctx)
+		require.NoError(t, err)
+
+		hash2, err := woc.computeAgentPodSpecHash(ctx)
+		require.NoError(t, err)
+
+		assert.Equal(t, hash1, hash2)
+	})
+}
+
+func TestCleanupAgentPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-workflow",
+			Namespace: "default",
+		},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				"test-node": {
+					Type: wfv1.NodeTypeHTTP,
+				},
+			},
+		},
+	}
+
+	t.Run("Returns false when no TaskSet nodes", func(t *testing.T) {
+		wfNoTasks := wf.DeepCopy()
+		wfNoTasks.Status.Nodes = map[string]wfv1.NodeStatus{}
+
+		cancel, controller := newController(ctx, wfNoTasks)
+		defer cancel()
+
+		woc := newWorkflowOperationCtx(ctx, wfNoTasks, controller)
+		shouldDelete := woc.cleanupAgentPod(ctx)
+		assert.False(t, shouldDelete)
+	})
+
+	t.Run("Returns false when CreatePod is false", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		createPod := false
+		controller.Config.Agent = &config.AgentConfig{
+			CreatePod: &createPod,
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		shouldDelete := woc.cleanupAgentPod(ctx)
+		assert.False(t, shouldDelete)
+	})
+
+	t.Run("Returns true for per-workflow agent with tasks", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		controller.Config.Agent = &config.AgentConfig{
+			RunMultipleWorkflow: false,
+		}
+		controller.Config.Agent.SetDefaults()
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.taskSet = map[string]wfv1.Template{
+			"task1": {},
+		}
+		shouldDelete := woc.cleanupAgentPod(ctx)
+		assert.True(t, shouldDelete)
+	})
 }
