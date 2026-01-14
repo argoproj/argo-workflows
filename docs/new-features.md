@@ -173,4 +173,3 @@ This is a concise list of new features.
   The featuregen tool now uses the plural "Authors:" field instead of "Author:" for new feature notes.
   This better reflects that features can have multiple authors.
   The change maintains full backwards compatibility with existing feature files that use the singular "Author:" field.
-
