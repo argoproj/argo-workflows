@@ -3018,7 +3018,7 @@ spec:
             value: "{{steps.wait.outputs.parameters.select}}"
   - name: wait
     suspend:
-      duration: "1s"
+      duration: "0s"
     inputs:
       parameters:
         - name: input
