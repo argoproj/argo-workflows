@@ -63,11 +63,11 @@ jobs:
 
       # In order to validate any links in the yaml file, render the config to markdown
       - name: Render .features/*.md feature descriptions
-        run: make features-preview > features_preview.md
+        run: make features-update
 
       - name: Link Checker
         id: lychee
         uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
         with:
-          args: "--verbose --no-progress ./features_preview.md"
+          args: "--verbose --no-progress ./docs/new-features.md"
           failIfEmpty: false

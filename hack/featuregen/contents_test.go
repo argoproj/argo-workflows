@@ -259,8 +259,7 @@ This is a concise list of new features.
 ## UI
 
 - Test Description by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234))
-  Test Details
-`,
+  Test Details`,
 		},
 		{
 			name:    "Released features",
@@ -283,8 +282,7 @@ This is a concise list of new features.
 - Test Description by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234), [#5678](https://github.com/argoproj/argo-workflows/issues/5678))
   Test Details
   - Point 1
-  - Point 2
-`,
+  - Point 2`,
 		},
 		{
 			name:    "Multiple features in different components",
@@ -316,8 +314,7 @@ This is a concise list of new features.
 ## UI
 
 - Description 2 by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))
-  Details 2
-`,
+  Details 2`,
 		},
 		{
 			name:    "Features in same component",
@@ -346,8 +343,7 @@ This is a concise list of new features.
 
 - First CLI feature by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234))
 
-- Second CLI feature by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))
-`,
+- Second CLI feature by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))`,
 		},
 	}
 
