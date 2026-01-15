@@ -1,9 +1,11 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"mime"
 	"net/http"
@@ -218,31 +220,14 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 				return
 			}
 		}
-
+		a.setSecurityHeaders(w)
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("<html><body><ul>\n"))
-
-		dirs := map[string]bool{} // to de-dupe sub-dirs
-
-		_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", "..", "..")
-
-		for _, object := range objects {
-
-			// object is prefixed the key, we must trim it
-			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
-
-			// if dir is empty string, we are in the root dir
-			if dir == "" {
-				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", file, file)
-			} else if dirs[dir] {
-				continue
-			} else {
-				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", dir, dir)
-				dirs[dir] = true
-			}
+		output, err := a.renderDirectoryListing(objects, key)
+		if err != nil {
+			a.serverInternalError(ctx, err, w)
+			return
 		}
-		_, _ = w.Write([]byte("</ul></body></html>"))
-
+		_, _ = w.Write(output)
 	} else { // stream the file itself
 		a.logger.WithFields(logging.Fields{
 			"artifact": artifact,
@@ -255,6 +240,42 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
+}
+
+func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([]byte, error) {
+	output := bytes.NewBufferString("<html><body><ul>\n<li><a href=\"..\">..</a></li>\n")
+
+	dirs := map[string]bool{} // to de-dupe sub-dirs
+
+	// Use html/template to prevent XSS attacks.
+	// The "./" prefix is necessary so the template engine recognizes it as a relative URL.
+	// Without that, a file called "javascript:alert(1)" would be escaped to "#ZgotmplZ" by the urlFilter.
+	tmpl, err := template.New("list").Parse("<li><a href=\"./{{.}}\">{{.}}</a></li>\n")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, object := range objects {
+
+		// object is prefixed the key, we must trim it
+		dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
+
+		// if dir is empty string, we are in the root dir
+		if dir == "" {
+			if err = tmpl.Execute(output, file); err != nil {
+				return nil, err
+			}
+		} else if dirs[dir] {
+			continue
+		} else {
+			if err = tmpl.Execute(output, dir); err != nil {
+				return nil, err
+			}
+			dirs[dir] = true
+		}
+	}
+	_, _ = output.WriteString("</ul></body></html>")
+	return output.Bytes(), nil
 }
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
@@ -502,6 +523,13 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	return art, driver, nil
 }
 
+func (a *ArtifactServer) setSecurityHeaders(w http.ResponseWriter) {
+	// Set strict CSP headers for defense-in-depth against XSS: https://web.dev/articles/strict-csp
+	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
+	// Mitigate clickjacking attacks
+	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
+}
+
 func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	stream, err := driver.OpenStream(ctx, art)
@@ -518,8 +546,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
-	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
-	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
+	a.setSecurityHeaders(w)
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
