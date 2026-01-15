@@ -758,6 +758,21 @@ func TestGetWorkflow(t *testing.T) {
 	assert.NotNil(t, wf)
 }
 
+func TestGetWorkflowByUID(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
+	require.NoError(t, err)
+
+	wfByUid, err := server.GetWorkflowByUID(ctx, &workflowpkg.WorkflowGetByUIDRequest{
+		Uid:       string(wf.UID),
+		Namespace: "workflows",
+		Name:      "hello-world-9tql2-run",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, wf, wfByUid)
+}
+
 func TestValidateWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
