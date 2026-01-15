@@ -764,13 +764,13 @@ func TestGetWorkflowByUID(t *testing.T) {
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	require.NoError(t, err)
 
-	wfByUid, err := server.GetWorkflowByUID(ctx, &workflowpkg.WorkflowGetByUIDRequest{
+	wfByUID, err := server.GetWorkflowByUID(ctx, &workflowpkg.WorkflowGetByUIDRequest{
 		Uid:       string(wf.UID),
 		Namespace: "workflows",
 		Name:      "hello-world-9tql2-run",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, wf, wfByUid)
+	assert.Equal(t, wf, wfByUID)
 }
 
 func TestValidateWorkflow(t *testing.T) {
