@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  generateName: workflow-template-input-artifacts-
+  name: workflow-template-input-artifacts
 spec:
   entrypoint: argosay
   arguments:
