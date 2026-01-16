@@ -53,13 +53,35 @@ echo "Downloading snipdoc from $DOWNLOAD_URL"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-# Download and extract
-curl -sSfL "$DOWNLOAD_URL" -o "$TMPDIR/snipdoc.tar.xz"
-tar -xJf "$TMPDIR/snipdoc.tar.xz" -C "$TMPDIR"
+# Try to download pre-built binary
+if curl -sSfL "$DOWNLOAD_URL" -o "$TMPDIR/snipdoc.tar.xz" 2>/dev/null; then
+    tar -xJf "$TMPDIR/snipdoc.tar.xz" -C "$TMPDIR"
+    mkdir -p "$(dirname "$TARGET_PATH")"
+    find "$TMPDIR" -name snipdoc -type f -exec mv {} "$TARGET_PATH" \;
+    chmod +x "$TARGET_PATH"
+    echo "✓ snipdoc installed to $TARGET_PATH"
+else
+    echo "Pre-built binary not available for ${ARCH_NAME}-${OS_NAME}, falling back to cargo install..."
 
-# Find and install the binary
-mkdir -p "$(dirname "$TARGET_PATH")"
-find "$TMPDIR" -name snipdoc -type f -exec mv {} "$TARGET_PATH" \;
-chmod +x "$TARGET_PATH"
+    if ! command -v cargo &> /dev/null; then
+        echo "Error: cargo is not installed. Please install Rust toolchain first." >&2
+        exit 1
+    fi
 
-echo "✓ snipdoc installed to $TARGET_PATH"
+    # Extract version number without 'v' prefix for cargo
+    CARGO_VERSION="${VERSION#v}"
+
+    cargo install snipdoc --version "$CARGO_VERSION"
+
+    # Copy from cargo bin to target path
+    CARGO_BIN="${CARGO_HOME:-$HOME/.cargo}/bin/snipdoc"
+    if [ -f "$CARGO_BIN" ]; then
+        mkdir -p "$(dirname "$TARGET_PATH")"
+        cp "$CARGO_BIN" "$TARGET_PATH"
+        chmod +x "$TARGET_PATH"
+        echo "✓ snipdoc installed to $TARGET_PATH (via cargo)"
+    else
+        echo "Error: cargo install succeeded but binary not found at $CARGO_BIN" >&2
+        exit 1
+    fi
+fi
