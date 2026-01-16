@@ -96,6 +96,7 @@ func NewRootCommand() *cobra.Command {
 
 			logs.AddK8SLogTransportWrapper(ctx, config)
 			metrics.AddMetricsTransportWrapper(ctx, config)
+			metrics.AddRateLimiterWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
