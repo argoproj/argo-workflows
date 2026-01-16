@@ -1110,10 +1110,12 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 	}
 
 	queue := make([]*dagNode, 0)
+	visited := make(map[string]bool)
 
 	for _, n := range nodes {
 		if n.n.Name == rootNodeName {
 			queue = append(queue, n)
+			visited[n.n.ID] = true
 			break
 		}
 	}
@@ -1126,7 +1128,13 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 		curr := queue[0]
 		sortedNodes = append(sortedNodes, curr)
 		queue = queue[1:]
-		queue = append(queue, curr.children...)
+		for _, child := range curr.children {
+			if visited[child.n.ID] {
+				continue
+			}
+			visited[child.n.ID] = true
+			queue = append(queue, child)
+		}
 	}
 
 	return sortedNodes
