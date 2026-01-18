@@ -188,6 +188,12 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
 		}),
 		// add argo_archived_workflows index
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername,instanceid,namespace)`),
+		// change argo_archived_workflows_i1 index to add startedat DESC to resolve MySQL out of sort memory issues. #14240
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1 on argo_archived_workflows`),
+			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
+		}),
+		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
 		// drop tableName indexes
 		// xxx_i1 is not needed because xxx_i2 already covers it, drop both and recreat an index named xxx_i1
 		sqldb.ByType(dbType, sqldb.TypedChanges{
