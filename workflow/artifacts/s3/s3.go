@@ -129,22 +129,33 @@ type ArtifactDriver struct {
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
+	AddressingStyle       string
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 
 // newS3Client instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, error) {
+	var addressingStyle AddressingStyle
+	switch strings.ToLower(s3Driver.AddressingStyle) {
+	case "path":
+		addressingStyle = PathStyle
+	case "virtual":
+		addressingStyle = VirtualHostedStyle
+	default:
+		addressingStyle = AutoDetectStyle
+	}
 	opts := S3ClientOpts{
-		Endpoint:     s3Driver.Endpoint,
-		Region:       s3Driver.Region,
-		Secure:       s3Driver.Secure,
-		AccessKey:    s3Driver.AccessKey,
-		SecretKey:    s3Driver.SecretKey,
-		SessionToken: s3Driver.SessionToken,
-		RoleARN:      s3Driver.RoleARN,
-		Trace:        os.Getenv(common.EnvVarArgoTrace) == "1",
-		UseSDKCreds:  s3Driver.UseSDKCreds,
+		Endpoint:        s3Driver.Endpoint,
+		Region:          s3Driver.Region,
+		Secure:          s3Driver.Secure,
+		AccessKey:       s3Driver.AccessKey,
+		SecretKey:       s3Driver.SecretKey,
+		SessionToken:    s3Driver.SessionToken,
+		RoleARN:         s3Driver.RoleARN,
+		Trace:           os.Getenv(common.EnvVarArgoTrace) == "1",
+		UseSDKCreds:     s3Driver.UseSDKCreds,
+		AddressingStyle: addressingStyle,
 		EncryptOpts: EncryptOpts{
 			KmsKeyID:              s3Driver.KmsKeyID,
 			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,
