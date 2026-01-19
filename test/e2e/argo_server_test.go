@@ -896,7 +896,8 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("GetByUid", func() {
-		j := s.e().GET("/api/v1/workflows/argo/" + name + "?uid=" + uid).
+		j := s.e().GET("/api/v1/workflows/argo/"+name).
+			WithQuery("uid", uid).
 			Expect().
 			Status(200).
 			JSON()
