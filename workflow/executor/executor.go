@@ -670,6 +670,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 		}
 
 		containerNames := we.Template.GetMainContainerNames()
+		containerNames = append(containerNames, we.Template.GetSidecarNames()...)
 		logArtifacts = make([]wfv1.Artifact, 0)
 
 		for _, containerName := range containerNames {
