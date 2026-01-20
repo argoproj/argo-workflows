@@ -209,5 +209,5 @@ func format(version string, features []feature) string {
 		}
 	}
 
-	return strings.TrimSuffix(output.String(), "\n\n")
+	return strings.TrimRight(output.String(), "\n") + "\n"
 }
