@@ -758,6 +758,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
+	oldRV := woc.wf.ResourceVersion
+	woc.updateLastSeenVersionAnnotation(oldRV)
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
@@ -780,6 +782,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	woc.updateLastSeenVersion(oldRV)
 	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
 	// with it, so copy from the original workflow.
 	woc.wf.TypeMeta = woc.orig.TypeMeta
@@ -861,9 +864,13 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
+	oldRV := woc.wf.ResourceVersion
+	woc.updateLastSeenVersionAnnotation(oldRV)
 	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow with size error: %v", err)
+	} else {
+		woc.updateLastSeenVersion(oldRV)
 	}
 }
 
@@ -4430,4 +4437,20 @@ func (woc *wfOperationCtx) setNodeDisplayName(node *wfv1.NodeStatus, displayName
 	newNode := node.DeepCopy()
 	newNode.DisplayName = displayName
 	woc.wf.Status.Nodes.Set(nodeID, *newNode)
+}
+
+func (woc *wfOperationCtx) updateLastSeenVersionAnnotation(value string) {
+	if woc.wf.GetAnnotations() == nil {
+		woc.wf.SetAnnotations(make(map[string]string))
+	}
+	woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion] = value
+}
+
+func (woc *wfOperationCtx) updateLastSeenVersion(value string) {
+	woc.controller.lastSeenVersions.mutex.Lock()
+	defer woc.controller.lastSeenVersions.mutex.Unlock()
+	if woc.controller.lastSeenVersions.versions == nil {
+		woc.controller.lastSeenVersions.versions = make(map[string]string)
+	}
+	woc.controller.lastSeenVersions.versions[woc.controller.getLastSeenVersionKey(woc.wf)] = value
 }
