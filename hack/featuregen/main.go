@@ -228,7 +228,7 @@ func updateFeatures(dryRun bool, version string, final bool) error {
 
 	fmt.Printf("Preview of changes with %d features:\n", len(features))
 	fmt.Println("===================")
-	fmt.Println(outputContent)
+	fmt.Print(outputContent)
 
 	if !dryRun {
 		if err := os.MkdirAll(filepath.Dir(docsOutput), 0755); err != nil {
