@@ -506,7 +506,7 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 }
 
 // Gets number of threads for S3 upload from env var. Default if not set: 4.
-func getFromEnvS3UploadNbThreads() int {
+func (s *s3client) getFromEnvS3UploadNbThreads() int {
 	// Minio default threads: https://github.com/minio/minio-go/blob/v7.0.98/constants.go#L58
 	const defaultThreads = 4
 
@@ -514,10 +514,11 @@ func getFromEnvS3UploadNbThreads() int {
 	var nbThreads int
 	if nbThreadsStr != "" {
 		var err error
-		log.Infof("Number of threads for S3 multipart upload detected from env %s: %s", common.EnvAgentS3UploadThreads, nbThreadsStr)
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Info(s.ctx, "Number of threads or s3 multipart upload detected")
+
 		nbThreads, err = strconv.Atoi(nbThreadsStr)
 		if err != nil {
-			log.Errorf("Could not convert to int the env key %s, value: %s. Ignoring and using default value %d.", common.EnvAgentS3UploadThreads, nbThreadsStr, defaultThreads)
+			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Error(s.ctx, "Could not convert to int the env var. Ignoring and using default value of 4")
 			nbThreads = defaultThreads
 		}
 	} else {
@@ -529,7 +530,7 @@ func getFromEnvS3UploadNbThreads() int {
 // Gets the S3 upload part size from env var. Default if not set: -1, which means we let Minio dynamically calculate
 // the part size (https://github.com/minio/minio-go/blob/v7.0.98/api-put-object-common.go#L71).
 // This value must be between 5MiB and 5GiB or Minio will reject in error (https://github.com/minio/minio-go/blob/v7.0.98/api-put-object-common.go#L101)
-func getFromEnvS3UploadPartSizeMiB() int64 {
+func (s *s3client) getFromEnvS3UploadPartSizeMiB() int64 {
 	// Special value to let Minio calculate the part size.
 	// However if the object size is <= 156GiB, then the part size is always the default Minio min part size of 16MiB.
 	const defaultPartSizeMiB = -1
@@ -537,11 +538,11 @@ func getFromEnvS3UploadPartSizeMiB() int64 {
 	partSizeMiBStr := os.Getenv(common.EnvAgentS3UploadPartSizeMiB)
 	var partSizeMiB int64
 	if partSizeMiBStr != "" {
-		log.Infof("Size of S3 multipart upload part size detected from env %s: %s MiB", common.EnvAgentS3UploadPartSizeMiB, partSizeMiBStr)
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadPartSizeMiB, "partSizeMiB": partSizeMiBStr}).Info(s.ctx, "Size of S3 multipart upload part size detected from env.")
 		partSizeMiBInt, err := strconv.Atoi(partSizeMiBStr)
 		partSizeMiB = int64(partSizeMiBInt)
 		if err != nil {
-			log.Errorf("Could not convert to int the env key %s, value: %s. Ignoring and using default value %d.", common.EnvAgentS3UploadThreads, partSizeMiBStr, defaultPartSizeMiB)
+			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadPartSizeMiB, "partSizeMiB": partSizeMiBStr}).Error(s.ctx, "Could not convert to int the env key. Ignoring and using empty value.")
 			partSizeMiB = defaultPartSizeMiB
 		}
 	} else {
@@ -555,7 +556,7 @@ func getFromEnvS3UploadPartSizeMiB() int64 {
 // or configuredPartSizeMiB < 5MiB or > 5GiB (must be inside Minio part size range)
 // or configuredPartSizeMiB < file size
 // Otherwise the configured part size in bytes (not in MiB) is returned
-func getCheckedPartSize(path string, configuredPartSizeMiB int64) (int64, error) {
+func (s *s3client) getCheckedPartSize(path string, configuredPartSizeMiB int64) (int64, error) {
 	if configuredPartSizeMiB <= 0 {
 		return -1, nil
 	}
@@ -563,11 +564,11 @@ func getCheckedPartSize(path string, configuredPartSizeMiB int64) (int64, error)
 	const partSizeMiBMin = 5
 	const partSizeMiBMax = 5 * 1024
 	if configuredPartSizeMiB < partSizeMiBMin {
-		log.Warnf("Ignoring configured part size from env var because it must be >%d MiB but instead is %d", partSizeMiBMin, configuredPartSizeMiB)
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"configuredPartSizeMiB": configuredPartSizeMiB, "partSizeMiBMin": partSizeMiBMin}).Warn(s.ctx, "Ignoring configured part size from env var because this must be true: configuredPartSizeMiB >= partSizeMiBMin.")
 		return -2, nil
 	}
 	if configuredPartSizeMiB > partSizeMiBMax {
-		log.Warnf("Ignoring configured part size from env var because it must be <%d MiB but instead is %d", partSizeMiBMax, configuredPartSizeMiB)
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"configuredPartSizeMiB": configuredPartSizeMiB, "partSizeMiBMax": partSizeMiBMax}).Warn(s.ctx, "Ignoring configured part size from env var because this must be true: configuredPartSizeMiB <= partSizeMiBMax.")
 		return -3, nil
 	}
 
@@ -590,7 +591,7 @@ func getCheckedPartSize(path string, configuredPartSizeMiB int64) (int64, error)
 	fileSize := fileStat.Size()
 	if fileSize < configuredPartSizeBytes {
 		// Part size is bigger than file so ignoring it.
-		log.Warnf("Ignoring configured part size from env var because current file size %d is bigger than %d", fileSize, configuredPartSizeBytes)
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"fileSize": fileSize, "configuredPartSizeBytes": configuredPartSizeBytes}).Warn(s.ctx, "Ignoring configured part size from env var because this must be true: configuredPartSizeBytes <= fileSize.")
 		return -6, nil
 	} else {
 		return configuredPartSizeBytes, nil
@@ -608,20 +609,19 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 	}
 	opts := minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts}
 
-	nbThreads := getFromEnvS3UploadNbThreads()
+	nbThreads := s.getFromEnvS3UploadNbThreads()
 	nbThreadsU := uint(nbThreads)
 	opts.NumThreads = nbThreadsU
 
-	partSizeMiB := getFromEnvS3UploadPartSizeMiB()
+	partSizeMiB := s.getFromEnvS3UploadPartSizeMiB()
 	if partSizeMiB > 0 {
-		log.Debugf("Part size MiB configured from env var: %d", partSizeMiB)
-		checkedPartSize, _ := getCheckedPartSize(path, partSizeMiB)
+		checkedPartSize, _ := s.getCheckedPartSize(path, partSizeMiB)
 		if checkedPartSize > 0 {
-			log.Infof("Part size MiB for S3 multipart upload: %d", checkedPartSize)
+			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"checkedPartSize": checkedPartSize}).Info(s.ctx, "Part size MiB for S3 multipart upload")
 			opts.PartSize = uint64(checkedPartSize)
 		}
 	} else {
-		log.Infof("Part size not configured from env var. Letting Minio calculating it.")
+		logging.RequireLoggerFromContext(s.ctx).Info(s.ctx, "Part size not configured from env var. Letting Minio calculating it.")
 	}
 	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
 	if err != nil {
