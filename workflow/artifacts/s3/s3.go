@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -504,6 +505,98 @@ func NewS3Client(ctx context.Context, opts S3ClientOpts) (S3Client, error) {
 	return &s3cli, nil
 }
 
+// Gets number of threads for S3 upload from env var. Default if not set: 4.
+func getFromEnvS3UploadNbThreads() int {
+	// Minio default threads: https://github.com/minio/minio-go/blob/v7.0.98/constants.go#L58
+	const defaultThreads = 4
+
+	nbThreadsStr := os.Getenv(common.EnvAgentS3UploadThreads)
+	var nbThreads int
+	if nbThreadsStr != "" {
+		var err error
+		log.Infof("Number of threads for S3 multipart upload detected from env %s: %s", common.EnvAgentS3UploadThreads, nbThreadsStr)
+		nbThreads, err = strconv.Atoi(nbThreadsStr)
+		if err != nil {
+			log.Errorf("Could not convert to int the env key %s, value: %s. Ignoring and using default value %d.", common.EnvAgentS3UploadThreads, nbThreadsStr, defaultThreads)
+			nbThreads = defaultThreads
+		}
+	} else {
+		nbThreads = defaultThreads
+	}
+	return nbThreads
+}
+
+// Gets the S3 upload part size from env var. Default if not set: -1, which means we let Minio dynamically calculate
+// the part size (https://github.com/minio/minio-go/blob/v7.0.98/api-put-object-common.go#L71).
+// This value must be between 5MiB and 5GiB or Minio will reject in error (https://github.com/minio/minio-go/blob/v7.0.98/api-put-object-common.go#L101)
+func getFromEnvS3UploadPartSizeMiB() int64 {
+	// Special value to let Minio calculate the part size.
+	// However if the object size is <= 156GiB, then the part size is always the default Minio min part size of 16MiB.
+	const defaultPartSizeMiB = -1
+
+	partSizeMiBStr := os.Getenv(common.EnvAgentS3UploadPartSizeMiB)
+	var partSizeMiB int64
+	if partSizeMiBStr != "" {
+		log.Infof("Size of S3 multipart upload part size detected from env %s: %s MiB", common.EnvAgentS3UploadPartSizeMiB, partSizeMiBStr)
+		partSizeMiBInt, err := strconv.Atoi(partSizeMiBStr)
+		partSizeMiB = int64(partSizeMiBInt)
+		if err != nil {
+			log.Errorf("Could not convert to int the env key %s, value: %s. Ignoring and using default value %d.", common.EnvAgentS3UploadThreads, partSizeMiBStr, defaultPartSizeMiB)
+			partSizeMiB = defaultPartSizeMiB
+		}
+	} else {
+		partSizeMiB = defaultPartSizeMiB
+	}
+	return partSizeMiB
+}
+
+// Return the part size in bytes. It is strictly negative when:
+// configuredPartSizeMiB is negative
+// or configuredPartSizeMiB < 5MiB or > 5GiB (must be inside Minio part size range)
+// or configuredPartSizeMiB < file size
+// Otherwise the configured part size in bytes (not in MiB) is returned
+func getCheckedPartSize(path string, configuredPartSizeMiB int64) (int64, error) {
+	if configuredPartSizeMiB <= 0 {
+		return -1, nil
+	}
+	// Checking if part size is inside Minio valid range (see https://github.com/minio/minio-go/blob/v7.0.98/constants.go#L20)
+	const partSizeMiBMin = 5
+	const partSizeMiBMax = 5 * 1024
+	if configuredPartSizeMiB < partSizeMiBMin {
+		log.Warnf("Ignoring configured part size from env var because it must be >%d MiB but instead is %d", partSizeMiBMin, configuredPartSizeMiB)
+		return -2, nil
+	}
+	if configuredPartSizeMiB > partSizeMiBMax {
+		log.Warnf("Ignoring configured part size from env var because it must be <%d MiB but instead is %d", partSizeMiBMax, configuredPartSizeMiB)
+		return -3, nil
+	}
+
+	// Checking if the file is smaller than the part size.
+	fileReader, err := os.Open(path)
+	if err != nil {
+		return -4, err
+	}
+	defer fileReader.Close()
+
+	// Save the file stat.
+	fileStat, err := fileReader.Stat()
+	if err != nil {
+		return -5, err
+	}
+
+	configuredPartSizeBytes := configuredPartSizeMiB * 1024 * 1024
+
+	// Save the file size.
+	fileSize := fileStat.Size()
+	if fileSize < configuredPartSizeBytes {
+		// Part size is bigger than file so ignoring it.
+		log.Warnf("Ignoring configured part size from env var because current file size %d is bigger than %d", fileSize, configuredPartSizeBytes)
+		return -6, nil
+	} else {
+		return configuredPartSizeBytes, nil
+	}
+}
+
 // PutFile puts a single file to a bucket at the specified key
 func (s *s3client) PutFile(bucket, key, path string) error {
 	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Saving file to s3")
@@ -513,8 +606,24 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 	if err != nil {
 		return err
 	}
+	opts := minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts}
 
-	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts})
+	nbThreads := getFromEnvS3UploadNbThreads()
+	nbThreadsU := uint(nbThreads)
+	opts.NumThreads = nbThreadsU
+
+	partSizeMiB := getFromEnvS3UploadPartSizeMiB()
+	if partSizeMiB > 0 {
+		log.Debugf("Part size MiB configured from env var: %d", partSizeMiB)
+		checkedPartSize, _ := getCheckedPartSize(path, partSizeMiB)
+		if checkedPartSize > 0 {
+			log.Infof("Part size MiB for S3 multipart upload: %d", checkedPartSize)
+			opts.PartSize = uint64(checkedPartSize)
+		}
+	} else {
+		log.Infof("Part size not configured from env var. Letting Minio calculating it.")
+	}
+	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
 	if err != nil {
 		return err
 	}
