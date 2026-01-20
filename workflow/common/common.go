@@ -57,6 +57,9 @@ const (
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
+	// AnnotationKeyLastSeenVersion stores the last seen version of the workflow when it was last successfully processed by the controller
+	AnnotationKeyLastSeenVersion = workflow.WorkflowFullName + "/last-seen-version"
+
 	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
 	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
 
