@@ -522,7 +522,7 @@ message CronWorkflowSpec {
 
   // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   // +kubebuilder:validation:MinItems=1
-  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/-?]+\s+){4}[0-9*,/-?]+)$`
+  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/?-]+\s+){4}[0-9*,/?-]+)$`
   repeated string schedules = 11;
 
   // v3.6 and after: When is an expression that determines if a run should be scheduled.
@@ -997,7 +997,7 @@ message Memoize {
   optional string maxAge = 3;
 }
 
-// Pod metdata
+// Pod metadata
 message Metadata {
   map<string, string> annotations = 1;
 
@@ -1173,6 +1173,15 @@ message NodeStatus {
 
   // TaskResultSynced is used to determine if the node's output has been received
   optional bool taskResultSynced = 28;
+
+  // FailedPodRestarts tracks the number of times the pod for this node was restarted
+  // due to infrastructure failures before the main container started.
+  optional int32 failedPodRestarts = 29;
+
+  // RestartingPodUID tracks the UID of the pod that is currently being restarted.
+  // This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
+  // Cleared when the replacement pod starts running.
+  optional string restartingPodUID = 30;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -1721,7 +1730,7 @@ message Template {
   // Overrides the affinity set at the workflow level (if any)
   optional k8s.io.api.core.v1.Affinity affinity = 8;
 
-  // Metdata sets the pods's metadata, i.e. annotations and labels
+  // Metadata sets the pods's metadata, i.e. annotations and labels
   optional Metadata metadata = 9;
 
   // Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness

@@ -57,6 +57,24 @@ const (
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
+// IsValid returns true if t exists in the set of possible template types.
+func (t TemplateType) IsValid() bool {
+	switch t {
+	case TemplateTypeContainer,
+		TemplateTypeContainerSet,
+		TemplateTypeSteps,
+		TemplateTypeScript,
+		TemplateTypeResource,
+		TemplateTypeDAG,
+		TemplateTypeSuspend,
+		TemplateTypeData,
+		TemplateTypeHTTP,
+		TemplateTypePlugin:
+		return true
+	}
+	return false
+}
+
 // NodePhase is a label for the condition of a node at the current time.
 type NodePhase string
 
@@ -647,7 +665,7 @@ type Template struct {
 	// Overrides the affinity set at the workflow level (if any)
 	Affinity *apiv1.Affinity `json:"affinity,omitempty" protobuf:"bytes,8,opt,name=affinity"`
 
-	// Metdata sets the pods's metadata, i.e. annotations and labels
+	// Metadata sets the pods's metadata, i.e. annotations and labels
 	Metadata Metadata `json:"metadata,omitempty" protobuf:"bytes,9,opt,name=metadata"`
 
 	// Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
@@ -972,7 +990,7 @@ func (in Inputs) IsEmpty() bool {
 	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
-// Pod metdata
+// Pod metadata
 type Metadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,opt,name=annotations"`
 	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
@@ -2518,6 +2536,15 @@ type NodeStatus struct {
 
 	// TaskResultSynced is used to determine if the node's output has been received
 	TaskResultSynced *bool `json:"taskResultSynced,omitempty" protobuf:"bytes,28,opt,name=taskResultSynced"`
+
+	// FailedPodRestarts tracks the number of times the pod for this node was restarted
+	// due to infrastructure failures before the main container started.
+	FailedPodRestarts int32 `json:"failedPodRestarts,omitempty" protobuf:"varint,29,opt,name=failedPodRestarts"`
+
+	// RestartingPodUID tracks the UID of the pod that is currently being restarted.
+	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
+	// Cleared when the replacement pod starts running.
+	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
 }
 
 // Completed is used to determine if this node can proceed

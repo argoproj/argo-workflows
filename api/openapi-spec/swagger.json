@@ -10175,7 +10175,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
-      "description": "Pod metdata",
+      "description": "Pod metadata",
       "type": "object",
       "properties": {
         "annotations": {
@@ -10323,6 +10323,10 @@
           "description": "EstimatedDuration in seconds.",
           "type": "integer"
         },
+        "failedPodRestarts": {
+          "description": "FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.",
+          "type": "integer"
+        },
         "finishedAt": {
           "description": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
@@ -10385,6 +10389,10 @@
             "type": "integer",
             "format": "int64"
           }
+        },
+        "restartingPodUID": {
+          "description": "RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.",
+          "type": "string"
         },
         "startedAt": {
           "description": "Time at which this node started",
@@ -11547,7 +11555,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize"
         },
         "metadata": {
-          "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
+          "description": "Metadata sets the pods's metadata, i.e. annotations and labels",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "metrics": {

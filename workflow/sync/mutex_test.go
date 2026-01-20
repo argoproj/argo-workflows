@@ -317,7 +317,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
     name: acquire-lock
     synchronization:

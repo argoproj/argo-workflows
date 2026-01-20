@@ -161,6 +161,7 @@ TOOL_SWAGGER                := $(GOPATH)/bin/swagger
 TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
 TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
 TOOL_GOTESTSUM              := $(GOPATH)/bin/gotestsum
+TOOL_SNIPDOC                := $(HOME)/.local/bin/snipdoc
 
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
@@ -225,7 +226,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
-GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/metrics.md
+GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/metrics.md docs/go-sdk-guide.md
 
 # protoc,my.proto
 define protoc
@@ -448,6 +449,12 @@ ifneq ($(USE_NIX), true)
 	go install gotest.tools/gotestsum@v1.12.3
 endif
 
+$(TOOL_SNIPDOC): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	./hack/install-snipdoc.sh $(TOOL_SNIPDOC) v0.1.12
+endif
+
 $(TOOL_CLANG_FORMAT):
 ifeq (, $(shell which clang-format))
 ifeq ($(shell uname),Darwin)
@@ -556,7 +563,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.5.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.7.2
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
@@ -820,6 +827,9 @@ docs/workflow-controller-configmap.md: config/*.go hack/docs/workflow-controller
 docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
 	go run ./hack/docs cli
 
+docs/go-sdk-guide.md: $(TOOL_SNIPDOC)
+	$(TOOL_SNIPDOC) run
+
 $(TOOL_MDSPELL): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
@@ -829,7 +839,7 @@ endif
 .PHONY: docs-spellcheck
 docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md ## Spell check docs
 	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md -not -name new-features.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
 
@@ -853,7 +863,7 @@ endif
 .PHONY: docs-lint
 docs-lint: $(TOOL_MARKDOWNLINT) docs/metrics.md
 	# lint docs
-	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md
+	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/go-sdk-guide.md
 
 $(TOOL_MKDOCS): docs/requirements.txt
 # update this in Nix when upgrading it here
@@ -914,9 +924,10 @@ feature-new: hack/featuregen/featuregen
 	$< new --filename $(FEATURE_FILENAME)
 
 .PHONY: features-validate
-features-validate: hack/featuregen/featuregen
+features-validate: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Validate all pending feature documentation files
 	$< validate
+	$< update --dry |  tail +4 | $(TOOL_MARKDOWNLINT) -s
 
 .PHONY: features-preview
 features-preview: hack/featuregen/featuregen
@@ -925,16 +936,18 @@ features-preview: hack/featuregen/featuregen
 	$< update --dry
 
 .PHONY: features-update
-features-update: hack/featuregen/featuregen
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
 	# Update the features documentation, but keep the feature files in the pending directory
 	# Updates docs/new-features.md for release-candidates
 	$< update --version $(VERSION)
+	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 .PHONY: features-release
-features-release: hack/featuregen/featuregen
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
 	# Update the features documentation AND move the feature files to the released directory
 	# Use this for the final update when releasing a version
 	$< update --version $(VERSION) --final
+	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
 	go test ./hack/featuregen
@@ -967,3 +980,7 @@ pkg/apiclient/artifact/artifact.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/api
 
 # Add artifact-proto to swagger dependencies
 swagger: pkg/apiclient/artifact/artifact.swagger.json
+
+.PHONY: test-go-sdk
+test-go-sdk: ## Run all Go SDK examples
+	./hack/test-go-sdk.sh

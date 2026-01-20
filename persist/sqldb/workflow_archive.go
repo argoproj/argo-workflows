@@ -17,6 +17,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
@@ -27,6 +28,9 @@ const (
 	archiveTableName        = "argo_archived_workflows"
 	archiveLabelsTableName  = archiveTableName + "_labels"
 	postgresNullReplacement = "ARGO_POSTGRES_NULL_REPLACEMENT"
+	// Default timeout in seconds for database queries in GetWorkflowForEstimator to prevent blocking workflow execution
+	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS environment variable
+	defaultEstimationDBQueryTimeoutSeconds = 5
 )
 
 type archivedWorkflowMetadata struct {
@@ -588,7 +592,13 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 }
 
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
-	selector := r.session.SQL().
+	// Add timeout to database query to prevent blocking workflow execution
+	// if database is slow or locked.
+	queryTimeoutSeconds := env.LookupEnvIntOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS", defaultEstimationDBQueryTimeoutSeconds)
+	queryCtx, cancel := context.WithTimeout(ctx, time.Duration(queryTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	selector := r.session.WithContext(queryCtx).SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).

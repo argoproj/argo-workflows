@@ -3911,7 +3911,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Pod metdata",
+				Description: "Pod metadata",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"annotations": {
@@ -4392,6 +4392,20 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 						SchemaProps: spec.SchemaProps{
 							Description: "TaskResultSynced is used to determine if the node's output has been received",
 							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"failedPodRestarts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"restartingPodUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
@@ -6495,7 +6509,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
+							Description: "Metadata sets the pods's metadata, i.e. annotations and labels",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
 						},

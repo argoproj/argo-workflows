@@ -133,6 +133,7 @@ nav:
           - template-defaults.md
           - enhanced-depends-logic.md
           - node-field-selector.md
+          - pod-restarts.md
       - Status:
           - resource-duration.md
           - estimated-duration.md
@@ -162,6 +163,7 @@ nav:
           - workflow-submitting-workflow.md
           - async-pattern.md
           - client-libraries.md
+          - go-sdk-guide.md
           - swagger.md
       - Executor Plugins:
           - plugins.md
