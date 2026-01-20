@@ -221,12 +221,12 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			}
 		}
 		a.setSecurityHeaders(w)
-		w.WriteHeader(http.StatusOK)
 		output, err := a.renderDirectoryListing(objects, key)
 		if err != nil {
 			a.serverInternalError(ctx, err, w)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(output)
 	} else { // stream the file itself
 		a.logger.WithFields(logging.Fields{
