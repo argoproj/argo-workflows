@@ -165,6 +165,9 @@ func validateMetrics(metrics *metricsList) {
 		default:
 			recordErrorString(fmt.Sprintf("%s: Invalid metric type %s", metric.Name, metric.Type))
 		}
+		if len(metric.DefaultBuckets) > 0 && metric.Type != "Float64Histogram" {
+			recordErrorString(fmt.Sprintf("%s: defaultBuckets can only be used with Float64Histogram metrics", metric.Name))
+		}
 		if strings.Contains(metric.Description, "\n") {
 			recordErrorString(fmt.Sprintf("%s: Description must be a single line", metric.Name))
 		}
