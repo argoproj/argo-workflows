@@ -133,18 +133,27 @@ func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, err
 		return nil, err
 	}
 	if artifact.Name == "my-s3-artifact-directory" {
+		prefix := "my-wf/my-node-1/my-s3-artifact-directory"
+		subdir := []string{
+			prefix + "/subdirectory/b.txt",
+			prefix + "/subdirectory/c.txt",
+		}
+		// XSS test strings. Loosely adapted from https://cheatsheetseries.owasp.org/cheatsheets/XSS_Filter_Evasion_Cheat_Sheet.html#waf-bypass-strings-for-xss
+		xss := []string{
+			prefix + `/xss/xss\"><img src=x onerror="alert(document.domain)">.html`,
+			prefix + `/xss/javascript:alert(document.domain)`,
+			prefix + `/xss/javascript:\u0061lert(1)`,
+			prefix + `/xss/<Input value = "XSS" type = text>`,
+		}
 		if strings.HasSuffix(key, "subdirectory") {
-			return []string{
-				"my-wf/my-node-1/my-s3-artifact-directory/subdirectory/b.txt",
-				"my-wf/my-node-1/my-s3-artifact-directory/subdirectory/c.txt",
-			}, nil
+			return subdir, nil
+		} else if strings.HasSuffix(key, "xss") {
+			return xss, nil
 		} else {
-			return []string{
-				"my-wf/my-node-1/my-s3-artifact-directory/a.txt",
-				"my-wf/my-node-1/my-s3-artifact-directory/index.html",
-				"my-wf/my-node-1/my-s3-artifact-directory/subdirectory/b.txt",
-				"my-wf/my-node-1/my-s3-artifact-directory/subdirectory/c.txt",
-			}, nil
+			return append(append([]string{
+				prefix + "/a.txt",
+				prefix + "/index.html",
+			}, subdir...), xss...), nil
 		}
 	}
 	return []string{}, nil
@@ -400,9 +409,21 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			statusCode:  200,
 			isDirectory: true,
 			directoryFiles: []string{
-				"..",
-				"b.txt",
-				"c.txt",
+				`<a href="..">..</a>`,
+				`<a href="./b.txt">b.txt</a>`,
+				`<a href="./c.txt">c.txt</a>`,
+			},
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-s3-artifact-directory/xss/",
+			statusCode:  200,
+			isDirectory: true,
+			directoryFiles: []string{
+				`<a href="..">..</a>`,
+				`<a href="./xss%5c%22%3e%3cimg%20src=x%20onerror=%22alert%28document.domain%29%22%3e.html">xss\&#34;&gt;&lt;img src=x onerror=&#34;alert(document.domain)&#34;&gt;.html</a>`,
+				`<a href="./javascript:alert%28document.domain%29">javascript:alert(document.domain)</a></li>`,
+				`<a href="./javascript:%5cu0061lert%281%29">javascript:\u0061lert(1)</a>`,
+				`<a href="./%3cInput%20value%20=%20%22XSS%22%20type%20=%20text%3e">&lt;Input value = &#34;XSS&#34; type = text&gt;</a>`,
 			},
 		},
 		{
@@ -415,9 +436,9 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			statusCode:  200,
 			isDirectory: true,
 			directoryFiles: []string{
-				"..",
-				"b.txt",
-				"c.txt",
+				`<a href="..">..</a>`,
+				`<a href="./b.txt">b.txt</a>`,
+				`<a href="./c.txt">c.txt</a>`,
 			},
 		},
 		{
@@ -474,6 +495,8 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				}
 				if tt.isDirectory {
 					fmt.Printf("got directory listing:\n%s\n", all)
+					assert.Contains(t, recorder.Header().Get("Content-Security-Policy"), "sandbox")
+					assert.Equal(t, "SAMEORIGIN", recorder.Header().Get("X-Frame-Options"))
 					// verify that the files are contained in the listing we got back
 					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))
 					for _, file := range tt.directoryFiles {
@@ -486,6 +509,64 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestArtifactServer_RenderDirectoryListings(t *testing.T) {
+	s := newServer()
+
+	t.Run("Empty Directory", func(t *testing.T) {
+		expected := `<html><body><ul>
+<li><a href="..">..</a></li>
+</ul></body></html>`
+		actual, err := s.renderDirectoryListing([]string{}, "")
+		require.NoError(t, err)
+		assert.Equal(t, expected, string(actual))
+	})
+
+	t.Run("Single File", func(t *testing.T) {
+		expected := `<html><body><ul>
+<li><a href="..">..</a></li>
+<li><a href="./foo.html">foo.html</a></li>
+</ul></body></html>`
+		actual, err := s.renderDirectoryListing([]string{"foo.html"}, "")
+		require.NoError(t, err)
+		assert.Equal(t, expected, string(actual))
+	})
+
+	t.Run("Nested Files", func(t *testing.T) {
+		expected := `<html><body><ul>
+<li><a href="..">..</a></li>
+<li><a href="./foo.html">foo.html</a></li>
+<li><a href="./dir/">dir/</a></li>
+<li><a href="./dir2/">dir2/</a></li>
+</ul></body></html>`
+		actual, err := s.renderDirectoryListing([]string{
+			"dir/foo.html",
+			"dir/dir/bar.html",
+			"dir/dir2/baz.html",
+			"dir/dir/bar2.html",
+		}, "dir")
+		require.NoError(t, err)
+		assert.Equal(t, expected, string(actual))
+	})
+
+	t.Run("XSS Filtering", func(t *testing.T) {
+		expected := `<html><body><ul>
+<li><a href="..">..</a></li>
+<li><a href="./xss%5c%22%3e%3cimg%20src=x%20onerror=%22alert%28document.domain%29%22%3e.html">xss\&#34;&gt;&lt;img src=x onerror=&#34;alert(document.domain)&#34;&gt;.html</a></li>
+<li><a href="./javascript:alert%28document.domain%29">javascript:alert(document.domain)</a></li>
+<li><a href="./javascript:%5cu0061lert%281%29">javascript:\u0061lert(1)</a></li>
+<li><a href="./%3cInput%20value%20=%20%22XSS%22%20type%20=%20text%3e">&lt;Input value = &#34;XSS&#34; type = text&gt;</a></li>
+</ul></body></html>`
+		actual, err := s.renderDirectoryListing([]string{
+			`xss\"><img src=x onerror="alert(document.domain)">.html`,
+			`javascript:alert(document.domain)`,
+			`javascript:\u0061lert(1)`,
+			`<Input value = "XSS" type = text>`,
+		}, "")
+		require.NoError(t, err)
+		assert.Equal(t, expected, string(actual))
+	})
 }
 
 func TestArtifactServer_GetOutputArtifact(t *testing.T) {
