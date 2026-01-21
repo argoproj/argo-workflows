@@ -329,7 +329,7 @@ argoexec-nonroot-image:
 codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS)
 	go generate ./...
  	# The generated markdown contains links to nowhere for interfaces, so remove them
-	sed -i.bak 's/\[interface{}\](#interface)/`interface{}`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
+	sed -i.bak 's/\[any\](#any)/`any`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
@@ -410,7 +410,7 @@ endif
 $(TOOL_SWAGGER): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.33.1
 endif
 $(TOOL_GOIMPORTS): Makefile
 # update this in Nix when upgrading it here
