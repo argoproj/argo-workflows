@@ -52,6 +52,10 @@ const (
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
+
+	// AnnotationKeyLastSeenVersion stores the last seen version of the workflow when it was last successfully processed by the controller
+	AnnotationKeyLastSeenVersion = workflow.WorkflowFullName + "/last-seen-version"
+
 	// AnnotationKeyPodGCStrategy is listed as an annotation on the Pod
 	// the strategy for the pod, in case the pod is orphaned from its workflow
 	AnnotationKeyPodGCStrategy = workflow.WorkflowFullName + "/pod-gc-strategy"
