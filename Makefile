@@ -276,9 +276,11 @@ argoexec-nonroot-image:
 .PHONY: codegen
 codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
 	go generate ./...
+	$(GOPATH)/bin/mockery --config .mockery.yaml
+	# The generated markdown contains links to nowhere for interfaces, so remove them
+	sed -i.bak 's/\[any\](#any)/`any`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
-
 .PHONY: check-pwd
 check-pwd:
 
@@ -356,7 +358,7 @@ endif
 $(GOPATH)/bin/swagger: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.33.1
 endif
 $(GOPATH)/bin/goimports: Makefile
 # update this in Nix when upgrading it here

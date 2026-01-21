@@ -113,7 +113,7 @@ ownership management and SELinux relabeling.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="any-string"></span> AnyString
 
@@ -1115,7 +1115,7 @@ can be used as map keys in json.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="empty-dir-volume-source"></span> EmptyDirVolumeSource
 
@@ -1308,7 +1308,7 @@ The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="flex-volume-source"></span> FlexVolumeSource
 
@@ -1861,7 +1861,7 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="key-to-path"></span> KeyToPath
 
@@ -2345,7 +2345,7 @@ save/load the directory appropriately.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="o-auth2-auth"></span> OAuth2Auth
 
@@ -2522,9 +2522,7 @@ be cluster-scoped, so there is no namespace field.
 > +kubebuilder:validation:Type=array
   
 
-
-
-[interface{}](#interface)
+`any`
 
 ### <span id="parameter"></span> Parameter
 
@@ -2684,7 +2682,26 @@ type of volume that is owned by someone else (the system).
 
 
 
-[interface{}](#interface)
+`any`
+
+### <span id="plugin-artifact"></span> PluginArtifact
+
+
+> PluginArtifact is the location of a plugin artifact
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configuration | string| `string` |  | | Configuration is the plugin defined configuration for the artifact driver plugin |  |
+| connectionTimeoutSeconds | int32 (formatted integer)| `int32` |  | | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout |  |
+| key | string| `string` |  | | Key is the path in the artifact repository where the artifact resides |  |
+| name | [ArtifactPluginName](#artifact-plugin-name)| `ArtifactPluginName` |  | |  |  |
 
 ### <span id="pod-affinity"></span> PodAffinity
 
@@ -3038,7 +3055,7 @@ cause implementors to also use a fixed point implementation.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="quobyte-volume-source"></span> QuobyteVolumeSource
 
@@ -3248,7 +3265,7 @@ cause implementors to also use a fixed point implementation.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="retry-policy"></span> RetryPolicy
 
@@ -3703,7 +3720,7 @@ of the first container processes are calculated.
 
   
 
-[interface{}](#interface)
+`any`
 
 ### <span id="suspend-template"></span> SuspendTemplate
 
@@ -4319,4 +4336,4 @@ intent and helps make sure that UIDs and names do not get conflated.
 
 
 
-[interface{}](#interface)
+`any`
