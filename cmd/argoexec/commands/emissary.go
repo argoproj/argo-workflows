@@ -65,6 +65,21 @@ func NewEmissaryCommand() *cobra.Command {
 
 			name, args := args[0], args[1:]
 
+			// Check if args were offloaded to a file (for large args that exceed exec limit)
+			if argsFile := os.Getenv(common.EnvVarArgsFile); argsFile != "" {
+				logger.Infof("Reading container args from file: %s", argsFile)
+				argsData, err := os.ReadFile(argsFile)
+				if err != nil {
+					return fmt.Errorf("failed to read container args file %s: %w", argsFile, err)
+				}
+				var fileArgs []string
+				if err := json.Unmarshal(argsData, &fileArgs); err != nil {
+					return fmt.Errorf("failed to unmarshal container args: %w", err)
+				}
+				args = append(args, fileArgs...)
+				logger.Infof("Loaded %d args from file", len(fileArgs))
+			}
+
 			data, err := os.ReadFile(varRunArgo + "/template")
 			if err != nil {
 				return fmt.Errorf("failed to read template: %w", err)
