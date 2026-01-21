@@ -1202,7 +1202,13 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+			Contains("<a href=\"./subdirectory/\">subdirectory/</a>")
+
+		resp.Header("Content-Security-Policy").
+			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			IsEqual("SAMEORIGIN")
 
 	})
 
@@ -1213,8 +1219,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
-			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+			Contains("<a href=\"./sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"./sub-file-2\">sub-file-2</a>")
 
 	})
 
