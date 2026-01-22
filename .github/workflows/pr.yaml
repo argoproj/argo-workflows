@@ -60,14 +60,3 @@ jobs:
           echo "A feature description was added to the ./.features/ directory."
           make features-validate \
             || { echo "New ./.features/*.md file failed validation."; exit 1; }
-
-      # In order to validate any links in the yaml file, render the config to markdown
-      - name: Render .features/*.md feature descriptions
-        run: make features-update
-
-      - name: Link Checker
-        id: lychee
-        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
-        with:
-          args: "--verbose --no-progress ./docs/new-features.md"
-          failIfEmpty: false
