@@ -441,7 +441,7 @@ endif
 $(TOOL_GOIMPORTS): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install golang.org/x/tools/cmd/goimports@v0.1.7
+	go install golang.org/x/tools/cmd/goimports@v0.35.0
 endif
 $(TOOL_GOTESTSUM): Makefile
 # update this in Nix when upgrading it here
