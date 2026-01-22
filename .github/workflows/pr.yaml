@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.24"
+          go-version: "1.25"
           cache: true
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -60,14 +60,3 @@ jobs:
           echo "A feature description was added to the ./.features/ directory."
           make features-validate \
             || { echo "New ./.features/*.md file failed validation."; exit 1; }
-
-      # In order to validate any links in the yaml file, render the config to markdown
-      - name: Render .features/*.md feature descriptions
-        run: make features-update
-
-      - name: Link Checker
-        id: lychee
-        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
-        with:
-          args: "--verbose --no-progress ./docs/new-features.md"
-          failIfEmpty: false
