@@ -1,5 +1,30 @@
 # Changelog
 
+## v4.0.0-rc4 (2026-01-21)
+
+Full Changelog: [v4.0.0-rc3...v4.0.0-rc4](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc3...v4.0.0-rc4)
+
+### Selected Changes
+
+* [a67673e13](https://github.com/argoproj/argo-workflows/commit/a67673e13ecea933b414fc60a8c116437cadb258) chore(deps): bump golang to 1.25 (#15235)
+* [159a5c562](https://github.com/argoproj/argo-workflows/commit/159a5c56285ecd4d3bb0a67aeef4507779a44e17) fix(security): stored XSS in artifact directory listings (#15255)
+* [2824d2121](https://github.com/argoproj/argo-workflows/commit/2824d21213830d2a17eb05cac070cf36c6678c47) fix: ensure single trailing newline in feature generator output (MD047) (#15242)
+* [b7670b678](https://github.com/argoproj/argo-workflows/commit/b7670b6789577454a8478e8eb5e8d1b9529546dc) fix: workflow controller to detect stale workflows (#15090)
+* [9872c296d](https://github.com/argoproj/argo-workflows/commit/9872c296d29dcc5e9c78493054961ede9fc30797) fix: Optimize DAG sort for retry (#15241)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Benjamin Scott Pruett
+* Eduardo Rodrigues
+* Gianluca
+* Joibel
+* Mason Malone
+* panicboat
+* William Van Hevelingen
+
+</details>
+
 ## v4.0.0-rc3 (2026-01-08)
 
 Full Changelog: [v4.0.0-rc2...v4.0.0-rc3](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc2...v4.0.0-rc3)
@@ -72,7 +97,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.7...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.7...v4.0.0-rc1)
+Full Changelog: [v3.7.8...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.8...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -259,6 +284,25 @@ Full Changelog: [v3.7.7...v4.0.0-rc1](https://github.com/argoproj/argo-workflows
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.8 (2026-01-21)
+
+Full Changelog: [v3.7.7...v3.7.8](https://github.com/argoproj/argo-workflows/compare/v3.7.7...v3.7.8)
+
+### Selected Changes
+
+* [add2c5456](https://github.com/argoproj/argo-workflows/commit/add2c5456be4d0858639067d28b38d9199e3ae63) fix: workflow controller to detect stale workflows (cherry-pick #15090 for 3.7) (#15262)
+* [190f5d7c1](https://github.com/argoproj/argo-workflows/commit/190f5d7c18e445a8e62d2c29abd41f986ed4770b) fix(security): stored XSS in artifact directory listings (cherry-pick #15255 for 3.7) (#15259)
+* [739280d36](https://github.com/argoproj/argo-workflows/commit/739280d3637e192241a4f2e49c75ccd15425a32c) fix: Optimize DAG sort for retry (cherry-pick #15241 for 3.7) (#15249)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Benjamin Scott Pruett
+* Eduardo Rodrigues
+* Mason Malone
 
 </details>
 
@@ -560,7 +604,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.16...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.16...v3.7.0-rc1)
+Full Changelog: [v3.6.17...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.17...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -767,6 +811,25 @@ Full Changelog: [v3.6.16...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.17 (2026-01-21)
+
+Full Changelog: [v3.6.16...v3.6.17](https://github.com/argoproj/argo-workflows/compare/v3.6.16...v3.6.17)
+
+### Selected Changes
+
+* [0b991b47b](https://github.com/argoproj/argo-workflows/commit/0b991b47bf64a116bb78ef1e8aa655352d737428) fix: workflow controller to detect stale workflows (cherry-pick #15090 for 3.6) (#15263)
+* [ec96c1bfc](https://github.com/argoproj/argo-workflows/commit/ec96c1bfc5f53ffd2a77a13a1dbaf86ee9798b7a) fix(security): stored XSS in artifact directory listings (cherry-pick #15255 for 3.6) (#15261)
+* [3d75205e0](https://github.com/argoproj/argo-workflows/commit/3d75205e0dd5d50f7b8212f62496b888b67cbb72) fix: Optimize DAG sort for retry (cherry-pick #15241 for 3.6) (#15248)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Benjamin Scott Pruett
+* Eduardo Rodrigues
+* Mason Malone
 
 </details>
 
