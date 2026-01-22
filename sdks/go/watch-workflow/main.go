@@ -80,7 +80,7 @@ func main() {
 	}
 }
 
-// <snip id="watch-workflow">
+// <embed id="watch-workflow">
 func watchWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string) error {
 	// Create field selector to watch only this workflow
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name))
@@ -163,7 +163,7 @@ func watchWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nam
 		}
 	}
 }
-// </snip>
+// </embed>
 
 func formatDuration(d time.Duration) string {
 	d = d.Round(time.Second)

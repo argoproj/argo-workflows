@@ -161,7 +161,7 @@ TOOL_SWAGGER                := $(GOPATH)/bin/swagger
 TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
 TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
 TOOL_GOTESTSUM              := $(GOPATH)/bin/gotestsum
-TOOL_SNIPDOC                := $(HOME)/.local/bin/snipdoc
+TOOL_EMBEDDOC               := hack/embeddoc/embeddoc
 
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
@@ -449,11 +449,8 @@ ifneq ($(USE_NIX), true)
 	go install gotest.tools/gotestsum@v1.12.3
 endif
 
-$(TOOL_SNIPDOC): Makefile
-# update this in Nix when upgrading it here
-ifneq ($(USE_NIX), true)
-	./hack/install-snipdoc.sh $(TOOL_SNIPDOC) v0.1.12
-endif
+$(TOOL_EMBEDDOC): hack/embeddoc/main.go hack/embeddoc/go.mod
+	cd hack/embeddoc && go build -o embeddoc .
 
 $(TOOL_CLANG_FORMAT):
 ifeq (, $(shell which clang-format))
@@ -827,8 +824,8 @@ docs/workflow-controller-configmap.md: config/*.go hack/docs/workflow-controller
 docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
 	go run ./hack/docs cli
 
-docs/go-sdk-guide.md: $(TOOL_SNIPDOC)
-	$(TOOL_SNIPDOC) run
+docs/go-sdk-guide.md: $(TOOL_EMBEDDOC)
+	$(TOOL_EMBEDDOC)
 
 $(TOOL_MDSPELL): Makefile
 # update this in Nix when upgrading it here
