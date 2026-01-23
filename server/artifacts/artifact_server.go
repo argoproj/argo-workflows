@@ -148,20 +148,54 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Create a deep copy to avoid modifying the original template artifact
+	artifactCopy := templateArtifact.DeepCopy()
+
+	// If the artifact doesn't have a full location, try to resolve from default artifact repository
+	if !artifactCopy.HasLocation() {
+		// Try to resolve default artifact repository for the namespace
+		// This handles cases where:
+		// 1. WorkflowTemplate specifies artifactRepositoryRef explicitly
+		// 2. Namespace has artifact-repositories ConfigMap
+		// 3. workflow-controller-configmap has default artifactRepository
+		repoRef, err := a.artifactRepositories.Resolve(ctx, wfTemplate.Spec.ArtifactRepositoryRef, namespace)
+		if err != nil {
+			a.logger.WithError(err).Debug(ctx, "Failed to resolve artifact repository, will check if artifact has location anyway")
+		} else {
+			repo, err := a.artifactRepositories.Get(ctx, repoRef)
+			if err != nil {
+				a.logger.WithError(err).Debug(ctx, "Failed to get artifact repository")
+			} else if repo != nil {
+				// Get the default artifact location from the repository
+				// We don't use Relocate() because it requires an existing key,
+				// but for uploads we generate a new key anyway
+				archiveLocation := repo.ToArtifactLocation()
+				if archiveLocation != nil && archiveLocation.HasLocation() {
+					// Copy the location settings (bucket, endpoint, etc.) to our artifact
+					artifactCopy.ArtifactLocation = *archiveLocation.DeepCopy()
+					a.logger.WithFields(logging.Fields{
+						"artifactName": artifactName,
+						"repoRef":      repoRef,
+					}).Info(ctx, "Resolved artifact location from default repository")
+				}
+			}
+		}
+	}
+
 	// Check if the artifact has a location configured (S3, GCS, etc.)
-	if !templateArtifact.HasLocation() {
-		http.Error(w, fmt.Sprintf("Artifact '%s' does not have a storage location configured (s3, gcs, azure, oss). Please configure a storage location in the WorkflowTemplate.", artifactName), http.StatusBadRequest)
+	if !artifactCopy.HasLocation() {
+		http.Error(w, fmt.Sprintf("Artifact '%s' does not have a storage location configured (s3, gcs, azure, oss). Please configure a storage location in the WorkflowTemplate or set up a default artifact repository.", artifactName), http.StatusBadRequest)
 		return
 	}
 
 	// Generate unique key for the artifact
 	uuid := generateUUID()
-	originalKey, _ := templateArtifact.GetKey()
+	originalKey, _ := artifactCopy.GetKey()
 	// Replace the key with uploaded file path under uploads/
 	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, header.Filename)
 
-	// Create a copy of the artifact for uploading
-	outputArtifact := templateArtifact.DeepCopy()
+	// Create a copy of the artifact for uploading (using artifactCopy which has resolved location)
+	outputArtifact := artifactCopy.DeepCopy()
 	if err := outputArtifact.SetKey(newKey); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to set artifact key: %v", err), http.StatusInternalServerError)
 		return
