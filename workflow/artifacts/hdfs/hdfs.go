@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -57,7 +58,9 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if art.Path == "" {
 		return errors.Errorf(errors.CodeBadRequest, "%s.path is required", errPrefix)
 	}
-	if !filepath.IsAbs(art.Path) {
+	// HDFS paths are always Unix-style, so check for leading "/" instead of filepath.IsAbs
+	// which would fail on Windows for paths like "/hdfs/path"
+	if !strings.HasPrefix(art.Path, "/") {
 		return errors.Errorf(errors.CodeBadRequest, "%s.path must be a absolute file path", errPrefix)
 	}
 
