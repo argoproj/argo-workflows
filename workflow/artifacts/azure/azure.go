@@ -498,6 +498,10 @@ func generatePutTasks(blobNamePrefix, rootPath string) chan uploadTask {
 			if fi.Mode()&os.ModeSymlink != 0 {
 				return nil
 			}
+			// Convert Windows path separators to forward slashes for blob names
+			if os.PathSeparator == '\\' {
+				relPath = strings.ReplaceAll(relPath, "\\", "/")
+			}
 			t := uploadTask{
 				blobName: path.Join(blobNamePrefix, relPath),
 				path:     localPath,
