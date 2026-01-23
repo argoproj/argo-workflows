@@ -1051,7 +1051,13 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if retryStrategyBackoffFactor != nil && *retryStrategyBackoffFactor > 0 {
 			// Formula: timeToWait = duration * factor^retry_number
 			// Note that timeToWait should equal to duration for the first retry attempt.
-			timeToWait = baseDuration * time.Duration(math.Pow(float64(*retryStrategyBackoffFactor), float64(len(childNodeIds)-1)))
+			factor := math.Pow(float64(*retryStrategyBackoffFactor), float64(len(childNodeIds)-1))
+			// Prevent overflow: cap at max duration if multiplication would exceed MaxInt64
+			if factor > float64(math.MaxInt64)/float64(baseDuration) {
+				timeToWait = time.Duration(math.MaxInt64)
+			} else {
+				timeToWait = baseDuration * time.Duration(factor)
+			}
 		}
 		if retryStrategy.Backoff.Cap != "" {
 			capDuration, err := wfv1.ParseStringToDuration(retryStrategy.Backoff.Cap)

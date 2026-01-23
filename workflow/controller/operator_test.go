@@ -890,6 +890,44 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.Equal(wfv1.NodeSucceeded, n.Phase)
 }
 
+func TestProcessNodeRetriesBackoffOverflow(t *testing.T) {
+	require := require.New(t)
+
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	retries := wfv1.RetryStrategy{}
+	retries.Limit = intstrutil.ParsePtr("100")
+	retries.RetryPolicy = wfv1.RetryPolicyAlways
+	retries.Backoff = &wfv1.Backoff{
+		Duration: "5s",
+		Factor:   intstrutil.ParsePtr("2"),
+	}
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	// Add 32 child nodes to trigger overflow (2^31 * 5s would overflow int64)
+	for i := 0; i < 32; i++ {
+		childName := fmt.Sprintf("%s(%d)", nodeName, i)
+		woc.initializeNode(ctx, childName, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+		woc.addChildNode(ctx, nodeName, childName)
+	}
+
+	n, err := woc.wf.GetNodeByName(nodeName)
+	require.NoError(err)
+
+	// Should not panic or overflow - should cap at max duration
+	n, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
+	require.NoError(err)
+	require.Equal(wfv1.NodeRunning, n.Phase)
+	require.Contains(n.Message, "Backoff for")
+}
+
 // TestProcessNodeRetries tests retrying with Expression
 func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	cancel, controller := newController()
