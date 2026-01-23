@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "dependencyDashboard": true,  
+  "dependencyDashboard": true,
   "labels": [
     "type/dependencies"
   ],
