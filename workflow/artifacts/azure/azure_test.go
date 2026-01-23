@@ -3,7 +3,9 @@ package azure
 import (
 	"errors"
 	"net/url"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -158,4 +160,75 @@ func TestIsSASAccountKey(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
+}
+
+// TestGeneratePutTasks tests the generatePutTasks function
+func TestGeneratePutTasks(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test files
+	err := os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("content1"), 0600)
+	require.NoError(t, err)
+
+	subDir := filepath.Join(tempDir, "subdir")
+	err = os.MkdirAll(subDir, 0755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(subDir, "file2.txt"), []byte("content2"), 0600)
+	require.NoError(t, err)
+
+	// Test generatePutTasks
+	tasks := generatePutTasks("prefix", tempDir)
+
+	var taskList []uploadTask
+	for task := range tasks {
+		taskList = append(taskList, task)
+	}
+
+	assert.Len(t, taskList, 2)
+
+	// Check that both files are in the task list
+	hasFile1 := false
+	hasFile2 := false
+	for _, task := range taskList {
+		if strings.HasSuffix(task.path, "file1.txt") {
+			hasFile1 = true
+			assert.Equal(t, "prefix/file1.txt", task.blobName)
+		}
+		if strings.HasSuffix(task.path, "file2.txt") {
+			hasFile2 = true
+			assert.Equal(t, "prefix/subdir/file2.txt", task.blobName)
+		}
+	}
+	assert.True(t, hasFile1, "file1.txt should be in tasks")
+	assert.True(t, hasFile2, "subdir/file2.txt should be in tasks")
+}
+
+// TestGeneratePutTasksEmptyDir tests generatePutTasks with an empty directory
+func TestGeneratePutTasksEmptyDir(t *testing.T) {
+	tempDir := t.TempDir()
+
+	tasks := generatePutTasks("prefix", tempDir)
+
+	var taskList []uploadTask
+	for task := range tasks {
+		taskList = append(taskList, task)
+	}
+
+	assert.Len(t, taskList, 0)
+}
+
+// TestArtifactDriverMissingAccountKey tests that SaveStream fails without credentials
+func TestArtifactDriverMissingAccountKey(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	driver := ArtifactDriver{
+		AccountKey:  "", // No account key
+		Container:   "test",
+		Endpoint:    "http://127.0.0.1:10000/devstoreaccount1",
+		UseSDKCreds: false,
+	}
+
+	_, err := driver.newAzureContainerClient(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accountKey secret is required")
 }
