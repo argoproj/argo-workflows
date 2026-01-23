@@ -35,6 +35,11 @@ func WithPodRestartCondition(podRestartCondition string) PodRestartsTotalOption 
 	}
 }
 
+// RecordClientRateLimiterLatency records a value to the client_rate_limiter_latency histogram
+func (m *Metrics) RecordClientRateLimiterLatency(ctx context.Context, val float64) {
+	m.Record(ctx, InstrumentClientRateLimiterLatency.Name(), val, InstAttribs{})
+}
+
 // AddCronworkflowsConcurrencypolicyTriggered adds a value to the cronworkflows_concurrencypolicy_triggered counter
 func (m *Metrics) AddCronworkflowsConcurrencypolicyTriggered(ctx context.Context, val int64, cronWFName string, cronWFNamespace string, concurrencyPolicy string) {
 	attribs := InstAttribs{
@@ -245,6 +250,11 @@ func (m *Metrics) ObserveQueueUnfinishedWork(ctx context.Context, o metric.Obser
 		{Name: AttribQueueName, Value: queueName},
 	}
 	inst.ObserveFloat(ctx, o, val, attribs)
+}
+
+// RecordResourceRateLimiterLatency records a value to the resource_rate_limiter_latency histogram
+func (m *Metrics) RecordResourceRateLimiterLatency(ctx context.Context, val float64) {
+	m.Record(ctx, InstrumentResourceRateLimiterLatency.Name(), val, InstAttribs{})
 }
 
 // AddTotalCount adds a value to the total_count counter

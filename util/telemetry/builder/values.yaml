@@ -97,6 +97,16 @@ attributes:
     description: "The type of condition, currently only `PodRunning`"
 
 metrics:
+  - name: ClientRateLimiterLatency
+    description: A histogram of the time spent waiting for the client-side rate limiter
+    extendedDescription: |
+      Records the actual wait time spent blocking on the client-go rate limiter before
+      Kubernetes API requests can proceed. This metric helps identify when the client
+      rate limiter (configured via QPS and Burst settings) is causing delays in API calls.
+      This rate limiter is on by default.
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [0.01, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
   - name: CronworkflowsConcurrencypolicyTriggered
     description: A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running
     attributes:
@@ -370,6 +380,17 @@ metrics:
       - name: QueueName
     unit: "{item}"
     type: Float64ObservableGauge
+  - name: ResourceRateLimiterLatency
+    description: A histogram of the delay duration from the resource creation rate limiter
+    extendedDescription: |
+      Records the delay that would be required before a resource creation operation could proceed.
+      This metric helps identify when the resource rate limiter is throttling pod creation.
+      A delay of 0 means the operation was allowed immediately. A non-zero delay indicates
+      the operation was rate limited.
+      This rate limiter is not on by default
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [0.0, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
   - name: TotalCount
     description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
     attributes:

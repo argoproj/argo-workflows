@@ -3,6 +3,24 @@
 //go:generate go run ./builder --metricsListGo metrics_list.go
 package telemetry
 
+var InstrumentClientRateLimiterLatency = BuiltinInstrument{
+	name:        "client_rate_limiter_latency",
+	description: "A histogram of the time spent waiting for the client-side rate limiter",
+	unit:        "s",
+	instType:    Float64Histogram,
+	defaultBuckets: []float64{
+		0.010000,
+		0.100000,
+		0.500000,
+		1.000000,
+		5.000000,
+		10.000000,
+		30.000000,
+		60.000000,
+		180.000000,
+	},
+}
+
 var InstrumentCronworkflowsConcurrencypolicyTriggered = BuiltinInstrument{
 	name:        "cronworkflows_concurrencypolicy_triggered",
 	description: "A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running",
@@ -236,6 +254,15 @@ var InstrumentQueueAddsCount = BuiltinInstrument{
 			name: AttribQueueName,
 		},
 	},
+	defaultBuckets: []float64{
+		1.000000,
+		5.000000,
+		10.000000,
+		20.000000,
+		30.000000,
+		60.000000,
+		180.000000,
+	},
 }
 
 var InstrumentQueueDepthGauge = BuiltinInstrument{
@@ -326,6 +353,24 @@ var InstrumentQueueUnfinishedWork = BuiltinInstrument{
 		{
 			name: AttribQueueName,
 		},
+	},
+}
+
+var InstrumentResourceRateLimiterLatency = BuiltinInstrument{
+	name:        "resource_rate_limiter_latency",
+	description: "A histogram of the delay duration from the resource creation rate limiter",
+	unit:        "s",
+	instType:    Float64Histogram,
+	defaultBuckets: []float64{
+		0.000000,
+		0.100000,
+		0.500000,
+		1.000000,
+		5.000000,
+		10.000000,
+		30.000000,
+		60.000000,
+		180.000000,
 	},
 }
 
