@@ -103,7 +103,7 @@ func TestListFileRelPathsEmptyDir(t *testing.T) {
 
 	files, err := listFileRelPaths(tempDir+string(os.PathSeparator), "")
 	require.NoError(t, err)
-	assert.Len(t, files, 0)
+	assert.Empty(t, files)
 }
 
 // TestListFileRelPathsNonExistent tests listing a non-existent directory
