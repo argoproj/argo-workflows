@@ -899,11 +899,11 @@ func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 }
 
 // createMultipartRequest creates a multipart form request with a file
-func createMultipartRequest(t *testing.T, path string, fileName string, fileContent []byte) *http.Request {
+func createMultipartRequest(t *testing.T, path string, fileContent []byte) *http.Request {
 	t.Helper()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", fileName)
+	part, err := writer.CreateFormFile("file", "test-file.zip")
 	require.NoError(t, err)
 	_, err = part.Write(fileContent)
 	require.NoError(t, err)
@@ -919,7 +919,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Success - upload artifact with location", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", "test-file.zip", []byte("test content"))
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("test content"))
 
 		s.UploadInputArtifact(recorder, req)
 
@@ -936,7 +936,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Success - upload artifact without location (uses default repository)", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft-no-location/input-artifact", "test-file.zip", []byte("test content"))
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft-no-location/input-artifact", []byte("test content"))
 
 		s.UploadInputArtifact(recorder, req)
 
@@ -962,7 +962,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Error - invalid path", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := createMultipartRequest(t, "/upload-artifacts/my-ns", "test-file.zip", []byte("test content"))
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns", []byte("test content"))
 
 		s.UploadInputArtifact(recorder, req)
 
@@ -972,7 +972,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Error - WorkflowTemplate not found", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := createMultipartRequest(t, "/upload-artifacts/my-ns/non-existent-wft/input-artifact", "test-file.zip", []byte("test content"))
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/non-existent-wft/input-artifact", []byte("test content"))
 
 		s.UploadInputArtifact(recorder, req)
 
@@ -982,7 +982,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Error - artifact not found in template", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/non-existent-artifact", "test-file.zip", []byte("test content"))
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/non-existent-artifact", []byte("test content"))
 
 		s.UploadInputArtifact(recorder, req)
 
@@ -992,7 +992,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Error - SaveStream fails", func(t *testing.T) {
 		s := newServerForUpload(t, errors.New("storage error"))
 		recorder := httptest.NewRecorder()
-		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", "test-file.zip", []byte("test content"))
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("test content"))
 
 		s.UploadInputArtifact(recorder, req)
 

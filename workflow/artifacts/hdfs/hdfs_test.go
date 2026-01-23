@@ -184,4 +184,3 @@ func TestIsDirectoryNotSupported(t *testing.T) {
 		assert.Equal(t, errors.CodeNotImplemented, argoErr.Code())
 	}
 }
-

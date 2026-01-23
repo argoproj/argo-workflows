@@ -27,7 +27,6 @@ func TestIsTransientOSSErr(t *testing.T) {
 	assert.False(t, isTransientOSSErr(ctx, nil))
 }
 
-
 // TestIsOssErrCode tests the IsOssErrCode function
 func TestIsOssErrCode(t *testing.T) {
 	tests := []struct {
