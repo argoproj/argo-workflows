@@ -212,7 +212,7 @@ func TestGeneratePutTasksEmptyDir(t *testing.T) {
 		taskList = append(taskList, task)
 	}
 
-	assert.Len(t, taskList, 0)
+	assert.Empty(t, taskList)
 }
 
 // TestArtifactDriverMissingAccountKey tests that SaveStream fails without credentials
