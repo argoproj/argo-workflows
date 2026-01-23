@@ -13,7 +13,7 @@
     {
       "description": "Disable argo updates (maintained separately)",
       "matchPackageNames": [
-        "argo-ui",
+        "argoproj/argo-ui",
         "argoproj/argosay",
         "github.com/argoproj/pkg"
       ],
