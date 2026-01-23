@@ -8,6 +8,7 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+hack/embeddoc/embeddoc
 hack/featuregen/featuregen
 /argo
 /argoexec

@@ -1,4 +1,4 @@
-// <snip id="quickstart">
+// <embed id="quickstart">
 package main
 
 import (
@@ -86,4 +86,4 @@ func defaultKubeconfig() string {
 	return ""
 }
 
-// </snip>
+// </embed>

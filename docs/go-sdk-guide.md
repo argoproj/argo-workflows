@@ -21,7 +21,7 @@ go get github.com/argoproj/argo-workflows/v3@latest
 Here's a simple example that submits a workflow:
 
 ```go
-<!-- <snip id="quickstart" inject_from="code"> -->
+<!-- <embed id="quickstart" inject_from="code"> -->
 package main
 
 import (
@@ -52,8 +52,7 @@ func main() {
 	// Load kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading kubeconfig: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error loading kubeconfig: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -86,30 +85,20 @@ func main() {
 	}
 
 	// Submit the workflow
-	fmt.Printf("Submitting workflow to namespace '%s'...
-", *namespace)
+	fmt.Printf("Submitting workflow to namespace '%s'...\n", *namespace)
 	created, err := wfClient.Create(ctx, workflow, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating workflow: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error creating workflow: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("✓ Workflow submitted successfully!
-")
-	fmt.Printf("  Name: %s
-", created.Name)
-	fmt.Printf("  Namespace: %s
-", created.Namespace)
-	fmt.Printf("  UID: %s
-", created.UID)
-	fmt.Printf("
-View workflow status with:
-")
-	fmt.Printf("  kubectl get workflow %s -n %s
-", created.Name, created.Namespace)
-	fmt.Printf("  argo get %s -n %s
-", created.Name, created.Namespace)
+	fmt.Printf("✓ Workflow submitted successfully!\n")
+	fmt.Printf("  Name: %s\n", created.Name)
+	fmt.Printf("  Namespace: %s\n", created.Namespace)
+	fmt.Printf("  UID: %s\n", created.UID)
+	fmt.Printf("\nView workflow status with:\n")
+	fmt.Printf("  kubectl get workflow %s -n %s\n", created.Name, created.Namespace)
+	fmt.Printf("  argo get %s -n %s\n", created.Name, created.Namespace)
 }
 
 // defaultKubeconfig returns the default kubeconfig path
@@ -119,7 +108,8 @@ func defaultKubeconfig() string {
 	}
 	return ""
 }
-<!-- </snip> -->
+
+<!-- </embed> -->
 ```
 
 ## Client Architecture
@@ -414,7 +404,7 @@ for nodeName, nodeStatus := range wf.Status.Nodes {
 ### Watching Workflows
 
 ```go
-<!-- <snip id="watch-workflow" inject_from="code"> -->
+<!-- <embed id="watch-workflow" inject_from="code"> -->
 func watchWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string) error {
 	// Create field selector to watch only this workflow
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name))
@@ -452,50 +442,38 @@ func watchWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nam
 
 			switch event.Type {
 			case watch.Added:
-				fmt.Printf("[%s] Workflow created
-", formatDuration(time.Since(startTime)))
+				fmt.Printf("[%s] Workflow created\n", formatDuration(time.Since(startTime)))
 
 			case watch.Modified:
 				// Only print if phase changed
 				if wf.Status.Phase != lastPhase {
 					lastPhase = wf.Status.Phase
-					fmt.Printf("[%s] Phase: %s
-", formatDuration(time.Since(startTime)), wf.Status.Phase)
+					fmt.Printf("[%s] Phase: %s\n", formatDuration(time.Since(startTime)), wf.Status.Phase)
 
 					// Print additional details based on phase
 					if wf.Status.Phase == wfv1.WorkflowRunning && !wf.Status.StartedAt.IsZero() {
-						fmt.Printf("         Started at: %s
-", wf.Status.StartedAt.Format(time.RFC3339))
+						fmt.Printf("         Started at: %s\n", wf.Status.StartedAt.Format(time.RFC3339))
 					}
 				}
 
 				// Check if workflow is complete
 				if !wf.Status.FinishedAt.IsZero() {
 					fmt.Println("─────────────────────────────────────────────")
-					fmt.Printf("✓ Workflow completed!
-")
-					fmt.Printf("  Final Phase: %s
-", wf.Status.Phase)
-					fmt.Printf("  Started: %s
-", wf.Status.StartedAt.Format(time.RFC3339))
-					fmt.Printf("  Finished: %s
-", wf.Status.FinishedAt.Format(time.RFC3339))
-					fmt.Printf("  Duration: %s
-", wf.Status.FinishedAt.Sub(wf.Status.StartedAt.Time))
+					fmt.Printf("✓ Workflow completed!\n")
+					fmt.Printf("  Final Phase: %s\n", wf.Status.Phase)
+					fmt.Printf("  Started: %s\n", wf.Status.StartedAt.Format(time.RFC3339))
+					fmt.Printf("  Finished: %s\n", wf.Status.FinishedAt.Format(time.RFC3339))
+					fmt.Printf("  Duration: %s\n", wf.Status.FinishedAt.Sub(wf.Status.StartedAt.Time))
 
 					if wf.Status.Message != "" {
-						fmt.Printf("  Message: %s
-", wf.Status.Message)
+						fmt.Printf("  Message: %s\n", wf.Status.Message)
 					}
 
 					// Print node statuses
 					if len(wf.Status.Nodes) > 0 {
-						fmt.Printf("
-Node Details:
-")
+						fmt.Printf("\nNode Details:\n")
 						for nodeName, node := range wf.Status.Nodes {
-							fmt.Printf("  - %s: %s
-", nodeName, node.Phase)
+							fmt.Printf("  - %s: %s\n", nodeName, node.Phase)
 						}
 					}
 
@@ -503,14 +481,13 @@ Node Details:
 				}
 
 			case watch.Deleted:
-				fmt.Printf("[%s] Workflow deleted
-", formatDuration(time.Since(startTime)))
+				fmt.Printf("[%s] Workflow deleted\n", formatDuration(time.Since(startTime)))
 				return nil
 			}
 		}
 	}
 }
-<!-- </snip> -->
+<!-- </embed> -->
 ```
 
 ### Deleting Workflows
@@ -533,7 +510,7 @@ err = wfClient.DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 ### Using Argo Server Client
 
 ```go
-<!-- <snip id="grpc-client-operations" inject_from="code"> -->
+<!-- <embed id="grpc-client-operations" inject_from="code"> -->
 	ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
 		ArgoServerOpts: apiclient.ArgoServerOpts{
 			URL:                *argoServer,
@@ -548,8 +525,7 @@ err = wfClient.DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		},
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating client: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error creating client: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -580,53 +556,40 @@ err = wfClient.DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 	}
 
 	// Submit the workflow
-	fmt.Printf("Submitting workflow to namespace '%s'...
-", *namespace)
+	fmt.Printf("Submitting workflow to namespace '%s'...\n", *namespace)
 	created, err := serviceClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
 		Namespace: *namespace,
 		Workflow:  workflow,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating workflow: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error creating workflow: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("✓ Workflow submitted successfully!
-")
-	fmt.Printf("  Name: %s
-", created.Name)
-	fmt.Printf("  Namespace: %s
-", created.Namespace)
-	fmt.Printf("  UID: %s
-", created.UID)
+	fmt.Printf("✓ Workflow submitted successfully!\n")
+	fmt.Printf("  Name: %s\n", created.Name)
+	fmt.Printf("  Namespace: %s\n", created.Namespace)
+	fmt.Printf("  UID: %s\n", created.UID)
 
 	// Get workflow details
 	time.Sleep(time.Second)
-	fmt.Printf("
-Fetching workflow details...
-")
+	fmt.Printf("\nFetching workflow details...\n")
 	wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 		Namespace: *namespace,
 		Name:      created.Name,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting workflow: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error getting workflow: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("  Phase: %s
-", wf.Status.Phase)
+	fmt.Printf("  Phase: %s\n", wf.Status.Phase)
 	if !wf.Status.StartedAt.IsZero() {
-		fmt.Printf("  Started: %s
-", wf.Status.StartedAt.Format("2006-01-02 15:04:05"))
+		fmt.Printf("  Started: %s\n", wf.Status.StartedAt.Format("2006-01-02 15:04:05"))
 	}
 
 	// List workflows
-	fmt.Printf("
-Listing recent workflows in namespace '%s'...
-", *namespace)
+	fmt.Printf("\nListing recent workflows in namespace '%s'...\n", *namespace)
 	list, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 		Namespace: *namespace,
 		ListOptions: &metav1.ListOptions{
@@ -634,18 +597,15 @@ Listing recent workflows in namespace '%s'...
 		},
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error listing workflows: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error listing workflows: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Found %d workflow(s):
-", len(list.Items))
+	fmt.Printf("Found %d workflow(s):\n", len(list.Items))
 	for i, wf := range list.Items {
-		fmt.Printf("  %d. %s (%s)
-", i+1, wf.Name, wf.Status.Phase)
+		fmt.Printf("  %d. %s (%s)\n", i+1, wf.Name, wf.Status.Phase)
 	}
-<!-- </snip> -->
+<!-- </embed> -->
 ```
 
 ## Working with Workflow Templates
@@ -653,7 +613,7 @@ Listing recent workflows in namespace '%s'...
 ### Creating WorkflowTemplates
 
 ```go
-<!-- <snip id="create-workflow-template" inject_from="code"> -->
+<!-- <embed id="create-workflow-template" inject_from="code"> -->
 	template := &wfv1.WorkflowTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hello-world",
@@ -695,31 +655,25 @@ Listing recent workflows in namespace '%s'...
 		template.ResourceVersion = existingTemplate.ResourceVersion
 		createdTemplate, err = wftClient.Update(ctx, template, metav1.UpdateOptions{})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error updating template: %v
-", err)
+			fmt.Fprintf(os.Stderr, "Error updating template: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("✓ WorkflowTemplate '%s' updated (already existed)
-
-", createdTemplate.Name)
+		fmt.Printf("✓ WorkflowTemplate '%s' updated (already existed)\n\n", createdTemplate.Name)
 	} else {
 		createdTemplate, err = wftClient.Create(ctx, template, metav1.CreateOptions{})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating template: %v
-", err)
+			fmt.Fprintf(os.Stderr, "Error creating template: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("✓ WorkflowTemplate '%s' created
-
-", createdTemplate.Name)
+		fmt.Printf("✓ WorkflowTemplate '%s' created\n\n", createdTemplate.Name)
 	}
-<!-- </snip> -->
+<!-- </embed> -->
 ```
 
 ### Submitting from WorkflowTemplate
 
 ```go
-<!-- <snip id="submit-from-template" inject_from="code"> -->
+<!-- <embed id="submit-from-template" inject_from="code"> -->
 	workflow1 := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "from-template-default-",
@@ -733,15 +687,12 @@ Listing recent workflows in namespace '%s'...
 
 	submitted1, err := wfClient.Create(ctx, workflow1, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error submitting workflow: %v
-", err)
+		fmt.Fprintf(os.Stderr, "Error submitting workflow: %v\n", err)
 		cleanup(ctx, wftClient, createdTemplate.Name)
 		os.Exit(1)
 	}
-	fmt.Printf("✓ Workflow '%s' submitted with default parameters
-
-", submitted1.Name)
-<!-- </snip> -->
+	fmt.Printf("✓ Workflow '%s' submitted with default parameters\n\n", submitted1.Name)
+<!-- </embed> -->
 ```
 
 ### Working with CronWorkflows
