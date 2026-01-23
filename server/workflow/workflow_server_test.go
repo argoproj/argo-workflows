@@ -33,6 +33,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
+	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
@@ -996,4 +998,205 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
+}
+
+// TestSubmitWorkflowWithArtifactOverride tests artifact override functionality during workflow submission
+func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
+	// WorkflowTemplate with artifact in arguments (has full location)
+	wftWithArtifact := &v1alpha1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "wft-with-artifact",
+		},
+		Spec: v1alpha1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: v1alpha1.Arguments{
+				Artifacts: []v1alpha1.Artifact{
+					{
+						Name: "input-artifact",
+						ArtifactLocation: v1alpha1.ArtifactLocation{
+							S3: &v1alpha1.S3Artifact{
+								S3Bucket: v1alpha1.S3Bucket{
+									Endpoint: "s3.amazonaws.com",
+									Bucket:   "my-bucket",
+								},
+								Key: "original/key.zip",
+							},
+						},
+					},
+				},
+			},
+			Templates: []v1alpha1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"cat"},
+						Args:    []string{"/tmp/input"},
+					},
+					Inputs: v1alpha1.Inputs{
+						Artifacts: v1alpha1.Artifacts{
+							{
+								Name: "input-artifact",
+								Path: "/tmp/input",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// WorkflowTemplate without location (relies on default repository)
+	wftNoLocation := &v1alpha1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "wft-no-location",
+		},
+		Spec: v1alpha1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: v1alpha1.Arguments{
+				Artifacts: []v1alpha1.Artifact{
+					{
+						Name: "input-artifact",
+						// No ArtifactLocation - relies on default repository
+					},
+				},
+			},
+			Templates: []v1alpha1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"cat"},
+						Args:    []string{"/tmp/input"},
+					},
+					Inputs: v1alpha1.Inputs{
+						Artifacts: v1alpha1.Artifacts{
+							{
+								Name: "input-artifact",
+								Path: "/tmp/input",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	t.Run("Override artifact key with full location in template", func(t *testing.T) {
+		server, ctx := getWorkflowServerWithArtifacts(t, wftWithArtifact, nil)
+
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:    "test-ns",
+			ResourceKind: "WorkflowTemplate",
+			ResourceName: "wft-with-artifact",
+			SubmitOptions: &v1alpha1.SubmitOpts{
+				Artifacts: []string{"input-artifact=uploads/test-ns/uuid123/uploaded-file.zip"},
+			},
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+
+		// Verify artifact key was overridden
+		require.Len(t, wf.Spec.Arguments.Artifacts, 1)
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/test-ns/uuid123/uploaded-file.zip", key)
+
+		// Verify original location settings are preserved
+		assert.Equal(t, "s3.amazonaws.com", wf.Spec.Arguments.Artifacts[0].S3.Endpoint)
+		assert.Equal(t, "my-bucket", wf.Spec.Arguments.Artifacts[0].S3.Bucket)
+	})
+
+	t.Run("Override artifact key with default repository resolution", func(t *testing.T) {
+		artifactRepo := &v1alpha1.ArtifactRepository{
+			S3: &v1alpha1.S3ArtifactRepository{
+				S3Bucket: v1alpha1.S3Bucket{
+					Endpoint: "default-endpoint",
+					Bucket:   "default-bucket",
+				},
+			},
+		}
+		server, ctx := getWorkflowServerWithArtifacts(t, wftNoLocation, artifactRepo)
+
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:    "test-ns",
+			ResourceKind: "WorkflowTemplate",
+			ResourceName: "wft-no-location",
+			SubmitOptions: &v1alpha1.SubmitOpts{
+				Artifacts: []string{"input-artifact=uploads/test-ns/uuid456/uploaded-file.zip"},
+			},
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+
+		// Verify artifact key was overridden
+		require.Len(t, wf.Spec.Arguments.Artifacts, 1)
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/test-ns/uuid456/uploaded-file.zip", key)
+
+		// Verify location was resolved from default repository
+		assert.Equal(t, "default-endpoint", wf.Spec.Arguments.Artifacts[0].S3.Endpoint)
+		assert.Equal(t, "default-bucket", wf.Spec.Arguments.Artifacts[0].S3.Bucket)
+	})
+
+	t.Run("Submit without artifact override", func(t *testing.T) {
+		server, ctx := getWorkflowServerWithArtifacts(t, wftWithArtifact, nil)
+
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:    "test-ns",
+			ResourceKind: "WorkflowTemplate",
+			ResourceName: "wft-with-artifact",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+
+		// Artifact override processing should not happen - artifacts will be empty
+		// because workflowTemplateRef is used and no override was provided
+		assert.Empty(t, wf.Spec.Arguments.Artifacts)
+	})
+}
+
+// getWorkflowServerWithArtifacts creates a workflow server with artifact support for testing
+func getWorkflowServerWithArtifacts(t *testing.T, wft *v1alpha1.WorkflowTemplate, defaultRepo *v1alpha1.ArtifactRepository) (workflowpkg.WorkflowServiceServer, context.Context) {
+	t.Helper()
+
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
+	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
+
+	archivedRepo := &mocks.WorkflowArchive{}
+
+	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+
+	wfClientset := v1alpha.NewSimpleClientset(wft)
+	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
+
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(ctx, auth.WfKey, wfClientset)
+	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
+	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+
+	wfStore, err := store.NewSQLiteStore(instanceid.NewService("my-instanceid"))
+	require.NoError(t, err)
+
+	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
+
+	var artifactRepos artifactrepositories.Interface
+	if defaultRepo != nil {
+		artifactRepos = armocks.DummyArtifactRepositories(defaultRepo)
+	}
+
+	namespaceAll := metav1.NamespaceAll
+	server := NewWorkflowServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
+
+	return server, ctx
 }
