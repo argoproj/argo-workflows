@@ -194,6 +194,9 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
+	if err = validateExecutorPlugins(wf.Spec); err != nil {
+		return err
+	}
 
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
 	// explicit value. Workflow templates without a default value are also a desired use
@@ -374,6 +377,16 @@ func getUniqueKeys(labelSources ...[]string) map[string]struct{} {
 func WorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 	if len(wfSpec.Templates) > 0 {
 		return errors.Errorf(errors.CodeBadRequest, "Templates is invalid field in spec if workflow referred WorkflowTemplate reference")
+	}
+	return nil
+}
+
+func validateExecutorPlugins(wfSpec wfv1.WorkflowSpec) error {
+	if len(wfSpec.ExecutorPlugins) == 0 {
+		return nil
+	}
+	if _, err := wfSpec.AsExecutorPluginSpec(); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "spec.executorPlugins: %s", err)
 	}
 	return nil
 }
