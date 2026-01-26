@@ -85,8 +85,8 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.52.0/go.mod h1:f/ad5NuHnYz8AOZGuR0cY+l36oSCstdxD73YlIchr6I=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.52.0 h1:wbMd4eG/fOhsCa6+IP8uEDvWF5vl7rNoUWmP5f72Tbs=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.52.0/go.mod h1:gdIm9TxRk5soClCwuB0FtdXsbqtw0aqPwBEurK9tPkw=
-github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible h1:1G1pk05UrOh0NlF1oeaaix1x8XzrfjIDK47TY0Zehcw=
-github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
+github.com/Knetic/govaluate v3.0.1-0.20250325060307-7625b7f8c03d+incompatible h1:PQkGQvISFXAw+Lkmcyd5OUGDVtdQdY1u0CIDjDbBg64=
+github.com/Knetic/govaluate v3.0.1-0.20250325060307-7625b7f8c03d+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
