@@ -25,7 +25,7 @@ require (
 	github.com/gavv/httpexpect/v2 v2.16.0
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/go-jose/go-jose/v3 v3.0.4
-	github.com/go-openapi/jsonreference v0.21.0
+	github.com/go-openapi/jsonreference v0.21.4
 	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gogo/protobuf v1.3.2
@@ -90,6 +90,7 @@ require (
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
 	github.com/google/cel-go v0.23.2 // indirect
 	github.com/olekukonko/cat v0.0.0-20250817074551-3280053e4e00 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
@@ -272,7 +273,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-logr/logr v1.4.3
-	github.com/go-openapi/jsonpointer v0.21.1 // indirect
+	github.com/go-openapi/jsonpointer v0.22.4 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
