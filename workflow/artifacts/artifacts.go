@@ -106,6 +106,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
+			AddressingStyle:       art.S3.AddressingStyle,
 		}
 
 		return &driver, nil
