@@ -171,3 +171,100 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		assert.Empty(t, msg)
 	})
 }
+
+func TestWorkflowDefinedExecutorPluginsUsage(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  podSpecPatch: |
+    nodeName: virtual-node
+  entrypoint: main
+  executorPlugins:
+     - spec:
+        sidecar:
+          container:
+            name: test-sidecar
+            image: busybox:1.35
+            ports:
+              - containerPort: 8080
+            resources:
+              requests:
+                cpu: "100m"
+                memory: "128Mi"
+              limits:
+                cpu: "200m"
+                memory: "256Mi"
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+        - - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
+
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+        url: "{{inputs.parameters.url}}"
+`)
+	assert.NotNil(t, wf)
+	assert.Len(t, wf.Spec.ExecutorPlugins, 1)
+
+	t.Run("ExecutorPluginLoadedFromWorkflowSpec", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		var ts wfv1.WorkflowTaskSet
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		sidecars, volumes, err := woc.getExecutorPlugins(ctx)
+		require.NoError(t, err)
+		assert.Len(t, sidecars, 1)
+		assert.Equal(t, "test-sidecar", sidecars[0].Name)
+		assert.Equal(t, "busybox:1.35", sidecars[0].Image)
+
+		assert.Nil(t, volumes)
+	})
+
+	t.Run("AgentPodCreatedWithExecutorPluginSidecar", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		var ts wfv1.WorkflowTaskSet
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		pod, err := woc.createAgentPod(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, pod)
+
+		containers := pod.Spec.Containers
+		assert.NotEmpty(t, containers)
+
+		var executorSidecar *apiv1.Container
+		for _, container := range containers {
+			if container.Name == "test-sidecar" && container.Image == "busybox:1.35" {
+				executorSidecar = &container
+			}
+		}
+		assert.NotNil(t, pod.Spec.Volumes)
+		assert.NotNil(t, executorSidecar)
+	})
+}
