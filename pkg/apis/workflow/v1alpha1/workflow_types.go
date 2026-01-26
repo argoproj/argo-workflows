@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 
+	execplugin "github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
+
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
@@ -468,6 +470,10 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// ExecutorPlugins specifies a list of executor plugins at the workflow level.
+	// If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.
+	ExecutorPlugins []ExecutorPlugin `json:"executorPlugins,omitempty" protobuf:"bytes,44,rep,name=executorPlugins"`
 }
 
 type LabelValueFrom struct {
@@ -520,6 +526,23 @@ func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
+}
+
+func (wfs WorkflowSpec) AsExecutorPluginSpec() []execplugin.Plugin {
+	plugins := make([]execplugin.Plugin, 0, len(wfs.ExecutorPlugins))
+	for _, plugin := range wfs.ExecutorPlugins {
+		spec := execplugin.PluginSpec{
+			Sidecar: execplugin.Sidecar{
+				AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
+				Container:                    plugin.Spec.Sidecar.Container,
+			},
+		}
+
+		plugins = append(plugins, execplugin.Plugin{
+			Spec: spec,
+		})
+	}
+	return plugins
 }
 
 // GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
@@ -1214,6 +1237,21 @@ type WorkflowLevelArtifactGC struct {
 
 	// PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,3,opt,name=podSpecPatch"`
+}
+
+// ExecutorPlugin describe workflow level executor plugin settings
+type ExecutorPlugin struct {
+	Spec ExecutorPluginSpec `json:"spec" protobuf:"bytes,1,opt,name=spec"`
+}
+
+type ExecutorPluginSpec struct {
+	Sidecar ExecutorPluginSidecar `json:"spec" protobuf:"bytes,1,opt,name=spec"`
+}
+
+type ExecutorPluginSidecar struct {
+	// AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
+	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty"`
+	Container                    apiv1.Container `json:"container"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
