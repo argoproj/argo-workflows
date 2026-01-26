@@ -254,15 +254,6 @@ var InstrumentQueueAddsCount = BuiltinInstrument{
 			name: AttribQueueName,
 		},
 	},
-	defaultBuckets: []float64{
-		1.000000,
-		5.000000,
-		10.000000,
-		20.000000,
-		30.000000,
-		60.000000,
-		180.000000,
-	},
 }
 
 var InstrumentQueueDepthGauge = BuiltinInstrument{
