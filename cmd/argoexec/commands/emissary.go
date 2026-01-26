@@ -78,6 +78,24 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 				args = append(args, fileArgs...)
 				logger.Infof("Loaded %d args from file", len(fileArgs))
+
+				// Check for a large --component arg and offload to file if needed
+				// This avoids the exec() "argument list too long" error for KFP driver
+				const componentThreshhold = 10000 // 100KB
+				const componentFilePath = "/tmp/component_spec.json"
+				for i:= 0; i < len(args)-1; i++ {
+					if args[i] == "--component" {
+						componentValue := args[i+1]
+						if len(componentValue) > componentThreshhold {
+							if err := os.WriteFile(componentFilePath, []byte(componentValue), 0o644); err != nil {
+								return fmt.Errorf("failed to offload large --component arg to file: %w", err)
+							}
+							args[i+1] = "@" + componentFilePath
+							logger.Infof("Wrote large component spec (%d bytes) to %s", len(componentValue), componentFilePath)
+						}
+						break
+					}
+				}
 			}
 
 			data, err := os.ReadFile(varRunArgo + "/template")

@@ -573,7 +573,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 						Name:  common.EnvVarContainerArgsFile,
 						Value: common.EnvConfigMountPath + "/ARGO_CONTAINER_ARGS",
 					})
-					c.volumeMounts = append(c.VolumeMounts, volumeMountConfig)
+					c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
 					pod.Spec.Containers[i] = c
 					woc.log.Infof("Offloaded container args for %s to configmap", containerArgsName)
 				}
