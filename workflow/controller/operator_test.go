@@ -884,7 +884,7 @@ func TestProcessNodeRetriesBackoffOverflow(t *testing.T) {
 
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("100")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -897,7 +897,7 @@ func TestProcessNodeRetriesBackoffOverflow(t *testing.T) {
 	// Add 32 child nodes to trigger overflow (2^31 * 5s would overflow int64)
 	for i := 0; i < 32; i++ {
 		childName := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childName, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+		woc.initializeNode(childName, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
 		woc.addChildNode(nodeName, childName)
 	}
 
