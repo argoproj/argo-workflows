@@ -273,6 +273,34 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 	return err
 }
 
+// SaveStream saves an artifact from an io.Reader to OSS compliant storage
+func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.WithField("key", outputArtifact.OSS.Key).Info(ctx, "OSS SaveStream")
+			osscli, err := ossDriver.newOSSClient(ctx)
+			if err != nil {
+				return !isTransientOSSErr(ctx, err), err
+			}
+			bucketName := outputArtifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(ctx, err), err
+			}
+			bucket, err := osscli.Bucket(bucketName)
+			if err != nil {
+				return !isTransientOSSErr(ctx, err), err
+			}
+			err = bucket.PutObject(outputArtifact.OSS.Key, reader)
+			if err != nil {
+				return !isTransientOSSErr(ctx, err), err
+			}
+			return true, nil
+		})
+	return err
+}
+
 // Delete deletes an artifact from an OSS compliant storage
 func (ossDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,

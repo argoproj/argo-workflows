@@ -1655,6 +1655,9 @@ message SubmitOpts {
   // Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
   // are processed first.
   optional int32 priority = 14;
+
+  // Artifacts overrides input artifact locations. Format: name=s3://bucket/key or name=key
+  repeated string artifacts = 15;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.

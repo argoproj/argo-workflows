@@ -210,6 +210,26 @@ func (d *Driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 	return nil
 }
 
+// SaveStream implements ArtifactDriver.SaveStream by using a temporary file
+// Note: gRPC streaming upload is complex, so we use a temp file fallback
+func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	// Write to temp file first
+	tmpFile, err := os.CreateTemp("", "plugin-upload-*")
+	if err != nil {
+		return fmt.Errorf("plugin %s failed to create temp file: %w", d.pluginName, err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = io.Copy(tmpFile, reader); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("plugin %s failed to write to temp file: %w", d.pluginName, err)
+	}
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("plugin %s failed to close temp file: %w", d.pluginName, err)
+	}
+	return d.Save(ctx, tmpFile.Name(), outputArtifact)
+}
+
 // Delete implements ArtifactDriver.Delete by calling the plugin service
 func (d *Driver) Delete(ctx context.Context, artifactRef *wfv1.Artifact) error {
 	grpcArtifact := convertToGRPC(artifactRef)
