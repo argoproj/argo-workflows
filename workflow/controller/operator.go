@@ -3566,7 +3566,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 		if node.Outputs.Result != nil {
 			// Support the case where item may be a map
 			var item wfv1.Item
-			err := json.Unmarshal([]byte(*node.Outputs.Result), &item)
+			err := wfv1.Unmarshal([]byte(*node.Outputs.Result), &item)
 			if err != nil {
 				return err
 			}

@@ -13,33 +13,42 @@ import (
 // text - a byte array or string, if starts with "@" it assumed to be a file and read from disk, is starts with "{" assumed to be JSON, otherwise assumed to be YAML
 // v - a pointer to an object
 func MustUnmarshal(text, v interface{}) {
+	if err := Unmarshal(text, v); err != nil {
+		panic(err)
+	}
+}
+
+// Unmarshal is a utility function to unmarshall either a file, byte array, or string of JSON or YAMl into a object.
+// same as MustUnmarshal, but returns an error
+func Unmarshal(text, v interface{}) error {
 	switch x := text.(type) {
 	case string:
-		MustUnmarshal([]byte(x), v)
+		return Unmarshal([]byte(x), v)
 	case []byte:
 		if len(x) == 0 {
-			panic("no text to unmarshal")
+			return fmt.Errorf("no text to unmarshal")
 		}
 		switch x[0] {
 		case '@':
 			filename := string(x[1:])
 			y, err := os.ReadFile(filepath.Clean(filename))
 			if err != nil {
-				panic(fmt.Errorf("failed to read file %s: %w", filename, err))
+				return fmt.Errorf("failed to read file %s: %w", filename, err)
 			}
-			MustUnmarshal(y, v)
+			return Unmarshal(y, v)
 		case '{':
 			if err := json.Unmarshal(x, v); err != nil {
-				panic(fmt.Errorf("failed to unmarshal JSON %q: %w", string(x), err))
+				return fmt.Errorf("failed to unmarshal JSON %q: %w", string(x), err)
 			}
 		default:
 			if err := yaml.UnmarshalStrict(x, v); err != nil {
-				panic(fmt.Errorf("failed to unmarshal YAML %q: %w", string(x), err))
+				return fmt.Errorf("failed to unmarshal YAML %q: %w", string(x), err)
 			}
 		}
 	default:
-		panic(fmt.Errorf("cannot unmarshal type %T", text))
+		return fmt.Errorf("cannot unmarshal type %T", text)
 	}
+	return nil
 }
 
 func MustMarshallJSON(v interface{}) string {
