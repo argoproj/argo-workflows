@@ -58,6 +58,7 @@ EditorConfig
 EtcD
 EventRouter
 Generator
+GiB
 GitOps
 Github
 Golang
@@ -80,6 +81,7 @@ Katacoda
 Katib
 Kerberos
 KeyValueEditor
+KiB
 Killercoda
 KubectlExec
 Kubeflow
@@ -90,8 +92,10 @@ LitmusChaos
 MLOps
 Makefile
 Metaflow
+MiB
 MinIO
 Minikube
+Multipart
 MySQL
 Nagal
 Nano
