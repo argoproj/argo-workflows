@@ -20,7 +20,7 @@ func NewResourceCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := execResource(cmd.Context(), args[0])
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},

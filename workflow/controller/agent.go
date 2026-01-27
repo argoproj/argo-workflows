@@ -87,7 +87,7 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
+		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %w", name, err)
 	}
 	if exists {
 		certVolume := &apiv1.Volume{
@@ -258,7 +258,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			woc.requeue()
 			return created, nil
 		}
-		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
+		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %w", err))
 	}
 	log.Info(ctx, "Created Agent pod")
 	return created, nil

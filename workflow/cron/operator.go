@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -128,7 +129,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
-		if errors.IsAlreadyExists(err) {
+		if apierrors.IsAlreadyExists(err) {
 			return
 		}
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
@@ -290,16 +291,16 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 		woc.log.WithField("name", wfObjectRef.Name).Info(ctx, "stopping")
 		err := util.TerminateWorkflow(ctx, woc.wfClient, wfObjectRef.Name)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
 				continue
 			}
-			alreadyShutdownErr, ok := err.(util.AlreadyShutdownError)
-			if ok {
+			var alreadyShutdownErr util.AlreadyShutdownError
+			if errors.As(err, &alreadyShutdownErr) {
 				woc.log.Warn(ctx, alreadyShutdownErr.Error())
 				continue
 			}
-			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
+			return fmt.Errorf("error stopping workflow %s: %w", wfObjectRef.Name, err)
 		}
 	}
 	return nil
@@ -381,7 +382,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 				woc.updateWfPhaseCounter(fulfilled.phase)
 				completed, err := woc.checkStopingCondition()
 				if err != nil {
-					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err)
+					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %w", woc.cronWf.Name, err)
 				} else if completed {
 					woc.setAsCompleted()
 				}
@@ -430,7 +431,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	}
 	err := woc.deleteOldestWorkflows(ctx, successfulWorkflows, int(workflowsToKeep))
 	if err != nil {
-		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %w", woc.cronWf.Name, err)
 	}
 
 	workflowsToKeep = int32(1)
@@ -439,7 +440,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	}
 	err = woc.deleteOldestWorkflows(ctx, failedWorkflows, int(workflowsToKeep))
 	if err != nil {
-		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %w", woc.cronWf.Name, err)
 	}
 	return nil
 }
@@ -456,11 +457,11 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(ctx, wf.Name, v1.DeleteOptions{})
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				woc.log.WithField("workflow", wf.Name).Info(ctx, "Workflow was already deleted")
 				continue
 			}
-			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
+			return fmt.Errorf("error deleting workflow '%s': %w", wf.Name, err)
 		}
 		woc.log.WithField("workflow", wf.Name).Info(ctx, "Deleted Workflow due to CronWorkflow history limit")
 	}

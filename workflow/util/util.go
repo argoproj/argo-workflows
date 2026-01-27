@@ -451,7 +451,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 			if workflowUpdated {
 				err := hydrator.Dehydrate(ctx, wf)
 				if err != nil {
-					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
+					return false, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
 				}
 				creator.LabelActor(ctx, wf, creator.ActionResume)
 				_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
@@ -601,7 +601,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 		err = hydrator.Dehydrate(ctx, wf)
 		if err != nil {
-			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
+			return true, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
 		}
 		creator.LabelActor(ctx, wf, action)
 		_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
