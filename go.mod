@@ -71,7 +71,7 @@ require (
 	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.236.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260122232226-8e98ce8d340d
+	google.golang.org/genproto/googleapis/api v0.0.0-20260126211449-d11affda4bed
 	google.golang.org/grpc v1.72.2
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	k8s.io/api v0.33.1
