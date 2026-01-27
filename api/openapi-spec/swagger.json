@@ -3365,6 +3365,12 @@
             "description": "Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".",
             "name": "fields",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Optional UID to retrieve a specific workflow (useful for archived workflows with the same name).",
+            "name": "uid",
+            "in": "query"
           }
         ],
         "responses": {

@@ -611,6 +611,17 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
+	// Mock for UID-based lookups on archive
+	archivedRepo.On("GetWorkflow", mock.Anything, "91066a6c-1ddc-11ea-b443-42010aa80099", "test", "hello-world-9tql2-test").Return(&v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			UID:       "91066a6c-1ddc-11ea-b443-42010aa80099",
+			Labels: map[string]string{
+				common.LabelKeyControllerInstanceID: "my-instanceid", // necessary to pass validation
+			},
+		},
+	}, nil)
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/controller-instanceid=my-instanceid")
 	if err != nil {
 		panic(err)
@@ -750,10 +761,10 @@ func TestGetWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
-	wf, err = s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err = s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 }
@@ -762,9 +773,79 @@ func TestValidateWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
 	require.NoError(t, err)
 	require.NoError(t, s.validateWorkflow(wf))
+}
+
+func TestGetWorkflowByUID(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+	s := server.(*workflowServer)
+	wfClient := auth.GetWfClient(ctx)
+
+	t.Run("GetWorkflowWithValidUID", func(t *testing.T) {
+		wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "6522aff1-1e01-11ea-b443-42010aa80074", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+		assert.Equal(t, "6522aff1-1e01-11ea-b443-42010aa80074", string(wf.UID))
+	})
+
+	t.Run("GetWorkflowWithUIDMatchesClusterUID", func(t *testing.T) {
+		wfWithUID, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "6522aff1-1e01-11ea-b443-42010aa80074", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wfWithUID)
+		wfWithoutUID, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wfWithoutUID)
+		assert.Equal(t, wfWithoutUID, wfWithUID)
+	})
+
+	t.Run("GetWorkflowWithMismatchedUID", func(t *testing.T) {
+		// The cluster has uid "6522aff1-1e01-11ea-b443-42010aa80074"
+		// archive has uid "91066a6c-1ddc-11ea-b443-42010aa80099"
+		wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "91066a6c-1ddc-11ea-b443-42010aa80099", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "91066a6c-1ddc-11ea-b443-42010aa80099", string(wf.UID))
+	})
+
+	t.Run("GetClusterWorkflowViaAPI", func(t *testing.T) {
+		// Test the full API with UID parameter
+		wf, err := server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			Uid:       "6522aff1-1e01-11ea-b443-42010aa80074",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+		assert.Equal(t, "6522aff1-1e01-11ea-b443-42010aa80074", string(wf.UID))
+	})
+
+	t.Run("GetClusterWorkflowViaAPIWithoutUID", func(t *testing.T) {
+		// Test the full API without UID parameter
+		wf, err := server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			Uid:       "",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+		assert.Equal(t, "6522aff1-1e01-11ea-b443-42010aa80074", string(wf.UID))
+	})
+
+	t.Run("GetArchivedWorkflowViaAPI", func(t *testing.T) {
+		wf, err := server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			Uid:       "91066a6c-1ddc-11ea-b443-42010aa80099",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "91066a6c-1ddc-11ea-b443-42010aa80099", string(wf.UID))
+	})
 }
 
 func TestListWorkflow(t *testing.T) {
