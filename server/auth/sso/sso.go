@@ -391,7 +391,7 @@ func isValidFinalRedirectURL(redirect string) bool {
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse encrypted token %w", err)
+		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)
 	}
 	c := &types.Claims{}
 	if err := tok.Claims(s.privateKey, c); err != nil {
