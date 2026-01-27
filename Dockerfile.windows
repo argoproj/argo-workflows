@@ -40,7 +40,7 @@ RUN SETX /m path C:\app;%path%
 ####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
 ####################################################################################################
-FROM builder as argo-build
+FROM builder AS argo-build
 
 ARG GIT_COMMIT
 ARG GIT_TAG
@@ -55,7 +55,7 @@ RUN bash -c 'make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_
 ####################################################################################################
 # argoexec
 ####################################################################################################
-FROM argoexec-base as argoexec
+FROM argoexec-base AS argoexec
 COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows/dist/argoexec C:/app/argoexec.exe
 RUN argoexec version
 ENTRYPOINT [ "argoexec" ]
