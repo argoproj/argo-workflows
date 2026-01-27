@@ -50,6 +50,8 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 	}
 	containerURL.Path += azblobDriver.Container
 
+	logging.RequireLoggerFromContext(ctx).WithField("containerURL", containerURL.String()).Debug(ctx, "Constructed Container URL")
+
 	if azblobDriver.UseSDKCreds {
 		credential, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
@@ -250,6 +252,7 @@ func (azblobDriver *ArtifactDriver) OpenStream(ctx context.Context, artifact *wf
 	emptyFile := false
 	response, origErr := blobClient.DownloadStream(ctx, nil)
 	if origErr == nil {
+		logger.WithField("contentLength", *response.ContentLength).Debug(ctx, "ContentLength from DownloadStream")
 		emptyFile = *response.ContentLength == 0
 		// We have a normal file blob, so just return the response body stream
 		if !emptyFile {
@@ -259,6 +262,7 @@ func (azblobDriver *ArtifactDriver) OpenStream(ctx context.Context, artifact *wf
 		return nil, fmt.Errorf("unable to open stream for blob %s: %s", artifact.Azure.Blob, origErr)
 	}
 
+	logger.Debug(ctx, "Checking if blob is a directory")
 	isDir, err := azblobDriver.IsDirectory(ctx, artifact)
 	if err != nil {
 		return nil, fmt.Errorf("unable to test if blob %s is a directory: %s", artifact.Azure.Blob, err)
