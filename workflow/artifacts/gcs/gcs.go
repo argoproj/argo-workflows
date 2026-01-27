@@ -39,6 +39,9 @@ var (
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
 func isTransientGCSErr(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
 	if errors.Is(err, io.ErrUnexpectedEOF) || errutil.IsTransientErr(ctx, err) {
 		return true
 	}
