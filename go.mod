@@ -48,7 +48,7 @@ require (
 	github.com/sethvargo/go-limiter v1.1.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
-	github.com/spf13/viper v1.20.1
+	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.37.0
@@ -187,11 +187,11 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/sagikazarmark/locafero v0.9.0 // indirect
+	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/tinylib/msgp v1.6.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -206,7 +206,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120174246-409b4a993575 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
@@ -334,8 +333,8 @@ require (
 	github.com/sanity-io/litter v1.5.5 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/spf13/afero v1.14.0 // indirect
-	github.com/spf13/cast v1.9.2 // indirect
+	github.com/spf13/afero v1.15.0 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
