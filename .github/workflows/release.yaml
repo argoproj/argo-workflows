@@ -446,7 +446,7 @@ jobs:
       # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
       # of this action.
       # Instead, delete the release so it is re-created.
-      - uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+      - uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}
