@@ -316,7 +316,7 @@ jobs:
           yarn --cwd ui install
           yarn --cwd ui build
       - name: Upload UI artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ui-dist
           path: ui/dist/
@@ -373,7 +373,7 @@ jobs:
       - name: Build CLI for ${{ matrix.goos }}-${{ matrix.goarch }}
         run: make dist/argo-${{ matrix.goos }}-${{ matrix.goarch }}.gz STATIC_FILES=true VERSION=$VERSION
       - name: Upload CLI artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: argo-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/argo-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}.gz
