@@ -65,6 +65,39 @@ func NewEmissaryCommand() *cobra.Command {
 
 			name, args := args[0], args[1:]
 
+			// Check if args were offloaded to a file (for large args that exceed exec limit)
+			if argsFile := os.Getenv(common.EnvVarArgsFile); argsFile != "" {
+				logger.Infof("Reading container args from file: %s", argsFile)
+				argsData, err := os.ReadFile(argsFile)
+				if err != nil {
+					return fmt.Errorf("failed to read container args file %s: %w", argsFile, err)
+				}
+				var fileArgs []string
+				if err := json.Unmarshal(argsData, &fileArgs); err != nil {
+					return fmt.Errorf("failed to unmarshal container args: %w", err)
+				}
+				args = append(args, fileArgs...)
+				logger.Infof("Loaded %d args from file", len(fileArgs))
+
+				// Check for a large --component arg and offload to file if needed
+				// This avoids the exec() "argument list too long" error for KFP driver
+				const componentThreshhold = 10000 // 100KB
+				const componentFilePath = "/tmp/component_spec.json"
+				for i:= 0; i < len(args)-1; i++ {
+					if args[i] == "--component" {
+						componentValue := args[i+1]
+						if len(componentValue) > componentThreshhold {
+							if err := os.WriteFile(componentFilePath, []byte(componentValue), 0o644); err != nil {
+								return fmt.Errorf("failed to offload large --component arg to file: %w", err)
+							}
+							args[i+1] = "@" + componentFilePath
+							logger.Infof("Wrote large component spec (%d bytes) to %s", len(componentValue), componentFilePath)
+						}
+						break
+					}
+				}
+			}
+
 			data, err := os.ReadFile(varRunArgo + "/template")
 			if err != nil {
 				return fmt.Errorf("failed to read template: %w", err)
