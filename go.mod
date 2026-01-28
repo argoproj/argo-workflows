@@ -69,7 +69,7 @@ require (
 	golang.org/x/crypto v0.46.0
 	golang.org/x/oauth2 v0.33.0
 	golang.org/x/sync v0.19.0
-	golang.org/x/time v0.11.0
+	golang.org/x/time v0.14.0
 	google.golang.org/api v0.236.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260126211449-d11affda4bed
 	google.golang.org/grpc v1.72.2
