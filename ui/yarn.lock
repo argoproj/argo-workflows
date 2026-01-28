@@ -1785,9 +1785,9 @@
   integrity sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==
 
 "@types/qs@*":
-  version "6.9.11"
-  resolved "https://registry.yarnpkg.com/@types/qs/-/qs-6.9.11.tgz#208d8a30bc507bd82e03ada29e4732ea46a6bbda"
-  integrity sha512-oGk0gmhnEJK4Yyk+oI7EfXsLayXatCWPHary1MtcmbAifkobT9cM9yutG/hZKIseOU0MqbIwQ/u2nn/Gb+ltuQ==
+  version "6.14.0"
+  resolved "https://registry.yarnpkg.com/@types/qs/-/qs-6.14.0.tgz#d8b60cecf62f2db0fb68e5e006077b9178b85de5"
+  integrity sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==
 
 "@types/range-parser@*":
   version "1.2.7"
@@ -1795,9 +1795,9 @@
   integrity sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==
 
 "@types/react-autocomplete@^1.8.10":
-  version "1.8.10"
-  resolved "https://registry.yarnpkg.com/@types/react-autocomplete/-/react-autocomplete-1.8.10.tgz#c48d01cfdb936a9958058aba119fc09e8b5bd8e2"
-  integrity sha512-3pL4pHLKIKuwDArUfCg8y697tsRSNyowofZGpV8vYKoGc5Jws0jrnzqTgdUHcZew0g0UxcFO1zeXD7LG0WSggg==
+  version "1.8.11"
+  resolved "https://registry.yarnpkg.com/@types/react-autocomplete/-/react-autocomplete-1.8.11.tgz#fef4702fdb739f11ed6694c84ba9d8e4af60b4c0"
+  integrity sha512-JYaD/OGfVFMK5NaGOCAd25QRs4MEevapn38xvYWjwo5brxrUMo2PucYmShTfuTX99r80UtncCMDrFZ9MGIVyvQ==
   dependencies:
     "@types/react" "*"
 
