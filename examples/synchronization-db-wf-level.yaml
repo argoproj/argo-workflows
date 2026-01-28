@@ -11,8 +11,8 @@ spec:
   entrypoint: hello-world
   synchronization:
     semaphores:
-      - database: # v3.7 and after
-          key: workflow
+      - name: workflow # v3.7 and after
+        database: true
   templates:
     - name: hello-world
       container:
