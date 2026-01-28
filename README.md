@@ -57,16 +57,12 @@ You can try Argo Workflows via one of the following:
 Just some of the projects that use or rely on Argo Workflows (complete list [here](https://github.com/akuity/awesome-argo#ecosystem-projects)):
 
 * [Argo Events](https://github.com/argoproj/argo-events)
-* [Couler](https://github.com/couler-proj/couler)
-* [Hera](https://github.com/argoproj-labs/hera-workflows)
+* [Hera](https://github.com/argoproj-labs/hera)
 * [Katib](https://github.com/kubeflow/katib)
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
-* [Onepanel](https://github.com/onepanelio/onepanel)
-* [Orchest](https://github.com/orchest/orchest/)
 * [Piper](https://github.com/quickube/piper)
-* [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 
