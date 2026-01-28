@@ -1250,8 +1250,8 @@ type ExecutorPluginSpec struct {
 
 type ExecutorPluginSidecar struct {
 	// AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
-	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty"`
-	Container                    apiv1.Container `json:"container"`
+	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty" protobuf:"varint,1,opt,name=automountServiceAccountToken"`
+	Container                    apiv1.Container `json:"container" protobuf:"bytes,2,opt,name=container"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
