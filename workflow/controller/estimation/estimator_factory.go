@@ -52,7 +52,7 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 		if exists {
 			objs, err := f.wfInformer.GetIndexer().ByIndex(indexName, indexes.MetaNamespaceLabelIndex(wf.Namespace, labelValue))
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to list workflows by index: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to list workflows by index: %w", err)
 			}
 			var newestUn *unstructured.Unstructured
 			for _, obj := range objs {
@@ -82,11 +82,11 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 			// we failed to find a base-line in the live set, so we now look in the archive
 			requirements, err := labels.ParseToRequirements(labelName + "=" + labelValue)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %w", err)
 			}
 			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(ctx, wf.Namespace, requirements)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %w", err)
 			}
 			return &estimator{wf, baselineWF}, nil
 		}

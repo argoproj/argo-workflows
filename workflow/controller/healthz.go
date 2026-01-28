@@ -67,7 +67,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			unreconciledWorkflows[key] = wf
 		})
 		if err != nil {
-			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
+			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%w", err)
 		}
 
 		unreconciledExceedAge := false

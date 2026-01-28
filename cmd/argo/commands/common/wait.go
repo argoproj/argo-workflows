@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -56,7 +57,7 @@ func waitOnOne(ctx context.Context, serviceClient workflowpkg.WorkflowServiceCli
 	}
 	for {
 		event, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.Debug(ctx, "Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)

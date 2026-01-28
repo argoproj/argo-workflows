@@ -205,7 +205,7 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 		SubmitOptions: submitOpts,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to submit workflow: %v", err)
+		return fmt.Errorf("failed to submit workflow: %w", err)
 	}
 
 	if err = printWorkflow(created, common.GetFlags{Output: cliOpts.Output}); err != nil {
@@ -249,7 +249,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 			CreateOptions: options,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to submit workflow: %v", err)
+			return fmt.Errorf("failed to submit workflow: %w", err)
 		}
 
 		if err = printWorkflow(created, common.GetFlags{Output: cliOpts.Output, Status: cliOpts.GetArgs.Status}); err != nil {

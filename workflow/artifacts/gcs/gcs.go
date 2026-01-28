@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,7 +19,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/file"
@@ -38,28 +39,32 @@ var (
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
 func isTransientGCSErr(ctx context.Context, err error) bool {
-	if err == io.ErrUnexpectedEOF || errutil.IsTransientErr(ctx, err) {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.ErrUnexpectedEOF) || errutil.IsTransientErr(ctx, err) {
 		return true
 	}
-	switch e := err.(type) {
-	case *googleapi.Error:
+	var googleErr *googleapi.Error
+	if errors.As(err, &googleErr) {
 		// Retry on 429 and 5xx, according to
 		// https://cloud.google.com/storage/docs/exponential-backoff.
-		return e.Code == 429 || (e.Code >= 500 && e.Code < 600)
-	case interface{ Temporary() bool }:
-		if e.Temporary() {
+		return googleErr.Code == 429 || (googleErr.Code >= 500 && googleErr.Code < 600)
+	}
+	var tempErr interface{ Temporary() bool }
+	if errors.As(err, &tempErr) {
+		if tempErr.Temporary() {
 			return true
 		}
-	default:
-		// Retry errors that might be an unexported type
-		// Also picks up certain 500-level codes that are sent back from upstream gcp services
-		// and not caught by the googleapi.Error case (Workload Identity in particular)
-		retriable := []string{"connection refused", "connection reset", "Received 504",
-			"Received 500", "TLS handshake timeout"}
-		for _, s := range retriable {
-			if strings.Contains(e.Error(), s) {
-				return true
-			}
+	}
+	// Retry errors that might be an unexported type
+	// Also picks up certain 500-level codes that are sent back from upstream gcp services
+	// and not caught by the googleapi.Error case (Workload Identity in particular)
+	retriable := []string{"connection refused", "connection reset", "Received 504",
+		"Received 500", "TLS handshake timeout"}
+	for _, s := range retriable {
+		if strings.Contains(err.Error(), s) {
+			return true
 		}
 	}
 	if e, ok := err.(interface{ Unwrap() error }); ok {
@@ -127,7 +132,7 @@ func downloadObjects(ctx context.Context, client *storage.Client, bucket, key, p
 	}
 	if len(objNames) < 1 {
 		msg := fmt.Sprintf("no results for key: %s", key)
-		return errors.New(errors.CodeNotFound, msg)
+		return argoerrors.New(argoerrors.CodeNotFound, msg)
 	}
 	for _, objName := range objNames {
 		err = downloadObject(ctx, client, bucket, key, objName, path)
@@ -155,8 +160,8 @@ func downloadObject(ctx context.Context, client *storage.Client, bucket, key, ob
 	}
 	rc, err := client.Bucket(bucket).Object(objName).NewReader(ctx)
 	if err != nil {
-		if err == storage.ErrObjectNotExist {
-			return errors.New(errors.CodeNotFound, err.Error())
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			return argoerrors.New(argoerrors.CodeNotFound, err.Error())
 		}
 		return fmt.Errorf("new bucket reader: %w", err)
 	}
@@ -189,7 +194,7 @@ func listByPrefix(ctx context.Context, client *storage.Client, bucket, prefix, d
 	results := []string{}
 	for {
 		attrs, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
@@ -322,7 +327,7 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 func deleteObject(ctx context.Context, client *storage.Client, bucket, key string) error {
 	err := client.Bucket(bucket).Object(key).Delete(ctx)
 	if err != nil {
-		return fmt.Errorf("delete %s: %v", key, err)
+		return fmt.Errorf("delete %s: %w", key, err)
 	}
 	return nil
 }
@@ -368,5 +373,5 @@ func (h *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifac
 }
 
 func (h *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
-	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for GCS")
+	return false, argoerrors.New(argoerrors.CodeNotImplemented, "IsDirectory currently unimplemented for GCS")
 }

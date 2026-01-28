@@ -65,7 +65,7 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Namespace: wftmpl.Namespace,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
+			return fmt.Errorf("failed to get existing workflow template %q to update: %w", wftmpl.Name, err)
 		}
 		wftmpl.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
@@ -73,7 +73,7 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update workflow template: %v", err)
+			return fmt.Errorf("failed to update workflow template: %w", err)
 		}
 		printWorkflowTemplate(updated, cliOpts.output.String())
 	}

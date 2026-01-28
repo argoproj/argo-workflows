@@ -56,7 +56,7 @@ func NewNodeCommand() *cobra.Command {
 				}
 				res, err := json.Marshal(outputParams)
 				if err != nil {
-					return fmt.Errorf("unable to parse output parameter set request: %s", err)
+					return fmt.Errorf("unable to parse output parameter set request: %w", err)
 				}
 				outputParameters = string(res)
 			}
@@ -71,7 +71,7 @@ func NewNodeCommand() *cobra.Command {
 
 			selector, err := fields.ParseSelector(setArgs.nodeFieldSelector)
 			if err != nil {
-				return fmt.Errorf("unable to parse node field selector '%s': %s", setArgs.nodeFieldSelector, err)
+				return fmt.Errorf("unable to parse node field selector '%s': %w", setArgs.nodeFieldSelector, err)
 			}
 
 			_, err = serviceClient.SetWorkflow(ctx, &workflowpkg.WorkflowSetRequest{

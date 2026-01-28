@@ -68,7 +68,7 @@ func GetSyncLimitCommand(ctx context.Context, key string, cliGetOpts *cliGetOpts
 
 	resp, err := serviceClient.GetSyncLimit(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to get sync limit: %v", err)
+		return fmt.Errorf("failed to get sync limit: %w", err)
 	}
 
 	printSyncLimit(resp.Key, resp.CmName, resp.Namespace, resp.Limit, resp.Type)

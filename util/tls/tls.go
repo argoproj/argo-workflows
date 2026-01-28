@@ -50,7 +50,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 	var err error
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate private key: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	notBefore := time.Now()
@@ -59,7 +59,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate serial number: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -85,7 +85,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create certificate: %s", err)
+		return nil, nil, fmt.Errorf("failed to create certificate: %w", err)
 	}
 	return certBytes, privateKey, nil
 }

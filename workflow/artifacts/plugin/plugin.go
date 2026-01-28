@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -168,7 +169,7 @@ func (d *Driver) OpenStream(ctx context.Context, a *wfv1.Artifact) (io.ReadClose
 		defer writer.Close()
 		for {
 			resp, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {

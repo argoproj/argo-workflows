@@ -34,7 +34,7 @@ func NewSuspendCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				if err != nil {
-					return fmt.Errorf("failed to suspended %s: %+v", wfName, err)
+					return fmt.Errorf("failed to suspend %s: %w", wfName, err)
 				}
 				fmt.Printf("workflow %s suspended\n", wfName)
 			}

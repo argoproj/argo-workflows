@@ -69,7 +69,7 @@ func DeleteSyncLimitCommand(ctx context.Context, key string, cliDeleteOpts *cliD
 	}
 
 	if _, err := serviceClient.DeleteSyncLimit(ctx, req); err != nil {
-		return fmt.Errorf("failed to delete sync limit: %v", err)
+		return fmt.Errorf("failed to delete sync limit: %w", err)
 	}
 
 	fmt.Printf("Sync limit deleted\n")

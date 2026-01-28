@@ -55,7 +55,7 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 			}()
 			err := loadArtifactPlugin(ctx, wfv1.ArtifactPluginName(artifactPlugin))
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},

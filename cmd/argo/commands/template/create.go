@@ -55,7 +55,7 @@ func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create workflow template: %v", err)
+			return fmt.Errorf("failed to create workflow template: %w", err)
 		}
 		printWorkflowTemplate(created, cliOpts.output.String())
 	}

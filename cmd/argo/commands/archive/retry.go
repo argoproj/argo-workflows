@@ -107,7 +107,7 @@ func NewRetryCommand() *cobra.Command {
 func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowarchivepkg.ArchivedWorkflowServiceClient, serviceClient workflowpkg.WorkflowServiceClient, retryOpts retryOps, cliSubmitOpts common.CliSubmitOpts, args []string) error {
 	selector, err := fields.ParseSelector(retryOpts.nodeFieldSelector)
 	if err != nil {
-		return fmt.Errorf("unable to parse node field selector '%s': %s", retryOpts.nodeFieldSelector, err)
+		return fmt.Errorf("unable to parse node field selector '%s': %w", retryOpts.nodeFieldSelector, err)
 	}
 	var wfs wfv1.Workflows
 	if retryOpts.hasSelector() {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -573,7 +574,7 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 		}
 	}
 	if err != nil {
-		if err == db.ErrNoMoreRows {
+		if errors.Is(err, db.ErrNoMoreRows) {
 			return nil, nil
 		}
 		return nil, err

@@ -137,7 +137,7 @@ func TestGetLimitErrorThenSuccess(t *testing.T) {
 	limit, changed, err := cl.get(ctx, "test-key")
 
 	// Verify
-	if firstErr != expectedError {
+	if !errors.Is(firstErr, expectedError) {
 		t.Errorf("expected first call to error with %v, got %v", expectedError, firstErr)
 	}
 

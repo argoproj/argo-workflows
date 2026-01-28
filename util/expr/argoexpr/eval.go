@@ -13,7 +13,7 @@ func EvalBool(input string, env interface{}) (bool, error) {
 	}
 	result, err := expr.Run(program, env)
 	if err != nil {
-		return false, fmt.Errorf("unable to evaluate expression '%s': %s", input, err)
+		return false, fmt.Errorf("unable to evaluate expression '%s': %w", input, err)
 	}
 	resultBool, ok := result.(bool)
 	if !ok {
