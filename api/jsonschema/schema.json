@@ -5326,6 +5326,44 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ExecutorPlugin": {
+      "description": "ExecutorPlugin describe workflow level executor plugin settings",
+      "properties": {
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSpec"
+        }
+      },
+      "required": [
+        "spec"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar": {
+      "properties": {
+        "automountServiceAccountToken": {
+          "description": "AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.",
+          "type": "boolean"
+        },
+        "container": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
+        }
+      },
+      "required": [
+        "container"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSpec": {
+      "properties": {
+        "sidecar": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar"
+        }
+      },
+      "required": [
+        "sidecar"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.GCSArtifact": {
       "description": "GCSArtifact is the location of a GCS artifact",
       "properties": {
@@ -8104,6 +8142,13 @@
         "executor": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1."
+        },
+        "executorPlugins": {
+          "description": "ExecutorPlugins specifies a list of executor plugins at the workflow level. If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPlugin"
+          },
+          "type": "array"
         },
         "hooks": {
           "additionalProperties": {

@@ -669,6 +669,22 @@ message ExecutorConfig {
   optional string serviceAccountName = 1;
 }
 
+// ExecutorPlugin describe workflow level executor plugin settings
+message ExecutorPlugin {
+  optional ExecutorPluginSpec spec = 1;
+}
+
+message ExecutorPluginSidecar {
+  // AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
+  optional bool automountServiceAccountToken = 1;
+
+  optional k8s.io.api.core.v1.Container container = 2;
+}
+
+message ExecutorPluginSpec {
+  optional ExecutorPluginSidecar sidecar = 1;
+}
+
 // GCSArtifact is the location of a GCS artifact
 message GCSArtifact {
   optional GCSBucket gCSBucket = 1;
@@ -2217,6 +2233,10 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // ExecutorPlugins specifies a list of executor plugins at the workflow level.
+  // If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.
+  repeated ExecutorPlugin executorPlugins = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow

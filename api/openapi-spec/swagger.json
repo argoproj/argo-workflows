@@ -9612,6 +9612,44 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ExecutorPlugin": {
+      "description": "ExecutorPlugin describe workflow level executor plugin settings",
+      "type": "object",
+      "required": [
+        "spec"
+      ],
+      "properties": {
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar": {
+      "type": "object",
+      "required": [
+        "container"
+      ],
+      "properties": {
+        "automountServiceAccountToken": {
+          "description": "AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.",
+          "type": "boolean"
+        },
+        "container": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSpec": {
+      "type": "object",
+      "required": [
+        "sidecar"
+      ],
+      "properties": {
+        "sidecar": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GCSArtifact": {
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
@@ -12373,6 +12411,13 @@
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
+        },
+        "executorPlugins": {
+          "description": "ExecutorPlugins specifies a list of executor plugins at the workflow level. If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPlugin"
+          }
         },
         "hooks": {
           "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
