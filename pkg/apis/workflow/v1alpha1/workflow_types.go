@@ -1245,7 +1245,7 @@ type ExecutorPlugin struct {
 }
 
 type ExecutorPluginSpec struct {
-	Sidecar ExecutorPluginSidecar `json:"spec" protobuf:"bytes,1,opt,name=spec"`
+	Sidecar ExecutorPluginSidecar `json:"sidecar" protobuf:"bytes,1,opt,name=sidecar"`
 }
 
 type ExecutorPluginSidecar struct {
