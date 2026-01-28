@@ -22,7 +22,7 @@ require (
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/evilmonkeyinc/jsonpath v0.8.1
 	github.com/expr-lang/expr v1.17.7
-	github.com/gavv/httpexpect/v2 v2.16.0
+	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/go-openapi/jsonreference v0.21.4
@@ -340,7 +340,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.34.0 // indirect
+	github.com/valyala/fasthttp v1.40.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
