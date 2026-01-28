@@ -2,6 +2,8 @@
 
 In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.
 
+/// tab | YAML
+
 ```yaml
 # in a workflow. The resource template type accepts any k8s manifest
 # (including CRDs) and can perform any `kubectl` action against it (e.g. create,
@@ -43,14 +45,51 @@ spec:
           backoffLimit: 4
 ```
 
-**Note:**
-Currently only a single resource can be managed by a resource template so either a `generateName` or `name` must be provided in the resource's meta-data.
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Resource, Workflow
+
+with Workflow(
+    generate_name="k8s-jobs-",
+    entrypoint="pi-tmpl",
+) as w:
+    Resource(
+        name="pi-tmpl",
+        action="create",
+        failure_condition="status.failed > 3",
+        manifest="""\
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: pi-job-
+spec:
+  template:
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never
+  backoffLimit: 4
+""",
+        success_condition="status.succeeded > 0",
+    )
+```
+
+///
+
+!!! Note
+    Currently only a single resource can be managed by a resource template so either a `generateName` or `name` must be provided in the resource's `metadata`.
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](https://github.com/argoproj/argo-workflows/tree/main/examples/k8s-owner-reference.yaml)).
 
-You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](https://github.com/argoproj/argo-workflows/tree/main/examples/k8s-jobs.yaml))
+You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](https://github.com/argoproj/argo-workflows/tree/main/examples/k8s-jobs.yaml)).
 
-**Note:**
 When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [`CronTab` CRD](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a `CronTab`:
 
 ```yaml
@@ -62,6 +101,8 @@ spec:
 ```
 
 This `CronTab` can be modified using the following Argo Workflow:
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -82,3 +123,31 @@ spec:
           cronSpec: "* * * * */10"
           image: my-awesome-cron-image
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Resource, Workflow
+
+with Workflow(
+    generate_name="k8s-patch-",
+    entrypoint="cront-tmpl",
+) as w:
+    Resource(
+        name="cront-tmpl",
+        action="patch",
+        manifest="""\
+apiVersion: "stable.example.com/v1"
+kind: CronTab
+spec:
+  cronSpec: "* * * * */10"
+  image: my-awesome-cron-image
+""",
+        merge_strategy="merge",
+    )
+
+```
+
+///

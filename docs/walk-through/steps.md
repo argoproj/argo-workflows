@@ -3,6 +3,8 @@
 You can create multi-step workflows and nested workflows, as well as define more than one template in a workflow.
 See the comments in the example below:
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -46,6 +48,49 @@ spec:
       command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, Parameter, Step, Steps, Workflow # (1)!
+
+with Workflow(
+    generate_name="steps-",
+    entrypoint="hello-hello-hello",
+) as w:
+    print_message = Container(
+        name="print-message",
+        inputs=[Parameter(name="message")],
+        image="busybox",
+        command=["echo"],
+        args=["{{inputs.parameters.message}}"],
+    )
+
+    with Steps(name="hello-hello-hello") as s:
+        Step(
+            name="hello1",
+            template=print_message,
+            arguments=[Parameter(name="message", value="hello1")],
+        )
+
+        with s.parallel():
+            Step(
+                name="hello2a",
+                template=print_message,
+                arguments=[Parameter(name="message", value="hello2a")],
+            )
+            Step(
+                name="hello2b",
+                template=print_message,
+                arguments=[Parameter(name="message", value="hello2b")],
+            )
+```
+
+1. Install the `hera` package to define your Workflows in Python. Learn more at [the Hera docs](https://hera.readthedocs.io/en/stable/).
+
+///
 
 The above workflow prints three variants of "hello".
 The `hello-hello-hello` template has three `steps`.

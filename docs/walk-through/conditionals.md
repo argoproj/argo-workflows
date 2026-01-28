@@ -2,6 +2,8 @@
 
 We also support conditional execution. The syntax is implemented by [`govaluate`](https://github.com/Knetic/govaluate) which offers the support for complex syntax. See in the example:
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -69,12 +71,85 @@ spec:
       args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, Step, Steps, Workflow, script
+
+
+@script(image="python:alpine3.6")
+def flip_coin():
+    import random
+    result = "heads" if random.randint(0,1) == 0 else "tails"
+    print(result)
+
+with Workflow(
+    generate_name="coinflip-",
+    entrypoint="coinflip",
+) as w:
+    heads = Container(
+        name="heads",
+        args=['echo "it was heads"'],
+        command=["sh", "-c"],
+        image="alpine:3.6",
+    )
+    tails = Container(
+        name="tails",
+        args=['echo "it was tails"'],
+        command=["sh", "-c"],
+        image="alpine:3.6",
+    )
+    heads_tails_or_twice_tails = Container(
+        name="heads-tails-or-twice-tails",
+        image="alpine:3.6",
+        command=["sh", "-c"],
+        args=[
+            'echo "it was heads the first flip and tails the second. Or it was two times tails."'
+        ],
+    )
+    with Steps(name="coinflip") as steps:
+        flip_coin_step = flip_coin(name="flip-coin")
+
+        with steps.parallel():
+            Step(
+                name="heads",
+                template="heads",
+                when=f"{flip_coin_step.result} == heads",
+            )
+            Step(
+                name="tails",
+                template="tails",
+                when=f"{flip_coin_step.result} == tails",
+            )
+
+        flip_again = flip_coin(name="flip-again")
+
+        with steps.parallel():
+            heads_tails_or_twice_tails(
+                name="complex-condition",
+                when=f"( {flip_coin_step.result} == heads && {flip_again.result} == tails) || ( {flip_coin_step.result} == tails && {flip_again.result} == tails )",
+            )
+            heads(
+                name="heads-regex",
+                when=f"{flip_again.result} =~ hea",
+            )
+            tails(
+                name="tails-regex",
+                when=f"{flip_again.result} =~ tai",
+            )
+```
+
+///
+
+<!-- markdownlint-disable MD046 -- allow indentation within the admonition -->
 !!! Warning "Nested Quotes"
     If the parameter value contains quotes, it may invalidate the `govaluate` expression.
     To handle parameters with quotes, embed an [`expr` expression](../variables.md#expression) in the conditional.
     For example:
 
-<!-- this is supposed to be inside the infobox above, but markdownlint errors when trying to do that and has no in-line ignore yet (https://github.com/markdownlint/markdownlint/issues/16) -->
-```yaml
-when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
-```
+    ```yaml
+    when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
+    ```
+<!-- markdownlint-enable MD046 -->
