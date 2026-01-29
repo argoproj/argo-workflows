@@ -34,6 +34,12 @@ func AddKubectlFlagsToCmd(cmd *cobra.Command) {
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 }
 
+// some kubectl flags apply to server mode as well
+func AddKubectlFlagsToArgoServerOpts() {
+	ArgoServerOpts.ClientCert = overrides.AuthInfo.ClientCertificate
+	ArgoServerOpts.ClientKey = overrides.AuthInfo.ClientKey
+}
+
 func GetConfig() clientcmd.ClientConfig {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
@@ -55,6 +61,9 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	// Update ArgoServerOpts with values from kubectl flags
+	AddKubectlFlagsToArgoServerOpts()
+
 	return apiclient.NewClientFromOptsWithContext(ctx,
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,

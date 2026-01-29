@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/flatten"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
@@ -27,10 +27,12 @@ type Facade struct {
 	insecureSkipVerify bool
 	headers            []string
 	httpClient         *http.Client
+	clientCert         string
+	clientKey          string
 }
 
-func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
-	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient}
+func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client, clientCert, clientKey string) Facade {
+	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient, clientCert, clientKey}
 }
 
 func (h Facade) Get(ctx context.Context, in, out interface{}, path string) error {
@@ -70,11 +72,13 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
 	client := h.httpClient
 	if h.httpClient == nil {
+		tlsConfig, err := tls.GetTLSConfig(h.clientCert, h.clientKey, h.insecureSkipVerify)
+		if err != nil {
+			return nil, err
+		}
 		client = &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: h.insecureSkipVerify,
-				},
+				TLSClientConfig: tlsConfig,
 			},
 		}
 	}
@@ -117,11 +121,13 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
 	client := h.httpClient
 	if h.httpClient == nil {
+		tlsConfig, err := tls.GetTLSConfig(h.clientCert, h.clientKey, h.insecureSkipVerify)
+		if err != nil {
+			return err
+		}
 		client = &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: h.insecureSkipVerify,
-				},
+				TLSClientConfig:   tlsConfig,
 				DisableKeepAlives: true,
 			},
 		}
