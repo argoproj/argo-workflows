@@ -2,6 +2,7 @@ package template
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,14 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
+
+func TestIsMissingVariableErr(t *testing.T) {
+	assert.False(t, IsMissingVariableErr(nil))
+	assert.False(t, IsMissingVariableErr(fmt.Errorf("some random error")))
+	assert.True(t, IsMissingVariableErr(fmt.Errorf("failed to resolve {{foo}}")))
+	assert.True(t, IsMissingVariableErr(fmt.Errorf("failed to evaluate expression: foo is missing")))
+	assert.True(t, IsMissingVariableErr(fmt.Errorf("failed to evaluate expression: syntax error")))
+}
 
 func toJSONString(v any) string {
 	jsonString, _ := json.Marshal(v)
@@ -87,7 +96,7 @@ func Test_Replace(t *testing.T) {
 			})
 			t.Run("Disallowed", func(t *testing.T) {
 				_, err := Replace(ctx, toJSONString("{{=foo}}"), nil, false)
-				require.EqualError(t, err, "failed to evaluate expression: unknown name foo (1:1)\n | foo\n | ^")
+				require.EqualError(t, err, "failed to evaluate expression: foo is missing")
 			})
 			t.Run("DisallowedWorkflowStatus", func(t *testing.T) {
 				_, err := Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, false)
@@ -113,48 +122,48 @@ func TestNestedReplaceString(t *testing.T) {
     {{ .Data.data.gitcreds }}
   {{- end }}`)
 	replacement, err := Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("{{- with secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("{{- with secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
 
 	test = toJSONString(`{{- with {{ secret "{{inputs.parameters.message}}" -}}
     {{ .Data.data.gitcreds }}
   {{- end }}`)
 
 	replacement, err = Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("{{- with {{ secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("{{- with {{ secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
 
 	test = toJSONString(`{{- with {{ secret "{{inputs.parameters.message}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`)
 
 	replacement, err = Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("{{- with {{ secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("{{- with {{ secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
 
 	test = toJSONString(`{{- with secret "{{inputs.parameters.message}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`)
 
 	replacement, err = Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("{{- with secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("{{- with secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
 
 	test = toJSONString(`{{- with {{ {{ }} secret "{{inputs.parameters.message}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`)
 
 	replacement, err = Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("{{- with {{ {{ }} secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("{{- with {{ {{ }} secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}"), replacement)
 
 	test = toJSONString(`{{- with {{ {{ }} secret "{{does-not-exist}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`)
 
 	replacement, err = Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, test, replacement)
+		require.NoError(t, err)
+		assert.Equal(t, test, replacement)
 }
 
 func TestReplaceStringWithWhiteSpace(t *testing.T) {
@@ -163,8 +172,8 @@ func TestReplaceStringWithWhiteSpace(t *testing.T) {
 
 	test := toJSONString(`{{ inputs.parameters.message }}`)
 	replacement, err := Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("hello world"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("hello world"), replacement)
 }
 
 func TestReplaceStringWithExpression(t *testing.T) {
@@ -173,11 +182,11 @@ func TestReplaceStringWithExpression(t *testing.T) {
 
 	test := toJSONString(`test {{= sprig.trunc(5, inputs.parameters.message) }}`)
 	replacement, err := Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("test hello"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("test hello"), replacement)
 
 	test = toJSONString(`test {{= sprig.trunc(-5, inputs.parameters.message) }}`)
 	replacement, err = Replace(ctx, test, replaceMap, true)
-	require.NoError(t, err)
-	assert.Equal(t, toJSONString("test world"), replacement)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("test world"), replacement)
 }
