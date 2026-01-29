@@ -321,11 +321,12 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			continue
 		}
 		var outputFormat string
-		if param.ValueFrom.JSONPath != "" {
+		switch {
+		case param.ValueFrom.JSONPath != "":
 			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
-		} else if param.ValueFrom.JQFilter != "" {
+		case param.ValueFrom.JQFilter != "":
 			outputFormat = "json"
-		} else {
+		default:
 			continue
 		}
 		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat}

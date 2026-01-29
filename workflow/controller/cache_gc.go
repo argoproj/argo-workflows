@@ -66,12 +66,10 @@ func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1
 			}
 			return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
 		}
-	} else {
-		if modified {
-			_, err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)
-			}
+	} else if modified {
+		_, err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)
 		}
 	}
 

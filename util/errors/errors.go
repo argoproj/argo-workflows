@@ -87,14 +87,17 @@ func isResourceQuotaTimeoutErr(err error) bool {
 
 func isTransientEtcdErr(err error) bool {
 	// Some clusters expose these (transient) etcd errors to the caller
-	if strings.Contains(err.Error(), "etcdserver: leader changed") {
+	errStr := err.Error()
+	switch {
+	case strings.Contains(errStr, "etcdserver: leader changed"):
 		return true
-	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
+	case strings.Contains(errStr, "etcdserver: request timed out"):
 		return true
-	} else if strings.Contains(err.Error(), "etcdserver: too many requests") {
+	case strings.Contains(errStr, "etcdserver: too many requests"):
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func isTransientNetworkErr(err error) bool {
@@ -106,35 +109,39 @@ func isTransientNetworkErr(err error) bool {
 	}
 
 	errorString := generateErrorString(err)
-	if strings.Contains(errorString, "Connection closed by foreign host") {
+	switch {
+	case strings.Contains(errorString, "Connection closed by foreign host"):
 		// For a URL error, where it replies back "connection closed"
 		// retry again.
 		return true
-	} else if strings.Contains(errorString, "net/http: TLS handshake timeout") {
+	case strings.Contains(errorString, "net/http: TLS handshake timeout"):
 		// If error is - tlsHandshakeTimeoutError, retry.
 		return true
-	} else if strings.Contains(errorString, "i/o timeout") {
+	case strings.Contains(errorString, "i/o timeout"):
 		// If error is - tcp timeoutError, retry.
 		return true
-	} else if strings.Contains(errorString, "connection timed out") {
+	case strings.Contains(errorString, "connection timed out"):
 		// If err is a net.Dial timeout, retry.
 		return true
-	} else if strings.Contains(errorString, "connection reset by peer") {
+	case strings.Contains(errorString, "connection reset by peer"):
 		// If err is a ECONNRESET, retry.
 		return true
-	} else if errors.As(err, new(*url.Error)) && strings.Contains(errorString, "EOF") {
-		// If err is EOF, retry.
-		return true
-	} else if strings.Contains(errorString, "http2: client connection lost") {
+	case strings.Contains(errorString, "http2: client connection lost"):
 		// If err is http2 transport ping timeout, retry.
 		return true
-	} else if strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection") {
+	case strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection"):
 		return true
-	} else if strings.Contains(errorString, "connect: connection refused") {
+	case strings.Contains(errorString, "connect: connection refused"):
 		// If err is connection refused, retry.
 		return true
-	} else if strings.Contains(errorString, "invalid connection") {
+	case strings.Contains(errorString, "invalid connection"):
 		// If err is invalid connection, retry.
+		return true
+	}
+
+	// If err is EOF, retry.
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) && strings.Contains(errorString, "EOF") {
 		return true
 	}
 

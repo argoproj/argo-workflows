@@ -2,6 +2,7 @@ package printer
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 	"time"
 
@@ -129,7 +130,7 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 				},
 			})
 	}
-	completedAndIncompleteWorkflows := append(completedWorkflows, incompleteWorkflows...)
+	completedAndIncompleteWorkflows := slices.Concat(completedWorkflows, incompleteWorkflows)
 
 	t.Run("CostOptimizationOnCompletedWorkflows", func(t *testing.T) {
 		var b bytes.Buffer

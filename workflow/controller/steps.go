@@ -554,9 +554,10 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
 	var items []wfv1.Item
-	if len(step.WithItems) > 0 {
+	switch {
+	case len(step.WithItems) > 0:
 		items = step.WithItems
-	} else if step.WithParam != "" {
+	case step.WithParam != "":
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(step.When)
@@ -564,7 +565,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
 			}
 		}
-	} else if step.WithSequence != nil {
+	case step.WithSequence != nil:
 		items, err = expandSequence(step.WithSequence)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(step.When)
@@ -572,7 +573,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 				return nil, err
 			}
 		}
-	} else {
+	default:
 		// this should have been prevented in expandStepGroup()
 		return nil, argoerrors.InternalError("expandStep() was called with withItems and withParam empty")
 	}

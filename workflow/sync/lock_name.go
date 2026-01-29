@@ -157,8 +157,7 @@ func needDBSession(ctx context.Context, lockKeys []string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		switch lock.Kind {
-		case lockKindDatabase:
+		if lock.Kind == lockKindDatabase {
 			return true, nil
 		}
 	}

@@ -9420,7 +9420,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {
@@ -11006,7 +11006,7 @@
           "type": "string"
         },
         "keyPrefix": {
-          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\n\nDeprecated: Use KeyFormat instead.",
           "type": "string"
         },
         "region": {
@@ -12580,7 +12580,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {

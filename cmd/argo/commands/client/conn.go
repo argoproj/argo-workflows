@@ -67,7 +67,7 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 				}
 				return authString
 			},
-			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
+			ClientConfigSupplier: GetConfig,
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
 		})

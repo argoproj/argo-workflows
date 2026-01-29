@@ -74,10 +74,8 @@ func TestConvertToGRPC(t *testing.T) {
 				assert.Equal(t, tt.expectedPluginName, result.Plugin.Name)
 				assert.Equal(t, tt.expectedConfig, result.Plugin.Configuration)
 				assert.Equal(t, tt.expectedKey, result.Plugin.Key)
-			} else {
-				if result.Plugin != nil {
-					assert.Nil(t, result.Plugin)
-				}
+			} else if result.Plugin != nil {
+				assert.Nil(t, result.Plugin)
 			}
 		})
 	}

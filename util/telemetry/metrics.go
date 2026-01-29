@@ -88,19 +88,20 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 			otlpProtocol = os.Getenv(`OTEL_EXPORTER_OTLP_PROTOCOL`)
 		}
 
-		if otlpProtocol == "" || otlpProtocol == "grpc" {
+		switch {
+		case otlpProtocol == "" || otlpProtocol == "grpc":
 			grpcExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
 			if err != nil {
 				return nil, err
 			}
 			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(grpcExporter)))
-		} else if strings.HasPrefix(otlpProtocol, "http/") {
+		case strings.HasPrefix(otlpProtocol, "http/"):
 			httpExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithTemporalitySelector(config.Temporality))
 			if err != nil {
 				return nil, err
 			}
 			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(httpExporter)))
-		} else {
+		default:
 			logger.WithFatal().WithField("protocol", otlpProtocol).Error(ctx, "OTEL metric protocol invalid")
 		}
 	}
