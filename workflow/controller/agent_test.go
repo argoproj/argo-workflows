@@ -253,7 +253,7 @@ spec:
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		pod, err := woc.createAgentPod(ctx)
 		require.NoError(t, err)
-		assert.NotNil(t, pod)
+		require.NotNil(t, pod)
 
 		containers := pod.Spec.Containers
 		assert.NotEmpty(t, containers)

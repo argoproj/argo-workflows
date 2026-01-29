@@ -274,6 +274,11 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 	namespaces[woc.wf.Namespace] = true
 	wFPlugins := woc.execWf.Spec.AsExecutorPluginSpec()
 	isGetPluginsFromWorkflow := len(wFPlugins) > 0
+	if isGetPluginsFromWorkflow && !woc.controller.enableWorkflowLevelExecutorPlugins {
+		return nil, nil, fmt.Errorf(
+			"workflow-level executor plugins are disabled in the controller. To enable them, set the environment variable ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true",
+		)
+	}
 	if isGetPluginsFromWorkflow {
 		for _, plugin := range wFPlugins {
 			sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, plugin)

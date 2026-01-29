@@ -113,8 +113,7 @@ func NewRootCommand() *cobra.Command {
 			if namespaced && managedNamespace == "" {
 				managedNamespace = namespace
 			}
-
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins, workflowLevelExecutorPlugins)
 			if err != nil {
 				return err
 			}
@@ -205,6 +204,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
+	command.Flags().BoolVar(&workflowLevelExecutorPlugins, "workflow-level-executor-plugins", false, "enable workflow-level executor plugins")
 	ctx, log, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
