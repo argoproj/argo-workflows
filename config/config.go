@@ -359,6 +359,8 @@ type DatabaseConfig struct {
 	Database string `json:"database"`
 	// TableName is the name of the table to use, must be set
 	TableName string `json:"tableName,omitempty"`
+	// Username passed in plaintext (Both Username and UsernameSecret are supported but pass user name in only one field)
+	Username string `json:"userName,omitempty"`
 	// UsernameSecret references a secret containing the database username
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
 	// PasswordSecret references a secret containing the database password
