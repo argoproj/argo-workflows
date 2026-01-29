@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) (int, error) {
+func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) error {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {
 		// Attempt to resolve nested tags, if possible
@@ -28,7 +28,8 @@ func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMa
 				if isStr {
 					replacement = strconv.Quote(replacement)
 					replacement = replacement[1 : len(replacement)-1]
-					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
+					_, err := w.Write([]byte("{{" + nestedTagPrefix + replacement))
+					return err
 				}
 			}
 		}
@@ -36,20 +37,22 @@ func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMa
 			// just write the same string back
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.WithError(errors.InternalError("unresolved")).Debug(ctx, "unresolved is allowed")
-			return fmt.Fprintf(w, "{{%s}}", tag)
+			_, err := fmt.Fprintf(w, "{{%s}}", tag)
+			return err
 		}
-		return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
+		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 	}
 
 	replacementStr, isStr := replacement.(string)
 	if !isStr {
-		return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}} to string", tag)
+		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}} to string", tag)
 	}
 	// The following escapes any special characters (e.g. newlines, tabs, etc...)
 	// in preparation for substitution
 	replacementStr = strconv.Quote(replacementStr)
 	replacementStr = replacementStr[1 : len(replacementStr)-1]
-	return w.Write([]byte(replacementStr))
+	_, err := w.Write([]byte(replacementStr))
+	return err
 }
 
 func Test_CompareSimpleReplace(t *testing.T) {
@@ -75,7 +78,7 @@ func Test_CompareSimpleReplace(t *testing.T) {
 		t.Run(fmt.Sprintf("%s_%v", tc.tag, tc.allowUnresolved), func(t *testing.T) {
 			// Helper (Old logic)
 			var b1 strings.Builder
-			_, err1 := simpleReplaceHelper(ctx, &b1, tc.tag, replaceMap, tc.allowUnresolved)
+			err1 := simpleReplaceHelper(ctx, &b1, tc.tag, replaceMap, tc.allowUnresolved)
 			res1 := b1.String()
 
 			// New logic
@@ -143,15 +146,15 @@ func Test_SimpleReplace(t *testing.T) {
 			// The caller (fasttemplate) will append the closing "}}" from the original string.
 			expectedWritten: "{{outer-suffix",
 		},
-		        {
-		            name: "NestedReplacementQuoted",
-		            tag:  "msg-{{val",
-		            replaceMap: map[string]interface{}{
-		                "val": "hello \"world\"",
-		            },
-		            // replacement is quoted: "hello \"world\"" -> "\\"hello \\\"world\\\"" -> inner stripped -> "hello \\\"world\\\""
-		            expectedWritten: "{{msg-hello \\\"world\\\"",
-		        },		{
+		{
+			name: "NestedReplacementQuoted",
+			tag:  "msg-{{val",
+			replaceMap: map[string]interface{}{
+				"val": "hello \"world\"",
+			},
+			// replacement is quoted: "hello \"world\"" -> "\\"hello \\\"world\\\"" -> inner stripped -> "hello \\\"world\\\""
+			expectedWritten: "{{msg-hello \\\"world\\\"",
+		}, {
 			name: "NestedTagNotFound",
 			tag:  "outer-{{unknown",
 			replaceMap: map[string]interface{}{
