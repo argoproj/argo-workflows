@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"maps"
 	"reflect"
@@ -597,7 +598,8 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	} else if tmplName != "" {
 		_, err := tmplCtx.GetTemplateByName(ctx, tmplName)
 		if err != nil {
-			if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
+			var argoerr errors.ArgoError
+			if stderrors.As(err, &argoerr) && argoerr.Code() == errors.CodeNotFound {
 				return nil, errors.Errorf(errors.CodeBadRequest, "template name '%s' undefined", tmplName)
 			}
 			return nil, err
@@ -606,7 +608,8 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 
 	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(ctx, tmplHolder)
 	if err != nil {
-		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
+		var argoerr errors.ArgoError
+		if stderrors.As(err, &argoerr) && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil && strings.Contains(tmplRef.Template, "placeholder") {
 				// placeholder indicate this is a dynamic template, skip validation
 				return nil, nil

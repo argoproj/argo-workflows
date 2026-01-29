@@ -3,6 +3,7 @@ package oss
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -18,7 +19,7 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/file"
@@ -165,7 +166,7 @@ func (ossDriver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.A
 			}
 
 			if err = GetOssDirectory(ctx, bucket, objectName, path); err != nil {
-				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed get directory: %v", err)
+				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed get directory: %w", err)
 			}
 			return true, nil
 		})
@@ -208,7 +209,7 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 			}
 			// directory case:
 			// todo: make a .tgz file which can be streamed to user
-			return false, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
+			return false, argoerrors.New(argoerrors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
 		})
 	return stream, err
 }
@@ -404,7 +405,8 @@ func isTransientOSSErr(ctx context.Context, err error) bool {
 	if errutil.IsTransientErr(ctx, err) {
 		return true
 	}
-	if ossErr, ok := err.(oss.ServiceError); ok {
+	var ossErr oss.ServiceError
+	if errors.As(err, &ossErr) {
 		if slices.Contains(ossTransientErrorCodes, ossErr.Code) {
 			return true
 		}
@@ -478,12 +480,12 @@ func putFile(ctx context.Context, bucket *oss.Bucket, objectName, path string) e
 func putDirectory(ctx context.Context, bucket *oss.Bucket, objectName, dir string) error {
 	return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return argoerrors.InternalWrapError(err)
 		}
 		// build the name to be used in OSS
 		nameInDir, err := filepath.Rel(dir, fpath)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return argoerrors.InternalWrapError(err)
 		}
 		fObjectName := filepath.Join(objectName, nameInDir)
 		// create an OSS dir explicitly for every local dir, , including empty dirs.
@@ -511,7 +513,8 @@ func putDirectory(ctx context.Context, bucket *oss.Bucket, objectName, dir strin
 
 // IsOssErrCode tests if an err is an oss.ServiceError with the specified code
 func IsOssErrCode(err error, code string) bool {
-	if serr, ok := err.(oss.ServiceError); ok {
+	var serr oss.ServiceError
+	if errors.As(err, &serr) {
 		if serr.Code == code {
 			return true
 		}

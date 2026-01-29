@@ -90,7 +90,7 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create cron workflow: %v", err)
+			return fmt.Errorf("failed to create cron workflow: %w", err)
 		}
 		fmt.Print(getCronWorkflowGet(ctx, created))
 	}

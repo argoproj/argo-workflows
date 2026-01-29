@@ -98,8 +98,10 @@ func isTransientEtcdErr(err error) bool {
 }
 
 func isTransientNetworkErr(err error) bool {
-	switch err.(type) {
-	case *net.DNSError, *net.OpError, net.UnknownNetworkError:
+	var dnsErr *net.DNSError
+	var opErr *net.OpError
+	var unknownNetErr net.UnknownNetworkError
+	if errors.As(err, &dnsErr) || errors.As(err, &opErr) || errors.As(err, &unknownNetErr) {
 		return true
 	}
 
@@ -120,7 +122,7 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "connection reset by peer") {
 		// If err is a ECONNRESET, retry.
 		return true
-	} else if _, ok := err.(*url.Error); ok && strings.Contains(errorString, "EOF") {
+	} else if errors.As(err, new(*url.Error)) && strings.Contains(errorString, "EOF") {
 		// If err is EOF, retry.
 		return true
 	} else if strings.Contains(errorString, "http2: client connection lost") {
@@ -141,7 +143,8 @@ func isTransientNetworkErr(err error) bool {
 
 func generateErrorString(err error) string {
 	errorString := err.Error()
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
 	}
 	return errorString

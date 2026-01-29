@@ -740,7 +740,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	driver, err := artifacts.NewDriver(ctx, art, we)
-	if err == artifacts.ErrUnsupportedDriver {
+	if errors.Is(err, artifacts.ErrUnsupportedDriver) {
 		return nil, argoerrs.Errorf(argoerrs.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
 	return driver, err
@@ -1015,7 +1015,7 @@ func untar(tarPath string, destPath string) error {
 		for {
 			header, err := tr.Next()
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				return nil
 			case err != nil:
 				return err
@@ -1256,7 +1256,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 
 	logger.WithError(err).Info(ctx, "Main container completed")
 
-	if err != nil && err != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
 	return nil

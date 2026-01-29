@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
@@ -21,11 +21,11 @@ import (
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch interface{}, subresources ...string) error {
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return argoerrors.InternalWrapError(err)
 	}
 	_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, types.MergePatchType, patchByte, metav1.PatchOptions{}, subresources...)
 	if err != nil {
-		return fmt.Errorf("failed patching taskset: %v", err)
+		return fmt.Errorf("failed patching taskset: %w", err)
 	}
 	return nil
 }
@@ -102,7 +102,7 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	}
 	if err := woc.reconcileAgentPod(ctx); err != nil {
 		woc.log.WithError(err).Error(ctx, "error in agent pod reconciliation")
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%s"`, err))
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err))
 		return
 	}
 }
@@ -211,7 +211,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		err = woc.mergePatchTaskSet(ctx, spec)
 		if err != nil {
 			woc.log.WithError(err).Error(ctx, "Failed to patch WorkflowTaskSet")
-			return fmt.Errorf("failed to patch TaskSet. %v", err)
+			return fmt.Errorf("failed to patch TaskSet. %w", err)
 		}
 	} else if err != nil {
 		woc.log.WithError(err).Error(ctx, "Failed to create WorkflowTaskSet")
