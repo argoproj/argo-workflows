@@ -97,7 +97,7 @@ func Test_Template_Replace(t *testing.T) {
 		// Input must be valid JSON.
 		input := `{"key": "{{outer-{{inner}}}}"}`
 		replaceMap := map[string]string{
-			"inner":       "suffix",
+			"inner":        "suffix",
 			"outer-suffix": "final-value",
 		}
 
@@ -108,14 +108,14 @@ func Test_Template_Replace(t *testing.T) {
 		// Result: ... "{{outer-suffix}}" ...
 		pass1, err := Replace(ctx, input, replaceMap, true)
 		require.NoError(t, err)
-		assert.Equal(t, `{"key": "{{outer-suffix}}"}`, pass1, "First pass should only resolve the inner tag")
+		assert.JSONEq(t, `{"key": "{{outer-suffix}}"}`, pass1, "First pass should only resolve the inner tag")
 
 		// Pass 2: Resolves outer tag
 		// Input: ... "{{outer-suffix}}" ...
 		// Resolves "outer-suffix" -> "final-value".
 		pass2, err := Replace(ctx, pass1, replaceMap, true)
 		require.NoError(t, err)
-		assert.Equal(t, `{"key": "final-value"}`, pass2, "Second pass should resolve the now-valid outer tag")
+		assert.JSONEq(t, `{"key": "final-value"}`, pass2, "Second pass should resolve the now-valid outer tag")
 	})
 
 	t.Run("TripleNestedVariableResolution", func(t *testing.T) {
@@ -126,8 +126,8 @@ func Test_Template_Replace(t *testing.T) {
 		// JSON: {"key": "..."}
 		input := `{"key": "{{A {{B {{C}}}}}}"}`
 		replaceMap := map[string]string{
-			"C": "valC",
-			"B valC": "valB", // The tag becomes "{{B valC}}" -> resolves to "valB"
+			"C":      "valC",
+			"B valC": "valB",  // The tag becomes "{{B valC}}" -> resolves to "valB"
 			"A valB": "final", // The tag becomes "{{A valB}}" -> resolves to "final"
 		}
 
@@ -135,19 +135,19 @@ func Test_Template_Replace(t *testing.T) {
 		// "{{A {{B {{C}}}}}}" -> "{{A {{B valC}}}}"
 		pass1, err := Replace(ctx, input, replaceMap, true)
 		require.NoError(t, err)
-		assert.Equal(t, `{"key": "{{A {{B valC}}}}"}`, pass1)
+		assert.JSONEq(t, `{"key": "{{A {{B valC}}}}"}`, pass1)
 
 		// Pass 2: Resolves middle B
 		// "{{A {{B valC}}}}" -> "{{A valB}}"
 		pass2, err := Replace(ctx, pass1, replaceMap, true)
 		require.NoError(t, err)
-		assert.Equal(t, `{"key": "{{A valB}}"}`, pass2)
+		assert.JSONEq(t, `{"key": "{{A valB}}"}`, pass2)
 
 		// Pass 3: Resolves outer A
 		// "{{A valB}}" -> "final"
 		pass3, err := Replace(ctx, pass2, replaceMap, true)
 		require.NoError(t, err)
-		assert.Equal(t, `{"key": "final"}`, pass3)
+		assert.JSONEq(t, `{"key": "final"}`, pass3)
 	})
 
 }

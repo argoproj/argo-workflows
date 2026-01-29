@@ -66,7 +66,7 @@ func Test_CompareExpressionReplace(t *testing.T) {
 		t.Run(fmt.Sprintf("%s_%v", tc.expression, tc.allowUnresolved), func(t *testing.T) {
 			// Helper (Old logic)
 			var b1 strings.Builder
-			_, err1 := expressionReplaceHelper(ctx, &b1, tc.expression, replaceMap, tc.allowUnresolved)
+			err1 := expressionReplaceHelper(ctx, &b1, tc.expression, replaceMap, tc.allowUnresolved)
 			res1 := b1.String()
 
 			// New logic
@@ -76,7 +76,7 @@ func Test_CompareExpressionReplace(t *testing.T) {
 
 			if err1 != nil {
 				// Old (Helper) returns error even if suppressed (to signal suppression).
-				
+
 				if err2 == nil {
 					// New returned success (nil error).
 					// If Old suppressed an error, New should also suppress it (return unresolved tag).
@@ -91,7 +91,7 @@ func Test_CompareExpressionReplace(t *testing.T) {
 					if strings.Contains(err1.Error(), "expr run error:") {
 						return
 					}
-					
+
 					// If Old suppressed "variable not in env", New should also suppress it?
 					// New `expressionReplaceStrict` detects missing vars and sets allowUnresolved=true.
 					// So New should return nil error (unresolved tag).
@@ -112,7 +112,7 @@ func Test_CompareExpressionReplace(t *testing.T) {
 	}
 }
 
-func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) error {
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -120,10 +120,10 @@ func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string
 	if err != nil && allowUnresolved {
 		log.WithError(err).Debug(ctx, "unresolved is allowed")
 		fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-		return 0, fmt.Errorf("json unmarshal error: %w", err)
+		return fmt.Errorf("json unmarshal error: %w", err)
 	}
 	if err != nil {
-		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
+		return fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
 	varNameNotInEnv := anyVarNotInEnv(unmarshalledExpression, env)
@@ -134,7 +134,7 @@ func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string
 		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
 		log.WithField("variable", *varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
 		fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-		return 0, fmt.Errorf("variable not in env: %s", *varNameNotInEnv)
+		return fmt.Errorf("variable not in env: %s", *varNameNotInEnv)
 	}
 
 	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
@@ -142,7 +142,7 @@ func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
 	if err != nil && !allowUnresolved {
-		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+		return fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
@@ -150,38 +150,40 @@ func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string
 		log.WithError(err).Debug(ctx, "Result and error are unresolved")
 		fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 		if err != nil {
-			return 0, fmt.Errorf("expr run error: %w", err)
+			return fmt.Errorf("expr run error: %w", err)
 		}
-		return 0, fmt.Errorf("expr result nil")
+		return fmt.Errorf("expr result nil")
 	}
 	if err != nil {
-		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+		return fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	if result == nil {
-		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
+		return fmt.Errorf("failed to evaluate expression %q", expression)
 	}
 	resultMarshaled, err := json.Marshal(result)
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
 		log.WithError(err).Debug(ctx, "resultMarshaled is nil and unresolved is allowed ")
 		fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 		if err != nil {
-			return 0, fmt.Errorf("json marshal error: %w", err)
+			return fmt.Errorf("json marshal error: %w", err)
 		}
-		return 0, fmt.Errorf("json marshal result nil")
+		return fmt.Errorf("json marshal result nil")
 	}
 	if err != nil {
-		return 0, fmt.Errorf("failed to marshal evaluated expression: %w", err)
+		return fmt.Errorf("failed to marshal evaluated expression: %w", err)
 	}
 	if resultMarshaled == nil {
-		return 0, fmt.Errorf("failed to marshal evaluated marshaled expression %q", expression)
+		return fmt.Errorf("failed to marshal evaluated marshaled expression %q", expression)
 	}
 	marshaledLength := len(resultMarshaled)
 
 	// Trim leading and trailing quotes. The value is being inserted into something that's already a string.
 	if len(resultMarshaled) > 1 && resultMarshaled[0] == '"' && resultMarshaled[marshaledLength-1] == '"' {
-		return w.Write(resultMarshaled[1 : marshaledLength-1])
+		_, err := w.Write(resultMarshaled[1 : marshaledLength-1])
+		return err
 	}
 
 	resultQuoted := []byte(strconv.Quote(string(resultMarshaled)))
-	return w.Write(resultQuoted[1 : len(resultQuoted)-1])
+	_, err = w.Write(resultQuoted[1 : len(resultQuoted)-1])
+	return err
 }

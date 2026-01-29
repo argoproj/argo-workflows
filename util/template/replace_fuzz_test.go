@@ -17,15 +17,15 @@ func FuzzSimpleReplace(f *testing.F) {
 	f.Fuzz(func(t *testing.T, tag string, allowUnresolved bool) {
 		ctx := logging.TestContext(t.Context())
 		replaceMap := map[string]interface{}{
-			"foo":    "bar",
-			"baz":    "qux",
-			"nested": "value",
-			"int":    1,
+			"foo":                              "bar",
+			"baz":                              "qux",
+			"nested":                           "value",
+			"int":                              1,
 			"steps.step.outputs.artifacts.art": "path/to/art",
 		}
 
 		var b1 strings.Builder
-		_, err1 := simpleReplaceHelper(ctx, &b1, tag, replaceMap, allowUnresolved)
+		err1 := simpleReplaceHelper(ctx, &b1, tag, replaceMap, allowUnresolved)
 		res1 := b1.String()
 
 		var b2 strings.Builder
@@ -76,7 +76,7 @@ func FuzzExpressionReplace(f *testing.F) {
 		}
 
 		var b1 strings.Builder
-		_, err1 := expressionReplaceHelper(ctx, &b1, expression, env, allowUnresolved)
+		err1 := expressionReplaceHelper(ctx, &b1, expression, env, allowUnresolved)
 		res1 := b1.String()
 
 		var b2 strings.Builder
@@ -85,7 +85,7 @@ func FuzzExpressionReplace(f *testing.F) {
 
 		if err1 != nil {
 			// Old (Helper) returned error.
-			
+
 			if err2 == nil {
 				// New returned success.
 				if strings.Contains(res2, "{{=") {
