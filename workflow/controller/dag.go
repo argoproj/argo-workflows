@@ -805,9 +805,10 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]string) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
-	if len(task.WithItems) > 0 {
+	switch {
+	case len(task.WithItems) > 0:
 		items = task.WithItems
-	} else if task.WithParam != "" {
+	case task.WithParam != "":
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
@@ -815,7 +816,7 @@ func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]s
 				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 			}
 		}
-	} else if task.WithSequence != nil {
+	case task.WithSequence != nil:
 		items, err = expandSequence(task.WithSequence)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
@@ -823,7 +824,7 @@ func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]s
 				return nil, err
 			}
 		}
-	} else {
+	default:
 		return []wfv1.DAGTask{task}, nil
 	}
 

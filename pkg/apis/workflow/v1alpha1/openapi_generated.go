@@ -2523,7 +2523,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"onExit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5512,7 +5512,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					},
 					"keyPrefix": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+							Description: "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\n\nDeprecated: Use KeyFormat instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -8409,7 +8409,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"onExit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

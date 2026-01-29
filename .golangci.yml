@@ -24,6 +24,7 @@ linters:
     - errorlint
     - exptostd
     - gocheckcompilerdirectives
+    - gocritic
     - gosec
     - govet
     - iface

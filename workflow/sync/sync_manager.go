@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -110,7 +111,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			sm.log.WithError(err).Error(ctx, "failed to get current lock pending")
 			continue
 		}
-		keys := append(holders, pending...)
+		keys := slices.Concat(holders, pending)
 		for _, holderKeys := range keys {
 			wfKey, err := sm.getWorkflowKey(holderKeys)
 			if err != nil {

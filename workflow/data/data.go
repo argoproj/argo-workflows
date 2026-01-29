@@ -44,8 +44,7 @@ func processTransformation(data interface{}, transformation *wfv1.Transformation
 
 	var err error
 	for i, step := range *transformation {
-		switch {
-		case step.Expression != "":
+		if step.Expression != "" {
 			data, err = processExpression(step.Expression, data)
 		}
 		if err != nil {

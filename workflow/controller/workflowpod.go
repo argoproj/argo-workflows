@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -174,12 +175,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if wfDeadline == nil || opts.onExitPod { // ignore the workflow deadline for exit handler so they still run if the deadline has passed
 		activeDeadlineSeconds = tmplActiveDeadlineSeconds
 	} else {
-		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
-		if wfActiveDeadlineSeconds <= 0 {
+		wfActiveDeadlineSeconds := int64(wfDeadline.Sub(time.Now().UTC()).Seconds())
+		switch {
+		case wfActiveDeadlineSeconds <= 0:
 			return nil, nil
-		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmplActiveDeadlineSeconds {
+		case tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmplActiveDeadlineSeconds:
 			activeDeadlineSeconds = &wfActiveDeadlineSeconds
-		} else {
+		default:
 			activeDeadlineSeconds = tmplActiveDeadlineSeconds
 		}
 	}
@@ -883,27 +885,30 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't get boundaryTemplate")
 	}
 	// Set nodeSelector (if specified)
-	if len(tmpl.NodeSelector) > 0 {
+	switch {
+	case len(tmpl.NodeSelector) > 0:
 		pod.Spec.NodeSelector = tmpl.NodeSelector
-	} else if boundaryTemplate != nil && len(boundaryTemplate.NodeSelector) > 0 {
+	case boundaryTemplate != nil && len(boundaryTemplate.NodeSelector) > 0:
 		pod.Spec.NodeSelector = boundaryTemplate.NodeSelector
-	} else if len(wfSpec.NodeSelector) > 0 {
+	case len(wfSpec.NodeSelector) > 0:
 		pod.Spec.NodeSelector = wfSpec.NodeSelector
 	}
 	// Set affinity (if specified)
-	if tmpl.Affinity != nil {
+	switch {
+	case tmpl.Affinity != nil:
 		pod.Spec.Affinity = tmpl.Affinity
-	} else if boundaryTemplate != nil && boundaryTemplate.Affinity != nil {
+	case boundaryTemplate != nil && boundaryTemplate.Affinity != nil:
 		pod.Spec.Affinity = boundaryTemplate.Affinity
-	} else if wfSpec.Affinity != nil {
+	case wfSpec.Affinity != nil:
 		pod.Spec.Affinity = wfSpec.Affinity
 	}
 	// Set tolerations (if specified)
-	if len(tmpl.Tolerations) > 0 {
+	switch {
+	case len(tmpl.Tolerations) > 0:
 		pod.Spec.Tolerations = tmpl.Tolerations
-	} else if boundaryTemplate != nil && len(boundaryTemplate.Tolerations) > 0 {
+	case boundaryTemplate != nil && len(boundaryTemplate.Tolerations) > 0:
 		pod.Spec.Tolerations = boundaryTemplate.Tolerations
-	} else if len(wfSpec.Tolerations) > 0 {
+	case len(wfSpec.Tolerations) > 0:
 		pod.Spec.Tolerations = wfSpec.Tolerations
 	}
 
@@ -1213,7 +1218,7 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 	}
 	archiveLogs := woc.IsArchiveLogs(tmpl)
 	needLocation := archiveLogs
-	artifacts := append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...)
+	artifacts := slices.Concat(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts)
 	if tmpl.Data != nil {
 		if art, exist := tmpl.Data.Source.GetArtifactIfNeeded(); exist {
 			artifacts = append(artifacts, *art)
@@ -1487,7 +1492,8 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 		if artifactLocation == nil {
 			continue
 		}
-		if artifactLocation.S3 != nil {
+		switch {
+		case artifactLocation.S3 != nil:
 			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
 			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
 			if artifactLocation.S3.SessionTokenSecret != nil {
@@ -1500,22 +1506,22 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 			if artifactLocation.S3.CASecret != nil {
 				createSecretVal(volMap, artifactLocation.S3.CASecret, keyMap)
 			}
-		} else if artifactLocation.Git != nil {
+		case artifactLocation.Git != nil:
 			createSecretVal(volMap, artifactLocation.Git.UsernameSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.Git.PasswordSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.Git.SSHPrivateKeySecret, keyMap)
-		} else if artifactLocation.Artifactory != nil {
+		case artifactLocation.Artifactory != nil:
 			createSecretVal(volMap, artifactLocation.Artifactory.UsernameSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.Artifactory.PasswordSecret, keyMap)
-		} else if artifactLocation.HDFS != nil {
+		case artifactLocation.HDFS != nil:
 			createSecretVal(volMap, artifactLocation.HDFS.KrbCCacheSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HDFS.KrbKeytabSecret, keyMap)
-		} else if artifactLocation.OSS != nil {
+		case artifactLocation.OSS != nil:
 			createSecretVal(volMap, artifactLocation.OSS.AccessKeySecret, keyMap)
 			createSecretVal(volMap, artifactLocation.OSS.SecretKeySecret, keyMap)
-		} else if artifactLocation.GCS != nil {
+		case artifactLocation.GCS != nil:
 			createSecretVal(volMap, artifactLocation.GCS.ServiceAccountKeySecret, keyMap)
-		} else if artifactLocation.HTTP != nil && artifactLocation.HTTP.Auth != nil {
+		case artifactLocation.HTTP != nil && artifactLocation.HTTP.Auth != nil:
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.BasicAuth.UsernameSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.BasicAuth.PasswordSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.ClientCert.ClientCertSecret, keyMap)
@@ -1523,7 +1529,7 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
-		} else if artifactLocation.Azure != nil {
+		case artifactLocation.Azure != nil:
 			createSecretVal(volMap, artifactLocation.Azure.AccountKeySecret, keyMap)
 		}
 	}

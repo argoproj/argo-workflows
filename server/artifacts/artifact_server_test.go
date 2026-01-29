@@ -146,11 +146,12 @@ func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artif
 			prefix + `/xss/javascript:\u0061lert(1)`,
 			prefix + `/xss/<Input value = "XSS" type = text>`,
 		}
-		if strings.HasSuffix(key, "subdirectory") {
+		switch {
+		case strings.HasSuffix(key, "subdirectory"):
 			return subdir, nil
-		} else if strings.HasSuffix(key, "xss") {
+		case strings.HasSuffix(key, "xss"):
 			return xss, nil
-		} else {
+		default:
 			return append(append([]string{
 				prefix + "/a.txt",
 				prefix + "/index.html",

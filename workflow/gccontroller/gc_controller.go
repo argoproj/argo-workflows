@@ -262,11 +262,12 @@ func (c *Controller) expiresIn(wf *wfv1.Workflow) (expiresIn time.Duration, ok b
 func ttl(wf *wfv1.Workflow) (ttl time.Duration, ok bool) {
 	ttlStrategy := wf.GetTTLStrategy()
 	if ttlStrategy != nil {
-		if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
+		switch {
+		case wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil:
 			return time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second, true
-		} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
+		case wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil:
 			return time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second, true
-		} else if wf.Status.Phase.Completed() && ttlStrategy.SecondsAfterCompletion != nil {
+		case wf.Status.Phase.Completed() && ttlStrategy.SecondsAfterCompletion != nil:
 			return time.Duration(*ttlStrategy.SecondsAfterCompletion) * time.Second, true
 		}
 	}

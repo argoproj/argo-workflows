@@ -303,9 +303,8 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 	}
 
 	for _, opt := range options {
-		switch v := opt.(type) {
 		// any post-processing
-		case func(workflowController *WorkflowController):
+		if v, ok := opt.(func(workflowController *WorkflowController)); ok {
 			v(wfc)
 		}
 	}

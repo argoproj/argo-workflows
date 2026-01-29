@@ -1155,8 +1155,8 @@ func (a *Artifact) CleanPath() error {
 	}
 
 	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
-	if strings.Contains(path, slashDotDotSlash) {
-		safeDir = path[:strings.Index(path, slashDotDotSlash)]
+	if idx := strings.Index(path, slashDotDotSlash); idx >= 0 {
+		safeDir = path[:idx]
 	} else if slashDotDotRe.FindStringIndex(path) != nil {
 		safeDir = path[:len(path)-3]
 	}
@@ -1321,30 +1321,32 @@ type ArtifactLocation struct {
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
-	if a == nil {
+	switch {
+	case a == nil:
 		return nil, fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
-	} else if a.Artifactory != nil {
+	case a.Artifactory != nil:
 		return a.Artifactory, nil
-	} else if a.Azure != nil {
+	case a.Azure != nil:
 		return a.Azure, nil
-	} else if a.Git != nil {
+	case a.Git != nil:
 		return a.Git, nil
-	} else if a.GCS != nil {
+	case a.GCS != nil:
 		return a.GCS, nil
-	} else if a.HDFS != nil {
+	case a.HDFS != nil:
 		return a.HDFS, nil
-	} else if a.HTTP != nil {
+	case a.HTTP != nil:
 		return a.HTTP, nil
-	} else if a.OSS != nil {
+	case a.OSS != nil:
 		return a.OSS, nil
-	} else if a.Raw != nil {
+	case a.Raw != nil:
 		return a.Raw, nil
-	} else if a.S3 != nil {
+	case a.S3 != nil:
 		return a.S3, nil
-	} else if a.Plugin != nil {
+	case a.Plugin != nil:
 		return a.Plugin, nil
+	default:
+		return nil, fmt.Errorf("artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 	}
-	return nil, fmt.Errorf("artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -1693,7 +1695,8 @@ type WorkflowStep struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	// DEPRECATED: Use Hooks[exit].Template instead.
+	//
+	// Deprecated: Use Hooks[exit].Template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// Hooks holds the lifecycle hook which is invoked at lifecycle of
@@ -3431,14 +3434,16 @@ func (tmpl *Template) HasSequencedContainers() bool {
 }
 
 func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
-	if tmpl.Container != nil {
+	switch {
+	case tmpl.Container != nil:
 		return tmpl.Container.VolumeMounts
-	} else if tmpl.Script != nil {
+	case tmpl.Script != nil:
 		return tmpl.Script.VolumeMounts
-	} else if tmpl.ContainerSet != nil {
+	case tmpl.ContainerSet != nil:
 		return tmpl.ContainerSet.VolumeMounts
+	default:
+		return nil
 	}
-	return nil
 }
 
 // HasOutput returns true if the template can and will have outputs (i.e. exit code and result).
@@ -3539,7 +3544,8 @@ type DAGTask struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	// DEPRECATED: Use Hooks[exit].Template instead.
+	//
+	// Deprecated: Use Hooks[exit].Template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// Depends are name of other targets which this depends on
@@ -3819,7 +3825,8 @@ func (w *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName str
 // if it should be stored
 func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
 	tmplRef := caller.GetTemplateRef()
-	if tmplRef != nil {
+	switch {
+	case tmplRef != nil:
 		// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate. Template storage is needed
 		// We need to determine if we're calling a WorkflowTemplate or a ClusterWorkflowTemplate
 		referenceScope := ResourceScopeNamespaced
@@ -3827,14 +3834,14 @@ func resolveTemplateReference(callerScope ResourceScope, resourceName string, ca
 			referenceScope = ResourceScopeCluster
 		}
 		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
-	} else if callerScope != ResourceScopeLocal {
+	case callerScope != ResourceScopeLocal:
 		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
 		if caller.GetTemplate() != nil {
 			// If we have an inlined template here, use the inlined name
 			return fmt.Sprintf("%s/%s/inline/%s", callerScope, resourceName, caller.GetName()), true
 		}
 		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
-	} else {
+	default:
 		// A Workflow is calling a template inside itself. Template storage is not needed
 		return "", false
 	}

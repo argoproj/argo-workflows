@@ -480,8 +480,9 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 
-// Wait creates slow flaky tests
-// DEPRECATED: do not use this
+// Wait creates slow flaky tests.
+//
+// do not use this.
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
 	_, _ = fmt.Println("Waiting for", timeout.String())
@@ -671,7 +672,8 @@ func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
 	limitTable := w.config.Synchronization.LimitTableName
 
 	// Insert or update the semaphore limit
-	if w.config.Synchronization.PostgreSQL != nil {
+	switch {
+	case w.config.Synchronization.PostgreSQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET sizelimit = $2",
 				limitTable),
@@ -679,7 +681,7 @@ func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else if w.config.Synchronization.MySQL != nil {
+	case w.config.Synchronization.MySQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES (?, ?) ON DUPLICATE KEY UPDATE sizelimit = ?",
 				limitTable),
@@ -687,7 +689,7 @@ func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else {
+	default:
 		w.t.Fatal("Require one synchronization database to be setup")
 	}
 	return w
@@ -712,7 +714,8 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 	}
 
 	// Insert or update the semaphore state
-	if w.config.Synchronization.PostgreSQL != nil {
+	switch {
+	case w.config.Synchronization.PostgreSQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES ($1, $2, $3, $4, $5, $6) "+
 				"ON CONFLICT (name, workflowkey, controller) DO UPDATE SET held = $4, priority = $5, time = $6",
@@ -721,7 +724,7 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else if w.config.Synchronization.MySQL != nil {
+	case w.config.Synchronization.MySQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES (?, ?, ?, ?, ?, ?) "+
 				"ON DUPLICATE KEY UPDATE held = ?, priority = ?, time = ?",
@@ -730,7 +733,7 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else {
+	default:
 		w.t.Fatal("Require one synchronization database to be setup")
 	}
 	return w
@@ -750,7 +753,8 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 	}
 
 	// Insert or update the semaphore state
-	if w.config.Synchronization.PostgreSQL != nil {
+	switch {
+	case w.config.Synchronization.PostgreSQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES ($1, $2) "+
 				"ON CONFLICT (controller) DO UPDATE SET time = $2",
@@ -759,7 +763,7 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else if w.config.Synchronization.MySQL != nil {
+	case w.config.Synchronization.MySQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES (?, ?) "+
 				"ON DUPLICATE KEY UPDATE time = ?",
@@ -768,7 +772,7 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else {
+	default:
 		w.t.Fatal("Require one synchronization database to be setup")
 	}
 	return w

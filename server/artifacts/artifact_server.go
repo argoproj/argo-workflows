@@ -261,13 +261,14 @@ func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([
 		dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
 		// if dir is empty string, we are in the root dir
-		if dir == "" {
+		switch {
+		case dir == "":
 			if err = tmpl.Execute(output, file); err != nil {
 				return nil, err
 			}
-		} else if dirs[dir] {
+		case dirs[dir]:
 			continue
-		} else {
+		default:
 			if err = tmpl.Execute(output, dir); err != nil {
 				return nil, err
 			}

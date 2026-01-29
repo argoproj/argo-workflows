@@ -649,9 +649,10 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParametersJSON] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.Value != nil {
+		switch {
+		case param.Value != nil:
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
-		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+		case param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil:
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				if param.ValueFrom.Default != nil {
@@ -663,7 +664,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			} else {
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
-		} else {
+		default:
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
 	}
@@ -2008,7 +2009,7 @@ func (woc *wfOperationCtx) possiblyGetRetryChildNode(node *wfv1.NodeStatus) *wfv
 }
 
 func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1.NodeStatus {
-	if len(node.Children) <= 0 {
+	if len(node.Children) == 0 {
 		return nil
 	}
 
@@ -3962,12 +3963,13 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 			return nil, err
 		}
 	}
-	if seq.End != nil {
+	switch {
+	case seq.End != nil:
 		end, err = strconv.Atoi(seq.End.String())
 		if err != nil {
 			return nil, err
 		}
-	} else if seq.Count != nil {
+	case seq.Count != nil:
 		count, err := strconv.Atoi(seq.Count.String())
 		if err != nil {
 			return nil, err
@@ -3976,7 +3978,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 			return []wfv1.Item{}, nil
 		}
 		end = start + count - 1
-	} else {
+	default:
 		return nil, argoerrors.InternalError("neither end nor count was specified in withSequence")
 	}
 	items := make([]wfv1.Item, 0)
@@ -4270,7 +4272,8 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
-	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
+	switch {
+	case woc.wf.Spec.WorkflowTemplateRef != nil: // not-woc-misuse
 		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
 			woc.markWorkflowError(ctx, err)
@@ -4278,11 +4281,11 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		}
 		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
 		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
-	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+	case woc.controller.Config.WorkflowRestrictions.MustUseReference():
 		err := fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		woc.markWorkflowError(ctx, err)
 		return err
-	} else {
+	default:
 		err := woc.controller.setWorkflowDefaults(woc.wf)
 		if err != nil {
 			woc.markWorkflowError(ctx, err)

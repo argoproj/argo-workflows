@@ -53,10 +53,8 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 	return retry.OnError(p.backoff, func(err error) bool {
 		log.WithError(err).Debug(ctx, "Plugin returned error")
 		var tempErr interface{ Temporary() bool }
-		if stderrors.As(err, &tempErr) {
-			if tempErr.Temporary() {
-				return true
-			}
+		if stderrors.As(err, &tempErr) && tempErr.Temporary() {
+			return true
 		}
 		return strings.Contains(err.Error(), "connection refused") || errors.IsTransientErr(ctx, err)
 	}, func() error {

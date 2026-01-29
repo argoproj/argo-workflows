@@ -22915,7 +22915,8 @@ spec:
                                   OnExit is a template reference which is invoked at the end of the
                                   template, irrespective of the success, failure, or error of the
                                   primary template.
-                                  DEPRECATED: Use Hooks[exit].Template instead.
+
+                                  Deprecated: Use Hooks[exit].Template instead.
                                 type: string
                               template:
                                 description: Name of template to execute
@@ -35384,7 +35385,8 @@ spec:
                                 OnExit is a template reference which is invoked at the end of the
                                 template, irrespective of the success, failure, or error of the
                                 primary template.
-                                DEPRECATED: Use Hooks[exit].Template instead.
+
+                                Deprecated: Use Hooks[exit].Template instead.
                               type: string
                             template:
                               description: Template is the name of the template to

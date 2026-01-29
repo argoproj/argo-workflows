@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -153,10 +154,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
-	podVolumes := append(
+	podVolumes := slices.Concat(
 		pluginVolumes,
-		volumeVarArgo,
-		*tokenVolume,
+		[]apiv1.Volume{volumeVarArgo, *tokenVolume},
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,

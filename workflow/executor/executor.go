@@ -164,10 +164,8 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 			"error": r,
 			"stack": debug.Stack(),
 		}).Error(ctx, "executor panic")
-	} else {
-		if len(we.errors) > 0 {
-			util.WriteTerminateMessage(we.errors[0].Error())
-		}
+	} else if len(we.errors) > 0 {
+		util.WriteTerminateMessage(we.errors[0].Error())
 	}
 }
 
@@ -257,17 +255,18 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 
 		isTar := false
 		isZip := false
-		if art.GetArchive().None != nil {
+		switch {
+		case art.GetArchive().None != nil:
 			// explicitly not a tar
 			isTar = false
 			isZip = false
-		} else if art.GetArchive().Tar != nil {
+		case art.GetArchive().Tar != nil:
 			// explicitly a tar
 			isTar = true
-		} else if art.GetArchive().Zip != nil {
+		case art.GetArchive().Zip != nil:
 			// explicitly a zip
 			isZip = true
-		} else {
+		default:
 			// auto-detect if tarball
 			// (don't try to autodetect zip files for backwards compatibility)
 			isTar, err = isTarball(ctx, tempArtPath)
@@ -276,13 +275,14 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 			}
 		}
 
-		if isTar {
+		switch {
+		case isTar:
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
-		} else if isZip {
+		case isZip:
 			err = unzip(ctx, tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
-		} else {
+		default:
 			err = os.Rename(tempArtPath, artPath)
 		}
 		if err != nil {
@@ -1339,9 +1339,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 	logger.Info(ctx, message)
 	util.WriteTerminateMessage(message)
 
-	containerNames = slices.DeleteFunc(containerNames, func(containerName string) bool {
-		return common.IsArtifactPluginSidecar(containerName)
-	})
+	containerNames = slices.DeleteFunc(containerNames, common.IsArtifactPluginSidecar)
 	we.killContainers(ctx, containerNames)
 }
 
