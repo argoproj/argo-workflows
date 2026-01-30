@@ -25,7 +25,7 @@ import {useCollectEvent} from '../../../shared/use-collect-event';
 import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
-import {NAME_FILTER_KEYS, WorkflowFilters, type NameFilterKeys} from '../workflow-filters/workflow-filters';
+import {matchesNameFilter, NAME_FILTER_KEYS, WorkflowFilters, type NameFilterKeys} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
 import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
@@ -172,7 +172,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             () => setError(null),
             newWorkflows => setWorkflows([...newWorkflows]),
             err => setError(err),
-            sortByYouth
+            sortByYouth,
+            nameValue ? wf => matchesNameFilter(wf.metadata.name, nameValue, nameFilter) : undefined
         );
         listWatch.start();
 
