@@ -181,7 +181,7 @@ Name | Type | Description  | Notes
 
 <a name="workflowServiceGetWorkflow"></a>
 # **workflowServiceGetWorkflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflowServiceGetWorkflow(namespace, name, getOptionsResourceVersion, fields)
+> IoArgoprojWorkflowV1alpha1Workflow workflowServiceGetWorkflow(namespace, name, getOptionsResourceVersion, fields, uid)
 
 
 
@@ -211,8 +211,9 @@ public class Example {
     String name = "name_example"; // String | 
     String getOptionsResourceVersion = "getOptionsResourceVersion_example"; // String | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
     String fields = "fields_example"; // String | Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".
+    String uid = "uid_example"; // String | Optional UID to retrieve a specific workflow (useful for archived workflows with the same name).
     try {
-      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.workflowServiceGetWorkflow(namespace, name, getOptionsResourceVersion, fields);
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.workflowServiceGetWorkflow(namespace, name, getOptionsResourceVersion, fields, uid);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling WorkflowServiceApi#workflowServiceGetWorkflow");
@@ -233,6 +234,7 @@ Name | Type | Description  | Notes
  **name** | **String**|  |
  **getOptionsResourceVersion** | **String**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **fields** | **String**| Fields to be included or excluded in the response. e.g. \&quot;spec,status.phase\&quot;, \&quot;-status.nodes\&quot;. | [optional]
+ **uid** | **String**| Optional UID to retrieve a specific workflow (useful for archived workflows with the same name). | [optional]
 
 ### Return type
 
