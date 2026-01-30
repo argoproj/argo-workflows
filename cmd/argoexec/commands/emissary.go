@@ -80,10 +80,10 @@ func NewEmissaryCommand() *cobra.Command {
 				logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
 
 				// Check for a large args and offload to file if needed
-				// This avoids the exec() "argument list too long" error 
+				// This avoids the exec() "argument list too long" error
 				// Downstream programs should support @filename for parsing large args
 				const argThreshold = 131072 // 128KB exec arg limit
-				for i:= 0; i < len(args); i++ {
+				for i := 0; i < len(args); i++ {
 					if len(args[i]) > argThreshold {
 						filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
 						if err := os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
@@ -91,7 +91,7 @@ func NewEmissaryCommand() *cobra.Command {
 						}
 						logger.WithFields(logging.Fields{
 							"argIndex": i,
-							"size": len(args[i]),
+							"size":     len(args[i]),
 							"filePath": filePath,
 						}).Info(ctx, "Offloaded large argument to file")
 						args[i] = "@" + filePath

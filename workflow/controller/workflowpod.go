@@ -490,7 +490,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	if offloadEnvVarTemplate || offloadContainerArgs{ // Either init container's ARGO_TEMPLATE or main container's args are too large and need offloading
+	if offloadEnvVarTemplate || offloadContainerArgs { // Either init container's ARGO_TEMPLATE or main container's args are too large and need offloading
 		cmName := pod.Name
 		cmData := make(map[string]string)
 
