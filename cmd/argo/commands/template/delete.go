@@ -59,14 +59,14 @@ func apiServerDeleteWorkflowTemplates(ctx context.Context, allWFs bool, wfTmplNa
 		delWFTmplNames = wfTmplNames
 	}
 	for _, wfTmplNames := range delWFTmplNames {
-		if err := apiServerDeleteWorkflowTemplate(serviceClient, ctx, namespace, wfTmplNames); err != nil {
+		if err := apiServerDeleteWorkflowTemplate(ctx, serviceClient, namespace, wfTmplNames); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func apiServerDeleteWorkflowTemplate(client workflowtemplatepkg.WorkflowTemplateServiceClient, ctx context.Context, namespace, wftmplName string) error {
+func apiServerDeleteWorkflowTemplate(ctx context.Context, client workflowtemplatepkg.WorkflowTemplateServiceClient, namespace, wftmplName string) error {
 	_, err := client.DeleteWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateDeleteRequest{
 		Name:      wftmplName,
 		Namespace: namespace,

@@ -98,11 +98,9 @@ func (s *logrSink) isLevelEnabled(level int) bool {
 // logAtLevel maps logr levels to our logging levels and logs the message
 func (s *logrSink) logAtLevel(logger logging.Logger, level int, msg string) {
 	switch level {
-	case logrInfoLevel:
-		logger.Info(context.Background(), msg)
 	case logrDebugLevel, 2, 3, logrMaxLevel:
 		logger.Debug(context.Background(), msg)
 	default:
-		logger.Info(context.Background(), msg) // Default to info for unknown levels
+		logger.Info(context.Background(), msg)
 	}
 }

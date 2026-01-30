@@ -295,9 +295,8 @@ func TestGetFormatter(t *testing.T) {
 				if test.expectedErr != nil {
 					require.EqualError(t, err, test.expectedErr.Error())
 					return
-				} else {
-					require.NoError(t, err)
 				}
+				require.NoError(t, err)
 			}
 
 			ctx := logging.TestContext(t.Context())

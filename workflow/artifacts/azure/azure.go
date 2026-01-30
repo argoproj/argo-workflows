@@ -57,30 +57,29 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 		}
 		containerClient, err := container.NewClient(containerURL.String(), credential, nil)
 		return containerClient, err
-	} else {
-		if azblobDriver.AccountKey == "" {
-			return nil, fmt.Errorf("accountKey secret is required for Azure Blob Storage if useSDKCreds is false")
-		}
+	}
+	if azblobDriver.AccountKey == "" {
+		return nil, fmt.Errorf("accountKey secret is required for Azure Blob Storage if useSDKCreds is false")
+	}
 
-		if isSASAccountKey(azblobDriver.AccountKey) {
-			logger := logging.RequireLoggerFromContext(ctx)
-			logger.Info(ctx, "Provided account key is a SAS token. Using no-credential client.")
-			serviceURL := fmt.Sprintf("%s?%s", containerURL.String(), azblobDriver.AccountKey)
-			containerClient, err := container.NewClientWithNoCredential(serviceURL, nil)
-			return containerClient, err
-		}
-
-		accountName, err := determineAccountName(containerURL)
-		if err != nil {
-			return nil, err
-		}
-		credential, err := azblob.NewSharedKeyCredential(accountName, azblobDriver.AccountKey)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create Azure shared key credential: %w", err)
-		}
-		containerClient, err := container.NewClientWithSharedKeyCredential(containerURL.String(), credential, nil)
+	if isSASAccountKey(azblobDriver.AccountKey) {
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.Info(ctx, "Provided account key is a SAS token. Using no-credential client.")
+		serviceURL := fmt.Sprintf("%s?%s", containerURL.String(), azblobDriver.AccountKey)
+		containerClient, err := container.NewClientWithNoCredential(serviceURL, nil)
 		return containerClient, err
 	}
+
+	accountName, err := determineAccountName(containerURL)
+	if err != nil {
+		return nil, err
+	}
+	credential, err := azblob.NewSharedKeyCredential(accountName, azblobDriver.AccountKey)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create Azure shared key credential: %w", err)
+	}
+	containerClient, err := container.NewClientWithSharedKeyCredential(containerURL.String(), credential, nil)
+	return containerClient, err
 }
 
 // determineAccountName determines the account name of the storage account based on the
@@ -93,10 +92,9 @@ func determineAccountName(containerURL *url.URL) (string, error) {
 			return "", fmt.Errorf("unable to determine storage account name from %s", containerURL)
 		}
 		return parts[1], nil
-	} else {
-		parts := strings.Split(hostname, ".")
-		return parts[0], nil
 	}
+	parts := strings.Split(hostname, ".")
+	return parts[0], nil
 }
 
 // isSASAccountKey determines whether the account key provided is a SAS token instead of a
@@ -356,25 +354,24 @@ func (azblobDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.A
 
 	if !isDir {
 		return DeleteBlob(ctx, containerClient, artifact.Azure.Blob, true)
-	} else {
-		files, err := azblobDriver.ListObjects(ctx, artifact)
-		if err != nil {
-			return fmt.Errorf("unable to list files in %s: %w", artifact.Azure.Blob, err)
+	}
+	files, err := azblobDriver.ListObjects(ctx, artifact)
+	if err != nil {
+		return fmt.Errorf("unable to list files in %s: %w", artifact.Azure.Blob, err)
+	}
+	directoryFile := ""
+	for _, file := range files {
+		if file == artifact.Azure.Blob {
+			directoryFile = file
+			continue
 		}
-		directoryFile := ""
-		for _, file := range files {
-			if file == artifact.Azure.Blob {
-				directoryFile = file
-				continue
-			}
 
-			if err := DeleteBlob(ctx, containerClient, file, true); err != nil {
-				return err
-			}
+		if err := DeleteBlob(ctx, containerClient, file, true); err != nil {
+			return err
 		}
-		if directoryFile != "" {
-			return DeleteBlob(ctx, containerClient, directoryFile, true)
-		}
+	}
+	if directoryFile != "" {
+		return DeleteBlob(ctx, containerClient, directoryFile, true)
 	}
 	return nil
 }
@@ -388,12 +385,10 @@ func DeleteBlob(ctx context.Context, containerClient *container.Client, blobName
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.WithField("blob", blobName).WithError(err).Debug(ctx, "blob to delete does not exist")
 			return nil
-		} else {
-			return fmt.Errorf("unable to delete Azure Blob %s: %w", blobName, err)
 		}
+		return fmt.Errorf("unable to delete Azure Blob %s: %w", blobName, err)
 	}
-
-	return err
+	return nil
 }
 
 // ListObjects lists the files in Azure Blob Storage
@@ -455,9 +450,8 @@ func (azblobDriver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *w
 		}
 		if len(resp.Segment.BlobItems) == 1 {
 			return strings.HasPrefix(*resp.Segment.BlobItems[0].Name, blobPrefix), nil
-		} else {
-			return len(resp.Segment.BlobItems) > 0, nil
 		}
+		return len(resp.Segment.BlobItems) > 0, nil
 	}
 
 	return false, nil

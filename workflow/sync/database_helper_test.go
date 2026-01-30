@@ -33,9 +33,9 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 
 	switch dbType {
 	case sqldb.Postgres:
-		cfg, termContainerFn, err = setupPostgresContainer(t, ctx)
+		cfg, termContainerFn, err = setupPostgresContainer(ctx, t)
 	case sqldb.MySQL:
-		cfg, termContainerFn, err = setupMySQLContainer(t, ctx)
+		cfg, termContainerFn, err = setupMySQLContainer(ctx, t)
 	}
 	if err != nil {
 		t.Fatalf("failed to start container: %s", err)
@@ -70,7 +70,7 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 }
 
 // setupPostgresContainer sets up a Postgres test container and returns the config and cleanup function
-func setupPostgresContainer(t *testing.T, ctx context.Context) (config.SyncConfig, func(), error) {
+func setupPostgresContainer(ctx context.Context, t *testing.T) (config.SyncConfig, func(), error) {
 	postgresContainer, err := testpostgres.Run(ctx,
 		"postgres:17.4-alpine",
 		testpostgres.WithDatabase(testDBName),
@@ -115,7 +115,7 @@ func setupPostgresContainer(t *testing.T, ctx context.Context) (config.SyncConfi
 }
 
 // setupMySQLContainer sets up a MySQL test container and returns the config and cleanup function
-func setupMySQLContainer(t *testing.T, ctx context.Context) (config.SyncConfig, func(), error) {
+func setupMySQLContainer(ctx context.Context, t *testing.T) (config.SyncConfig, func(), error) {
 	mysqlContainer, err := testmysql.Run(ctx,
 		"mysql:8.4.5",
 		testmysql.WithDatabase(testDBName),

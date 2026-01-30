@@ -84,9 +84,8 @@ func NewDeleteCommand() *cobra.Command {
 					if status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
-					} else {
-						return err
 					}
+					return err
 				}
 				fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 			}

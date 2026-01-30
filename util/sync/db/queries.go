@@ -87,12 +87,12 @@ var _ SyncQueries = &syncQueries{}
 
 // syncQueries holds all SQL query operations for the sync package
 type syncQueries struct {
-	config  dbConfig
+	config  DBConfig
 	session db.Session
 }
 
 // NewSyncQueries creates a new syncQueries instance
-func NewSyncQueries(session db.Session, config dbConfig) *syncQueries {
+func NewSyncQueries(session db.Session, config DBConfig) SyncQueries {
 	return &syncQueries{
 		config:  config,
 		session: session,

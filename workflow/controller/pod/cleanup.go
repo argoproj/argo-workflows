@@ -23,8 +23,8 @@ func (c *Controller) EnactAnyPodCleanup(
 ) {
 	action := determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase, pod.Finalizers)
 	switch action {
-	case noAction: // ignore
-		break
+	case noAction:
+		// ignore
 	case deletePod:
 		c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
 	default:

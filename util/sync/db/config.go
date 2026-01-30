@@ -13,7 +13,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
-type dbConfig struct {
+// DBConfig holds database configuration for sync operations.
+type DBConfig struct {
 	LimitTable                string
 	StateTable                string
 	ControllerTable           string
@@ -24,7 +25,7 @@ type dbConfig struct {
 }
 
 type DBInfo struct {
-	Config  dbConfig
+	Config  DBConfig
 	Session db.Session
 }
 
@@ -74,11 +75,11 @@ func (d *DBInfo) Migrate(ctx context.Context) {
 	}
 }
 
-func DBConfigFromConfig(config *config.SyncConfig) dbConfig {
+func DBConfigFromConfig(config *config.SyncConfig) DBConfig {
 	if config == nil {
-		return dbConfig{}
+		return DBConfig{}
 	}
-	return dbConfig{
+	return DBConfig{
 		LimitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
 		StateTable:      defaultTable(config.StateTableName, defaultStateTableName),
 		ControllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),

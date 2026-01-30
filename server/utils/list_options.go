@@ -104,7 +104,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 			case "":
 				namespace = fieldSelectedNamespace
 			case fieldSelectedNamespace:
-				break
+				// namespace matches, nothing to do
 			default:
 				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)

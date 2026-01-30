@@ -5,13 +5,19 @@ import (
 	"strings"
 )
 
+// PlaceholderGenerator is the interface for generating placeholder strings.
+type PlaceholderGenerator interface {
+	NextPlaceholder() string
+	IsPlaceholder(s string) bool
+}
+
 // placeholderGenerator is to generate dynamically-generated placeholder strings.
 type placeholderGenerator struct {
 	index int
 }
 
-// NewPlaceholderGenerator returns a placeholderGenerator.
-func NewPlaceholderGenerator() *placeholderGenerator {
+// NewPlaceholderGenerator returns a PlaceholderGenerator.
+func NewPlaceholderGenerator() PlaceholderGenerator {
 	return &placeholderGenerator{}
 }
 

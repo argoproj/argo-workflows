@@ -14,7 +14,7 @@ type authorizingServerStream struct {
 	Gatekeeper
 }
 
-func NewAuthorizingServerStream(ss grpc.ServerStream, gk Gatekeeper) *authorizingServerStream {
+func NewAuthorizingServerStream(ss grpc.ServerStream, gk Gatekeeper) grpc.ServerStream {
 	return &authorizingServerStream{
 		ServerStream: ss,
 		ctx:          ss.Context(),

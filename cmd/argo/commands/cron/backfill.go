@@ -144,9 +144,8 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	wfYamlStr := "apiVersion: argoproj.io/v1alpha1 \n" + string(yamlbyte)
 	if len(scheList) > 0 {
 		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(ctx), cronWFName, scheList, wfClient, cliOps)
-	} else {
-		fmt.Print("There is no suitable scheduling time.")
 	}
+	fmt.Print("There is no suitable scheduling time.")
 	return nil
 }
 

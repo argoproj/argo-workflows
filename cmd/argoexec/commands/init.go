@@ -27,7 +27,8 @@ func NewInitCommand() *cobra.Command {
 
 func loadArtifacts(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
-	defer wfExecutor.HandleError(ctx)
+	errHandler := wfExecutor.HandleError(ctx)
+	defer errHandler()
 	defer stats.LogStats()
 
 	if err := wfExecutor.Init(); err != nil {

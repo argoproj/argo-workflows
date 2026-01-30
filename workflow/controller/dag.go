@@ -743,11 +743,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
 		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
 		// we continue execution as normal
-		if newTask.ShouldExpand() {
-			proceed = true
-		} else {
+		if !newTask.ShouldExpand() {
 			return nil, err
 		}
+		proceed = true
 	}
 	if !proceed {
 		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution

@@ -24,7 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
 )
 
-// nolint: contextcheck
+//nolint:contextcheck
 func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
 	version := argo.GetVersion()
 	logger := logging.RequireLoggerFromContext(ctx)

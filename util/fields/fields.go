@@ -53,9 +53,8 @@ func (f Cleaner) WillExclude(x string) bool {
 	}
 	if f.matches(x) {
 		return f.exclude
-	} else {
-		return !f.exclude
 	}
+	return !f.exclude
 }
 
 func (f Cleaner) matches(x string) bool {

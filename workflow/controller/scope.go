@@ -82,9 +82,8 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
 			return nil, err
 		}
 		return expr.Run(program, env)
-	} else {
-		return s.resolveVar(p.Parameter)
 	}
+	return s.resolveVar(p.Parameter)
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
@@ -117,11 +116,10 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	if !ok {
 		// If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
 		ptArt, ok := val.(*wfv1.Artifact)
-		if ok {
-			valArt = *ptArt
-		} else {
+		if !ok {
 			return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%v}} is not an artifact", art)
 		}
+		valArt = *ptArt
 	}
 
 	if art.SubPath != "" {

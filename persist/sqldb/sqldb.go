@@ -15,7 +15,6 @@ func GetTableName(persistConfig *config.PersistConfig) (string, error) {
 	}
 	if tableName == "" {
 		return "", errors.InternalError("TableName is empty")
-	} else {
-		return tableName, nil
 	}
+	return tableName, nil
 }

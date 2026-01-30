@@ -206,7 +206,7 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 
 				if acquired {
 					testMtx.Lock()
-					lockCount += 1
+					lockCount++
 					t.Log(lockCount)
 					if lockCount >= maxLockCount {
 						maxLockCount = lockCount
@@ -219,7 +219,7 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 					// Release lock with a mutex to ensure we won't have lockCount at +1 after release
 					testMtx.Lock()
 					sm.Release(ctx, wfCopy, wfCopy.Name, wfCopy.Spec.Synchronization)
-					lockCount -= 1
+					lockCount--
 					testMtx.Unlock()
 				}
 			}

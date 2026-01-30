@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // load authentication plugins
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 

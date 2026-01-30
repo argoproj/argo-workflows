@@ -584,7 +584,7 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	tmplName := tmplHolder.GetTemplateName()
 	if tmplRef != nil {
 		if tmplName != "" {
-			return nil, errors.New(errors.CodeBadRequest, "template name cannot be specified with templateRef.")
+			return nil, errors.New(errors.CodeBadRequest, "template name cannot be specified with templateRef")
 		}
 		if tmplRef.Name == "" {
 			return nil, errors.New(errors.CodeBadRequest, "resource name is required")
@@ -1223,7 +1223,7 @@ func validateOutputs(scope map[string]any, globalParams map[string]string, tmpl 
 // validateOutputParameter verifies that only one of valueFrom is defined in an output
 func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 	if param.ValueFrom != nil && param.Value != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s has both valueFrom and value specified. Choose one.", paramRef)
+		return errors.Errorf(errors.CodeBadRequest, "%s has both valueFrom and value specified, choose one", paramRef)
 	}
 	if param.Value != nil {
 		return nil

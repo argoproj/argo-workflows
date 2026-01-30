@@ -14,7 +14,7 @@ import (
 
 // labelsToPropagate includes the labels of a CronWorkflow which are to be
 // propagated to the Workflow to be scheduled.
-var labelsToPropagate []string = []string{
+var labelsToPropagate = []string{
 	"workflows.argoproj.io/creator",
 	"workflows.argoproj.io/creator-email",
 	"workflows.argoproj.io/creator-preferred-username",

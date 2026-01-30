@@ -44,7 +44,7 @@ func TestGetLimitFirstCall(t *testing.T) {
 		t.Errorf("expected limit %d, got %d", expectedLimit, limit)
 	}
 
-	if cl.limitTimestamp != mockNow {
+	if !cl.limitTimestamp.Equal(mockNow) {
 		t.Errorf("expected timestamp to be updated to %v, got %v", mockNow, cl.limitTimestamp)
 	}
 }

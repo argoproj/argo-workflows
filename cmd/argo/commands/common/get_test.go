@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-var workflowName string = "testWF"
+var workflowName = "testWF"
 
 func init() {
 	// these values get used as part of determining node name and would normally be set as part of

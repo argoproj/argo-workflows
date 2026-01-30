@@ -32,7 +32,7 @@ func addIsLeader(ctx context.Context, m *Metrics) error {
 }
 
 func (l *leaderGauge) update(ctx context.Context, o metric.Observer) error {
-	var val int64 = 0
+	var val int64
 	if l.callback() {
 		val = 1
 	}

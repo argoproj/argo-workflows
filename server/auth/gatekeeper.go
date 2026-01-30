@@ -208,11 +208,10 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
 			return clients, claims, nil
-		} else {
-			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
-			return s.clients, claims, nil
 		}
+		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+		logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
+		return s.clients, claims, nil
 	default:
 		panic("this should never happen")
 	}

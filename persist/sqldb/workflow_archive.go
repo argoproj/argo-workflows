@@ -541,37 +541,36 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 			And(db.Cond{"uid": uid}).
 			One(archivedWf)
 	} else {
-		if name != "" && namespace != "" {
-			total := &archivedWorkflowCount{}
-			err = r.session.SQL().
-				Select(db.Raw("count(*) as total")).
-				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(namespace)).
-				And(nameEqual(name)).
-				One(total)
-			if err != nil {
-				return nil, err
-			}
-			num := int64(total.Total)
-			if num > 1 {
-				logger.WithFields(logging.Fields{
-					"namespace": namespace,
-					"name":      name,
-					"num":       num,
-				}).Debug(ctx, "returning latest of archived workflows")
-			}
-			err = r.session.SQL().
-				Select("workflow").
-				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(namespace)).
-				And(nameEqual(name)).
-				OrderBy("-startedat").
-				One(archivedWf)
-		} else {
+		if name == "" || namespace == "" {
 			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)
 		}
+		total := &archivedWorkflowCount{}
+		err = r.session.SQL().
+			Select(db.Raw("count(*) as total")).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(namespaceEqual(namespace)).
+			And(nameEqual(name)).
+			One(total)
+		if err != nil {
+			return nil, err
+		}
+		num := int64(total.Total)
+		if num > 1 {
+			logger.WithFields(logging.Fields{
+				"namespace": namespace,
+				"name":      name,
+				"num":       num,
+			}).Debug(ctx, "returning latest of archived workflows")
+		}
+		err = r.session.SQL().
+			Select("workflow").
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(namespaceEqual(namespace)).
+			And(nameEqual(name)).
+			OrderBy("-startedat").
+			One(archivedWf)
 	}
 	if err != nil {
 		if errors.Is(err, db.ErrNoMoreRows) {

@@ -691,9 +691,8 @@ func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
 	for obj := range objCh {
 		if obj.Err != nil {
 			return false, obj.Err
-		} else {
-			return true, nil
 		}
+		return true, nil //nolint:staticcheck // intentionally returns on first object
 	}
 	return false, nil
 }

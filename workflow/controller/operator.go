@@ -189,7 +189,8 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 // later time
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate(ctx context.Context) {
-	defer argoruntime.RecoverFromPanic(ctx, woc.log)
+	panicHandler := argoruntime.RecoverFromPanic(ctx, woc.log)
+	defer panicHandler()
 
 	defer func() {
 		woc.persistUpdates(ctx)
@@ -306,7 +307,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration(ctx)
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
-		err, podReconciliationCompleted := woc.podReconciliation(ctx)
+		podReconciliationCompleted, err := woc.podReconciliation(ctx)
 		if err == nil {
 			// Execution control has been applied to the nodes with created pods after pod reconciliation.
 			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
@@ -655,12 +656,11 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		case param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil:
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
-				if param.ValueFrom.Default != nil {
-					woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
-				} else {
+				if param.ValueFrom.Default == nil {
 					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
 						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
 				}
+				woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
 			} else {
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
@@ -1160,11 +1160,11 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
 // returns whether pod reconciliation successfully completed
-func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) {
+func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) {
 	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
 		woc.log.Error(ctx, "was unable to retrieve workflow pods")
-		return err, false
+		return false, err
 	}
 	seenPods := make(map[string]*apiv1.Pod)
 	seenPodLock := &sync.Mutex{}
@@ -1246,7 +1246,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 	// If true, it means there are some nodes which have outputs we wanted to be marked succeed, but the node's taskresults didn't completed.
 	// We should make sure the taskresults processing is complete as it will be possible to reference it in the next step.
 	if taskResultIncomplete {
-		return nil, false
+		return false, nil
 	}
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
@@ -1292,7 +1292,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			woc.markAllContainersDeleted(ctx, node.ID)
 		}
 	}
-	return nil, !taskResultIncomplete
+	return !taskResultIncomplete, nil
 }
 
 func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
@@ -1778,14 +1778,13 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		case ctr.Name == common.WaitContainerName:
 			return wfv1.NodeError, msg
 		default:
-			if t.ExitCode == 137 || t.ExitCode == 143 {
-				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
-				// forcibly killed the container, which we ignore the error for.
-				// Java code 143 is a normal exit 128 + 15 https://github.com/elastic/elasticsearch/issues/31847
-				woc.log.WithFields(logging.Fields{"exitCode": t.ExitCode, "containerName": ctr.Name}).Info(ctx, "ignoring exit code")
-			} else {
+			if t.ExitCode != 137 && t.ExitCode != 143 {
 				return wfv1.NodeFailed, msg
 			}
+			// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
+			// forcibly killed the container, which we ignore the error for.
+			// Java code 143 is a normal exit 128 + 15 https://github.com/elastic/elasticsearch/issues/31847
+			woc.log.WithFields(logging.Fields{"exitCode": t.ExitCode, "containerName": ctr.Name}).Info(ctx, "ignoring exit code")
 		}
 	}
 
@@ -1795,16 +1794,13 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		if waitContainerSucceeded {
 			// Both succeeded - sidecars may have been force-killed (137/143), which is fine
 			return wfv1.NodeSucceeded, ""
-		} else {
-			return wfv1.NodeFailed, "pod failed: wait container did not complete successfully"
 		}
-	} else {
-		if waitContainerSucceeded {
-			return wfv1.NodeFailed, "pod failed: main container did not complete successfully"
-		} else {
-			return wfv1.NodeFailed, "pod failed: neither main nor wait container completed successfully"
-		}
+		return wfv1.NodeFailed, "pod failed: wait container did not complete successfully"
 	}
+	if waitContainerSucceeded {
+		return wfv1.NodeFailed, "pod failed: main container did not complete successfully"
+	}
+	return wfv1.NodeFailed, "pod failed: neither main nor wait container completed successfully"
 }
 
 // shouldAutoRestartPod checks if a failed pod should be automatically restarted.
@@ -2213,18 +2209,17 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 			woc.log.WithField("lockName", failedLockName).Info(ctx, "Could not acquire lock")
 			return woc.markNodeWaitingForLock(ctx, node.Name, failedLockName, msg)
-		} else {
-			woc.log.WithField("nodeName", nodeName).Info(ctx, "Node acquired synchronization lock")
-			if node != nil {
-				node, err = woc.markNodeWaitingForLock(ctx, node.Name, "", "")
-				if err != nil {
-					woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error(ctx, "markNodeWaitingForLock returned err")
-					return nil, err
-				}
-			}
-			// Set this value to check that this node is using synchronization, and has acquired the lock
-			unlockedNode = true
 		}
+		woc.log.WithField("nodeName", nodeName).Info(ctx, "Node acquired synchronization lock")
+		if node != nil {
+			node, err = woc.markNodeWaitingForLock(ctx, node.Name, "", "")
+			if err != nil {
+				woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error(ctx, "markNodeWaitingForLock returned err")
+				return nil, err
+			}
+		}
+		// Set this value to check that this node is using synchronization, and has acquired the lock
+		unlockedNode = true
 
 		woc.updated = woc.updated || wfUpdated
 	}
@@ -3281,11 +3276,10 @@ func (woc *wfOperationCtx) getTemplateOutputsFromScope(ctx context.Context, tmpl
 			val, err := scope.resolveParameter(param.ValueFrom)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					val = param.ValueFrom.Default.String()
-				} else {
+				if param.ValueFrom.Default == nil {
 					return nil, err
 				}
+				val = param.ValueFrom.Default.String()
 			}
 			param.Value = wfv1.AnyStringPtr(val)
 			param.ValueFrom = nil
@@ -4113,42 +4107,38 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricTmpl, string(woc.wf.UID), valueFunc)
 			if err != nil {
 				woc.reportMetricEmissionError(ctx, fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
-				continue
 			}
 			continue
-		} else {
-			metricSpec := metricTmpl.DeepCopy()
+		}
+		metricSpec := metricTmpl.DeepCopy()
 
-			// Finally substitute value parameters
-			metricValueString := metricSpec.GetValueString()
+		// Finally substitute value parameters
+		metricValueString := metricSpec.GetValueString()
 
-			metricValueStringJSON, err := json.Marshal(metricValueString)
-			if err != nil {
-				woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
-				continue
-			}
-
-			replacedValueJSON, err := template.Replace(ctx, string(metricValueStringJSON), localScope, false)
-			if err != nil {
-				woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
-				continue
-			}
-
-			var replacedStringJSON string
-			err = json.Unmarshal([]byte(replacedValueJSON), &replacedStringJSON)
-			if err != nil {
-				woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
-				continue
-			}
-
-			metricSpec.SetValueString(replacedStringJSON)
-
-			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricSpec, string(woc.wf.UID), nil)
-			if err != nil {
-				woc.reportMetricEmissionError(ctx, fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
-				continue
-			}
+		metricValueStringJSON, err := json.Marshal(metricValueString)
+		if err != nil {
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
 			continue
+		}
+
+		replacedValueJSON, err := template.Replace(ctx, string(metricValueStringJSON), localScope, false)
+		if err != nil {
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
+			continue
+		}
+
+		var replacedStringJSON string
+		err = json.Unmarshal([]byte(replacedValueJSON), &replacedStringJSON)
+		if err != nil {
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
+			continue
+		}
+
+		metricSpec.SetValueString(replacedStringJSON)
+
+		err = woc.controller.metrics.UpsertCustomMetric(ctx, metricSpec, string(woc.wf.UID), nil)
+		if err != nil {
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 		}
 	}
 }

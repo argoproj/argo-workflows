@@ -41,13 +41,13 @@ var (
 		Stderr:       []byte("this error is transient"),
 	}
 
-	connectionClosedUErr    *url.Error = urlError("Connection closed by foreign host")
-	tlsHandshakeTimeoutUErr *url.Error = urlError("net/http: TLS handshake timeout")
-	ioTimeoutUErr           *url.Error = urlError("i/o timeout")
-	connectionTimedoutUErr  *url.Error = urlError("connection timed out")
-	connectionResetUErr     *url.Error = urlError("connection reset by peer")
-	EOFUErr                 *url.Error = urlError("EOF")
-	connectionRefusedErr    *url.Error = urlError("connect: connection refused")
+	connectionClosedUErr    = urlError("Connection closed by foreign host")
+	tlsHandshakeTimeoutUErr = urlError("net/http: TLS handshake timeout")
+	ioTimeoutUErr           = urlError("i/o timeout")
+	connectionTimedoutUErr  = urlError("connection timed out")
+	connectionResetUErr     = urlError("connection reset by peer")
+	EOFUErr                 = urlError("EOF")
+	connectionRefusedErr    = urlError("connect: connection refused")
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"

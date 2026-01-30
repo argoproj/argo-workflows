@@ -31,7 +31,7 @@ func statusToNodeFieldSelector(status string) string {
 	return fmt.Sprintf("phase=%s", status)
 }
 
-func (g GetFlags) shouldPrint(node wfv1.NodeStatus) bool {
+func (g *GetFlags) shouldPrint(node wfv1.NodeStatus) bool {
 	if g.Status != "" {
 		// Adapt --status to a node field selector for compatibility
 		if g.NodeFieldSelectorString != "" {

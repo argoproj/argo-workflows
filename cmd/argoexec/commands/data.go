@@ -25,7 +25,7 @@ func NewDataCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func execData(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
@@ -33,8 +33,8 @@ func execData(ctx context.Context) error {
 	//nolint:contextcheck
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
-	wfExecutor.InitializeOutput(bgCtx)
-	defer wfExecutor.HandleError(bgCtx)
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 
 	err := wfExecutor.Data(ctx)

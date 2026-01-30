@@ -156,16 +156,21 @@ func NewExecutor(
 	}
 }
 
-// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
-func (we *WorkflowExecutor) HandleError(ctx context.Context) {
-	if r := recover(); r != nil {
-		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
-		logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
-			"error": r,
-			"stack": debug.Stack(),
-		}).Error(ctx, "executor panic")
-	} else if len(we.errors) > 0 {
-		util.WriteTerminateMessage(we.errors[0].Error())
+// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error.
+// Usage: defer we.HandleError(ctx)()
+//
+//nolint:revive // recover is inside returned closure that gets deferred by caller
+func (we *WorkflowExecutor) HandleError(ctx context.Context) func() {
+	return func() {
+		if r := recover(); r != nil {
+			util.WriteTerminateMessage(fmt.Sprintf("%v", r))
+			logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
+				"error": r,
+				"stack": debug.Stack(),
+			}).Error(ctx, "executor panic")
+		} else if len(we.errors) > 0 {
+			util.WriteTerminateMessage(we.errors[0].Error())
+		}
 	}
 }
 
@@ -189,9 +194,8 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 			if art.Optional {
 				logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
 				continue
-			} else {
-				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
+			return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 		}
 		err := art.CleanPath()
 		if err != nil {
@@ -365,9 +369,8 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	}
 	if aggregateError == "" {
 		return artifacts, nil
-	} else {
-		return artifacts, errors.New(aggregateError)
 	}
+	return artifacts, errors.New(aggregateError)
 }
 
 // save artifact
@@ -626,11 +629,10 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
-				} else {
+				if param.ValueFrom.Default == nil {
 					return err
 				}
+				output = param.ValueFrom.Default
 			} else {
 				output = wfv1.AnyStringPtr(fileContents)
 			}
@@ -640,11 +642,10 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
-				} else {
+				if param.ValueFrom.Default == nil {
 					return err
 				}
+				output = param.ValueFrom.Default
 			} else {
 				output = wfv1.AnyStringPtr(string(data))
 			}

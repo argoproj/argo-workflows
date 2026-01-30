@@ -49,7 +49,8 @@ spec:
 
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -70,7 +71,8 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 
 // TestPersistErrorWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -90,7 +92,8 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 
 // TestPersistWithLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -118,7 +121,8 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 
 // TestPersistErrorWithLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 

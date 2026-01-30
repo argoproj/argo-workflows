@@ -330,12 +330,11 @@ func (ossDriver *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1
 				for _, object := range results.Objects {
 					files = append(files, object.Key)
 				}
-				if results.IsTruncated {
-					continueToken = results.NextContinuationToken
-					pre = oss.Prefix(results.Prefix)
-				} else {
+				if !results.IsTruncated {
 					break
 				}
+				continueToken = results.NextContinuationToken
+				pre = oss.Prefix(results.Prefix)
 			}
 			return true, nil
 		})
