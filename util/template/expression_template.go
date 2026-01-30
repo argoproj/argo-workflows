@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/doublerebel/bellows"
 	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/ast"
 	"github.com/expr-lang/expr/file"
+	"github.com/expr-lang/expr/parser"
 	"github.com/expr-lang/expr/parser/lexer"
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/maps"
 )
 
 func init() {
@@ -23,16 +28,18 @@ func init() {
 	}
 }
 
-var variablesToCheck = []string{
-	"item",
-	"retries",
-	"lastRetry.exitCode",
-	"lastRetry.status",
-	"lastRetry.duration",
-	"lastRetry.message",
-	"workflow.status",
-	"workflow.failures",
-}
+var (
+	variablesToCheck = []string{
+		"item",
+		"retries",
+		"lastRetry.exitCode",
+		"lastRetry.status",
+		"lastRetry.duration",
+		"lastRetry.message",
+		"workflow.status",
+		"workflow.failures",
+	}
+)
 
 func anyVarNotInEnv(expression string, env map[string]interface{}) *string {
 	for _, variable := range variablesToCheck {
@@ -43,7 +50,90 @@ func anyVarNotInEnv(expression string, env map[string]interface{}) *string {
 	return nil
 }
 
+func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, strictRegex *regexp.Regexp) (int, error) {
+	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
+	var unmarshalledExpression string
+	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
+	if err != nil {
+		// If we can't unmarshal, we can't parse. Fallback to expressionReplaceCore to handle it (likely error).
+		return expressionReplaceCore(ctx, w, expression, env, false)
+	}
+
+	identifiers, err := getIdentifiers(unmarshalledExpression)
+	if err != nil {
+		// If we can't parse, we can't check variables. Fallback to expressionReplaceCore(false) to report syntax error.
+		return expressionReplaceCore(ctx, w, expression, env, false)
+	}
+
+	missingIdentifiers := []string{}
+	for _, id := range identifiers {
+		if !hasVarInEnv(env, id) {
+			missingIdentifiers = append(missingIdentifiers, id)
+		}
+	}
+
+	for _, id := range missingIdentifiers {
+		if strictRegex != nil && strictRegex.MatchString(id) {
+			return 0, fmt.Errorf("failed to evaluate expression: %s is missing", id)
+		}
+	}
+
+	// If we have missing identifiers but they are NOT strict, we allow unresolved.
+	// If we have NO missing identifiers, we enforce resolution (to catch runtime errors).
+	allowUnresolved := len(missingIdentifiers) > 0
+	return expressionReplaceCore(ctx, w, expression, env, allowUnresolved)
+}
+
+type identifierVisitor struct {
+	identifiers []string
+	seen        map[string]bool
+}
+
+func (v *identifierVisitor) Visit(node *ast.Node) {
+	if n, ok := (*node).(*ast.IdentifierNode); ok {
+		if !v.seen[n.Value] {
+			v.identifiers = append(v.identifiers, n.Value)
+			v.seen[n.Value] = true
+		}
+	}
+}
+
+func getIdentifiers(expression string) ([]string, error) {
+	tree, err := parser.Parse(expression)
+	if err != nil {
+		return nil, err
+	}
+	visitor := &identifierVisitor{
+		seen: make(map[string]bool),
+	}
+	ast.Walk(&tree.Node, visitor)
+	return visitor.identifiers, nil
+}
+
 func expressionReplace(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+	var strictRegex *regexp.Regexp
+	if !allowUnresolved {
+		strictRegex = matchAllRegex
+	}
+	return expressionReplaceStrict(ctx, w, expression, env, strictRegex)
+}
+
+func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+
+	shouldAllowFailure := false
+
+	maps.VisitMap(env, func(key string, value any) bool {
+		rv := reflect.Indirect(reflect.ValueOf(value))
+		if rv.Kind() == reflect.String {
+			placeholder := strings.HasPrefix(rv.String(), "__argo__internal__placeholder")
+			if placeholder {
+				shouldAllowFailure = true
+				return false
+			}
+		}
+		return true
+	})
+
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -70,11 +160,11 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
-	if err != nil && !allowUnresolved {
+	if err != nil && !allowUnresolved && !shouldAllowFailure {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
-	if (err != nil || result == nil) && allowUnresolved {
+	if (err != nil || result == nil) && (allowUnresolved || shouldAllowFailure) {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug(ctx, "Result and error are unresolved")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
@@ -168,6 +258,9 @@ func hasVariableInExpression(expression, variable string) bool {
 
 // hasVarInEnv checks if a parameter is in env or not
 func hasVarInEnv(env map[string]interface{}, parameter string) bool {
+	if _, ok := env[parameter]; ok {
+		return true
+	}
 	flattenEnv := bellows.Flatten(env)
 	_, ok := flattenEnv[parameter]
 	return ok
