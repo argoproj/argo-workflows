@@ -74,39 +74,32 @@ func Test_CompareExpressionReplace(t *testing.T) {
 			_, err2 := expressionReplace(ctx, &b2, tc.expression, replaceMap, tc.allowUnresolved)
 			res2 := b2.String()
 
-			if err1 != nil {
+			switch {
+			case err1 != nil:
 				// Old (Helper) returns error even if suppressed (to signal suppression).
-
-				if err2 == nil {
+				switch {
+				case err2 == nil:
 					// New returned success (nil error).
 					// If Old suppressed an error, New should also suppress it (return unresolved tag).
 					if strings.Contains(res2, "{{=") {
 						return
 					}
 					t.Errorf("Old suppressed error (%v) but New resolved it to %q", err1, res2)
-				} else {
+				case strings.Contains(err1.Error(), "expr run error:"):
 					// Both returned error.
 					// If Old suppressed a RUNTIME error (expr run error), but New failed hard.
 					// This is the expected divergence when variables are present.
-					if strings.Contains(err1.Error(), "expr run error:") {
-						return
-					}
-
+					return
+				case strings.Contains(err1.Error(), "variable not in env"):
 					// If Old suppressed "variable not in env", New should also suppress it?
 					// New `expressionReplaceStrict` detects missing vars and sets allowUnresolved=true.
 					// So New should return nil error (unresolved tag).
-					if strings.Contains(err1.Error(), "variable not in env") {
-						t.Errorf("Old suppressed missing var (%v), but New errored: %v", err1, err2)
-					}
+					t.Errorf("Old suppressed missing var (%v), but New errored: %v", err1, err2)
 				}
-			} else {
-				if err2 != nil {
-					t.Errorf("Old succeeded (res: %s) but New errored (%v)", res1, err2)
-				} else {
-					if res1 != res2 {
-						t.Errorf("Results differ: Old=%q, New=%q", res1, res2)
-					}
-				}
+			case err2 != nil:
+				t.Errorf("Old succeeded (res: %s) but New errored (%v)", res1, err2)
+			case res1 != res2:
+				t.Errorf("Results differ: Old=%q, New=%q", res1, res2)
 			}
 		})
 	}
