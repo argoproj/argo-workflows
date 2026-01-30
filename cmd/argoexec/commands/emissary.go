@@ -66,8 +66,8 @@ func NewEmissaryCommand() *cobra.Command {
 			name, args := args[0], args[1:]
 
 			// Check if args were offloaded to a file (for large args that exceed exec limit)
-			if argsFile := os.Getenv(common.EnvVarArgsFile); argsFile != "" {
-				logger.Infof("Reading container args from file: %s", argsFile)
+			if argsFile := os.Getenv(common.EnvVarContainerArgsFile); argsFile != "" {
+				logger.WithField("argsFile", argsFile).Info(ctx, "Reading container args from file")
 				argsData, err := os.ReadFile(argsFile)
 				if err != nil {
 					return fmt.Errorf("failed to read container args file %s: %w", argsFile, err)
@@ -77,23 +77,24 @@ func NewEmissaryCommand() *cobra.Command {
 					return fmt.Errorf("failed to unmarshal container args: %w", err)
 				}
 				args = append(args, fileArgs...)
-				logger.Infof("Loaded %d args from file", len(fileArgs))
+				logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
 
-				// Check for a large --component arg and offload to file if needed
-				// This avoids the exec() "argument list too long" error for KFP driver
-				const componentThreshhold = 10000 // 100KB
-				const componentFilePath = "/tmp/component_spec.json"
-				for i:= 0; i < len(args)-1; i++ {
-					if args[i] == "--component" {
-						componentValue := args[i+1]
-						if len(componentValue) > componentThreshhold {
-							if err := os.WriteFile(componentFilePath, []byte(componentValue), 0o644); err != nil {
-								return fmt.Errorf("failed to offload large --component arg to file: %w", err)
-							}
-							args[i+1] = "@" + componentFilePath
-							logger.Infof("Wrote large component spec (%d bytes) to %s", len(componentValue), componentFilePath)
+				// Check for a large args and offload to file if needed
+				// This avoids the exec() "argument list too long" error 
+				// Downstream programs should support @filename for parsing large args
+				const argThreshold = 131072 // 128KB exec arg limit
+				for i:= 0; i < len(args); i++ {
+					if len(args[i]) > argThreshold {
+						filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
+						if err := os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
+							return fmt.Errorf("failed to write large arg %d to file: %w", i, err)
 						}
-						break
+						logger.WithFields(logging.Fields{
+							"argIndex": i,
+							"size": len(args[i]),
+							"filePath": filePath,
+						}).Info(ctx, "Offloaded large argument to file")
+						args[i] = "@" + filePath
 					}
 				}
 			}
