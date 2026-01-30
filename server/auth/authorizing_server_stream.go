@@ -26,12 +26,12 @@ func (l *authorizingServerStream) Context() context.Context {
 	return l.ctx
 }
 
-func (l *authorizingServerStream) SendMsg(m interface{}) error {
+func (l *authorizingServerStream) SendMsg(m any) error {
 	return l.ServerStream.SendMsg(m)
 }
 
 // RecvMsg is overridden so that we can understand the request and use it for RBAC
-func (l *authorizingServerStream) RecvMsg(m interface{}) error {
+func (l *authorizingServerStream) RecvMsg(m any) error {
 	err := l.ServerStream.RecvMsg(m)
 	if err != nil {
 		return err

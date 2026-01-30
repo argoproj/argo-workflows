@@ -22,7 +22,7 @@ func (h *gcHeap) Less(i, j int) bool {
 }
 func (h *gcHeap) Swap(i, j int) { h.heap[i], h.heap[j] = h.heap[j], h.heap[i] }
 
-func (h *gcHeap) Push(x interface{}) {
+func (h *gcHeap) Push(x any) {
 	if _, ok := h.dedup[x.(*unstructured.Unstructured).GetName()]; ok {
 		return
 	}
@@ -30,7 +30,7 @@ func (h *gcHeap) Push(x interface{}) {
 	h.heap = append(h.heap, x.(*unstructured.Unstructured))
 }
 
-func (h *gcHeap) Pop() interface{} {
+func (h *gcHeap) Pop() any {
 	old := h.heap
 	n := len(old)
 	x := old[n-1]

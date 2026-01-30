@@ -26,7 +26,7 @@ func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate 
 	return ret
 }
 
-func interfaceToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, error) {
+func interfaceToWorkflowTemplate(object any) (*wfv1.WorkflowTemplate, error) {
 	v := &wfv1.WorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {

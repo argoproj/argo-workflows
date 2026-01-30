@@ -910,7 +910,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 			triggerCount++
 		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "acquired", i)
 			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -922,7 +922,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 			wfs = append(wfs, *wf)
 
 		}
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "wait", i)
 			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)

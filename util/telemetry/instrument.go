@@ -12,8 +12,8 @@ import (
 type Instrument struct {
 	name        string
 	description string
-	otel        interface{}
-	userdata    interface{}
+	otel        any
+	userdata    any
 }
 
 func (m *Metrics) preCreateCheck(name string) error {
@@ -76,7 +76,7 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 	if opts.builtIn {
 		desc = addHelpLink(name, desc)
 	}
-	var instPtr interface{}
+	var instPtr any
 	switch instType {
 	case Float64ObservableGauge:
 		inst, insterr := (*m.otelMeter).Float64ObservableGauge(name,
@@ -154,14 +154,14 @@ func (i *Instrument) GetDescription() string {
 	return i.description
 }
 
-func (i *Instrument) GetOtel() interface{} {
+func (i *Instrument) GetOtel() any {
 	return i.otel
 }
 
-func (i *Instrument) SetUserdata(data interface{}) {
+func (i *Instrument) SetUserdata(data any) {
 	i.userdata = data
 }
 
-func (i *Instrument) GetUserdata() interface{} {
+func (i *Instrument) GetUserdata() any {
 	return i.userdata
 }

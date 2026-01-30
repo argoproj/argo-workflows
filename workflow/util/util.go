@@ -141,7 +141,7 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	return &wf, err
 }
 
-func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+func FromUnstructuredObj(un *unstructured.Unstructured, v any) error {
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
 		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
@@ -1408,8 +1408,8 @@ func (e AlreadyShutdownError) Error() string {
 
 // patchShutdownStrategy patches the shutdown strategy to a workflow.
 func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
-	patchObj := map[string]interface{}{
-		"spec": map[string]interface{}{
+	patchObj := map[string]any{
+		"spec": map[string]any{
 			"shutdown": strategy,
 		},
 	}
@@ -1424,7 +1424,7 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 	}
 	userActionLabel := creator.UserActionLabel(ctx, action)
 	if userActionLabel != nil {
-		patchObj["metadata"] = map[string]interface{}{
+		patchObj["metadata"] = map[string]any{
 			"labels": userActionLabel,
 		}
 	}

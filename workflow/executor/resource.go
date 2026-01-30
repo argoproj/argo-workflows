@@ -150,7 +150,7 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		if mergeStrategy == "json" {
 			appendFileFlag = false
 		} else {
-			var obj map[string]interface{}
+			var obj map[string]any
 			err = yaml.Unmarshal(buff, &obj)
 			if err != nil {
 				return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
@@ -352,7 +352,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 }
 
 func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(input, &v); err != nil {
 		return "", err
 	}

@@ -78,7 +78,7 @@ func TestStoreOperation(t *testing.T) {
 		instanceService: instanceIDSvc,
 	}
 	t.Run("TestAddWorkflow", func(t *testing.T) {
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			require.NoError(t, store.Add(generateWorkflow(i)))
 		}
 		ctx := logging.TestContext(t.Context())

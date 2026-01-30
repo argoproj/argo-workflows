@@ -86,7 +86,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
 	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime)
-	for i := 0; i < taskWorkers; i++ {
+	for range taskWorkers {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
 
@@ -180,7 +180,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				continue
 			}
 
-			patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
 			if err != nil {
 				logger.WithError(err).Error(ctx, "Generating Patch Failed")
 				continue
@@ -278,15 +278,15 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 			message = fmt.Sprintf("received non-2xx response code: %d", response.StatusCode)
 		}
 	} else {
-		evalScope := map[string]interface{}{
-			"request": map[string]interface{}{
+		evalScope := map[string]any{
+			"request": map[string]any{
 				"method":    tmpl.HTTP.Method,
 				"url":       tmpl.HTTP.URL,
 				"body":      tmpl.HTTP.Body,
 				"bodyBytes": tmpl.HTTP.GetBodyBytes(),
 				"headers":   tmpl.HTTP.Headers.ToHeader(),
 			},
-			"response": map[string]interface{}{
+			"response": map[string]any{
 				"statusCode": response.StatusCode,
 				"body":       string(bodyBytes),
 				"headers":    response.Header,

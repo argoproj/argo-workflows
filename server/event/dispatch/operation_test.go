@@ -414,5 +414,5 @@ func Test_expressionEnvironment(t *testing.T) {
 	assert.Equal(t, "my-ns", env["namespace"])
 	assert.Equal(t, "my-d", env["discriminator"])
 	assert.Contains(t, env, "metadata")
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
+	assert.Equal(t, map[string]any{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

@@ -45,7 +45,7 @@ func TestMakeParseLabels(t *testing.T) {
 
 	errorCases := []struct {
 		name   string
-		labels interface{}
+		labels any
 	}{
 		{
 			name:   "non-string",

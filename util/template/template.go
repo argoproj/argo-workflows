@@ -16,7 +16,7 @@ const (
 )
 
 type Template interface {
-	Replace(ctx context.Context, replaceMap map[string]interface{}, allowUnresolved bool) (string, error)
+	Replace(ctx context.Context, replaceMap map[string]any, allowUnresolved bool) (string, error)
 }
 
 func NewTemplate(s string) (Template, error) {
@@ -31,7 +31,7 @@ type impl struct {
 	*fasttemplate.Template
 }
 
-func (t *impl) Replace(ctx context.Context, replaceMap map[string]interface{}, allowUnresolved bool) (string, error) {
+func (t *impl) Replace(ctx context.Context, replaceMap map[string]any, allowUnresolved bool) (string, error) {
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)

@@ -39,14 +39,14 @@ func (s *logrSink) Enabled(level int) bool {
 }
 
 // Info implements logr.LogSink
-func (s *logrSink) Info(level int, msg string, keysAndValues ...interface{}) {
+func (s *logrSink) Info(level int, msg string, keysAndValues ...any) {
 	fields := s.parseKeyValues(keysAndValues)
 	loggerWithFields := s.logger.WithFields(fields)
 	s.logAtLevel(loggerWithFields, level, msg)
 }
 
 // Error implements logr.LogSink
-func (s *logrSink) Error(err error, msg string, keysAndValues ...interface{}) {
+func (s *logrSink) Error(err error, msg string, keysAndValues ...any) {
 	fields := s.parseKeyValues(keysAndValues)
 	loggerWithFields := s.logger.WithFields(fields)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *logrSink) WithName(name string) logr.LogSink {
 }
 
 // WithValues implements logr.LogSink
-func (s *logrSink) WithValues(keysAndValues ...interface{}) logr.LogSink {
+func (s *logrSink) WithValues(keysAndValues ...any) logr.LogSink {
 	fields := s.parseKeyValues(keysAndValues)
 	return &logrSink{
 		logger: s.logger.WithFields(fields),
@@ -71,7 +71,7 @@ func (s *logrSink) WithValues(keysAndValues ...interface{}) logr.LogSink {
 }
 
 // parseKeyValues converts logr key-value pairs to our Fields format
-func (s *logrSink) parseKeyValues(keysAndValues []interface{}) logging.Fields {
+func (s *logrSink) parseKeyValues(keysAndValues []any) logging.Fields {
 	fields := make(logging.Fields)
 	for i := 0; i < len(keysAndValues); i += 2 {
 		if i+1 < len(keysAndValues) {

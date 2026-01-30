@@ -568,7 +568,7 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 }
 
 // VerifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func VerifyResolvedVariables(obj interface{}) error {
+func VerifyResolvedVariables(obj any) error {
 	str, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -640,7 +640,7 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 // validateTemplateType validates that only one template type is defined
 func validateTemplateType(tmpl *wfv1.Template) error {
 	numTypes := 0
-	for _, tmplType := range []interface{}{tmpl.Container, tmpl.ContainerSet, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.Data, tmpl.HTTP, tmpl.Plugin} {
+	for _, tmplType := range []any{tmpl.Container, tmpl.ContainerSet, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.Data, tmpl.HTTP, tmpl.Plugin} {
 		if !reflect.ValueOf(tmplType).IsNil() {
 			numTypes++
 		}
@@ -656,7 +656,7 @@ func validateTemplateType(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
+func validateInputs(tmpl *wfv1.Template) (map[string]any, error) {
 	err := validateWorkflowFieldNames(tmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.parameters%s", tmpl.Name, err.Error())
@@ -665,7 +665,7 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts%s", tmpl.Name, err.Error())
 	}
-	scope := make(map[string]interface{})
+	scope := make(map[string]any)
 	for _, param := range tmpl.Inputs.Parameters {
 		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
 	}
@@ -714,7 +714,7 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 }
 
 // resolveAllVariables is a helper to ensure all {{variables}} are resolvable from current scope
-func resolveAllVariables(scope map[string]interface{}, globalParams map[string]string, tmplStr string, workflowTemplateValidation bool) error {
+func resolveAllVariables(scope map[string]any, globalParams map[string]string, tmplStr string, workflowTemplateValidation bool) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
@@ -772,7 +772,7 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func (tctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -853,7 +853,7 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tm
 			}
 			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
 				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
-				var obj interface{}
+				var obj any
 
 				// Unmarshalling will fail if we have unquoted expressions which is sometimes a false positive,
 				// so for the sake of template validation we will just replace expressions with placeholders
@@ -906,7 +906,7 @@ func validateArguments(prefix string, arguments wfv1.Arguments, allowEmptyValues
 }
 
 func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error {
-	fieldToSlices := map[string]interface{}{
+	fieldToSlices := map[string]any{
 		"parameters": arguments.Parameters,
 		"artifacts":  arguments.Artifacts,
 	}
@@ -966,7 +966,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 	return nil
 }
 
-func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[string]interface{}, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[string]any, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
@@ -1016,7 +1016,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 				return errors.InternalWrapError(err)
 			}
 
-			stepScope := make(map[string]interface{})
+			stepScope := make(map[string]any)
 			maps.Copy(stepScope, scope)
 
 			if i := step.Inline; i != nil {
@@ -1044,7 +1044,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 	return nil
 }
 
-func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1.Sequence, scope map[string]interface{}) error {
+func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1.Sequence, scope map[string]any) error {
 	defined := 0
 	if len(withItems) > 0 {
 		defined++
@@ -1091,7 +1091,7 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 	return nil
 }
 
-func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *wfv1.Template, prefix string, scope map[string]interface{}, aggregate bool, isAncestor bool) {
+func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *wfv1.Template, prefix string, scope map[string]any, aggregate bool, isAncestor bool) {
 	scope[fmt.Sprintf("%s.id", prefix)] = true
 	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
 	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
@@ -1149,7 +1149,7 @@ func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *
 	}
 }
 
-func validateOutputs(scope map[string]interface{}, globalParams map[string]string, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func validateOutputs(scope map[string]any, globalParams map[string]string, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters %s", tmpl.Name, err.Error())
@@ -1255,17 +1255,17 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 // * unique
 // * non-empty
 // * matches matches our regex requirements
-func validateWorkflowFieldNames(slice interface{}) error {
+func validateWorkflowFieldNames(slice any) error {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
 		return errors.InternalErrorf("validateWorkflowFieldNames given a non-slice type")
 	}
-	items := make([]interface{}, s.Len())
+	items := make([]any, s.Len())
 	for i := 0; i < s.Len(); i++ {
 		items[i] = s.Index(i).Interface()
 	}
 	names := make(map[string]bool)
-	getNameFieldValue := func(val interface{}) (string, error) {
+	getNameFieldValue := func(val any) (string, error) {
 		s := reflect.ValueOf(val)
 		for i := 0; i < s.NumField(); i++ {
 			typeField := s.Type().Field(i)
@@ -1286,7 +1286,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 		}
 		var errs []string
 		t := reflect.TypeOf(item)
-		if t == reflect.TypeOf(wfv1.Parameter{}) || t == reflect.TypeOf(wfv1.Artifact{}) {
+		if t == reflect.TypeFor[wfv1.Parameter]() || t == reflect.TypeFor[wfv1.Artifact]() {
 			errs = isValidParamOrArtifactName(name)
 		} else {
 			errs = isValidWorkflowFieldName(name)
@@ -1338,7 +1338,7 @@ func (d *dagValidationContext) GetTaskFinishedAtTime(ctx context.Context, taskNa
 	return time.Now()
 }
 
-func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[string]interface{}, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[string]any, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
@@ -1444,7 +1444,7 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		taskScope := make(map[string]interface{})
+		taskScope := make(map[string]any)
 		maps.Copy(taskScope, scope)
 		ancestry := common.GetTaskAncestry(ctx, dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {

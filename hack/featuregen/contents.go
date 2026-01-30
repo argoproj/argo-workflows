@@ -48,7 +48,7 @@ func validateMetadataOrder(content string) (bool, string) {
 
 	// Find the first line that's not a metadata field
 	metadataEnd := 0
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := lines[i]
 		isMetadata := false
 		for _, field := range metadataFields {

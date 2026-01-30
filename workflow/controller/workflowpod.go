@@ -392,7 +392,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				if err != nil {
 					return nil, err
 				}
-				for _, obj := range []interface{}{tmpl.ArchiveLocation} {
+				for _, obj := range []any{tmpl.ArchiveLocation} {
 					err = validate.VerifyResolvedVariables(obj)
 					if err != nil {
 						return nil, err

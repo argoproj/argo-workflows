@@ -13,7 +13,7 @@ import (
 func Test_flatten(t *testing.T) {
 	tests := []struct {
 		name string
-		in   interface{}
+		in   any
 		want map[string]string
 	}{
 		{"Empty", workflowarchive.ListArchivedWorkflowsRequest{}, map[string]string{}},

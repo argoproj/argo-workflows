@@ -9,7 +9,7 @@ import (
 )
 
 type ConfigMapStore interface {
-	GetByKey(key string) (interface{}, bool, error)
+	GetByKey(key string) (any, bool, error)
 }
 
 // GetConfigMapValue retrieves a configmap value

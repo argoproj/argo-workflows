@@ -18,7 +18,7 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
 
-func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch interface{}, subresources ...string) error {
+func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
 		return argoerrors.InternalWrapError(err)
@@ -30,8 +30,8 @@ func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch interfac
 	return nil
 }
 
-func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]interface{}, nodesPatch map[string]interface{}) {
-	deletedNode := make(map[string]interface{})
+func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]any, nodesPatch map[string]any) {
+	deletedNode := make(map[string]any)
 	for _, node := range woc.wf.Status.Nodes {
 		if node.IsTaskSetNode() && node.Fulfilled() {
 			deletedNode[node.ID] = nil
@@ -39,13 +39,13 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]in
 	}
 
 	// Delete the completed Tasks and nodes status
-	tasksPatch = map[string]interface{}{
-		"spec": map[string]interface{}{
+	tasksPatch = map[string]any{
+		"spec": map[string]any{
 			"tasks": deletedNode,
 		},
 	}
-	nodesPatch = map[string]interface{}{
-		"status": map[string]interface{}{
+	nodesPatch = map[string]any{
+		"status": map[string]any{
 			"nodes": deletedNode,
 		},
 	}
@@ -199,7 +199,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		woc.log.Debug(ctx, "patching the exiting taskset")
-		spec := map[string]interface{}{
+		spec := map[string]any{
 			"metadata": metav1.ObjectMeta{
 				Labels: map[string]string{
 					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),

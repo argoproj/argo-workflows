@@ -187,7 +187,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 		case event := <-eventList.ResultChan():
 			e, ok := event.Object.(*apiv1.Event)
 			if !ok {
-				t.t.Errorf("event is not an event: %v", reflect.TypeOf(e).String())
+				t.t.Errorf("event is not an event: %v", reflect.TypeFor[*apiv1.Event]().String())
 				return t
 			}
 			if filter(*e) {

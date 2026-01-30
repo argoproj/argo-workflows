@@ -50,7 +50,7 @@ func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupV
 					continueTok = unList.GetContinue()
 				}
 				return &unstructured.UnstructuredList{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "v1",
 						"kind":       "List",
 					},

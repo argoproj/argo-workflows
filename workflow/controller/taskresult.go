@@ -54,12 +54,12 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(newObj interface{}) {
+			AddFunc: func(newObj any) {
 				result := newObj.(*wfv1.WorkflowTaskResult)
 				workflow := result.Labels[common.LabelKeyWorkflow]
 				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
 			},
-			UpdateFunc: func(old, newObj interface{}) {
+			UpdateFunc: func(old, newObj any) {
 				result := newObj.(*wfv1.WorkflowTaskResult)
 				workflow := result.Labels[common.LabelKeyWorkflow]
 				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)

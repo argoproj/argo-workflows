@@ -72,7 +72,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	podController.podInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 				pod, err := podFromObj(obj)
 				if err != nil {
 					log.WithError(err).Error(ctx, "object from informer wasn't a pod")
@@ -80,7 +80,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 				}
 				podController.addPodEvent(ctx, pod)
 			},
-			UpdateFunc: func(old, newVal interface{}) {
+			UpdateFunc: func(old, newVal any) {
 				key, err := keyFunc(newVal)
 				if err != nil {
 					return
@@ -96,7 +96,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 				}
 				podController.updatePodEvent(ctx, oldPod, newPod)
 			},
-			DeleteFunc: func(obj interface{}) {
+			DeleteFunc: func(obj any) {
 				podController.deletePodEvent(ctx, obj)
 			},
 		},
@@ -257,7 +257,7 @@ func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, newPod 
 	c.commonPodEvent(ctx, newPod, deleting)
 }
 
-func (c *Controller) deletePodEvent(ctx context.Context, obj interface{}) {
+func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 	pod, err := podFromObj(obj)
 	if err != nil {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
@@ -327,7 +327,7 @@ func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID
 	return informer
 }
 
-func podFromObj(obj interface{}) (*apiv1.Pod, error) {
+func podFromObj(obj any) (*apiv1.Pod, error) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
 		return nil, fmt.Errorf("object is not a pod")

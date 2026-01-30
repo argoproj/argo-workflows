@@ -50,17 +50,17 @@ func (s *PodRestartSuite) TestEvictedPodRestarts() {
 			// - Reason is set to "Evicted"
 			// - Message describes the eviction cause
 			// - Main container never entered Running state (still in Waiting)
-			patch := map[string]interface{}{
-				"status": map[string]interface{}{
+			patch := map[string]any{
+				"status": map[string]any{
 					"phase":   "Failed",
 					"reason":  "Evicted",
 					"message": "The node had condition: [DiskPressure]",
-					"initContainerStatuses": []map[string]interface{}{
+					"initContainerStatuses": []map[string]any{
 						{
 							"name":  "init",
 							"image": "alpine:latest",
-							"state": map[string]interface{}{
-								"terminated": map[string]interface{}{
+							"state": map[string]any{
+								"terminated": map[string]any{
 									"exitCode": 0,
 									"reason":   "Completed",
 								},
@@ -71,8 +71,8 @@ func (s *PodRestartSuite) TestEvictedPodRestarts() {
 						{
 							"name":  "delay",
 							"image": "alpine:latest",
-							"state": map[string]interface{}{
-								"terminated": map[string]interface{}{
+							"state": map[string]any{
+								"terminated": map[string]any{
 									"exitCode": 137,
 									"reason":   "Error",
 								},
@@ -81,12 +81,12 @@ func (s *PodRestartSuite) TestEvictedPodRestarts() {
 							"restartCount": 0,
 						},
 					},
-					"containerStatuses": []map[string]interface{}{
+					"containerStatuses": []map[string]any{
 						{
 							"name":  "main",
 							"image": "alpine:latest",
-							"state": map[string]interface{}{
-								"waiting": map[string]interface{}{
+							"state": map[string]any{
+								"waiting": map[string]any{
 									"reason": "PodInitializing",
 								},
 							},

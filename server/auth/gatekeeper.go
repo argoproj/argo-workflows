@@ -46,7 +46,7 @@ const (
 )
 
 type Gatekeeper interface {
-	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
+	ContextWithRequest(ctx context.Context, req any) (context.Context, error)
 	Context(ctx context.Context) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
@@ -87,7 +87,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		ctx, err = s.ContextWithRequest(ctx, req)
 		if err != nil {
 			return nil, err
@@ -97,12 +97,12 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 }
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, NewAuthorizingServerStream(ss, s))
 	}
 }
 
-func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
+func (s *gatekeeper) ContextWithRequest(ctx context.Context, req any) (context.Context, error) {
 	clients, claims, err := s.getClients(ctx, req)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func getAuthHeaders(md metadata.MD) []string {
 	return authorizations
 }
 
-func (s *gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *authTypes.Claims, error) {
+func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
 	// Required for GetMode() with Server auth when no auth header specified
@@ -218,7 +218,7 @@ func (s *gatekeeper) getClients(ctx context.Context, req interface{}) (*serverty
 	}
 }
 
-func getNamespace(req interface{}) string {
+func getNamespace(req any) string {
 	if req == nil {
 		return ""
 	}
@@ -266,7 +266,7 @@ func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace strin
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(req any) bool {
 	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
 		return false
 	}
@@ -288,7 +288,7 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *au
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Claims, req interface{}) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Claims, req any) (*servertypes.Clients, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)

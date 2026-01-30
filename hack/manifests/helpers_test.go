@@ -10,40 +10,40 @@ import (
 
 func TestSetNestedField(t *testing.T) {
 	o := &obj{
-		"a": map[string]interface{}{
-			"b": map[string]interface{}{},
+		"a": map[string]any{
+			"b": map[string]any{},
 		},
 	}
 	o.SetNestedField("newValue", "a", "b", "c")
-	val := (*o)["a"].(map[string]interface{})["b"].(map[string]interface{})["c"]
+	val := (*o)["a"].(map[string]any)["b"].(map[string]any)["c"]
 	assert.Equal(t, "newValue", val)
 }
 
 func TestCopyNestedField(t *testing.T) {
 	nested_o := &obj{
-		"items": map[string]interface{}{
-			"properties": map[string]interface{}{
+		"items": map[string]any{
+			"properties": map[string]any{
 				"name": "foo",
 			},
 		},
 	}
 	o := &obj{
-		"steps": map[string]interface{}{
-			"items": map[string]interface{}{
-				"properties": map[string]interface{}{
+		"steps": map[string]any{
+			"items": map[string]any{
+				"properties": map[string]any{
 					"steps": nested_o,
 				},
 			},
 		},
 	}
 	o.CopyNestedField([]string{"steps", "items", "properties", "steps"}, []string{"steps", "items"})
-	assert.Equal(t, &obj{"steps": map[string]interface{}{"items": nested_o}}, o)
+	assert.Equal(t, &obj{"steps": map[string]any{"items": nested_o}}, o)
 }
 
 func TestName(t *testing.T) {
 	expectedName := "test-name"
 	o := &obj{
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name": expectedName,
 		},
 	}
@@ -51,13 +51,13 @@ func TestName(t *testing.T) {
 }
 
 func TestOpenAPIV3Schema(t *testing.T) {
-	expectedSchema := map[string]interface{}{"foo": "bar"}
+	expectedSchema := map[string]any{"foo": "bar"}
 	o := &obj{
-		"spec": map[string]interface{}{
-			"versions": []interface{}{
-				map[string]interface{}{
-					"schema": map[string]interface{}{
-						"openAPIV3Schema": map[string]interface{}{
+		"spec": map[string]any{
+			"versions": []any{
+				map[string]any{
+					"schema": map[string]any{
+						"openAPIV3Schema": map[string]any{
 							"properties": expectedSchema,
 						},
 					},
@@ -86,16 +86,16 @@ func TestParseYaml(t *testing.T) {
 
 func TestRecursiveRemoveDescriptions(t *testing.T) {
 	o := &obj{
-		"spec": map[string]interface{}{
-			"schema": map[string]interface{}{
+		"spec": map[string]any{
+			"schema": map[string]any{
 				"description": "desc",
-				"properties": map[string]interface{}{
+				"properties": map[string]any{
 					"description": "Test",
-					"a": map[string]interface{}{
+					"a": map[string]any{
 						"description": "descA",
 					},
-					"b": map[string]interface{}{
-						"description": map[string]interface{}{
+					"b": map[string]any{
+						"description": map[string]any{
 							"type": "string",
 						},
 					},
@@ -105,13 +105,13 @@ func TestRecursiveRemoveDescriptions(t *testing.T) {
 	}
 	o.RecursiveRemoveDescriptions("spec", "schema")
 	assert.Equal(t, &obj{
-		"spec": map[string]interface{}{
-			"schema": map[string]interface{}{
+		"spec": map[string]any{
+			"schema": map[string]any{
 				"description": "desc.\nAll nested field descriptions have been dropped due to Kubernetes size limitations.",
-				"properties": map[string]interface{}{
-					"a": map[string]interface{}{},
-					"b": map[string]interface{}{
-						"description": map[string]interface{}{
+				"properties": map[string]any{
+					"a": map[string]any{},
+					"b": map[string]any{
+						"description": map[string]any{
 							"type": "string",
 						},
 					},

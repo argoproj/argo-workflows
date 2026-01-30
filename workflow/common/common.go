@@ -290,7 +290,7 @@ var AnnotationKeyKillCmd = func(containerName string) string { return workflow.W
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
-func UnstructuredHasCompletedLabel(obj interface{}) bool {
+func UnstructuredHasCompletedLabel(obj any) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}

@@ -216,7 +216,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error {
 	_, err := cc.cronWfInformer.Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
+			FilterFunc: func(obj any) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
 					cc.logger.WithField("obj", obj).Warn(ctx, "Cron Workflow FilterFunc: is not an unstructured")
@@ -225,19 +225,19 @@ func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error 
 				return !isCompleted(un)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
+				AddFunc: func(obj any) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)
 					}
 				},
-				UpdateFunc: func(old, newObj interface{}) {
+				UpdateFunc: func(old, newObj any) {
 					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)
 					}
 				},
-				DeleteFunc: func(obj interface{}) {
+				DeleteFunc: func(obj any) {
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)

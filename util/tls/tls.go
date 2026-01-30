@@ -30,7 +30,7 @@ const (
 	tlsKeySecretKey = "tls.key"
 )
 
-func pemBlockForKey(priv interface{}) *pem.Block {
+func pemBlockForKey(priv any) *pem.Block {
 	switch k := priv.(type) {
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)

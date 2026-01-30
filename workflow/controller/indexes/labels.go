@@ -13,7 +13,7 @@ func MetaNamespaceLabelIndex(namespace, label string) string {
 }
 
 func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
-	return func(obj interface{}) ([]string, error) {
+	return func(obj any) ([]string, error) {
 		v, err := meta.Accessor(obj)
 		if err != nil {
 			return nil, err
@@ -28,7 +28,7 @@ func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
 }
 
 func MetaNamespaceLabelIndexFunc(label string) cache.IndexFunc {
-	return func(obj interface{}) ([]string, error) {
+	return func(obj any) ([]string, error) {
 		v, err := meta.Accessor(obj)
 		if err != nil {
 			return nil, err
