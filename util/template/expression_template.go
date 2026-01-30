@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/expr-lang/expr/parser/lexer"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/maps"
 )
 
 func init() {
@@ -117,6 +119,21 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 }
 
 func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
+
+	shouldAllowFailure := false
+
+	maps.VisitMap(env, func(key string, value any) bool {
+		rv := reflect.Indirect(reflect.ValueOf(value))
+		if rv.Kind() == reflect.String {
+			placeholder := strings.HasPrefix(rv.String(), "__argo__internal__placeholder")
+			if placeholder {
+				shouldAllowFailure = true
+				return false
+			}
+		}
+		return true
+	})
+
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -143,11 +160,11 @@ func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, 
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
-	if err != nil && !allowUnresolved {
+	if err != nil && !allowUnresolved && !shouldAllowFailure {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
-	if (err != nil || result == nil) && allowUnresolved {
+	if (err != nil || result == nil) && (allowUnresolved || shouldAllowFailure) {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug(ctx, "Result and error are unresolved")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)

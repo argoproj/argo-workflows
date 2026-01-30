@@ -23,11 +23,11 @@ func NewPlaceholderGenerator() PlaceholderGenerator {
 
 // NextPlaceholder returns an arbitrary string to perform mock substitution of variables
 func (p *placeholderGenerator) NextPlaceholder() string {
-	s := fmt.Sprintf("placeholder-%d", p.index)
-	p.index++
+	s := fmt.Sprintf("__argo__internal__placeholder-%d", p.index)
+	p.index += 1
 	return s
 }
 
 func (p *placeholderGenerator) IsPlaceholder(s string) bool {
-	return strings.HasPrefix(s, "placeholder-")
+	return strings.HasPrefix(s, "__argo__internal__placeholder-")
 }
