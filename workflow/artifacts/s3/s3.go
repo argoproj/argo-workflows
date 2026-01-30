@@ -609,6 +609,9 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 	}
 	opts := minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts}
 
+	// Enables better performance for parallel uploads (3 times faster in a benchmark of 4 threads 16MiB part size).
+	opts.ConcurrentStreamParts = true
+
 	nbThreads := s.getFromEnvS3UploadNbThreads()
 	nbThreadsU := uint(nbThreads)
 	opts.NumThreads = nbThreadsU
