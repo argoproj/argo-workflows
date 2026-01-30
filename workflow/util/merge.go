@@ -131,6 +131,20 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 			// If none of the above conditions are met, we can safely assume that the parameter is set from the wfDefaultSpec.
 		}
 	}
+
+	// Apply the same priority logic for artifacts.
+	// Artifacts from the workflow spec should take precedence over those from the template.
+	wfArtifactsMap := artifactsToMapByName(wfSpec)
+	wftArtifactsMap := artifactsToMapByName(wftSpec)
+	for index, artifact := range targetWf.Spec.Arguments.Artifacts {
+		if art, ok := wfArtifactsMap[artifact.Name]; ok {
+			targetWf.Spec.Arguments.Artifacts[index] = *art.DeepCopy()
+		} else if art, ok := wftArtifactsMap[artifact.Name]; ok {
+			targetWf.Spec.Arguments.Artifacts[index] = *art.DeepCopy()
+		}
+		// If none of the above conditions are met, we can safely assume that the artifact is set from the wfDefaultSpec.
+	}
+
 	return &targetWf, nil
 }
 
@@ -144,6 +158,16 @@ func parametersToMapByName(spec *wfv1.WorkflowSpec) map[string]wfv1.Parameter {
 		}
 	}
 	return parameterMap
+}
+
+func artifactsToMapByName(spec *wfv1.WorkflowSpec) map[string]wfv1.Artifact {
+	artifactMap := make(map[string]wfv1.Artifact)
+	if spec != nil {
+		for _, artifact := range spec.Arguments.Artifacts {
+			artifactMap[artifact.Name] = artifact
+		}
+	}
+	return artifactMap
 }
 
 // mergeMetadata will merge the labels and annotations into the target metadata.

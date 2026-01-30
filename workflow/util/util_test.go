@@ -4675,3 +4675,221 @@ status:
 	assert.Contains(t, podsToDelete, "subdag-iterate-jrfch-echo-1786915540",
 		"Pod deletion list should contain the target node's pod")
 }
+
+func TestOverrideArtifacts(t *testing.T) {
+
+	t.Run("Override artifact key in workflow arguments", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "my-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "original-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"my-artifact=new-key"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", key)
+	})
+
+	t.Run("Override multiple artifacts", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "artifact1",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "key1",
+								},
+							},
+						},
+						{
+							Name: "artifact2",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "key2",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"artifact1=new-key1", "artifact2=new-key2"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		key1, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key1", key1)
+
+		key2, err := wf.Spec.Arguments.Artifacts[1].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key2", key2)
+	})
+
+	t.Run("Override with StoredWorkflowSpec", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "my-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "original-key",
+								},
+							},
+						},
+					},
+				},
+			},
+			Status: wfv1.WorkflowStatus{
+				StoredWorkflowSpec: &wfv1.WorkflowSpec{
+					Arguments: wfv1.Arguments{
+						Artifacts: []wfv1.Artifact{
+							{
+								Name: "my-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "stored-key",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"my-artifact=new-key"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		// Check main spec
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", key)
+
+		// Check stored spec
+		storedKey, err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", storedKey)
+	})
+
+	t.Run("Invalid format should return error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{},
+				},
+			},
+		}
+
+		artifacts := []string{"invalid-format"}
+		err := overrideArtifacts(wf, artifacts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected artifact of the form: NAME=KEY")
+	})
+
+	t.Run("Empty artifacts should not error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{},
+				},
+			},
+		}
+
+		artifacts := []string{}
+		err := overrideArtifacts(wf, artifacts)
+		assert.NoError(t, err)
+	})
+}
+
+func TestApplySubmitOptsWithArtifacts(t *testing.T) {
+
+	t.Run("Apply submit opts with artifact overrides", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "input-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "default-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		opts := &wfv1.SubmitOpts{
+			Artifacts: []string{"input-artifact=uploads/new-key"},
+		}
+
+		err := ApplySubmitOpts(wf, opts)
+		require.NoError(t, err)
+
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/new-key", key)
+	})
+
+	t.Run("Apply submit opts with parameters and artifacts", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{Name: "message", Value: wfv1.AnyStringPtr("hello")},
+					},
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "input-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "default-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		opts := &wfv1.SubmitOpts{
+			Parameters: []string{"message=world"},
+			Artifacts:  []string{"input-artifact=uploads/new-key"},
+		}
+
+		err := ApplySubmitOpts(wf, opts)
+		require.NoError(t, err)
+
+		// Check parameter override
+		assert.Equal(t, "world", wf.Spec.Arguments.Parameters[0].Value.String())
+
+		// Check artifact override
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/new-key", key)
+	})
+}

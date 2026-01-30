@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-input-artifacts
+spec:
+  entrypoint: argosay
+  arguments:
+    artifacts:
+      - name: input-file
+        s3:
+          bucket: your-bucket-name
+          # Replaced after Submit
+          key: input-file/upload.zip
+  templates:
+    - name: argosay
+      inputs:
+        artifacts:
+          - name: input-file
+            path: /tmp/input-file
+      container:
+        image: alpine:latest
+        command: [cat]
+        args: ["/tmp/input-file"]
