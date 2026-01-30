@@ -473,7 +473,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if len(argsJSON) > maxEnvVarLen {
 				offloadContainerArgs = true
 				containerArgsValue = string(argsJSON)
-				containerArgsName = c.name
+				containerArgsName = c.Name
 				break
 			}
 		}
@@ -501,7 +501,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 		// Add container args data if needed
 		if offloadContainerArgs {
-			cmData["ARGO_CONTAINER_ARGS"] = containerArgsValue
+			cmData[common.EnvVarContainerArgsFile] = containerArgsValue
 		}
 
 		cm := &apiv1.ConfigMap{

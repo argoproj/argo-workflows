@@ -271,7 +271,7 @@ const (
 	SecretVolMountPath            = "/argo/secret"
 	EnvConfigMountPath            = "/argo/config"
 	EnvVarTemplateOffloaded       = "offloaded"
-	//EnvVarConatainerArgsFile is set when container args are offloaded to a file
+	//EnvVarContainerArgsFile is set when container args are offloaded to a file
 	EnvVarContainerArgsFile = "ARGO_CONTAINER_ARGS_FILE"
 
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
