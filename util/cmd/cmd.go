@@ -80,7 +80,7 @@ func IsURL(u string) bool {
 }
 
 // ParseLabels turns a string representation of a label set into a map[string]string
-func ParseLabels(labelSpec interface{}) (map[string]string, error) {
+func ParseLabels(labelSpec any) (map[string]string, error) {
 	labelString, isString := labelSpec.(string)
 	if !isString {
 		return nil, fmt.Errorf("expected string, found %v", labelSpec)

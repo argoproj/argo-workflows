@@ -77,7 +77,7 @@ func TestHealthz(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		workflowsAsInterfaceSlice := []interface{}{}
+		workflowsAsInterfaceSlice := []any{}
 		for _, wf := range tt.workflows {
 			workflowsAsInterfaceSlice = append(workflowsAsInterfaceSlice, wf)
 		}

@@ -71,7 +71,7 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 	assert.Equal(t, 1, callCount, "Getter should be called once initially")
 
 	// Make several more calls while within TTL - should use cache
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		// Advance time slightly but stay within TTL
 		advanceTime(1 * time.Minute)
 
@@ -95,7 +95,7 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 	assert.Equal(t, 2, callCount, "Getter should be called a second time after TTL expires")
 
 	// Make several more calls with the new cache
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		// Advance time slightly but stay within new TTL
 		advanceTime(2 * time.Minute)
 

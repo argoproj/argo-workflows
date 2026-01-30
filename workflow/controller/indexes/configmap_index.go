@@ -6,7 +6,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func ConfigMapIndexFunc(obj interface{}) ([]string, error) {
+func ConfigMapIndexFunc(obj any) ([]string, error) {
 	cm, ok := obj.(*corev1.ConfigMap)
 
 	if !ok {

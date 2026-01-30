@@ -34,7 +34,7 @@ type Operation struct {
 	eventRecorder     record.EventRecorder
 	instanceIDService instanceid.Service
 	events            []wfv1.WorkflowEventBinding
-	env               map[string]interface{}
+	env               map[string]any
 }
 
 // Context returns the context associated with this operation
@@ -216,8 +216,8 @@ func (o *Operation) evaluateStringExpression(statement string, errorInfo string)
 	return v, nil
 }
 
-func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
-	src := map[string]interface{}{
+func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]any, error) {
+	src := map[string]any{
 		"namespace":     namespace,
 		"discriminator": discriminator,
 		"metadata":      metaData(ctx),
@@ -226,8 +226,8 @@ func expressionEnvironment(ctx context.Context, namespace, discriminator string,
 	return jsonutil.Jsonify(src)
 }
 
-func metaData(ctx context.Context) map[string]interface{} {
-	meta := make(map[string]interface{})
+func metaData(ctx context.Context) map[string]any {
+	meta := make(map[string]any)
 	md, _ := metadata.FromIncomingContext(ctx)
 	for k, v := range md {
 		// only allow headers `X-`  headers, e.g. `X-Github-Action`

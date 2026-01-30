@@ -21,6 +21,7 @@ linters:
     - iotamixing
     - mirror
     - misspell
+    - modernize
     - nakedret
     - nilerr
     - noctx

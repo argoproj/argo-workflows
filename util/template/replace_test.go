@@ -10,7 +10,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func toJSONString(v interface{}) string {
+func toJSONString(v any) string {
 	jsonString, _ := json.Marshal(v)
 	return string(jsonString)
 }

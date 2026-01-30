@@ -37,7 +37,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	mockReturn := "successful return"
 
 	t.Run("success", func(t *testing.T) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return mockReturn, nil }
+		handler := func(ctx context.Context, req any) (any, error) { return mockReturn, nil }
 		msts := &mockServerTransportStream{}
 		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
@@ -51,7 +51,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	})
 
 	t.Run("upstream error handling", func(t *testing.T) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
+		handler := func(ctx context.Context, req any) (any, error) { return nil, errors.New("error") }
 		msts := &mockServerTransportStream{}
 		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
@@ -64,7 +64,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	})
 
 	t.Run("SetHeader error handling", func(t *testing.T) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		handler := func(ctx context.Context, req any) (any, error) {
 			return mockReturn, nil
 		}
 		msts := &mockServerTransportStream{isError: true}

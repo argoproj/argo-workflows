@@ -977,8 +977,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
+		patchObj := map[string]any{
+			"spec": map[string]any{
 				"shutdown": wfv1.ShutdownStrategyTerminate,
 			},
 		}
@@ -1021,8 +1021,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
+		patchObj := map[string]any{
+			"spec": map[string]any{
 				"shutdown": wfv1.ShutdownStrategyStop,
 			},
 		}

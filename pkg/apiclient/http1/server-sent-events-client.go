@@ -35,17 +35,17 @@ func (c serverSentEventsClient) Context() context.Context {
 	return c.ctx
 }
 
-func (c serverSentEventsClient) SendMsg(interface{}) error {
+func (c serverSentEventsClient) SendMsg(any) error {
 	panic("implement me")
 }
 
-func (c serverSentEventsClient) RecvMsg(interface{}) error {
+func (c serverSentEventsClient) RecvMsg(any) error {
 	panic("implement me")
 }
 
 const prefixLength = len("data: ")
 
-func (c serverSentEventsClient) RecvEvent(v interface{}) error {
+func (c serverSentEventsClient) RecvEvent(v any) error {
 	log := logging.RequireLoggerFromContext(c.ctx)
 	for {
 		line, err := c.reader.ReadBytes('\n')
@@ -60,7 +60,7 @@ func (c serverSentEventsClient) RecvEvent(v interface{}) error {
 		}
 		// the actual data itself always has a `{"result": v}` field
 		x := struct {
-			Result interface{} `json:"result"`
+			Result any `json:"result"`
 		}{
 			Result: v,
 		}

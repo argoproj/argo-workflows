@@ -2048,8 +2048,8 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
-func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
-	localScope := make(map[string]interface{})
+func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]any {
+	localScope := make(map[string]any)
 
 	// `retries` variable
 	childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, nodes)
@@ -3607,19 +3607,19 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 // JSON and NOT a plain JSON value.
 // If returns success only if all items can be unmarshalled and are either
 // maps or lists
-func tryJSONUnmarshal(valueList []string) ([]interface{}, bool) {
+func tryJSONUnmarshal(valueList []string) ([]any, bool) {
 	success := true
-	var list []interface{}
+	var list []any
 	for _, value := range valueList {
-		var unmarshalledValue interface{}
+		var unmarshalledValue any
 		err := json.Unmarshal([]byte(value), &unmarshalledValue)
 		if err != nil {
 			success = false
 			break // Unmarshal failed, fall back to strings
 		}
 		switch unmarshalledValue.(type) {
-		case []interface{}:
-		case map[string]interface{}:
+		case []any:
+		case map[string]any:
 			// Keep these types
 		default:
 			// Drop anything else
@@ -3875,8 +3875,8 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string, globalScope map[string]string) (string, error) {
-	replaceMap := make(map[string]interface{})
+func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj any, whenCondition string, globalScope map[string]string) (string, error) {
+	replaceMap := make(map[string]any)
 	// Start with the global scope
 	for k, v := range globalScope {
 		replaceMap[k] = v
@@ -3943,7 +3943,7 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 	return newName, nil
 }
 
-func generateNodeName(name string, index int, desc interface{}) string {
+func generateNodeName(name string, index int, desc any) string {
 	// Do not display parentheses in node name. Nodes are still guaranteed to be unique due to the index number
 	replacer := strings.NewReplacer("(", "", ")", "")
 	cleanName := replacer.Replace(fmt.Sprint(desc))

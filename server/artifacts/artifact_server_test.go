@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -96,13 +97,7 @@ func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifa
 		if !found {
 			return nil, fmt.Errorf("artifact bucket not found: %+v", artifact)
 		}
-		foundKey := false
-		for _, recognizableKey := range keysInBucket {
-			if key == recognizableKey {
-				foundKey = true
-				break
-			}
-		}
+		foundKey := slices.Contains(keysInBucket, key)
 		if !foundKey {
 			return nil, fmt.Errorf("artifact key '%s' not found in bucket '%s'", key, artifact.S3.Bucket)
 		}

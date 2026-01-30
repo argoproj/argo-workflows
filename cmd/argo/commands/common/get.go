@@ -498,13 +498,13 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 	} else if node.TemplateName != "" {
 		fmtTemplateName = node.TemplateName
 	}
-	var args []interface{}
+	var args []any
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
 		podName := util.GeneratePodName(wfName, nodeName, templateName, node.ID, podNameVersion)
-		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
+		args = []any{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
 	} else {
-		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}
+		args = []any{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}
 	}
 	switch getArgs.Output.String() {
 	case "wide":

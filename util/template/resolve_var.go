@@ -8,7 +8,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
-func ResolveVar(s string, m map[string]interface{}) (interface{}, error) {
+func ResolveVar(s string, m map[string]any) (any, error) {
 	tag := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(s, prefix), suffix))
 	kind, expression := parseTag(tag)
 	switch kind {

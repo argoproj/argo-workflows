@@ -599,7 +599,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	// Since we are writing a custom unmarshaller, we have to enforce the "DisallowUnknownFields" requirement manually.
 
 	// First, get a generic representation of the contents
-	var candidate []map[string]interface{}
+	var candidate []map[string]any
 	err := json.Unmarshal(value, &candidate)
 	if err != nil {
 		return err
@@ -607,7 +607,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 
 	// Generate a list of all the available JSON fields of the WorkflowStep struct
 	availableFields := map[string]bool{}
-	reflectType := reflect.TypeOf(WorkflowStep{})
+	reflectType := reflect.TypeFor[WorkflowStep]()
 	for i := 0; i < reflectType.NumField(); i++ {
 		cleanString := strings.ReplaceAll(reflectType.Field(i).Tag.Get("json"), ",omitempty", "")
 		availableFields[cleanString] = true
@@ -1155,8 +1155,8 @@ func (a *Artifact) CleanPath() error {
 	}
 
 	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
-	if idx := strings.Index(path, slashDotDotSlash); idx >= 0 {
-		safeDir = path[:idx]
+	if before, _, ok := strings.Cut(path, slashDotDotSlash); ok {
+		safeDir = before
 	} else if slashDotDotRe.FindStringIndex(path) != nil {
 		safeDir = path[:len(path)-3]
 	}
@@ -2063,8 +2063,8 @@ func (n Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 }
 
 // Map maps the nodes to new values, e.g. `x.Hostname`
-func (n Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
-	values := make(map[string]interface{})
+func (n Nodes) Map(f func(x NodeStatus) any) map[string]any {
+	values := make(map[string]any)
 	for _, node := range n {
 		values[node.ID] = f(node)
 	}
@@ -2403,16 +2403,17 @@ func (cs *Conditions) DisplayString(fmtStr string, iconMap map[ConditionType]str
 	if len(*cs) == 0 {
 		return fmt.Sprintf(fmtStr, "Conditions:", "None")
 	}
-	out := fmt.Sprintf(fmtStr, "Conditions:", "")
+	var out strings.Builder
+	out.WriteString(fmt.Sprintf(fmtStr, "Conditions:", ""))
 	for _, condition := range *cs {
 		conditionMessage := condition.Message
 		if conditionMessage == "" {
 			conditionMessage = string(condition.Status)
 		}
 		conditionPrefix := fmt.Sprintf("%s %s", iconMap[condition.Type], string(condition.Type))
-		out += fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage)
+		out.WriteString(fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage))
 	}
-	return out
+	return out.String()
 }
 
 type ConditionType string
@@ -3965,19 +3966,20 @@ func (p *Prometheus) GetKey() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
 	labels := p.GetMetricLabels()
-	desc := p.Name + "{"
+	var desc strings.Builder
+	desc.WriteString(p.Name + "{")
 	for _, key := range sortedMapStringStringKeys(labels) {
-		desc += key + "=" + labels[key] + ","
+		desc.WriteString(key + "=" + labels[key] + ",")
 	}
 	if p.Histogram != nil {
 		sortedBuckets := p.Histogram.GetBuckets()
 		sort.Float64s(sortedBuckets)
 		for _, bucket := range sortedBuckets {
-			desc += "bucket=" + fmt.Sprint(bucket) + ","
+			desc.WriteString("bucket=" + fmt.Sprint(bucket) + ",")
 		}
 	}
-	desc += "}"
-	return desc
+	desc.WriteString("}")
+	return desc.String()
 }
 
 func sortedMapStringStringKeys(in map[string]string) []string {

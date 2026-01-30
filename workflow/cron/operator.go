@@ -168,14 +168,14 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
+	woc.patch(ctx, map[string]any{"status": woc.cronWf.Status, "metadata": map[string]any{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
 }
 
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
+	woc.patch(ctx, map[string]any{"status": map[string]any{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
 }
 
-func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
+func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]any) {
 	data, err := json.Marshal(patch)
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "failed to marshall cron workflow status.active data")
@@ -226,8 +226,8 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	env := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
+	env := make(map[string]any)
+	addSetField := func(name string, value any) {
 		env[fmt.Sprintf("%s.%s", variablePrefix, name)] = value
 	}
 	err = expressionEnv(cron, addSetField)
@@ -494,7 +494,7 @@ func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase
 	}
 }
 
-func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value interface{})) error {
+func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value any)) error {
 	addSetField("name", cron.Name)
 	addSetField("namespace", cron.Namespace)
 	addSetField("labels", cron.Labels)
@@ -531,11 +531,11 @@ func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 	if woc.cronWf.Spec.StopStrategy == nil {
 		return false, nil
 	}
-	prefixedEnv := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
+	prefixedEnv := make(map[string]any)
+	addSetField := func(name string, value any) {
 		prefixedEnv[name] = value
 	}
-	env := make(map[string]interface{})
+	env := make(map[string]any)
 	env[variablePrefix] = prefixedEnv
 	err := expressionEnv(woc.cronWf, addSetField)
 	if err != nil {

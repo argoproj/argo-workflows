@@ -38,7 +38,7 @@ func New(address, token string, timeout time.Duration, backoff wait.Backoff) Cli
 	}
 }
 
-func (p *Client) Call(ctx context.Context, method string, args interface{}, reply interface{}) error {
+func (p *Client) Call(ctx context.Context, method string, args any, reply any) error {
 	if p.invalid[method] {
 		return nil
 	}

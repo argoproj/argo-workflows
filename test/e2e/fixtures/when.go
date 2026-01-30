@@ -305,7 +305,7 @@ func describeListOptions(opts metav1.ListOptions) string {
 //   - just because the Workflow completed
 //
 // * `Condition` - a condition - `ToFinish` by default
-func (w *When) WaitForWorkflow(options ...interface{}) *When {
+func (w *When) WaitForWorkflow(options ...any) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
 	condition := ToBeDone
@@ -516,9 +516,9 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 func (w *When) AddNamespaceLimit(limit string) *When {
 	w.t.Helper()
 	ctx := logging.TestContext(w.t.Context())
-	patchMap := make(map[string]interface{})
-	metadata := make(map[string]interface{})
-	labels := make(map[string]interface{})
+	patchMap := make(map[string]any)
+	metadata := make(map[string]any)
+	labels := make(map[string]any)
 	labels["workflows.argoproj.io/parallelism-limit"] = limit
 	metadata["labels"] = labels
 	patchMap["metadata"] = metadata
@@ -875,8 +875,8 @@ func (w *When) SuspendCronWorkflow() *When {
 func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 	ctx := logging.TestContext(w.t.Context())
 	w.t.Helper()
-	spec := map[string]interface{}{"suspend": suspend}
-	data, err := json.Marshal(map[string]interface{}{"spec": spec})
+	spec := map[string]any{"suspend": suspend}
+	data, err := json.Marshal(map[string]any{"spec": spec})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -890,7 +890,7 @@ func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 	w.t.Helper()
 	ctx := logging.TestContext(w.t.Context())
-	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"shutdown": strategy}})
+	data, err := json.Marshal(map[string]any{"spec": map[string]any{"shutdown": strategy}})
 	if err != nil {
 		w.t.Fatal(err)
 	}

@@ -24,7 +24,7 @@ type Cleaner struct {
 	fields  map[string]bool
 }
 
-func (f Cleaner) Clean(x, y interface{}) (bool, error) {
+func (f Cleaner) Clean(x, y any) (bool, error) {
 	if len(f.fields) == 0 {
 		return false, nil
 	}
@@ -32,7 +32,7 @@ func (f Cleaner) Clean(x, y interface{}) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	if err := json.Unmarshal(v, &data); err != nil {
 		return false, err
 	}
@@ -67,8 +67,8 @@ func (f Cleaner) matches(x string) bool {
 	return false
 }
 
-func (f Cleaner) cleanItem(path []string, item interface{}) {
-	if mapItem, ok := item.(map[string]interface{}); ok {
+func (f Cleaner) cleanItem(path []string, item any) {
+	if mapItem, ok := item.(map[string]any); ok {
 		for k, v := range mapItem {
 			fieldPath := strings.Join(append(path, k), ".")
 			_, pathIn := f.fields[fieldPath]
@@ -89,7 +89,7 @@ func (f Cleaner) cleanItem(path []string, item interface{}) {
 				delete(mapItem, k)
 			}
 		}
-	} else if arrayItem, ok := item.([]interface{}); ok {
+	} else if arrayItem, ok := item.([]any); ok {
 		for i := range arrayItem {
 			f.cleanItem(path, arrayItem[i])
 		}

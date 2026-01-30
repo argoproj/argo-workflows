@@ -30,7 +30,7 @@ func TestDecodeLockName(t *testing.T) {
 				Key:          "",
 				Kind:         lockKindMutex,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
@@ -43,7 +43,7 @@ func TestDecodeLockName(t *testing.T) {
 				Key:          "",
 				Kind:         lockKindMutex,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
@@ -55,7 +55,7 @@ func TestDecodeLockName(t *testing.T) {
 				ResourceName: "foo",
 				Kind:         lockKindDatabase,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
@@ -68,7 +68,7 @@ func TestDecodeLockName(t *testing.T) {
 				Key:          "bar",
 				Kind:         lockKindConfigMap,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
@@ -76,7 +76,7 @@ func TestDecodeLockName(t *testing.T) {
 			"TestConfigMapKeysCannotContainSlashes",
 			args{"default/ConfigMap/foo/bar/baz/qux"},
 			nil,
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return err == nil // this should error
 			},
 		},

@@ -9,7 +9,7 @@ import (
 	unwf "github.com/argoproj/argo-workflows/v3/util/unstructured/workflow"
 )
 
-func ConditionsIndexFunc(obj interface{}) ([]string, error) {
+func ConditionsIndexFunc(obj any) ([]string, error) {
 	var values []string
 	for _, x := range unwf.GetConditions(obj.(*unstructured.Unstructured)) {
 		values = append(values, ConditionValue(x))

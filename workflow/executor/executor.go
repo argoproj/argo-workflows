@@ -962,7 +962,7 @@ func (we *WorkflowExecutor) HasError() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+	data, err := json.Marshal(map[string]any{"metadata": metav1.ObjectMeta{
 		Annotations: map[string]string{
 			key: value,
 		},
