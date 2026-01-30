@@ -86,18 +86,13 @@ func Test_CompareSimpleReplace(t *testing.T) {
 			_, err2 := simpleReplace(ctx, &b2, tc.tag, replaceMap, tc.allowUnresolved)
 			res2 := b2.String()
 
-			if err1 != nil {
-				if err2 == nil {
-					t.Errorf("Old errored (%v) but New did not (res: %s)", err1, res2)
-				}
-			} else {
-				if err2 != nil {
-					t.Errorf("Old succeeded (res: %s) but New errored (%v)", res1, err2)
-				} else {
-					if res1 != res2 {
-						t.Errorf("Results differ: Old=%q, New=%q", res1, res2)
-					}
-				}
+			switch {
+			case err1 != nil && err2 == nil:
+				t.Errorf("Old errored (%v) but New did not (res: %s)", err1, res2)
+			case err1 == nil && err2 != nil:
+				t.Errorf("Old succeeded (res: %s) but New errored (%v)", res1, err2)
+			case err1 == nil && res1 != res2:
+				t.Errorf("Results differ: Old=%q, New=%q", res1, res2)
 			}
 		})
 	}
