@@ -23,7 +23,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
-const unlabelled = `{
+const (
+	unlabelled = `{
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "WorkflowTemplate",
     "metadata": {
@@ -31,8 +32,7 @@ const unlabelled = `{
       "namespace": "default"
     }
 }`
-
-const wftStr1 = `{
+	wftStr1 = `{
   "namespace": "default",
   "template": {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -76,8 +76,7 @@ const wftStr1 = `{
     }
   }
 }`
-
-const wftStr2 = `{
+	wftStr2 = `{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "WorkflowTemplate",
   "metadata": {
@@ -121,8 +120,7 @@ const wftStr2 = `{
     ]
   }
 }`
-
-const wftStr3 = `{
+	wftStr3 = `{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "WorkflowTemplate",
   "metadata": {
@@ -164,8 +162,103 @@ const wftStr3 = `{
     ]
   }
 }`
-
-const userEmailLabel = "my-sub.at.your.org"
+	wftWithExpr = `
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "WorkflowTemplate",
+  "metadata": {
+    "name": "workflow-template-expr",
+    "namespace": "default",
+	"labels": {
+		"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+  	}
+  },
+  "spec": {
+    "templates": [
+      {
+        "name": "whalesay-template",
+        "inputs": {
+          "parameters": [
+            {
+              "name": "message",
+			  "default": "{{=sprig.uuidv4()}}"
+            }
+          ]
+        },
+        "container": {
+          "image": "docker/whalesay",
+          "command": [
+            "cowsay"
+          ],
+          "args": [
+            "{{inputs.parameters.message}}"
+          ]
+        }
+      }
+    ]
+  }
+}`
+	wftWithComplexExpr = `
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "WorkflowTemplate",
+  "metadata": {
+    "name": "workflow-template-complex-expr",
+    "namespace": "default",
+    "labels": {
+      "workflows.argoproj.io/controller-instanceid": "my-instanceid"
+    }
+  },
+  "spec": {
+    "arguments": {
+      "parameters": [
+        {
+          "name": "global_message",
+          "default": "{{=sprig.trim(\"  hello world  \")}}"
+        }
+      ]
+    },
+    "templates": [
+      {
+        "name": "main",
+        "inputs": {
+          "parameters": [
+            {
+              "name": "main_param",
+              "default": "{{=sprig.upper(workflow.parameters.global_message)}}"
+            }
+          ]
+        },
+        "steps": [
+          [
+            {
+              "name": "call-sub-template",
+              "template": "sub-template"
+            }
+          ]
+        ]
+      },
+      {
+        "name": "sub-template",
+        "inputs": {
+          "parameters": [
+            {
+              "name": "sub_param_with_default_expr",
+              "default": "{{=sprig.uuidv4()}}"
+            }
+          ]
+        },
+        "container": {
+          "image": "docker/whalesay",
+          "command": ["cowsay"],
+          "args": ["hello"]
+        }
+      }
+    ]
+  }
+}`
+	userEmailLabel = "my-sub.at.your.org"
+)
 
 func getWorkflowTemplateServer(t *testing.T) (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
 	t.Helper()
@@ -228,6 +321,62 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "unlabelled", Namespace: "default"})
 		require.Error(t, err)
+	})
+	t.Run("WithExpression", func(t *testing.T) {
+		var wftObj v1alpha1.WorkflowTemplate
+		v1alpha1.MustUnmarshal(wftWithExpr, &wftObj)
+		_, err := server.CreateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateCreateRequest{Template: &wftObj, Namespace: "default"})
+		require.NoError(t, err)
+
+		wftRsp, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "workflow-template-expr", Namespace: "default"})
+		require.NoError(t, err)
+		assert.NotNil(t, wftRsp)
+		assert.Equal(t, "workflow-template-expr", wftRsp.Name)
+
+		// 1. Check that the original expression in 'Default' is preserved
+		assert.Equal(t, "{{=sprig.uuidv4()}}", wftRsp.Spec.Templates[0].Inputs.Parameters[0].Default.String())
+
+		// 2. Check that 'Value' has been populated with the evaluated result
+		assert.NotNil(t, wftRsp.Spec.Templates[0].Inputs.Parameters[0].Value)
+		assert.NotEmpty(t, wftRsp.Spec.Templates[0].Inputs.Parameters[0].Value.String())
+		assert.NotEqual(t, "{{=sprig.uuidv4()}}", wftRsp.Spec.Templates[0].Inputs.Parameters[0].Value.String())
+	})
+	t.Run("WithComplexExpression", func(t *testing.T) {
+		var wftObj v1alpha1.WorkflowTemplate
+		v1alpha1.MustUnmarshal(wftWithComplexExpr, &wftObj)
+		_, err := server.CreateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateCreateRequest{Template: &wftObj, Namespace: "default"})
+		require.NoError(t, err)
+
+		wftRsp, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "workflow-template-complex-expr", Namespace: "default"})
+		require.NoError(t, err)
+		assert.NotNil(t, wftRsp)
+
+		// Check global parameters
+		globalParams := wftRsp.Spec.Arguments.Parameters
+		assert.Len(t, globalParams, 1)
+		assert.Equal(t, "{{=sprig.trim(\"  hello world  \")}}", globalParams[0].Default.String())
+		assert.NotNil(t, globalParams[0].Value, "Global parameter should be evaluated")
+		assert.Equal(t, "hello world", globalParams[0].Value.String())
+
+		// Check templates
+		assert.Len(t, wftRsp.Spec.Templates, 2)
+		mainTmpl := wftRsp.Spec.Templates[0]
+		subTmpl := wftRsp.Spec.Templates[1]
+
+		// Check main template parameters
+		mainParams := mainTmpl.Inputs.Parameters
+		assert.Len(t, mainParams, 1)
+		assert.Equal(t, "{{=sprig.upper(workflow.parameters.global_message)}}", mainParams[0].Default.String())
+		assert.NotNil(t, mainParams[0].Value, "Value should be populated from the evaluated global parameter")
+		assert.Equal(t, "HELLO WORLD", mainParams[0].Value.String())
+
+		// Check sub-template parameters
+		subParams := subTmpl.Inputs.Parameters
+		assert.Len(t, subParams, 1)
+		// This expression is self-contained and should be evaluated.
+		assert.Equal(t, "{{=sprig.uuidv4()}}", subParams[0].Default.String())
+		assert.NotNil(t, subParams[0].Value)
+		assert.NotEmpty(t, subParams[0].Value.String(), "Value should be populated by the expression")
 	})
 }
 
