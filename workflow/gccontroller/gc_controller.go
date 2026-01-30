@@ -26,7 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-var ticker *time.Ticker = time.NewTicker(50 * time.Millisecond)
+var ticker = time.NewTicker(50 * time.Millisecond)
 
 type Controller struct {
 	wfclientset      wfclientset.Interface
@@ -35,7 +35,7 @@ type Controller struct {
 	clock            clock.WithTickerAndDelayedExecution
 	metrics          *metrics.Metrics
 	orderedQueueLock sync.Mutex
-	orderedQueue     map[wfv1.WorkflowPhase]*gcHeap
+	orderedQueue     map[wfv1.WorkflowPhase]Heap
 	retentionPolicy  *config.RetentionPolicy
 	log              logging.Logger
 }
@@ -43,7 +43,7 @@ type Controller struct {
 // NewController returns a new workflow ttl controller
 func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "gc_controller").InContext(ctx)
-	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
+	orderedQueue := map[wfv1.WorkflowPhase]Heap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
 		wfv1.WorkflowSucceeded: NewHeap(),
@@ -235,11 +235,10 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	c.log.WithField("workflow", key).Info(ctx, "Deleting garbage collected workflow")
 	err = c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
-		if apierr.IsNotFound(err) {
-			c.log.WithField("workflow", key).Info(ctx, "Workflow already deleted")
-		} else {
+		if !apierr.IsNotFound(err) {
 			return err
 		}
+		c.log.WithField("workflow", key).Info(ctx, "Workflow already deleted")
 	} else {
 		c.log.WithField("workflow", key).Info(ctx, "Successful request to be deleted")
 	}

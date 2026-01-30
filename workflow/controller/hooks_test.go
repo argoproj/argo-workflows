@@ -998,7 +998,7 @@ spec:
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-	err, _ := woc.podReconciliation(ctx)
+	_, err := woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)

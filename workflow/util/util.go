@@ -393,12 +393,11 @@ func OverrideOutputParametersWithDefault(outputs *wfv1.Outputs) error {
 	}
 	for i, param := range outputs.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.Supplied != nil {
-			if param.ValueFrom.Default != nil {
-				outputs.Parameters[i].Value = param.ValueFrom.Default
-				outputs.Parameters[i].ValueFrom = nil
-			} else {
+			if param.ValueFrom.Default == nil {
 				return fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
 			}
+			outputs.Parameters[i].Value = param.ValueFrom.Default
+			outputs.Parameters[i].ValueFrom = nil
 		}
 	}
 	return nil
@@ -414,59 +413,58 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 	}
 	if len(nodeFieldSelector) > 0 {
 		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg}, creator.ActionResume)
-	} else {
-		err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
-			if err != nil {
-				return !errorsutil.IsTransientErr(ctx, err), err
-			}
+	}
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(ctx, err), err
+		}
 
-			err = hydrator.Hydrate(ctx, wf)
-			if err != nil {
-				return true, err
-			}
+		err = hydrator.Hydrate(ctx, wf)
+		if err != nil {
+			return true, err
+		}
 
-			workflowUpdated := false
-			if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-				wf.Spec.Suspend = nil
-				workflowUpdated = true
-			}
+		workflowUpdated := false
+		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+			wf.Spec.Suspend = nil
+			workflowUpdated = true
+		}
 
-			// To resume a workflow with a suspended node we simply mark the node as Successful
-			for nodeID, node := range wf.Status.Nodes {
-				if node.IsActiveSuspendNode() {
-					if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
-						return false, err
-					}
-					node.Phase = wfv1.NodeSucceeded
-					if node.Message != "" {
-						uiMsg = node.Message + "; " + uiMsg
-					}
-					node.Message = uiMsg
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes.Set(ctx, nodeID, node)
-					workflowUpdated = true
-				}
-			}
-
-			if workflowUpdated {
-				err := hydrator.Dehydrate(ctx, wf)
-				if err != nil {
-					return false, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
-				}
-				creator.LabelActor(ctx, wf, creator.ActionResume)
-				_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
-				if err != nil {
-					if apierr.IsConflict(err) {
-						return false, nil
-					}
+		// To resume a workflow with a suspended node we simply mark the node as Successful
+		for nodeID, node := range wf.Status.Nodes {
+			if node.IsActiveSuspendNode() {
+				if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
 					return false, err
 				}
+				node.Phase = wfv1.NodeSucceeded
+				if node.Message != "" {
+					uiMsg = node.Message + "; " + uiMsg
+				}
+				node.Message = uiMsg
+				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+				wf.Status.Nodes.Set(ctx, nodeID, node)
+				workflowUpdated = true
 			}
-			return true, nil
-		})
-		return err
-	}
+		}
+
+		if workflowUpdated {
+			err := hydrator.Dehydrate(ctx, wf)
+			if err != nil {
+				return false, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
+			}
+			creator.LabelActor(ctx, wf, creator.ActionResume)
+			_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
+			if err != nil {
+				if apierr.IsConflict(err) {
+					return false, nil
+				}
+				return false, err
+			}
+		}
+		return true, nil
+	})
+	return err
 }
 
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {

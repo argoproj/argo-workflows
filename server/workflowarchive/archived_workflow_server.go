@@ -70,7 +70,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	if !loadAll {
 		// Attempt to load 1 more record than we actually need as an easy way to determine whether or not more
 		// records exist than we're currently requesting
-		options.Limit += 1
+		options.Limit++
 	}
 
 	items, err := w.wfArchive.ListWorkflows(ctx, options)
@@ -171,13 +171,11 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		return nil, sutils.ToStatusError(fmt.Errorf("only allow 1 labelRequirement, found %v", len(requirements)), codes.InvalidArgument)
 	}
 
-	var key string
 	requirement := requirements[0]
-	if requirement.Operator() == selection.Exists {
-		key = requirement.Key()
-	} else {
+	if requirement.Operator() != selection.Exists {
 		return nil, sutils.ToStatusError(fmt.Errorf("operation %v is not supported", requirement.Operator()), codes.InvalidArgument)
 	}
+	key := requirement.Key()
 	if matchLabelKeyPattern(key) {
 		logging.RequireLoggerFromContext(ctx).WithField("labelKey", key).Info(ctx, "Skipping retrieving the list of values for label key")
 		return &wfv1.LabelValues{Items: []string{}}, nil

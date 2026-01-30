@@ -48,6 +48,12 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
+// WorkflowServer is the interface for the workflow server.
+type WorkflowServer interface {
+	workflowpkg.WorkflowServiceServer
+	Run(stopCh <-chan struct{})
+}
+
 type workflowServer struct {
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
@@ -60,10 +66,10 @@ type workflowServer struct {
 	wfDefaults            *wfv1.Workflow
 }
 
-var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
+var _ WorkflowServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) *workflowServer {
+func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) WorkflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -333,9 +339,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		} else if clean {
 			return y, nil
-		} else {
-			return x, nil
 		}
+		return x, nil
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Debug(ctx, "Piping events to channel")

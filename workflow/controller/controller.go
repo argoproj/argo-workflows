@@ -67,7 +67,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	plugin "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
+	"github.com/argoproj/argo-workflows/v3/workflow/util/plugin"
 )
 
 const maxAllowedStackDepth = 100
@@ -416,20 +416,20 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace)
+		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.GetNamespace())
 		var configMap *apiv1.ConfigMap
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 			var err error
-			configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+			configMap, err = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
 			return !errors.IsTransientErr(ctx, err), err
 		})
 		if err != nil {
 			return 0, err
 		}
 
-		value, found := configMap.Data[lockName.Key]
+		value, found := configMap.Data[lockName.GetKey()]
 		if !found {
-			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.Key))
+			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.GetKey()))
 		}
 		return strconv.Atoi(value)
 	}

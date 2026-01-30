@@ -124,7 +124,6 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 		wf.Status.CompressedNodes = ""
 		wf.Status.OffloadNodeStatusVersion = offloadVersion
 		return nil
-	} else {
-		return err
 	}
+	return err
 }

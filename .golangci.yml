@@ -29,6 +29,7 @@ linters:
     - nolintlint
     - predeclared
     - reassign
+    - revive
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
@@ -40,6 +41,57 @@ linters:
     - usetesting
     - wastedassign
   settings:
+    revive:
+      rules:
+        # defaults
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: var-declaration
+        # disabled defaults due to large number of fixes required for now - PRs welcome
+        - name: exported
+          disabled: true
+        - name: unused-parameter
+          disabled: true
+        - name: var-naming
+          disabled: true
+        # additional rules
+        - name: atomic
+        - name: datarace
+        - name: defer
+        - name: duplicated-imports
+        - name: early-return
+        - name: forbidden-call-in-wg-go
+        - name: identical-branches
+        - name: identical-ifelseif-branches
+        - name: identical-ifelseif-conditions
+        - name: identical-switch-branches
+        - name: identical-switch-conditions
+        - name: modifies-value-receiver
+        - name: optimize-operands-order
+        - name: package-directory-mismatch
+        - name: time-equal
+        - name: unnecessary-if
+        - name: unnecessary-stmt
+        - name: use-waitgroup-go
+        - name: useless-break
+        - name: useless-fallthrough
     gosec:
       includes:
         - G304

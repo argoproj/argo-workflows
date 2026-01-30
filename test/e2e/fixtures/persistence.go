@@ -44,9 +44,8 @@ func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
 		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
 		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
-	} else {
-		return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 	}
+	return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 }
 
 func (s *Persistence) IsEnabled() bool {

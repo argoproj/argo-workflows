@@ -118,12 +118,11 @@ func addClientRateLimiterLatency(_ context.Context, m *Metrics) error {
 func AddRateLimiterWrapper(ctx context.Context, config *rest.Config) *rest.Config {
 	if config.RateLimiter == nil {
 		// If no rate limiter is set, create one using the QPS and Burst settings
-		if config.QPS > 0 && config.Burst > 0 {
-			config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(config.QPS, config.Burst)
-		} else {
+		if config.QPS <= 0 || config.Burst <= 0 {
 			// No rate limiting configured
 			return config
 		}
+		config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(config.QPS, config.Burst)
 	}
 	// Store the context for later use when metrics are initialized
 	k8sMetrics.ctx = ctx

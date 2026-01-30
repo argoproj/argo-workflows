@@ -28,7 +28,7 @@ func NewResourceCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func execResource(ctx context.Context, action string) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
@@ -37,7 +37,8 @@ func execResource(ctx context.Context, action string) error {
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 
 	wfExecutor.InitializeOutput(bgCtx)
-	defer wfExecutor.HandleError(bgCtx)
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()
 	if !wfExecutor.Template.SaveLogsAsArtifact() {
 		defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	}

@@ -2201,17 +2201,15 @@ func (in *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
 			return !value
 		}
 		return false // workflows from older versions do not have this status, so assume completed if this is missing
-	} else {
-		node, err := in.Nodes.Get(name)
-		if err != nil {
-			return true // what can we even do here?
-		}
-		if node.TaskResultSynced != nil {
-			return !*node.TaskResultSynced
-		} else {
-			return false
-		}
 	}
+	node, err := in.Nodes.Get(name)
+	if err != nil {
+		return true // what can we even do here?
+	}
+	if node.TaskResultSynced != nil {
+		return !*node.TaskResultSynced
+	}
+	return false
 }
 
 func (in *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2301,9 +2299,8 @@ func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
 	}
 	if s.Expression == "" {
 		return RetryPolicyOnFailure
-	} else {
-		return RetryPolicyAlways
 	}
+	return RetryPolicyAlways
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -3425,9 +3422,8 @@ func (tmpl *Template) GetMainContainerNames() []string {
 			out = append(out, c.Name)
 		}
 		return out
-	} else {
-		return []string{"main"}
 	}
+	return []string{"main"}
 }
 
 func (tmpl *Template) HasSequencedContainers() bool {

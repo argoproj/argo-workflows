@@ -91,7 +91,7 @@ func (i initLogger) Level() Level {
 func (i initLogger) WithFatal() Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
+	i = deepCopy(i)
 	i.storage.fatal = true
 	return i
 }
@@ -103,7 +103,7 @@ func (i initLogger) WithPanic() Logger {
 func (i initLogger) WithField(name string, value any) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
+	i = deepCopy(i)
 	i.fields[name] = value
 	return i
 }
@@ -111,7 +111,7 @@ func (i initLogger) WithField(name string, value any) Logger {
 func (i initLogger) WithFields(fields Fields) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
+	i = deepCopy(i)
 	maps.Copy(i.fields, fields)
 	return i
 }
@@ -119,7 +119,7 @@ func (i initLogger) WithFields(fields Fields) Logger {
 func (i initLogger) WithError(err error) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
+	i = deepCopy(i)
 	i.fields["error"] = err
 	return i
 }
@@ -144,17 +144,19 @@ func (i initLogger) Warn(ctx context.Context, message string) {
 
 func (i initLogger) Error(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
-	defer i.storage.mutex.Unlock()
 	i.add(Error, message)
 	if i.storage.fatal {
+		i.storage.mutex.Unlock()
 		//nolint:contextcheck
 		emitInitLogs(ctx, NewSlogLoggerCustom(Debug, JSON, i.storage.out))
-		if exitFunc := GetExitFunc(); exitFunc != nil {
-			exitFunc(1)
-		} else {
+		exitFunc := GetExitFunc()
+		if exitFunc == nil {
 			os.Exit(1)
 		}
+		exitFunc(1)
+		return
 	}
+	i.storage.mutex.Unlock()
 }
 
 func emitInitLogs(ctx context.Context, logger Logger) {
@@ -173,7 +175,7 @@ func emitInitLogs(ctx context.Context, logger Logger) {
 	initStorage.initLogs = make([]initLog, 0)
 }
 
-func DeepCopy(i initLogger) initLogger {
+func deepCopy(i initLogger) initLogger {
 	return initLogger{
 		storage: i.storage,
 		fields:  maps.Clone(i.fields),

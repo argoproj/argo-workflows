@@ -137,9 +137,8 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 	}
 	if out != nil {
 		return json.NewDecoder(resp.Body).Decode(out)
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (h Facade) url(method, path string, in any) (*url.URL, error) {
