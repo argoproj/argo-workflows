@@ -1,15 +1,4 @@
 version: "2"
-run:
-  build-tags:
-    - api
-    - cli
-    - cron
-    - executor
-    - examples
-    - corefunctional
-    - functional
-    - metrics
-    - plugins
 linters:
   enable:
     - asciicheck
