@@ -575,9 +575,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					})
 					c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
 					pod.Spec.Containers[i] = c
-					woc.log.Infof("Offloaded container args for %s to configmap", containerArgsName)
+					log.WithField("container", containerArgsName).Info(ctx, "Offloaded container args to configmap")
 				}
 			}
+		}
 	}
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
