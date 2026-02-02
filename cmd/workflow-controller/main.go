@@ -141,11 +141,9 @@ func NewRootCommand() *cobra.Command {
 				dummyCtx, dummyCancel := context.WithCancel(ctx)
 				defer dummyCancel()
 
-				wg.Add(1)
-				go func() {
+				wg.Go(func() {
 					wfController.RunPrometheusServer(dummyCtx, true)
-					wg.Done()
-				}()
+				})
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -161,11 +159,9 @@ func NewRootCommand() *cobra.Command {
 							dummyCancel()
 							wg.Wait()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
-							wg.Add(1)
-							go func() {
+							wg.Go(func() {
 								wfController.RunPrometheusServer(ctx, false)
-								wg.Done()
-							}()
+							})
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info(ctx, "stopped leading")

@@ -1222,13 +1222,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 
 	for _, pod := range podList {
 		parallelPodNum <- pod.Name
-		wg.Add(1)
-		go func(pod *apiv1.Pod) {
-			defer wg.Done()
+		wg.Go(func() {
 			performAssessment(pod)
 			woc.applyExecutionControl(ctx, pod, wfNodesLock)
 			<-parallelPodNum
-		}(pod)
+		})
 	}
 
 	wg.Wait()

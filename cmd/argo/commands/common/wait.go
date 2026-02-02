@@ -23,14 +23,11 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	wfSuccessStatus := true
 
 	for _, name := range workflowNames {
-		wg.Add(1)
-		go func(name string) {
+		wg.Go(func() {
 			if ok, _ := waitOnOne(ctx, serviceClient, name, namespace, ignoreNotFound, quiet); !ok {
 				wfSuccessStatus = false
 			}
-			wg.Done()
-		}(name)
-
+		})
 	}
 	wg.Wait()
 

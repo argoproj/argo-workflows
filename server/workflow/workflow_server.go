@@ -489,17 +489,15 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 	errCh := make(chan error, len(podsToDelete))
 	var wg sync.WaitGroup
-	wg.Add(len(podsToDelete))
 	for _, podName := range podsToDelete {
 		logger.WithFields(logging.Fields{"podDeleted": podName}).Info(ctx, "Deleting pod")
-		go func(podName string) {
-			defer wg.Done()
+		wg.Go(func() {
 			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				errCh <- err
 				return
 			}
-		}(podName)
+		})
 	}
 	wg.Wait()
 
