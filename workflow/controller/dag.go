@@ -558,6 +558,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(ctx, dagCtx, task)
 	if err != nil {
+		if errors.Is(err, ErrRequeue) {
+			return
+		}
 		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
@@ -736,11 +739,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	// If they are not resolved, it indicates a missing output (e.g. due to race condition), and we should error out
 	// rather than leaving the tag unresolved (which would result in incorrect workflow execution).
 	// We allow other variables (like {{item}}) to remain unresolved for later expansion.
-	newTaskStr, err := template.ReplaceStrict(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), []string{"tasks.*", "steps.*"})
+	newTaskStr, err := template.ReplaceStrict(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), []string{"tasks", "steps"})
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
 			woc.requeue()
-			return task, nil
+			return nil, ErrRequeue
 		}
 		return nil, err
 	}

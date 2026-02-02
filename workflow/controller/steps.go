@@ -22,6 +22,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
+var ErrRequeue = errors.New("requeue")
+
 // stepsContext holds context information about this context's steps
 type stepsContext struct {
 	// boundaryID is the node ID of the boundary which all immediate child steps are bound to
@@ -246,6 +248,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	var resolveErr error
 	stepGroup, resolveErr = woc.resolveReferences(ctx, stepGroup, stepsCtx.scope)
 	if resolveErr != nil {
+		if errors.Is(resolveErr, ErrRequeue) {
+			return node, nil
+		}
 		return woc.markNodeError(ctx, sgNodeName, resolveErr), nil
 	}
 
@@ -451,11 +456,11 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
 		}
-		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), []string{"steps.", "tasks."})
+		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), []string{"steps", "tasks"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
-				return nil
+				return ErrRequeue
 			}
 			return err
 		}
@@ -525,6 +530,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	wg.Wait()
 
 	if err := errorFromChannel(errCh); err != nil { // fetch the first error during resolveStepReferences
+		if errors.Is(err, ErrRequeue) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to resolve references: %w", err)
 	}
 	return newStepGroup, nil

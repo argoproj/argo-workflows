@@ -213,7 +213,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	ctx, err := woc.setExecWorkflow(ctx)
 	if err != nil {
-		woc.log.WithError(err).Error(ctx, "Unable to set ExecWorkflow")
+		woc.log.WithError(err).WithField("stack", debug.Stack()).Error(ctx, "Unable to set ExecWorkflow")
 		return
 	}
 	// For new workflows, create the workflow span first to ensure reconcileWorkflow
@@ -4357,7 +4357,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 			func() (bool, error) {
 				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
-					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
+					return !errorsutil.IsTransientErr(ctx, validationErr), fmt.Errorf(" validation error %w", validationErr)
 				}
 				return true, nil
 			})

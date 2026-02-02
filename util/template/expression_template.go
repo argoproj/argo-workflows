@@ -96,6 +96,38 @@ func (v *identifierVisitor) Visit(node *ast.Node) {
 			v.seen[n.Value] = true
 		}
 	}
+	if n, ok := (*node).(*ast.MemberNode); ok {
+		path, ok := getMemberPath(n)
+		if ok {
+			if !v.seen[path] {
+				v.identifiers = append(v.identifiers, path)
+				v.seen[path] = true
+			}
+		}
+	}
+}
+
+func getMemberPath(node *ast.MemberNode) (string, bool) {
+	var parts []string
+	curr := node
+	for {
+		prop, ok := curr.Property.(*ast.StringNode)
+		if !ok {
+			return "", false
+		}
+		parts = append([]string{prop.Value}, parts...)
+
+		if id, ok := curr.Node.(*ast.IdentifierNode); ok {
+			parts = append([]string{id.Value}, parts...)
+			return strings.Join(parts, "."), true
+		}
+
+		if next, ok := curr.Node.(*ast.MemberNode); ok {
+			curr = next
+		} else {
+			return "", false
+		}
+	}
 }
 
 func getIdentifiers(expression string) ([]string, error) {
@@ -262,6 +294,10 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 		return true
 	}
 	flattenEnv := bellows.Flatten(env)
-	_, ok := flattenEnv[parameter]
-	return ok
+	for k := range flattenEnv {
+		if k == parameter || strings.HasPrefix(k, parameter+".") {
+			return true
+		}
+	}
+	return false
 }
