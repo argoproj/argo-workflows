@@ -14,7 +14,7 @@ func TestExpressionReplaceCore_PlaceholderBehavior(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
 	// Setup: A variable 'foo' holding an internal placeholder
-	env := map[string]interface{}{
+	env := map[string]any{
 		"foo": "__argo__internal__placeholder-1",
 	}
 	expression := "foo"

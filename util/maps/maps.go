@@ -5,8 +5,8 @@ import (
 	"strconv"
 )
 
-func castToMapStringAny(in interface{}) (map[string]interface{}, bool) {
-	if m, ok := in.(map[string]interface{}); ok {
+func castToMapStringAny(in any) (map[string]any, bool) {
+	if m, ok := in.(map[string]any); ok {
 		return m, true
 	}
 	v := reflect.ValueOf(in)
@@ -16,7 +16,7 @@ func castToMapStringAny(in interface{}) (map[string]interface{}, bool) {
 	if v.Type().Key().Kind() != reflect.String {
 		return nil, false
 	}
-	out := make(map[string]interface{}, v.Len())
+	out := make(map[string]any, v.Len())
 	iter := v.MapRange()
 	for iter.Next() {
 		val := iter.Value()
@@ -29,15 +29,15 @@ func castToMapStringAny(in interface{}) (map[string]interface{}, bool) {
 	return out, true
 }
 
-func castToSliceAny(in interface{}) ([]interface{}, bool) {
-	if s, ok := in.([]interface{}); ok {
+func castToSliceAny(in any) ([]any, bool) {
+	if s, ok := in.([]any); ok {
 		return s, true
 	}
 	v := reflect.ValueOf(in)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil, false
 	}
-	out := make([]interface{}, v.Len())
+	out := make([]any, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		val := v.Index(i)
 		if !val.IsValid() {

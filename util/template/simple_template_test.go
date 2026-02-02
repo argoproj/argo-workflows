@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) error {
+func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMap map[string]any, allowUnresolved bool) error {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {
 		// Attempt to resolve nested tags, if possible
@@ -57,7 +57,7 @@ func simpleReplaceHelper(ctx context.Context, w io.Writer, tag string, replaceMa
 
 func Test_CompareSimpleReplace(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	replaceMap := map[string]interface{}{"foo": "bar"}
+	replaceMap := map[string]any{"foo": "bar"}
 
 	tests := []struct {
 		tag             string
@@ -105,7 +105,7 @@ func Test_SimpleReplace(t *testing.T) {
 	tests := []struct {
 		name            string
 		tag             string
-		replaceMap      map[string]interface{}
+		replaceMap      map[string]any
 		allowUnresolved bool
 		expectedWritten string
 		expectedError   string
@@ -113,7 +113,7 @@ func Test_SimpleReplace(t *testing.T) {
 		{
 			name: "BasicReplacement",
 			tag:  "foo",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"foo": "bar",
 			},
 			expectedWritten: "bar",
@@ -121,7 +121,7 @@ func Test_SimpleReplace(t *testing.T) {
 		{
 			name: "BasicReplacementWithWhitespace",
 			tag:  " foo ",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"foo": "bar",
 			},
 			expectedWritten: "bar",
@@ -132,7 +132,7 @@ func Test_SimpleReplace(t *testing.T) {
 			// fasttemplate sees "{{", reads until "}}".
 			// It captures "outer-{{inner".
 			tag: "outer-{{inner",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"inner": "suffix",
 			},
 			// Expects to write back the resolved nested tag, re-wrapped in {{ }} by the caller?
@@ -144,7 +144,7 @@ func Test_SimpleReplace(t *testing.T) {
 		{
 			name: "NestedReplacementQuoted",
 			tag:  "msg-{{val",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"val": "hello \"world\"",
 			},
 			// replacement is quoted: "hello \"world\"" -> "\\"hello \\\"world\\\"" -> inner stripped -> "hello \\\"world\\\""
@@ -152,7 +152,7 @@ func Test_SimpleReplace(t *testing.T) {
 		}, {
 			name: "NestedTagNotFound",
 			tag:  "outer-{{unknown",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"inner": "suffix",
 			},
 			allowUnresolved: true,
@@ -163,7 +163,7 @@ func Test_SimpleReplace(t *testing.T) {
 		{
 			name: "NestedTagNotFound_DisallowUnresolved",
 			tag:  "outer-{{unknown",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"inner": "suffix",
 			},
 			allowUnresolved: false,
@@ -173,7 +173,7 @@ func Test_SimpleReplace(t *testing.T) {
 			name: "DoubleNested_ResolvesLast",
 			// "{{a {{b}} {{c}}}}" -> tag "a {{b}} {{c"
 			tag: "a {{b}} {{c",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"b": "B",
 				"c": "C",
 			},
@@ -184,7 +184,7 @@ func Test_SimpleReplace(t *testing.T) {
 		{
 			name: "OuterTagDirectMatchTakesPrecedence",
 			tag:  "outer-{{inner",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"outer-{{inner": "direct-hit",
 				"inner":         "ignored",
 			},
@@ -203,7 +203,7 @@ func Test_SimpleReplace(t *testing.T) {
 			// The A and B tags are not resolved because they rely on the inner content being resolved first?
 			// Or simply because their "name" would be "A {{B {{C" which is invalid/incomplete.
 			tag: "A {{B {{C",
-			replaceMap: map[string]interface{}{
+			replaceMap: map[string]any{
 				"C": "valC",
 			},
 			expectedWritten: "{{A {{B valC",

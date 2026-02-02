@@ -16,7 +16,7 @@ func FuzzSimpleReplace(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, tag string, allowUnresolved bool) {
 		ctx := logging.TestContext(t.Context())
-		replaceMap := map[string]interface{}{
+		replaceMap := map[string]any{
 			"foo":                              "bar",
 			"baz":                              "qux",
 			"nested":                           "value",
@@ -58,18 +58,18 @@ func FuzzExpressionReplace(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, expression string, allowUnresolved bool) {
 		ctx := logging.TestContext(t.Context())
-		env := map[string]interface{}{
+		env := map[string]any{
 			"foo": "bar",
 			"val": 1,
-			"tasks": map[string]interface{}{
-				"A": map[string]interface{}{
-					"outputs": map[string]interface{}{
+			"tasks": map[string]any{
+				"A": map[string]any{
+					"outputs": map[string]any{
 						"result": "success",
 					},
 				},
 			},
-			"inputs": map[string]interface{}{
-				"parameters": map[string]interface{}{
+			"inputs": map[string]any{
+				"parameters": map[string]any{
 					"param": "value",
 				},
 			},

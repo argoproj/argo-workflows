@@ -46,7 +46,7 @@ func Test_hasWorkflowParameters(t *testing.T) {
 
 func Test_CompareExpressionReplace(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	replaceMap := map[string]interface{}{"foo": "bar", "tasks": map[string]interface{}{"A": "success"}}
+	replaceMap := map[string]any{"foo": "bar", "tasks": map[string]any{"A": "success"}}
 
 	tests := []struct {
 		expression      string
@@ -105,7 +105,7 @@ func Test_CompareExpressionReplace(t *testing.T) {
 	}
 }
 
-func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) error {
+func expressionReplaceHelper(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) error {
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string

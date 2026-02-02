@@ -15,7 +15,7 @@ func TestExpressionReplaceCore_AsIntPlaceholder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
 	// Get a base env with asInt
-	e := env.GetFuncMap(map[string]interface{}{
+	e := env.GetFuncMap(map[string]any{
 		"foo": "__argo__internal__placeholder-1",
 	})
 
