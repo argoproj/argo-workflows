@@ -544,7 +544,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childNode)
@@ -628,7 +628,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childNode)
@@ -701,7 +701,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childNode)
@@ -918,7 +918,7 @@ func TestProcessNodeRetriesBackoffOverflow(t *testing.T) {
 	woc.wf.Status.Nodes[nodeID] = *node
 
 	// Add 32 child nodes to trigger overflow (2^31 * 5s would overflow int64)
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		childName := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childName, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childName)
@@ -964,7 +964,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childNode)
@@ -1047,7 +1047,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
-	for i := 0; i < 1; i++ {
+	for i := range 1 {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childNode)
@@ -1181,7 +1181,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 		woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true)
 		woc.addChildNode(ctx, nodeName, childNode)
@@ -1436,7 +1436,7 @@ func TestRetriesVariable(t *testing.T) {
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
 	actual := []string{}
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		actual = append(actual, pods.Items[i].Spec.Containers[1].Args[0])
 		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
@@ -1490,7 +1490,7 @@ func TestRetriesVariableInPodSpecPatch(t *testing.T) {
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
 	actual := []string{}
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
 		expected = append(expected, fmt.Sprintf("%dMi", (i+1)*64))
 	}
@@ -1547,7 +1547,7 @@ func TestRetriesVariableWithGlobalVariableInPodSpecPatch(t *testing.T) {
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
 	actual := []string{}
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
 		expected = append(expected, fmt.Sprintf("%dMi", (i+1)*100))
 	}
@@ -1600,7 +1600,7 @@ func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
 	assert.Len(t, pods.Items, iterations)
 	expected := []string{}
 	actual := []string{}
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
 		expected = append(expected, fmt.Sprintf("%dMi", (i+1)*100))
 	}
@@ -1661,7 +1661,7 @@ func TestStepsRetriesVariable(t *testing.T) {
 
 	expected := []string{}
 	actual := []string{}
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		actual = append(actual, pods.Items[i].Spec.Containers[1].Args[0])
 		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
@@ -4357,7 +4357,7 @@ spec:
 func getEventsWithoutAnnotations(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
-	for i := 0; i < num; i++ {
+	for i := range num {
 		event := <-c
 		events[i] = truncateAnnotationsFromEvent(event)
 	}
@@ -4365,9 +4365,9 @@ func getEventsWithoutAnnotations(controller *WorkflowController, num int) []stri
 }
 
 func truncateAnnotationsFromEvent(event string) string {
-	mapIndex := strings.Index(event, " map[")
-	if mapIndex != -1 {
-		return event[:mapIndex]
+	before, _, ok := strings.Cut(event, " map[")
+	if ok {
+		return before
 	}
 	return event
 }
@@ -4711,7 +4711,7 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.NotNil(t, retryNode)
 	fmt.Println(retryNode)
 	scope := &wfScope{
-		scope: make(map[string]interface{}),
+		scope: make(map[string]any),
 	}
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
@@ -10959,7 +10959,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		woc := setup()
 		childNodes := []*wfv1.NodeStatus{}
 		// Add child nodes.
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 			childNodes = append(childNodes, woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true))
 			woc.addChildNode(ctx, nodeName, childNode)
@@ -10976,7 +10976,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		woc := setup()
 		childNodes := []*wfv1.NodeStatus{}
 		// Add child nodes.
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 			childNodes = append(childNodes, woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}, true))
 			woc.addChildNode(ctx, nodeName, childNode)
@@ -11000,7 +11000,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		woc := setup()
 		childNodes := []*wfv1.NodeStatus{}
 		// Add child hooked noes
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
 			childNodes = append(childNodes, woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true, Hooked: true}, true))
 			woc.addChildNode(ctx, nodeName, childNode)

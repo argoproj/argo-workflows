@@ -16,7 +16,7 @@ func newExecutorDataSourceProcessor(we *WorkflowExecutor) *executorDataSourcePro
 	}
 }
 
-func (ep *executorDataSourceProcessor) ProcessArtifactPaths(ctx context.Context, artifacts *wfv1.ArtifactPaths) (interface{}, error) {
+func (ep *executorDataSourceProcessor) ProcessArtifactPaths(ctx context.Context, artifacts *wfv1.ArtifactPaths) (any, error) {
 	driverArt, err := ep.we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
 		return nil, err

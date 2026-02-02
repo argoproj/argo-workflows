@@ -15,7 +15,7 @@ func GetConditions(un *unstructured.Unstructured) wfv1.Conditions {
 	items, _, _ := unstructured.NestedSlice(un.Object, "status", "conditions")
 	var x wfv1.Conditions
 	for _, item := range items {
-		m, ok := item.(map[string]interface{})
+		m, ok := item.(map[string]any)
 		if !ok {
 			return nil
 		}

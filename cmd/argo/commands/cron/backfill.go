@@ -213,7 +213,7 @@ func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, sche
 	startIdx := 0
 	var endIdx int
 	var wfNames []string
-	for i := 0; i < iterCount; i++ {
+	for i := range iterCount {
 		tmpl := monitorWfObj.GetTemplateByName("create-workflow")
 		if (TotalScheCount - i*cliOps.maxWorkflowCount) < cliOps.maxWorkflowCount {
 			endIdx = TotalScheCount

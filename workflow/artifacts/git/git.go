@@ -125,8 +125,7 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	}
 
 	r, err := git.PlainClone(path, false, cloneOptions)
-	switch err {
-	case transport.ErrEmptyRemoteRepository:
+	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "Cloned an empty repository")
 		r, err := git.PlainInit(path, false)
 		if err != nil {
@@ -143,9 +142,7 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 			return fmt.Errorf("failed to create branch %q: %w", branchName, err)
 		}
 		return nil
-	case nil:
-		// fallthrough ...
-	default:
+	} else if err != nil {
 		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}
 	if len(a.Fetch) > 0 {

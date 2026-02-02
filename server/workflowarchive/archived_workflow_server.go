@@ -87,7 +87,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		}
 		count := total - int64(offset) - int64(items.Len())
 		if len(items) > limit {
-			count = count + 1
+			count++
 		}
 		if count < 0 {
 			count = 0

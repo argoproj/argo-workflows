@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,7 +38,7 @@ func New(address, token string, timeout time.Duration, backoff wait.Backoff) Cli
 	}
 }
 
-func (p *Client) Call(ctx context.Context, method string, args interface{}, reply interface{}) error {
+func (p *Client) Call(ctx context.Context, method string, args any, reply any) error {
 	if p.invalid[method] {
 		return nil
 	}
@@ -51,11 +52,9 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 	}
 	return retry.OnError(p.backoff, func(err error) bool {
 		log.WithError(err).Debug(ctx, "Plugin returned error")
-		switch e := err.(type) {
-		case interface{ Temporary() bool }:
-			if e.Temporary() {
-				return true
-			}
+		var tempErr interface{ Temporary() bool }
+		if stderrors.As(err, &tempErr) && tempErr.Temporary() {
+			return true
 		}
 		return strings.Contains(err.Error(), "connection refused") || errors.IsTransientErr(ctx, err)
 	}, func() error {

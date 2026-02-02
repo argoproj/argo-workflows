@@ -84,7 +84,7 @@ func NewStopCommand() *cobra.Command {
 func stopWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, stopArgs stopOps, args []string) error {
 	selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 	if err != nil {
-		return fmt.Errorf("unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
+		return fmt.Errorf("unable to parse node field selector '%s': %w", stopArgs.nodeFieldSelector, err)
 	}
 	var wfs wfv1.Workflows
 	if stopArgs.hasSelector() {

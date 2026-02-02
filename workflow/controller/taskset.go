@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
@@ -18,20 +18,20 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
 
-func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch interface{}, subresources ...string) error {
+func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return argoerrors.InternalWrapError(err)
 	}
 	_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, types.MergePatchType, patchByte, metav1.PatchOptions{}, subresources...)
 	if err != nil {
-		return fmt.Errorf("failed patching taskset: %v", err)
+		return fmt.Errorf("failed patching taskset: %w", err)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]interface{}, nodesPatch map[string]interface{}) {
-	deletedNode := make(map[string]interface{})
+func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]any, nodesPatch map[string]any) {
+	deletedNode := make(map[string]any)
 	for _, node := range woc.wf.Status.Nodes {
 		if node.IsTaskSetNode() && node.Fulfilled() {
 			deletedNode[node.ID] = nil
@@ -39,13 +39,13 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]in
 	}
 
 	// Delete the completed Tasks and nodes status
-	tasksPatch = map[string]interface{}{
-		"spec": map[string]interface{}{
+	tasksPatch = map[string]any{
+		"spec": map[string]any{
 			"tasks": deletedNode,
 		},
 	}
-	nodesPatch = map[string]interface{}{
-		"status": map[string]interface{}{
+	nodesPatch = map[string]any{
+		"status": map[string]any{
 			"nodes": deletedNode,
 		},
 	}
@@ -102,7 +102,7 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	}
 	if err := woc.reconcileAgentPod(ctx); err != nil {
 		woc.log.WithError(err).Error(ctx, "error in agent pod reconciliation")
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%s"`, err))
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err))
 		return
 	}
 }
@@ -199,7 +199,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		woc.log.Debug(ctx, "patching the exiting taskset")
-		spec := map[string]interface{}{
+		spec := map[string]any{
 			"metadata": metav1.ObjectMeta{
 				Labels: map[string]string{
 					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),
@@ -211,7 +211,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		err = woc.mergePatchTaskSet(ctx, spec)
 		if err != nil {
 			woc.log.WithError(err).Error(ctx, "Failed to patch WorkflowTaskSet")
-			return fmt.Errorf("failed to patch TaskSet. %v", err)
+			return fmt.Errorf("failed to patch TaskSet. %w", err)
 		}
 	} else if err != nil {
 		woc.log.WithError(err).Error(ctx, "Failed to create WorkflowTaskSet")

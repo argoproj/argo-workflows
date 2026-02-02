@@ -93,7 +93,7 @@ func convertDocument(data []byte, outputFormat string, isJSON bool) error {
 		return fmt.Errorf("failed to parse TypeMeta: %w", err)
 	}
 
-	var converted interface{}
+	var converted any
 
 	// Parse into legacy type and convert to current type
 	switch typeMeta.Kind {
@@ -128,7 +128,7 @@ func convertDocument(data []byte, outputFormat string, isJSON bool) error {
 	default:
 		// Unknown type - pass through unchanged
 		// Re-parse as generic map to preserve structure
-		var generic map[string]interface{}
+		var generic map[string]any
 		if err := yaml.Unmarshal(data, &generic); err != nil {
 			return fmt.Errorf("failed to parse unknown kind %s: %w", typeMeta.Kind, err)
 		}
@@ -138,7 +138,7 @@ func convertDocument(data []byte, outputFormat string, isJSON bool) error {
 	return outputObject(converted, outputFormat, isJSON)
 }
 
-func outputObject(obj interface{}, format string, preferJSON bool) error {
+func outputObject(obj any, format string, preferJSON bool) error {
 	var outBytes []byte
 	var err error
 

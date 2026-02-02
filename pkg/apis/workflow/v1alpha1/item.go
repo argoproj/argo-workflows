@@ -43,11 +43,11 @@ func (i *Item) GetType() Type {
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		return Bool
 	}
-	var list []interface{}
+	var list []any
 	if err := json.Unmarshal(i.Value, &list); err == nil {
 		return List
 	}
-	var object map[string]interface{}
+	var object map[string]any
 	if err := json.Unmarshal(i.Value, &object); err == nil {
 		return Map
 	}

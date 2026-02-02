@@ -204,7 +204,7 @@ I am following this example: https://github.com/kubernetes/client-go/blob/v0.20.
 func ConfigToExecCluster(ctx context.Context, config *restclient.Config) (*clientauthenticationapi.Cluster, error) {
 	caData, err := dataFromSliceOrFile(config.CAData, config.CAFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load CA bundle for execProvider: %v", err)
+		return nil, fmt.Errorf("failed to load CA bundle for execProvider: %w", err)
 	}
 
 	var proxyURL string
@@ -260,11 +260,11 @@ func decodeBasicAuthToken(auth string) (username, password string, ok bool) {
 		return
 	}
 	cs := string(c)
-	s := strings.IndexByte(cs, ':')
-	if s < 0 {
+	before, after, ok0 := strings.Cut(cs, ":")
+	if !ok0 {
 		return
 	}
-	return cs[:s], cs[s+1:], true
+	return before, after, true
 }
 
 func ReloadKubeConfig(explicitPath string) clientcmd.ClientConfig {
@@ -281,7 +281,7 @@ func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentTo
 		if timestr != "" {
 			t, err := time.Parse(time.RFC3339, timestr)
 			if err != nil {
-				return "", fmt.Errorf("invalid expiry date in Kubeconfig. %v", err)
+				return "", fmt.Errorf("invalid expiry date in Kubeconfig. %w", err)
 			}
 			if time.Now().After(t) {
 				err = RefreshAuthToken(restConfig)

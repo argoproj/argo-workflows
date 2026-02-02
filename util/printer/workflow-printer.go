@@ -140,11 +140,12 @@ func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
-		if node.Fulfilled() {
+		switch {
+		case node.Fulfilled():
 			completed++
-		} else if node.Phase == wfv1.NodeRunning {
+		case node.Phase == wfv1.NodeRunning:
 			running++
-		} else {
+		default:
 			pending++
 		}
 	}

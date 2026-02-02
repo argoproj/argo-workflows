@@ -60,14 +60,14 @@ func updateClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
 			Name: wftmpl.Name,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get existing cluster workflow template %q to update: %v", wftmpl.Name, err)
+			return fmt.Errorf("failed to get existing cluster workflow template %q to update: %w", wftmpl.Name, err)
 		}
 		wftmpl.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateUpdateRequest{
 			Template: &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update cluster workflow template: %s,  %v", wftmpl.Name, err)
+			return fmt.Errorf("failed to update cluster workflow template: %s,  %w", wftmpl.Name, err)
 		}
 		printClusterWorkflowTemplate(updated, cliOpts.output.String())
 	}

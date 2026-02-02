@@ -164,10 +164,8 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 			"error": r,
 			"stack": debug.Stack(),
 		}).Error(ctx, "executor panic")
-	} else {
-		if len(we.errors) > 0 {
-			util.WriteTerminateMessage(we.errors[0].Error())
-		}
+	} else if len(we.errors) > 0 {
+		util.WriteTerminateMessage(we.errors[0].Error())
 	}
 }
 
@@ -257,17 +255,18 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 
 		isTar := false
 		isZip := false
-		if art.GetArchive().None != nil {
+		switch {
+		case art.GetArchive().None != nil:
 			// explicitly not a tar
 			isTar = false
 			isZip = false
-		} else if art.GetArchive().Tar != nil {
+		case art.GetArchive().Tar != nil:
 			// explicitly a tar
 			isTar = true
-		} else if art.GetArchive().Zip != nil {
+		case art.GetArchive().Zip != nil:
 			// explicitly a zip
 			isZip = true
-		} else {
+		default:
 			// auto-detect if tarball
 			// (don't try to autodetect zip files for backwards compatibility)
 			isTar, err = isTarball(ctx, tempArtPath)
@@ -276,13 +275,14 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 			}
 		}
 
-		if isTar {
+		switch {
+		case isTar:
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
-		} else if isZip {
+		case isZip:
 			err = unzip(ctx, tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
-		} else {
+		default:
 			err = os.Rename(tempArtPath, artPath)
 		}
 		if err != nil {
@@ -740,7 +740,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	driver, err := artifacts.NewDriver(ctx, art, we)
-	if err == artifacts.ErrUnsupportedDriver {
+	if errors.Is(err, artifacts.ErrUnsupportedDriver) {
 		return nil, argoerrs.Errorf(argoerrs.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
 	return driver, err
@@ -962,7 +962,7 @@ func (we *WorkflowExecutor) HasError() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+	data, err := json.Marshal(map[string]any{"metadata": metav1.ObjectMeta{
 		Annotations: map[string]string{
 			key: value,
 		},
@@ -1015,7 +1015,7 @@ func untar(tarPath string, destPath string) error {
 		for {
 			header, err := tr.Next()
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				return nil
 			case err != nil:
 				return err
@@ -1256,7 +1256,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 
 	logger.WithError(err).Info(ctx, "Main container completed")
 
-	if err != nil && err != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
 	return nil
@@ -1339,9 +1339,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 	logger.Info(ctx, message)
 	util.WriteTerminateMessage(message)
 
-	containerNames = slices.DeleteFunc(containerNames, func(containerName string) bool {
-		return common.IsArtifactPluginSidecar(containerName)
-	})
+	containerNames = slices.DeleteFunc(containerNames, common.IsArtifactPluginSidecar)
 	we.killContainers(ctx, containerNames)
 }
 

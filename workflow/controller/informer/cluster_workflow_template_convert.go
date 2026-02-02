@@ -27,7 +27,7 @@ func objectsToClusterWorkflowTemplates(list []runtime.Object) []*wfv1.ClusterWor
 }
 
 // this function always tries to return a value, even if it is badly formed
-func interfaceToClusterWorkflowTemplate(object interface{}) (*wfv1.ClusterWorkflowTemplate, error) {
+func interfaceToClusterWorkflowTemplate(object any) (*wfv1.ClusterWorkflowTemplate, error) {
 	v := &wfv1.ClusterWorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {

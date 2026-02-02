@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -128,7 +129,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
-		if errors.IsAlreadyExists(err) {
+		if apierrors.IsAlreadyExists(err) {
 			return
 		}
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
@@ -167,14 +168,14 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
+	woc.patch(ctx, map[string]any{"status": woc.cronWf.Status, "metadata": map[string]any{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
 }
 
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
+	woc.patch(ctx, map[string]any{"status": map[string]any{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
 }
 
-func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
+func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]any) {
 	data, err := json.Marshal(patch)
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "failed to marshall cron workflow status.active data")
@@ -225,8 +226,8 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	env := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
+	env := make(map[string]any)
+	addSetField := func(name string, value any) {
 		env[fmt.Sprintf("%s.%s", variablePrefix, name)] = value
 	}
 	err = expressionEnv(cron, addSetField)
@@ -290,16 +291,16 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 		woc.log.WithField("name", wfObjectRef.Name).Info(ctx, "stopping")
 		err := util.TerminateWorkflow(ctx, woc.wfClient, wfObjectRef.Name)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
 				continue
 			}
-			alreadyShutdownErr, ok := err.(util.AlreadyShutdownError)
-			if ok {
+			var alreadyShutdownErr util.AlreadyShutdownError
+			if errors.As(err, &alreadyShutdownErr) {
 				woc.log.Warn(ctx, alreadyShutdownErr.Error())
 				continue
 			}
-			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
+			return fmt.Errorf("error stopping workflow %s: %w", wfObjectRef.Name, err)
 		}
 	}
 	return nil
@@ -381,7 +382,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 				woc.updateWfPhaseCounter(fulfilled.phase)
 				completed, err := woc.checkStopingCondition()
 				if err != nil {
-					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err)
+					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %w", woc.cronWf.Name, err)
 				} else if completed {
 					woc.setAsCompleted()
 				}
@@ -430,7 +431,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	}
 	err := woc.deleteOldestWorkflows(ctx, successfulWorkflows, int(workflowsToKeep))
 	if err != nil {
-		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %w", woc.cronWf.Name, err)
 	}
 
 	workflowsToKeep = int32(1)
@@ -439,7 +440,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	}
 	err = woc.deleteOldestWorkflows(ctx, failedWorkflows, int(workflowsToKeep))
 	if err != nil {
-		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %w", woc.cronWf.Name, err)
 	}
 	return nil
 }
@@ -456,11 +457,11 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(ctx, wf.Name, v1.DeleteOptions{})
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				woc.log.WithField("workflow", wf.Name).Info(ctx, "Workflow was already deleted")
 				continue
 			}
-			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
+			return fmt.Errorf("error deleting workflow '%s': %w", wf.Name, err)
 		}
 		woc.log.WithField("workflow", wf.Name).Info(ctx, "Deleted Workflow due to CronWorkflow history limit")
 	}
@@ -493,7 +494,7 @@ func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase
 	}
 }
 
-func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value interface{})) error {
+func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value any)) error {
 	addSetField("name", cron.Name)
 	addSetField("namespace", cron.Namespace)
 	addSetField("labels", cron.Labels)
@@ -530,11 +531,11 @@ func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 	if woc.cronWf.Spec.StopStrategy == nil {
 		return false, nil
 	}
-	prefixedEnv := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
+	prefixedEnv := make(map[string]any)
+	addSetField := func(name string, value any) {
 		prefixedEnv[name] = value
 	}
-	env := make(map[string]interface{})
+	env := make(map[string]any)
 	env[variablePrefix] = prefixedEnv
 	err := expressionEnv(woc.cronWf, addSetField)
 	if err != nil {

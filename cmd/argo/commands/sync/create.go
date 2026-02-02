@@ -78,7 +78,7 @@ func CreateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliCreateO
 
 	resp, err := serviceClient.CreateSyncLimit(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to create sync limit: %v", err)
+		return fmt.Errorf("failed to create sync limit: %w", err)
 	}
 
 	fmt.Printf("Sync limit created\n")

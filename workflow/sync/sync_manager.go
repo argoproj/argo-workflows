@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -110,7 +111,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			sm.log.WithError(err).Error(ctx, "failed to get current lock pending")
 			continue
 		}
-		keys := append(holders, pending...)
+		keys := slices.Concat(holders, pending)
 		for _, holderKeys := range keys {
 			wfKey, err := sm.getWorkflowKey(holderKeys)
 			if err != nil {
@@ -434,7 +435,7 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *tr
 			}
 			currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
 			if err != nil {
-				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %s", err)
+				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %w", err)
 			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockAcquired(holderKey, lockKey, currentHolders) {
 				updated = true
@@ -446,7 +447,7 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *tr
 		for i, lockKey := range lockKeys {
 			currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
 			if err != nil {
-				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %s", err)
+				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %w", err)
 			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
 				updated = true

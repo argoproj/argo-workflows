@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
@@ -56,9 +56,9 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 			},
 		}, tempFile)
 		require.Error(t, err)
-		argoError, ok := err.(errors.ArgoError)
-		require.True(t, ok)
-		assert.Equal(t, errors.CodeNotFound, argoError.Code())
+		var argoError argoerrors.ArgoError
+		require.ErrorAs(t, err, &argoError)
+		assert.Equal(t, argoerrors.CodeNotFound, argoError.Code())
 	})
 }
 
@@ -75,9 +75,9 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 			},
 		}, tempFile)
 		require.Error(t, err)
-		argoError, ok := err.(errors.ArgoError)
-		require.True(t, ok)
-		assert.Equal(t, errors.CodeNotFound, argoError.Code())
+		var argoError argoerrors.ArgoError
+		require.ErrorAs(t, err, &argoError)
+		assert.Equal(t, argoerrors.CodeNotFound, argoError.Code())
 	})
 	t.Run("Found", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "found")

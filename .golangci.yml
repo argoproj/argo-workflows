@@ -1,15 +1,4 @@
 version: "2"
-run:
-  build-tags:
-    - api
-    - cli
-    - cron
-    - executor
-    - examples
-    - corefunctional
-    - functional
-    - metrics
-    - plugins
 linters:
   enable:
     - asciicheck
@@ -21,8 +10,10 @@ linters:
     - containedctx
     - durationcheck
     - errcheck
+    - errorlint
     - exptostd
     - gocheckcompilerdirectives
+    - gocritic
     - gosec
     - govet
     - iface
@@ -30,6 +21,7 @@ linters:
     - iotamixing
     - mirror
     - misspell
+    - modernize
     - nakedret
     - nilerr
     - noctx

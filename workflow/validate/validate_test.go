@@ -2757,7 +2757,7 @@ func TestSubstituteResourceManifestExpressions(t *testing.T) {
 	assert.NotEqual(t, resourceManifestWithExpressions, replaced)
 
 	// despite spacing in the expr itself we should have only 1 placeholder here
-	patt, _ := regexp.Compile(`placeholder\-\d+`)
+	patt := regexp.MustCompile(`placeholder\-\d+`)
 	matches := patt.FindAllString(replaced, -1)
 	assert.Len(t, matches, 2)
 	assert.Equal(t, matches[0], matches[1])

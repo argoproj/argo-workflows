@@ -18,13 +18,13 @@ import (
 // wfScope contains the current scope of variables available when executing a template
 type wfScope struct {
 	tmpl  *wfv1.Template
-	scope map[string]interface{}
+	scope map[string]any
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
-		scope: make(map[string]interface{}),
+		scope: make(map[string]any),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
@@ -60,8 +60,8 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 }
 
 // resolveVar resolves a parameter or artifact
-func (s *wfScope) resolveVar(v string) (interface{}, error) {
-	m := make(map[string]interface{})
+func (s *wfScope) resolveVar(v string) (any, error) {
+	m := make(map[string]any)
 	maps.Copy(m, s.scope)
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
@@ -71,7 +71,7 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	return template.ResolveVar(v, m)
 }
 
-func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
 	if p == nil || (p.Parameter == "" && p.Expression == "") {
 		return "", nil
 	}
@@ -93,7 +93,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	}
 
 	var err error
-	var val interface{}
+	var val any
 
 	if art.FromExpression != "" {
 		env := env.GetFuncMap(s.scope)

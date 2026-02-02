@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/upper/db/v4"
@@ -36,7 +37,7 @@ func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.Creat
 	_, err = s.db.GetSemaphoreLimit(ctx, name)
 	if err == nil {
 		return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("Database sync limit already exists in namespace \"%s\".", req.Namespace))
-	} else if err != db.ErrNoMoreRows {
+	} else if !errors.Is(err, db.ErrNoMoreRows) {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
@@ -60,7 +61,7 @@ func (s *dbSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncL
 	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	limit, err := s.db.GetSemaphoreLimit(ctx, name)
 	if err != nil {
-		if err == db.ErrNoMoreRows {
+		if errors.Is(err, db.ErrNoMoreRows) {
 			return nil, status.Error(codes.NotFound, fmt.Sprintf("Database sync limit not found in namespace \"%s\".", req.Namespace))
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -80,7 +81,7 @@ func (s *dbSyncProvider) updateSyncLimit(ctx context.Context, req *syncpkg.Updat
 	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	err = s.db.UpdateSemaphoreLimit(ctx, name, int(req.Limit))
 	if err != nil {
-		if err == db.ErrNoMoreRows {
+		if errors.Is(err, db.ErrNoMoreRows) {
 			return nil, status.Error(codes.NotFound, fmt.Sprintf("Database sync limit not found in namespace \"%s\".", req.Namespace))
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -102,7 +103,7 @@ func (s *dbSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpkg.Delet
 	name := fmt.Sprintf("%s/%s", req.Namespace, req.Key)
 	err = s.db.DeleteSemaphoreLimit(ctx, name)
 	if err != nil {
-		if err == db.ErrNoMoreRows {
+		if errors.Is(err, db.ErrNoMoreRows) {
 			return nil, status.Error(codes.NotFound, fmt.Sprintf("Database sync limit not found in namespace \"%s\".", req.Namespace))
 		}
 		return nil, sutils.ToStatusError(err, codes.Internal)

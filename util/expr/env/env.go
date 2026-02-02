@@ -17,7 +17,7 @@ func init() {
 	delete(sprigFuncMap, "expandenv")
 }
 
-func GetFuncMap(m map[string]interface{}) map[string]interface{} {
+func GetFuncMap(m map[string]any) map[string]any {
 	env := expand.Expand(m)
 	// Alias for the built-in `int` function, for backwards compatibility.
 	env["asInt"] = builtin.Int
@@ -29,7 +29,7 @@ func GetFuncMap(m map[string]interface{}) map[string]interface{} {
 	return env
 }
 
-func toJSON(v interface{}) string {
+func toJSON(v any) string {
 	output, err := json.Marshal(v)
 	if err != nil {
 		panic(err)
@@ -37,8 +37,8 @@ func toJSON(v interface{}) string {
 	return string(output)
 }
 
-func jsonPath(jsonStr string, path string) interface{} {
-	var jsonMap interface{}
+func jsonPath(jsonStr string, path string) any {
+	var jsonMap any
 	err := json.Unmarshal([]byte(jsonStr), &jsonMap)
 	if err != nil {
 		panic(err)

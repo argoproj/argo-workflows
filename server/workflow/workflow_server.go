@@ -672,7 +672,7 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if req.OutputParameters != "" {
 		err = json.Unmarshal([]byte(req.OutputParameters), &outputParams)
 		if err != nil {
-			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %s", err), codes.InvalidArgument)
+			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %w", err), codes.InvalidArgument)
 		}
 	}
 

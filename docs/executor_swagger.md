@@ -1002,7 +1002,7 @@ Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnkn
 | hooks | [LifecycleHooks](#lifecycle-hooks)| `LifecycleHooks` |  | |  |  |
 | inline | [Template](#template)| `Template` |  | |  |  |
 | name | string| `string` |  | | Name is the name of the target</br>+kubebuilder:validation:MaxLength=128</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$` |  |
-| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the</br>template, irrespective of the success, failure, or error of the</br>primary template.</br>DEPRECATED: Use Hooks[exit].Template instead. |  |
+| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the</br>template, irrespective of the success, failure, or error of the</br>primary template.</br></br>Deprecated: Use Hooks[exit].Template instead. |  |
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |

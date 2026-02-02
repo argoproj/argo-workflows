@@ -34,7 +34,7 @@ var variablesToCheck = []string{
 	"workflow.failures",
 }
 
-func anyVarNotInEnv(expression string, env map[string]interface{}) *string {
+func anyVarNotInEnv(expression string, env map[string]any) *string {
 	for _, variable := range variablesToCheck {
 		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
 			return &variable
@@ -43,7 +43,7 @@ func anyVarNotInEnv(expression string, env map[string]interface{}) *string {
 	return nil
 }
 
-func expressionReplace(ctx context.Context, w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+func expressionReplace(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -107,8 +107,8 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 	return w.Write(resultQuoted[1 : len(resultQuoted)-1])
 }
 
-func EnvMap(replaceMap map[string]string) map[string]interface{} {
-	envMap := make(map[string]interface{})
+func EnvMap(replaceMap map[string]string) map[string]any {
+	envMap := make(map[string]any)
 	for k, v := range replaceMap {
 		envMap[k] = v
 	}
@@ -124,7 +124,7 @@ func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
 	}
 outer:
 	for i := 0; i <= len(haystack)-len(needle); i++ {
-		for j := 0; j < len(needle); j++ {
+		for j := range needle {
 			if haystack[i+j].String() != needle[j].String() {
 				continue outer
 			}
@@ -167,7 +167,7 @@ func hasVariableInExpression(expression, variable string) bool {
 }
 
 // hasVarInEnv checks if a parameter is in env or not
-func hasVarInEnv(env map[string]interface{}, parameter string) bool {
+func hasVarInEnv(env map[string]any, parameter string) bool {
 	flattenEnv := bellows.Flatten(env)
 	_, ok := flattenEnv[parameter]
 	return ok
