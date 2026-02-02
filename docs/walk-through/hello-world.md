@@ -10,6 +10,8 @@ hello world
 Below, run the same container on a Kubernetes cluster with a Workflow.
 The comments provide useful explanations.
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow                  # new type of k8s spec
@@ -28,6 +30,30 @@ spec:
             memory: 32Mi
             cpu: 100m
 ```
+
+///
+
+/// tab | Python
+
+```py
+from hera.workflows import Container, Resources, Workflow # (1)!
+
+with Workflow(
+    generate_name="hello-world-",
+    entrypoint="hello-world",
+) as w:
+    Container(
+        name="hello-world",
+        image="busybox",
+        command=["echo"],
+        args=["hello world"],
+        resources=Resources(memory_limit="32Mi", cpu_limit="100m"),
+    )
+```
+
+1. Install the `hera` package to define your Workflows in Python. Learn more at [the Hera docs](https://hera.readthedocs.io/en/stable/).
+
+///
 
 Argo adds a new `kind` of Kubernetes resource called a `Workflow`.
 

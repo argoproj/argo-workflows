@@ -1,6 +1,10 @@
 # Output Parameters
 
-Output parameters provide a general mechanism to use the result of a step as a parameter (and not just as an artifact). This allows you to use the result from any type of step, not just a `script`, for conditional tests, loops, and arguments. Output parameters work similarly to `script result` except that the value of the output parameter is set to the contents of a generated file rather than the contents of `stdout`.
+Output parameters allow multiple values to be outputted from any type of template, not just as an artifact or as the script `result` output.
+Output parameters are declared within the template, similarly to artifacts, and also take their value from a file.
+They can then be accessed from steps or tasks, and can be used for conditional tests, loops, and arguments.
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -42,6 +46,49 @@ spec:
       command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import (
+    Container,
+    Parameter,
+    Steps,
+    Workflow,
+    models as m,
+)
+
+with Workflow(generate_name="output-parameter-", entrypoint="output-parameter") as w:
+    hello_world_to_file = Container(
+        name="hello-world-to-file",
+        image="busybox",
+        command=["sh", "-c"],
+        args=["echo -n hello world > /tmp/hello_world.txt"],
+        outputs=Parameter(
+            name="hello-param",
+            value_from=m.ValueFrom(
+                path="/tmp/hello_world.txt",
+            ),
+        ),
+    )
+    print_message = Container(
+        name="print-message",
+        image="busybox",
+        command=["echo"],
+        args=["{{inputs.parameters.message}}"],
+        inputs=Parameter(name="message"),
+    )
+    with Steps(name="output-parameter"):
+        generate_step = hello_world_to_file(name="generate-parameter")
+        print_message(
+            name="consume-parameter",
+            arguments={"message": generate_step.get_parameter("hello-param")},
+        )
+```
+
+///
 
 DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-parameter.outputs.parameters.hello-param}}`.
 

@@ -11,6 +11,8 @@ Often, the output artifacts of one step may be used as input artifacts to a subs
 The below workflow spec consists of two steps that run in sequence.
 The first step named `generate-artifact` will generate an artifact using the `hello-world-to-file` template that will be consumed by the second step named `print-message-from-file` that then consumes the generated artifact.
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -57,6 +59,42 @@ spec:
       args: ["cat /tmp/message"]
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Artifact, Container, Step, Steps, Workflow # (1)!
+
+with Workflow(generate_name="artifact-passing-", entrypoint="artifact-example") as w:
+    hello_world_to_file = Container(
+        name="hello-world-to-file",
+        image="busybox",
+        command=["sh", "-c"],
+        args=["sleep 1; echo hello world | tee /tmp/hello_world.txt"],
+        outputs=[Artifact(name="hello-art", path="/tmp/hello_world.txt")],
+    )
+    print_message_from_file = Container(
+        name="print-message-from-file",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["cat /tmp/message"],
+        inputs=[Artifact(name="message", path="/tmp/message")],
+    )
+
+    with Steps(name="artifact-example") as s:
+        gen_step = Step(name="generate-artifact", template=hello_world_to_file)
+        Step(
+            name="consume-artifact",
+            template=print_message_from_file,
+            arguments={"message": gen_step.get_artifact("hello-art")},
+        )
+```
+
+1. Install the `hera` package to define your Workflows in Python. Learn more at [the Hera docs](https://hera.readthedocs.io/en/stable/).
+
+///
+
 In this Workflow:
 
 - The `hello-world-to-file` template uses the `echo` command to generate a file named `/tmp/hello-world.txt`.
@@ -67,6 +105,8 @@ In this Workflow:
   DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
 Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.
+
+/// tab | YAML
 
 ```yaml
 # <... snipped ...>
@@ -91,6 +131,34 @@ Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec
 # <... snipped ...>
 ```
 
+///
+
+/// tab | Python
+
+```python
+# <... snipped ...>
+    cat_large_artifact = Container(
+        name="large-artifact",
+        image="alpine:latest",
+        command=["sh", "-c"],
+        args=["cat /tmp/large-file"],
+        inputs=[Artifact(name="data", path="/tmp/large-file")],
+        pod_spec_patch=json.dumps({
+          "initContainers": [
+            {
+              "name": "init",
+              "resources": {
+                "requests": {"memory": "2Gi", "cpu": "300m"}
+              }
+            }
+          ]
+        }),
+    )
+# <... snipped ...>
+```
+
+///
+
 ## Setting File Behavior
 
 ### Archive Strategy
@@ -98,6 +166,8 @@ Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec
 Artifacts are packaged as Tarballs and gzipped by default.
 You may customize this behavior by specifying an archive strategy, using the `archive` field.
 For example:
+
+/// tab | YAML
 
 ```yaml
 # <... snipped ...>
@@ -127,12 +197,40 @@ For example:
 # <... snipped ...>
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Artifact, NoneArchiveStrategy, TarArchiveStrategy
+
+# <... snipped ...>
+outputs=[
+    Artifact(name="hello-art-1", path="/tmp/hello_world.txt"),
+    Artifact(
+      name="hello-art-2",
+      path="/tmp/hello_world.txt",
+      archive=NoneArchiveStrategy()
+    ),
+    Artifact(
+        name="hello-art-3",
+        path="/tmp/hello_world.txt",
+        archive=TarArchiveStrategy(compression_level=0),
+    ),
+]
+# <... snipped ...>
+```
+
+///
+
 ### File Permissions (`mode`)
 
 It is good practice to specify the `mode` of the input file, to ensure your container code can always interact with it (reading/writing/executing) as expected.
 [This article](https://www.redhat.com/en/blog/linux-file-permissions-explained) explains file permissions and octal values.
 
 For example, to allow the user to execute `/bin/kubectl`, we set `mode: 0755`.
+
+/// tab | YAML
 
 ```yaml
 # <... snipped ...>
@@ -149,6 +247,28 @@ For example, to allow the user to execute `/bin/kubectl`, we set `mode: 0755`.
 # <... snipped ...>
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import HTTPArtifact
+
+# <... snipped ...>
+        name="executable-artifact",
+        inputs=[
+            HTTPArtifact(
+                name="kubectl",
+                path="/bin/kubectl",
+                mode=0o755,
+                url="https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl",
+            ),
+        ],
+# <... snipped ...>
+```
+
+///
+
 !!! Note
     `0755` is a YAML-formatted octal value (`0o755` is also allowed in YAML spec 1.2).
     When the Kubernetes API receives and validates the octal `mode` value, it will be stored in decimal.
@@ -161,6 +281,8 @@ As of version 3.4 you can configure your Workflow to automatically delete Artifa
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`.
 You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -196,6 +318,48 @@ spec:
               strategy: Never   # optional override for an Artifact
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows.models import (
+    ArtifactGC,
+    WorkflowLevelArtifactGC,
+)
+from hera.workflows import Container, S3Artifact, Workflow
+
+with Workflow(
+    generate_name="artifact-gc-",
+    artifact_gc=WorkflowLevelArtifactGC(strategy="OnWorkflowDeletion"),
+    entrypoint="main",
+) as w:
+    Container(
+        name="main",
+        image="argoproj/argosay:v2",
+        command=["sh", "-c"],
+        args=[
+            'echo "can throw this away" > /tmp/temporary-artifact.txt\necho "keep this" > /tmp/keep-this.txt\n'
+        ],
+        outputs=[
+            S3Artifact(
+                name="temporary-artifact",
+                path="/tmp/temporary-artifact.txt",
+                key="temporary-artifact.txt",
+            ),
+            S3Artifact(
+                name="keep-this",
+                path="/tmp/keep-this.txt",
+                key="keep-this.txt",
+                artifact_gc=ArtifactGC(strategy="Never"),
+            ),
+        ],
+
+    )
+```
+
+///
+
 ### Artifact Naming
 
 Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec.
@@ -210,6 +374,8 @@ Here are two examples:
   Otherwise, Argo will fail to create the archive file.
 
 Example (A) without packaging as `.tgz`
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -243,7 +409,45 @@ spec:
               key: "{{workflow.name}}/directory/" # IMPORTANT! ends with "/"
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, NoneArchiveStrategy, S3Artifact, Workflow
+from hera.workflows.models import WorkflowLevelArtifactGC
+
+with Workflow(
+    generate_name="artifact-gc-dir-key-",
+    artifact_gc=WorkflowLevelArtifactGC(strategy="OnWorkflowDeletion"),
+    entrypoint="main",
+) as w:
+    Container(
+        name="main",
+        image="argoproj/argosay:v2",
+        command=["sh", "-c"],
+        args=[
+            """\
+mkdir /tmp/tmp-directory
+echo "can throw this away" > /tmp/tmp-directory/delete-this.txt
+echo "and this too" > /tmp/tmp-directory/delete-this-too.txt"""
+        ],
+        outputs=[
+            S3Artifact(
+                name="temporary-artifact",
+                path="/tmp/tmp-directory",
+                key="{{workflow.name}}/directory/", # IMPORTANT! ends with "/"
+                archive=NoneArchiveStrategy(),
+            ),
+        ],
+    )
+```
+
+///
+
 Example (B) with packaging as `.tgz`
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -277,11 +481,48 @@ spec:
               key: "{{workflow.name}}/archive.tgz" # IMPORTANT! must not end with "/"
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, S3Artifact, TarArchiveStrategy, Workflow
+from hera.workflows.models import (
+    WorkflowLevelArtifactGC,
+)
+
+with Workflow(
+    generate_name="artifact-gc-dir-key-",
+    artifact_gc=WorkflowLevelArtifactGC(strategy="OnWorkflowDeletion"),
+    entrypoint="main",
+) as w:
+    Container(
+        name="main",
+        outputs=[
+            S3Artifact(
+                name="temporary-artifact",
+                path="/tmp/tmp-directory",
+                key="{{workflow.name}}/archive.tgz",
+                archive=TarArchiveStrategy(compression_level=1),
+            ),
+        ],
+        args=[
+            'mkdir /tmp/tmp-directory\necho "can throw this away" > /tmp/tmp-directory/delete-this.txt\necho "and this too" > /tmp/tmp-directory/delete-this-too.txt\n'
+        ],
+        command=["sh", "-c"],
+        image="argoproj/argosay:v2",
+    )
+```
+
+///
+
 ### Service Accounts and Annotations
 
 Does your S3 bucket require you to run with a special Service Account or IAM Role Annotation?
 You can either use the same ones you use for creating artifacts or generate new ones that are specific for deletion permission.
 Generally users will probably just have a single Service Account or IAM Role to apply to all artifacts for the Workflow, but you can also customize on the artifact level if you need that:
+
+/// tab | YAML
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -332,6 +573,64 @@ spec:
               strategy: Never
 ```
 
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Container, S3Artifact, Workflow
+from hera.workflows.models import (
+    ArtifactGC,
+    Metadata,
+    WorkflowLevelArtifactGC,
+)
+
+with Workflow(
+    generate_name="artifact-gc-",
+    artifact_gc=WorkflowLevelArtifactGC(
+        pod_metadata=Metadata(
+            annotations={
+                "eks.amazonaws.com/role-arn": "arn:aws:iam::111122223333:role/my-iam-role"
+            }
+        ),
+        service_account_name="my-sa",
+        strategy="OnWorkflowDeletion",
+    ),
+    entrypoint="main",
+) as w:
+    Container(
+        name="main",
+        image="argoproj/argosay:v2",
+        command=["sh", "-c"],
+        args=[
+            'echo "can throw this away" > /tmp/temporary-artifact.txt\necho "keep this" > /tmp/keep-this.txt\n'
+        ],
+        outputs=[
+            S3Artifact(
+                name="temporary-artifact",
+                path="/tmp/temporary-artifact.txt",
+                key="temporary-artifact-{{workflow.uid}}.txt",
+                artifact_gc=ArtifactGC(
+                    pod_metadata=Metadata(
+                        annotations={
+                            "eks.amazonaws.com/role-arn": "arn:aws:iam::111122223333:role/artifact-specific-iam-role"
+                        }
+                    ),
+                    service_account_name="artifact-specific-sa",
+                ),
+            ),
+            S3Artifact(
+                    name="keep-this",
+                    path="/tmp/keep-this.txt",
+                    key="keep-this-{{workflow.uid}}.txt",
+                    artifact_gc=ArtifactGC(strategy="Never"),
+            )
+        ],
+    )
+```
+
+///
+
 If you do supply your own Service Account you will need to create a RoleBinding that binds it with a role like this:
 
 ```yaml
@@ -370,6 +669,8 @@ For additional debugging, the user should find 1 or more Pods named `<wfName>-ar
 
 If the user needs to delete the Workflow and its child CRD objects, they will need to patch the Workflow to remove the finalizer preventing the deletion:
 
+/// tab | YAML
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -377,6 +678,21 @@ metadata:
   finalizers:
   - workflows.argoproj.io/artifact-gc
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Workflow
+
+with Workflow(
+    finalizers=["workflows.argoproj.io/artifact-gc"],
+) as w:
+    ...
+```
+
+///
 
 The finalizer can be deleted by doing:
 
@@ -392,6 +708,8 @@ Or for simplicity use the Argo CLI `argo delete` command with flag `--force`, wh
 
 A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails:
 
+/// tab | YAML
+
 ```yaml
 spec:
   artifactGC:
@@ -399,3 +717,21 @@ spec:
     forceFinalizerRemoval: true
 
 ```
+
+///
+
+/// tab | Python
+
+```python
+from hera.workflows import Workflow
+from hera.workflows.models import WorkflowLevelArtifactGC
+
+with Workflow(
+    artifact_gc=WorkflowLevelArtifactGC(
+        force_finalizer_removal=True, strategy="OnWorkflowDeletion"
+    ),
+) as w:
+    ...
+```
+
+///
