@@ -51,14 +51,12 @@ func (s *Controller) Run(ctx context.Context, stopCh <-chan struct{}) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	for w := 0; w < s.workerCount; w++ {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for operation := range s.operationQueue {
 				ctx := operation.Context()
 				_ = operation.Dispatch(ctx)
 			}
-		}()
-		wg.Add(1)
+		})
 	}
 
 	<-stopCh

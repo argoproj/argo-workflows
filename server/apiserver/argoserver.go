@@ -487,10 +487,7 @@ func (as *argoServer) validateArtifactDriverConnections(ctx context.Context, cfg
 
 	// Validate each driver connection in parallel
 	for _, driver := range cfg.ArtifactDrivers {
-		wg.Add(1)
-		go func(driver config.ArtifactDriver) {
-			defer wg.Done()
-
+		wg.Go(func() {
 			// Create a new driver connection
 			pluginDriver, err := plugin.NewDriver(ctx, driver.Name, driver.Name.SocketPath(), driver.ConnectionTimeout())
 			if err != nil {
@@ -506,7 +503,7 @@ func (as *argoServer) validateArtifactDriverConnections(ctx context.Context, cfg
 			}()
 
 			log.WithField("driver", driver.Name).Info(ctx, "Successfully validated connection to artifact driver")
-		}(driver)
+		})
 	}
 
 	// Wait for all validations to complete

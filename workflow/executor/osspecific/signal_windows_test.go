@@ -22,14 +22,11 @@ func TestKill(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		err = cmd.Wait()
 		// we'll get an exit code
 		assert.Error(t, err)
-	}()
+	})
 
 	err = Kill(cmd.Process.Pid, syscall.SIGTERM)
 	require.NoError(t, err)
