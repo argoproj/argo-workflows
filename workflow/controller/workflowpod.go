@@ -571,7 +571,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					// Add env var pointing to the args file
 					c.Env = append(c.Env, apiv1.EnvVar{
 						Name:  common.EnvVarContainerArgsFile,
-						Value: common.EnvConfigMountPath + "/ARGO_CONTAINER_ARGS",
+						Value: common.EnvConfigMountPath + "/" + common.EnvVarContainerArgsFile,
 					})
 					c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
 					pod.Spec.Containers[i] = c
