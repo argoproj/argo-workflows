@@ -142,8 +142,10 @@ func (i initLogger) Warn(ctx context.Context, message string) {
 	i.add(Warn, message)
 }
 
+//nolint:gocritic
 func (i initLogger) Error(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
+	defer i.storage.mutex.Unlock()
 	i.add(Error, message)
 	if i.storage.fatal {
 		i.storage.mutex.Unlock()
@@ -156,7 +158,6 @@ func (i initLogger) Error(ctx context.Context, message string) {
 		exitFunc(1)
 		return
 	}
-	i.storage.mutex.Unlock()
 }
 
 func emitInitLogs(ctx context.Context, logger Logger) {
