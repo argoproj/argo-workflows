@@ -158,7 +158,10 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	ctx, cancel := context.WithTimeout(ctx, terminationGracePeriodDuration)
 	defer cancel()
 	err := e.Wait(ctx, containerNames)
-	if !errors.Is(err, context.Canceled) {
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
 	for _, containerName := range containerNames {
@@ -173,5 +176,9 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 			return err
 		}
 	}
+	// Old context has expired here
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	//nolint:contextcheck
 	return e.Wait(ctx, containerNames)
 }
