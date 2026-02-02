@@ -93,7 +93,7 @@ func NewEmissaryCommand() *cobra.Command {
 							"argIndex": i,
 							"size":     len(args[i]),
 							"filePath": filePath,
-						}).Info(ctx, "Offloaded large argument to file")
+						}).Info(ctx, "Offloaded large argument to file. Downstream program must support @filename syntax")
 						args[i] = "@" + filePath
 					}
 				}

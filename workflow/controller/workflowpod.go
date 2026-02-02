@@ -578,7 +578,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					})
 					c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
 					pod.Spec.Containers[i] = c
-					log.WithField("container", containerArgsName).Info(ctx, "Offloaded container args to configmap")
+					log.WithField("container", containerArgsName).Info(ctx, "Offloaded container args to configmap. Args >128KB will use @filename syntax")
 				}
 			}
 		}
