@@ -469,7 +469,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			continue
 		}
 		if c.Args != nil {
-			argsJSON, _ := json.Marshal(c.Args)
+			argsJSON, err := json.Marshal(c.Args)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal container args for %s: %w", c.Name, err)
+			}
 			if len(argsJSON) > maxEnvVarLen {
 				offloadContainerArgs = true
 				containerArgsValue = string(argsJSON)
