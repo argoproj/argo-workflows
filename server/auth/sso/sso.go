@@ -170,9 +170,8 @@ func newSso(
 	if err != nil {
 		if isSecretAlreadyExists {
 			return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
-		} else {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
 		}
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	clientID := clientIDObj.Data[c.ClientID.Key]

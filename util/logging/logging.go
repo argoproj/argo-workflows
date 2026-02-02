@@ -71,25 +71,13 @@ func ParseLevelOr(s string, defaultLevel Level) (Level, error) {
 // ParseLevel parses a string into a Level enum
 func ParseLevel(s string) (Level, error) {
 	switch strings.ToLower(s) {
-	// legacy removed level
-	case "trace":
+	case "trace", "debug": // trace is a legacy removed level
 		return Debug, nil
-	case "debug":
-		return Debug, nil
-	case "info":
-		return Info, nil
-	// legacy removed level
-	case "print":
+	case "info", "print": // print is a legacy removed level
 		return Info, nil
 	case "warn":
 		return Warn, nil
-	case "error":
-		return Error, nil
-	// legacy removed level
-	case "fatal":
-		return Error, nil
-	// legacy removed level
-	case "panic":
+	case "error", "fatal", "panic": // fatal and panic are legacy removed levels
 		return Error, nil
 	default:
 		return "", fmt.Errorf("invalid log level: %s", s)

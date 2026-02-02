@@ -20,10 +20,9 @@ func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
 		}
 		if value, exists := v.GetLabels()[common.LabelKeyPhase]; exists {
 			return []string{value}, nil
-		} else {
-			// If the object doesn't have a phase set, consider it pending
-			return []string{string(v1alpha1.NodePending)}, nil
 		}
+		// If the object doesn't have a phase set, consider it pending
+		return []string{string(v1alpha1.NodePending)}, nil
 	}
 }
 
@@ -35,8 +34,7 @@ func MetaNamespaceLabelIndexFunc(label string) cache.IndexFunc {
 		}
 		if value, exists := v.GetLabels()[label]; exists {
 			return []string{MetaNamespaceLabelIndex(v.GetNamespace(), value)}, nil
-		} else {
-			return nil, nil
 		}
+		return nil, nil
 	}
 }

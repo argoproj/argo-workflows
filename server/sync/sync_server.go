@@ -25,7 +25,7 @@ type syncServer struct {
 	providers map[syncpkg.SyncConfigType]SyncConfigProvider
 }
 
-func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) *syncServer {
+func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) syncpkg.SyncServiceServer {
 	server := &syncServer{
 		providers: make(map[syncpkg.SyncConfigType]SyncConfigProvider),
 	}

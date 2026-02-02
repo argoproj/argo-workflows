@@ -18,19 +18,34 @@ const (
 	lockKindMutex     lockKind = "Mutex"
 )
 
-type lockName struct {
-	Namespace    string
-	ResourceName string
-	Key          string
-	Kind         lockKind
+// LockName represents a decoded lock name with its components.
+type LockName interface {
+	GetNamespace() string
+	GetResourceName() string
+	GetKey() string
+	getKind() lockKind
+	getDBKey() string
+	String(ctx context.Context) string
 }
+
+type lockName struct {
+	namespace    string
+	resourceName string
+	key          string
+	kind         lockKind
+}
+
+func (ln *lockName) GetNamespace() string    { return ln.namespace }
+func (ln *lockName) GetResourceName() string { return ln.resourceName }
+func (ln *lockName) GetKey() string          { return ln.key }
+func (ln *lockName) getKind() lockKind       { return ln.kind }
 
 func newLockName(namespace, resourceName, lockKey string, kind lockKind) *lockName {
 	return &lockName{
-		Namespace:    namespace,
-		ResourceName: resourceName,
-		Key:          lockKey,
-		Kind:         kind,
+		namespace:    namespace,
+		resourceName: resourceName,
+		key:          lockKey,
+		kind:         kind,
 	}
 }
 
@@ -77,7 +92,7 @@ func (i *syncItem) lockName(wfNamespace string) (*lockName, error) {
 	}
 }
 
-func DecodeLockName(ctx context.Context, name string) (*lockName, error) {
+func DecodeLockName(ctx context.Context, name string) (LockName, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	log.WithField("name", name).Info(ctx, "DecodeLockName")
 	items := strings.SplitN(name, "/", 3)
@@ -91,7 +106,7 @@ func DecodeLockName(ctx context.Context, name string) (*lockName, error) {
 
 	switch lockKind {
 	case lockKindMutex, lockKindDatabase:
-		lock = lockName{Namespace: namespace, Kind: lockKind, ResourceName: items[2]}
+		lock = lockName{namespace: namespace, kind: lockKind, resourceName: items[2]}
 	case lockKindConfigMap:
 		components := strings.Split(items[2], "/")
 
@@ -99,7 +114,7 @@ func DecodeLockName(ctx context.Context, name string) (*lockName, error) {
 			return nil, errors.New(errors.CodeBadRequest, "Invalid ConfigMap lock key: unknown format")
 		}
 
-		lock = lockName{Namespace: namespace, Kind: lockKind, ResourceName: components[0], Key: components[1]}
+		lock = lockName{namespace: namespace, kind: lockKind, resourceName: components[0], key: components[1]}
 	default:
 		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("Invalid lock key, unexpected kind: %s", lockKind))
 	}
@@ -112,25 +127,25 @@ func DecodeLockName(ctx context.Context, name string) (*lockName, error) {
 }
 
 func (ln *lockName) String(ctx context.Context) string {
-	switch ln.Kind {
+	switch ln.kind {
 	case lockKindMutex, lockKindDatabase:
-		return ln.validateEncoding(ctx, fmt.Sprintf("%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName))
+		return ln.validateEncoding(ctx, fmt.Sprintf("%s/%s/%s", ln.namespace, ln.kind, ln.resourceName))
 	default:
-		return ln.validateEncoding(ctx, fmt.Sprintf("%s/%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key))
+		return ln.validateEncoding(ctx, fmt.Sprintf("%s/%s/%s/%s", ln.namespace, ln.kind, ln.resourceName, ln.key))
 	}
 }
 
 func (ln *lockName) validate() error {
-	if ln.Namespace == "" {
+	if ln.namespace == "" {
 		return errors.New(errors.CodeBadRequest, "Invalid lock key: Namespace is missing")
 	}
-	if ln.Kind == "" {
+	if ln.kind == "" {
 		return errors.New(errors.CodeBadRequest, "Invalid lock key: Kind is missing")
 	}
-	if ln.ResourceName == "" {
+	if ln.resourceName == "" {
 		return errors.New(errors.CodeBadRequest, "Invalid lock key: ResourceName is missing")
 	}
-	if ln.Kind == lockKindConfigMap && ln.Key == "" {
+	if ln.kind == lockKindConfigMap && ln.key == "" {
 		return errors.New(errors.CodeBadRequest, "Invalid lock key: Key is missing for ConfigMap lock")
 	}
 	return nil
@@ -141,14 +156,14 @@ func (ln *lockName) validateEncoding(ctx context.Context, encoding string) strin
 	if err != nil {
 		panic(fmt.Sprintf("bug: unable to decode lock (%s) that was just encoded: %s", encoding, err))
 	}
-	if ln.Namespace != decoded.Namespace || ln.Kind != decoded.Kind || ln.ResourceName != decoded.ResourceName || ln.Key != decoded.Key {
+	if ln.namespace != decoded.GetNamespace() || ln.resourceName != decoded.GetResourceName() || ln.key != decoded.GetKey() {
 		panic("bug: lock that was just encoded does not match encoding")
 	}
 	return encoding
 }
 
-func (ln *lockName) dbKey() string {
-	return fmt.Sprintf("%s/%s", ln.Namespace, ln.ResourceName)
+func (ln *lockName) getDBKey() string {
+	return fmt.Sprintf("%s/%s", ln.namespace, ln.resourceName)
 }
 
 func needDBSession(ctx context.Context, lockKeys []string) (bool, error) {
@@ -157,7 +172,7 @@ func needDBSession(ctx context.Context, lockKeys []string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if lock.Kind == lockKindDatabase {
+		if lock.getKind() == lockKindDatabase {
 			return true, nil
 		}
 	}

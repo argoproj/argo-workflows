@@ -58,12 +58,12 @@ func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, logger}
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, false)
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, true)
 }
@@ -76,7 +76,8 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 //	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}/{fileDir}/.../{fileName}
 //
 // 'id' field represents 'uid' for archived workflows and 'name' for non-archived
-// nolint: contextcheck
+//
+//nolint:contextcheck
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 	const (
 		namespaceIndex      = 2
@@ -331,7 +332,7 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 	a.getArtifactByUID(w, r, true)
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) != 5 {
@@ -554,10 +555,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
 		http.Error(w, errStr, http.StatusInternalServerError)
 		return errors.New(errStr)
-	} else {
-		w.WriteHeader(http.StatusOK)
 	}
-
+	w.WriteHeader(http.StatusOK)
 	return nil
 }
 

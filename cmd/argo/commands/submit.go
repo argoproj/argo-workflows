@@ -88,9 +88,8 @@ func NewSubmitCommand() *cobra.Command {
 			namespace := client.Namespace(ctx)
 			if from != "" {
 				return submitWorkflowFromResource(ctx, serviceClient, namespace, from, &submitOpts, &cliSubmitOpts)
-			} else {
-				return submitWorkflowsFromFile(ctx, serviceClient, namespace, args, &submitOpts, &cliSubmitOpts)
 			}
+			return submitWorkflowsFromFile(ctx, serviceClient, namespace, args, &submitOpts, &cliSubmitOpts)
 		},
 	}
 	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, true)

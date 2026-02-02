@@ -153,8 +153,6 @@ func (e argoerr) HTTPCode() int {
 		return http.StatusBadRequest
 	case CodeNotImplemented:
 		return http.StatusNotImplemented
-	case CodeTimeout, CodeInternal:
-		return http.StatusInternalServerError
 	default:
 		return http.StatusInternalServerError
 	}

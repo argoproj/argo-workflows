@@ -44,21 +44,22 @@ type instrumentOptions struct {
 	defaultBuckets []float64
 }
 
-type instrumentOption func(*instrumentOptions)
+// InstrumentOption is a functional option for configuring instruments.
+type InstrumentOption func(*instrumentOptions)
 
-func WithAsBuiltIn() instrumentOption {
+func WithAsBuiltIn() InstrumentOption {
 	return func(o *instrumentOptions) {
 		o.builtIn = true
 	}
 }
 
-func WithDefaultBuckets(buckets []float64) instrumentOption {
+func WithDefaultBuckets(buckets []float64) InstrumentOption {
 	return func(o *instrumentOptions) {
 		o.defaultBuckets = buckets
 	}
 }
 
-func collectOptions(options ...instrumentOption) instrumentOptions {
+func collectOptions(options ...InstrumentOption) instrumentOptions {
 	var o instrumentOptions
 	for _, opt := range options {
 		opt(&o)
@@ -66,7 +67,7 @@ func collectOptions(options ...instrumentOption) instrumentOptions {
 	return o
 }
 
-func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
+func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...InstrumentOption) error {
 	opts := collectOptions(options...)
 	err := m.preCreateCheck(name)
 	if err != nil {

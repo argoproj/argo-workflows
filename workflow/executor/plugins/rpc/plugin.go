@@ -7,12 +7,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
-	rpc "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
+	rpc "github.com/argoproj/argo-workflows/v3/workflow/util/plugin"
 )
 
 type plugin struct{ rpc.Client }
 
-func New(address, token string) *plugin {
+func New(address, token string) executorplugins.TemplateExecutor {
 	return &plugin{Client: rpc.New(address, token, 30*time.Second, wait.Backoff{
 		Duration: time.Second,
 		Jitter:   0.2,

@@ -254,9 +254,8 @@ func (tplCtx *TemplateContext) WithTemplateHolder(ctx context.Context, tmplHolde
 		tmplName := tmplRef.Name
 		if tmplRef.ClusterScope {
 			return tplCtx.WithClusterWorkflowTemplate(ctx, tmplName)
-		} else {
-			return tplCtx.WithWorkflowTemplate(ctx, tmplName)
 		}
+		return tplCtx.WithWorkflowTemplate(ctx, tmplName)
 	}
 	return tplCtx.WithTemplateBase(tplCtx.tmplBase), nil
 }

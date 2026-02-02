@@ -18,9 +18,8 @@ func Backoff(b wait.Backoff, f func() (bool, error)) error {
 	if waitErr != nil {
 		if err != nil {
 			return fmt.Errorf("%w: %w", waitErr, err)
-		} else {
-			return waitErr
 		}
+		return waitErr
 	}
 	return err
 }

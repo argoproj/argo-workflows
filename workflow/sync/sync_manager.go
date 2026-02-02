@@ -346,13 +346,12 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 					"error":     err,
 				}).Info(ctx, "TryAcquire - serialization conflict, retrying")
 				continue
-			} else {
-				sm.log.WithFields(logging.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-					"error":     err,
-				}).Info(ctx, "TryAcquire - tx failed")
 			}
+			sm.log.WithFields(logging.Fields{
+				"holderKey": holderKey,
+				"attempt":   retryCounter + 1,
+				"error":     err,
+			}).Info(ctx, "TryAcquire - tx failed")
 			// For other errors, return immediately
 			return false, false, "", failedLockName, err
 		}
@@ -612,16 +611,16 @@ func (sm *Manager) initializeSemaphore(ctx context.Context, semaphoreName string
 	if err != nil {
 		return nil, err
 	}
-	switch lock.Kind {
+	switch lock.getKind() {
 	case lockKindConfigMap:
 		return newInternalSemaphore(ctx, semaphoreName, sm.nextWorkflow, sm.getSyncLimit, sm.syncLimitCacheTTL)
 	case lockKindDatabase:
 		if sm.dbInfo.Session == nil {
 			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
 		}
-		return newDatabaseSemaphore(ctx, semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
+		return newDatabaseSemaphore(ctx, semaphoreName, lock.getDBKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
 	default:
-		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.Kind)
+		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.getKind())
 	}
 }
 
@@ -630,16 +629,16 @@ func (sm *Manager) initializeMutex(ctx context.Context, mutexName string) (semap
 	if err != nil {
 		return nil, err
 	}
-	switch lock.Kind {
+	switch lock.getKind() {
 	case lockKindMutex:
 		return newInternalMutex(mutexName, sm.nextWorkflow), nil
 	case lockKindDatabase:
 		if sm.dbInfo.Session == nil {
 			return nil, fmt.Errorf("database session is not available for mutex %s", mutexName)
 		}
-		return newDatabaseMutex(mutexName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
+		return newDatabaseMutex(mutexName, lock.getDBKey(), sm.nextWorkflow, sm.dbInfo), nil
 	default:
-		return nil, fmt.Errorf("invalid lock kind %s when initializing mutex", lock.Kind)
+		return nil, fmt.Errorf("invalid lock kind %s when initializing mutex", lock.getKind())
 	}
 }
 

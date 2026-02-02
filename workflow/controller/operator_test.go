@@ -9929,18 +9929,20 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Run(tt.podNameVersion, func(t *testing.T) {
+			t.Setenv("POD_NAMES", tt.podNameVersion)
 
-		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
-		cancel, controller := newController(logging.TestContext(t.Context()), wf)
-		defer cancel()
+			wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+			cancel, controller := newController(logging.TestContext(t.Context()), wf)
+			defer cancel()
 
-		ctx := logging.TestContext(t.Context())
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
+			ctx := logging.TestContext(t.Context())
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-		woc.operate(ctx)
-		annotations := woc.wf.GetAnnotations()
-		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
+			woc.operate(ctx)
+			annotations := woc.wf.GetAnnotations()
+			assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
+		})
 	}
 }
 
@@ -11222,7 +11224,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	for _, node := range woc.wf.Status.Nodes {
 		woc.wf.Status.MarkTaskResultIncomplete(ctx, node.ID)
 	}
-	err, podReconciliationCompleted := woc.podReconciliation(ctx)
+	podReconciliationCompleted, err := woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	assert.False(t, podReconciliationCompleted)
 
@@ -11240,7 +11242,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
 		}
 	}
-	err, podReconciliationCompleted = woc.podReconciliation(ctx)
+	podReconciliationCompleted, err = woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	assert.True(t, podReconciliationCompleted)
 	woc.operate(ctx)

@@ -81,6 +81,11 @@ import (
 
 var MaxGRPCMessageSize int
 
+// Server is the interface for the Argo API server
+type Server interface {
+	Run(ctx context.Context, port int, browserOpenFunc func(string))
+}
+
 type argoServer struct {
 	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
@@ -141,10 +146,10 @@ func getResourceCacheNamespace(managedNamespace string) string {
 	return v1.NamespaceAll
 }
 
-func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
+func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
-	var resourceCache *cache.ResourceCache = nil
+	var resourceCache *cache.ResourceCache
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
@@ -423,16 +428,16 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
 		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
 	)
-	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(sensorpkg.RegisterSensorServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(syncpkg.RegisterSyncServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, infopkg.RegisterInfoServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, eventpkg.RegisterEventServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, sensorpkg.RegisterSensorServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(ctx, syncpkg.RegisterSyncServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// we must delete this header for API request to prevent "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR" error
@@ -577,7 +582,7 @@ func (as *argoServer) validateArtifactDriverImages(ctx context.Context, cfg *con
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
 
 // mustRegisterGWHandler is a convenience function to register a gateway handler
-func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) {
+func mustRegisterGWHandler(ctx context.Context, register registerFunc, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) {
 	err := register(ctx, mux, endpoint, opts)
 	if err != nil {
 		panic(err)
