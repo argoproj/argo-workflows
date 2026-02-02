@@ -3,6 +3,7 @@ package emissary
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
@@ -85,7 +86,7 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 		// If compressed file does not exist then the source artifact did not exist
 		// and we throw an Argo NotFound error to handle optional artifacts upstream
 		if os.IsNotExist(err) {
-			return errors.New(errors.CodeNotFound, err.Error())
+			return argoerrors.New(argoerrors.CodeNotFound, err.Error())
 		}
 		return err
 	}
@@ -145,7 +146,10 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	ctx, cancel := context.WithTimeout(ctx, terminationGracePeriodDuration)
 	defer cancel()
 	err := e.Wait(ctx, containerNames)
-	if err != context.Canceled {
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
 	for _, containerName := range containerNames {
@@ -155,5 +159,9 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 			return err
 		}
 	}
+	// Old context has expired here
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	//nolint:contextcheck
 	return e.Wait(ctx, containerNames)
 }
