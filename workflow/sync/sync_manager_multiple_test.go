@@ -187,7 +187,6 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 
 	// Function to run workflows for a sync manager
 	runWorkflows := func(sm *Manager, name string, count int) {
-		defer wg.Done()
 		for testCounter := range count {
 			wfCopy := wfbase.DeepCopy()
 			wfName := fmt.Sprintf("%s-%d", name, testCounter)
@@ -228,9 +227,8 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 
 	const iterationCount = 5
 	// Start two goroutines
-	wg.Add(2)
-	go runWorkflows(syncMgr1, "wf1", iterationCount)
-	go runWorkflows(syncMgr2, "wf2", iterationCount)
+	wg.Go(func() { runWorkflows(syncMgr1, "wf1", iterationCount) })
+	wg.Go(func() { runWorkflows(syncMgr2, "wf2", iterationCount) })
 	wg.Wait()
 
 	// Verify that at no point were multiple locks held
