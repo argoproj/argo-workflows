@@ -51,11 +51,9 @@ func TestPrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		m.RunPrometheusServer(ctx, false)
-		wg.Done()
-	}()
+	})
 	time.Sleep(1 * time.Second)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
 	resp, err := http.DefaultClient.Do(req)
@@ -86,11 +84,9 @@ func TestDummyPrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		m.RunPrometheusServer(ctx, true)
-		wg.Done()
-	}()
+	})
 	time.Sleep(1 * time.Second)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
 	resp, err := http.DefaultClient.Do(req)

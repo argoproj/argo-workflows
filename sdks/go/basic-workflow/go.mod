@@ -1,6 +1,6 @@
 module github.com/argoproj/argo-workflows/v3/sdks/go/basic-workflow
 
-go 1.24.10
+go 1.25.6
 
 replace github.com/argoproj/argo-workflows/v3 => ../../..
 
