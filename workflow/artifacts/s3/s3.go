@@ -517,8 +517,8 @@ func (s *s3client) getFromEnvS3UploadNbThreads() int {
 		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Info(s.ctx, "Number of threads or s3 multipart upload detected")
 
 		nbThreads, err = strconv.Atoi(nbThreadsStr)
-		if err != nil {
-			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Error(s.ctx, "Could not convert to int the env var. Ignoring and using default value of 4")
+		if err != nil || nbThreads < 1 {
+			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Error(s.ctx, "Could not convert to uint the env var. Ignoring and using default value of 4")
 			nbThreads = defaultThreads
 		}
 	} else {
