@@ -35,9 +35,9 @@ When container arguments are extremely large, Argo automatically offloads them t
 
 ### How It Works
 
-**1. ConfigMap Offloading (>128KB total args)**
+#### 1. ConfigMap Offloading (over 128KB total args)
 
-If a container's JSON-marshaled arguments exceed 128KB (131,072 bytes), Argo stores them in a ConfigMap instead of directly in the pod specification:
+If a container's JSON marshaled arguments exceed 128KB (131,072 bytes), Argo stores them in a ConfigMap instead of directly in the pod specification:
 
 - Args are stored in a ConfigMap with key `ARGO_CONTAINER_ARGS_FILE`
 - The ConfigMap is mounted as a volume at `/argo/config/`
@@ -47,7 +47,7 @@ If a container's JSON-marshaled arguments exceed 128KB (131,072 bytes), Argo sto
 
 This happens automatically and transparently - no workflow changes needed.
 
-**2. Individual Argument Offloading (>128KB per arg) with @filename Syntax**
+#### 2. Individual Argument Offloading (over 128KB per arg) with @filename Syntax
 
 Even after loading args from the ConfigMap, individual arguments exceeding 128KB (131,072 bytes) would still trigger the exec syscall's "argument list too long" error (E2BIG). To handle this:
 
@@ -95,7 +95,7 @@ Your program doesn't support the `@filename` syntax. Options:
 
 #### Args not being offloaded when expected
 
-- ConfigMap offloading triggers at **128KB total args** (131,072 bytes, JSON-marshaled)
-- Individual arg file offloading triggers at **128KB per argument** (131,072 bytes)
-- Check controller logs for "Offloaded container args to configmap" message
+- ConfigMap offloading triggers at 128KB total args (131,072 bytes, JSON marshaled)
+- Individual arg file offloading triggers at 128KB per argument (131,072 bytes)
+- Check controller logs for "Offloaded container args to ConfigMap" message
 - Check emissary logs for "Offloaded large argument to file" message
