@@ -4357,7 +4357,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 			func() (bool, error) {
 				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
-					return !errorsutil.IsTransientErr(ctx, validationErr), fmt.Errorf(" validation error %w", validationErr)
+					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
 				}
 				return true, nil
 			})

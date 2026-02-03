@@ -153,6 +153,10 @@ status:
       finishedAt: "2021-02-22T18:01:09Z"
       id: artifact-passing-z9j6n-613296860
       name: artifact-passing-z9j6n[1]
+      outputs:
+        parameters:
+        - name: processed
+          value: '["foo/script.py.processed","script.py.processed"]'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:02Z"
       templateScope: local/artifact-passing-z9j6n

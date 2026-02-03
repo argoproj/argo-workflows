@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/doublerebel/bellows"
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/ast"
 	"github.com/expr-lang/expr/file"
@@ -293,11 +292,97 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 	if _, ok := env[parameter]; ok {
 		return true
 	}
-	flattenEnv := bellows.Flatten(env)
-	for k := range flattenEnv {
-		if k == parameter || strings.HasPrefix(k, parameter+".") {
+
+	parts := strings.Split(parameter, ".")
+	var current any
+	found := false
+	remainingParts := parts
+
+	// Try to find the longest matching prefix in env
+	for i := len(parts); i > 0; i-- {
+		prefix := strings.Join(parts[:i], ".")
+		if val, ok := env[prefix]; ok {
+			current = val
+			remainingParts = parts[i:]
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		// If no prefix found, start from env itself (if env is the root object)
+		// But in our case env is a map[string]any, so if no key matched, we probably can't traverse.
+		// However, let's keep existing behavior: start traversing from env as if it's the root.
+		current = env
+		remainingParts = parts
+	}
+
+	// Traverse the remaining parts
+	for i, part := range remainingParts {
+		if current == nil {
+			return false
+		}
+
+		rVal := reflect.ValueOf(current)
+		for rVal.Kind() == reflect.Ptr {
+			if rVal.IsNil() {
+				return false
+			}
+			rVal = rVal.Elem()
+		}
+
+		if rVal.Kind() == reflect.Map {
+			val := rVal.MapIndex(reflect.ValueOf(part))
+			if !val.IsValid() {
+				return false
+			}
+			current = val.Interface()
+		} else if rVal.Kind() == reflect.Struct {
+			field := rVal.FieldByName(part)
+			if !field.IsValid() {
+				// Search anonymous fields manually to ensure we find embedded fields
+				for j := 0; j < rVal.NumField(); j++ {
+					fType := rVal.Type().Field(j)
+					if fType.Anonymous {
+						embeddedValue := rVal.Field(j)
+						// Handle pointer to embedded struct
+						for embeddedValue.Kind() == reflect.Ptr {
+							if embeddedValue.IsNil() {
+								break
+							}
+							embeddedValue = embeddedValue.Elem()
+						}
+						if embeddedValue.Kind() == reflect.Struct {
+							// If we are looking for the embedded type itself (e.g. "Time" in metav1.Time)
+							if fType.Name == part {
+								field = rVal.Field(j)
+								break
+							}
+							if foundField := embeddedValue.FieldByName(part); foundField.IsValid() {
+								field = foundField
+								break
+							}
+						}
+					}
+				}
+			}
+
+			if !field.IsValid() {
+				return false
+			}
+			if !field.CanInterface() {
+				return false
+			}
+			current = field.Interface()
+		} else {
+			return false
+		}
+		
+		// If this was the last part, we found it
+		if i == len(remainingParts)-1 {
 			return true
 		}
 	}
-	return false
+
+	return found && len(remainingParts) == 0
 }
