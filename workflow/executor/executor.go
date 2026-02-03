@@ -156,16 +156,19 @@ func NewExecutor(
 	}
 }
 
-// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
-func (we *WorkflowExecutor) HandleError(ctx context.Context) {
-	if r := recover(); r != nil {
-		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
-		logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
-			"error": r,
-			"stack": debug.Stack(),
-		}).Error(ctx, "executor panic")
-	} else {
-		if len(we.errors) > 0 {
+// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error.
+// Usage: defer we.HandleError(ctx)()
+//
+//nolint:revive // recover is inside returned closure that gets deferred by caller
+func (we *WorkflowExecutor) HandleError(ctx context.Context) func() {
+	return func() {
+		if r := recover(); r != nil {
+			util.WriteTerminateMessage(fmt.Sprintf("%v", r))
+			logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
+				"error": r,
+				"stack": debug.Stack(),
+			}).Error(ctx, "executor panic")
+		} else if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}
 	}
@@ -191,9 +194,8 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 			if art.Optional {
 				logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
 				continue
-			} else {
-				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
+			return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 		}
 		err := art.CleanPath()
 		if err != nil {
@@ -257,17 +259,18 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 
 		isTar := false
 		isZip := false
-		if art.GetArchive().None != nil {
+		switch {
+		case art.GetArchive().None != nil:
 			// explicitly not a tar
 			isTar = false
 			isZip = false
-		} else if art.GetArchive().Tar != nil {
+		case art.GetArchive().Tar != nil:
 			// explicitly a tar
 			isTar = true
-		} else if art.GetArchive().Zip != nil {
+		case art.GetArchive().Zip != nil:
 			// explicitly a zip
 			isZip = true
-		} else {
+		default:
 			// auto-detect if tarball
 			// (don't try to autodetect zip files for backwards compatibility)
 			isTar, err = isTarball(ctx, tempArtPath)
@@ -276,13 +279,14 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 			}
 		}
 
-		if isTar {
+		switch {
+		case isTar:
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
-		} else if isZip {
+		case isZip:
 			err = unzip(ctx, tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
-		} else {
+		default:
 			err = os.Rename(tempArtPath, artPath)
 		}
 		if err != nil {
@@ -365,9 +369,8 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	}
 	if aggregateError == "" {
 		return artifacts, nil
-	} else {
-		return artifacts, errors.New(aggregateError)
 	}
+	return artifacts, errors.New(aggregateError)
 }
 
 // save artifact
@@ -626,11 +629,10 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
-				} else {
+				if param.ValueFrom.Default == nil {
 					return err
 				}
+				output = param.ValueFrom.Default
 			} else {
 				output = wfv1.AnyStringPtr(fileContents)
 			}
@@ -640,11 +642,10 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
-				} else {
+				if param.ValueFrom.Default == nil {
 					return err
 				}
+				output = param.ValueFrom.Default
 			} else {
 				output = wfv1.AnyStringPtr(string(data))
 			}
@@ -740,7 +741,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	driver, err := artifacts.NewDriver(ctx, art, we)
-	if err == artifacts.ErrUnsupportedDriver {
+	if errors.Is(err, artifacts.ErrUnsupportedDriver) {
 		return nil, argoerrs.Errorf(argoerrs.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
 	return driver, err
@@ -962,7 +963,7 @@ func (we *WorkflowExecutor) HasError() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+	data, err := json.Marshal(map[string]any{"metadata": metav1.ObjectMeta{
 		Annotations: map[string]string{
 			key: value,
 		},
@@ -1015,7 +1016,7 @@ func untar(tarPath string, destPath string) error {
 		for {
 			header, err := tr.Next()
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				return nil
 			case err != nil:
 				return err
@@ -1256,7 +1257,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 
 	logger.WithError(err).Info(ctx, "Main container completed")
 
-	if err != nil && err != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
 	return nil
@@ -1339,9 +1340,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 	logger.Info(ctx, message)
 	util.WriteTerminateMessage(message)
 
-	containerNames = slices.DeleteFunc(containerNames, func(containerName string) bool {
-		return common.IsArtifactPluginSidecar(containerName)
-	})
+	containerNames = slices.DeleteFunc(containerNames, common.IsArtifactPluginSidecar)
 	we.killContainers(ctx, containerNames)
 }
 

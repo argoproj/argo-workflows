@@ -279,6 +279,56 @@ func (s *MetricsSuite) TestClusterTemplateMetrics() {
 		})
 }
 
+func (s *MetricsSuite) TestClientRateLimiterLatencyMetric() {
+	// The client_rate_limiter_latency histogram is recorded on every K8s API request.
+	// We check that running a workflow increases the _count metric.
+	// We use ExpectAtLeastIncrease since we don't know the exact number of API calls,
+	// but we know running a workflow triggers multiple K8s API calls.
+	expectedIncreases := map[string]float64{
+		`client_rate_limiter_latency_count`: 1, // At least 1 API call
+	}
+
+	// Capture baseline metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
+	s.Given().
+		Workflow(`@testdata/basic-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+
+			// Check that the client rate limiter latency metric increased by at least 1
+			baseline.ExpectAtLeastIncrease()
+		})
+}
+
+func (s *MetricsSuite) TestResourceRateLimiterLatencyMetric() {
+	// The resource_rate_limiter_latency histogram is recorded every time a pod is created.
+	// We check that running a workflow with a pod increases the _count metric.
+	expectedIncreases := map[string]float64{
+		`resource_rate_limiter_latency_count`: 1, // One pod created
+	}
+
+	// Capture baseline metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
+	s.Given().
+		Workflow(`@testdata/basic-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+
+			// Check that the resource rate limiter latency metric increased
+			baseline.ExpectIncrease()
+		})
+}
+
 func TestMetricsSuite(t *testing.T) {
 	suite.Run(t, new(MetricsSuite))
 }

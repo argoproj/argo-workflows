@@ -1042,7 +1042,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
 			Array().
-			IsEqual([]interface{}{"Persisted", "Persisted"})
+			IsEqual([]any{"Persisted", "Persisted"})
 	})
 
 	s.Run("ListNameContainsAlice", func() {
@@ -1054,7 +1054,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ListNameContainsNoMatch", func() {
@@ -1077,7 +1077,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNamePrefixBobNoMatch", func() {
@@ -1101,7 +1101,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ListNameExactAliceNoMatch", func() {
@@ -1124,7 +1124,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNameDoubleEqualsBob", func() {
@@ -1135,7 +1135,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNameContainsTest", func() {
@@ -1147,7 +1147,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
 	})
 }
 
@@ -1228,7 +1228,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
 			Array().
-			IsEqual([]interface{}{"Persisted", "Persisted"})
+			IsEqual([]any{"Persisted", "Persisted"})
 	})
 
 	s.Run("ArchiveNameContainsAlice", func() {
@@ -1240,7 +1240,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ArchiveNameContainsNoMatch", func() {
@@ -1263,7 +1263,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNamePrefixBobNoMatch", func() {
@@ -1287,7 +1287,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ArchiveNameExactAliceNoMatch", func() {
@@ -1310,7 +1310,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameDoubleEqualsBob", func() {
@@ -1321,7 +1321,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameContainsTest", func() {
@@ -1333,7 +1333,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
 	})
 
 	s.Run("ArchiveNamePrefixNameFilterContainsBobTest", func() {
@@ -1346,7 +1346,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNamePrefixNameFilterEmptyTest", func() {
@@ -1391,7 +1391,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+			IsEqualUnordered([]any{uidBobWf, uidAliceWf})
 	})
 
 	s.Run("ListNameNotEqualsAlice", func() {
@@ -1403,7 +1403,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNameNotEqualsNoMatch", func() {
@@ -1415,7 +1415,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
 	})
 
 	s.Run("ListNameNotEqualsPrecedence", func() {
@@ -1427,7 +1427,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameNotEqualsAlice", func() {
@@ -1439,7 +1439,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameNotEqualsNoMatch", func() {
@@ -1451,7 +1451,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+			IsEqualUnordered([]any{uidBobWf, uidAliceWf})
 	})
 
 	s.Run("ArchiveNameNotEqualsPrecedence", func() {
@@ -1463,7 +1463,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 }
 
@@ -1728,7 +1728,13 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+			Contains("<a href=\"./subdirectory/\">subdirectory/</a>")
+
+		resp.Header("Content-Security-Policy").
+			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			IsEqual("SAMEORIGIN")
 
 	})
 
@@ -1739,8 +1745,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
-			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+			Contains("<a href=\"./sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"./sub-file-2\">sub-file-2</a>")
 
 	})
 

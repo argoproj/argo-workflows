@@ -12,8 +12,8 @@ import (
 type Instrument struct {
 	name        string
 	description string
-	otel        interface{}
-	userdata    interface{}
+	otel        any
+	userdata    any
 }
 
 func (m *Metrics) preCreateCheck(name string) error {
@@ -44,21 +44,22 @@ type instrumentOptions struct {
 	defaultBuckets []float64
 }
 
-type instrumentOption func(*instrumentOptions)
+// InstrumentOption is a functional option for configuring instruments.
+type InstrumentOption func(*instrumentOptions)
 
-func WithAsBuiltIn() instrumentOption {
+func WithAsBuiltIn() InstrumentOption {
 	return func(o *instrumentOptions) {
 		o.builtIn = true
 	}
 }
 
-func WithDefaultBuckets(buckets []float64) instrumentOption {
+func WithDefaultBuckets(buckets []float64) InstrumentOption {
 	return func(o *instrumentOptions) {
 		o.defaultBuckets = buckets
 	}
 }
 
-func collectOptions(options ...instrumentOption) instrumentOptions {
+func collectOptions(options ...InstrumentOption) instrumentOptions {
 	var o instrumentOptions
 	for _, opt := range options {
 		opt(&o)
@@ -66,7 +67,7 @@ func collectOptions(options ...instrumentOption) instrumentOptions {
 	return o
 }
 
-func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
+func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...InstrumentOption) error {
 	opts := collectOptions(options...)
 	err := m.preCreateCheck(name)
 	if err != nil {
@@ -76,7 +77,7 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 	if opts.builtIn {
 		desc = addHelpLink(name, desc)
 	}
-	var instPtr interface{}
+	var instPtr any
 	switch instType {
 	case Float64ObservableGauge:
 		inst, insterr := (*m.otelMeter).Float64ObservableGauge(name,
@@ -154,14 +155,14 @@ func (i *Instrument) GetDescription() string {
 	return i.description
 }
 
-func (i *Instrument) GetOtel() interface{} {
+func (i *Instrument) GetOtel() any {
 	return i.otel
 }
 
-func (i *Instrument) SetUserdata(data interface{}) {
+func (i *Instrument) SetUserdata(data any) {
 	i.userdata = data
 }
 
-func (i *Instrument) GetUserdata() interface{} {
+func (i *Instrument) GetUserdata() any {
 	return i.userdata
 }

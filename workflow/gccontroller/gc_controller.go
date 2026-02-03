@@ -26,7 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-var ticker *time.Ticker = time.NewTicker(50 * time.Millisecond)
+var ticker = time.NewTicker(50 * time.Millisecond)
 
 type Controller struct {
 	wfclientset      wfclientset.Interface
@@ -35,7 +35,7 @@ type Controller struct {
 	clock            clock.WithTickerAndDelayedExecution
 	metrics          *metrics.Metrics
 	orderedQueueLock sync.Mutex
-	orderedQueue     map[wfv1.WorkflowPhase]*gcHeap
+	orderedQueue     map[wfv1.WorkflowPhase]Heap
 	retentionPolicy  *config.RetentionPolicy
 	log              logging.Logger
 }
@@ -43,7 +43,7 @@ type Controller struct {
 // NewController returns a new workflow ttl controller
 func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "gc_controller").InContext(ctx)
-	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
+	orderedQueue := map[wfv1.WorkflowPhase]Heap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
 		wfv1.WorkflowSucceeded: NewHeap(),
@@ -61,15 +61,15 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 	}
 
 	_, err := wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
+		FilterFunc: func(obj any) bool {
 			un, ok := obj.(*unstructured.Unstructured)
 			return ok && common.IsDone(un)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 				controller.enqueueWF(ctx, obj)
 			},
-			UpdateFunc: func(old, newObj interface{}) {
+			UpdateFunc: func(old, newObj any) {
 				controller.enqueueWF(ctx, newObj)
 			},
 		},
@@ -79,15 +79,15 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 	}
 
 	_, err = wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
+		FilterFunc: func(obj any) bool {
 			un, ok := obj.(*unstructured.Unstructured)
 			return ok && common.IsDone(un)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, newObj interface{}) {
+			UpdateFunc: func(old, newObj any) {
 				controller.retentionEnqueue(ctx, newObj)
 			},
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 				controller.retentionEnqueue(ctx, obj)
 			},
 		},
@@ -98,7 +98,7 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 	return controller
 }
 
-func (c *Controller) retentionEnqueue(ctx context.Context, obj interface{}) {
+func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
 	// No need to queue the workflow if the retention policy is not set
 	if c.retentionPolicy == nil {
 		return
@@ -131,7 +131,7 @@ func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	for i := 0; i < workflowGCWorkers; i++ {
+	for range workflowGCWorkers {
 		go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 	}
 	c.log.Info(ctx, "Started workflow garbage collection")
@@ -185,7 +185,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 // enqueueWF conditionally queues a workflow to the ttl queue if it is within the deletion period
-func (c *Controller) enqueueWF(ctx context.Context, obj interface{}) {
+func (c *Controller) enqueueWF(ctx context.Context, obj any) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		c.log.WithField("obj", obj).Warn(ctx, "is not an unstructured")
@@ -235,11 +235,10 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	c.log.WithField("workflow", key).Info(ctx, "Deleting garbage collected workflow")
 	err = c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
-		if apierr.IsNotFound(err) {
-			c.log.WithField("workflow", key).Info(ctx, "Workflow already deleted")
-		} else {
+		if !apierr.IsNotFound(err) {
 			return err
 		}
+		c.log.WithField("workflow", key).Info(ctx, "Workflow already deleted")
 	} else {
 		c.log.WithField("workflow", key).Info(ctx, "Successful request to be deleted")
 	}
@@ -262,11 +261,12 @@ func (c *Controller) expiresIn(wf *wfv1.Workflow) (expiresIn time.Duration, ok b
 func ttl(wf *wfv1.Workflow) (ttl time.Duration, ok bool) {
 	ttlStrategy := wf.GetTTLStrategy()
 	if ttlStrategy != nil {
-		if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
+		switch {
+		case wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil:
 			return time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second, true
-		} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
+		case wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil:
 			return time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second, true
-		} else if wf.Status.Phase.Completed() && ttlStrategy.SecondsAfterCompletion != nil {
+		case wf.Status.Phase.Completed() && ttlStrategy.SecondsAfterCompletion != nil:
 			return time.Duration(*ttlStrategy.SecondsAfterCompletion) * time.Second, true
 		}
 	}

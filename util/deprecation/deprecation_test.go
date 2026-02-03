@@ -20,12 +20,12 @@ func TestInitalized(t *testing.T) {
 	countUndefined := 0
 	countMutex := 0
 	fn := func(_ context.Context, deprecation, _ string) {
-		count += 1
+		count++
 		if deprecation == "undefined" {
-			countUndefined += 1
+			countUndefined++
 		}
 		if deprecation == "synchronization mutex" {
-			countMutex += 1
+			countMutex++
 		}
 	}
 	Initialize(fn)

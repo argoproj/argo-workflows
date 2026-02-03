@@ -1958,7 +1958,7 @@ func TestPodFinalizerDoesNotExist(t *testing.T) {
 }
 
 func TestProgressEnvVars(t *testing.T) {
-	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
+	setup := func(t *testing.T, options ...any) (context.CancelFunc, *apiv1.Pod) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, options...)
 
@@ -2082,7 +2082,7 @@ spec:
 `
 
 func TestMergeEnvVars(t *testing.T) {
-	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
+	setup := func(t *testing.T, options ...any) (context.CancelFunc, *apiv1.Pod) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, options...)
 

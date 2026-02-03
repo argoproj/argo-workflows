@@ -352,7 +352,7 @@ func (s *CLISuite) TestLogs() {
 
 func toLines(x string) []string {
 	var y []string
-	for _, s := range strings.Split(x, "\n") {
+	for s := range strings.SplitSeq(x, "\n") {
 		println("s=", s)
 		if s != "" && !strings.Contains(s, "argo=true") {
 			y = append(y, s)

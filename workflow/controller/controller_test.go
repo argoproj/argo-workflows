@@ -253,7 +253,7 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 // test exporter extract metric values from the metrics subsystem
 var testExporter *telemetry.TestMetricsExporter
 
-func newController(ctx context.Context, options ...interface{}) (context.CancelFunc, *WorkflowController) {
+func newController(ctx context.Context, options ...any) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
 	for _, opt := range options {
@@ -303,9 +303,8 @@ func newController(ctx context.Context, options ...interface{}) (context.CancelF
 	}
 
 	for _, opt := range options {
-		switch v := opt.(type) {
 		// any post-processing
-		case func(workflowController *WorkflowController):
+		if v, ok := opt.(func(workflowController *WorkflowController)); ok {
 			v(wfc)
 		}
 	}
@@ -968,7 +967,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	assert.Equal(3, controller.wfQueue.Len())
 
 	// Remove all Wf from Worker queue
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		key, _ := controller.wfQueue.Get()
 		controller.wfQueue.Done(key)
 		controller.wfQueue.Forget(key)

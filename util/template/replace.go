@@ -16,7 +16,7 @@ func Replace(ctx context.Context, s string, replaceMap map[string]string, allowU
 	if err != nil {
 		return "", err
 	}
-	interReplaceMap := make(map[string]interface{})
+	interReplaceMap := make(map[string]any)
 	for k, v := range replaceMap {
 		interReplaceMap[k] = v
 	}

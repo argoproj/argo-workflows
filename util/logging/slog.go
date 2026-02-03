@@ -53,8 +53,6 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 	}
 
 	switch format {
-	case JSON:
-		handler = slog.NewJSONHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	case Text:
 		handler = slog.NewTextHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	default:
@@ -165,11 +163,11 @@ func (s *slogLogger) commonLog(ctx context.Context, level Level, msg string) {
 	s.logger.LogAttrs(ctx, convertLevel(level), msg, fieldsToAttrs(s.fields)...)
 	switch {
 	case s.withFatal:
-		if exitFunc := GetExitFunc(); exitFunc != nil {
-			exitFunc(1)
-		} else {
+		exitFunc := GetExitFunc()
+		if exitFunc == nil {
 			os.Exit(1)
 		}
+		exitFunc(1)
 	case s.withPanic:
 		panic(msg)
 	}
@@ -196,8 +194,6 @@ func convertLevel(level Level) slog.Level {
 	switch level {
 	case Debug:
 		return slog.LevelDebug
-	case Info:
-		return slog.LevelInfo
 	case Warn:
 		return slog.LevelWarn
 	case Error:

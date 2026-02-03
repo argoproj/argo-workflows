@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: artifact-repositories
+data:
+  plugin-v1: |
+    archiveLogs: true
+    plugin:
+      name: test
+      configuration: |
+        bucket: plugin-bucket
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey

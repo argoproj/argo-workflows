@@ -244,6 +244,18 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
 
 <!-- Generated documentation BEGIN -->
 
+#### `client_rate_limiter_latency`
+
+A histogram of the time spent waiting for the client-side rate limiter.
+Records the actual wait time spent blocking on the client-go rate limiter before
+Kubernetes API requests can proceed. This metric helps identify when the client
+rate limiter (configured via QPS and Burst settings) is causing delays in API calls.
+This rate limiter is on by default.
+
+This metric has no attributes.
+
+Default bucket sizes: 0.01, 0.1, 0.5, 1, 5, 10, 30, 60, 180
+
 #### `cronworkflows_concurrencypolicy_triggered`
 
 A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running.
@@ -327,6 +339,7 @@ A histogram recording the API requests sent to the Kubernetes API.
 | `status_code` | The HTTP status code of the response                               |
 
 Default bucket sizes: 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 60, 180
+
 This contains all the information contained in `k8s_request_total` along with timings.
 
 #### `k8s_request_total`
@@ -473,6 +486,7 @@ A histogram of the time events in the queues are taking to be processed.
 | `queue_name` | The name of the queue |
 
 Default bucket sizes: 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 60, 180
+
 Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
@@ -492,6 +506,7 @@ A histogram of the time events in the queues are taking before they are processe
 | `queue_name` | The name of the queue |
 
 Default bucket sizes: 1, 5, 20, 60, 180
+
 Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
@@ -555,6 +570,19 @@ Queues:
 - `workflow_archive_queue`: workflows which are queued for archiving
 
 This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+
+#### `resource_rate_limiter_latency`
+
+A histogram of the delay duration from the resource creation rate limiter.
+Records the delay that would be required before a resource creation operation could proceed.
+This metric helps identify when the resource rate limiter is throttling pod creation.
+A delay of 0 means the operation was allowed immediately. A non-zero delay indicates
+the operation was rate limited.
+This rate limiter is not on by default
+
+This metric has no attributes.
+
+Default bucket sizes: 0, 0.1, 0.5, 1, 5, 10, 30, 60, 180
 
 #### `total_count`
 

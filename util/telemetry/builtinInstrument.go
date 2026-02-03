@@ -22,7 +22,7 @@ func (bi *BuiltinInstrument) Name() string {
 
 // CreateBuiltinInstrument adds a yaml defined builtin instrument
 // opts parameter is for legacy metrics, do not use for new metrics
-func (m *Metrics) CreateBuiltinInstrument(instrument BuiltinInstrument, opts ...instrumentOption) error {
+func (m *Metrics) CreateBuiltinInstrument(instrument BuiltinInstrument, opts ...InstrumentOption) error {
 	opts = append(opts, WithAsBuiltIn())
 	if len(instrument.defaultBuckets) > 0 {
 		opts = append(opts,

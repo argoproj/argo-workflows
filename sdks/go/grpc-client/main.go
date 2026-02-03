@@ -35,7 +35,7 @@ func main() {
 	// Create Argo Server client
 	fmt.Printf("Connecting to Argo Server at %s...\n", *argoServer)
 
-	// <snip id="grpc-client-operations">
+	// <embed id="grpc-client-operations">
 	ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
 		ArgoServerOpts: apiclient.ArgoServerOpts{
 			URL:                *argoServer,
@@ -130,7 +130,7 @@ func main() {
 	for i, wf := range list.Items {
 		fmt.Printf("  %d. %s (%s)\n", i+1, wf.Name, wf.Status.Phase)
 	}
-	// </snip>
+	// </embed>
 
 	fmt.Printf("\nView workflow with:\n")
 	fmt.Printf("  argo get %s -n %s\n", created.Name, *namespace)

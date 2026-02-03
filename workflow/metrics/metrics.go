@@ -57,8 +57,10 @@ func New(ctx context.Context, serviceName, prometheusName string, config *teleme
 		addErrorCounter,
 		addLogCounter,
 		addK8sRequests,
+		addClientRateLimiterLatency,
 		addWorkflowConditionGauge,
 		addWorkQueueMetrics,
+		addResourceRateLimiterLatency,
 	)
 	if err != nil {
 		return nil, err

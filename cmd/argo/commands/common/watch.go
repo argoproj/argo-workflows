@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -11,7 +12,7 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
@@ -33,14 +34,14 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	go func() {
 		for {
 			event, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				logger := logging.RequireLoggerFromContext(ctx)
 				logger.Debug(ctx, "Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
-				errors.CheckError(ctx, err)
+				argoerrors.CheckError(ctx, err)
 				continue
 			}
-			errors.CheckError(ctx, err)
+			argoerrors.CheckError(ctx, err)
 			if event == nil {
 				continue
 			}

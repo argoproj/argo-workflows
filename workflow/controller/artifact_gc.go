@@ -545,11 +545,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			woc.log.WithField("name", pod.Name).Warn(ctx, "Artifact GC Pod already exists")
-		} else {
+		if !apierr.IsAlreadyExists(err) {
 			return nil, fmt.Errorf("failed to create pod: %w", err)
 		}
+		woc.log.WithField("name", pod.Name).Warn(ctx, "Artifact GC Pod already exists")
 	}
 	return pod, nil
 }

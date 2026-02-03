@@ -39,7 +39,7 @@ func TestInitLogger(t *testing.T) {
 		lines := strings.Split(strings.TrimSpace(output), "\n")
 		require.Len(t, lines, 4)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 
 		err := json.Unmarshal([]byte(lines[0]), &logEntry)
 		require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestInitLogger(t *testing.T) {
 		lines := strings.Split(strings.TrimSpace(output), "\n")
 		require.Len(t, lines, 2)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 
 		err := json.Unmarshal([]byte(lines[0]), &logEntry)
 		require.NoError(t, err)
@@ -133,7 +133,7 @@ func TestInitLogger(t *testing.T) {
 		lines := strings.Split(strings.TrimSpace(output), "\n")
 		require.Len(t, lines, 1)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err := json.Unmarshal([]byte(lines[0]), &logEntry)
 		require.NoError(t, err)
 
@@ -159,7 +159,7 @@ func TestInitLogger(t *testing.T) {
 		lines := strings.Split(strings.TrimSpace(output), "\n")
 		require.Len(t, lines, 2)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 
 		err := json.Unmarshal([]byte(lines[0]), &logEntry)
 		require.NoError(t, err)
@@ -228,7 +228,7 @@ func TestInitLogger(t *testing.T) {
 		lines := strings.Split(strings.TrimSpace(output), "\n")
 		require.Len(t, lines, 3)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 
 		err := json.Unmarshal([]byte(lines[0]), &logEntry)
 		require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestInitLogger(t *testing.T) {
 
 		// Start multiple goroutines logging simultaneously
 		done := make(chan bool, 10)
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			go func(id int) {
 				defer func() { done <- true }()
 				initLogger.WithField("goroutine", id).Info(ctx, "concurrent message")
@@ -281,7 +281,7 @@ func TestInitLogger(t *testing.T) {
 		require.Len(t, lines, 10)
 
 		for _, line := range lines {
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal([]byte(line), &logEntry)
 			require.NoError(t, err)
 			assert.Equal(t, "concurrent message", logEntry["msg"])

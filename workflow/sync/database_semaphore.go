@@ -192,7 +192,7 @@ func (s *databaseSemaphore) notifyWaiters(ctx context.Context) {
 		"triggerCount": triggerCount,
 		"pendingCount": len(pending),
 	}).Debug(ctx, "Notifying waiters for semaphore")
-	for idx := 0; idx < triggerCount; idx++ {
+	for idx := range triggerCount {
 		item := pending[idx]
 		if item.Controller != s.info.Config.ControllerName {
 			continue

@@ -90,7 +90,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
 	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime)
-	for i := 0; i < taskWorkers; i++ {
+	for range taskWorkers {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
 
@@ -323,15 +323,15 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, workflowName s
 			message = fmt.Sprintf("received non-2xx response code: %d", response.StatusCode)
 		}
 	} else {
-		evalScope := map[string]interface{}{
-			"request": map[string]interface{}{
+		evalScope := map[string]any{
+			"request": map[string]any{
 				"method":    tmpl.HTTP.Method,
 				"url":       tmpl.HTTP.URL,
 				"body":      tmpl.HTTP.Body,
 				"bodyBytes": tmpl.HTTP.GetBodyBytes(),
 				"headers":   tmpl.HTTP.Headers.ToHeader(),
 			},
-			"response": map[string]interface{}{
+			"response": map[string]any{
 				"statusCode": response.StatusCode,
 				"body":       string(bodyBytes),
 				"headers":    response.Header,

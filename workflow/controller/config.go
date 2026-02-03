@@ -126,7 +126,6 @@ func (wfc *WorkflowController) executorLogFormat() string {
 func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	if wfc.cliExecutorImagePullPolicy != "" {
 		return apiv1.PullPolicy(wfc.cliExecutorImagePullPolicy)
-	} else {
-		return wfc.Config.GetExecutor().ImagePullPolicy
 	}
+	return wfc.Config.GetExecutor().ImagePullPolicy
 }

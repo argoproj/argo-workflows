@@ -44,21 +44,19 @@ func NewController(ctx context.Context, instanceIDService instanceid.Service, ev
 	}
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (s *Controller) Run(ctx context.Context, stopCh <-chan struct{}) {
 	// this `WaitGroup` allows us to wait for all events to dispatch before exiting
 	wg := sync.WaitGroup{}
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	for w := 0; w < s.workerCount; w++ {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for operation := range s.operationQueue {
 				ctx := operation.Context()
 				_ = operation.Dispatch(ctx)
 			}
-		}()
-		wg.Add(1)
+		})
 	}
 
 	<-stopCh

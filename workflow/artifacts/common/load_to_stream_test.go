@@ -41,9 +41,8 @@ func (a *fakeArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path st
 			panic(fmt.Sprintf("can't create file at path %s", path))
 		}
 		return nil
-	} else {
-		return err
 	}
+	return err
 }
 
 func (a *fakeArtifactDriver) OpenStream(ctx context.Context, _ *wfv1.Artifact) (io.ReadCloser, error) {

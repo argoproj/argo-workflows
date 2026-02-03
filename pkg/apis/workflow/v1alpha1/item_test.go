@@ -67,7 +67,7 @@ func TestItem_GetStrVal(t *testing.T) {
 
 var testItemStringTable = []struct {
 	name   string
-	origin interface{}
+	origin any
 	str    string
 }{
 	{"json-string", []string{`{"foo": "bar"}`}, `["{\"foo\": \"bar\"}"]`},
