@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 	"slices"
+	"sort"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -488,13 +488,7 @@ func (woc *wfOperationCtx) cleanupAgentPod(ctx context.Context) bool {
 		"wfName":                      woc.wf.Name,
 	}).Debug(ctx, "cleanupAgentPod decision factors")
 	// Check if we should delete agent pod
-	if !createPod {
-		return false
-	} else if !hasNodes {
-		return false
-	} else if runMultipleWorkflow && woc.hasRunningWorkflowsUsingSameAgentPod(ctx) {
-		return false
-	} else if runMultipleWorkflow && !shouldDeleteAfterCompletion {
+	if !createPod || !hasNodes || (runMultipleWorkflow && woc.hasRunningWorkflowsUsingSameAgentPod(ctx)) || (runMultipleWorkflow && !shouldDeleteAfterCompletion) {
 		return false
 	}
 

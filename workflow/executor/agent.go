@@ -222,7 +222,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 
 			// Patch each TaskSet's results separately
 			for taskSetName, nodeResults := range taskSetResults {
-				patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+				patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
 				if err != nil {
 					logger.WithError(err).WithField("taskSet", taskSetName).Error(ctx, "Generating Patch Failed")
 					continue
