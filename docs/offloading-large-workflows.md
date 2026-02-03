@@ -64,6 +64,7 @@ For individual arguments exceeding 128KB, Argo replaces the argument value with 
 3. Using the file contents as the actual argument value
 
 If your program doesn't support this pattern, you'll need to either:
+
 - Add file expansion logic to your program
 - Reduce argument sizes below 128KB
 - Use alternative input methods (environment variables, mounted ConfigMaps, etc.)
@@ -73,12 +74,14 @@ If your program doesn't support this pattern, you'll need to either:
 When offloading occurs, you'll see these log messages:
 
 **Controller logs:**
-```
+
+```text
 Offloaded container args to configmap. Args >128KB will use @filename syntax container=my-container
 ```
 
 **Emissary executor logs:**
-```
+
+```text
 Reading container args from file argsFile=/argo/config/ARGO_CONTAINER_ARGS_FILE
 Loaded container args from file count=5
 Offloaded large argument to file. Downstream program must support @filename syntax argIndex=1 size=140000 filePath=/tmp/argo_arg_1.txt
@@ -89,6 +92,7 @@ Offloaded large argument to file. Downstream program must support @filename synt
 #### Error: Program doesn't recognize @filename argument
 
 Your program doesn't support the `@filename` syntax. Options:
+
 1. Add file expansion logic to detect `@` prefix and read the referenced file
 2. Reduce the argument size below 128KB
 3. Use alternative input methods (environment variables, mounted ConfigMaps, etc.)
