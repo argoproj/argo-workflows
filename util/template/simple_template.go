@@ -45,12 +45,8 @@ func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMa
 		trimmedTag := strings.TrimSpace(tag)
 		isStrict := strictRegex != nil && strictRegex.MatchString(trimmedTag)
 
-		if isStrict {
-			if allowUnresolvedArtifacts && strings.Contains(trimmedTag, ".outputs.artifacts.") {
-				// allow unresolved
-			} else {
-				return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-			}
+		if isStrict && (!allowUnresolvedArtifacts || !strings.Contains(trimmedTag, ".outputs.artifacts.")) {
+			return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 		}
 
 		// allow unresolved (implied true for non-strict tags or artifacts)

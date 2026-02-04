@@ -121,11 +121,11 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 			return strings.Join(parts, "."), true
 		}
 
-		if next, ok := curr.Node.(*ast.MemberNode); ok {
-			curr = next
-		} else {
+		next, ok := curr.Node.(*ast.MemberNode)
+		if !ok {
 			return "", false
 		}
+		curr = next
 	}
 }
 

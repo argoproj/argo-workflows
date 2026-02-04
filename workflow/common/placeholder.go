@@ -24,7 +24,7 @@ func NewPlaceholderGenerator() PlaceholderGenerator {
 // NextPlaceholder returns an arbitrary string to perform mock substitution of variables
 func (p *placeholderGenerator) NextPlaceholder() string {
 	s := fmt.Sprintf("__argo__internal__placeholder-%d", p.index)
-	p.index += 1
+	p.index++
 	return s
 }
 
