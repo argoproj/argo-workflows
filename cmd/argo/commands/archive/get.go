@@ -55,24 +55,13 @@ func NewGetCommand() *cobra.Command {
 				return err
 			}
 
-			var wf *wfv1.Workflow
-			isUID := isUID(identifier)
-			if forceUID {
-				isUID = true
-			} else if forceName {
-				isUID = false
+			namespace := client.Namespace(ctx)
+			uid, err := resolveUID(ctx, serviceClient, identifier, namespace, forceUID, forceName)
+			if err != nil {
+				return fmt.Errorf("resolve UID: %w", err)
 			}
-			if isUID {
-				// Lookup by UID
-				wf, err = serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: identifier})
-			} else {
-				// Lookup by Name
-				namespace := client.Namespace(ctx)
-				wf, err = serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{
-					Name:      identifier,
-					Namespace: namespace,
-				})
-			}
+
+			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
 			if err != nil {
 				return err
 			}

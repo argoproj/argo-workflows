@@ -136,21 +136,15 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 
 	// Add workflows from args - auto-detect UID vs NAME
 	for _, identifier := range args {
+		uid, err := resolveUID(ctx, archiveServiceClient, identifier, retryOpts.namespace, retryOpts.forceUID, retryOpts.forceName)
+		if err != nil {
+			return fmt.Errorf("resolve UID: %w", err)
+		}
 		wf := wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: retryOpts.namespace,
+				UID:       types.UID(uid),
 			},
-		}
-		isUID := isUID(identifier)
-		if retryOpts.forceUID {
-			isUID = true
-		} else if retryOpts.forceName {
-			isUID = false
-		}
-		if isUID {
-			wf.UID = types.UID(identifier)
-		} else {
-			wf.Name = identifier
 		}
 		wfs = append(wfs, wf)
 	}

@@ -43,22 +43,11 @@ func NewDeleteCommand() *cobra.Command {
 			}
 			namespace := client.Namespace(ctx)
 			for _, identifier := range args {
-				var req *workflowarchivepkg.DeleteArchivedWorkflowRequest
-				isUID := isUID(identifier)
-				if forceUID {
-					isUID = true
-				} else if forceName {
-					isUID = false
+				uid, err := resolveUID(ctx, serviceClient, identifier, namespace, forceUID, forceName)
+				if err != nil {
+					return fmt.Errorf("resolve UID: %w", err)
 				}
-				if isUID {
-					req = &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: identifier}
-				} else {
-					req = &workflowarchivepkg.DeleteArchivedWorkflowRequest{
-						Name:      identifier,
-						Namespace: namespace,
-					}
-				}
-				if _, err = serviceClient.DeleteArchivedWorkflow(ctx, req); err != nil {
+				if _, err = serviceClient.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: uid}); err != nil {
 					return err
 				}
 				fmt.Printf("Archived workflow '%s' deleted\n", identifier)
