@@ -85,6 +85,8 @@ This must be done on the new branch (otherwise it won't generate a file) but can
 Now you can add the branch to ["Read the Docs"](https://app.readthedocs.org/projects/argo-workflows/) and then the new branch should be built and published.
 Close the release candidate GitHub issue and unpin it, and create a new issue for patches to this branch.
 
+Update `/renovate.json` with just the live branches being renovated.
+
 ### Expire old branches
 
 Release n-2 is now out of support.

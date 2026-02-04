@@ -160,14 +160,6 @@ This is a concise list of new features.
 - Add support for creating a database semaphore config using CLI by [Darko Janjic](https://github.com/djanjic) ([#14783](https://github.com/argoproj/argo-workflows/issues/14783))
   Allow user to create a database semaphore configuration using CLI
 
-## Telemetry
-
-- Add metrics for the rate limiter by [Alan Clucas](https://github.com/Joibel) ([#15245](https://github.com/argoproj/argo-workflows/issues/15245))
-  Add two rate limiter metrics to help us understand the effects:
-    - the k8s API client rate limiter (enabled by default and set quite low, configurable via --qps)
-    - and the resource rate limiter configured in the configmap and disabled by default.
-  These produce histogram metrics
-
 ## Build and Development
 
 - Document features as they are created by [Alan Clucas](https://github.com/Joibel) ([#14155](https://github.com/argoproj/argo-workflows/issues/14155))
