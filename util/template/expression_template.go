@@ -331,13 +331,14 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 			rVal = rVal.Elem()
 		}
 
-		if rVal.Kind() == reflect.Map {
+		switch rVal.Kind() {
+		case reflect.Map:
 			val := rVal.MapIndex(reflect.ValueOf(part))
 			if !val.IsValid() {
 				return false
 			}
 			current = val.Interface()
-		} else if rVal.Kind() == reflect.Struct {
+		case reflect.Struct:
 			field := rVal.FieldByName(part)
 			if !field.IsValid() {
 				// Search anonymous fields manually to ensure we find embedded fields
@@ -374,10 +375,10 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 				return false
 			}
 			current = field.Interface()
-		} else {
+		default:
 			return false
 		}
-		
+
 		// If this was the last part, we found it
 		if i == len(remainingParts)-1 {
 			return true
