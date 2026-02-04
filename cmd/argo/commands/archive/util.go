@@ -59,12 +59,13 @@ func resolveUID(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWo
 	}
 
 	if len(matches) > 1 {
-		msg := fmt.Sprintf("Multiple archived workflows found with name '%s':\n", identifier)
+		var msg strings.Builder
+		msg.WriteString(fmt.Sprintf("Multiple archived workflows found with name '%s':\n", identifier))
 		for _, wf := range matches {
-			msg += fmt.Sprintf("  %s (Created: %s, Finished: %s)\n", wf.UID, humanize.Timestamp(wf.CreationTimestamp.Time), humanize.Timestamp(wf.Status.FinishedAt.Time))
+			msg.WriteString(fmt.Sprintf("  %s (Created: %s, Finished: %s)\n", wf.UID, humanize.Timestamp(wf.CreationTimestamp.Time), humanize.Timestamp(wf.Status.FinishedAt.Time)))
 		}
-		msg += "Please specify the UID."
-		return "", errors.New(msg)
+		msg.WriteString("Please specify the UID.")
+		return "", errors.New(msg.String())
 	}
 
 	return string(matches[0].UID), nil
