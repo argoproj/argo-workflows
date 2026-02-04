@@ -172,6 +172,10 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	}
 
 	woc.log.Info(ctx, "Creating TaskSet")
+	labels := map[string]string{}
+	if woc.controller.Config.InstanceID != "" {
+		labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+	}
 	taskSet := wfv1.WorkflowTaskSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowTaskSetKind,
@@ -180,6 +184,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: woc.wf.Namespace,
 			Name:      woc.wf.Name,
+			Labels:    labels,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: woc.wf.APIVersion,
