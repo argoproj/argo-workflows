@@ -170,6 +170,10 @@ status:
       hostNodeName: k3d-k3s-default-server-0
       id: artifact-passing-z9j6n-762040888
       name: artifact-passing-z9j6n[1].process-artifact(1:script.py)
+      outputs:
+        parameters:
+        - name: processed
+          value: '"script.py.processed"'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:02Z"
       templateName: process-message
@@ -221,6 +225,10 @@ status:
       hostNodeName: k3d-k3s-default-server-0
       id: artifact-passing-z9j6n-4238057504
       name: artifact-passing-z9j6n[1].process-artifact(0:foo/script.py)
+      outputs:
+        parameters:
+        - name: processed
+          value: '"foo/script.py.processed"'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:02Z"
       templateName: process-message
