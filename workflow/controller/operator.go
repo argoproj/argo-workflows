@@ -3859,6 +3859,17 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 			if node.Outputs == nil {
 				node.Outputs = &wfv1.Outputs{Parameters: []wfv1.Parameter{}}
 			}
+			// If the output parameter doesn't have a default, check if there's a matching
+			// input parameter with the same name that has a default value. This allows
+			// suspend nodes to use input defaults for outputs when the node times out.
+			if param.ValueFrom.Default == nil {
+				for _, inParam := range tmpl.Inputs.Parameters {
+					if inParam.Name == param.Name && inParam.Default != nil {
+						param.ValueFrom.Default = inParam.Default
+						break
+					}
+				}
+			}
 			node.Outputs.Parameters = append(node.Outputs.Parameters, param)
 		}
 	}
