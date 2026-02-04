@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **filter** | [**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StorageGridFilter**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1StorageGridFilter.md) |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **region** | **String** |  |  [optional]
+**tls** | [**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1TLSConfig.md) |  |  [optional]
 **topicArn** | **String** |  |  [optional]
 **webhook** | [**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1WebhookContext.md) |  |  [optional]
 
