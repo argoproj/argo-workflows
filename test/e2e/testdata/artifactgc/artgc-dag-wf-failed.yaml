@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-dag-wf-failed-
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: "artgc-dag-wf-failed"
+  podGC:
+    strategy: OnPodCompletion
+  artifactGC:
+    serviceAccountName: default
+    strategy: OnWorkflowDeletion
+  entrypoint: artgc-dag-wf-failed-main
+  serviceAccountName: argo
+  executor:
+    serviceAccountName: default
+  volumeClaimTemplates:
+    - metadata:
+        name: artifacts
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+  templates:
+    - name: artgc-dag-wf-failed-main
+      dag:
+        tasks:
+          - name: create-artifact
+            template: artgc-dag-artifact-creator
+          - name: fail-workflow
+            template: artgc-dag-workflow-failer
+            dependencies: [create-artifact]
+    - name: artgc-dag-workflow-failer
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args:
+          - |
+            echo "Failing workflow"
+            exit 1
+    - name: artgc-dag-artifact-creator
+      metadata:
+        labels:
+          template: "artgc-dag-artifact-creator"
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo 'testing' > /mnt/vol/test.txt
+            echo "Artifact saved to /mnt/vol/test.txt"
+      outputs:
+        artifacts:
+          - name: on-deletion-wf-failed
+            path: /mnt/vol/test.txt
+            s3:
+              key: on-deletion-wf-failed
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowDeletion
