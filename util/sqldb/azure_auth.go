@@ -28,7 +28,7 @@ func (c *azureConnector) Connect(ctx context.Context) (driver.Conn, error) {
 	}
 
 	// Escape single quotes in token just in case
-	escapedToken := strings.ReplaceAll(token.Token, "'", "'")
+	escapedToken := strings.ReplaceAll(token.Token, "'", "\\'")
 
 	// Append password to DSN
 	dsnWithPassword := fmt.Sprintf("%s password='%s'", c.dsn, escapedToken)
