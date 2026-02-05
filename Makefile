@@ -916,9 +916,9 @@ feature-new: hack/featuregen/featuregen
 features-validate: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) $(TOOL_MDSPELL)
 	# Validate all pending feature documentation files
 	$< validate
-	# Spell check individual feature files before they are combined (warning only, does not fail build)
+	# Spell check individual feature files before they are combined
 	@if ls .features/pending/*.md 1> /dev/null 2>&1; then \
-		$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report .features/pending/*.md || true; \
+		$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report .features/pending/*.md; \
 	fi
 	# Lint the combined output
 	$< update --dry |  tail +4 | $(TOOL_MARKDOWNLINT) -s
