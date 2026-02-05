@@ -24,7 +24,7 @@ type SSOConfig struct {
 	// additional scopes (on top of "openid")
 	Scopes []string `json:"scopes,omitempty"`
 	// SessionExpiry specifies how long user sessions last
-	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
+	SessionExpiry metav1.Duration `json:"sessionExpiry,omitzero"`
 	// CustomGroupClaimName will override the groups claim name
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	// UserInfoPath specifies the path to user info endpoint
