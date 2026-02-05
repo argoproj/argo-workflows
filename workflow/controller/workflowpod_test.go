@@ -2445,6 +2445,9 @@ func TestArtifactPluginSidecar(t *testing.T) {
 		assert.Equal(t, "config-data", configDataMount.SubPath)
 	})
 }
+
+// TestContainerArgsOffloading verifies that container arguments exceeding 128KB are automatically
+// offloaded to a ConfigMap instead of being stored directly in the pod specification.
 func TestContainerArgsOffloading(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 

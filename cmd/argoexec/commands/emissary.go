@@ -82,9 +82,8 @@ func NewEmissaryCommand() *cobra.Command {
 				// Check for a large args and offload to file if needed
 				// This avoids the exec() "argument list too long" error
 				// Downstream programs should support @filename for parsing large args
-				const argThreshold = 131072 // 128KB exec arg limit
 				for i := 0; i < len(args); i++ {
-					if len(args[i]) > argThreshold {
+					if len(args[i]) > common.MaxEnvVarLen {
 						filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
 						if err := os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
 							return fmt.Errorf("failed to write large arg %d to file: %w", i, err)

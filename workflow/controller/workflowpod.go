@@ -52,7 +52,6 @@ var (
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
-	maxEnvVarLen = 131072
 )
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
@@ -473,7 +472,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal container args for %s: %w", c.Name, err)
 			}
-			if len(argsJSON) > maxEnvVarLen {
+			if len(argsJSON) > common.MaxEnvVarLen {
 				offloadContainerArgs = true
 				containerArgsValue = string(argsJSON)
 				containerArgsName = c.Name
@@ -486,7 +485,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		for _, e := range c.Env {
 			if e.Name == common.EnvVarTemplate {
 				envVarTemplateValue = e.Value
-				if len(envVarTemplateValue) > maxEnvVarLen {
+				if len(envVarTemplateValue) > common.MaxEnvVarLen {
 					offloadEnvVarTemplate = true
 				}
 			}
