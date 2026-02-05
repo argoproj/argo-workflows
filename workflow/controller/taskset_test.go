@@ -102,6 +102,7 @@ spec:
 			assert.Equal(t, ts.Name, wf.Name)
 			assert.Equal(t, ts.Namespace, wf.Namespace)
 			assert.Len(t, ts.Spec.Tasks, 1)
+			assert.Equal(t, "testID", ts.Labels[common.LabelKeyControllerInstanceID], "WorkflowTaskSet should have instanceID label")
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
