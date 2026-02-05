@@ -379,6 +379,15 @@ type PostgreSQLConfig struct {
 	SSL bool `json:"ssl,omitempty"`
 	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
 	SSLMode string `json:"sslMode,omitempty"`
+	// AzureToken specifies if the password should be fetched as an Azure token
+	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+}
+
+type AzureTokenConfig struct {
+	// Enabled enables Azure token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
+	Scope string `json:"scope,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration
