@@ -62,6 +62,8 @@ jobs:
               - sdks/**
               # example test suite
               - examples/**
+              - go.mod
+              - go.sum
             codegen:
               - *common
               # generated files
@@ -83,6 +85,8 @@ jobs:
               - hack/docs/**
               - hack/manifests/**
               - .clang-format
+              - go.mod
+              - go.sum
             lint:
               - *tests
               - .features/**
@@ -106,6 +110,8 @@ jobs:
               - .mlc_config.json
               - .spelling
               - mkdocs.yml
+              - go.mod
+              - go.sum
             ui:
               - *common
               - ui/**
