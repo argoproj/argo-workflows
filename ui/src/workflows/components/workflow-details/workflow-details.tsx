@@ -21,6 +21,7 @@ import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {useCollectEvent} from '../../../shared/use-collect-event';
+import {useFaviconStatus} from '../../../shared/use-favicon-status';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {useResizableWidth} from '../../../shared/use-resizable-width';
 import {useTransition} from '../../../shared/use-transition';
@@ -183,6 +184,9 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     }, []);
 
     useCollectEvent('openedWorkflowDetails');
+
+    // Update browser tab favicon and title based on workflow status
+    useFaviconStatus(workflow?.status?.phase, workflow?.metadata?.name);
 
     useEffect(() => {
         setParameters(getInputParametersForNode(nodeId));
