@@ -233,6 +233,8 @@ GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-confi
 # protoc,my.proto
 define protoc
 	# protoc $(1)
+    # Remove v3 symlink before vendoring - it confuses Go into thinking there's a nested v3 module
+    rm -f ./v3
     [ -e ./vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
@@ -245,7 +247,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-    perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    perl -i -pe 's|argoproj/argo-workflows/(?!v3/)|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 
@@ -401,9 +403,7 @@ endif
 $(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	# TODO: currently fails on v0.30.3 with
-	# Unable to clean package k8s.io.api.core.v1: remove /home/runner/go/pkg/mod/k8s.io/api@v0.30.3/core/v1/generated.proto: permission denied
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.33.1
 endif
 $(GOPATH)/src/github.com/gogo/protobuf: Makefile
 # update this in Nix when upgrading it here
@@ -466,20 +466,39 @@ endif
 
 # go-to-protobuf fails with mysterious errors on code that doesn't compile
 pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
 	# Why clang-format? Google uses it.
 	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
 	@echo "*** So fix them first."
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
+	# go-to-protobuf uses `go list` which returns module cache paths. It writes temporary .proto files
+	# there and cleans them afterward. The module cache is read-only by default, so we must:
+	# 1. Make module cache writable for k8s.io packages
+	# 2. Copy k8s.io to GOPATH/src for --proto-import (protoc needs to find .proto files)
+	# 3. Symlink argo-workflows in GOPATH/src so --output-dir routes .pb.go to project dir
+	# 4. Re-download k8s.io modules after, since go-to-protobuf deletes files from them
+	chmod -R +w $(shell go env GOMODCACHE)/k8s.io 2>/dev/null || true
+	mkdir -p $(GOPATH)/src/k8s.io
+	rm -rf $(GOPATH)/src/k8s.io/api $(GOPATH)/src/k8s.io/apimachinery
+	cp -r $(shell go env GOMODCACHE)/k8s.io/api@v0.33.1 $(GOPATH)/src/k8s.io/api
+	cp -r $(shell go env GOMODCACHE)/k8s.io/apimachinery@v0.33.1 $(GOPATH)/src/k8s.io/apimachinery
+	mkdir -p $(GOPATH)/src/github.com/argoproj/argo-workflows
+	rm -rf $(GOPATH)/src/github.com/argoproj/argo-workflows/v3
+	ln -s $(CURDIR) $(GOPATH)/src/github.com/argoproj/argo-workflows/v3
 	$(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1 \
-		--proto-import $(GOPATH)/src
-	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
+		--proto-import $(GOPATH)/src \
+		--output-dir $(GOPATH)/src
+	# Clean up and restore k8s.io modules that go-to-protobuf corrupted
+	rm -rf $(GOPATH)/src/k8s.io/api $(GOPATH)/src/k8s.io/apimachinery
+	rm -rf $(GOPATH)/src/github.com/argoproj/argo-workflows/v3
+	rm -rf $(shell go env GOMODCACHE)/k8s.io/api@v0.33.1 $(shell go env GOMODCACHE)/k8s.io/apimachinery@v0.33.1
+	go mod download k8s.io/api@v0.33.1 k8s.io/apimachinery@v0.33.1
+	rm -rf vendor
+	rm -rf ./k8s.io ./github.com
+	[ -e ./v3 ] && rm -rf v3 || true
 	touch $@
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
@@ -756,11 +775,17 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF) $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
-	    "deepcopy,client,informer,lister" \
-	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
-	    workflow:v1alpha1 \
-	    --go-header-file ./hack/custom-boilerplate.go.txt
+	# Use kube_codegen.sh from code-generator v0.33.1
+	bash -c 'source $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.33.1/kube_codegen.sh && \
+	    kube::codegen::gen_helpers \
+	        --boilerplate ./hack/custom-boilerplate.go.txt \
+	        ./pkg/apis && \
+	    kube::codegen::gen_client \
+	        --boilerplate ./hack/custom-boilerplate.go.txt \
+	        --output-dir ./pkg/client \
+	        --output-pkg github.com/argoproj/argo-workflows/v3/pkg/client \
+	        --with-watch \
+	        ./pkg/apis'
 	# Force the timestamp to be up to date
 	touch $@
 	# Delete the link
