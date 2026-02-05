@@ -96,8 +96,6 @@ jobs:
               - '!docs/fields.md'
               - '!docs/executor_swagger.md'
               - '!docs/cli/**'
-              # proposals live only on GH as pure markdown
-              - '!docs/proposals/**'
               # docs scripts & tools from `make docs`
               - hack/docs/copy-readme.sh
               - hack/docs/check-env-doc.sh
