@@ -64,6 +64,7 @@ jobs:
               - examples/**
               - go.mod
               - go.sum
+              - hack/k8s-versions.sh
             codegen:
               - *common
               # generated files
