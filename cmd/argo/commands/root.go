@@ -144,6 +144,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 			os.Exit(1)
 		}
 
+		logging.SetupKlogAdapter(ctx)
 		cmdutil.SetGLogLevel(glogLevel)
 		command.SetContext(ctx)
 

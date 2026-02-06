@@ -76,6 +76,7 @@ func NewRootCommand() *cobra.Command {
 				return err
 			}
 
+			logging.SetupKlogAdapter(ctx)
 			cmdutil.SetGLogLevel(glogLevel)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)

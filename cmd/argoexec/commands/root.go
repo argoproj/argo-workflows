@@ -42,6 +42,7 @@ func NewRootCommand() *cobra.Command {
 				logging.InitLogger().WithError(err).WithFatal().Error(cmd.Context(), "Failed to create argoexec pre-run logger")
 				os.Exit(1)
 			}
+			logging.SetupKlogAdapter(ctx)
 
 			// Required: argo=true field for test filtering compatibility
 			ctx = logging.WithLogger(ctx, logger.WithField("argo", true))
