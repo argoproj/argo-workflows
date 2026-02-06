@@ -2,7 +2,6 @@ package template
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,14 +9,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
-
-func TestIsMissingVariableErr(t *testing.T) {
-	assert.False(t, IsMissingVariableErr(nil))
-	assert.False(t, IsMissingVariableErr(fmt.Errorf("some random error")))
-	assert.True(t, IsMissingVariableErr(fmt.Errorf("failed to resolve {{foo}}")))
-	assert.True(t, IsMissingVariableErr(fmt.Errorf("failed to evaluate expression: foo is missing")))
-	assert.True(t, IsMissingVariableErr(fmt.Errorf("failed to evaluate expression: syntax error")))
-}
 
 func toJSONString(v any) string {
 	jsonString, _ := json.Marshal(v)
