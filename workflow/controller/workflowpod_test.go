@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -2128,4 +2129,414 @@ func TestMergeEnvVars(t *testing.T) {
 			},
 		})
 	})
+}
+
+func TestArtifactPluginSidecar(t *testing.T) {
+	t.Run("TestAddArtifactPluginSidecars", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+
+		tmpl := &wfv1.Template{
+			Name: "test-template",
+			Container: &apiv1.Container{
+				Image:   "hello-world",
+				Command: []string{"echo", "hello"},
+			},
+			Outputs: wfv1.Outputs{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "result",
+						Path: "/tmp/result.txt",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "test-plugin",
+							},
+						},
+					},
+					{
+						Name: "logs",
+						Path: "/tmp/logs.txt",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "another-plugin",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		pod := &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{Name: common.WaitContainerName, Image: "wait-image"},
+					{Name: common.MainContainerName, Image: "main-image"},
+				},
+				Volumes: []apiv1.Volume{},
+			},
+		}
+
+		cfg := &config.Config{
+			ArtifactDrivers: []config.ArtifactDriver{
+				{
+					Name:  "test-plugin",
+					Image: "busybox",
+				},
+				{
+					Name:  "another-plugin",
+					Image: "alpine",
+				},
+			},
+			// Avoid Docker Hub image lookup by providing entrypoint
+			Images: map[string]config.Image{
+				"busybox": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+				"alpine": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+			},
+		}
+
+		cancel, controller := newController(ctx)
+		defer cancel()
+		controller.Config.ArtifactDrivers = cfg.ArtifactDrivers
+		controller.Config.Images = cfg.Images
+
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-workflow",
+				UID:  "test-uid",
+			},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "test-template",
+				Templates:  []wfv1.Template{*tmpl},
+			},
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		err := woc.setExecWorkflow(ctx)
+		require.NoError(t, err)
+
+		err = woc.addArtifactPlugins(ctx, pod, tmpl, cfg)
+		require.NoError(t, err)
+
+		// Volumes are normally added in addOutputArtifactsVolumes
+		artifactVolumes := woc.createArtifactVolumeMounts(ctx, tmpl)
+		pod.Spec.Volumes = append(pod.Spec.Volumes, artifactVolumes...)
+
+		assert.Len(t, pod.Spec.Containers, 4) // wait + main + 2 plugin sidecars
+
+		// Test both plugin sidecar containers
+		var testPluginContainer, anotherPluginContainer *apiv1.Container
+		for _, c := range pod.Spec.Containers {
+			switch c.Name {
+			case common.ArtifactPluginSidecarPrefix + "test-plugin":
+				testPluginContainer = &c
+			case common.ArtifactPluginSidecarPrefix + "another-plugin":
+				anotherPluginContainer = &c
+			}
+		}
+		require.NotNil(t, testPluginContainer, "test-plugin sidecar container not found")
+		assert.Equal(t, "busybox", testPluginContainer.Image)
+
+		require.NotNil(t, anotherPluginContainer, "another-plugin sidecar container not found")
+		assert.Equal(t, "alpine", anotherPluginContainer.Image)
+
+		// Test both plugin volumes
+		testPluginVolume := wfv1.ArtifactPluginName("test-plugin").Volume()
+		anotherPluginVolume := wfv1.ArtifactPluginName("another-plugin").Volume()
+		assert.Contains(t, pod.Spec.Volumes, testPluginVolume)
+		assert.Contains(t, pod.Spec.Volumes, anotherPluginVolume)
+
+		// Test wait container has both plugin volume mounts
+		waitContainer := &pod.Spec.Containers[0]
+		testPluginMount := wfv1.ArtifactPluginName("test-plugin").VolumeMount()
+		anotherPluginMount := wfv1.ArtifactPluginName("another-plugin").VolumeMount()
+		assert.Contains(t, waitContainer.VolumeMounts, testPluginMount)
+		assert.Contains(t, waitContainer.VolumeMounts, anotherPluginMount)
+
+		// Test plugin names environment variable contains both plugins
+		var pluginNamesEnv *apiv1.EnvVar
+		for _, env := range waitContainer.Env {
+			if env.Name == common.EnvVarArtifactPluginNames {
+				pluginNamesEnv = &env
+				break
+			}
+		}
+		require.NotNil(t, pluginNamesEnv, "Plugin names env var not found")
+		assert.Contains(t, pluginNamesEnv.Value, common.ArtifactPluginSidecarPrefix+"test-plugin")
+		assert.Contains(t, pluginNamesEnv.Value, common.ArtifactPluginSidecarPrefix+"another-plugin")
+	})
+
+	t.Run("TestArtifactPluginInitContainers", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+
+		tmpl := &wfv1.Template{
+			Name: "test-template",
+			Container: &apiv1.Container{
+				Image:   "hello-world",
+				Command: []string{"echo", "hello"},
+			},
+			Inputs: wfv1.Inputs{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "input-data",
+						Path: "/tmp/input.txt",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "test-plugin",
+							},
+						},
+					},
+					{
+						Name: "config-data",
+						Path: "/tmp/config.json",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "another-plugin",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		cfg := &config.Config{
+			ArtifactDrivers: []config.ArtifactDriver{
+				{
+					Name:  "test-plugin",
+					Image: "busybox",
+				},
+				{
+					Name:  "another-plugin",
+					Image: "alpine",
+				},
+			},
+			Images: map[string]config.Image{
+				"busybox": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+				"alpine": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+			},
+		}
+
+		cancel, controller := newController(ctx)
+		defer cancel()
+		controller.Config.ArtifactDrivers = cfg.ArtifactDrivers
+		controller.Config.Images = cfg.Images
+
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-workflow",
+				UID:  "test-uid",
+			},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "test-template",
+				Templates:  []wfv1.Template{*tmpl},
+			},
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Skip workflow validation by not calling setExecWorkflow
+		// Test plugin init container creation directly
+		initContainers, err := woc.newInitContainers(ctx, tmpl)
+		require.NoError(t, err)
+
+		// Should have standard init container plus 2 plugin init containers
+		assert.Len(t, initContainers, 3)
+
+		// Test both plugin init containers
+		var testPluginInit, anotherPluginInit *apiv1.Container
+		for _, c := range initContainers {
+			switch c.Name {
+			case common.ArtifactPluginInitPrefix + "test-plugin":
+				testPluginInit = &c
+			case common.ArtifactPluginInitPrefix + "another-plugin":
+				anotherPluginInit = &c
+			}
+		}
+
+		require.NotNil(t, testPluginInit, "test-plugin init container not found")
+		assert.Equal(t, "busybox", testPluginInit.Image)
+		assert.Contains(t, testPluginInit.Command, "artifact-plugin-init")
+		assert.Contains(t, testPluginInit.Command, "--plugin-name")
+		assert.Contains(t, testPluginInit.Command, "test-plugin")
+
+		require.NotNil(t, anotherPluginInit, "another-plugin init container not found")
+		assert.Equal(t, "alpine", anotherPluginInit.Image)
+		assert.Contains(t, anotherPluginInit.Command, "artifact-plugin-init")
+		assert.Contains(t, anotherPluginInit.Command, "--plugin-name")
+		assert.Contains(t, anotherPluginInit.Command, "another-plugin")
+
+		// Test addInputArtifactsVolumes directly with a mock pod
+		pod := &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				InitContainers: []apiv1.Container{
+					{Name: common.InitContainerName, Image: "init-image"},
+					{Name: common.ArtifactPluginInitPrefix + "test-plugin", Image: "busybox"},
+					{Name: common.ArtifactPluginInitPrefix + "another-plugin", Image: "alpine"},
+				},
+				Containers: []apiv1.Container{
+					{Name: common.MainContainerName, Image: "main-image"},
+				},
+				Volumes: []apiv1.Volume{},
+			},
+		}
+
+		err = woc.addInputArtifactsVolumes(ctx, pod, tmpl)
+		require.NoError(t, err)
+
+		// Should have input-artifacts volume
+		var inputArtifactsVolume *apiv1.Volume
+		for _, v := range pod.Spec.Volumes {
+			if v.Name == "input-artifacts" {
+				inputArtifactsVolume = &v
+				break
+			}
+		}
+		require.NotNil(t, inputArtifactsVolume, "input-artifacts volume not found")
+		assert.NotNil(t, inputArtifactsVolume.EmptyDir, "input-artifacts should be EmptyDir volume")
+
+		// Both plugin init containers should have input-artifacts volume mount
+		var testPluginMount, anotherPluginMount *apiv1.VolumeMount
+		for _, vm := range pod.Spec.InitContainers[1].VolumeMounts {
+			if vm.Name == "input-artifacts" {
+				testPluginMount = &vm
+				break
+			}
+		}
+		for _, vm := range pod.Spec.InitContainers[2].VolumeMounts {
+			if vm.Name == "input-artifacts" {
+				anotherPluginMount = &vm
+				break
+			}
+		}
+		require.NotNil(t, testPluginMount, "test-plugin init container should have input-artifacts volume mount")
+		assert.Equal(t, "/argo/inputs/artifacts", testPluginMount.MountPath)
+
+		require.NotNil(t, anotherPluginMount, "another-plugin init container should have input-artifacts volume mount")
+		assert.Equal(t, "/argo/inputs/artifacts", anotherPluginMount.MountPath)
+
+		// Main container should have artifact path volume mounts for both artifacts
+		var inputDataMount, configDataMount *apiv1.VolumeMount
+		for _, vm := range pod.Spec.Containers[0].VolumeMounts {
+			if vm.Name == "input-artifacts" && vm.MountPath == "/tmp/input.txt" {
+				inputDataMount = &vm
+			} else if vm.Name == "input-artifacts" && vm.MountPath == "/tmp/config.json" {
+				configDataMount = &vm
+			}
+		}
+		require.NotNil(t, inputDataMount, "Main container should have input-data artifact path volume mount")
+		assert.Equal(t, "input-data", inputDataMount.SubPath)
+
+		require.NotNil(t, configDataMount, "Main container should have config-data artifact path volume mount")
+		assert.Equal(t, "config-data", configDataMount.SubPath)
+	})
+}
+
+// TestContainerArgsOffloading verifies that container arguments exceeding 128KB are automatically
+// offloaded to a ConfigMap instead of being stored directly in the pod specification.
+func TestContainerArgsOffloading(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Create a large argument that exceeds 128KB threshold (131,072 bytes)
+	largeArg := strings.Repeat("x", 140000) // 140KB
+	args := []string{"--flag", largeArg, "--other"}
+
+	// Create a workflow with a container that has large args
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-large-args
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: ["/bin/sh"]
+`)
+
+	// Set large args on the template
+	wf.Spec.Templates[0].Container.Args = args
+
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Create the main container with large args
+	mainCtr := apiv1.Container{
+		Name:    "main",
+		Image:   "alpine:latest",
+		Command: []string{"/bin/sh"},
+		Args:    args,
+	}
+
+	// Execute: Call createWorkflowPod
+	pod, err := woc.createWorkflowPod(ctx, wf.Spec.Templates[0].Name, []apiv1.Container{mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	// Verify Concern 1: Args offloading when exceeding threshold
+	// Check that a ConfigMap was created
+	cms, err := controller.kubeclientset.CoreV1().ConfigMaps(wf.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: common.LabelKeyWorkflow + "=" + wf.Name,
+	})
+	require.NoError(t, err)
+	assert.Len(t, cms.Items, 1, "Expected exactly one ConfigMap to be created")
+
+	// Verify Concern 2: Correct JSON unmarshaling from ConfigMap
+	cm := cms.Items[0]
+	assert.Contains(t, cm.Data, common.EnvVarContainerArgsFile, "ConfigMap should contain ARGO_CONTAINER_ARGS_FILE key")
+
+	// Unmarshal the JSON data back to verify it matches original args
+	var unmarshaledArgs []string
+	err = json.Unmarshal([]byte(cm.Data[common.EnvVarContainerArgsFile]), &unmarshaledArgs)
+	require.NoError(t, err, "Should be able to unmarshal ConfigMap data as JSON")
+	assert.Equal(t, args, unmarshaledArgs, "Unmarshaled args should match original args")
+
+	// Verify Concern 3: Container setup for file access
+	// Container args should be cleared (nil) after offloading
+	// Note: pod.Spec.Containers[0] is the wait container, main container is at index 1
+	require.Len(t, pod.Spec.Containers, 2, "Pod should have wait and main containers")
+	container := pod.Spec.Containers[1]
+	assert.Nil(t, container.Args, "Container args should be nil after offloading")
+
+	// Find and verify the environment variable
+	var foundEnvVar *apiv1.EnvVar
+	for i, env := range container.Env {
+		if env.Name == common.EnvVarContainerArgsFile {
+			foundEnvVar = &container.Env[i]
+			break
+		}
+	}
+	require.NotNil(t, foundEnvVar, "Container should have ARGO_CONTAINER_ARGS_FILE env var")
+	expectedPath := common.EnvConfigMountPath + "/" + common.EnvVarContainerArgsFile
+	assert.Equal(t, expectedPath, foundEnvVar.Value, "Env var should point to correct file path")
+
+	// Verify volume mount exists
+	var foundVolumeMount *apiv1.VolumeMount
+	for i, vm := range container.VolumeMounts {
+		if vm.MountPath == common.EnvConfigMountPath {
+			foundVolumeMount = &container.VolumeMounts[i]
+			break
+		}
+	}
+	require.NotNil(t, foundVolumeMount, "Container should have volume mount at /argo/config")
+
+	// Verify ConfigMap volume exists in pod spec
+	var foundVolume bool
+	for _, vol := range pod.Spec.Volumes {
+		if vol.ConfigMap != nil && vol.ConfigMap.Name == cm.Name {
+			foundVolume = true
+			break
+		}
+	}
+	assert.True(t, foundVolume, "Pod should have ConfigMap volume")
 }
