@@ -12,7 +12,16 @@ func IsMissingVariableErr(err error) bool {
 		return false
 	}
 	msg := err.Error()
-	return strings.Contains(msg, "failed to resolve") || strings.Contains(msg, "failed to evaluate expression:")
+	if strings.Contains(msg, "failed to resolve {{") {
+		return true
+	}
+	if strings.Contains(msg, " is missing") {
+		return true
+	}
+	if strings.Contains(msg, "variable not in env") {
+		return true
+	}
+	return false
 }
 
 // Replace takes a json-formatted string and performs variable replacement.
