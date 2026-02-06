@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	md "github.com/nao1215/markdown"
@@ -238,10 +239,8 @@ func processFieldWithNames(field *ast.Field, typeStr string, names []string, row
 
 // addToRecursionList adds a type to the recursion list only if it's not already present
 func addToRecursionList(typesToRecurse *[]string, baseType string) {
-	for _, existing := range *typesToRecurse {
-		if existing == baseType {
-			return // Already in the list, skip
-		}
+	if slices.Contains(*typesToRecurse, baseType) {
+		return // Already in the list, skip
 	}
 	*typesToRecurse = append(*typesToRecurse, baseType)
 }

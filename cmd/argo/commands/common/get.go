@@ -31,7 +31,7 @@ func statusToNodeFieldSelector(status string) string {
 	return fmt.Sprintf("phase=%s", status)
 }
 
-func (g GetFlags) shouldPrint(node wfv1.NodeStatus) bool {
+func (g *GetFlags) shouldPrint(node wfv1.NodeStatus) bool {
 	if g.Status != "" {
 		// Adapt --status to a node field selector for compatibility
 		if g.NodeFieldSelectorString != "" {
@@ -114,23 +114,24 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 		if len(wf.Status.Outputs.Artifacts) > 0 {
 			out += fmt.Sprintf(fmtStr, "Output Artifacts:", "")
 			for _, art := range wf.Status.Outputs.Artifacts {
-				if art.S3 != nil {
+				switch {
+				case art.S3 != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.S3.String())
-				} else if art.Git != nil {
+				case art.Git != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Git.String())
-				} else if art.HTTP != nil {
+				case art.HTTP != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HTTP.String())
-				} else if art.Artifactory != nil {
+				case art.Artifactory != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
-				} else if art.HDFS != nil {
+				case art.HDFS != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HDFS.String())
-				} else if art.Raw != nil {
+				case art.Raw != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Raw.String())
-				} else if art.OSS != nil {
+				case art.OSS != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.OSS.String())
-				} else if art.GCS != nil {
+				case art.GCS != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.GCS.String())
-				} else if art.Azure != nil {
+				case art.Azure != nil:
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Azure.String())
 				}
 			}
@@ -147,11 +148,12 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 		w := tabwriter.NewWriter(writerBuffer, 0, 0, 2, ' ', 0)
 		out += "\n"
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
-		if getArgs.Output.String() == "wide" {
+		switch getArgs.Output.String() {
+		case "wide":
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
-		} else if getArgs.Output.String() == "short" {
+		case "short":
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\tNODENAME\n", ansiFormat("STEP", FgDefault))
-		} else {
+		default:
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
 
@@ -393,16 +395,18 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 // tells whether the children need special indentation due to filtering
 // Return Values: (is node filtered, do children need special indent)
 func filterNode(node wfv1.NodeStatus, getArgs GetFlags) (bool, bool) {
-	if node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1 {
+	switch {
+	case node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1:
 		return true, false
-	} else if node.Type == wfv1.NodeTypeStepGroup {
+	case node.Type == wfv1.NodeTypeStepGroup:
 		return true, true
-	} else if node.Type == wfv1.NodeTypeSkipped && node.Phase == wfv1.NodeOmitted {
+	case node.Type == wfv1.NodeTypeSkipped && node.Phase == wfv1.NodeOmitted:
 		return true, false
-	} else if !getArgs.shouldPrint(node) {
+	case !getArgs.shouldPrint(node):
 		return true, false
+	default:
+		return false, false
 	}
-	return false, false
 }
 
 // Render the child of a given node based on information about the parent such as:
@@ -413,48 +417,52 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 	var part, subp string
 	if NoUtf8 {
 		if parentFiltered && childIndent {
-			if maxIndex == 0 {
+			switch {
+			case maxIndex == 0:
 				part = "--"
 				subp = "  "
-			} else if childIndex == 0 {
+			case childIndex == 0:
 				part = "+-"
 				subp = "| "
-			} else if childIndex == maxIndex {
+			case childIndex == maxIndex:
 				part = "`-"
 				subp = "  "
-			} else {
+			default:
 				part = "|-"
 				subp = "| "
 			}
 		} else if !parentFiltered {
-			if childIndex == maxIndex {
+			switch childIndex {
+			case maxIndex:
 				part = "`-"
 				subp = "  "
-			} else {
+			default:
 				part = "|-"
 				subp = "| "
 			}
 		}
 	} else {
 		if parentFiltered && childIndent {
-			if maxIndex == 0 {
+			switch {
+			case maxIndex == 0:
 				part = "──"
 				subp = "  "
-			} else if childIndex == 0 {
+			case childIndex == 0:
 				part = "┬─"
 				subp = "│ "
-			} else if childIndex == maxIndex {
+			case childIndex == maxIndex:
 				part = "└─"
 				subp = "  "
-			} else {
+			default:
 				part = "├─"
 				subp = "│ "
 			}
 		} else if !parentFiltered {
-			if childIndex == maxIndex {
+			switch childIndex {
+			case maxIndex:
 				part = "└─"
 				subp = "  "
-			} else {
+			default:
 				part = "├─"
 				subp = "│ "
 			}
@@ -462,7 +470,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 	}
 	var childNodePrefix, childChldPrefix string
 	if !parentFiltered {
-		depth = depth + 1
+		depth++
 		childNodePrefix = childPrefix + part
 		childChldPrefix = childPrefix + subp
 	} else {
@@ -490,15 +498,16 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 	} else if node.TemplateName != "" {
 		fmtTemplateName = node.TemplateName
 	}
-	var args []interface{}
+	var args []any
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
 		podName := util.GeneratePodName(wfName, nodeName, templateName, node.ID, podNameVersion)
-		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
+		args = []any{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
 	} else {
-		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}
+		args = []any{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}
 	}
-	if getArgs.Output.String() == "wide" {
+	switch getArgs.Output.String() {
+	case "wide":
 		msg := args[len(args)-2]
 		args[len(args)-2] = getArtifactsString(node)
 		args[len(args)-1] = msg
@@ -507,12 +516,12 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 			args[len(args)-1] = node.HostNodeName
 		}
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
-	} else if getArgs.Output.String() == "short" {
+	case "short":
 		if node.Type == wfv1.NodeTypePod {
 			args[len(args)-1] = node.HostNodeName
 		}
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
-	} else {
+	default:
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	}
 }

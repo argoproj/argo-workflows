@@ -48,6 +48,12 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
+// WorkflowServer is the interface for the workflow server.
+type WorkflowServer interface {
+	workflowpkg.WorkflowServiceServer
+	Run(stopCh <-chan struct{})
+}
+
 type workflowServer struct {
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
@@ -60,10 +66,10 @@ type workflowServer struct {
 	wfDefaults            *wfv1.Workflow
 }
 
-var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
+var _ WorkflowServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) *workflowServer {
+func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) WorkflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -333,9 +339,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		} else if clean {
 			return y, nil
-		} else {
-			return x, nil
 		}
+		return x, nil
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Debug(ctx, "Piping events to channel")
@@ -489,17 +494,15 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 	errCh := make(chan error, len(podsToDelete))
 	var wg sync.WaitGroup
-	wg.Add(len(podsToDelete))
 	for _, podName := range podsToDelete {
 		logger.WithFields(logging.Fields{"podDeleted": podName}).Info(ctx, "Deleting pod")
-		go func(podName string) {
-			defer wg.Done()
+		wg.Go(func() {
 			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				errCh <- err
 				return
 			}
-		}(podName)
+		})
 	}
 	wg.Wait()
 
@@ -672,7 +675,7 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if req.OutputParameters != "" {
 		err = json.Unmarshal([]byte(req.OutputParameters), &outputParams)
 		if err != nil {
-			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %s", err), codes.InvalidArgument)
+			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %w", err), codes.InvalidArgument)
 		}
 	}
 

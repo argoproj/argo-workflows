@@ -113,7 +113,7 @@ ownership management and SELinux relabeling.
 
 
 
-`interface{}`
+`any`
 
 ### <span id="any-string"></span> AnyString
 
@@ -1002,7 +1002,7 @@ Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnkn
 | hooks | [LifecycleHooks](#lifecycle-hooks)| `LifecycleHooks` |  | |  |  |
 | inline | [Template](#template)| `Template` |  | |  |  |
 | name | string| `string` |  | | Name is the name of the target</br>+kubebuilder:validation:MaxLength=128</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$` |  |
-| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the</br>template, irrespective of the success, failure, or error of the</br>primary template.</br>DEPRECATED: Use Hooks[exit].Template instead. |  |
+| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the</br>template, irrespective of the success, failure, or error of the</br>primary template.</br></br>Deprecated: Use Hooks[exit].Template instead. |  |
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
@@ -1138,7 +1138,7 @@ can be used as map keys in json.
 
 
 
-`interface{}`
+`any`
 
 ### <span id="empty-dir-volume-source"></span> EmptyDirVolumeSource
 
@@ -1331,7 +1331,7 @@ The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 
 
-`interface{}`
+`any`
 
 ### <span id="flex-volume-source"></span> FlexVolumeSource
 
@@ -1887,7 +1887,7 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 
 
-`interface{}`
+`any`
 
 ### <span id="key-to-path"></span> KeyToPath
 
@@ -2373,7 +2373,7 @@ save/load the directory appropriately.
 
 
 
-`interface{}`
+`any`
 
 ### <span id="o-auth2-auth"></span> OAuth2Auth
 
@@ -2549,7 +2549,7 @@ be cluster-scoped, so there is no namespace field.
 
   
 
-`interface{}`
+`any`
 
 ### <span id="parameter"></span> Parameter
 
@@ -2709,7 +2709,7 @@ type of volume that is owned by someone else (the system).
 
 
 
-`interface{}`
+`any`
 
 ### <span id="plugin-artifact"></span> PluginArtifact
 
@@ -3084,7 +3084,7 @@ cause implementors to also use a fixed point implementation.
 
 
 
-`interface{}`
+`any`
 
 ### <span id="quobyte-volume-source"></span> QuobyteVolumeSource
 
@@ -3295,7 +3295,7 @@ cause implementors to also use a fixed point implementation.
 
 
 
-`interface{}`
+`any`
 
 ### <span id="retry-policy"></span> RetryPolicy
 
@@ -3770,7 +3770,7 @@ of the first container processes are calculated.
 
   
 
-`interface{}`
+`any`
 
 ### <span id="suspend-template"></span> SuspendTemplate
 
@@ -4399,4 +4399,4 @@ intent and helps make sure that UIDs and names do not get conflated.
 
 
 
-`interface{}`
+`any`

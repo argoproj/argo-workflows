@@ -154,8 +154,8 @@ func (s *E2ESuite) DeleteResources() {
 			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
 			s.CheckError(err)
 			for _, item := range resourceList.Items {
-				patch, err := json.Marshal(map[string]interface{}{
-					"metadata": map[string]interface{}{
+				patch, err := json.Marshal(map[string]any{
+					"metadata": map[string]any{
 						"finalizers": []string{},
 					},
 				})

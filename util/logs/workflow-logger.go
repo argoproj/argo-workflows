@@ -122,9 +122,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		logger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
 			streamedPods[pod.UID] = true
-			wg.Add(1)
-			go func(podName string) {
-				defer wg.Done()
+			podName := pod.GetName()
+			wg.Go(func() {
 				logger.Debug(ctx, "Streaming pod logs")
 				defer logger.Debug(ctx, "Pod logs stream done")
 				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
@@ -175,7 +174,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				}
 				logger.Debug(ctx, "No more log lines to stream")
 				// out of data, we do not want to start watching again
-			}(pod.GetName())
+			})
 		}
 	}
 
@@ -212,10 +211,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		stopWatchingPods := make(chan struct{})
 		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
 		// When that happens, it signals we are done by closing the stop channel.
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			defer close(stopWatchingPods)
-			defer wg.Done()
 			defer logger.Debug(ctx, "Done watching workflow events")
 			logger.Debug(ctx, "Watching for workflow events")
 			for {
@@ -245,12 +242,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					}
 				}
 			}
-		}()
+		})
 
 		// The purpose of this watch is to start streaming any new pods that appear when we are running.
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer logger.Debug(ctx, "Done watching pod events")
 			logger.Debug(ctx, "Watching for pod events")
 			for {
@@ -281,7 +276,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					podListOptions.ResourceVersion = pod.ResourceVersion
 				}
 			}
-		}()
+		})
 	} else {
 		logger.Debug(ctx, "Not starting watches")
 	}

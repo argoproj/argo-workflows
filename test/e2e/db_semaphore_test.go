@@ -184,7 +184,7 @@ func (s *DBSemaphoreSuite) TestSynchronizationCases() {
 
 	// Iterate over tests in sorted order
 	for testName, testCase := range tests {
-		s.T().Run(testName, func(t *testing.T) {
+		s.Run(testName, func() {
 			workflowName := testName
 			for i := 0; i < len(workflowName); i++ {
 				if i > 0 && workflowName[i] >= 'A' && workflowName[i] <= 'Z' {

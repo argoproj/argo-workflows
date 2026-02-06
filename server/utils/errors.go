@@ -27,35 +27,35 @@ var errorMaps = map[int]codes.Code{
 	http.StatusServiceUnavailable:  codes.Unavailable,
 }
 
-// Return a new status error and true else nil and false
+// Return true and a new status error, else false and nil
 // is meant to be as close to the opposite of grpc gateways status -> http error code converter
 // exceptions made where one to one mappings were not available
-func httpToStatusError(code int, msg string) (error, bool) {
+func httpToStatusError(code int, msg string) (bool, error) {
 	// handle success & information  codes in one go
 	if code < 300 {
-		return status.Error(codes.OK, msg), true
+		return true, status.Error(codes.OK, msg)
 	}
 
 	statusCode, ok := errorMaps[code]
 	if ok {
-		return status.Error(statusCode, msg), true
+		return true, status.Error(statusCode, msg)
 	}
 
 	// redirects don't make sense for servers
 	// so that must imply an internal server error
 	if code < 400 && code >= 300 {
-		return status.Error(codes.Internal, msg), true
+		return true, status.Error(codes.Internal, msg)
 	}
 
 	if code >= 500 {
-		return status.Error(codes.Internal, msg), true
+		return true, status.Error(codes.Internal, msg)
 	}
 
 	if code >= 400 {
-		return status.Error(codes.InvalidArgument, msg), true
+		return true, status.Error(codes.InvalidArgument, msg)
 	}
 
-	return nil, false
+	return false, nil
 }
 
 // Try to see if we can obtain a http
@@ -75,7 +75,7 @@ func ToStatusError(err error, code codes.Code) error {
 	}
 	var argoerr argoerrors.ArgoError
 	if errors.As(err, &argoerr) {
-		newErr, converted := httpToStatusError(argoerr.HTTPCode(), err.Error())
+		converted, newErr := httpToStatusError(argoerr.HTTPCode(), err.Error())
 		if converted {
 			return newErr
 		}
@@ -85,7 +85,7 @@ func ToStatusError(err error, code codes.Code) error {
 	if errors.As(err, &e) { // check if it's a Kubernetes API error
 		// There is a http error code somewhere in the error stack
 		statusCode := int(e.Status().Code)
-		newErr, converted := httpToStatusError(statusCode, err.Error())
+		converted, newErr := httpToStatusError(statusCode, err.Error())
 		if converted {
 			return newErr
 		}

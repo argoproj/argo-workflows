@@ -95,7 +95,7 @@ func link(text, linkTo string) string {
 	return fmt.Sprintf("[%s](%s)", text, linkTo)
 }
 
-func getDescFromField(field map[string]interface{}) string {
+func getDescFromField(field map[string]any) string {
 	if val, ok := field["description"]; ok {
 		return cleanDesc(val.(string))
 	} else if val, ok := field["title"]; ok {
@@ -115,9 +115,9 @@ func getExamples(examples Set, summary string) string {
 	return out
 }
 
-func getKeyValueFieldTypes(field map[string]interface{}) (string, string) {
+func getKeyValueFieldTypes(field map[string]any) (string, string) {
 	keyType, valType := "string", "string"
-	addProps := field["additionalProperties"].(map[string]interface{})
+	addProps := field["additionalProperties"].(map[string]any)
 	if val, ok := addProps["type"]; ok {
 		keyType = val.(string)
 	}
@@ -127,10 +127,10 @@ func getKeyValueFieldTypes(field map[string]interface{}) (string, string) {
 	return keyType, valType
 }
 
-func getObjectType(field map[string]interface{}, addToQueue func(string)) string {
+func getObjectType(field map[string]any, addToQueue func(string)) string {
 	objTypeRaw := field["type"].(string)
 	if objTypeRaw == "array" {
-		if ref, ok := field["items"].(map[string]interface{})["$ref"]; ok {
+		if ref, ok := field["items"].(map[string]any)["$ref"]; ok {
 			refString := ref.(string)[14:]
 			addToQueue(refString)
 
@@ -140,10 +140,10 @@ func getObjectType(field map[string]interface{}, addToQueue func(string)) string
 			}
 			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), "#"+strings.ToLower(name)))
 		}
-		fullName := field["items"].(map[string]interface{})["type"].(string)
+		fullName := field["items"].(map[string]any)["type"].(string)
 		return fmt.Sprintf("`Array< %s >`", getNameFromFullName(fullName))
 	} else if objTypeRaw == "object" {
-		if ref, ok := field["additionalProperties"].(map[string]interface{})["$ref"]; ok {
+		if ref, ok := field["additionalProperties"].(map[string]any)["$ref"]; ok {
 			refString := ref.(string)[14:]
 			addToQueue(refString)
 			name := getNameFromFullName(refString)
@@ -168,7 +168,7 @@ func glob(dir string, ext string) ([]string, error) {
 	return files, err
 }
 
-func sortedMapInterfaceKeys(in map[string]interface{}) []string {
+func sortedMapInterfaceKeys(in map[string]any) []string {
 	var stringList []string
 	for key := range in {
 		stringList = append(stringList, key)
@@ -192,7 +192,7 @@ type DocGeneratorContext struct {
 	external   []string
 	index      map[string]Set
 	jsonName   map[string]string
-	defs       map[string]interface{}
+	defs       map[string]any
 }
 
 type Set map[string]bool
@@ -217,7 +217,7 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 		external: []string{},
 		index:    make(map[string]Set),
 		jsonName: make(map[string]string),
-		defs:     make(map[string]interface{}),
+		defs:     make(map[string]any),
 	}
 }
 
@@ -226,12 +226,12 @@ func (c *DocGeneratorContext) loadFiles() {
 	if err != nil {
 		panic(err)
 	}
-	swagger := make(map[string]interface{})
+	swagger := make(map[string]any)
 	err = json.Unmarshal(bytes, &swagger)
 	if err != nil {
 		panic(err)
 	}
-	c.defs = swagger["definitions"].(map[string]interface{})
+	c.defs = swagger["definitions"].(map[string]any)
 
 	files, err := glob("examples/", ".yaml")
 	if err != nil {
@@ -288,7 +288,7 @@ func (c *DocGeneratorContext) addToQueue(ref, jsonFieldName string) {
 }
 
 func (c *DocGeneratorContext) getDesc(key string) string {
-	obj, ok := c.defs[key].(map[string]interface{})
+	obj, ok := c.defs[key].(map[string]any)
 	if !ok {
 		return "_No description available_"
 	}
@@ -326,20 +326,20 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 		}
 	}
 
-	var properties map[string]interface{}
+	var properties map[string]any
 	def, ok := c.defs[key]
 	if !ok {
 		return out
 	}
-	if props, ok := def.(map[string]interface{})["properties"]; ok {
-		properties = props.(map[string]interface{})
+	if props, ok := def.(map[string]any)["properties"]; ok {
+		properties = props.(map[string]any)
 	} else {
 		return out
 	}
 
 	out += fieldTableHeader
 	for _, jsonFieldName := range sortedMapInterfaceKeys(properties) {
-		field := properties[jsonFieldName].(map[string]interface{})
+		field := properties[jsonFieldName].(map[string]any)
 		if ref, ok := field["$ref"]; ok {
 			refString := ref.(string)[14:]
 			c.addToQueue(refString, jsonFieldName)

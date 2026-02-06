@@ -53,7 +53,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 
 		// establish a list of unreconciled workflows
 		unreconciledWorkflows := make(map[string]*wfv1.Workflow)
-		err = cache.ListAllByNamespace(wfc.wfInformer.GetIndexer(), wfc.managedNamespace, selector, func(m interface{}) {
+		err = cache.ListAllByNamespace(wfc.wfInformer.GetIndexer(), wfc.managedNamespace, selector, func(m any) {
 			// Informer holds Workflows as type *Unstructured
 			un := m.(*unstructured.Unstructured)
 			// verify it's of type *Workflow (if not, it's an incorrectly formatted Workflow spec)
@@ -67,7 +67,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			unreconciledWorkflows[key] = wf
 		})
 		if err != nil {
-			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
+			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%w", err)
 		}
 
 		unreconciledExceedAge := false

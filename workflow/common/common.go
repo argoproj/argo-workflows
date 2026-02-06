@@ -57,6 +57,9 @@ const (
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
+	// AnnotationKeyLastSeenVersion stores the last seen version of the workflow when it was last successfully processed by the controller
+	AnnotationKeyLastSeenVersion = workflow.WorkflowFullName + "/last-seen-version"
+
 	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
 	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
 
@@ -268,6 +271,13 @@ const (
 	SecretVolMountPath            = "/argo/secret"
 	EnvConfigMountPath            = "/argo/config"
 	EnvVarTemplateOffloaded       = "offloaded"
+	// EnvVarContainerArgsFile is set when container args are offloaded to a file
+	EnvVarContainerArgsFile = "ARGO_CONTAINER_ARGS_FILE"
+
+	// MaxEnvVarLen is the maximum size in bytes for environment variables and arguments
+	// before they are offloaded to a ConfigMap or file. This limit is based on
+	// Kubernetes' etcd value size limit and Linux exec() argument size limits.
+	MaxEnvVarLen = 131072 // 128KB
 
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
@@ -287,7 +297,7 @@ var AnnotationKeyKillCmd = func(containerName string) string { return workflow.W
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
-func UnstructuredHasCompletedLabel(obj interface{}) bool {
+func UnstructuredHasCompletedLabel(obj any) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}

@@ -91,7 +91,7 @@ func (i *Instrument) ObserveFloat(ctx context.Context, o metric.Observer, val fl
 type InstAttribs []InstAttrib
 type InstAttrib struct {
 	Name  string
-	Value interface{}
+	Value any
 }
 
 func (i *Instrument) attributes(ctx context.Context, labels InstAttribs) metric.MeasurementOption {

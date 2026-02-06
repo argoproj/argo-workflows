@@ -139,7 +139,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
                 const paramClone = {...param};
-                if (paramClone.enum) {
+                if (paramClone.enum && !paramClone.value) {
                     paramClone.value = paramClone.default;
                 }
                 return paramClone;

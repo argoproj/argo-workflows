@@ -113,10 +113,10 @@ func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 
 func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
 	const tag = "metadata.name="
-	if starts := strings.Index(selector, tag); starts > -1 {
-		suffix := selector[starts+len(tag):]
-		if ends := strings.Index(suffix, ","); ends > -1 {
-			return strings.TrimSpace(suffix[:ends])
+	if _, after, ok := strings.Cut(selector, tag); ok {
+		suffix := after
+		if before, _, ok := strings.Cut(suffix, ","); ok {
+			return strings.TrimSpace(before)
 		}
 		return strings.TrimSpace(suffix)
 	}

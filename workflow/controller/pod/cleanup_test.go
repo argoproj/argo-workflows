@@ -14,7 +14,7 @@ import (
 
 func TestDeterminePodCleanupAction(t *testing.T) {
 	finalizersNotOurs := []string{}
-	finalizersOurs := append(finalizersNotOurs, common.FinalizerPodStatus)
+	finalizersOurs := []string{common.FinalizerPodStatus}
 	assert.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Nothing(), nil, wfv1.PodGCOnPodCompletion, wfv1.WorkflowSucceeded, apiv1.PodSucceeded, finalizersOurs))
 	assert.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Everything(), nil, wfv1.PodGCOnPodNone, wfv1.WorkflowSucceeded, apiv1.PodSucceeded, finalizersOurs))
 

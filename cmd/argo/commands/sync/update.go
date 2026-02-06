@@ -76,7 +76,7 @@ func UpdateSyncLimitCommand(ctx context.Context, key string, cliOpts *cliUpdateO
 
 	resp, err := serviceClient.UpdateSyncLimit(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to update sync limit: %v", err)
+		return fmt.Errorf("failed to update sync limit: %w", err)
 	}
 
 	fmt.Printf("Sync limit updated\n")

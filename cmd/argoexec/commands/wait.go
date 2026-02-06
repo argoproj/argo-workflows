@@ -19,7 +19,7 @@ func NewWaitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := waitContainer(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -27,7 +27,7 @@ func NewWaitCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func waitContainer(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
@@ -35,7 +35,8 @@ func waitContainer(ctx context.Context) error {
 	//nolint:contextcheck
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 
-	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()                     // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	defer func() {
 		err := wfExecutor.KillArtifactSidecars(bgCtx)

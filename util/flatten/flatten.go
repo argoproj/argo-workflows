@@ -7,12 +7,12 @@ import (
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 )
 
-func toMap(in interface{}) map[string]interface{} {
+func toMap(in any) map[string]any {
 	v, _ := jsonutil.Jsonify(in)
 	return v
 }
 
-func flattenWithPrefix(in map[string]interface{}, out map[string]string, prefix string) {
+func flattenWithPrefix(in map[string]any, out map[string]string, prefix string) {
 	for k, v := range in {
 		if v == nil {
 			continue
@@ -28,7 +28,7 @@ func flattenWithPrefix(in map[string]interface{}, out map[string]string, prefix 
 
 // Flatten converts a struct into a map[string]string using dot-notation.
 // E.g. listOptions.continue="10"
-func Flatten(in interface{}) map[string]string {
+func Flatten(in any) map[string]string {
 	out := make(map[string]string)
 	flattenWithPrefix(toMap(in), out, "")
 	return out

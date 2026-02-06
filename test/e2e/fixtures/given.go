@@ -137,7 +137,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 // Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 // downloaded or evicted. To keep tests fast and reliable you must use allowed images.
 // Workflows from the examples/ folder are given special treatment and allowed to use a wider range of images.
-func (g *Given) checkImages(wf interface{}, isExample bool) {
+func (g *Given) checkImages(wf any, isExample bool) {
 	g.t.Helper()
 	var defaultImage string
 	var templates []wfv1.Template

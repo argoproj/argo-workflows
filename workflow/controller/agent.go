@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -87,7 +88,7 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
+		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %w", name, err)
 	}
 	if exists {
 		certVolume := &apiv1.Volume{
@@ -153,10 +154,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
-	podVolumes := append(
+	podVolumes := slices.Concat(
 		pluginVolumes,
-		volumeVarArgo,
-		*tokenVolume,
+		[]apiv1.Volume{volumeVarArgo, *tokenVolume},
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
@@ -258,7 +258,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			woc.requeue()
 			return created, nil
 		}
-		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
+		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %w", err))
 	}
 	log.Info(ctx, "Created Agent pod")
 	return created, nil

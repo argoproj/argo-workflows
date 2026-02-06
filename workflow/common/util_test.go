@@ -131,16 +131,16 @@ func TestGetTemplateHolderString(t *testing.T) {
 
 func TestIsDone(t *testing.T) {
 	assert.False(t, IsDone(&unstructured.Unstructured{}))
-	assert.True(t, IsDone(&unstructured.Unstructured{Object: map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"labels": map[string]interface{}{
+	assert.True(t, IsDone(&unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
 				LabelKeyCompleted: "true",
 			},
 		},
 	}}))
-	assert.False(t, IsDone(&unstructured.Unstructured{Object: map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"labels": map[string]interface{}{
+	assert.False(t, IsDone(&unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
 				LabelKeyCompleted:               "true",
 				LabelKeyWorkflowArchivingStatus: "Pending",
 			},
@@ -149,7 +149,7 @@ func TestIsDone(t *testing.T) {
 }
 
 func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
-	globalParams := map[string]interface{}{
+	globalParams := map[string]any{
 		"workflow.parameters.name": "simple-parameters",
 		"workflow.parameters.key":  "msg",
 	}
@@ -255,10 +255,10 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 }
 
 type mockConfigMapStore struct {
-	getByKey func(key string) (interface{}, bool, error)
+	getByKey func(key string) (any, bool, error)
 }
 
-func (cs mockConfigMapStore) GetByKey(key string) (interface{}, bool, error) {
+func (cs mockConfigMapStore) GetByKey(key string) (any, bool, error) {
 	return cs.getByKey(key)
 }
 
@@ -274,7 +274,7 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	overrideConfigMapValue := "override-config-map-value"
 
 	configMapStore := mockConfigMapStore{}
-	configMapStore.getByKey = func(key string) (interface{}, bool, error) {
+	configMapStore.getByKey = func(key string) (any, bool, error) {
 		return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{LabelKeyConfigMapType: LabelValueTypeConfigMapParameter}},
 			Data: map[string]string{overrideConfigMapKey: overrideConfigMapValue},
@@ -321,7 +321,7 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	overrideConfigMapValue := "override-config-map-value"
 
 	configMapStore := mockConfigMapStore{}
-	configMapStore.getByKey = func(key string) (interface{}, bool, error) {
+	configMapStore.getByKey = func(key string) (any, bool, error) {
 		return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{LabelKeyConfigMapType: LabelValueTypeConfigMapParameter}},
 			Data: map[string]string{configMapKey: configMapValue, overrideConfigMapKey: overrideConfigMapValue},

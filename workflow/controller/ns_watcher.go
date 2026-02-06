@@ -59,7 +59,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 
 	_, err := informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 				ns, err := nsFromObj(obj)
 				if err != nil {
 					return
@@ -67,7 +67,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				updateNS(ctx, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
 			},
 
-			UpdateFunc: func(old, newVal interface{}) {
+			UpdateFunc: func(old, newVal any) {
 				ns, err := nsFromObj(newVal)
 				if err != nil {
 					return
@@ -79,7 +79,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 				updateNS(ctx, ns, wfc.throttler.UpdateNamespaceParallelism, wfc.throttler.ResetNamespaceParallelism)
 			},
 
-			DeleteFunc: func(obj interface{}) {
+			DeleteFunc: func(obj any) {
 				ns, err := nsFromObj(obj)
 				if err != nil {
 					return
@@ -114,7 +114,7 @@ func updateNS(ctx context.Context, ns *apiv1.Namespace, updateFn updateFunc, res
 	updateFn(ns.Name, limit)
 }
 
-func nsFromObj(obj interface{}) (*apiv1.Namespace, error) {
+func nsFromObj(obj any) (*apiv1.Namespace, error) {
 	ns, ok := obj.(*apiv1.Namespace)
 	if !ok {
 		return nil, errors.New("was unable to convert to namespace")

@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -23,14 +24,11 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	wfSuccessStatus := true
 
 	for _, name := range workflowNames {
-		wg.Add(1)
-		go func(name string) {
+		wg.Go(func() {
 			if ok, _ := waitOnOne(ctx, serviceClient, name, namespace, ignoreNotFound, quiet); !ok {
 				wfSuccessStatus = false
 			}
-			wg.Done()
-		}(name)
-
+		})
 	}
 	wg.Wait()
 
@@ -56,7 +54,7 @@ func waitOnOne(ctx context.Context, serviceClient workflowpkg.WorkflowServiceCli
 	}
 	for {
 		event, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.Debug(ctx, "Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)

@@ -463,6 +463,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "ConnectionString is the connection string for the Azure Service Bus. If this fields is not provided\nit will try to access via Azure AD with DefaultAzureCredential and FullyQualifiedNamespace.\n+optional"
         },
+        "deferDelete": {
+          "description": "DeferDelete controls when messages are removed from Azure Service Bus.\nIf false (default), messages are received and deleted immediately before processing.\nIf true, messages are locked and only deleted after successful processing, ensuring they are not lost if processing fails.",
+          "type": "boolean"
+        },
         "filter": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
@@ -965,13 +969,14 @@
       "type": "object"
     },
     "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.DataFilter": {
+      "description": "DataFilter describes constraints and filters for event data.",
       "properties": {
         "comparator": {
           "description": "Comparator compares the event data with a user given value.\nCan be \"\u003e=\", \"\u003e\", \"=\", \"!=\", \"\u003c\", or \"\u003c=\".\nIs optional, and if left blank treated as equality \"=\".",
           "type": "string"
         },
         "path": {
-          "description": "Path is the JSONPath of the event's (JSON decoded) data key\nPath is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'.\nTo access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'.\nSee https://github.com/tidwall/gjson#path-syntax for more information on how to use this.",
+          "description": "Path is the JSONPath of the event's (JSON decoded) data key.\nPath is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'.\nTo access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'.\nSee https://github.com/tidwall/gjson#path-syntax for more information on how to use this.",
           "type": "string"
         },
         "template": {
@@ -983,14 +988,13 @@
           "type": "string"
         },
         "value": {
+          "description": "Value is the allowed string values for this key.\nBooleans are parsed using strconv.ParseBool(),\nNumbers are parsed as float64 using strconv.ParseFloat(),\nStrings are treated as regular expressions,\nNils value is ignored.",
           "items": {
             "type": "string"
           },
-          "title": "Value is the allowed string values for this key\nBooleans are passed using strconv.ParseBool()\nNumbers are parsed using as float64 using strconv.ParseFloat()\nStrings are taken as is\nNils this value is ignored",
           "type": "array"
         }
       },
-      "title": "DataFilter describes constraints and filters for event data\nRegular Expressions are purposefully not a feature as they are overkill for our uses here\nSee Rob Pike's Post: https://commandcenter.blogspot.com/2011/08/regular-expressions-in-lexing-and.html",
       "type": "object"
     },
     "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EmailTrigger": {
@@ -1378,6 +1382,13 @@
           "title": "Minio event sources",
           "type": "object"
         },
+        "mns": {
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MNSEventSource"
+          },
+          "title": "MNS event sources",
+          "type": "object"
+        },
         "mqtt": {
           "additionalProperties": {
             "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MQTTEventSource"
@@ -1626,6 +1637,10 @@
         },
         "hookName": {
           "title": "HookName is the name of the webhook",
+          "type": "string"
+        },
+        "maxTries": {
+          "title": "MaxTries is number of attempts when posting an event to the target url\n+optional",
           "type": "string"
         },
         "metadata": {
@@ -1970,12 +1985,23 @@
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
           "title": "BasicAuth configuration for the http request.\n+optional"
         },
+        "dynamicHeaders": {
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+          },
+          "title": "Dynamic Headers for the request, sourced from the io.argoproj.workflow.v1alpha1. Same spec as Parameters.\n+optional",
+          "type": "array"
+        },
         "headers": {
           "additionalProperties": {
             "type": "string"
           },
           "title": "Headers for the HTTP request.\n+optional",
           "type": "object"
+        },
+        "host": {
+          "title": "Host refers to the domain name of the server (for virtual hosting).\n+optional",
+          "type": "string"
         },
         "method": {
           "title": "Method refers to the type of the HTTP request.\nRefer https://golang.org/src/net/http/method.go for more io.argoproj.workflow.v1alpha1.\nDefault value is POST.\n+optional",
@@ -2120,6 +2146,10 @@
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SASLConfig",
           "title": "SASL configuration for the kafka client\n+optional"
         },
+        "schemaRegistry": {
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SchemaRegistryConfig",
+          "title": "Schema Registry configuration for consumer message with Avro format\n+optional"
+        },
         "tls": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the kafka client.\n+optional"
@@ -2226,6 +2256,36 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MNSEventSource": {
+      "properties": {
+        "accessKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "AccessKey refers K8s secret containing AlibabaCloud access key"
+        },
+        "endpoint": {
+          "title": "Endpoint configures connection to a specific AlibabaCloud MNS endpoint\n+optional",
+          "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
+        "jsonBody": {
+          "title": "+optional",
+          "type": "boolean"
+        },
+        "queue": {
+          "title": "Queue is AlibabaCloud MNS queue to listen to for messages",
+          "type": "string"
+        },
+        "secretKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "SecretKey refers K8s secret containing AlibabaCloud secret key"
+        }
+      },
+      "title": "MNSEventSource refers to event-source for AlibabaCloud MNS related events",
       "type": "object"
     },
     "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MQTTEventSource": {
@@ -3104,10 +3164,10 @@
       "properties": {
         "auth": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
-          "title": "+optional\nSchemaRegistry - basic authentication"
+          "title": "SchemaRegistry - basic authentication\n+optional"
         },
         "schemaId": {
-          "title": "Schema ID",
+          "title": "Schema ID\n+optional",
           "type": "integer"
         },
         "url": {
@@ -3443,6 +3503,10 @@
           "title": "S3 region.\nDefaults to us-east-1\n+optional",
           "type": "string"
         },
+        "tls": {
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "title": "TLS configuration for the service bus client\n+optional"
+        },
         "topicArn": {
           "title": "TopicArn",
           "type": "string"
@@ -3513,6 +3577,10 @@
         "clientKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "ClientKeySecret refers to the secret that contains the client key"
+        },
+        "enabled": {
+          "title": "Enabled indicates if TLS is enabled. Added for compatibility proposes for Brokers that needs TLS without key authentication\n+optional",
+          "type": "boolean"
         },
         "insecureSkipVerify": {
           "title": "If true, skips creation of TLSConfig with certs and creates an empty TLSConfig. (Defaults to false)\n+optional",
@@ -3592,6 +3660,10 @@
         },
         "stop": {
           "description": "Stop is the end of a time window in UTC.\nAfter or equal to this time, events for this dependency are ignored and\nFormat is hh:mm:ss.\nIf it is smaller than Start, it is treated as next day of Start\n(e.g.: 22:00:00-01:00:00 means 22:00:00-25:00:00).",
+          "type": "string"
+        },
+        "timezone": {
+          "title": "Timezone specifies the timezone for the time window.\nIf not specified, defaults to UTC.\nFormat should be a valid IANA timezone name (e.g., \"America/New_York\", \"Europe/London\").\n+optional",
           "type": "string"
         }
       },
@@ -3778,7 +3850,7 @@
       "type": "object"
     },
     "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.URLArtifact": {
-      "description": "URLArtifact contains information about an artifact at an http endpoint.",
+      "description": "URLArtifact contains information about an artifact at an HTTP endpoint.",
       "properties": {
         "path": {
           "title": "Path is the complete URL",
@@ -5136,7 +5208,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {
@@ -6725,7 +6797,7 @@
           "type": "string"
         },
         "keyPrefix": {
-          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\n\nDeprecated: Use KeyFormat instead.",
           "type": "string"
         },
         "region": {
@@ -8317,7 +8389,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {

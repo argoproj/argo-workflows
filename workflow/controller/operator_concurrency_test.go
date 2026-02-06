@@ -198,7 +198,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -259,7 +259,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -321,7 +321,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -381,7 +381,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -418,7 +418,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err, _ = woc.podReconciliation(ctx)
+		_, err = woc.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -977,8 +977,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
+		patchObj := map[string]any{
+			"spec": map[string]any{
 				"shutdown": wfv1.ShutdownStrategyTerminate,
 			},
 		}
@@ -1021,8 +1021,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
+		patchObj := map[string]any{
+			"spec": map[string]any{
 				"shutdown": wfv1.ShutdownStrategyStop,
 			},
 		}

@@ -73,12 +73,10 @@ func TestEmissary(t *testing.T) {
 			err := os.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
 			require.NoError(t, err)
 			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				err := run("sleep 3")
 				assert.EqualError(t, err, fmt.Sprintf("exit status %d", 128+signal))
-			}()
+			})
 			wg.Wait()
 		}
 	})

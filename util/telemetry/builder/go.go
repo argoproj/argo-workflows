@@ -20,6 +20,8 @@ func writeMetricsListGo(filename string, metrics *metricsList) {
 	}
 	defer f.Close()
 	fmt.Fprintf(f, "%s\n", generatedBanner)
+	fmt.Fprintf(f, "//\n")
+	fmt.Fprintf(f, "//go:generate go run ./builder --metricsListGo %s\n", filename)
 	fmt.Fprintf(f, "package telemetry\n\n")
 	for _, metric := range *metrics {
 		fmt.Fprintf(f, "var Instrument%s = BuiltinInstrument{\n", metric.Name)
@@ -63,6 +65,8 @@ func writeAttributesGo(filename string, attributes *attributesList) {
 	}
 	defer f.Close()
 	fmt.Fprintf(f, "%s\n", generatedBanner)
+	fmt.Fprintf(f, "//\n")
+	fmt.Fprintf(f, "//go:generate go run ./builder --attributesGo %s\n", filename)
 	fmt.Fprintf(f, "package telemetry\n\nconst (\n")
 	for _, attrib := range *attributes {
 		fmt.Fprintf(f, "\tAttrib%s string = `%s`\n", attrib.Name, attrib.displayName())
