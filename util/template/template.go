@@ -57,23 +57,21 @@ func (t *impl) Replace(ctx context.Context, replaceMap map[string]any, allowUnre
 	return t.replace(ctx, replaceMap, regex, regex, allowUnresolved)
 }
 
-func (t *impl) ReplaceStrict(ctx context.Context, replaceMap map[string]any, strictPrefixes []string) (string, error) {
-	var strictRegex *regexp.Regexp
-	var expressionStrictRegex *regexp.Regexp
-	if len(strictPrefixes) > 0 {
-		var patterns []string
-		var expressionPatterns []string
-		for _, p := range strictPrefixes {
-			patterns = append(patterns, regexp.QuoteMeta(p))
-			expressionPatterns = append(expressionPatterns, regexp.QuoteMeta(strings.SplitN(p, ".", 2)[0]))
-		}
-		// Match any string starting with one of the prefixes
-		regexStr := "^(" + strings.Join(patterns, "|") + ")"
-		strictRegex = regexp.MustCompile(regexStr)
-
-		expressionRegexStr := "^(" + strings.Join(expressionPatterns, "|") + ")$"
-		expressionStrictRegex = regexp.MustCompile(expressionRegexStr)
+func GetStrictRegex(strictPrefixes []string) *regexp.Regexp {
+	if len(strictPrefixes) == 0 {
+		return nil
 	}
+	var patterns []string
+	for _, p := range strictPrefixes {
+		patterns = append(patterns, regexp.QuoteMeta(p))
+	}
+	// Match any string starting with one of the prefixes, followed by a dot or the end of the string.
+	// This ensures that we match a full dot-segment (e.g., "tasks" matches "tasks.A" but not "tasksA").
+	regexStr := "^((" + strings.Join(patterns, "|") + "))(\\.|$)"
+	return regexp.MustCompile(regexStr)
+}
 
-	return t.replace(ctx, replaceMap, strictRegex, expressionStrictRegex, true)
+func (t *impl) ReplaceStrict(ctx context.Context, replaceMap map[string]any, strictPrefixes []string) (string, error) {
+	strictRegex := GetStrictRegex(strictPrefixes)
+	return t.replace(ctx, replaceMap, strictRegex, strictRegex, true)
 }
