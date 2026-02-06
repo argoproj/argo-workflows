@@ -52,7 +52,6 @@ var (
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
-	maxEnvVarLen = 131072
 )
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
@@ -459,19 +458,54 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	offloadEnvVarTemplate := false
+	offloadContainerArgs := false
+	var containerArgsValue string
+	var containerArgsName string
+
+	// Check if main container args need offloading (too large for exec)
+	for _, c := range pod.Spec.Containers {
+		if c.Name == common.WaitContainerName { // skip wait container
+			continue
+		}
+		if c.Args != nil {
+			argsJSON, err := json.Marshal(c.Args)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal container args for %s: %w", c.Name, err)
+			}
+			if len(argsJSON) > common.MaxEnvVarLen {
+				offloadContainerArgs = true
+				containerArgsValue = string(argsJSON)
+				containerArgsName = c.Name
+				break
+			}
+		}
+	}
+
 	for _, c := range pod.Spec.InitContainers {
 		for _, e := range c.Env {
 			if e.Name == common.EnvVarTemplate {
 				envVarTemplateValue = e.Value
-				if len(envVarTemplateValue) > maxEnvVarLen {
+				if len(envVarTemplateValue) > common.MaxEnvVarLen {
 					offloadEnvVarTemplate = true
 				}
 			}
 		}
 	}
 
-	if offloadEnvVarTemplate {
+	if offloadEnvVarTemplate || offloadContainerArgs { // Either init container's ARGO_TEMPLATE or main container's args are too large and need offloading
 		cmName := pod.Name
+		cmData := make(map[string]string)
+
+		// Add template data if needed
+		if offloadEnvVarTemplate {
+			cmData[common.EnvVarTemplate] = envVarTemplateValue
+		}
+
+		// Add container args data if needed
+		if offloadContainerArgs {
+			cmData[common.EnvVarContainerArgsFile] = containerArgsValue
+		}
+
 		cm := &apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      cmName,
@@ -487,9 +521,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 				},
 			},
-			Data: map[string]string{
-				common.EnvVarTemplate: envVarTemplateValue,
-			},
+			Data: cmData,
 		}
 		created, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{})
 		if err != nil {
@@ -517,15 +549,37 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			Name:      volumeConfig.Name,
 			MountPath: common.EnvConfigMountPath,
 		}
-		for i, c := range pod.Spec.InitContainers {
-			for j, e := range c.Env {
-				if e.Name == common.EnvVarTemplate {
-					e.Value = common.EnvVarTemplateOffloaded
-					c.Env[j] = e
+
+		// Handle init containers - offload ARGO_TEMPLATE env var
+		if offloadEnvVarTemplate {
+			for i, c := range pod.Spec.InitContainers {
+				for j, e := range c.Env {
+					if e.Name == common.EnvVarTemplate {
+						e.Value = common.EnvVarTemplateOffloaded
+						c.Env[j] = e
+					}
+				}
+				c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
+				pod.Spec.InitContainers[i] = c
+			}
+		}
+
+		// Handle main conatainers - offload args to file
+		if offloadContainerArgs {
+			for i, c := range pod.Spec.Containers {
+				if c.Name == containerArgsName {
+					// Clear the args - they will be read from file
+					c.Args = nil
+					// Add env var pointing to the args file
+					c.Env = append(c.Env, apiv1.EnvVar{
+						Name:  common.EnvVarContainerArgsFile,
+						Value: common.EnvConfigMountPath + "/" + common.EnvVarContainerArgsFile,
+					})
+					c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
+					pod.Spec.Containers[i] = c
+					log.WithField("container", containerArgsName).Info(ctx, "Offloaded container args to configmap. Args >128KB will use @filename syntax")
 				}
 			}
-			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
-			pod.Spec.InitContainers[i] = c
 		}
 	}
 
