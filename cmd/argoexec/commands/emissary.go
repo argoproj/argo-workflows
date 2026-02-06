@@ -66,7 +66,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			// Check if args were offloaded to a file (for large args that exceed exec limit)
 			if argsFile := os.Getenv(common.EnvVarContainerArgsFile); argsFile != "" {
-				logger.WithField("argsFile", argsFile).Info(ctx, "Reading container args from file")
+				logger.WithField("argsFile", argsFile).Info("Reading container args from file")
 				argsData, err := os.ReadFile(argsFile)
 				if err != nil {
 					return fmt.Errorf("failed to read container args file %s: %w", argsFile, err)
@@ -76,7 +76,7 @@ func NewEmissaryCommand() *cobra.Command {
 					return fmt.Errorf("failed to unmarshal container args: %w", err)
 				}
 				args = append(args, fileArgs...)
-				logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
+				logger.WithField("count", len(fileArgs)).Info("Loaded container args from file")
 
 				// Check for a large args and offload to file if needed
 				// This avoids the exec() "argument list too long" error
@@ -87,11 +87,11 @@ func NewEmissaryCommand() *cobra.Command {
 						if err := os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
 							return fmt.Errorf("failed to write large arg %d to file: %w", i, err)
 						}
-						logger.WithFields(logging.Fields{
+						logger.WithFields(log.Fields{
 							"argIndex": i,
 							"size":     len(args[i]),
 							"filePath": filePath,
-						}).Info(ctx, "Offloaded large argument to file. Downstream program must support @filename syntax")
+						}).Info("Offloaded large argument to file. Downstream program must support @filename syntax")
 						args[i] = "@" + filePath
 					}
 				}
