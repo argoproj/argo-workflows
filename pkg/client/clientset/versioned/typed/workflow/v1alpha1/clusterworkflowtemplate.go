@@ -3,15 +3,14 @@
 package v1alpha1
 
 import (
-	"context"
-	"time"
+	context "context"
 
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	scheme "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // ClusterWorkflowTemplatesGetter has a method to return a ClusterWorkflowTemplateInterface.
@@ -22,131 +21,34 @@ type ClusterWorkflowTemplatesGetter interface {
 
 // ClusterWorkflowTemplateInterface has methods to work with ClusterWorkflowTemplate resources.
 type ClusterWorkflowTemplateInterface interface {
-	Create(ctx context.Context, clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate, opts v1.CreateOptions) (*v1alpha1.ClusterWorkflowTemplate, error)
-	Update(ctx context.Context, clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate, opts v1.UpdateOptions) (*v1alpha1.ClusterWorkflowTemplate, error)
+	Create(ctx context.Context, clusterWorkflowTemplate *workflowv1alpha1.ClusterWorkflowTemplate, opts v1.CreateOptions) (*workflowv1alpha1.ClusterWorkflowTemplate, error)
+	Update(ctx context.Context, clusterWorkflowTemplate *workflowv1alpha1.ClusterWorkflowTemplate, opts v1.UpdateOptions) (*workflowv1alpha1.ClusterWorkflowTemplate, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.ClusterWorkflowTemplate, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ClusterWorkflowTemplateList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*workflowv1alpha1.ClusterWorkflowTemplate, error)
+	List(ctx context.Context, opts v1.ListOptions) (*workflowv1alpha1.ClusterWorkflowTemplateList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ClusterWorkflowTemplate, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *workflowv1alpha1.ClusterWorkflowTemplate, err error)
 	ClusterWorkflowTemplateExpansion
 }
 
 // clusterWorkflowTemplates implements ClusterWorkflowTemplateInterface
 type clusterWorkflowTemplates struct {
-	client rest.Interface
+	*gentype.ClientWithList[*workflowv1alpha1.ClusterWorkflowTemplate, *workflowv1alpha1.ClusterWorkflowTemplateList]
 }
 
 // newClusterWorkflowTemplates returns a ClusterWorkflowTemplates
 func newClusterWorkflowTemplates(c *ArgoprojV1alpha1Client) *clusterWorkflowTemplates {
 	return &clusterWorkflowTemplates{
-		client: c.RESTClient(),
+		gentype.NewClientWithList[*workflowv1alpha1.ClusterWorkflowTemplate, *workflowv1alpha1.ClusterWorkflowTemplateList](
+			"clusterworkflowtemplates",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			"",
+			func() *workflowv1alpha1.ClusterWorkflowTemplate { return &workflowv1alpha1.ClusterWorkflowTemplate{} },
+			func() *workflowv1alpha1.ClusterWorkflowTemplateList {
+				return &workflowv1alpha1.ClusterWorkflowTemplateList{}
+			},
+		),
 	}
-}
-
-// Get takes name of the clusterWorkflowTemplate, and returns the corresponding clusterWorkflowTemplate object, and an error if there is any.
-func (c *clusterWorkflowTemplates) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
-	result = &v1alpha1.ClusterWorkflowTemplate{}
-	err = c.client.Get().
-		Resource("clusterworkflowtemplates").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of ClusterWorkflowTemplates that match those selectors.
-func (c *clusterWorkflowTemplates) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ClusterWorkflowTemplateList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha1.ClusterWorkflowTemplateList{}
-	err = c.client.Get().
-		Resource("clusterworkflowtemplates").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested clusterWorkflowTemplates.
-func (c *clusterWorkflowTemplates) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Resource("clusterworkflowtemplates").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a clusterWorkflowTemplate and creates it.  Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
-func (c *clusterWorkflowTemplates) Create(ctx context.Context, clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate, opts v1.CreateOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
-	result = &v1alpha1.ClusterWorkflowTemplate{}
-	err = c.client.Post().
-		Resource("clusterworkflowtemplates").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterWorkflowTemplate).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a clusterWorkflowTemplate and updates it. Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
-func (c *clusterWorkflowTemplates) Update(ctx context.Context, clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate, opts v1.UpdateOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
-	result = &v1alpha1.ClusterWorkflowTemplate{}
-	err = c.client.Put().
-		Resource("clusterworkflowtemplates").
-		Name(clusterWorkflowTemplate.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterWorkflowTemplate).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the clusterWorkflowTemplate and deletes it. Returns an error if one occurs.
-func (c *clusterWorkflowTemplates) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Resource("clusterworkflowtemplates").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *clusterWorkflowTemplates) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Resource("clusterworkflowtemplates").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched clusterWorkflowTemplate.
-func (c *clusterWorkflowTemplates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
-	result = &v1alpha1.ClusterWorkflowTemplate{}
-	err = c.client.Patch(pt).
-		Resource("clusterworkflowtemplates").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }
