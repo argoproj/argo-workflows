@@ -64,8 +64,9 @@ export const WorkflowsService = {
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },
 
-    get(namespace: string, name: string) {
-        return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
+    get(namespace: string, name: string, uid?: string) {
+        const params = uid ? `?uid=${uid}` : '';
+        return requests.get(`api/v1/workflows/${namespace}/${name}${params}`).then(res => res.body as Workflow);
     },
 
     getArchived(namespace: string, uid: string) {

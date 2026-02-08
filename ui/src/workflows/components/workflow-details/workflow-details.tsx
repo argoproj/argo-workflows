@@ -394,7 +394,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     useEffect(() => {
         (async () => {
             try {
-                const wf = await services.workflows.get(namespace, name);
+                // Pass uid if available from URL query params
+                const wf = await services.workflows.get(namespace, name, uid || undefined);
                 setUid(wf.metadata.uid);
                 setWorkflow(wf);
                 setError(null);
