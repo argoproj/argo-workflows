@@ -776,34 +776,6 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	return val, nil
 }
 
-// GetSecrets retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key string) ([]byte, error) {
-	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
-	if val, ok := we.memoizedSecrets[cachedKey]; ok {
-		return val, nil
-	}
-	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
-	var secret *apiv1.Secret
-	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		var err error
-		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(ctx, err), err
-	})
-	if err != nil {
-		return []byte{}, argoerrs.InternalWrapError(err)
-	}
-	// memoize all keys in the secret since it's highly likely we will need to get a
-	// subsequent key in the secret (e.g. username + password) and we can save an API call
-	for k, v := range secret.Data {
-		we.memoizedSecrets[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = v
-	}
-	val, ok := we.memoizedSecrets[cachedKey]
-	if !ok {
-		return []byte{}, argoerrs.Errorf(argoerrs.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
-	}
-	return val, nil
-}
-
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
 func GetTerminationGracePeriodDuration() time.Duration {
 	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
