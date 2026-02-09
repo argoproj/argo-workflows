@@ -210,14 +210,12 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 
 ## AzureTokenConfig
 
-AzureTokenConfig specifies configuration for fetching Azure AD tokens. Uses `DefaultAzureCredential` which supports Workload Identity, Managed Identity, and CLI credentials. Ensure standard Azure environment variables (e.g., `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_FEDERATED_TOKEN_FILE`) are set.
-
 ### Fields
 
-| Field Name | Field Type |                                                      Description                                                       |
-|------------|------------|------------------------------------------------------------------------------------------------------------------------|
-| `Enabled`  | `bool`     | Enabled enables Azure token fetching                                                                                   |
-| `Scope`    | `string`   | Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty |
+| Field Name | Field Type |                                                       Description                                                       |
+|------------|------------|-------------------------------------------------------------------------------------------------------------------------|
+| `Enabled`  | `bool`     | Enabled enables Azure token fetching                                                                                    |
+| `Scope`    | `string`   | Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty. |
 
 ## MySQLConfig
 
