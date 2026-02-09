@@ -26,6 +26,8 @@ message WorkflowGetRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
   // Fields to be included or excluded in the response. e.g. "spec,status.phase", "-status.nodes"
   string fields = 4;
+  // Optional UID to retrieve a specific workflow (useful for archived workflows with the same name)
+  string uid = 5;
 }
 
 message WorkflowListRequest {

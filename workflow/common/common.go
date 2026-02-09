@@ -285,6 +285,13 @@ const (
 	SecretVolMountPath            = "/argo/secret"
 	EnvConfigMountPath            = "/argo/config"
 	EnvVarTemplateOffloaded       = "offloaded"
+	// EnvVarContainerArgsFile is set when container args are offloaded to a file
+	EnvVarContainerArgsFile = "ARGO_CONTAINER_ARGS_FILE"
+
+	// MaxEnvVarLen is the maximum size in bytes for environment variables and arguments
+	// before they are offloaded to a ConfigMap or file. This limit is based on
+	// Kubernetes' etcd value size limit and Linux exec() argument size limits.
+	MaxEnvVarLen = 131072 // 128KB
 
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"

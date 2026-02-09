@@ -185,6 +185,9 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		common.LabelKeyWorkflowName:           woc.wf.Name,
 	}
 
+	if woc.controller.Config.InstanceID != "" {
+		taskSetLabels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+	}
 	taskSet := wfv1.WorkflowTaskSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowTaskSetKind,

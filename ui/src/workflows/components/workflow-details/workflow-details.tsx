@@ -139,7 +139,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
                 const paramClone = {...param};
-                if (paramClone.enum) {
+                if (paramClone.enum && !paramClone.value) {
                     paramClone.value = paramClone.default;
                 }
                 return paramClone;
@@ -394,7 +394,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     useEffect(() => {
         (async () => {
             try {
-                const wf = await services.workflows.get(namespace, name);
+                // Pass uid if available from URL query params
+                const wf = await services.workflows.get(namespace, name, uid || undefined);
                 setUid(wf.metadata.uid);
                 setWorkflow(wf);
                 setError(null);

@@ -1,5 +1,19 @@
 # Changelog
 
+## v4.0.0 (2026-02-04)
+
+Full Changelog: [v4.0.0-rc4...v4.0.0](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc4...v4.0.0)
+
+### Selected Changes
+
+* [a8bff4a72](https://github.com/argoproj/argo-workflows/commit/a8bff4a72130bc1a13d95c6f73ff3fafec880287) fix(security): update qs to 6.14.1 (#15427)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+
+</details>
+
 ## v4.0.0-rc4 (2026-01-21)
 
 Full Changelog: [v4.0.0-rc3...v4.0.0-rc4](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc3...v4.0.0-rc4)
