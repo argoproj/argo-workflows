@@ -24,7 +24,7 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.DBInfo, func(), config.SyncConfig, error) {
+func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.Info, func(), config.SyncConfig, error) {
 	t.Helper()
 
 	var cfg config.SyncConfig
@@ -41,9 +41,9 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 		t.Fatalf("failed to start container: %s", err)
 	}
 
-	info := syncdb.DBInfo{
-		Config:  syncdb.DBConfigFromConfig(&cfg),
-		Session: syncdb.DBSessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
+	info := syncdb.Info{
+		Config:  syncdb.ConfigFromConfig(&cfg),
+		Session: syncdb.SessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
 	}
 	require.NotNil(t, info.Session, "failed to create database session")
 	deferfn := func() {

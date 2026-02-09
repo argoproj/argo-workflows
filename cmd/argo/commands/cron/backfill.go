@@ -46,7 +46,7 @@ func NewBackfillCommand() *cobra.Command {
 				os.Exit(0)
 			}
 			if cliOps.name == "" {
-				name, err := rand.RandString(5)
+				name, err := rand.String(5)
 				if err != nil {
 					return err
 				}

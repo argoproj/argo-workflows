@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func SignalContainer(ctx context.Context, restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
+func Container(ctx context.Context, restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
 
 	// If the container has the /var/run/argo volume mounted, this it will have access to `argoexec`.

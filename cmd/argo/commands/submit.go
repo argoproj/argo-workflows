@@ -105,7 +105,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&cliSubmitOpts.ScheduledTime, "scheduled-time", "", "Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339")
 
 	// Only complete files with appropriate extension.
-	ctx, _, err := cmdutil.CmdContextWithLogger(command, string(logging.Info), string(logging.Text))
+	ctx, _, err := cmdutil.ContextWithLogger(command, string(logging.Info), string(logging.Text))
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create submit logger")
 		os.Exit(1)
@@ -263,7 +263,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalWorkflows(ctx context.Context, wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
-	var jsonOpts []argoJson.JSONOpt
+	var jsonOpts []argoJson.Opt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}

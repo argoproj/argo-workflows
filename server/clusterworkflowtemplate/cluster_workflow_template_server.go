@@ -19,7 +19,7 @@ import (
 	serverutils "github.com/argoproj/argo-workflows/v3/server/utils"
 )
 
-type ClusterWorkflowTemplateServer struct {
+type Server struct {
 	instanceIDService instanceid.Service
 	cwftmplStore      servertypes.ClusterWorkflowTemplateStore
 	wfDefaults        *v1alpha1.Workflow
@@ -27,12 +27,12 @@ type ClusterWorkflowTemplateServer struct {
 
 func NewClusterWorkflowTemplateServer(instanceID instanceid.Service, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *v1alpha1.Workflow) clusterwftmplpkg.ClusterWorkflowTemplateServiceServer {
 	if cwftmplStore == nil {
-		cwftmplStore = NewClusterWorkflowTemplateClientStore()
+		cwftmplStore = NewClientStore()
 	}
-	return &ClusterWorkflowTemplateServer{instanceID, cwftmplStore, wfDefaults}
+	return &Server{instanceID, cwftmplStore, wfDefaults}
 }
 
-func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
+func (cwts *Server) CreateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 	if req.Template == nil {
 		return nil, serverutils.ToStatusError(fmt.Errorf("cluster workflow template was not found in the request body"), codes.InvalidArgument)
@@ -40,7 +40,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	cwts.instanceIDService.Label(req.Template)
 	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
+	err := validate.ClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.Opts{})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -51,7 +51,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	return res, nil
 }
 
-func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
+func (cwts *Server) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	wfTmpl, err := cwts.getTemplateAndValidate(ctx, req.Name)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
@@ -59,7 +59,7 @@ func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx contex
 	return wfTmpl, nil
 }
 
-func (cwts *ClusterWorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, name string) (*v1alpha1.ClusterWorkflowTemplate, error) {
+func (cwts *Server) getTemplateAndValidate(ctx context.Context, name string) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	wfTmpl, err := cwts.cwftmplStore.Getter(ctx).Get(ctx, name)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
@@ -71,7 +71,7 @@ func (cwts *ClusterWorkflowTemplateServer) getTemplateAndValidate(ctx context.Co
 	return wfTmpl, nil
 }
 
-func (cwts *ClusterWorkflowTemplateServer) ListClusterWorkflowTemplates(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateListRequest) (*v1alpha1.ClusterWorkflowTemplateList, error) {
+func (cwts *Server) ListClusterWorkflowTemplates(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateListRequest) (*v1alpha1.ClusterWorkflowTemplateList, error) {
 	wfClient := auth.GetWfClient(ctx)
 	options := &v1.ListOptions{}
 	if req.ListOptions != nil {
@@ -88,7 +88,7 @@ func (cwts *ClusterWorkflowTemplateServer) ListClusterWorkflowTemplates(ctx cont
 	return cwfList, nil
 }
 
-func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateDeleteRequest) (*clusterwftmplpkg.ClusterWorkflowTemplateDeleteResponse, error) {
+func (cwts *Server) DeleteClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateDeleteRequest) (*clusterwftmplpkg.ClusterWorkflowTemplateDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 	_, err := cwts.getTemplateAndValidate(ctx, req.Name)
 	if err != nil {
@@ -102,12 +102,12 @@ func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx con
 	return &clusterwftmplpkg.ClusterWorkflowTemplateDeleteResponse{}, nil
 }
 
-func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateLintRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
+func (cwts *Server) LintClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateLintRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	cwts.instanceIDService.Label(req.Template)
 	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
 
-	err := validate.ValidateClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{Lint: true})
+	err := validate.ClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -115,7 +115,7 @@ func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx conte
 	return req.Template, nil
 }
 
-func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
+func (cwts *Server) UpdateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	if req.Template == nil {
 		return nil, serverutils.ToStatusError(fmt.Errorf("ClusterWorkflowTemplate is not found in Request body"), codes.InvalidArgument)
 	}
@@ -127,7 +127,7 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	wfClient := auth.GetWfClient(ctx)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)
 
-	err = validate.ValidateClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
+	err = validate.ClusterWorkflowTemplate(ctx, nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.Opts{})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}

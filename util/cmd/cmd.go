@@ -104,7 +104,7 @@ func ParseLabels(labelSpec any) (map[string]string, error) {
 }
 
 // Ensures we have a logger at the specified level
-func CmdContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Context, logging.Logger, error) {
+func ContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Context, logging.Logger, error) {
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()

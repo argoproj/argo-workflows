@@ -27,7 +27,7 @@ func TestDBSyncProvider(t *testing.T) {
 	mockSyncQueries := &syncdbmocks.SyncQueries{}
 	provider := &dbSyncProvider{db: mockSyncQueries}
 	server := &syncServer{
-		providers: map[syncpkg.SyncConfigType]SyncConfigProvider{
+		providers: map[syncpkg.SyncConfigType]ConfigProvider{
 			syncpkg.SyncConfigType_DATABASE: provider,
 		},
 	}

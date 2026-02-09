@@ -81,7 +81,7 @@ func TestLintFile(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
 	ctx := logging.TestContext(t.Context())
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(ctx, &Options{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
 			WorkflowsClient: wfServiceClientMock,
@@ -112,7 +112,7 @@ func TestLintMultipleKinds(t *testing.T) {
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
 	ctx := logging.TestContext(t.Context())
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(ctx, &Options{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -157,7 +157,7 @@ func TestLintWithOutput(t *testing.T) {
 	mw.On("Write", mock.Anything).Return(0, nil)
 
 	ctx := logging.TestContext(t.Context())
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(ctx, &Options{
 		Files: []string{file.Name(), "-"},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -201,7 +201,7 @@ func TestLintStdin(t *testing.T) {
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
 	ctx := logging.TestContext(t.Context())
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(ctx, &Options{
 		Files: []string{"-"},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -240,7 +240,7 @@ func TestLintDeviceFile(t *testing.T) {
 	deviceFileName := fmt.Sprintf("/dev/fd/%d", fd)
 
 	ctx := logging.TestContext(t.Context())
-	res, err := Lint(ctx, &LintOptions{
+	res, err := Lint(ctx, &Options{
 		Files: []string{deviceFileName},
 		ServiceClients: ServiceClients{
 			WorkflowsClient: wfServiceClientMock,
@@ -264,17 +264,17 @@ func TestGetFormatter(t *testing.T) {
 		"default": {
 			formatterName:  "",
 			expectedErr:    nil,
-			expectedOutput: (&LintResults{fmtr: formatterPretty{}}).buildMsg(),
+			expectedOutput: (&Results{fmtr: formatterPretty{}}).buildMsg(),
 		},
 		"pretty": {
 			formatterName:  "pretty",
 			expectedErr:    nil,
-			expectedOutput: (&LintResults{fmtr: formatterPretty{}}).buildMsg(),
+			expectedOutput: (&Results{fmtr: formatterPretty{}}).buildMsg(),
 		},
 		"simple": {
 			formatterName:  "simple",
 			expectedErr:    nil,
-			expectedOutput: (&LintResults{fmtr: formatterSimple{}}).buildMsg(),
+			expectedOutput: (&Results{fmtr: formatterSimple{}}).buildMsg(),
 		},
 		"unknown name": {
 			formatterName:  "foo",
@@ -300,7 +300,7 @@ func TestGetFormatter(t *testing.T) {
 			}
 
 			ctx := logging.TestContext(t.Context())
-			r, err := Lint(ctx, &LintOptions{Formatter: fmtr})
+			r, err := Lint(ctx, &Options{Formatter: fmtr})
 			require.NoError(t, err)
 			assert.Equal(t, test.expectedOutput, r.Msg())
 		})

@@ -70,7 +70,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
 			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
-			ctx, log, err := cmdutil.CmdContextWithLogger(c, logLevel, logFormat)
+			ctx, log, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
 				logging.InitLogger().WithError(err).WithFatal().Error(c.Context(), "Failed to create workflow-controller cmd logger")
 				return err
@@ -205,7 +205,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
-	ctx, log, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	ctx, log, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
 		os.Exit(1)

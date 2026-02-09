@@ -48,8 +48,8 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
-// WorkflowServer is the interface for the workflow server.
-type WorkflowServer interface {
+// Server is the interface for the workflow server.
+type Server interface {
 	workflowpkg.WorkflowServiceServer
 	Run(stopCh <-chan struct{})
 }
@@ -66,10 +66,10 @@ type workflowServer struct {
 	wfDefaults            *wfv1.Workflow
 }
 
-var _ WorkflowServer = &workflowServer{}
+var _ Server = &workflowServer{}
 
-// NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) WorkflowServer {
+// NewServer returns a new Server
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -118,7 +118,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err := validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{})
+	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -706,7 +706,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	s.instanceIDService.Label(req.Workflow)
 	creator.LabelCreator(ctx, req.Workflow)
 
-	err := validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{Lint: true})
+	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
@@ -831,7 +831,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err = validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.ValidateOpts{Submit: true})
+	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.Opts{Submit: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}

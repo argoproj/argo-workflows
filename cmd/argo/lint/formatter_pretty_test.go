@@ -13,14 +13,14 @@ import (
 
 func TestPrettySummarize(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		msg := formatterPretty{}.Summarize(&LintResults{
+		msg := formatterPretty{}.Summarize(&Results{
 			Success: true,
 		})
 		expected := fmt.Sprintf("%s no linting errors found!\n", color.Ize(color.Green, "✔"))
 		assert.Equal(t, expected, msg)
 	})
 	t.Run("Nothing linted", func(t *testing.T) {
-		msg := formatterPretty{}.Summarize(&LintResults{
+		msg := formatterPretty{}.Summarize(&Results{
 			anythingLinted: false,
 			Success:        false,
 		})
@@ -31,7 +31,7 @@ func TestPrettySummarize(t *testing.T) {
 
 func TestPrettyFormat(t *testing.T) {
 	t.Run("Multiple", func(t *testing.T) {
-		msg := formatterPretty{}.Format(&LintResult{
+		msg := formatterPretty{}.Format(&Result{
 			File: "test1",
 			Errs: []error{
 				fmt.Errorf("some error"),
@@ -47,7 +47,7 @@ func TestPrettyFormat(t *testing.T) {
 	})
 
 	t.Run("One", func(t *testing.T) {
-		msg := formatterPretty{}.Format(&LintResult{
+		msg := formatterPretty{}.Format(&Result{
 			File: "test2",
 			Errs: []error{
 				fmt.Errorf("some error"),
@@ -62,7 +62,7 @@ func TestPrettyFormat(t *testing.T) {
 	})
 
 	t.Run("NotLinted", func(t *testing.T) {
-		msg := formatterPretty{}.Format(&LintResult{
+		msg := formatterPretty{}.Format(&Result{
 			File:   "test3",
 			Linted: false,
 		})
@@ -78,14 +78,14 @@ func TestPrettySummarizeWithColorDisabled(t *testing.T) {
 	}()
 
 	t.Run("Success", func(t *testing.T) {
-		msg := formatterPretty{}.Summarize(&LintResults{
+		msg := formatterPretty{}.Summarize(&Results{
 			Success: true,
 		})
 		expected := "✔ no linting errors found!\n"
 		assert.Equal(t, expected, msg)
 	})
 	t.Run("Nothing linted", func(t *testing.T) {
-		msg := formatterPretty{}.Summarize(&LintResults{
+		msg := formatterPretty{}.Summarize(&Results{
 			anythingLinted: false,
 			Success:        false,
 		})
@@ -101,7 +101,7 @@ func TestPrettyFormatWithColorDisabled(t *testing.T) {
 	}()
 
 	t.Run("Multiple", func(t *testing.T) {
-		msg := formatterPretty{}.Format(&LintResult{
+		msg := formatterPretty{}.Format(&Result{
 			File: "test1",
 			Errs: []error{
 				fmt.Errorf("some error"),
@@ -114,7 +114,7 @@ func TestPrettyFormatWithColorDisabled(t *testing.T) {
 	})
 
 	t.Run("One", func(t *testing.T) {
-		msg := formatterPretty{}.Format(&LintResult{
+		msg := formatterPretty{}.Format(&Result{
 			File: "test2",
 			Errs: []error{
 				fmt.Errorf("some error"),
@@ -126,7 +126,7 @@ func TestPrettyFormatWithColorDisabled(t *testing.T) {
 	})
 
 	t.Run("NotLinted", func(t *testing.T) {
-		msg := formatterPretty{}.Format(&LintResult{
+		msg := formatterPretty{}.Format(&Result{
 			File:   "test3",
 			Linted: false,
 		})

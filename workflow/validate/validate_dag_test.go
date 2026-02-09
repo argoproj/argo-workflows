@@ -1219,7 +1219,7 @@ func TestDagWithItemTemplateRefTmpl(t *testing.T) {
 	err := createWorkflowTemplate(ctx, wftmpl)
 	require.NoError(t, err)
 
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.NoError(t, err)
 
 	_ = deleteWorkflowTemplate(ctx, wftmpl.Name)

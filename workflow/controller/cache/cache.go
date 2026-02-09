@@ -56,7 +56,7 @@ type cacheFactory struct {
 }
 
 type Factory interface {
-	GetCache(ct CacheType, name string) MemoizationCache
+	GetCache(ct Type, name string) MemoizationCache
 }
 
 func NewCacheFactory(ki kubernetes.Interface, ns string) Factory {
@@ -68,15 +68,15 @@ func NewCacheFactory(ki kubernetes.Interface, ns string) Factory {
 	}
 }
 
-type CacheType string
+type Type string
 
 const (
 	// Only config maps are currently supported for caching
-	ConfigMapCache CacheType = "ConfigMapCache"
+	ConfigMapCache Type = "ConfigMapCache"
 )
 
 // Returns a cache if it exists and creates it otherwise
-func (cf *cacheFactory) GetCache(ct CacheType, name string) MemoizationCache {
+func (cf *cacheFactory) GetCache(ct Type, name string) MemoizationCache {
 	cf.lock.RLock()
 
 	idx := string(ct) + "." + name

@@ -138,7 +138,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 			logLevel = "debug"
 			glogLevel = 6
 		}
-		ctx, log, err := cmdutil.CmdContextWithLogger(cmd, logLevel, logFormat)
+		ctx, log, err := cmdutil.ContextWithLogger(cmd, logLevel, logFormat)
 		if err != nil {
 			logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create argo pre-run logger")
 			os.Exit(1)
@@ -161,7 +161,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
-	cctx, log, err := cmdutil.CmdContextWithLogger(command, logLevel, logFormat)
+	cctx, log, err := cmdutil.ContextWithLogger(command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(cctx, "Failed to create argo logger")
 		os.Exit(1)

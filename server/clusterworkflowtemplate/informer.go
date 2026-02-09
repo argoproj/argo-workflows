@@ -20,18 +20,18 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
-type ClusterWorkflowTemplateInformer interface {
+type Informer interface {
 	Run(ctx context.Context, stopCh <-chan struct{})
 	Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter
 }
 
-var _ types.ClusterWorkflowTemplateStore = &Informer{}
+var _ types.ClusterWorkflowTemplateStore = &informerImpl{}
 
-type Informer struct {
+type informerImpl struct {
 	informer wfextvv1alpha1.ClusterWorkflowTemplateInformer
 }
 
-func NewInformer(restConfig *rest.Config) (*Informer, error) {
+func NewInformer(restConfig *rest.Config) (Informer, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -40,13 +40,13 @@ func NewInformer(restConfig *rest.Config) (*Informer, error) {
 		dynamicInterface,
 		workflowTemplateResyncPeriod,
 	)
-	return &Informer{
+	return &informerImpl{
 		informer: informer,
 	}, nil
 }
 
 // Start informer in separate go-routine and block until cache sync
-func (cwti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
+func (cwti *informerImpl) Run(ctx context.Context, stopCh <-chan struct{}) {
 
 	go cwti.informer.Informer().Run(stopCh)
 
@@ -60,7 +60,7 @@ func (cwti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
-func (cwti *Informer) Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter {
+func (cwti *informerImpl) Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter {
 	if cwti == nil || cwti.informer == nil {
 		logging.RequireLoggerFromContext(ctx).Error(ctx, "Template informer not started")
 		return nil
