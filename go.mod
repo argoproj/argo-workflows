@@ -23,7 +23,7 @@ require (
 	github.com/evilmonkeyinc/jsonpath v0.8.1
 	github.com/expr-lang/expr v1.17.7
 	github.com/gavv/httpexpect/v2 v2.17.0
-	github.com/go-git/go-git/v5 v5.16.4
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/go-openapi/jsonreference v0.21.4
 	github.com/go-playground/webhooks/v6 v6.4.0
@@ -44,6 +44,7 @@ require (
 	github.com/nao1215/markdown v0.10.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
+	github.com/prometheus/otlptranslator v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sethvargo/go-limiter v1.1.0
 	github.com/spf13/cobra v1.10.2
@@ -61,7 +62,7 @@ require (
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.40.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.58.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.62.0
 	go.opentelemetry.io/otel/metric v1.40.0
 	go.opentelemetry.io/otel/sdk v1.40.0
 	go.opentelemetry.io/otel/sdk/metric v1.40.0
@@ -70,7 +71,7 @@ require (
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.14.0
-	google.golang.org/api v0.264.0
+	google.golang.org/api v0.265.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20
 	google.golang.org/grpc v1.78.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
@@ -327,7 +328,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sanity-io/litter v1.5.5 // indirect
@@ -349,7 +350,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	golang.org/x/net v0.49.0
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.41.0
 	golang.org/x/term v0.39.0
 	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
