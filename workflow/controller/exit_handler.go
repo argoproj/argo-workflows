@@ -91,7 +91,7 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv
 			if art.Optional {
 				continue
 			}
-			return args, fmt.Errorf("unable to resolve references: %s", err)
+			return args, fmt.Errorf("unable to resolve references: %w", err)
 		}
 		resolvedArt.Name = art.Name
 		newArgs.Artifacts[j] = *resolvedArt

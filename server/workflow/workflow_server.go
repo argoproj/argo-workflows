@@ -50,6 +50,12 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
+// WorkflowServer is the interface for the workflow server.
+type WorkflowServer interface {
+	workflowpkg.WorkflowServiceServer
+	Run(stopCh <-chan struct{})
+}
+
 type workflowServer struct {
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
@@ -63,7 +69,7 @@ type workflowServer struct {
 	artifactRepositories  artifactrepositories.Interface
 }
 
-var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
+var _ WorkflowServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
 func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface) *workflowServer {
@@ -154,7 +160,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		wfGetOption = *req.GetOptions
 	}
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, wfGetOption)
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, req.Uid, wfGetOption)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -315,7 +321,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		if wfName != "" {
 			// If we are using an alias (such as `@latest`) we need to dereference it.
 			// s.getWorkflow does that for us
-			wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, wfName, metav1.GetOptions{})
+			wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, wfName, "", metav1.GetOptions{})
 			if err != nil {
 				return sutils.ToStatusError(err, codes.Internal)
 			}
@@ -337,9 +343,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		} else if clean {
 			return y, nil
-		} else {
-			return x, nil
 		}
+		return x, nil
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Debug(ctx, "Piping events to channel")
@@ -436,7 +441,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -471,7 +476,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -493,17 +498,15 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 	errCh := make(chan error, len(podsToDelete))
 	var wg sync.WaitGroup
-	wg.Add(len(podsToDelete))
 	for _, podName := range podsToDelete {
 		logger.WithFields(logging.Fields{"podDeleted": podName}).Info(ctx, "Deleting pod")
-		go func(podName string) {
-			defer wg.Done()
+		wg.Go(func() {
 			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				errCh <- err
 				return
 			}
-		}(podName)
+		})
 	}
 	wg.Wait()
 
@@ -529,7 +532,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowResubmitRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -554,7 +557,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -583,7 +586,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.WorkflowSuspendRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -609,7 +612,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -633,7 +636,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 
 func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -655,7 +658,7 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 
 func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.WorkflowSetRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -676,7 +679,7 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if req.OutputParameters != "" {
 		err = json.Unmarshal([]byte(req.OutputParameters), &outputParams)
 		if err != nil {
-			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %s", err), codes.InvalidArgument)
+			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %w", err), codes.InvalidArgument)
 		}
 	}
 
@@ -719,7 +722,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}
@@ -742,7 +745,7 @@ func (s *workflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws wo
 	return sutils.ToStatusError(s.PodLogs(req, ws), codes.Internal)
 }
 
-func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Interface, namespace string, name string, options metav1.GetOptions) (*wfv1.Workflow, error) {
+func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Interface, namespace string, name string, uid string, options metav1.GetOptions) (*wfv1.Workflow, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if name == latestAlias {
 		latest, err := getLatestWorkflow(ctx, wfClient, namespace)
@@ -755,7 +758,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 
 	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
 	// fallback to retrieve from archived workflows
-	if wf == nil || origErr != nil {
+	if wf == nil || origErr != nil || (uid != "" && string(wf.UID) != uid) {
 		allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 		if err != nil {
 			return nil, getWorkflowOrigErr(ctx, origErr, err)
@@ -765,7 +768,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 			return nil, getWorkflowOrigErr(ctx, origErr, err)
 		}
 
-		wf, err = s.wfArchive.GetWorkflow(ctx, "", namespace, name)
+		wf, err = s.wfArchive.GetWorkflow(ctx, uid, namespace, name)
 		if wf == nil || err != nil {
 			return nil, getWorkflowOrigErr(ctx, origErr, err)
 		}

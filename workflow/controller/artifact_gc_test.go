@@ -371,15 +371,15 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// and it should only consist of artifacts labeled with OnWorkflowCompletion
 
 	assert.NotNil(t, pods)
-	assert.Len(t, (*pods).Items, 2)
+	assert.Len(t, pods.Items, 2)
 	var pod1 *corev1.Pod
 	var pod2 *corev1.Pod
-	for i, pod := range (*pods).Items {
+	for i, pod := range pods.Items {
 		switch pod.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874":
-			pod1 = &(*pods).Items[i]
+			pod1 = &pods.Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
-			pod2 = &(*pods).Items[i]
+			pod2 = &pods.Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
 		}
@@ -425,16 +425,16 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// We should have on WFAT per Pod (for now until we implement the capability to have multiple)
 
 	assert.NotNil(t, wfats)
-	assert.Len(t, (*wfats).Items, 2)
+	assert.Len(t, wfats.Items, 2)
 
 	var wfat1 *wfv1.WorkflowArtifactGCTask
 	var wfat2 *wfv1.WorkflowArtifactGCTask
-	for i, wfat := range (*wfats).Items {
+	for i, wfat := range wfats.Items {
 		switch wfat.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874-0":
-			wfat1 = &(*wfats).Items[i]
+			wfat1 = &wfats.Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960-0":
-			wfat2 = &(*wfats).Items[i]
+			wfat2 = &wfats.Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))
 		}

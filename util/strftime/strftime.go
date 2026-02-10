@@ -51,10 +51,8 @@ func Format(format string, t time.Time) string {
 					retval = append(retval, '%', c)
 				}
 			}
-		} else {
-			if ni < len(format) {
-				retval = append(retval, '%')
-			}
+		} else if ni < len(format) {
+			retval = append(retval, '%')
 		}
 	}
 	return string(retval)

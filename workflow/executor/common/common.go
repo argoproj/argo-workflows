@@ -24,11 +24,11 @@ const (
 
 // GetContainerID returns container ID of a ContainerStatus resource
 func GetContainerID(container string) string {
-	i := strings.Index(container, containerShimPrefix)
-	if i == -1 {
+	_, after, ok := strings.Cut(container, containerShimPrefix)
+	if !ok {
 		return container
 	}
-	return container[i+len(containerShimPrefix):]
+	return after
 }
 
 // KubernetesClientInterface is the interface to implement getContainerStatus method

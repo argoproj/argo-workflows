@@ -32,12 +32,12 @@ type Opts struct {
 	ArgoKubeOpts   ArgoKubeOpts
 	InstanceID     string
 	AuthSupplier   func() string
-	// DEPRECATED: use `ClientConfigSupplier`
+	// Deprecated: use ClientConfigSupplier
 	ClientConfig         clientcmd.ClientConfig
 	ClientConfigSupplier func() clientcmd.ClientConfig
 	Offline              bool
 	OfflineFiles         []string
-	// DEPRECATED: use NewClientFromOptsWithContext
+	// Deprecated: use NewClientFromOptsWithContext
 	//nolint: containedctx
 	Context   context.Context
 	LogLevel  string
@@ -69,17 +69,18 @@ func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Conte
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
-	if opts.ArgoServerOpts.HTTP1 {
+	switch {
+	case opts.ArgoServerOpts.HTTP1:
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
 		return newHTTP1Client(ctx, opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
-	} else if opts.ArgoServerOpts.URL != "" {
+	case opts.ArgoServerOpts.URL != "":
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
 		return newArgoServerClient(ctx, opts.ArgoServerOpts, opts.AuthSupplier())
-	} else {
+	default:
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}

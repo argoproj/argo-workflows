@@ -15,60 +15,66 @@ func TestDecodeLockName(t *testing.T) {
 	type args struct {
 		lockName string
 	}
+	type expected struct {
+		namespace    string
+		resourceName string
+		key          string
+		kind         lockKind
+	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *lockName
+		want    *expected
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
 			"TestMutexLockNameValidation",
 			args{"default/Mutex/test"},
-			&lockName{
-				Namespace:    "default",
-				ResourceName: "test",
-				Key:          "",
-				Kind:         lockKindMutex,
+			&expected{
+				namespace:    "default",
+				resourceName: "test",
+				key:          "",
+				kind:         lockKindMutex,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
 		{
 			"TestMutexLocksCanContainSlashes",
 			args{"default/Mutex/test/foo/bar/baz"},
-			&lockName{
-				Namespace:    "default",
-				ResourceName: "test/foo/bar/baz",
-				Key:          "",
-				Kind:         lockKindMutex,
+			&expected{
+				namespace:    "default",
+				resourceName: "test/foo/bar/baz",
+				key:          "",
+				kind:         lockKindMutex,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
 		{
 			"TestDatabaseLockNamesWork",
 			args{"default/Database/foo"},
-			&lockName{
-				Namespace:    "default",
-				ResourceName: "foo",
-				Kind:         lockKindDatabase,
+			&expected{
+				namespace:    "default",
+				resourceName: "foo",
+				kind:         lockKindDatabase,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
 		{
 			"TestConfigMapLockNamesWork",
 			args{"default/ConfigMap/foo/bar"},
-			&lockName{
-				Namespace:    "default",
-				ResourceName: "foo",
-				Key:          "bar",
-				Kind:         lockKindConfigMap,
+			&expected{
+				namespace:    "default",
+				resourceName: "foo",
+				key:          "bar",
+				kind:         lockKindConfigMap,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return true
 			},
 		},
@@ -76,7 +82,7 @@ func TestDecodeLockName(t *testing.T) {
 			"TestConfigMapKeysCannotContainSlashes",
 			args{"default/ConfigMap/foo/bar/baz/qux"},
 			nil,
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t assert.TestingT, err error, i ...any) bool {
 				return err == nil // this should error
 			},
 		},
@@ -87,8 +93,14 @@ func TestDecodeLockName(t *testing.T) {
 			if !tt.wantErr(t, err, fmt.Sprintf("decodeLockName(%v)", tt.args.lockName)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "decodeLockName(%v)", tt.args.lockName)
-			got.validateEncoding(ctx, tt.args.lockName)
+			if tt.want != nil {
+				assert.Equalf(t, tt.want.namespace, got.GetNamespace(), "decodeLockName(%v).GetNamespace()", tt.args.lockName)
+				assert.Equalf(t, tt.want.resourceName, got.GetResourceName(), "decodeLockName(%v).GetResourceName()", tt.args.lockName)
+				assert.Equalf(t, tt.want.key, got.GetKey(), "decodeLockName(%v).GetKey()", tt.args.lockName)
+				assert.Equalf(t, tt.want.kind, got.getKind(), "decodeLockName(%v).getKind()", tt.args.lockName)
+				// Verify encoding roundtrip
+				assert.Equalf(t, tt.args.lockName, got.String(ctx), "decodeLockName(%v).String()", tt.args.lockName)
+			}
 		})
 	}
 }

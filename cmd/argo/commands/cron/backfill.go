@@ -144,9 +144,8 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	wfYamlStr := "apiVersion: argoproj.io/v1alpha1 \n" + string(yamlbyte)
 	if len(scheList) > 0 {
 		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(ctx), cronWFName, scheList, wfClient, cliOps)
-	} else {
-		fmt.Print("There is no suitable scheduling time.")
 	}
+	fmt.Print("There is no suitable scheduling time.")
 	return nil
 }
 
@@ -213,7 +212,7 @@ func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, sche
 	startIdx := 0
 	var endIdx int
 	var wfNames []string
-	for i := 0; i < iterCount; i++ {
+	for i := range iterCount {
 		tmpl := monitorWfObj.GetTemplateByName("create-workflow")
 		if (TotalScheCount - i*cliOps.maxWorkflowCount) < cliOps.maxWorkflowCount {
 			endIdx = TotalScheCount

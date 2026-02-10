@@ -42,7 +42,7 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 
 	containerURL, err := url.Parse(azblobDriver.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse Azure Blob Storage endpoint url %s: %s", azblobDriver.Endpoint, err)
+		return nil, fmt.Errorf("unable to parse Azure Blob Storage endpoint url %s: %w", azblobDriver.Endpoint, err)
 	}
 	// Append the container name to the URL path
 	if len(containerURL.Path) == 0 || containerURL.Path[len(containerURL.Path)-1] != '/' {
@@ -53,34 +53,33 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 	if azblobDriver.UseSDKCreds {
 		credential, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
-			return nil, fmt.Errorf("unable to create default Azure credential: %s", err)
+			return nil, fmt.Errorf("unable to create default Azure credential: %w", err)
 		}
 		containerClient, err := container.NewClient(containerURL.String(), credential, nil)
 		return containerClient, err
-	} else {
-		if azblobDriver.AccountKey == "" {
-			return nil, fmt.Errorf("accountKey secret is required for Azure Blob Storage if useSDKCreds is false")
-		}
+	}
+	if azblobDriver.AccountKey == "" {
+		return nil, fmt.Errorf("accountKey secret is required for Azure Blob Storage if useSDKCreds is false")
+	}
 
-		if isSASAccountKey(azblobDriver.AccountKey) {
-			logger := logging.RequireLoggerFromContext(ctx)
-			logger.Info(ctx, "Provided account key is a SAS token. Using no-credential client.")
-			serviceURL := fmt.Sprintf("%s?%s", containerURL.String(), azblobDriver.AccountKey)
-			containerClient, err := container.NewClientWithNoCredential(serviceURL, nil)
-			return containerClient, err
-		}
-
-		accountName, err := determineAccountName(containerURL)
-		if err != nil {
-			return nil, err
-		}
-		credential, err := azblob.NewSharedKeyCredential(accountName, azblobDriver.AccountKey)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create Azure shared key credential: %s", err)
-		}
-		containerClient, err := container.NewClientWithSharedKeyCredential(containerURL.String(), credential, nil)
+	if isSASAccountKey(azblobDriver.AccountKey) {
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.Info(ctx, "Provided account key is a SAS token. Using no-credential client.")
+		serviceURL := fmt.Sprintf("%s?%s", containerURL.String(), azblobDriver.AccountKey)
+		containerClient, err := container.NewClientWithNoCredential(serviceURL, nil)
 		return containerClient, err
 	}
+
+	accountName, err := determineAccountName(containerURL)
+	if err != nil {
+		return nil, err
+	}
+	credential, err := azblob.NewSharedKeyCredential(accountName, azblobDriver.AccountKey)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create Azure shared key credential: %w", err)
+	}
+	containerClient, err := container.NewClientWithSharedKeyCredential(containerURL.String(), credential, nil)
+	return containerClient, err
 }
 
 // determineAccountName determines the account name of the storage account based on the
@@ -93,10 +92,9 @@ func determineAccountName(containerURL *url.URL) (string, error) {
 			return "", fmt.Errorf("unable to determine storage account name from %s", containerURL)
 		}
 		return parts[1], nil
-	} else {
-		parts := strings.Split(hostname, ".")
-		return parts[0], nil
 	}
+	parts := strings.Split(hostname, ".")
+	return parts[0], nil
 }
 
 // isSASAccountKey determines whether the account key provided is a SAS token instead of a
@@ -117,7 +115,7 @@ func (azblobDriver *ArtifactDriver) Load(ctx context.Context, artifact *wfv1.Art
 		Info(ctx, "Downloading from Azure Blob Storage")
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return fmt.Errorf("unable to create Azure Blob Container client: %s", err)
+		return fmt.Errorf("unable to create Azure Blob Container client: %w", err)
 	}
 
 	// Assume we're not downloading a directory and try to download as a file, since this is
@@ -131,7 +129,7 @@ func (azblobDriver *ArtifactDriver) Load(ctx context.Context, artifact *wfv1.Art
 	if origErr == nil {
 		fileInfo, err := os.Lstat(path)
 		if err != nil {
-			return fmt.Errorf("unable to retrieve stats for downloaded file %s: %s", path, err)
+			return fmt.Errorf("unable to retrieve stats for downloaded file %s: %w", path, err)
 		}
 
 		// Empty file means it could be an ADLS Gen 2 account and we downloaded the
@@ -142,12 +140,12 @@ func (azblobDriver *ArtifactDriver) Load(ctx context.Context, artifact *wfv1.Art
 		}
 		isEmptyFile = true
 	} else if !bloberror.HasCode(origErr, bloberror.BlobNotFound) {
-		return fmt.Errorf("unable to download blob %s: %s", artifact.Azure.Blob, origErr)
+		return fmt.Errorf("unable to download blob %s: %w", artifact.Azure.Blob, origErr)
 	}
 
 	isDir, err := azblobDriver.IsDirectory(ctx, artifact)
 	if err != nil {
-		return fmt.Errorf("unable to determine if %s is a directory: %s", artifact.Azure.Blob, err)
+		return fmt.Errorf("unable to determine if %s is a directory: %w", artifact.Azure.Blob, err)
 	}
 
 	// It's not a directory and the file doesn't exist, Return the original NoSuchKey error.
@@ -159,13 +157,13 @@ func (azblobDriver *ArtifactDriver) Load(ctx context.Context, artifact *wfv1.Art
 	// blob as a target. We need to delete that empty file so we can re-create as a directory.
 	err = os.Remove(path)
 	if err != nil {
-		return fmt.Errorf("unable to remove attempted file download %s: %s", path, err)
+		return fmt.Errorf("unable to remove attempted file download %s: %w", path, err)
 	}
 
 	// It's a directory, so download all of the files.
 	err = azblobDriver.DownloadDirectory(ctx, containerClient, artifact, path)
 	if err != nil {
-		return fmt.Errorf("unable to download directory %s: %s", artifact.Azure.Blob, err)
+		return fmt.Errorf("unable to download directory %s: %w", artifact.Azure.Blob, err)
 	}
 
 	return nil
@@ -177,11 +175,11 @@ func DownloadFile(ctx context.Context, containerClient *container.Client, blobNa
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
-		return fmt.Errorf("unable to create dir for file %s: %s", path, err)
+		return fmt.Errorf("unable to create dir for file %s: %w", path, err)
 	}
 	outFile, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("unable to create file %s: %s", path, err)
+		return fmt.Errorf("unable to create file %s: %w", path, err)
 	}
 	defer func() {
 		if err := outFile.Close(); err != nil {
@@ -204,12 +202,12 @@ func (azblobDriver *ArtifactDriver) DownloadDirectory(ctx context.Context, conta
 
 	files, err := azblobDriver.ListObjects(ctx, artifact)
 	if err != nil {
-		return fmt.Errorf("unable to list blob %s in Azure Storage: %s", artifact.Azure.Blob, err)
+		return fmt.Errorf("unable to list blob %s in Azure Storage: %w", artifact.Azure.Blob, err)
 	}
 
 	err = os.MkdirAll(path, 0755)
 	if err != nil {
-		return fmt.Errorf("unable to create local directory %s: %s", path, err)
+		return fmt.Errorf("unable to create local directory %s: %w", path, err)
 	}
 
 	for _, file := range files {
@@ -223,7 +221,7 @@ func (azblobDriver *ArtifactDriver) DownloadDirectory(ctx context.Context, conta
 
 		err = DownloadFile(ctx, containerClient, file, localPath)
 		if err != nil {
-			return fmt.Errorf("unable to download file %s: %s", localPath, err)
+			return fmt.Errorf("unable to download file %s: %w", localPath, err)
 		}
 	}
 	return nil
@@ -238,7 +236,7 @@ func (azblobDriver *ArtifactDriver) OpenStream(ctx context.Context, artifact *wf
 		Info(ctx, "Streaming from Azure Blob Storage")
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create Azure Blob Container client: %s", err)
+		return nil, fmt.Errorf("unable to create Azure Blob Container client: %w", err)
 	}
 
 	blobClient := containerClient.NewBlockBlobClient(artifact.Azure.Blob)
@@ -256,19 +254,19 @@ func (azblobDriver *ArtifactDriver) OpenStream(ctx context.Context, artifact *wf
 			return response.Body, nil
 		}
 	} else if !bloberror.HasCode(origErr, bloberror.BlobNotFound) {
-		return nil, fmt.Errorf("unable to open stream for blob %s: %s", artifact.Azure.Blob, origErr)
+		return nil, fmt.Errorf("unable to open stream for blob %s: %w", artifact.Azure.Blob, origErr)
 	}
 
 	isDir, err := azblobDriver.IsDirectory(ctx, artifact)
 	if err != nil {
-		return nil, fmt.Errorf("unable to test if blob %s is a directory: %s", artifact.Azure.Blob, err)
+		return nil, fmt.Errorf("unable to test if blob %s is a directory: %w", artifact.Azure.Blob, err)
 	}
 	if isDir {
 		return nil, argoerrors.New(argoerrors.CodeNotImplemented, "Directory Stream capability currently unimplemented for Azure Blob")
 	} else if !emptyFile {
 		// Not a directory (and not successful retrieval of an empty file), so return
 		// the original BlobNotFound error
-		return nil, fmt.Errorf("unable to open blob stream for %s: %s", artifact.Azure.Blob, origErr)
+		return nil, fmt.Errorf("unable to open blob stream for %s: %w", artifact.Azure.Blob, origErr)
 	}
 
 	return response.Body, nil
@@ -284,23 +282,23 @@ func (azblobDriver *ArtifactDriver) Save(ctx context.Context, path string, outpu
 
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
-		return fmt.Errorf("failed to test if %s is a directory: %v", path, err)
+		return fmt.Errorf("failed to test if %s is a directory: %w", path, err)
 	}
 
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return fmt.Errorf("unable to create Azure Blob Container client for %s: %s", outputArtifact.Azure.Blob, err)
+		return fmt.Errorf("unable to create Azure Blob Container client for %s: %w", outputArtifact.Azure.Blob, err)
 	}
 
 	if isDir {
 		err := PutDirectory(ctx, containerClient, outputArtifact.Azure.Blob, path)
 		if err != nil {
-			return fmt.Errorf("unable to upload directory %s to Azure: %s", path, err)
+			return fmt.Errorf("unable to upload directory %s to Azure: %w", path, err)
 		}
 	} else {
 		err := PutFile(ctx, containerClient, outputArtifact.Azure.Blob, path)
 		if err != nil {
-			return fmt.Errorf("unable to upload file %s to Azure: %s", path, err)
+			return fmt.Errorf("unable to upload file %s to Azure: %w", path, err)
 		}
 	}
 
@@ -331,7 +329,7 @@ func PutFile(ctx context.Context, containerClient *container.Client, blobName, p
 
 	file, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("unable to open file %s: %s", path, err)
+		return fmt.Errorf("unable to open file %s: %w", path, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
@@ -364,35 +362,34 @@ func (azblobDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.A
 		Info(ctx, "Deleting object from Azure Blob Storage")
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return fmt.Errorf("unable to create Azure Blob Container client: %s", err)
+		return fmt.Errorf("unable to create Azure Blob Container client: %w", err)
 	}
 
 	isDir, err := azblobDriver.IsDirectory(ctx, artifact)
 	if err != nil {
-		return fmt.Errorf("unable to test if %s is a directory: %s", artifact.Azure.Blob, err)
+		return fmt.Errorf("unable to test if %s is a directory: %w", artifact.Azure.Blob, err)
 	}
 
 	if !isDir {
 		return DeleteBlob(ctx, containerClient, artifact.Azure.Blob, true)
-	} else {
-		files, err := azblobDriver.ListObjects(ctx, artifact)
-		if err != nil {
-			return fmt.Errorf("unable to list files in %s: %s", artifact.Azure.Blob, err)
+	}
+	files, err := azblobDriver.ListObjects(ctx, artifact)
+	if err != nil {
+		return fmt.Errorf("unable to list files in %s: %w", artifact.Azure.Blob, err)
+	}
+	directoryFile := ""
+	for _, file := range files {
+		if file == artifact.Azure.Blob {
+			directoryFile = file
+			continue
 		}
-		directoryFile := ""
-		for _, file := range files {
-			if file == artifact.Azure.Blob {
-				directoryFile = file
-				continue
-			}
 
-			if err := DeleteBlob(ctx, containerClient, file, true); err != nil {
-				return err
-			}
+		if err := DeleteBlob(ctx, containerClient, file, true); err != nil {
+			return err
 		}
-		if directoryFile != "" {
-			return DeleteBlob(ctx, containerClient, directoryFile, true)
-		}
+	}
+	if directoryFile != "" {
+		return DeleteBlob(ctx, containerClient, directoryFile, true)
 	}
 	return nil
 }
@@ -406,12 +403,10 @@ func DeleteBlob(ctx context.Context, containerClient *container.Client, blobName
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.WithField("blob", blobName).WithError(err).Debug(ctx, "blob to delete does not exist")
 			return nil
-		} else {
-			return fmt.Errorf("unable to delete Azure Blob %s: %s", blobName, err)
 		}
+		return fmt.Errorf("unable to delete Azure Blob %s: %w", blobName, err)
 	}
-
-	return err
+	return nil
 }
 
 // ListObjects lists the files in Azure Blob Storage
@@ -425,7 +420,7 @@ func (azblobDriver *ArtifactDriver) ListObjects(ctx context.Context, artifact *w
 
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create Azure Blob Container client: %s", err)
+		return nil, fmt.Errorf("unable to create Azure Blob Container client: %w", err)
 	}
 
 	listOpts := azblob.ListBlobsFlatOptions{
@@ -436,7 +431,7 @@ func (azblobDriver *ArtifactDriver) ListObjects(ctx context.Context, artifact *w
 	for pager.More() {
 		resp, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("error listing blobs %s in Azure Blob Storage container: %s", artifact.Azure.Blob, err)
+			return nil, fmt.Errorf("error listing blobs %s in Azure Blob Storage container: %w", artifact.Azure.Blob, err)
 		}
 		for _, v := range resp.Segment.BlobItems {
 			files = append(files, *v.Name)
@@ -458,7 +453,7 @@ func (azblobDriver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *w
 
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return false, fmt.Errorf("unable to create Azure Blob Container client: %s", err)
+		return false, fmt.Errorf("unable to create Azure Blob Container client: %w", err)
 	}
 
 	listOpts := azblob.ListBlobsFlatOptions{
@@ -469,13 +464,12 @@ func (azblobDriver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *w
 	if pager.More() {
 		resp, err := pager.NextPage(ctx)
 		if err != nil {
-			return false, fmt.Errorf("error listing blobs %s in Azure Blob Storage container: %s", artifact.Azure.Blob, err)
+			return false, fmt.Errorf("error listing blobs %s in Azure Blob Storage container: %w", artifact.Azure.Blob, err)
 		}
 		if len(resp.Segment.BlobItems) == 1 {
 			return strings.HasPrefix(*resp.Segment.BlobItems[0].Name, blobPrefix), nil
-		} else {
-			return len(resp.Segment.BlobItems) > 0, nil
 		}
+		return len(resp.Segment.BlobItems) > 0, nil
 	}
 
 	return false, nil

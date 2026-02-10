@@ -790,10 +790,10 @@ func TestNodes_Map(t *testing.T) {
 		"node_2": NodeStatus{ID: "node_2", HostNodeName: "host_2"},
 	}
 	t.Run("Empty", func(t *testing.T) {
-		assert.Empty(t, Nodes{}.Map(func(x NodeStatus) interface{} { return x.HostNodeName }))
+		assert.Empty(t, Nodes{}.Map(func(x NodeStatus) any { return x.HostNodeName }))
 	})
 	t.Run("Exist", func(t *testing.T) {
-		n := nodes.Map(func(x NodeStatus) interface{} { return x.HostNodeName })
+		n := nodes.Map(func(x NodeStatus) any { return x.HostNodeName })
 		assert.Equal(t, "host_1", n["node_1"])
 		assert.Equal(t, "host_2", n["node_2"])
 	})
@@ -905,7 +905,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 		},
 	}
 	stableDesc := metric.GetKey()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		require.Equal(t, stableDesc, metric.GetKey())
 	}
 }

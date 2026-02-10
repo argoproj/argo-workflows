@@ -141,7 +141,7 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	return &wf, err
 }
 
-func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+func FromUnstructuredObj(un *unstructured.Unstructured, v any) error {
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
 		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
@@ -190,15 +190,16 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	if err != nil {
 		return nil, err
 	}
-	if opts.DryRun {
+	switch {
+	case opts.DryRun:
 		return wf, nil
-	} else if opts.ServerDryRun {
+	case opts.ServerDryRun:
 		wf, err := CreateServerDryRun(ctx, wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
 		return wf, err
-	} else {
+	default:
 		var runWf *wfv1.Workflow
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 			var err error
@@ -436,12 +437,11 @@ func OverrideOutputParametersWithDefault(outputs *wfv1.Outputs) error {
 	}
 	for i, param := range outputs.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.Supplied != nil {
-			if param.ValueFrom.Default != nil {
-				outputs.Parameters[i].Value = param.ValueFrom.Default
-				outputs.Parameters[i].ValueFrom = nil
-			} else {
+			if param.ValueFrom.Default == nil {
 				return fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
 			}
+			outputs.Parameters[i].Value = param.ValueFrom.Default
+			outputs.Parameters[i].ValueFrom = nil
 		}
 	}
 	return nil
@@ -457,59 +457,58 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 	}
 	if len(nodeFieldSelector) > 0 {
 		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg}, creator.ActionResume)
-	} else {
-		err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
-			if err != nil {
-				return !errorsutil.IsTransientErr(ctx, err), err
-			}
+	}
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(ctx, err), err
+		}
 
-			err = hydrator.Hydrate(ctx, wf)
-			if err != nil {
-				return true, err
-			}
+		err = hydrator.Hydrate(ctx, wf)
+		if err != nil {
+			return true, err
+		}
 
-			workflowUpdated := false
-			if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-				wf.Spec.Suspend = nil
-				workflowUpdated = true
-			}
+		workflowUpdated := false
+		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+			wf.Spec.Suspend = nil
+			workflowUpdated = true
+		}
 
-			// To resume a workflow with a suspended node we simply mark the node as Successful
-			for nodeID, node := range wf.Status.Nodes {
-				if node.IsActiveSuspendNode() {
-					if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
-						return false, err
-					}
-					node.Phase = wfv1.NodeSucceeded
-					if node.Message != "" {
-						uiMsg = node.Message + "; " + uiMsg
-					}
-					node.Message = uiMsg
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes.Set(ctx, nodeID, node)
-					workflowUpdated = true
-				}
-			}
-
-			if workflowUpdated {
-				err := hydrator.Dehydrate(ctx, wf)
-				if err != nil {
-					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-				}
-				creator.LabelActor(ctx, wf, creator.ActionResume)
-				_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
-				if err != nil {
-					if apierr.IsConflict(err) {
-						return false, nil
-					}
+		// To resume a workflow with a suspended node we simply mark the node as Successful
+		for nodeID, node := range wf.Status.Nodes {
+			if node.IsActiveSuspendNode() {
+				if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
 					return false, err
 				}
+				node.Phase = wfv1.NodeSucceeded
+				if node.Message != "" {
+					uiMsg = node.Message + "; " + uiMsg
+				}
+				node.Message = uiMsg
+				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+				wf.Status.Nodes.Set(ctx, nodeID, node)
+				workflowUpdated = true
 			}
-			return true, nil
-		})
-		return err
-	}
+		}
+
+		if workflowUpdated {
+			err := hydrator.Dehydrate(ctx, wf)
+			if err != nil {
+				return false, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
+			}
+			creator.LabelActor(ctx, wf, creator.ActionResume)
+			_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
+			if err != nil {
+				if apierr.IsConflict(err) {
+					return false, nil
+				}
+				return false, err
+			}
+		}
+		return true, nil
+	})
+	return err
 }
 
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
@@ -645,7 +644,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 		err = hydrator.Dehydrate(ctx, wf)
 		if err != nil {
-			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
+			return true, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
 		}
 		creator.LabelActor(ctx, wf, action)
 		_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
@@ -790,14 +789,15 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
 		}
 		newNode.OutboundNodes = newOutboundNodes
-		if !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
+		switch {
+		case !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod:
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
-		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)) {
+		case newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)):
 			newWF.Status.Nodes.Delete(ctx, newNode.ID)
 			continue
-		} else {
+		default:
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
 		}
@@ -933,7 +933,7 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 }
 
 func singularPath(nodes []*dagNode, toNode string) ([]*dagNode, error) {
-	if len(nodes) <= 0 {
+	if len(nodes) == 0 {
 		return nil, fmt.Errorf("expected at least 1 node")
 	}
 	var root *dagNode
@@ -1196,7 +1196,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
-		if !restartSuccessful || len(nodeFieldSelector) <= 0 {
+		if !restartSuccessful || len(nodeFieldSelector) == 0 {
 			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
 		}
 	default:
@@ -1450,8 +1450,8 @@ func (e AlreadyShutdownError) Error() string {
 
 // patchShutdownStrategy patches the shutdown strategy to a workflow.
 func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
-	patchObj := map[string]interface{}{
-		"spec": map[string]interface{}{
+	patchObj := map[string]any{
+		"spec": map[string]any{
 			"shutdown": strategy,
 		},
 	}
@@ -1466,7 +1466,7 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 	}
 	userActionLabel := creator.UserActionLabel(ctx, action)
 	if userActionLabel != nil {
-		patchObj["metadata"] = map[string]interface{}{
+		patchObj["metadata"] = map[string]any{
 			"labels": userActionLabel,
 		}
 	}
@@ -1649,8 +1649,7 @@ func HasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
 func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 	waitCtrIndex := -1
 	for i, ctr := range pod.Spec.Containers {
-		switch ctr.Name {
-		case common.WaitContainerName:
+		if ctr.Name == common.WaitContainerName {
 			waitCtrIndex = i
 		}
 	}

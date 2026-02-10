@@ -187,7 +187,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 		case event := <-eventList.ResultChan():
 			e, ok := event.Object.(*apiv1.Event)
 			if !ok {
-				t.t.Errorf("event is not an event: %v", reflect.TypeOf(e).String())
+				t.t.Errorf("event is not an event: %v", reflect.TypeFor[*apiv1.Event]().String())
 				return t
 			}
 			if filter(*e) {
@@ -219,11 +219,12 @@ func (t *Then) ExpectPVCDeleted() *Then {
 			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.Namespace)
 			for _, p := range t.wf.Status.PersistentVolumeClaims {
 				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
-				if err == nil {
-					break
-				} else if apierr.IsNotFound(err) {
+				switch {
+				case err == nil:
+					// PVC exists, continue checking others
+				case apierr.IsNotFound(err):
 					num--
-				} else {
+				default:
 					t.t.Fatal(err)
 					return t
 				}

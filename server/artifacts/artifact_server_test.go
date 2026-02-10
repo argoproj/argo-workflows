@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -100,13 +101,7 @@ func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifa
 		if !found {
 			return nil, fmt.Errorf("artifact bucket not found: %+v", artifact)
 		}
-		foundKey := false
-		for _, recognizableKey := range keysInBucket {
-			if key == recognizableKey {
-				foundKey = true
-				break
-			}
-		}
+		foundKey := slices.Contains(keysInBucket, key)
 		if !foundKey {
 			return nil, fmt.Errorf("artifact key '%s' not found in bucket '%s'", key, artifact.S3.Bucket)
 		}
@@ -154,11 +149,12 @@ func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artif
 			prefix + `/xss/javascript:\u0061lert(1)`,
 			prefix + `/xss/<Input value = "XSS" type = text>`,
 		}
-		if strings.HasSuffix(key, "subdirectory") {
+		switch {
+		case strings.HasSuffix(key, "subdirectory"):
 			return subdir, nil
-		} else if strings.HasSuffix(key, "xss") {
+		case strings.HasSuffix(key, "xss"):
 			return xss, nil
-		} else {
+		default:
 			return append(append([]string{
 				prefix + "/a.txt",
 				prefix + "/index.html",

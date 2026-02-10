@@ -3887,9 +3887,8 @@ func TestNestedDAG(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
 
 	running := map[string]bool{
-		"dag-nested-zxlc2-1920344377":  true,
-		"dag-nested-zxlc2-1970677234 ": true,
-		"dag-nested-zxlc2":             true,
+		"dag-nested-zxlc2-1920344377": true,
+		"dag-nested-zxlc2":            true,
 	}
 	deleted := map[string]bool{
 		"dag-nested-zxlc2-744943701": true,

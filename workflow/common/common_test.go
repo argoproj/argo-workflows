@@ -11,18 +11,18 @@ func TestUnstructuredHasCompletedLabel(t *testing.T) {
 	noLabel := &unstructured.Unstructured{}
 	assert.False(t, UnstructuredHasCompletedLabel(noLabel))
 
-	label := &unstructured.Unstructured{Object: map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"labels": map[string]interface{}{
+	label := &unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
 				LabelKeyCompleted: "true",
 			},
 		},
 	}}
 	assert.True(t, UnstructuredHasCompletedLabel(label))
 
-	falseLabel := &unstructured.Unstructured{Object: map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"labels": map[string]interface{}{
+	falseLabel := &unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{
+			"labels": map[string]any{
 				LabelKeyCompleted: "false",
 			},
 		},

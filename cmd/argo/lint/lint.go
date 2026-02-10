@@ -97,11 +97,11 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 	}
 
 	if !res.Success {
-		if exitFunc := logging.GetExitFunc(); exitFunc != nil {
-			exitFunc(1)
-		} else {
+		exitFunc := logging.GetExitFunc()
+		if exitFunc == nil {
 			os.Exit(1)
 		}
+		exitFunc(1)
 	}
 	return nil
 }

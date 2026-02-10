@@ -11,14 +11,14 @@ import (
 
 type Claims struct {
 	jwt.Claims
-	Groups                  []string               `json:"groups,omitempty"`
-	Email                   string                 `json:"email,omitempty"`
-	EmailVerified           bool                   `json:"-"`
-	Name                    string                 `json:"name,omitempty"`
-	ServiceAccountName      string                 `json:"service_account_name,omitempty"`
-	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
-	PreferredUsername       string                 `json:"preferred_username,omitempty"`
-	RawClaim                map[string]interface{} `json:"-"`
+	Groups                  []string       `json:"groups,omitempty"`
+	Email                   string         `json:"email,omitempty"`
+	EmailVerified           bool           `json:"-"`
+	Name                    string         `json:"name,omitempty"`
+	ServiceAccountName      string         `json:"service_account_name,omitempty"`
+	ServiceAccountNamespace string         `json:"service_account_namespace,omitempty"`
+	PreferredUsername       string         `json:"preferred_username,omitempty"`
+	RawClaim                map[string]any `json:"-"`
 }
 
 type UserInfo struct {
@@ -69,7 +69,7 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 		return nil, fmt.Errorf("no claim found for key: %v", customKeyName)
 	}
 
-	sliceInterface, ok := groups.([]interface{})
+	sliceInterface, ok := groups.([]any)
 	if !ok {
 		return nil, fmt.Errorf("expected an array, got %v", groups)
 	}

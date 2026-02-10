@@ -175,12 +175,10 @@ func (driver *ArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path s
 				return err
 			}
 		}
-	} else {
-		if driver.Force {
-			err = os.Remove(path)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+	} else if driver.Force {
+		err = os.Remove(path)
+		if err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 
@@ -229,12 +227,10 @@ func (driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtif
 				return err
 			}
 		}
-	} else {
-		if driver.Force {
-			err = hdfscli.Remove(driver.Path)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+	} else if driver.Force {
+		err = hdfscli.Remove(driver.Path)
+		if err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 

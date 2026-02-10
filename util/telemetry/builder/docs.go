@@ -101,6 +101,7 @@ func metricsDocsLines(metrics *metricsList, attribs *attributesList) string {
 				buckets = fmt.Sprintf("%s%g", buckets, bucket)
 			}
 			markdown.PlainTextf("Default bucket sizes: %s", buckets)
+			markdown.PlainText("")
 		}
 
 		if metric.Notes != "" {

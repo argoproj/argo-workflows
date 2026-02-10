@@ -1,4 +1,4 @@
-# New features in v4.0.0-rc2 (2026-01-08)
+# New features in v4.0.0 (2026-02-04)
 
 This is a concise list of new features.
 

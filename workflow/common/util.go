@@ -117,7 +117,7 @@ func substituteAndGetConfigMapValue(ctx context.Context, inParam *wfv1.Parameter
 	log := logging.RequireLoggerFromContext(ctx)
 	if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 		if configMapStore != nil {
-			replaceMap := make(map[string]interface{})
+			replaceMap := make(map[string]any)
 			for k, v := range globalParams {
 				replaceMap[k] = v
 			}
@@ -137,11 +137,10 @@ func substituteAndGetConfigMapValue(ctx context.Context, inParam *wfv1.Parameter
 
 			cmValue, err := GetConfigMapValue(configMapStore, namespace, cmName, cmKey)
 			if err != nil {
-				if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
-					inParam.Value = inParam.ValueFrom.Default
-				} else {
+				if inParam.ValueFrom.Default == nil || !errors.IsCode(errors.CodeNotFound, err) {
 					return errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}
+				inParam.Value = inParam.ValueFrom.Default
 			} else {
 				inParam.Value = wfv1.AnyStringPtr(cmValue)
 			}
@@ -209,7 +208,7 @@ func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsPr
 }
 
 // substituteConfigMapKeyRefParam performs template substitution for ConfigMapKeyRef
-func substituteConfigMapKeyRefParam(ctx context.Context, in string, replaceMap map[string]interface{}) (string, error) {
+func substituteConfigMapKeyRefParam(ctx context.Context, in string, replaceMap map[string]any) (string, error) {
 	tmpl, err := template.NewTemplate(in)
 	if err != nil {
 		return "", err
@@ -293,9 +292,8 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 		return fmt.Sprintf("%T (%s)", tmplHolder, x)
 	} else if x := tmplHolder.GetTemplateRef(); x != nil {
 		return fmt.Sprintf("%T (%s/%s#%v)", tmplHolder, x.Name, x.Template, x.ClusterScope)
-	} else {
-		return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 	}
+	return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 }
 
 func GenerateOnExitNodeName(parentNodeName string) string {

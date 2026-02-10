@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -27,7 +28,7 @@ func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceC
 	// loop on log lines
 	for {
 		event, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {

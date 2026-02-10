@@ -2,6 +2,7 @@ package printer
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 	"time"
 
@@ -112,7 +113,7 @@ my-wf   Running   0s    3s         2          test-message   1/2/3   my-param=my
 
 func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 	completedWorkflows := wfv1.Workflows{}
-	for i := 0; i < 101; i++ {
+	for range 101 {
 		completedWorkflows = append(completedWorkflows,
 			wfv1.Workflow{
 				Status: wfv1.WorkflowStatus{
@@ -121,7 +122,7 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 			})
 	}
 	incompleteWorkflows := wfv1.Workflows{}
-	for i := 0; i < 101; i++ {
+	for range 101 {
 		incompleteWorkflows = append(incompleteWorkflows,
 			wfv1.Workflow{
 				Status: wfv1.WorkflowStatus{
@@ -129,7 +130,7 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 				},
 			})
 	}
-	completedAndIncompleteWorkflows := append(completedWorkflows, incompleteWorkflows...)
+	completedAndIncompleteWorkflows := slices.Concat(completedWorkflows, incompleteWorkflows)
 
 	t.Run("CostOptimizationOnCompletedWorkflows", func(t *testing.T) {
 		var b bytes.Buffer

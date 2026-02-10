@@ -18,7 +18,7 @@ jobs:
       pull-requests: write  # for peter-evans/create-pull-request to create a PR
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: main
           fetch-depth: 0
@@ -26,7 +26,7 @@ jobs:
       - run: git tag -l 'v*'
       # avoid invoking `make` to reduce the risk of a Makefile bug failing this workflow
       - run: ./hack/changelog.sh > CHANGELOG.md
-      - uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # v6.0.1
+      - uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
           title: 'docs: update CHANGELOG.md for ${{ github.ref_name }}'
           commit-message: 'docs: update CHANGELOG.md for ${{ github.ref_name }}'

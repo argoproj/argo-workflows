@@ -17,7 +17,7 @@ func NewInitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := loadArtifacts(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -27,7 +27,8 @@ func NewInitCommand() *cobra.Command {
 
 func loadArtifacts(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
-	defer wfExecutor.HandleError(ctx)
+	errHandler := wfExecutor.HandleError(ctx)
+	defer errHandler()
 	defer stats.LogStats()
 
 	if err := wfExecutor.Init(); err != nil {

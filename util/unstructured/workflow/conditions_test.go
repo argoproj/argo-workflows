@@ -13,7 +13,7 @@ import (
 
 func TestGetConditions(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
-		un := &unstructured.Unstructured{Object: map[string]interface{}{}}
+		un := &unstructured.Unstructured{Object: map[string]any{}}
 
 		assert.Nil(t, GetConditions(un))
 	})

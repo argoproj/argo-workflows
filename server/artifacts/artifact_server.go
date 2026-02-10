@@ -61,12 +61,12 @@ func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, logger}
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, false)
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, true)
 }
@@ -254,7 +254,8 @@ func generateUUID() string {
 //	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}/{fileDir}/.../{fileName}
 //
 // 'id' field represents 'uid' for archived workflows and 'name' for non-archived
-// nolint: contextcheck
+//
+//nolint:contextcheck
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 	const (
 		namespaceIndex      = 2
@@ -439,13 +440,14 @@ func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([
 		dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
 		// if dir is empty string, we are in the root dir
-		if dir == "" {
+		switch {
+		case dir == "":
 			if err = tmpl.Execute(output, file); err != nil {
 				return nil, err
 			}
-		} else if dirs[dir] {
+		case dirs[dir]:
 			continue
-		} else {
+		default:
 			if err = tmpl.Execute(output, dir); err != nil {
 				return nil, err
 			}
@@ -508,7 +510,7 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 	a.getArtifactByUID(w, r, true)
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) != 5 {
@@ -567,7 +569,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 	if token == "" {
 		cookie, err := r.Cookie("authorization")
 		if err != nil {
-			if err != http.ErrNoCookie {
+			if !errors.Is(err, http.ErrNoCookie) {
 				return nil, err
 			}
 		} else {
@@ -612,8 +614,8 @@ func (a *ArtifactServer) httpFromError(ctx context.Context, err error, w http.Re
 		statusCode = int(e.Status().Code)
 	} else {
 		// check if it's an internal ArgoError
-		argoerr, typeOkay := err.(argoerrors.ArgoError)
-		if typeOkay {
+		var argoerr argoerrors.ArgoError
+		if errors.As(err, &argoerr) {
 			statusCode = argoerr.HTTPCode()
 		}
 	}
@@ -656,7 +658,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	templateNode, err := wf.Status.Nodes.Get(nodeID)
 	if err != nil {
 		logger.WithError(err).WithField("nodeID", nodeID).Error(ctx, "was unable to retrieve node")
-		return nil, nil, fmt.Errorf("unable to get artifact and driver; could not get node for %s: %v", nodeID, err)
+		return nil, nil, fmt.Errorf("unable to get artifact and driver; could not get node for %s: %w", nodeID, err)
 	}
 	templateName := util.GetTemplateFromNode(*templateNode)
 	if templateName != "" {
@@ -682,7 +684,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	if fileName != nil {
 		err = art.AppendToKey(*fileName)
 		if err != nil {
-			return art, nil, fmt.Errorf("error appending filename %s to key of artifact %+v: err: %v", *fileName, art, err)
+			return art, nil, fmt.Errorf("error appending filename %s to key of artifact %+v: err: %w", *fileName, art, err)
 		}
 		logger.WithFields(logging.Fields{
 			"fileName": *fileName,
@@ -731,10 +733,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
 		http.Error(w, errStr, http.StatusInternalServerError)
 		return errors.New(errStr)
-	} else {
-		w.WriteHeader(http.StatusOK)
 	}
-
+	w.WriteHeader(http.StatusOK)
 	return nil
 }
 

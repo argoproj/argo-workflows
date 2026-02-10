@@ -43,7 +43,7 @@ func main() {
 
 	// Step 1: Create a WorkflowTemplate
 	fmt.Printf("Step 1: Creating WorkflowTemplate...\n")
-	// <snip id="create-workflow-template">
+	// <embed id="create-workflow-template">
 	template := &wfv1.WorkflowTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hello-world",
@@ -97,11 +97,11 @@ func main() {
 		}
 		fmt.Printf("✓ WorkflowTemplate '%s' created\n\n", createdTemplate.Name)
 	}
-	// </snip>
+	// </embed>
 
 	// Step 2: Submit workflow from template with default parameters
 	fmt.Printf("Step 2: Submitting workflow from template (default params)...\n")
-	// <snip id="submit-from-template">
+	// <embed id="submit-from-template">
 	workflow1 := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "from-template-default-",
@@ -120,7 +120,7 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("✓ Workflow '%s' submitted with default parameters\n\n", submitted1.Name)
-	// </snip>
+	// </embed>
 
 	// Step 3: Submit workflow with custom parameters
 	fmt.Printf("Step 3: Submitting workflow with custom parameters...\n")

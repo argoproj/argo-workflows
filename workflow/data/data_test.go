@@ -16,15 +16,15 @@ type testDataSourceProcessor struct{}
 
 var _ v1alpha1.DataSourceProcessor = &testDataSourceProcessor{}
 
-func (t testDataSourceProcessor) ProcessArtifactPaths(context.Context, *v1alpha1.ArtifactPaths) (interface{}, error) {
-	return []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, nil
+func (t testDataSourceProcessor) ProcessArtifactPaths(context.Context, *v1alpha1.ArtifactPaths) (any, error) {
+	return []any{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, nil
 }
 
 type nullTestDataSourceProcessor struct{}
 
 var _ v1alpha1.DataSourceProcessor = &nullTestDataSourceProcessor{}
 
-func (t nullTestDataSourceProcessor) ProcessArtifactPaths(context.Context, *v1alpha1.ArtifactPaths) (interface{}, error) {
+func (t nullTestDataSourceProcessor) ProcessArtifactPaths(context.Context, *v1alpha1.ArtifactPaths) (any, error) {
 	return nil, fmt.Errorf("cannot get artifacts")
 }
 
@@ -33,7 +33,7 @@ func TestProcessSource(t *testing.T) {
 	artifactPathsSource := v1alpha1.DataSource{ArtifactPaths: &v1alpha1.ArtifactPaths{}}
 	data, err := processSource(ctx, artifactPathsSource, &testDataSourceProcessor{})
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
+	assert.Equal(t, []any{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
 
 	_, err = processSource(ctx, artifactPathsSource, &nullTestDataSourceProcessor{})
 	require.Error(t, err)
@@ -43,42 +43,42 @@ func TestProcessSource(t *testing.T) {
 }
 
 func TestProcessTransformation(t *testing.T) {
-	files := []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}
+	files := []any{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}
 
 	filterFiles := &v1alpha1.Transformation{{Expression: `filter(data, {# endsWith '.py'})`}}
 	filtered, err := processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py", "goo/foo.py"}, filtered)
+	assert.Equal(t, []any{"foo.py", "goo/foo.py"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains '/'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"goo/foo.py", "moo/bar.pdf"}, filtered)
+	assert.Equal(t, []any{"goo/foo.py", "moo/bar.pdf"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains 'foo'})`}}
 	filtered, err = processTransformation(filtered, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"goo/foo.py"}, filtered)
+	assert.Equal(t, []any{"goo/foo.py"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains '/'})`}, {Expression: `filter(data, {# contains 'foo'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"goo/foo.py"}, filtered)
+	assert.Equal(t, []any{"goo/foo.py"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py", "bar.pdf"}, filtered)
+	assert.Equal(t, []any{"foo.py", "bar.pdf"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `map(data, {# + '.processed'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py.processed", "bar.pdf.processed", "goo/foo.py.processed", "moo/bar.pdf.processed"}, filtered)
+	assert.Equal(t, []any{"foo.py.processed", "bar.pdf.processed", "goo/foo.py.processed", "moo/bar.pdf.processed"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}, {Expression: `map(data, {# + '.processed'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py.processed", "bar.pdf.processed"}, filtered)
+	assert.Equal(t, []any{"foo.py.processed", "bar.pdf.processed"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}, {Expression: `map(data, {# + '.processed'})`}, {}}
 	_, err = processTransformation(files, filterFiles)

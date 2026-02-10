@@ -11,7 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) (int, error) {
+func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[string]any, allowUnresolved bool) (int, error) {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {
 		// Attempt to resolve nested tags, if possible

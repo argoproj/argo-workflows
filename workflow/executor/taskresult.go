@@ -96,10 +96,6 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		taskResult,
 		metav1.CreateOptions{},
 	)
-	if err != nil && !apierr.IsAlreadyExists(err) {
-		we.taskResultCreated = false
-	} else {
-		we.taskResultCreated = true
-	}
+	we.taskResultCreated = err == nil || apierr.IsAlreadyExists(err)
 	return err
 }

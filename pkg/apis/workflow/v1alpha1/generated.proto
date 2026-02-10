@@ -609,7 +609,8 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use Hooks[exit].Template instead.
+  //
+  // Deprecated: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
@@ -1488,7 +1489,8 @@ message S3ArtifactRepository {
   optional string keyFormat = 2;
 
   // KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-  // DEPRECATED. Use KeyFormat instead
+  //
+  // Deprecated: Use KeyFormat instead.
   optional string keyPrefix = 3;
 }
 
@@ -2332,7 +2334,8 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use Hooks[exit].Template instead.
+  //
+  // Deprecated: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
