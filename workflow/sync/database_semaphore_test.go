@@ -41,7 +41,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 
 			// Update the controller heartbeat to be older than the inactive controller timeout
 			staleTime := time.Now().Add(-info.Config.InactiveControllerTimeout * 2)
-			_, err := info.Session.SQL().Update(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
 				Set("time", staleTime).
 				Where(db.Cond{"controller": info.Config.ControllerName}).
 				Exec()
@@ -53,12 +53,12 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/wf-02", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the controller is considered inactive
-			tx := &transaction{db: &info.Session}
+			tx := &transaction{sessionProxy: info.SessionProxy}
 			acquired, _ := s.tryAcquire(ctx, "foo/wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as inactive")
 
 			// Now update the controller heartbeat to be current
-			_, err = info.Session.SQL().Update(info.Config.ControllerTable).
+			_, err = info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
 				Set("time", time.Now()).
 				Where(db.Cond{"controller": info.Config.ControllerName}).
 				Exec()
@@ -87,7 +87,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 				Controller: otherController,
 				Time:       time.Now(),
 			}
-			_, err := info.Session.Collection(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session().Collection(info.Config.ControllerTable).
 				Insert(controllerRecord)
 			require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 				Held:       false,
 				Time:       time.Now(),
 			}
-			_, err = info.Session.Collection(info.Config.StateTable).
+			_, err = info.SessionProxy.Session().Collection(info.Config.StateTable).
 				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
@@ -108,13 +108,13 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the other controller's item is first in line
-			tx := &transaction{db: &info.Session}
+			tx := &transaction{sessionProxy: info.SessionProxy}
 			acquired, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when another controller's item is first in queue")
 
 			// Now mark the other controller as inactive by setting its timestamp to be old
 			staleTime := time.Now().Add(-info.Config.InactiveControllerTimeout * 2)
-			_, err = info.Session.SQL().Update(info.Config.ControllerTable).
+			_, err = info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
 				Set("time", staleTime).
 				Where(db.Cond{"controller": otherController}).
 				Exec()
@@ -149,7 +149,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 				Controller: otherController,
 				Time:       time.Now(),
 			}
-			_, err := info.Session.Collection(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session().Collection(info.Config.ControllerTable).
 				Insert(controllerRecord)
 			require.NoError(t, err)
 
@@ -161,7 +161,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 				Held:       false,
 				Time:       time.Now(),
 			}
-			_, err = info.Session.Collection(info.Config.StateTable).
+			_, err = info.SessionProxy.Session().Collection(info.Config.StateTable).
 				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
@@ -170,7 +170,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should succeed because the other cluster's item is for a different semaphore
-			tx := &transaction{db: &info.Session}
+			tx := &transaction{sessionProxy: info.SessionProxy}
 			acquired, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.True(t, acquired, "Semaphore should be acquired when another cluster's item is for a different semaphore")
 
@@ -204,7 +204,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			now := time.Now()
 
 			// Mutex workflow 1
-			tx := &transaction{db: &info.Session}
+			tx := &transaction{sessionProxy: info.SessionProxy}
 			require.NoError(t, mutex.addToQueue(ctx, "foo/wf-mutex-1", 0, now))
 			mutexAcquired1, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-1", tx)
 			assert.True(t, mutexAcquired1, "Mutex should be acquired by first workflow")
@@ -259,7 +259,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 
 			// Verify by checking the database directly
 			var allHolders []syncdb.StateRecord
-			err := info.Session.SQL().
+			err := info.SessionProxy.Session().SQL().
 				Select("*").
 				From(info.Config.StateTable).
 				Where(db.Cond{"held": true}).
@@ -315,7 +315,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				assert.Equal(t, 5, limit, "Limit should still be 5")
 
 				// Update the semaphore limit in the database
-				_, err := info.Session.SQL().
+				_, err := info.SessionProxy.Session().SQL().
 					Update(info.Config.LimitTable).
 					Set(syncdb.LimitSizeField, 10).
 					Where(db.Cond{syncdb.LimitNameField: s.shortDBKey}).
@@ -356,7 +356,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				mockNow = mockNow.Add(1 * time.Millisecond)
 
 				// Update the semaphore limit in the database
-				_, err := info.Session.SQL().
+				_, err := info.SessionProxy.Session().SQL().
 					Update(info.Config.LimitTable).
 					Set(syncdb.LimitSizeField, 7).
 					Where(db.Cond{syncdb.LimitNameField: s.shortDBKey}).

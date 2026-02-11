@@ -28,22 +28,26 @@ func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, dbType, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
-		if err != nil {
-			panic(err)
-		}
 		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
 			panic(err)
 		}
 		log := logging.RequireLoggerFromContext(ctx)
-		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
+		sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+			KubectlConfig: kubeClient,
+			Namespace:     Namespace,
+			DBConfig:      persistence.DBConfig,
+		})
 		if err != nil {
 			panic(err)
 		}
-		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService, dbType)
-		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
+		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
+		if err != nil {
+			panic(err)
+		}
+		workflowArchive := persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), Namespace, instanceIDService)
+		return &Persistence{workflowArchive, sessionProxy.Session(), offloadNodeStatusRepo}
 	}
 	return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 }

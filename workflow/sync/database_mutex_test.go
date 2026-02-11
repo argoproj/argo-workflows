@@ -23,7 +23,7 @@ func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace 
 	// Create a mutex (which is a semaphore with limit=1)
 	mutex := newDatabaseMutex(name, dbKey, nextWorkflow, info)
 	require.NotNil(t, mutex)
-	tx := &transaction{db: &info.Session}
+	tx := &transaction{info.SessionProxy.Tx()}
 	return mutex, tx, deferfunc
 }
 
