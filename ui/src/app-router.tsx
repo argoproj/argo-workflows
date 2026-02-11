@@ -25,6 +25,8 @@ import ErrorBoundary from './shared/components/error-boundary';
 import {Version} from './shared/models';
 import * as nsUtils from './shared/namespaces';
 import {services} from './shared/services';
+import {ThemeContext} from './shared/theme-context';
+import {useTheme} from './shared/use-theme';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -53,6 +55,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
     const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
+    const {theme, resolvedTheme, setTheme} = useTheme();
     const setError = (error: Error) => {
         notificationsManager.show({
             content: 'Failed to load version/info ' + error,
@@ -85,13 +88,14 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     const managedNamespace = nsUtils.getManagedNamespace();
     const namespaceSuffix = managedNamespace ? '' : '/' + (namespace || '');
     return (
-        <>
+        <ThemeContext.Provider value={{theme, resolvedTheme, setTheme}}>
             {popupProps && <Popup {...popupProps} />}
             <Router history={history}>
                 <Switch>
                     <Route exact={true} strict={true} path={loginUrl} component={login.component} />
                     <Route path={uiUrl('widgets')} component={Widgets} />
                     <Layout
+                        theme={resolvedTheme}
                         navBarStyle={{backgroundColor: navBarBackgroundColor}}
                         navItems={[
                             {
@@ -189,6 +193,6 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                     </Layout>
                 </Switch>
             </Router>
-        </>
+        </ThemeContext.Provider>
     );
 }
