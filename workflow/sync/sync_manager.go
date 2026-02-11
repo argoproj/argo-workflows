@@ -96,8 +96,8 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	sm.lock.RLock()
-	defer sm.lock.RUnlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
 	sm.log.Debug(ctx, "Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
@@ -468,8 +468,8 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 		return
 	}
 
-	sm.lock.RLock()
-	defer sm.lock.RUnlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
 	sm.log.WithField("holderKey", holderKey).Info(ctx, "Release")
@@ -496,8 +496,8 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 }
 
 func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
-	sm.lock.RLock()
-	defer sm.lock.RUnlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
 	if wf.Status.Synchronization == nil {
 		return true
