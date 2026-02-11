@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -154,13 +155,14 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 	var sess db.Session
 	var err error
 
-	if sp.kubectlConfig != nil && sp.namespace != "" && sp.dbConfig != nil {
+	switch {
+	case sp.kubectlConfig != nil && sp.namespace != "" && sp.dbConfig != nil:
 		// Use Kubernetes secrets for authentication
 		sess, err = CreateDBSession(ctx, sp.kubectlConfig, sp.namespace, *sp.dbConfig)
-	} else if sp.username != "" && sp.password != "" && sp.dbConfig != nil {
+	case sp.username != "" && sp.password != "" && sp.dbConfig != nil:
 		// Use direct credentials
 		sess, err = CreateDBSessionWithCreds(*sp.dbConfig, sp.username, sp.password)
-	} else {
+	default:
 		return fmt.Errorf("insufficient authentication information provided")
 	}
 
@@ -215,17 +217,18 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 	}
 
 	// Check for specific error types
-	if netErr, ok := err.(net.Error); ok {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
 		return netErr.Timeout()
 	}
 
 	// Check for driver.ErrBadConn
-	if err == driver.ErrBadConn {
+	if errors.Is(err, driver.ErrBadConn) {
 		return true
 	}
 
 	// Check for sql.ErrConnDone
-	if err == sql.ErrConnDone {
+	if errors.Is(err, sql.ErrConnDone) {
 		return true
 	}
 
