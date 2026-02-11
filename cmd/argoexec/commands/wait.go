@@ -7,9 +7,11 @@ import (
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/tracing"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -29,11 +31,19 @@ func NewWaitCommand() *cobra.Command {
 
 //nolint:contextcheck
 func waitContainer(ctx context.Context) error {
+	ctx = tracing.InjectTraceContext(ctx)
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
+	defer func() {
+		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		}
+	}()
+	ctx, span := wfExecutor.Tracing.StartRunWaitContainer(ctx, wfExecutor.WorkflowName(), wfExecutor.Namespace)
+	defer span.End()
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	//nolint:contextcheck
-	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
+	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
 
 	errHandler := wfExecutor.HandleError(bgCtx)
 	defer errHandler()                     // Must be placed at the bottom of defers stack.
@@ -45,6 +55,7 @@ func waitContainer(ctx context.Context) error {
 		}
 	}()
 	defer stats.LogStats()
+
 	stats.StartStatsTicker(5 * time.Minute)
 
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.

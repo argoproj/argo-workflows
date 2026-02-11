@@ -12,7 +12,7 @@ func (woc *wfOperationCtx) executePluginTemplate(ctx context.Context, nodeName s
 		if opts.boundaryID == "" {
 			woc.log.Debug(ctx, "boundaryID was nil")
 		}
-		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePlugin, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, true)
+		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePlugin, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, true)
 	}
 	if !node.Fulfilled() {
 		woc.taskSet[node.ID] = *tmpl

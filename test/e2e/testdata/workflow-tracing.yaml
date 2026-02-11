@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: tracing-test-
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: generate
+            template: create-artifact
+        - - name: consume
+            template: use-artifact
+            arguments:
+              artifacts:
+                - name: input
+                  from: "{{steps.generate.outputs.artifacts.output}}"
+
+    - name: create-artifact
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "tracing-test-data", "/tmp/output.txt"]
+      outputs:
+        artifacts:
+          - name: output
+            path: /tmp/output.txt
+            archive:
+              none: {}
+
+    - name: use-artifact
+      inputs:
+        artifacts:
+          - name: input
+            path: /tmp/input.txt
+      container:
+        image: argoproj/argosay:v2
+        args: ["cat", "/tmp/input.txt"]

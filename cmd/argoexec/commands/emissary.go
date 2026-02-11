@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/propagation"
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -36,6 +37,15 @@ var (
 	template            = &wfv1.Template{}
 )
 
+func injectTraceParent(ctx context.Context) {
+	carrier := propagation.MapCarrier{}
+	propagation.TraceContext{}.Inject(ctx, carrier)
+
+	for k, v := range carrier {
+		os.Setenv(strings.ToUpper(k), v)
+	}
+}
+
 func NewEmissaryCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:          "emissary",
@@ -44,7 +54,6 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 			ctx := cmd.Context()
 			logger := logging.RequireLoggerFromContext(ctx)
-
 			defer func() {
 				err := os.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
@@ -53,16 +62,21 @@ func NewEmissaryCommand() *cobra.Command {
 			}()
 
 			tracer, err := tracing.New(ctx, `argoexec`)
-			if err != nil {
-				logger.WithFatal().WithError(err).Error(ctx, "failed to initialize tracing")
-				return err
-			}
 			defer func() {
 				if err := tracer.Shutdown(context.WithoutCancel(ctx)); err != nil {
 					logger.WithError(err).Error(ctx, "Failed to shutdown tracing")
 				}
 			}()
-			_ = tracer // tracing will be wired in a follow-up change
+			if err != nil {
+				logger.WithFatal().WithError(err).Error(ctx, "failed to initialize tracing")
+			}
+
+			ctx = tracing.InjectTraceContext(ctx)
+			workflowName := os.Getenv(common.EnvVarWorkflowName)
+			namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+			ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
+			defer span.End()
+			injectTraceParent(ctx)
 
 			osspecific.AllowGrantingAccessToEveryone()
 
