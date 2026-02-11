@@ -45,10 +45,6 @@ func newInternalSemaphore(ctx context.Context, name string, nextWorkflow NextWor
 	return sem, err
 }
 
-func (s *prioritySemaphore) getName() string {
-	return s.name
-}
-
 func (s *prioritySemaphore) getLimit(ctx context.Context) int {
 	limit, changed, err := s.limitGetter.get(ctx, s.name)
 	if err != nil {

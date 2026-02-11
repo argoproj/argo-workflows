@@ -56,10 +56,6 @@ func (s *databaseSemaphore) longDBKey() string {
 	return "sem/" + s.shortDBKey
 }
 
-func (s *databaseSemaphore) getName() string {
-	return s.name
-}
-
 func (s *databaseSemaphore) getLimitFromDB(ctx context.Context, _ string) (int, error) {
 	logger := s.logger(ctx)
 	// Update the limit from the database
