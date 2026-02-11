@@ -8,10 +8,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 func errorln(args ...any) {
@@ -81,4 +87,19 @@ func LoadObject(text string) (runtime.Object, error) {
 		return nil, err
 	}
 	return obj, nil
+}
+
+func CheckError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func DynamicFor(restConfig *rest.Config, r schema.GroupVersionResource) dynamic.ResourceInterface {
+	resourceInterface := dynamic.NewForConfigOrDie(restConfig).Resource(r)
+	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
+		return resourceInterface
+	}
+	return resourceInterface.Namespace(Namespace)
 }

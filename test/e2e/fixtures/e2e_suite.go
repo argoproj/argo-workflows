@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
@@ -150,7 +149,7 @@ func (s *E2ESuite) DeleteResources() {
 	for _, r := range resources {
 		for {
 			// remove finalizer from all the resources of the given GroupVersionResource
-			resourceInf := s.dynamicFor(pods)
+			resourceInf := DynamicFor(s.RestConfig, pods)
 			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
 			s.CheckError(err)
 			for _, item := range resourceList.Items {
@@ -165,8 +164,8 @@ func (s *E2ESuite) DeleteResources() {
 					s.CheckError(err)
 				}
 			}
-			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
-			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
+			s.CheckError(DynamicFor(s.RestConfig, r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
+			ls, err := DynamicFor(s.RestConfig, r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
 			if len(ls.Items) == 0 {
 				break
@@ -203,19 +202,8 @@ func (s *E2ESuite) DeleteResources() {
 	}
 }
 
-func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
-	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
-	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
-		return resourceInterface
-	}
-	return resourceInterface.Namespace(Namespace)
-}
-
 func (s *E2ESuite) CheckError(err error) {
-	s.T().Helper()
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	CheckError(s.T(), err)
 }
 
 func (s *E2ESuite) GetBasicAuthToken() string {
