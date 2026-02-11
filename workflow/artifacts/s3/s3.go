@@ -20,6 +20,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/minio/minio-go/v7/pkg/sse"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 
 	"github.com/minio/minio-go/v7"
 	"k8s.io/client-go/util/retry"
@@ -32,6 +33,7 @@ import (
 	artifactscommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 const nullIAMEndpoint = ""
@@ -161,7 +163,8 @@ func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
 			pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA))
 			tr.TLSClientConfig.RootCAs = pool
 		}
-		opts.Transport = tr
+		// Wrap transport with OpenTelemetry tracing
+		opts.Transport = tracing.WrapS3Transport(tr)
 	}
 
 	return NewClient(ctx, opts)
@@ -403,6 +406,9 @@ func getAWSCredentials(ctx context.Context, opts ClientOpts) (*credentials.Crede
 		return nil, err
 	}
 
+	// Add OpenTelemetry tracing middleware
+	otelaws.AppendMiddlewares(&cfg.APIOptions)
+
 	value, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
 		return nil, err
@@ -416,6 +422,10 @@ func getAssumeRoleCredentials(ctx context.Context, opts ClientOpts) (*credential
 	if err != nil {
 		return nil, err
 	}
+
+	// Add OpenTelemetry tracing middleware
+	otelaws.AppendMiddlewares(&cfg.APIOptions)
+
 	client := sts.NewFromConfig(cfg)
 
 	// Create the credentials from AssumeRoleProvider to assume the role

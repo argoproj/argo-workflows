@@ -941,14 +941,14 @@ features-preview: hack/featuregen/featuregen
 	$< update --dry
 
 .PHONY: features-update
-features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Update the features documentation, but keep the feature files in the pending directory
 	# Updates docs/new-features.md for release-candidates
 	$< update --version $(VERSION)
 	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 .PHONY: features-release
-features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Update the features documentation AND move the feature files to the released directory
 	# Use this for the final update when releasing a version
 	$< update --version $(VERSION) --final

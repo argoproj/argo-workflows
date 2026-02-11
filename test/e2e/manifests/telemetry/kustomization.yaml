@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Tracing profile extends minimal and configures executor for OTEL tracing
+# Usage: PROFILE=telemetry make start
+
+resources:
+- ../minimal
+- otel-collector.yaml
+
+patches:
+- path: workflow-controller-configmap-patch.yaml
+
+namespace: argo
