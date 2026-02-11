@@ -24,7 +24,7 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.Info, func(), config.SyncConfig, error) {
+func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.DBInfo, func(), config.SyncConfig, error) {
 	t.Helper()
 
 	var cfg config.SyncConfig
@@ -41,30 +41,41 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 		t.Fatalf("failed to start container: %s", err)
 	}
 
-	session, dbType := syncdb.SessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword)
-	info := syncdb.Info{
-		Config:  syncdb.ConfigFromConfig(&cfg),
-		Session: session,
-		DBType:  dbType,
+	// Create SessionProxy instead of raw Session
+	sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+		DBConfig:   cfg.DBConfig,
+		Username:   testDBUser,
+		Password:   testDBPassword,
+		MaxRetries: 5,
+		BaseDelay:  100 * time.Millisecond,
+		MaxDelay:   30 * time.Second,
+	})
+	if err != nil {
+		termContainerFn()
+		return syncdb.DBInfo{}, func() {}, cfg, err
 	}
-	require.NotNil(t, info.Session, "failed to create database session")
+
+	info := syncdb.DBInfo{
+		Config:       syncdb.DBConfigFromConfig(&cfg),
+		SessionProxy: sessionProxy,
+	}
+	require.NotNil(t, info.SessionProxy, "failed to create database session proxy")
 	deferfn := func() {
-		info.Session.Close()
+		info.SessionProxy.Close()
 		termContainerFn()
 	}
 
 	info.Migrate(ctx)
-	require.NotNil(t, info.Session, "failed to migrate database")
+	require.NotNil(t, info.SessionProxy, "failed to migrate database")
 
 	// Mark this controller as alive immediately
-	_, err = info.Session.Collection(info.Config.ControllerTable).
+	_, err = info.SessionProxy.Session().Collection(info.Config.ControllerTable).
 		Insert(&syncdb.ControllerHealthRecord{
 			Controller: info.Config.ControllerName,
 			Time:       time.Now(),
 		})
 	if err != nil {
-		info.Session.Close()
-		info.Session = nil
+		info.SessionProxy.Close()
 		return info, deferfn, cfg, err
 	}
 

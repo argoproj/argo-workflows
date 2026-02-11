@@ -113,6 +113,7 @@ func applyChange(ctx context.Context, session db.Session, changeSchemaVersion in
 		if rowsAffected == 1 {
 			logger.WithFields(logging.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info(ctx, "applying database change")
 			if c != nil {
+				// Apply the change directly with the transaction session
 				err := c.Apply(ctx, tx)
 				if err != nil {
 					return err

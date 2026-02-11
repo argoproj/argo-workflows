@@ -8,9 +8,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/sync/db"
 	mock "github.com/stretchr/testify/mock"
-	db0 "github.com/upper/db/v4"
 )
 
 // NewSyncQueries creates a new instance of SyncQueries. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -421,7 +421,7 @@ func (_c *SyncQueries_ExpireInactiveLocks_Call) RunAndReturn(run func(ctx contex
 }
 
 // GetCurrentHolders provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) GetCurrentHolders(ctx context.Context, session db0.Session, semaphoreName string) ([]db.StateRecord, error) {
+func (_mock *SyncQueries) GetCurrentHolders(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string) ([]db.StateRecord, error) {
 	ret := _mock.Called(ctx, session, semaphoreName)
 
 	if len(ret) == 0 {
@@ -430,17 +430,17 @@ func (_mock *SyncQueries) GetCurrentHolders(ctx context.Context, session db0.Ses
 
 	var r0 []db.StateRecord
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string) ([]db.StateRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string) ([]db.StateRecord, error)); ok {
 		return returnFunc(ctx, session, semaphoreName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string) []db.StateRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string) []db.StateRecord); ok {
 		r0 = returnFunc(ctx, session, semaphoreName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]db.StateRecord)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, db0.Session, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *sqldb.SessionProxy, string) error); ok {
 		r1 = returnFunc(ctx, session, semaphoreName)
 	} else {
 		r1 = ret.Error(1)
@@ -455,21 +455,21 @@ type SyncQueries_GetCurrentHolders_Call struct {
 
 // GetCurrentHolders is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 func (_e *SyncQueries_Expecter) GetCurrentHolders(ctx interface{}, session interface{}, semaphoreName interface{}) *SyncQueries_GetCurrentHolders_Call {
 	return &SyncQueries_GetCurrentHolders_Call{Call: _e.mock.On("GetCurrentHolders", ctx, session, semaphoreName)}
 }
 
-func (_c *SyncQueries_GetCurrentHolders_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string)) *SyncQueries_GetCurrentHolders_Call {
+func (_c *SyncQueries_GetCurrentHolders_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string)) *SyncQueries_GetCurrentHolders_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -489,7 +489,7 @@ func (_c *SyncQueries_GetCurrentHolders_Call) Return(stateRecords []db.StateReco
 	return _c
 }
 
-func (_c *SyncQueries_GetCurrentHolders_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string) ([]db.StateRecord, error)) *SyncQueries_GetCurrentHolders_Call {
+func (_c *SyncQueries_GetCurrentHolders_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string) ([]db.StateRecord, error)) *SyncQueries_GetCurrentHolders_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -563,7 +563,7 @@ func (_c *SyncQueries_GetCurrentPending_Call) RunAndReturn(run func(ctx context.
 }
 
 // GetCurrentState provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) GetCurrentState(ctx context.Context, session db0.Session, semaphoreName string, held bool) ([]db.StateRecord, error) {
+func (_mock *SyncQueries) GetCurrentState(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, held bool) ([]db.StateRecord, error) {
 	ret := _mock.Called(ctx, session, semaphoreName, held)
 
 	if len(ret) == 0 {
@@ -572,17 +572,17 @@ func (_mock *SyncQueries) GetCurrentState(ctx context.Context, session db0.Sessi
 
 	var r0 []db.StateRecord
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, bool) ([]db.StateRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, bool) ([]db.StateRecord, error)); ok {
 		return returnFunc(ctx, session, semaphoreName, held)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, bool) []db.StateRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, bool) []db.StateRecord); ok {
 		r0 = returnFunc(ctx, session, semaphoreName, held)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]db.StateRecord)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, db0.Session, string, bool) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *sqldb.SessionProxy, string, bool) error); ok {
 		r1 = returnFunc(ctx, session, semaphoreName, held)
 	} else {
 		r1 = ret.Error(1)
@@ -597,22 +597,22 @@ type SyncQueries_GetCurrentState_Call struct {
 
 // GetCurrentState is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 //   - held bool
 func (_e *SyncQueries_Expecter) GetCurrentState(ctx interface{}, session interface{}, semaphoreName interface{}, held interface{}) *SyncQueries_GetCurrentState_Call {
 	return &SyncQueries_GetCurrentState_Call{Call: _e.mock.On("GetCurrentState", ctx, session, semaphoreName, held)}
 }
 
-func (_c *SyncQueries_GetCurrentState_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string, held bool)) *SyncQueries_GetCurrentState_Call {
+func (_c *SyncQueries_GetCurrentState_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, held bool)) *SyncQueries_GetCurrentState_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -637,7 +637,7 @@ func (_c *SyncQueries_GetCurrentState_Call) Return(stateRecords []db.StateRecord
 	return _c
 }
 
-func (_c *SyncQueries_GetCurrentState_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string, held bool) ([]db.StateRecord, error)) *SyncQueries_GetCurrentState_Call {
+func (_c *SyncQueries_GetCurrentState_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, held bool) ([]db.StateRecord, error)) *SyncQueries_GetCurrentState_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -717,7 +717,7 @@ func (_c *SyncQueries_GetExistingLocks_Call) RunAndReturn(run func(ctx context.C
 }
 
 // GetOrderedQueue provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) GetOrderedQueue(ctx context.Context, session db0.Session, semaphoreName string, inactiveTimeout time.Duration) ([]db.StateRecord, error) {
+func (_mock *SyncQueries) GetOrderedQueue(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]db.StateRecord, error) {
 	ret := _mock.Called(ctx, session, semaphoreName, inactiveTimeout)
 
 	if len(ret) == 0 {
@@ -726,17 +726,17 @@ func (_mock *SyncQueries) GetOrderedQueue(ctx context.Context, session db0.Sessi
 
 	var r0 []db.StateRecord
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, time.Duration) ([]db.StateRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, time.Duration) ([]db.StateRecord, error)); ok {
 		return returnFunc(ctx, session, semaphoreName, inactiveTimeout)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, time.Duration) []db.StateRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, time.Duration) []db.StateRecord); ok {
 		r0 = returnFunc(ctx, session, semaphoreName, inactiveTimeout)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]db.StateRecord)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, db0.Session, string, time.Duration) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *sqldb.SessionProxy, string, time.Duration) error); ok {
 		r1 = returnFunc(ctx, session, semaphoreName, inactiveTimeout)
 	} else {
 		r1 = ret.Error(1)
@@ -751,22 +751,22 @@ type SyncQueries_GetOrderedQueue_Call struct {
 
 // GetOrderedQueue is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 //   - inactiveTimeout time.Duration
 func (_e *SyncQueries_Expecter) GetOrderedQueue(ctx interface{}, session interface{}, semaphoreName interface{}, inactiveTimeout interface{}) *SyncQueries_GetOrderedQueue_Call {
 	return &SyncQueries_GetOrderedQueue_Call{Call: _e.mock.On("GetOrderedQueue", ctx, session, semaphoreName, inactiveTimeout)}
 }
 
-func (_c *SyncQueries_GetOrderedQueue_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string, inactiveTimeout time.Duration)) *SyncQueries_GetOrderedQueue_Call {
+func (_c *SyncQueries_GetOrderedQueue_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration)) *SyncQueries_GetOrderedQueue_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -791,13 +791,13 @@ func (_c *SyncQueries_GetOrderedQueue_Call) Return(stateRecords []db.StateRecord
 	return _c
 }
 
-func (_c *SyncQueries_GetOrderedQueue_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string, inactiveTimeout time.Duration) ([]db.StateRecord, error)) *SyncQueries_GetOrderedQueue_Call {
+func (_c *SyncQueries_GetOrderedQueue_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]db.StateRecord, error)) *SyncQueries_GetOrderedQueue_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetPendingInQueue provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) GetPendingInQueue(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error) {
+func (_mock *SyncQueries) GetPendingInQueue(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error) {
 	ret := _mock.Called(ctx, session, semaphoreName, holderKey, controllerName)
 
 	if len(ret) == 0 {
@@ -806,17 +806,17 @@ func (_mock *SyncQueries) GetPendingInQueue(ctx context.Context, session db0.Ses
 
 	var r0 []db.StateRecord
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, string, string) ([]db.StateRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, string, string) ([]db.StateRecord, error)); ok {
 		return returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, string, string) []db.StateRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, string, string) []db.StateRecord); ok {
 		r0 = returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]db.StateRecord)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, db0.Session, string, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *sqldb.SessionProxy, string, string, string) error); ok {
 		r1 = returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	} else {
 		r1 = ret.Error(1)
@@ -831,7 +831,7 @@ type SyncQueries_GetPendingInQueue_Call struct {
 
 // GetPendingInQueue is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 //   - holderKey string
 //   - controllerName string
@@ -839,15 +839,15 @@ func (_e *SyncQueries_Expecter) GetPendingInQueue(ctx interface{}, session inter
 	return &SyncQueries_GetPendingInQueue_Call{Call: _e.mock.On("GetPendingInQueue", ctx, session, semaphoreName, holderKey, controllerName)}
 }
 
-func (_c *SyncQueries_GetPendingInQueue_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_GetPendingInQueue_Call {
+func (_c *SyncQueries_GetPendingInQueue_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_GetPendingInQueue_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -877,13 +877,13 @@ func (_c *SyncQueries_GetPendingInQueue_Call) Return(stateRecords []db.StateReco
 	return _c
 }
 
-func (_c *SyncQueries_GetPendingInQueue_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error)) *SyncQueries_GetPendingInQueue_Call {
+func (_c *SyncQueries_GetPendingInQueue_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error)) *SyncQueries_GetPendingInQueue_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetPendingInQueueWithSession provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) GetPendingInQueueWithSession(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error) {
+func (_mock *SyncQueries) GetPendingInQueueWithSession(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error) {
 	ret := _mock.Called(ctx, session, semaphoreName, holderKey, controllerName)
 
 	if len(ret) == 0 {
@@ -892,17 +892,17 @@ func (_mock *SyncQueries) GetPendingInQueueWithSession(ctx context.Context, sess
 
 	var r0 []db.StateRecord
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, string, string) ([]db.StateRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, string, string) ([]db.StateRecord, error)); ok {
 		return returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, string, string) []db.StateRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, string, string) []db.StateRecord); ok {
 		r0 = returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]db.StateRecord)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, db0.Session, string, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *sqldb.SessionProxy, string, string, string) error); ok {
 		r1 = returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	} else {
 		r1 = ret.Error(1)
@@ -917,7 +917,7 @@ type SyncQueries_GetPendingInQueueWithSession_Call struct {
 
 // GetPendingInQueueWithSession is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 //   - holderKey string
 //   - controllerName string
@@ -925,15 +925,15 @@ func (_e *SyncQueries_Expecter) GetPendingInQueueWithSession(ctx interface{}, se
 	return &SyncQueries_GetPendingInQueueWithSession_Call{Call: _e.mock.On("GetPendingInQueueWithSession", ctx, session, semaphoreName, holderKey, controllerName)}
 }
 
-func (_c *SyncQueries_GetPendingInQueueWithSession_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_GetPendingInQueueWithSession_Call {
+func (_c *SyncQueries_GetPendingInQueueWithSession_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_GetPendingInQueueWithSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -963,7 +963,7 @@ func (_c *SyncQueries_GetPendingInQueueWithSession_Call) Return(stateRecords []d
 	return _c
 }
 
-func (_c *SyncQueries_GetPendingInQueueWithSession_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error)) *SyncQueries_GetPendingInQueueWithSession_Call {
+func (_c *SyncQueries_GetPendingInQueueWithSession_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) ([]db.StateRecord, error)) *SyncQueries_GetPendingInQueueWithSession_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1094,7 +1094,7 @@ func (_c *SyncQueries_InsertControllerHealth_Call) RunAndReturn(run func(ctx con
 }
 
 // InsertHeldState provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) InsertHeldState(ctx context.Context, session db0.Session, record *db.StateRecord) error {
+func (_mock *SyncQueries) InsertHeldState(ctx context.Context, session *sqldb.SessionProxy, record *db.StateRecord) error {
 	ret := _mock.Called(ctx, session, record)
 
 	if len(ret) == 0 {
@@ -1102,7 +1102,7 @@ func (_mock *SyncQueries) InsertHeldState(ctx context.Context, session db0.Sessi
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, *db.StateRecord) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, *db.StateRecord) error); ok {
 		r0 = returnFunc(ctx, session, record)
 	} else {
 		r0 = ret.Error(0)
@@ -1117,21 +1117,21 @@ type SyncQueries_InsertHeldState_Call struct {
 
 // InsertHeldState is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - record *db.StateRecord
 func (_e *SyncQueries_Expecter) InsertHeldState(ctx interface{}, session interface{}, record interface{}) *SyncQueries_InsertHeldState_Call {
 	return &SyncQueries_InsertHeldState_Call{Call: _e.mock.On("InsertHeldState", ctx, session, record)}
 }
 
-func (_c *SyncQueries_InsertHeldState_Call) Run(run func(ctx context.Context, session db0.Session, record *db.StateRecord)) *SyncQueries_InsertHeldState_Call {
+func (_c *SyncQueries_InsertHeldState_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, record *db.StateRecord)) *SyncQueries_InsertHeldState_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 *db.StateRecord
 		if args[2] != nil {
@@ -1151,13 +1151,13 @@ func (_c *SyncQueries_InsertHeldState_Call) Return(err error) *SyncQueries_Inser
 	return _c
 }
 
-func (_c *SyncQueries_InsertHeldState_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, record *db.StateRecord) error) *SyncQueries_InsertHeldState_Call {
+func (_c *SyncQueries_InsertHeldState_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, record *db.StateRecord) error) *SyncQueries_InsertHeldState_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // InsertHeldStateWithSession provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) InsertHeldStateWithSession(ctx context.Context, session db0.Session, record *db.StateRecord) error {
+func (_mock *SyncQueries) InsertHeldStateWithSession(ctx context.Context, session *sqldb.SessionProxy, record *db.StateRecord) error {
 	ret := _mock.Called(ctx, session, record)
 
 	if len(ret) == 0 {
@@ -1165,7 +1165,7 @@ func (_mock *SyncQueries) InsertHeldStateWithSession(ctx context.Context, sessio
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, *db.StateRecord) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, *db.StateRecord) error); ok {
 		r0 = returnFunc(ctx, session, record)
 	} else {
 		r0 = ret.Error(0)
@@ -1180,21 +1180,21 @@ type SyncQueries_InsertHeldStateWithSession_Call struct {
 
 // InsertHeldStateWithSession is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - record *db.StateRecord
 func (_e *SyncQueries_Expecter) InsertHeldStateWithSession(ctx interface{}, session interface{}, record interface{}) *SyncQueries_InsertHeldStateWithSession_Call {
 	return &SyncQueries_InsertHeldStateWithSession_Call{Call: _e.mock.On("InsertHeldStateWithSession", ctx, session, record)}
 }
 
-func (_c *SyncQueries_InsertHeldStateWithSession_Call) Run(run func(ctx context.Context, session db0.Session, record *db.StateRecord)) *SyncQueries_InsertHeldStateWithSession_Call {
+func (_c *SyncQueries_InsertHeldStateWithSession_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, record *db.StateRecord)) *SyncQueries_InsertHeldStateWithSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 *db.StateRecord
 		if args[2] != nil {
@@ -1214,7 +1214,7 @@ func (_c *SyncQueries_InsertHeldStateWithSession_Call) Return(err error) *SyncQu
 	return _c
 }
 
-func (_c *SyncQueries_InsertHeldStateWithSession_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, record *db.StateRecord) error) *SyncQueries_InsertHeldStateWithSession_Call {
+func (_c *SyncQueries_InsertHeldStateWithSession_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, record *db.StateRecord) error) *SyncQueries_InsertHeldStateWithSession_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1535,7 +1535,7 @@ func (_c *SyncQueries_UpdateSemaphoreLimit_Call) RunAndReturn(run func(ctx conte
 }
 
 // UpdateStateToHeld provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) UpdateStateToHeld(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) error {
+func (_mock *SyncQueries) UpdateStateToHeld(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) error {
 	ret := _mock.Called(ctx, session, semaphoreName, holderKey, controllerName)
 
 	if len(ret) == 0 {
@@ -1543,7 +1543,7 @@ func (_mock *SyncQueries) UpdateStateToHeld(ctx context.Context, session db0.Ses
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, string, string) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, string, string) error); ok {
 		r0 = returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	} else {
 		r0 = ret.Error(0)
@@ -1558,7 +1558,7 @@ type SyncQueries_UpdateStateToHeld_Call struct {
 
 // UpdateStateToHeld is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 //   - holderKey string
 //   - controllerName string
@@ -1566,15 +1566,15 @@ func (_e *SyncQueries_Expecter) UpdateStateToHeld(ctx interface{}, session inter
 	return &SyncQueries_UpdateStateToHeld_Call{Call: _e.mock.On("UpdateStateToHeld", ctx, session, semaphoreName, holderKey, controllerName)}
 }
 
-func (_c *SyncQueries_UpdateStateToHeld_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_UpdateStateToHeld_Call {
+func (_c *SyncQueries_UpdateStateToHeld_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_UpdateStateToHeld_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -1604,13 +1604,13 @@ func (_c *SyncQueries_UpdateStateToHeld_Call) Return(err error) *SyncQueries_Upd
 	return _c
 }
 
-func (_c *SyncQueries_UpdateStateToHeld_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) error) *SyncQueries_UpdateStateToHeld_Call {
+func (_c *SyncQueries_UpdateStateToHeld_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) error) *SyncQueries_UpdateStateToHeld_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateStateToHeldWithSession provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) UpdateStateToHeldWithSession(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) error {
+func (_mock *SyncQueries) UpdateStateToHeldWithSession(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) error {
 	ret := _mock.Called(ctx, session, semaphoreName, holderKey, controllerName)
 
 	if len(ret) == 0 {
@@ -1618,7 +1618,7 @@ func (_mock *SyncQueries) UpdateStateToHeldWithSession(ctx context.Context, sess
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, db0.Session, string, string, string) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *sqldb.SessionProxy, string, string, string) error); ok {
 		r0 = returnFunc(ctx, session, semaphoreName, holderKey, controllerName)
 	} else {
 		r0 = ret.Error(0)
@@ -1633,7 +1633,7 @@ type SyncQueries_UpdateStateToHeldWithSession_Call struct {
 
 // UpdateStateToHeldWithSession is a helper method to define mock.On call
 //   - ctx context.Context
-//   - session db0.Session
+//   - session *sqldb.SessionProxy
 //   - semaphoreName string
 //   - holderKey string
 //   - controllerName string
@@ -1641,15 +1641,15 @@ func (_e *SyncQueries_Expecter) UpdateStateToHeldWithSession(ctx interface{}, se
 	return &SyncQueries_UpdateStateToHeldWithSession_Call{Call: _e.mock.On("UpdateStateToHeldWithSession", ctx, session, semaphoreName, holderKey, controllerName)}
 }
 
-func (_c *SyncQueries_UpdateStateToHeldWithSession_Call) Run(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_UpdateStateToHeldWithSession_Call {
+func (_c *SyncQueries_UpdateStateToHeldWithSession_Call) Run(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_UpdateStateToHeldWithSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 db0.Session
+		var arg1 *sqldb.SessionProxy
 		if args[1] != nil {
-			arg1 = args[1].(db0.Session)
+			arg1 = args[1].(*sqldb.SessionProxy)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -1679,7 +1679,7 @@ func (_c *SyncQueries_UpdateStateToHeldWithSession_Call) Return(err error) *Sync
 	return _c
 }
 
-func (_c *SyncQueries_UpdateStateToHeldWithSession_Call) RunAndReturn(run func(ctx context.Context, session db0.Session, semaphoreName string, holderKey string, controllerName string) error) *SyncQueries_UpdateStateToHeldWithSession_Call {
+func (_c *SyncQueries_UpdateStateToHeldWithSession_Call) RunAndReturn(run func(ctx context.Context, session *sqldb.SessionProxy, semaphoreName string, holderKey string, controllerName string) error) *SyncQueries_UpdateStateToHeldWithSession_Call {
 	_c.Call.Return(run)
 	return _c
 }
