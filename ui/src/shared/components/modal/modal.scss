@@ -1,3 +1,5 @@
+@import 'node_modules/argo-ui/src/styles/theme';
+
 .modal {
   position: fixed; /* Stay in place */
   z-index: 12; /* Sit on top */
@@ -12,24 +14,33 @@
 
 /* Modal Content/Box */
 .modal-content {
-  background-color: white;
   border-radius: 10px;
   margin: 15% auto; /* 15% from the top and centered */
   padding: 20px;
-  border: 1px solid gray;
   width: 60%; /* Could be more or less, depending on screen size */
+
+  @include themify($themes) {
+    background-color: themed('background-2');
+    border: 1px solid themed('border');
+  }
 }
 
 .modal-close {
-  color: gray;
   float: right;
   font-size: 28px;
   font-weight: bold;
+
+  @include themify($themes) {
+    color: themed('text-2');
+  }
 }
 
 .modal-close:hover,
 .modal-close:focus {
-  color: black;
   text-decoration: none;
   cursor: pointer;
+
+  @include themify($themes) {
+    color: themed('text-1');
+  }
 }

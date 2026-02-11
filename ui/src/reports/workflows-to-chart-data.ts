@@ -1,7 +1,7 @@
 import {denominator} from '../shared/duration';
 import {getColorForNodePhase, Workflow} from '../shared/models';
 
-export function workflowsToChartData(workflows: Workflow[], limit: number) {
+export function workflowsToChartData(workflows: Workflow[], limit: number, fontColor: string = '#666') {
     const filteredWorkflows = workflows
         .filter(wf => !!wf.status.finishedAt)
         .map(wf => ({
@@ -53,20 +53,23 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
             options: {
                 title: {
                     display: true,
-                    text: 'Duration'
+                    text: 'Duration',
+                    fontColor
                 },
                 legend: {display: false},
                 scales: {
-                    xAxes: [{}],
+                    xAxes: [{ticks: {fontColor}, scaleLabel: {fontColor}}],
                     yAxes: [
                         {
                             id: 'duration',
                             ticks: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                fontColor
                             },
                             scaleLabel: {
                                 display: true,
-                                labelString: 'Duration (seconds)'
+                                labelString: 'Duration (seconds)',
+                                fontColor
                             }
                         }
                     ]
@@ -104,18 +107,24 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
             options: {
                 title: {
                     display: true,
-                    text: 'Resources (not available for archived workflows)'
+                    text: 'Resources (not available for archived workflows)',
+                    fontColor
+                },
+                legend: {
+                    labels: {fontColor}
                 },
                 scales: {
-                    xAxes: [{}],
+                    xAxes: [{ticks: {fontColor}, scaleLabel: {fontColor}}],
                     yAxes: Object.keys(resourceData).map(resource => ({
                         id: resource,
                         ticks: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            fontColor
                         },
                         scaleLabel: {
                             display: true,
-                            labelString: resource + ' (' + denominator(resource) + ')'
+                            labelString: resource + ' (' + denominator(resource) + ')',
+                            fontColor
                         }
                     }))
                 }
