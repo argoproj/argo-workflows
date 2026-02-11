@@ -1814,7 +1814,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				defer cleanup()
 
 				// Configure sync manager
-				syncManager := createLockManager(ctx, info.Session, &syncConfig, nil, func(key string) {
+				syncManager := createLockManager(ctx, info.Session, dbType, &syncConfig, nil, func(key string) {
 				}, WorkflowExistenceFunc)
 				require.NotNil(t, syncManager)
 				require.NotNil(t, syncManager.dbInfo.Session)

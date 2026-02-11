@@ -401,7 +401,7 @@ type MySQLConfig struct {
 type MetricModifier struct {
 	// Disabled disables the emission of this metric completely
 	Disabled bool `json:"disabled,omitempty"`
-	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
+	// DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality
 	DisabledAttributes []string `json:"disabledAttributes"`
 	// HistogramBuckets allow configuring of the buckets used in a histogram
 	// Has no effect on non-histogram buckets

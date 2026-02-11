@@ -656,7 +656,7 @@ func (w *When) setupDBSession() db.Session {
 	}
 
 	ctx := logging.TestContext(w.t.Context())
-	dbSession, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
+	dbSession, _, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
 	if err != nil {
 		w.t.Fatal(err)
 	}

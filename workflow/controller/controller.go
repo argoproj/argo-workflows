@@ -50,6 +50,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
+	utilsqldb "github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
@@ -134,6 +135,7 @@ type WorkflowController struct {
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
+	dbType                utilsqldb.DBType
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive

@@ -41,12 +41,13 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			return err
 		}
 		if wfc.session == nil {
-			session, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
+			session, dbType, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
 			if err != nil {
 				return err
 			}
 			logger.Info(ctx, "Persistence Session created successfully")
 			wfc.session = session
+			wfc.dbType = dbType
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
@@ -65,7 +66,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService, wfc.dbType)
 			logger.Info(ctx, "Workflow archiving is enabled")
 		} else {
 			logger.Info(ctx, "Workflow archiving is disabled")
@@ -99,7 +100,7 @@ func (wfc *WorkflowController) initDB(ctx context.Context) error {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.session, persistence.GetClusterName(), tableName)
+	return persist.Migrate(ctx, wfc.session, persistence.GetClusterName(), tableName, wfc.dbType)
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {

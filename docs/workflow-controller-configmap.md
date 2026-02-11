@@ -160,7 +160,7 @@ MetricModifier are modifiers for an individual named metric to change their beha
 |      Field Name      |    Field Type    |                                                 Description                                                  |
 |----------------------|------------------|--------------------------------------------------------------------------------------------------------------|
 | `Disabled`           | `bool`           | Disabled disables the emission of this metric completely                                                     |
-| `DisabledAttributes` | `Array<string>`  | DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality             |
+| `DisabledAttributes` | `Array<string>`  | DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality            |
 | `HistogramBuckets`   | `Array<float64>` | HistogramBuckets allow configuring of the buckets used in a histogram Has no effect on non-histogram buckets |
 
 ## ResourceRateLimit

@@ -27,6 +27,7 @@ type Config struct {
 type Info struct {
 	Config  Config
 	Session db.Session
+	DBType  sqldb.DBType
 }
 
 const (
@@ -62,7 +63,7 @@ func (d *Info) Migrate(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Setting up sync manager database")
 	if !d.Config.SkipMigration {
-		err := migrate(ctx, d.Session, &d.Config)
+		err := migrate(ctx, d.Session, d.DBType, &d.Config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
 			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
@@ -91,26 +92,26 @@ func ConfigFromConfig(config *config.SyncConfig) Config {
 	}
 }
 
-func SessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
+func SessionFromConfigWithCreds(config *config.SyncConfig, username, password string) (db.Session, sqldb.DBType) {
 	if config == nil {
-		return nil
+		return nil, ""
 	}
-	dbSession, err := sqldb.CreateDBSessionWithCreds(config.DBConfig, username, password)
+	dbSession, dbType, err := sqldb.CreateDBSessionWithCreds(config.DBConfig, username, password)
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work
-		return nil
+		return nil, ""
 	}
-	return dbSession
+	return dbSession, dbType
 }
 
-func SessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) db.Session {
+func SessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) (db.Session, sqldb.DBType) {
 	if config == nil {
-		return nil
+		return nil, ""
 	}
-	dbSession, err := sqldb.CreateDBSession(ctx, kubectlConfig, namespace, config.DBConfig)
+	dbSession, dbType, err := sqldb.CreateDBSession(ctx, kubectlConfig, namespace, config.DBConfig)
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work
-		return nil
+		return nil, ""
 	}
-	return dbSession
+	return dbSession, dbType
 }
