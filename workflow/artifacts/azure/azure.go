@@ -315,7 +315,7 @@ func (azblobDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Re
 
 	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
 	if err != nil {
-		return fmt.Errorf("unable to create Azure Blob Container client for %s: %s", outputArtifact.Azure.Blob, err)
+		return fmt.Errorf("unable to create Azure Blob Container client for %s: %w", outputArtifact.Azure.Blob, err)
 	}
 
 	blobClient := containerClient.NewBlockBlobClient(outputArtifact.Azure.Blob)

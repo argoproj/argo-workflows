@@ -72,7 +72,7 @@ type workflowServer struct {
 var _ WorkflowServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface) *workflowServer {
+func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface) WorkflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -836,9 +836,8 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		"artifactsCount": func() int {
 			if req.SubmitOptions != nil {
 				return len(req.SubmitOptions.Artifacts)
-			} else {
-				return -1
 			}
+			return -1
 		}(),
 		"hasWorkflowTemplateRef": wf.Spec.WorkflowTemplateRef != nil,
 	}).Debug(ctx, "SubmitWorkflow: checking conditions")

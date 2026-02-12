@@ -277,11 +277,11 @@ func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader
 			log.WithField("key", outputArtifact.S3.Key).Info(ctx, "S3 SaveStream")
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %v", err)
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %w", err)
 			}
 			err = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, reader, -1)
 			if err != nil {
-				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put stream: %v", err)
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put stream: %w", err)
 			}
 			return true, nil
 		})
