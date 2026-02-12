@@ -4513,14 +4513,14 @@ func setWfTemplateLabel(wf *wfv1.Workflow) {
 	if wf.Spec.WorkflowTemplateRef == nil {
 		return
 	}
-	if wf.ObjectMeta.Labels == nil {
-		wf.ObjectMeta.Labels = map[string]string{}
+	if wf.Labels == nil {
+		wf.Labels = map[string]string{}
 	}
 
 	if wf.Spec.WorkflowTemplateRef.ClusterScope {
-		wf.ObjectMeta.Labels[common.LabelKeyClusterWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+		wf.Labels[common.LabelKeyClusterWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
 	} else {
-		wf.ObjectMeta.Labels[common.LabelKeyWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+		wf.Labels[common.LabelKeyWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
 	}
 }
 
