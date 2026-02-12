@@ -54,3 +54,6 @@ node_modules
 result
 .devenv
 .devenv.flake.nix
+.*-vendor
+proto_vendor
+.github.com
