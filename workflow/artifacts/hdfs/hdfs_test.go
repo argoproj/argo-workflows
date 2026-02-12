@@ -1,13 +1,14 @@
 package hdfs
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
@@ -179,8 +180,9 @@ func TestIsDirectoryNotSupported(t *testing.T) {
 	assert.False(t, isDir)
 
 	// Verify it's a CodeNotImplemented error
-	argoErr, ok := err.(errors.ArgoError)
+	var argoErr argoerrors.ArgoError
+	ok := errors.As(err, &argoErr)
 	if ok {
-		assert.Equal(t, errors.CodeNotImplemented, argoErr.Code())
+		assert.Equal(t, argoerrors.CodeNotImplemented, argoErr.Code())
 	}
 }

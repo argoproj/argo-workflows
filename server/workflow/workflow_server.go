@@ -840,9 +840,8 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		"artifactsCount": func() int {
 			if req.SubmitOptions != nil {
 				return len(req.SubmitOptions.Artifacts)
-			} else {
-				return -1
 			}
+			return -1
 		}(),
 		"hasWorkflowTemplateRef": wf.Spec.WorkflowTemplateRef != nil,
 	}).Debug(ctx, "SubmitWorkflow: checking conditions")

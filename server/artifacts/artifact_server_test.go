@@ -920,7 +920,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
 
-		var response map[string]interface{}
+		var response map[string]any
 		err := json.NewDecoder(recorder.Body).Decode(&response)
 		require.NoError(t, err)
 		assert.Equal(t, "input-artifact", response["name"])
@@ -937,7 +937,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
 
-		var response map[string]interface{}
+		var response map[string]any
 		err := json.NewDecoder(recorder.Body).Decode(&response)
 		require.NoError(t, err)
 		assert.Equal(t, "input-artifact", response["name"])
