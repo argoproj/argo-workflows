@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -57,7 +58,9 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if art.Path == "" {
 		return errors.Errorf(errors.CodeBadRequest, "%s.path is required", errPrefix)
 	}
-	if !filepath.IsAbs(art.Path) {
+	// HDFS paths are always Unix-style, so check for leading "/" instead of filepath.IsAbs
+	// which would fail on Windows for paths like "/hdfs/path"
+	if !strings.HasPrefix(art.Path, "/") {
 		return errors.Errorf(errors.CodeBadRequest, "%s.path must be a absolute file path", errPrefix)
 	}
 
@@ -232,6 +235,26 @@ func (driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtif
 	}
 
 	return hdfscli.CopyToRemote(path, driver.Path)
+}
+
+// SaveStream saves an artifact from an io.Reader to HDFS compliant storage
+// Uses a temporary file as a fallback since HDFS doesn't support direct stream writes
+func (driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	// Write to temp file first
+	tmpFile, err := os.CreateTemp("", "hdfs-upload-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = io.Copy(tmpFile, reader); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to write to temp file: %w", err)
+	}
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+	return driver.Save(ctx, tmpFile.Name(), outputArtifact)
 }
 
 // Delete is unsupported for the hdfs artifacts

@@ -24,6 +24,10 @@ type ArtifactDriver interface {
 	// Save uploads the path to artifact destination
 	Save(ctx context.Context, path string, outputArtifact *v1alpha1.Artifact) error
 
+	// SaveStream saves an artifact from an io.Reader.
+	// This allows for memory-efficient streaming uploads.
+	SaveStream(ctx context.Context, reader io.Reader, outputArtifact *v1alpha1.Artifact) error
+
 	Delete(ctx context.Context, artifact *v1alpha1.Artifact) error
 
 	ListObjects(ctx context.Context, artifact *v1alpha1.Artifact) ([]string, error)

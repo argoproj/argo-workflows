@@ -40,6 +40,9 @@ type S3Client interface {
 	// PutFile puts a single file to a bucket at the specified key
 	PutFile(bucket, key, path string) error
 
+	// PutStream puts a stream to a bucket at the specified key
+	PutStream(bucket, key string, reader io.Reader, objectSize int64) error
+
 	// PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 	// a separate key in the bucket.
 	PutDirectory(bucket, key, path string) error
@@ -260,6 +263,27 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %w", err)
 			}
 			return saveS3Artifact(ctx, s3cli, path, outputArtifact)
+		})
+	return err
+}
+
+// SaveStream saves an artifact from an io.Reader to S3 compliant storage
+func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	log := logging.RequireLoggerFromContext(ctx)
+	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
+		func() (bool, error) {
+			log.WithField("key", outputArtifact.S3.Key).Info(ctx, "S3 SaveStream")
+			s3cli, err := s3Driver.newS3Client(ctx)
+			if err != nil {
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %w", err)
+			}
+			err = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, reader, -1)
+			if err != nil {
+				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put stream: %w", err)
+			}
+			return true, nil
 		})
 	return err
 }
@@ -519,6 +543,19 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 		return err
 	}
 	return nil
+}
+
+// PutStream puts a stream to a bucket at the specified key
+func (s *s3client) PutStream(bucket, key string, reader io.Reader, objectSize int64) error {
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Saving stream to s3")
+
+	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.minioClient.PutObject(s.ctx, bucket, key, reader, objectSize, minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts})
+	return err
 }
 
 func (s *s3client) BucketExists(bucketName string) (bool, error) {

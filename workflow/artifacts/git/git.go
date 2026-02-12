@@ -82,6 +82,11 @@ func (g *ArtifactDriver) Save(ctx context.Context, path string, artifact *wfv1.A
 	return argoerrors.New(argoerrors.CodeBadRequest, "git output artifacts unsupported")
 }
 
+// SaveStream is unsupported for git output artifacts
+func (g *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, artifact *wfv1.Artifact) error {
+	return argoerrors.New(argoerrors.CodeBadRequest, "git output artifacts unsupported")
+}
+
 // Delete is unsupported for git artifacts
 func (g *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported

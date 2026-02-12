@@ -61,6 +61,20 @@ func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 	return err
 }
 
+func (d *driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Saving artifact from stream")
+	t := time.Now()
+	key, _ := outputArtifact.GetKey()
+	err := d.ArtifactDriver.SaveStream(ctx, reader, outputArtifact)
+	log.WithField("artifactName", outputArtifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
+		Info(ctx, "Save artifact from stream")
+	return err
+}
+
 func (d *driver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	log := logging.RequireLoggerFromContext(ctx)
 	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Deleting artifact")
