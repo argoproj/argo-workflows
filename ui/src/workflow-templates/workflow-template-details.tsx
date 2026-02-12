@@ -51,12 +51,20 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
             isFirstRender.current = false;
             return;
         }
+        const currentParams = new URLSearchParams(location.search);
+        const extraSearchParams = new URLSearchParams();
+        currentParams.forEach((value, key) => {
+            if (key.startsWith('parameters[') || key === 'entrypoint' || key === 'labels') {
+                extraSearchParams.set(key, value);
+            }
+        });
         history.push(
             historyUrl('workflow-templates/{namespace}/{name}', {
                 namespace,
                 name,
                 sidePanel,
-                tab
+                tab,
+                extraSearchParams: extraSearchParams.toString() ? extraSearchParams : null
             })
         );
     }, [namespace, name, sidePanel, tab]);
