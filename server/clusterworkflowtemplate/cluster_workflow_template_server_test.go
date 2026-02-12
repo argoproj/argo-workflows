@@ -15,7 +15,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
@@ -146,15 +148,20 @@ func init() {
 }`, &cwftObj3)
 }
 
-func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
+const userEmailLabel = "my-sub.at.your.org"
+
+func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
+	t.Helper()
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
+	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
+	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil, nil), ctx
 }
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
-	server, ctx := getClusterWorkflowTemplateServer()
+	server, ctx := getClusterWorkflowTemplateServer(t)
 	t.Run("Without parameter values", func(t *testing.T) {
 		tmpl := unlabelled.DeepCopy()
 		tmpl.Name = "foo-without-param-values"
@@ -179,11 +186,12 @@ func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
 		// ensure the label is added
 		assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, cwftRsp.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, cwftRsp.Labels[common.LabelKeyCreatorEmail])
 	})
 }
 
 func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
-	server, ctx := getClusterWorkflowTemplateServer()
+	server, ctx := getClusterWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		cwftRsp, err := server.GetClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
 			Name: "cluster-workflow-template-whalesay-template2",
@@ -202,7 +210,7 @@ func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_ListClusterWorkflowTemplates(t *testing.T) {
-	server, ctx := getClusterWorkflowTemplateServer()
+	server, ctx := getClusterWorkflowTemplateServer(t)
 	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateListRequest{}
 	cwftRsp, err := server.ListClusterWorkflowTemplates(ctx, &cwftReq)
 	require.NoError(t, err)
@@ -213,7 +221,7 @@ func TestWorkflowTemplateServer_ListClusterWorkflowTemplates(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_DeleteClusterWorkflowTemplate(t *testing.T) {
-	server, ctx := getClusterWorkflowTemplateServer()
+	server, ctx := getClusterWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		_, err := server.DeleteClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateDeleteRequest{
 			Name: "cluster-workflow-template-whalesay-template2",
@@ -229,7 +237,7 @@ func TestWorkflowTemplateServer_DeleteClusterWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
-	server, ctx := getClusterWorkflowTemplateServer()
+	server, ctx := getClusterWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		var cwftObj1 v1alpha1.ClusterWorkflowTemplate
 		resp, err := server.LintClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateLintRequest{
@@ -238,6 +246,7 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, resp.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, resp.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, resp.Labels[common.LabelKeyCreatorEmail])
 	})
 
 	t.Run("Without param values", func(t *testing.T) {
@@ -255,15 +264,18 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
-	server, ctx := getClusterWorkflowTemplateServer()
+	server, ctx := getClusterWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		req := &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
 			Template: cwftObj2.DeepCopy(),
 		}
-		req.Template.Spec.Templates[0].Container.Image = "alpine:latest"
+		req.Template.Spec.Templates[0].Container.Image = "alpine:3.23"
 		cwftRsp, err := server.UpdateClusterWorkflowTemplate(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, "alpine:latest", cwftRsp.Spec.Templates[0].Container.Image)
+		assert.Contains(t, cwftRsp.Labels, common.LabelKeyActor)
+		assert.Equal(t, string(creator.ActionUpdate), cwftRsp.Labels[common.LabelKeyAction])
+		assert.Equal(t, userEmailLabel, cwftRsp.Labels[common.LabelKeyActorEmail])
+		assert.Equal(t, "alpine:3.23", cwftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{

@@ -10,6 +10,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
     generateName: fun-with-gifs-
 spec:
   entrypoint: run-workflow
@@ -43,7 +45,7 @@ spec:
 
   - name: create-output-dir
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: ["mkdir", "/mnt/data/output"]
       volumeMounts:
       - name: workdir
@@ -99,7 +101,7 @@ spec:
 
   - name: bundle-up
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: ["ls"]
       volumeMounts:
       - name: workdir

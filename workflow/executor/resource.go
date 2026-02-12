@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/itchyny/gojq"
-	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -27,35 +27,39 @@ import (
 	kubectlutil "k8s.io/kubectl/pkg/cmd/util"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, string, error) {
+func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	var out []byte
-	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
-		out, err = runKubectl(args...)
+	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err)
+	}, func() error {
+		out, err = runKubectl(ctx, args...)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
+		var exErr *exec.ExitError
+		if errors.As(err, &exErr) {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			err = errors.Wrap(err, errors.CodeBadRequest, errMsg)
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
 		} else {
-			err = errors.Wrap(err, errors.CodeBadRequest, err.Error())
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
 		}
-		err = errors.Wrap(err, errors.CodeBadRequest, "no more retries "+err.Error())
+		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
 		return "", "", "", err
 	}
 	if action == "delete" {
@@ -73,11 +77,12 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	resourceName := obj.GetName()
 	resourceKind := obj.GroupVersionKind().Kind
 	if resourceName == "" || resourceKind == "" {
-		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+		return "", "", "", argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
 	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
 	selfLink := inferObjectSelfLink(obj)
-	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
@@ -110,10 +115,10 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
 	buff, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
-		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+		return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
 	}
 	if len(buff) == 0 && len(flags) == 0 {
-		return []string{}, errors.New(errors.CodeBadRequest, "Must provide at least one of flags or manifest.")
+		return []string{}, argoerrors.New(argoerrors.CodeBadRequest, "Must provide at least one of flags or manifest.")
 	}
 
 	args := []string{
@@ -145,10 +150,10 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		if mergeStrategy == "json" {
 			appendFileFlag = false
 		} else {
-			var obj map[string]interface{}
+			var obj map[string]any
 			err = yaml.Unmarshal(buff, &obj)
 			if err != nil {
-				return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+				return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
 			}
 			if len(flags) != 0 && obj["kind"] == nil {
 				appendFileFlag = false
@@ -189,6 +194,7 @@ func (g gjsonLabels) Get(label string) string {
 
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -196,9 +202,9 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 	if we.Template.Resource.SuccessCondition != "" {
 		successSelector, err := labels.Parse(we.Template.Resource.SuccessCondition)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
+			return argoerrors.Errorf(argoerrors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
 		}
-		log.Infof("Waiting for conditions: %s", successSelector)
+		logger.WithField("conditions", successSelector).Info(ctx, "Waiting for conditions")
 		successReqs, _ = successSelector.Requirements()
 	}
 
@@ -206,32 +212,32 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 	if we.Template.Resource.FailureCondition != "" {
 		failSelector, err := labels.Parse(we.Template.Resource.FailureCondition)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
+			return argoerrors.Errorf(argoerrors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
 		}
-		log.Infof("Failing for conditions: %s", failSelector)
+		logger.WithField("conditions", failSelector).Info(ctx, "Failing for conditions")
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
 		true,
 		func(ctx context.Context) (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
 			if err == nil {
-				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
+				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace}).Info(ctx, "Returning from successful wait for resource")
 				return true, nil
 			}
-			if isErrRetryable || argoerr.IsTransientErr(err) {
-				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
+			if isErrRetryable || argoerr.IsTransientErr(ctx, err) {
+				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace, "error": err}).Info(ctx, "Waiting for resource resulted in retryable error")
 				return false, nil
 			}
 
-			log.Warnf("Waiting for resource %s in namespace %s resulted in non-retryable error: %v", resourceName, resourceNamespace, err)
+			logger.WithField("name", resourceName).WithField("namespace", resourceNamespace).WithError(err).Warn(ctx, "Waiting for resource resulted in non-retryable error")
 			return false, err
 		})
 	if err != nil {
 		if wait.Interrupted(err) {
-			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
+			logger.WithField("name", resourceName).Warn(ctx, "Waiting for resource resulted in timeout due to repeated errors")
 		} else {
-			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
+			logger.WithField("name", resourceName).WithError(err).Warn(ctx, "Waiting for resource resulted in error")
 		}
 		return err
 	}
@@ -245,9 +251,9 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	stream, err := request.Stream(ctx)
 
 	if err != nil {
-		err = errors.Cause(err)
+		err = argoerrors.Cause(err)
 		if apierr.IsNotFound(err) {
-			return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
+			return false, argoerrors.Errorf(argoerrors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
 		}
 		return false, err
 	}
@@ -258,48 +264,50 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 		return false, err
 	}
 	jsonString := string(jsonBytes)
-	log.Debug(jsonString)
+	logging.RequireLoggerFromContext(ctx).Debug(ctx, jsonString)
 	if !gjson.Valid(jsonString) {
-		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
+		return false, argoerrors.Errorf(argoerrors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
 	}
-	return matchConditions(jsonBytes, successReqs, failReqs)
+	return matchConditions(ctx, jsonBytes, successReqs, failReqs)
 }
 
 // matchConditions checks whether the returned JSON bytes match success or failure conditions.
-func matchConditions(jsonBytes []byte, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	ls := gjsonLabels{json: jsonBytes}
 	for _, req := range failReqs {
 		failed := req.Matches(ls)
 		msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
-		log.Info(msg)
+		logger.Info(ctx, msg)
 		if failed {
 			// We return false here to not retry when failure conditions met.
-			return false, errors.Errorf(errors.CodeBadRequest, "%s", msg)
+			return false, argoerrors.Errorf(argoerrors.CodeBadRequest, "%s", msg)
 		}
 	}
 	numMatched := 0
 	for _, req := range successReqs {
 		matched := req.Matches(ls)
-		log.Infof("success condition '%s' evaluated %v", req, matched)
+		logger.WithFields(logging.Fields{"condition": req, "matched": matched}).Info(ctx, "success condition evaluated")
 		if matched {
 			numMatched++
 		}
 	}
-	log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
+	logger.WithFields(logging.Fields{"numMatched": numMatched, "total": len(successReqs)}).Info(ctx, "success conditions matched")
 	if numMatched >= len(successReqs) {
 		return false, nil
 	}
 
-	return true, errors.Errorf(errors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
+	return true, argoerrors.Errorf(argoerrors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
 }
 
 // SaveResourceParameters will save any resource output parameters
 func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 	if len(we.Template.Outputs.Parameters) == 0 {
-		log.Infof("No output parameters")
+		logger.Info(ctx, "No output parameters")
 		return nil
 	}
-	log.Infof("Saving resource output parameters")
+	logger.Info(ctx, "Saving resource output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
 		if param.ValueFrom == nil {
 			continue
@@ -312,38 +320,39 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		outputFormat := ""
-		if param.ValueFrom.JSONPath != "" {
+		var outputFormat string
+		switch {
+		case param.ValueFrom.JSONPath != "":
 			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
-		} else if param.ValueFrom.JQFilter != "" {
+		case param.ValueFrom.JQFilter != "":
 			outputFormat = "json"
-		} else {
+		default:
 			continue
 		}
 		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat}
-		out, err := runKubectl(args...)
-		log.WithError(err).WithField("out", string(out)).WithField("args", args).Info("kubectl")
+		out, err := runKubectl(ctx, args...)
+		logger.WithError(err).WithField("out", string(out)).WithField("args", args).Info(ctx, "kubectl")
 		if err != nil {
 			return err
 		}
 		output := string(out)
 		if param.ValueFrom.JQFilter != "" {
 			output, err = jqFilter(ctx, out, param.ValueFrom.JQFilter)
-			log.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info("gojq")
+			logger.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
 			if err != nil {
 				return err
 			}
 		}
 
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
-		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
+		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
 	err := we.ReportOutputs(ctx, nil)
 	return err
 }
 
 func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(input, &v); err != nil {
 		return "", err
 	}
@@ -375,8 +384,8 @@ func jqFilter(ctx context.Context, input []byte, filter string) (string, error) 
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func runKubectl(args ...string) ([]byte, error) {
-	log.Info(strings.Join(args, " "))
+func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
+	logging.RequireLoggerFromContext(ctx).Info(ctx, strings.Join(args, " "))
 	osArgs := append([]string{}, os.Args...)
 	os.Args = args
 	defer func() {
@@ -386,7 +395,7 @@ func runKubectl(args ...string) ([]byte, error) {
 	var fatalErr error
 	// catch `os.Exit(1)` from kubectl
 	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
-		fatalErr = errors.New(fmt.Sprint(code), msg)
+		fatalErr = argoerrors.New(fmt.Sprint(code), msg)
 	})
 
 	var buf bytes.Buffer

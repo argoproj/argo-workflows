@@ -16,20 +16,23 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer stop()
 	err := commands.NewRootCommand().ExecuteContext(ctx)
 	if err != nil {
 		if exitError, ok := err.(errors.Exited); ok {
 			if exitError.ExitCode() >= 0 {
-				os.Exit(exitError.ExitCode())
-			} else {
-				os.Exit(137) // probably SIGTERM or SIGKILL
+				return exitError.ExitCode()
 			}
-		} else {
-			util.WriteTerminateMessage(err.Error()) // we don't want to overwrite any other message
-			println(err.Error())
-			os.Exit(64)
+			return 137 // probably SIGTERM or SIGKILL
 		}
+		util.WriteTerminateMessage(err.Error()) // we don't want to overwrite any other message
+		println(err.Error())
+		return 64
 	}
+	return 0
 }

@@ -1,7 +1,7 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
@@ -15,7 +15,7 @@ import {GraphPanel} from '../shared/components/graph/graph-panel';
 import {Node} from '../shared/components/graph/types';
 import {Links} from '../shared/components/links';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
-import {ResourceEditor} from '../shared/components/resource-editor/resource-editor';
+import {SerializingObjectEditor} from '../shared/components/object-editor';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
@@ -43,6 +43,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') !== 'false');
@@ -61,20 +62,22 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('event-flow' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace,
-                    showFlow,
-                    showWorkflows,
-                    expanded,
-                    selectedNode,
-                    tab
-                })
-            ),
-        [namespace, showFlow, showWorkflows, expanded, expanded, tab]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('event-flow' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace,
+                showFlow,
+                showWorkflows,
+                expanded,
+                selectedNode,
+                tab
+            })
+        );
+    }, [namespace, showFlow, showWorkflows, expanded, expanded, tab]);
 
     // internal state
     const [error, setError] = useState<Error>();
@@ -317,7 +320,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                                 {
                                     title: 'SUMMARY',
                                     key: 'summary',
-                                    content: <ResourceEditor kind={selected.kind} value={selected.value} />
+                                    content: <SerializingObjectEditor type={'io.argoproj.workflow.v1alpha1.' + selected.kind} value={selected.value} />
                                 },
                                 {
                                     title: 'LOGS',

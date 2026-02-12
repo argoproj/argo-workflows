@@ -6,6 +6,8 @@ import (
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
 )
 
 func NewInitCommand() *cobra.Command {
@@ -13,10 +15,9 @@ func NewInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Load artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-			err := loadArtifacts(ctx)
+			err := loadArtifacts(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -25,23 +26,24 @@ func NewInitCommand() *cobra.Command {
 }
 
 func loadArtifacts(ctx context.Context) error {
-	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
+	errHandler := wfExecutor.HandleError(ctx)
+	defer errHandler()
 	defer stats.LogStats()
 
 	if err := wfExecutor.Init(); err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
+		return err
+	}
+	err := wfExecutor.StageFiles(ctx)
+	if err != nil {
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	// Download input artifacts
-	err := wfExecutor.StageFiles()
+	err = wfExecutor.LoadArtifactsWithoutPlugins(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	err = wfExecutor.LoadArtifacts(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	return nil

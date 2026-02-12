@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -42,10 +41,6 @@ const (
 )
 
 func initializeSession() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "2006-01-02T15:04:05.000Z",
-		FullTimestamp:   true,
-	})
 	if NoUtf8 {
 		JobStatusIconMap = map[wfv1.NodePhase]string{
 			wfv1.NodePending:   ansiFormat("Pending", FgYellow),
@@ -86,7 +81,7 @@ func ansiColorCode(s string) int {
 	for _, c := range s {
 		i += int(c)
 	}
-	colors := []int{FgRed, FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
+	colors := []int{FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
 	return colors[i%len(colors)]
 }
 

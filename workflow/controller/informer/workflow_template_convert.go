@@ -1,6 +1,7 @@
 package informer
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -25,7 +26,7 @@ func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate 
 	return ret
 }
 
-func interfaceToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, error) {
+func interfaceToWorkflowTemplate(object any) (*wfv1.WorkflowTemplate, error) {
 	v := &wfv1.WorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {
@@ -44,7 +45,7 @@ type WorkflowTemplateFromInformerGetter struct {
 	namespace      string
 }
 
-func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+func (getter *WorkflowTemplateFromInformerGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
 
 	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
 	if err != nil {

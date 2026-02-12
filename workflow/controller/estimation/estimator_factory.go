@@ -1,6 +1,7 @@
 package estimation
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -18,7 +19,7 @@ import (
 
 type EstimatorFactory interface {
 	// ALWAYS return as estimator, even if it also returns an error.
-	NewEstimator(wf *wfv1.Workflow) (Estimator, error)
+	NewEstimator(ctx context.Context, wf *wfv1.Workflow) (Estimator, error)
 }
 
 type estimatorFactory struct {
@@ -33,11 +34,11 @@ var (
 	skipWorkflowDurationEstimation = env.LookupEnvStringOr("SKIP_WORKFLOW_DURATION_ESTIMATION", "false")
 )
 
-func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
+func NewEstimatorFactory(ctx context.Context, wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 
-func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
+func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) (Estimator, error) {
 	defaultEstimator := &estimator{wf: wf}
 	if skipWorkflowDurationEstimation == "true" {
 		return defaultEstimator, nil
@@ -51,7 +52,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 		if exists {
 			objs, err := f.wfInformer.GetIndexer().ByIndex(indexName, indexes.MetaNamespaceLabelIndex(wf.Namespace, labelValue))
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to list workflows by index: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to list workflows by index: %w", err)
 			}
 			var newestUn *unstructured.Unstructured
 			for _, obj := range objs {
@@ -72,7 +73,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
-				err = f.hydrator.Hydrate(newestWf)
+				err = f.hydrator.Hydrate(ctx, newestWf)
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed hydrate last workflow: %w", err)
 				}
@@ -81,11 +82,11 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			// we failed to find a base-line in the live set, so we now look in the archive
 			requirements, err := labels.ParseToRequirements(labelName + "=" + labelValue)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %w", err)
 			}
-			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(wf.Namespace, requirements)
+			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(ctx, wf.Namespace, requirements)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %w", err)
 			}
 			return &estimator{wf, baselineWF}, nil
 		}

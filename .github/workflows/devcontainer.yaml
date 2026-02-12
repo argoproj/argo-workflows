@@ -1,0 +1,50 @@
+name: Dev Container
+
+on:
+  push:
+    paths:
+      - ".devcontainer/**"
+      - "hack/k8s-versions.sh"
+      - ".github/workflows/devcontainer.yaml"
+    branches:
+      - main
+  pull_request:
+    paths:
+      - ".devcontainer/**"
+      - "hack/k8s-versions.sh"
+      - ".github/workflows/devcontainer.yaml"
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    if: github.repository == 'argoproj/argo-workflows'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+        with:
+          # Workaround for segfaults under arm64:
+          # https://github.com/docker/setup-qemu-action/issues/198#issuecomment-2653791775
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: Login to registry
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
+      - name: Build dev container image
+        run: make devcontainer-build
+        env:
+          TARGET_PLATFORM: linux/amd64,linux/arm64
+          DEVCONTAINER_PUSH: ${{ github.event_name == 'push' && 'true' || 'false' }}

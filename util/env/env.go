@@ -1,48 +1,52 @@
 package env
 
 import (
+	"context"
 	"os"
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func LookupEnvDurationOr(key string, o time.Duration) time.Duration {
+func LookupEnvDurationOr(ctx context.Context, key string, o time.Duration) time.Duration {
+	logger := logging.RequireLoggerFromContext(ctx)
 	v, found := os.LookupEnv(key)
 	if found && v != "" {
 		d, err := time.ParseDuration(v)
-		if err != nil {
-			log.WithField(key, v).WithError(err).Panic("failed to parse")
-		} else {
+		if err == nil {
 			return d
 		}
+		logger = logger.WithField(key, v).WithError(err)
+		logger.WithPanic().Error(ctx, "failed to parse")
 	}
 	return o
 }
 
-func LookupEnvIntOr(key string, o int) int {
+func LookupEnvIntOr(ctx context.Context, key string, o int) int {
+	logger := logging.RequireLoggerFromContext(ctx)
 	v, found := os.LookupEnv(key)
 	if found && v != "" {
 		d, err := strconv.Atoi(v)
-		if err != nil {
-			log.WithField(key, v).WithError(err).Panic("failed to convert to int")
-		} else {
+		if err == nil {
 			return d
 		}
+		logger = logger.WithField(key, v).WithError(err)
+		logger.WithPanic().Error(ctx, "failed to convert to int")
 	}
 	return o
 }
 
-func LookupEnvFloatOr(key string, o float64) float64 {
+func LookupEnvFloatOr(ctx context.Context, key string, o float64) float64 {
+	logger := logging.RequireLoggerFromContext(ctx)
 	v, found := os.LookupEnv(key)
 	if found && v != "" {
 		d, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			log.WithField(key, v).WithError(err).Panic("failed to convert to float")
-		} else {
+		if err == nil {
 			return d
 		}
+		logger = logger.WithField(key, v).WithError(err)
+		logger.WithPanic().Error(ctx, "failed to convert to float")
 	}
 	return o
 }

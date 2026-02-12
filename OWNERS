@@ -1,5 +1,5 @@
 owners:
-- sarabala1979
+- joibel
 - terrytangyuan
 
 approvers:
@@ -8,9 +8,13 @@ approvers:
 - edlee2121
 - isubasinghe
 - jessesuen
-- joibel
 - juliev0
+- masonm
+- sarabala1979
 - tczhao
 
 reviewers:
+- blkperl
+- eduardodbr
+- jswxstw
 - shuangkun

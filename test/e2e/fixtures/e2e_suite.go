@@ -1,12 +1,13 @@
 package fixtures
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
@@ -40,14 +41,15 @@ import (
 
 const (
 	Namespace = "argo"
-	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
+	Label     = workflow.WorkflowFullName + "/test"     // mark this workflow as a test
+	Backfill  = workflow.WorkflowFullName + "/backfill" // clean backfill workflows
 )
 
-var timeoutBias = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
+var timeoutBias = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
 
-var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
+var defaultTimeout = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
 
-var EnvFactor = env.LookupEnvIntOr("E2E_ENV_FACTOR", 1)
+var EnvFactor = env.LookupEnvIntOr(logging.InitLoggerInContext(), "E2E_ENV_FACTOR", 1)
 
 type E2ESuite struct {
 	suite.Suite
@@ -74,7 +76,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.CheckError(err)
 	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
-	ctx := context.Background()
+	ctx := logging.TestContext(s.T().Context())
 	c, err := configController.Get(ctx)
 	s.CheckError(err)
 	s.Config = c
@@ -83,8 +85,8 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(s.KubeClient, s.Config)
-	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
+	s.Persistence = NewPersistence(ctx, s.KubeClient, s.Config)
+	s.hydrator = hydrator.New(s.Persistence.OffloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
@@ -123,7 +125,7 @@ func (s *E2ESuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *E2ESuite) DeleteResources() {
-	ctx := context.Background()
+	ctx := logging.TestContext(s.T().Context())
 
 	l := func(r schema.GroupVersionResource) string {
 		if r.Resource == "pods" {
@@ -152,8 +154,8 @@ func (s *E2ESuite) DeleteResources() {
 			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
 			s.CheckError(err)
 			for _, item := range resourceList.Items {
-				patch, err := json.Marshal(map[string]interface{}{
-					"metadata": map[string]interface{}{
+				patch, err := json.Marshal(map[string]any{
+					"metadata": map[string]any{
 						"finalizers": []string{},
 					},
 				})
@@ -178,13 +180,24 @@ func (s *E2ESuite) DeleteResources() {
 		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(utils.ListOptions{
+		workflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
 			Namespace:         Namespace,
 			LabelRequirements: parse,
 		})
 		s.CheckError(err)
 		for _, w := range workflows {
-			err := archive.DeleteWorkflow(string(w.UID))
+			err := archive.DeleteWorkflow(ctx, string(w.UID))
+			s.CheckError(err)
+		}
+		parse, err = labels.ParseToRequirements(Backfill)
+		s.CheckError(err)
+		backfillWorkflows, err := archive.ListWorkflows(ctx, utils.ListOptions{
+			Namespace:         Namespace,
+			LabelRequirements: parse,
+		})
+		s.CheckError(err)
+		for _, w := range backfillWorkflows {
+			err := archive.DeleteWorkflow(ctx, string(w.UID))
 			s.CheckError(err)
 		}
 	}
@@ -220,7 +233,7 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 		return "", err
 	}
 
-	ctx := context.Background()
+	ctx := logging.TestContext(s.T().Context())
 	sec, err := clientset.CoreV1().Secrets(Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -244,5 +257,7 @@ func (s *E2ESuite) Given() *Given {
 		hydrator:          s.hydrator,
 		kubeClient:        s.KubeClient,
 		bearerToken:       bearerToken,
+		restConfig:        s.RestConfig,
+		config:            s.Config,
 	}
 }

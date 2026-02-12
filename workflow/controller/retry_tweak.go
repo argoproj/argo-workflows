@@ -11,21 +11,14 @@ import (
 // RetryTweak is a 2nd order function interface for tweaking the retry
 type RetryTweak = func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, pod *apiv1.Pod)
 
-// FindRetryNode locates the closes retry node ancestor to nodeID
+// FindRetryNode locates the closest retry node ancestor to nodeID
 func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
+	if parentNode := nodes.FindByChild(nodeID); parentNode != nil && parentNode.Type == wfv1.NodeTypeRetry {
+		return parentNode
+	}
 	boundaryID := nodes[nodeID].BoundaryID
-	boundaryNode := nodes[boundaryID]
-	for _, node := range nodes {
-		if node.Type != wfv1.NodeTypeRetry {
-			continue
-		}
-		if boundaryID == "" && node.HasChild(nodeID) {
-			return &node
-		} else if boundaryNode.TemplateName != "" && node.TemplateName == boundaryNode.TemplateName {
-			return &node
-		} else if boundaryNode.TemplateRef != nil && node.TemplateRef != nil && node.TemplateRef.Name == boundaryNode.TemplateRef.Name && node.TemplateRef.Template == boundaryNode.TemplateRef.Template {
-			return &node
-		}
+	if parentNode := nodes.FindByChild(boundaryID); parentNode != nil && parentNode.Type == wfv1.NodeTypeRetry {
+		return parentNode
 	}
 	return nil
 }
@@ -36,10 +29,12 @@ func RetryOnDifferentHost(retryNodeName string) RetryTweak {
 		if retryStrategy.Affinity == nil {
 			return
 		}
-		hostNames := wfretry.GetFailHosts(nodes, retryNodeName)
-		hostLabel := env.GetString("RETRY_HOST_NAME_LABEL_KEY", "kubernetes.io/hostname")
-		if hostLabel != "" && len(hostNames) > 0 {
-			pod.Spec.Affinity = wfretry.AddHostnamesToAffinity(hostLabel, hostNames, pod.Spec.Affinity)
+		if retryStrategy.Affinity.NodeAntiAffinity != nil {
+			hostNames := wfretry.GetFailHosts(nodes, retryNodeName)
+			hostLabel := env.GetString("RETRY_HOST_NAME_LABEL_KEY", "kubernetes.io/hostname")
+			if hostLabel != "" && len(hostNames) > 0 {
+				pod.Spec.Affinity = wfretry.AddHostnamesToAffinity(hostLabel, hostNames, pod.Spec.Affinity)
+			}
 		}
 	}
 }

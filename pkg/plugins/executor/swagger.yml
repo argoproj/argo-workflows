@@ -140,12 +140,17 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             mode:
                 description: |-
-                    mode bits to use on this file, must be a value between 0 and 0777
-                    set when loading input artifacts.
+                    mode bits to use on this file, must be a value between 0 and 0777.
+                    Set when loading input artifacts. It is recommended to set the mode value
+                    to ensure the artifact has the expected permissions in your container.
+                    +kubebuilder:validation:Minimum=0
+                    +kubebuilder:validation:Maximum=511
                 format: int32
                 type: integer
             name:
-                description: name of the artifact. must be unique within a template's inputs/outputs.
+                description: |-
+                    name of the artifact. must be unique within a template's inputs/outputs.
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
                 type: string
             optional:
                 description: Make Artifacts optional, if Artifacts doesn't generate or exist
@@ -155,6 +160,8 @@ definitions:
             path:
                 description: Path is the container path to the artifact
                 type: string
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             recurseMode:
@@ -185,6 +192,7 @@ definitions:
             It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
             It is also used to describe the location of multiple artifacts such as the archive location
             of a single workflow step, which the executor will use as a default location to store its files.
+            +kubebuilder:validation:XValidation:rule="(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1",message="at most one artifact location can be specified"
         properties:
             archiveLogs:
                 description: ArchiveLogs indicates if the container logs should be archived
@@ -203,6 +211,8 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             oss:
                 $ref: '#/definitions/OSSArtifact'
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             s3:
@@ -247,12 +257,17 @@ definitions:
                 $ref: '#/definitions/HTTPArtifact'
             mode:
                 description: |-
-                    mode bits to use on this file, must be a value between 0 and 0777
-                    set when loading input artifacts.
+                    mode bits to use on this file, must be a value between 0 and 0777.
+                    Set when loading input artifacts. It is recommended to set the mode value
+                    to ensure the artifact has the expected permissions in your container.
+                    +kubebuilder:validation:Minimum=0
+                    +kubebuilder:validation:Maximum=511
                 format: int32
                 type: integer
             name:
-                description: name of the artifact. must be unique within a template's inputs/outputs.
+                description: |-
+                    name of the artifact. must be unique within a template's inputs/outputs.
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
                 type: string
             optional:
                 description: Make Artifacts optional, if Artifacts doesn't generate or exist
@@ -262,6 +277,8 @@ definitions:
             path:
                 description: Path is the container path to the artifact
                 type: string
+            plugin:
+                $ref: '#/definitions/PluginArtifact'
             raw:
                 $ref: '#/definitions/RawArtifact'
             recurseMode:
@@ -273,6 +290,9 @@ definitions:
                 description: SubPath allows an artifact to be sourced from a subpath within the specified source
                 type: string
         type: object
+    ArtifactPluginName:
+        description: ArtifactPluginName is the name of an artifact plugin
+        type: string
     ArtifactoryArtifact:
         description: ArtifactoryArtifact is the location of an artifactory artifact
         properties:
@@ -289,7 +309,7 @@ definitions:
             $ref: '#/definitions/Artifact'
         type: array
     AzureArtifact:
-        description: AzureArtifact is the location of a an Azure Storage artifact
+        description: AzureArtifact is the location of an Azure Storage artifact
         properties:
             accountKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
@@ -328,6 +348,7 @@ definitions:
                     Must be a filesystem type supported by the host operating system.
                     Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
                     +optional
+                    +default="ext4"
                 type: string
             kind:
                 $ref: '#/definitions/AzureDataDiskKind'
@@ -336,6 +357,7 @@ definitions:
                     readOnly Defaults to false (read/write). ReadOnly here will force
                     the ReadOnly setting in VolumeMounts.
                     +optional
+                    +default=false
                 type: boolean
         title: AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
         type: object
@@ -358,6 +380,12 @@ definitions:
     Backoff:
         description: Backoff is a backoff strategy to use within retryStrategy
         properties:
+            cap:
+                description: |-
+                    Cap is a limit on revised values of the duration parameter. If a
+                    multiplication by the factor parameter would make the duration
+                    exceed the cap then the duration is set to the cap
+                type: string
             duration:
                 description: Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
                 type: string
@@ -415,7 +443,7 @@ definitions:
         description: Cache is the configuration for the type of cache to be used
         properties:
             configMap:
-                $ref: '#/definitions/ConfigMapKeySelector'
+                $ref: '#/definitions/LocalObjectReference'
         type: object
     Capabilities:
         properties:
@@ -563,7 +591,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -591,7 +618,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -633,7 +659,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -686,7 +711,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -1155,7 +1179,9 @@ definitions:
         description: Counter is a Counter prometheus metric
         properties:
             value:
-                description: Value is the value of the metric
+                description: |-
+                    Value is the value of the metric
+                    +kubebuilder:validation:MinLength=1
                 type: string
         type: object
     CreateS3BucketOptions:
@@ -1166,7 +1192,12 @@ definitions:
                 type: boolean
         type: object
     DAGTask:
-        description: DAGTask represents a node in the graph during DAG execution
+        description: |-
+            DAGTask represents a node in the graph during DAG execution
+            Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
+            +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.dependencies)",message="cannot use both 'depends' and 'dependencies'"
+            +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.continueOn)",message="cannot use 'continueOn' when using 'depends'"
+            +kubebuilder:validation:XValidation:rule="!(has(self.depends) || has(self.dependencies)) || !self.name.matches('^[0-9]')",message="task name cannot begin with a digit when using 'depends' or 'dependencies'"
         properties:
             arguments:
                 $ref: '#/definitions/Arguments'
@@ -1185,14 +1216,18 @@ definitions:
             inline:
                 $ref: '#/definitions/Template'
             name:
-                description: Name is the name of the target
+                description: |-
+                    Name is the name of the target
+                    +kubebuilder:validation:MaxLength=128
+                    +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
                 type: string
             onExit:
                 description: |-
                     OnExit is a template reference which is invoked at the end of the
                     template, irrespective of the success, failure, or error of the
                     primary template.
-                    DEPRECATED: Use Hooks[exit].Template instead.
+
+                    Deprecated: Use Hooks[exit].Template instead.
                 type: string
             template:
                 description: Name of template to execute
@@ -1203,7 +1238,12 @@ definitions:
                 description: When is an expression in which the task should conditionally execute
                 type: string
             withItems:
-                description: WithItems expands a task into multiple parallel tasks from the items in the list
+                description: |-
+                    WithItems expands a task into multiple parallel tasks from the items in the list
+                    Note: The structure of WithItems is free-form, so we need
+                    "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+                    +kubebuilder:validation:Schemaless
+                    +kubebuilder:pruning:PreserveUnknownFields
                 items:
                     $ref: '#/definitions/Item'
                 type: array
@@ -1233,8 +1273,11 @@ definitions:
             tasks:
                 description: |-
                     Tasks are a list of DAG tasks
+                    MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                     +patchStrategy=merge
                     +patchMergeKey=name
+                    +kubebuilder:validation:MinItems=1
+                    +kubebuilder:validation:MaxItems=200
                 items:
                     $ref: '#/definitions/DAGTask'
                 type: array
@@ -1332,13 +1375,13 @@ definitions:
         title: Represents an empty directory for a pod.
         type: object
     EnvFromSource:
-        description: EnvFromSource represents the source of a set of ConfigMaps
+        description: EnvFromSource represents the source of a set of ConfigMaps or Secrets
         properties:
             configMapRef:
                 $ref: '#/definitions/ConfigMapEnvSource'
             prefix:
                 description: |-
-                    An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.
+                    Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.
                     +optional
                 type: string
             secretRef:
@@ -1598,9 +1641,12 @@ definitions:
                     +optional
                     +default=""
                 type: string
+        title: GRPCAction specifies an action involving a GRPC service.
         type: object
     Gauge:
-        description: Gauge is a Gauge prometheus metric
+        description: |-
+            Gauge is a Gauge prometheus metric
+            +kubebuilder:validation:XValidation:rule="!has(self.realtime) || !self.realtime || !self.value.contains('resourcesDuration.')",message="'resourcesDuration.*' metrics cannot be used in real-time gauges"
         properties:
             operation:
                 $ref: '#/definitions/GaugeOperation'
@@ -1611,13 +1657,17 @@ definitions:
                 description: |-
                     Value is the value to be used in the operation with the metric's current value. If no operation is set,
                     value is the value of the metric
+                    MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+                    +kubebuilder:validation:MinLength=1
+                    +kubebuilder:validation:MaxLength=256
                 type: string
         type: object
     GaugeOperation:
+        description: +kubebuilder:validation:Enum=Set;Add;Sub
         title: A GaugeOperation is the set of operations that can be used in a gauge metric.
         type: string
     GitArtifact:
-        description: GitArtifact is the location of an git artifact
+        description: GitArtifact is the location of a git artifact
         properties:
             branch:
                 description: Branch is the branch to fetch when `SingleBranch` is enabled
@@ -1875,7 +1925,9 @@ definitions:
                     $ref: '#/definitions/Amount'
                 type: array
             value:
-                description: Value is the value of the metric
+                description: |-
+                    Value is the value of the metric
+                    +kubebuilder:validation:MinLength=1
                 type: string
         type: object
     HostAlias:
@@ -1951,6 +2003,7 @@ definitions:
                     iscsiInterface is the interface Name that uses an iSCSI transport.
                     Defaults to 'default' (tcp).
                     +optional
+                    +default="default"
                 type: string
             lun:
                 description: lun represents iSCSI Target Lun number.
@@ -1980,6 +2033,22 @@ definitions:
                 type: string
         title: Represents an ISCSI disk.
         type: object
+    ImageVolumeSource:
+        properties:
+            pullPolicy:
+                $ref: '#/definitions/PullPolicy'
+            reference:
+                description: |-
+                    Required: Image or artifact reference to be used.
+                    Behaves in the same way as pod.spec.containers[*].image.
+                    Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                    More info: https://kubernetes.io/docs/concepts/containers/images
+                    This field is optional to allow higher level config management to default or override
+                    container images in workload controllers like Deployments and StatefulSets.
+                    +optional
+                type: string
+        title: ImageVolumeSource represents a image volume resource.
+        type: object
     Inputs:
         description: Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
         properties:
@@ -1988,8 +2057,10 @@ definitions:
             parameters:
                 description: |-
                     Parameters are a list of parameters passed as inputs
+                    MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
                     +patchStrategy=merge
                     +patchMergeKey=name
+                    +kubebuilder:validation:MaxItems=500
                 items:
                     $ref: '#/definitions/Parameter'
                 type: array
@@ -2015,9 +2086,7 @@ definitions:
             TODO: Rename to Int32OrString
         type: object
     Item:
-        description: |-
-            +protobuf.options.(gogoproto.goproto_stringer)=false
-            +kubebuilder:validation:Type=object
+        description: +protobuf.options.(gogoproto.goproto_stringer)=false
         title: |-
             Item expands a single workflow step into multiple parallel steps
             The value of Item can be a map, string, bool, or number
@@ -2107,6 +2176,8 @@ definitions:
                 $ref: '#/definitions/LifecycleHandler'
             preStop:
                 $ref: '#/definitions/LifecycleHandler'
+            stopSignal:
+                $ref: '#/definitions/Signal'
         type: object
     LifecycleHandler:
         description: |-
@@ -2143,8 +2214,16 @@ definitions:
         type: object
     LocalObjectReference:
         description: |-
-            LocalObjectReference contains enough information to let you locate the
-            referenced object inside the same namespace.
+            New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+            1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+            restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+            Those cannot be well described when embedded.
+            2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+            3. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+            will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+
+            Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+            For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
             +structType=atomic
         properties:
             name:
@@ -2153,13 +2232,15 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
                     +kubebuilder:default=""
                     TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
+        title: |-
+            LocalObjectReference contains enough information to let you locate the
+            referenced object inside the same namespace.
         type: object
     ManagedFieldsEntry:
         description: |-
@@ -2228,7 +2309,7 @@ definitions:
                 type: string
         type: object
     Metadata:
-        description: Pod metdata
+        description: Pod metadata
         properties:
             annotations:
                 additionalProperties:
@@ -2243,6 +2324,7 @@ definitions:
         description: MetricLabel is a single label for a prometheus metric
         properties:
             key:
+                description: +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
                 type: string
             value:
                 type: string
@@ -2251,7 +2333,10 @@ definitions:
         description: Metrics are a list of metrics emitted from a Workflow/Template
         properties:
             prometheus:
-                description: Prometheus is a list of prometheus metrics to be emitted
+                description: |-
+                    Prometheus is a list of prometheus metrics to be emitted
+                    MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
+                    +kubebuilder:validation:MaxItems=100
                 items:
                     $ref: '#/definitions/Prometheus'
                 type: array
@@ -2263,6 +2348,9 @@ definitions:
     Mutex:
         description: Mutex holds Mutex configuration
         properties:
+            database:
+                description: Database specifies this is database controlled if this is set true
+                type: boolean
             name:
                 description: name of the mutex
                 type: string
@@ -2509,7 +2597,7 @@ definitions:
                     $ref: '#/definitions/Parameter'
                 type: array
             result:
-                description: Result holds the result (stdout) of a script template
+                description: Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
                 type: string
         type: object
     OwnerReference:
@@ -2552,9 +2640,7 @@ definitions:
             uid:
                 $ref: '#/definitions/UID'
         type: object
-    ParallelSteps:
-        description: +kubebuilder:validation:Type=array
-        type: object
+    ParallelSteps: {}
     Parameter:
         description: Parameter indicate a passed string parameter to a service template with an optional default value
         properties:
@@ -2563,7 +2649,9 @@ definitions:
             description:
                 $ref: '#/definitions/AnyString'
             enum:
-                description: Enum holds a list of string values to choose from, for the actual value of the parameter
+                description: |-
+                    Enum holds a list of string values to choose from, for the actual value of the parameter
+                    +kubebuilder:validation:MinItems=1
                 items:
                     $ref: '#/definitions/AnyString'
                 type: array
@@ -2573,7 +2661,9 @@ definitions:
                     '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
                 type: string
             name:
-                description: Name is the parameter name
+                description: |-
+                    Name is the parameter name
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
                 type: string
             value:
                 $ref: '#/definitions/AnyString'
@@ -2624,7 +2714,7 @@ definitions:
                     set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
                     exists.
                     More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-                    (Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.
+                    (Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).
                     +featureGate=VolumeAttributesClass
                     +optional
                 type: string
@@ -2862,6 +2952,22 @@ definitions:
     Plugin:
         description: Plugin is an Object with exactly one key
         type: object
+    PluginArtifact:
+        description: PluginArtifact is the location of a plugin artifact
+        properties:
+            configuration:
+                description: Configuration is the plugin defined configuration for the artifact driver plugin
+                type: string
+            connectionTimeoutSeconds:
+                description: ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
+                format: int32
+                type: integer
+            key:
+                description: Key is the path in the artifact repository where the artifact resides
+                type: string
+            name:
+                $ref: '#/definitions/ArtifactPluginName'
+        type: object
     PodAffinity:
         properties:
             preferredDuringSchedulingIgnoredDuringExecution:
@@ -2917,7 +3023,7 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                     Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                    This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+
                     +listType=atomic
                     +optional
                 items:
@@ -2933,7 +3039,7 @@ definitions:
                     pod labels will be ignored. The default value is empty.
                     The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                     Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                    This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+
                     +listType=atomic
                     +optional
                 items:
@@ -3001,6 +3107,9 @@ definitions:
             when volume is mounted.
             +enum
         type: string
+    PodSELinuxChangePolicy:
+        title: PodSELinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod.
+        type: string
     PodSecurityContext:
         description: |-
             Some fields are also present in container.securityContext.  Field values of
@@ -3057,18 +3166,22 @@ definitions:
                     +optional
                 format: int64
                 type: integer
+            seLinuxChangePolicy:
+                $ref: '#/definitions/PodSELinuxChangePolicy'
             seLinuxOptions:
                 $ref: '#/definitions/SELinuxOptions'
             seccompProfile:
                 $ref: '#/definitions/SeccompProfile'
             supplementalGroups:
                 description: |-
-                    A list of groups applied to the first process run in each container, in addition
-                    to the container's primary GID, the fsGroup (if specified), and group memberships
-                    defined in the container image for the uid of the container process. If unspecified,
-                    no additional groups are added to any container. Note that group memberships
-                    defined in the container image for the uid of the container process are still effective,
-                    even if they are not included in this list.
+                    A list of groups applied to the first process run in each container, in
+                    addition to the container's primary GID and fsGroup (if specified).  If
+                    the SupplementalGroupsPolicy feature is enabled, the
+                    supplementalGroupsPolicy field determines whether these are in addition
+                    to or instead of any group memberships defined in the container image.
+                    If unspecified, no additional groups are added, though group memberships
+                    defined in the container image may still be used, depending on the
+                    supplementalGroupsPolicy field.
                     Note that this field cannot be set when spec.os.name is windows.
                     +optional
                     +listType=atomic
@@ -3076,6 +3189,8 @@ definitions:
                     format: int64
                     type: integer
                 type: array
+            supplementalGroupsPolicy:
+                $ref: '#/definitions/SupplementalGroupsPolicy'
             sysctls:
                 description: |-
                     Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
@@ -3208,7 +3323,8 @@ definitions:
                 type: integer
             sources:
                 description: |-
-                    sources is the list of volume projections
+                    sources is the list of volume projections. Each entry in this list
+                    handles one source.
                     +optional
                     +listType=atomic
                 items:
@@ -3223,7 +3339,9 @@ definitions:
             gauge:
                 $ref: '#/definitions/Gauge'
             help:
-                description: Help is a string that describes the metric
+                description: |-
+                    Help is a string that describes the metric
+                    +kubebuilder:validation:MinLength=1
                 type: string
             histogram:
                 $ref: '#/definitions/Histogram'
@@ -3233,7 +3351,9 @@ definitions:
                     $ref: '#/definitions/MetricLabel'
                 type: array
             name:
-                description: Name is the name of the metric
+                description: |-
+                    Name is the name of the metric
+                    +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
                 type: string
             when:
                 description: When is a conditional statement that decides when to emit the metric
@@ -3381,6 +3501,7 @@ definitions:
                     Default is /etc/ceph/keyring.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                     +optional
+                    +default="/etc/ceph/keyring"
                 type: string
             monitors:
                 description: |-
@@ -3396,6 +3517,7 @@ definitions:
                     Default is rbd.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                     +optional
+                    +default="rbd"
                 type: string
             readOnly:
                 description: |-
@@ -3412,6 +3534,7 @@ definitions:
                     Default is admin.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                     +optional
+                    +default="admin"
                 type: string
         title: Represents a Rados Block Device mount that lasts the lifetime of a pod.
         type: object
@@ -3432,6 +3555,14 @@ definitions:
                     Name must match the name of one entry in pod.spec.resourceClaims of
                     the Pod where this field is used. It makes that resource available
                     inside a container.
+                type: string
+            request:
+                description: |-
+                    Request is the name chosen for a request in the referenced claim.
+                    If empty, everything from the claim is made available, otherwise
+                    only the result of this request.
+
+                    +optional
                 type: string
         title: ResourceClaim references one entry in PodSpec.ResourceClaims.
         type: object
@@ -3488,12 +3619,15 @@ definitions:
         title: ResourceResizeRestartPolicy specifies how to handle container resource resize.
         type: string
     ResourceTemplate:
-        description: ResourceTemplate is a template subtype to manipulate kubernetes resources
+        description: |-
+            ResourceTemplate is a template subtype to manipulate kubernetes resources
+            +kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
         properties:
             action:
                 description: |-
                     Action is the action to perform to the resource.
                     Must be one of: get, create, apply, delete, replace, patch
+                    +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
                 type: string
             failureCondition:
                 description: |-
@@ -3519,6 +3653,7 @@ definitions:
                 description: |-
                     MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
                     Must be one of: strategic, merge, json
+                    +kubebuilder:validation:Enum=strategic;merge;json
                 type: string
             setOwnerReference:
                 description: SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
@@ -3540,6 +3675,7 @@ definitions:
         title: RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
         type: object
     RetryPolicy:
+        description: +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
         type: string
     RetryStrategy:
         description: RetryStrategy provides controls on how to retry a workflow step
@@ -3644,6 +3780,7 @@ definitions:
                     Ex. "ext4", "xfs", "ntfs".
                     Default is "xfs".
                     +optional
+                    +default="xfs"
                 type: string
             gateway:
                 description: gateway is the host address of the ScaleIO API Gateway.
@@ -3671,6 +3808,7 @@ definitions:
                     storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
                     Default is ThinProvisioned.
                     +optional
+                    +default="ThinProvisioned"
                 type: string
             storagePool:
                 description: |-
@@ -3800,7 +3938,9 @@ definitions:
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             source:
-                description: Source contains the source code of the script to execute
+                description: |-
+                    Source contains the source code of the script to execute
+                    +optional
                 type: string
             startupProbe:
                 $ref: '#/definitions/Probe'
@@ -3905,7 +4045,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -3933,7 +4072,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -3974,7 +4112,6 @@ definitions:
                     This field is effectively required, but due to backwards compatibility is
                     allowed to be empty. Instances of this type with an empty value here are
                     almost certainly wrong.
-                    TODO: Add other useful fields. apiVersion, kind, uid?
                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
                     +default=""
@@ -4113,12 +4250,16 @@ definitions:
         properties:
             configMapKeyRef:
                 $ref: '#/definitions/ConfigMapKeySelector'
+            database:
+                $ref: '#/definitions/SyncDatabaseRef'
             namespace:
                 default: '[namespace of workflow]'
                 type: string
         type: object
     Sequence:
-        description: Sequence expands a workflow step into numeric range
+        description: |-
+            Sequence expands a workflow step into numeric range
+            +kubebuilder:validation:XValidation:rule="!(has(self.count) && has(self.end))",message="only one of count or end can be defined"
         properties:
             count:
                 $ref: '#/definitions/IntOrString'
@@ -4162,6 +4303,11 @@ definitions:
                     token into.
                 type: string
         type: object
+    Signal:
+        description: |-
+            Signal defines the stop signal of containers
+            +enum
+        type: string
     SleepAction:
         properties:
             seconds:
@@ -4207,6 +4353,12 @@ definitions:
                 type: string
         title: Represents a StorageOS persistent volume resource.
         type: object
+    SupplementalGroupsPolicy:
+        description: |-
+            SupplementalGroupsPolicy defines how supplemental groups
+            of the first container processes are calculated.
+            +enum
+        type: string
     SuppliedValueFrom:
         title: SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
         type: object
@@ -4219,18 +4371,19 @@ definitions:
                     Could also be a Duration, e.g.: "2m", "6h"
                 type: string
         type: object
+    SyncDatabaseRef:
+        properties:
+            key:
+                type: string
+        type: object
     Synchronization:
         description: Synchronization holds synchronization lock configuration
         properties:
-            mutex:
-                $ref: '#/definitions/Mutex'
             mutexes:
                 description: 'v3.6 and after: Mutexes holds the list of Mutex lock details'
                 items:
                     $ref: '#/definitions/Mutex'
                 type: array
-            semaphore:
-                $ref: '#/definitions/SemaphoreRef'
             semaphores:
                 description: 'v3.6 and after: Semaphores holds the list of Semaphores configuration'
                 items:
@@ -4278,6 +4431,11 @@ definitions:
                 $ref: '#/definitions/IntOrString'
             affinity:
                 $ref: '#/definitions/Affinity'
+            annotations:
+                additionalProperties:
+                    type: string
+                description: Annotations is a list of annotations to add to the template at runtime
+                type: object
             archiveLocation:
                 $ref: '#/definitions/ArtifactLocation'
             automountServiceAccountToken:
@@ -4330,7 +4488,10 @@ definitions:
             metrics:
                 $ref: '#/definitions/Metrics'
             name:
-                description: Name is the name of the template
+                description: |-
+                    Name is the name of the template
+                    +kubebuilder:validation:MaxLength=128
+                    +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
                 type: string
             nodeSelector:
                 additionalProperties:
@@ -4346,6 +4507,7 @@ definitions:
                     Parallelism limits the max total parallel pods that can execute at the same time within the
                     boundaries of this template invocation. If additional steps/dag templates are invoked, the
                     pods created by those templates will not be counted towards this total.
+                    +kubebuilder:validation:Minimum=1
                 format: int64
                 type: integer
             plugin:
@@ -4355,10 +4517,6 @@ definitions:
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                     container fields which are not strings (e.g. resource limits).
                 type: string
-            priority:
-                description: Priority to apply to workflow pods.
-                format: int32
-                type: integer
             priorityClassName:
                 description: PriorityClassName to apply to workflow pods.
                 type: string
@@ -4390,7 +4548,9 @@ definitions:
                     $ref: '#/definitions/UserContainer'
                 type: array
             steps:
-                description: Steps define a series of sequential/parallel workflow steps
+                description: |-
+                    Steps define a series of sequential/parallel workflow steps
+                    +kubebuilder:validation:MinItems=1
                 items:
                     $ref: '#/definitions/ParallelSteps'
                 type: array
@@ -4488,8 +4648,19 @@ definitions:
         type: integer
     TypedLocalObjectReference:
         description: |-
-            TypedLocalObjectReference contains enough information to let you locate the
-            typed referenced object inside the same namespace.
+            New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+            1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+            restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+            Those cannot be well described when embedded.
+            2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+            3. The fields are both imprecise and overly precise.  Kind is not a precise mapping to a URL. This can produce ambiguity
+            during interpretation and require a REST mapping.  In most cases, the dependency is on the group,resource tuple
+            and the version of the actual struct is irrelevant.
+            4. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+            will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+
+            Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+            For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
             +structType=atomic
         properties:
             apiGroup:
@@ -4505,8 +4676,12 @@ definitions:
             name:
                 description: Name is the name of resource being referenced
                 type: string
+        title: |-
+            TypedLocalObjectReference contains enough information to let you locate the
+            typed referenced object inside the same namespace.
         type: object
     TypedObjectReference:
+        description: TypedObjectReference contains enough information to let you locate the typed referenced object
         properties:
             apiGroup:
                 description: |-
@@ -4798,6 +4973,8 @@ definitions:
                 $ref: '#/definitions/GlusterfsVolumeSource'
             hostPath:
                 $ref: '#/definitions/HostPathVolumeSource'
+            image:
+                $ref: '#/definitions/ImageVolumeSource'
             iscsi:
                 $ref: '#/definitions/ISCSIVolumeSource'
             name:
@@ -4877,7 +5054,7 @@ definitions:
         title: VolumeMount describes a mounting of a Volume within a container.
         type: object
     VolumeProjection:
-        description: Projection that may be projected along with other supported volume types
+        description: Exactly one of these fields must be set.
         properties:
             clusterTrustBundle:
                 $ref: '#/definitions/ClusterTrustBundleProjection'
@@ -4889,6 +5066,7 @@ definitions:
                 $ref: '#/definitions/SecretProjection'
             serviceAccountToken:
                 $ref: '#/definitions/ServiceAccountTokenProjection'
+        title: Projection that may be projected along with other supported volume types.
         type: object
     VolumeResourceRequirements:
         properties:

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -20,16 +22,16 @@ const (
 
 func TestLoad(t *testing.T) {
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
-	lf, err := os.CreateTemp("", LoadFileName)
+	lf, err := os.CreateTemp(t.TempDir(), LoadFileName)
+	lf.Close()
 	require.NoError(t, err)
-	defer os.Remove(lf.Name())
 
 	art := &wfv1.Artifact{}
 	art.Raw = &wfv1.RawArtifact{
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	err = driver.Load(art, lf.Name())
+	err = driver.Load(logging.TestContext(t.Context()), art, lf.Name())
 	require.NoError(t, err)
 
 	dat, err := os.ReadFile(lf.Name())
@@ -44,7 +46,7 @@ func TestOpenStream(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	rc, err := driver.OpenStream(art)
+	rc, err := driver.OpenStream(logging.TestContext(t.Context()), art)
 	require.NoError(t, err)
 	defer rc.Close()
 

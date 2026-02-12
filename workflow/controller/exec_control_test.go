@@ -8,13 +8,15 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(&v1alpha1.Workflow{
+	woc := newWorkflowOperationCtx(ctx, &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{
 			Nodes: v1alpha1.Nodes{
 				"a": v1alpha1.NodeStatus{
@@ -28,7 +30,7 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 
 	assert.NotNil(t, woc.wf.Status.Nodes["a"].Daemoned)
 	// Error will be that it cannot find the pod, but we only care about the node status for this test
-	woc.killDaemonedChildren("a")
+	woc.killDaemonedChildren(ctx, "a")
 	assert.Nil(t, woc.wf.Status.Nodes["a"].Daemoned)
 }
 
@@ -131,29 +133,31 @@ status:
 `
 
 func TestHandleExecutionControlErrorMarksProvidedNode(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	workflow := v1alpha1.MustUnmarshalWorkflow(workflowWithContainerSetPodInPending)
 
-	woc := newWorkflowOperationCtx(workflow, controller)
+	woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 	containerSetNodeName := "container-set-termination-demopw5vv-842041608"
 
 	assert.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[containerSetNodeName].Phase)
 
-	woc.handleExecutionControlError(containerSetNodeName, &sync.RWMutex{}, "terminated")
+	woc.handleExecutionControlError(ctx, containerSetNodeName, &sync.RWMutex{}, "terminated")
 
 	assert.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[containerSetNodeName].Phase)
 }
 
 func TestHandleExecutionControlErrorMarksChildNodes(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	workflow := v1alpha1.MustUnmarshalWorkflow(workflowWithContainerSetPodInPending)
 
-	woc := newWorkflowOperationCtx(workflow, controller)
+	woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 	containerSetNodeName := "container-set-termination-demopw5vv-842041608"
 	step1NodeName := "container-set-termination-demopw5vv-893664226"
@@ -162,7 +166,7 @@ func TestHandleExecutionControlErrorMarksChildNodes(t *testing.T) {
 	assert.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[step1NodeName].Phase)
 	assert.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
 
-	woc.handleExecutionControlError(containerSetNodeName, &sync.RWMutex{}, "terminated")
+	woc.handleExecutionControlError(ctx, containerSetNodeName, &sync.RWMutex{}, "terminated")
 
 	assert.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[step1NodeName].Phase)
 	assert.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)

@@ -10,6 +10,8 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -39,12 +41,12 @@ func TestUnmarshalJSON(t *testing.T) {
 					IssuedAt:  &testissuedAt,
 				},
 				ServiceAccountName: "",
-				RawClaim: map[string]interface{}{
-					"ad_groups":         []interface{}{"argo_admin", "argo_readonly"},
-					"amr":               []interface{}{"USERNAME_PASSWORD"},
-					"aud":               []interface{}{"example-aud"},
-					"clientAppRoles":    []interface{}{"Authenticated Client", "Cross Tenant"},
-					"userAppRoles":      []interface{}{"Authenticated", "Global Viewer", "Identity Domain Administrator"},
+				RawClaim: map[string]any{
+					"ad_groups":         []any{"argo_admin", "argo_readonly"},
+					"amr":               []any{"USERNAME_PASSWORD"},
+					"aud":               []any{"example-aud"},
+					"clientAppRoles":    []any{"Authenticated Client", "Cross Tenant"},
+					"userAppRoles":      []any{"Authenticated", "Global Viewer", "Identity Domain Administrator"},
 					"ca_guid":           "test-ca_guid",
 					"client_guid":       "adsf34534645654653454",
 					"client_id":         "tokenGenerator",
@@ -95,12 +97,12 @@ func TestUnmarshalJSON(t *testing.T) {
 				},
 				Groups:             []string{"argo_admin", "argo_readonly"},
 				ServiceAccountName: "",
-				RawClaim: map[string]interface{}{
-					"groups":            []interface{}{"argo_admin", "argo_readonly"},
-					"amr":               []interface{}{"USERNAME_PASSWORD"},
-					"aud":               []interface{}{"example-aud"},
-					"clientAppRoles":    []interface{}{"Authenticated Client", "Cross Tenant"},
-					"userAppRoles":      []interface{}{"Authenticated", "Global Viewer", "Identity Domain Administrator"},
+				RawClaim: map[string]any{
+					"groups":            []any{"argo_admin", "argo_readonly"},
+					"amr":               []any{"USERNAME_PASSWORD"},
+					"aud":               []any{"example-aud"},
+					"clientAppRoles":    []any{"Authenticated Client", "Cross Tenant"},
+					"userAppRoles":      []any{"Authenticated", "Global Viewer", "Identity Domain Administrator"},
 					"ca_guid":           "test-ca_guid",
 					"client_guid":       "adsf34534645654653454",
 					"client_id":         "tokenGenerator",
@@ -140,7 +142,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			data:        `{"email_verified":"true"}`,
 			expectedErr: nil,
 			expectedClaims: &Claims{
-				RawClaim: map[string]interface{}{
+				RawClaim: map[string]any{
 					"email_verified": "true",
 				},
 				EmailVerified: true,
@@ -151,7 +153,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			data:        `{"email_verified":true}`,
 			expectedErr: nil,
 			expectedClaims: &Claims{
-				RawClaim: map[string]interface{}{
+				RawClaim: map[string]any{
 					"email_verified": true,
 				},
 				EmailVerified: true,
@@ -162,7 +164,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			data:        `{}`,
 			expectedErr: nil,
 			expectedClaims: &Claims{
-				RawClaim: map[string]interface{}{},
+				RawClaim: map[string]any{},
 			},
 		},
 	}
@@ -185,11 +187,11 @@ func TestGetCustomGroup(t *testing.T) {
 	})
 	t.Run("CustomGroupSet", func(t *testing.T) {
 		tGroup := []string{"my-group"}
-		tGroupsIf := make([]interface{}, len(tGroup))
+		tGroupsIf := make([]any, len(tGroup))
 		for i := range tGroup {
 			tGroupsIf[i] = tGroup[i]
 		}
-		claims := &Claims{RawClaim: map[string]interface{}{
+		claims := &Claims{RawClaim: map[string]any{
 			"ad_groups": tGroupsIf,
 		}}
 		groups, err := claims.GetCustomGroup(("ad_groups"))
@@ -198,11 +200,11 @@ func TestGetCustomGroup(t *testing.T) {
 	})
 	t.Run("CustomGroupNotString", func(t *testing.T) {
 		tGroup := []int{0}
-		tGroupsIf := make([]interface{}, len(tGroup))
+		tGroupsIf := make([]any, len(tGroup))
 		for i := range tGroup {
 			tGroupsIf[i] = tGroup[i]
 		}
-		claims := &Claims{RawClaim: map[string]interface{}{
+		claims := &Claims{RawClaim: map[string]any{
 			"ad_groups": tGroupsIf,
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
@@ -210,7 +212,7 @@ func TestGetCustomGroup(t *testing.T) {
 	})
 	t.Run("CustomGroupNotSlice", func(t *testing.T) {
 		tGroup := "None"
-		claims := &Claims{RawClaim: map[string]interface{}{
+		claims := &Claims{RawClaim: map[string]any{
 			"ad_groups": tGroup,
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
@@ -218,12 +220,12 @@ func TestGetCustomGroup(t *testing.T) {
 	})
 }
 
-type HttpClientMock struct {
+type HTTPClientMock struct {
 	StatusCode int
 	Body       io.ReadCloser
 }
 
-func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
+func (c *HTTPClientMock) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: c.StatusCode,
 		Body:       c.Body,
@@ -232,14 +234,15 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 
 func TestGetUserInfoGroups(t *testing.T) {
 	t.Run("UserInfoGroupsReturn", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
 		userInfo := UserInfo{Groups: []string{"Everyone"}}
 		userInfoBytes, _ := json.Marshal(userInfo)
 		body := io.NopCloser(bytes.NewReader(userInfoBytes))
 
-		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
+		httpClient = &HTTPClientMock{StatusCode: 200, Body: body}
 
 		claims := &Claims{}
-		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
+		groups, err := claims.GetUserInfoGroups(ctx, httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
 		assert.Equal(t, []string{"Everyone"}, groups)
 		require.NoError(t, err)
 	})

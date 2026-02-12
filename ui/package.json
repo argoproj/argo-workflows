@@ -34,9 +34,12 @@
         "react-dom": "^18.3.1",
         "react-markdown": "^8.0.7",
         "react-monaco-editor": "^0.50.1",
+        "react-router": "^4.3.1",
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
-        "superagent": "^8.1.2",
+        "rxjs": "^7.8.1",
+        "superagent": "^10.2.3",
+        "xterm": "^4.19.0",
         "yaml": "^2.5.1"
     },
     "devDependencies": {
@@ -44,6 +47,9 @@
         "@babel/preset-env": "^7.22.10",
         "@fortawesome/fontawesome-free": "^6.5.1",
         "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+        "@testing-library/dom": "^10.4.0",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.3.0",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.3.1",
         "@types/dagre": "^0.7.52",
@@ -87,6 +93,7 @@
     },
     "resolutions": {
         "semver": "^7.5.2",
-        "types-ramda": "0.29.4"
-    }
+        "types-ramda": "0.29.4",
+        "qs": ">=6.14.1"
+	}
 }

@@ -12,10 +12,10 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func createWorkflowTemplate(wfClientset wfclientset.Interface, yamlStr string) error {
-	ctx := context.Background()
+func createWorkflowTemplate(ctx context.Context, wfClientset wfclientset.Interface, yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
 	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(ctx, wftmpl, metav1.CreateOptions{})
 	if err != nil && apierr.IsAlreadyExists(err) {
@@ -103,115 +103,125 @@ spec:
 func TestGetTemplateByName(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := logging.TestContext(t.Context())
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
-	tmpl, err := ctx.GetTemplateByName("whalesay")
+	tmpl, err := tplCtx.GetTemplateByName(ctx, "whalesay")
 	require.NoError(t, err)
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
-	_, err = ctx.GetTemplateByName("unknown")
+	_, err = tplCtx.GetTemplateByName(ctx, "unknown")
 	require.EqualError(t, err, "template unknown not found")
 }
 
 func TestGetTemplateFromRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
-	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
+	err := createWorkflowTemplate(ctx, wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = createWorkflowTemplate(wfClientset, someWorkflowTemplateYaml)
+	err = createWorkflowTemplate(ctx, wfClientset, someWorkflowTemplateYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	// Get the template of existing template reference.
 	tmplRef := wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}
-	tmpl, err := ctx.GetTemplateFromRef(&tmplRef)
+	tmpl, err := tplCtx.GetTemplateFromRef(ctx, &tmplRef)
 	require.NoError(t, err)
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of unexisting template reference.
 	tmplRef = wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}
-	_, err = ctx.GetTemplateFromRef(&tmplRef)
+	_, err = tplCtx.GetTemplateFromRef(ctx, &tmplRef)
 	require.EqualError(t, err, "workflow template unknown-workflow-template not found")
 
 	// Get the template of unexisting template name of existing template reference.
 	tmplRef = wfv1.TemplateRef{Name: "some-workflow-template", Template: "unknown"}
-	_, err = ctx.GetTemplateFromRef(&tmplRef)
+	_, err = tplCtx.GetTemplateFromRef(ctx, &tmplRef)
 	require.EqualError(t, err, "template unknown not found in workflow template some-workflow-template")
 }
 
 func TestGetTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
-	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
+	err := createWorkflowTemplate(ctx, wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = createWorkflowTemplate(wfClientset, someWorkflowTemplateYaml)
+	err = createWorkflowTemplate(ctx, wfClientset, someWorkflowTemplateYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	// Get the template of existing template name.
 	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
-	tmpl, err := ctx.GetTemplate(&tmplHolder)
+	tmpl, err := tplCtx.GetTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of unexisting template name.
 	tmplHolder = wfv1.WorkflowStep{Template: "unexisting"}
-	_, err = ctx.GetTemplate(&tmplHolder)
+	_, err = tplCtx.GetTemplate(ctx, &tmplHolder)
 	require.EqualError(t, err, "template unexisting not found")
 
 	// Get the template of existing template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	tmpl, err = ctx.GetTemplate(&tmplHolder)
+	tmpl, err = tplCtx.GetTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of unexisting template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
-	_, err = ctx.GetTemplate(&tmplHolder)
+	_, err = tplCtx.GetTemplate(ctx, &tmplHolder)
 	require.EqualError(t, err, "workflow template unknown-workflow-template not found")
 }
 
 func TestGetCurrentTemplateBase(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	// Get the template base of existing template name.
-	tmplBase := ctx.GetCurrentTemplateBase()
+	tmplBase := tplCtx.GetCurrentTemplateBase()
 	wftmpl, ok := tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 }
 
 func TestWithTemplateHolder(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
-	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
+	err := createWorkflowTemplate(ctx, wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = createWorkflowTemplate(wfClientset, someWorkflowTemplateYaml)
+	err = createWorkflowTemplate(ctx, wfClientset, someWorkflowTemplateYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	var tmplGetter wfv1.TemplateHolder
 	// Get the template base of existing template name.
 	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
-	newCtx, err := ctx.WithTemplateHolder(&tmplHolder)
+	newCtx, err := tplCtx.WithTemplateHolder(ctx, &tmplHolder)
 	require.NoError(t, err)
 	tmplGetter, ok := newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
@@ -219,7 +229,7 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	// Get the template base of unexisting template name.
 	tmplHolder = wfv1.WorkflowStep{Template: "unknown"}
-	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
+	newCtx, err = tplCtx.WithTemplateHolder(ctx, &tmplHolder)
 	require.NoError(t, err)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
@@ -227,7 +237,7 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	// Get the template base of existing template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
+	newCtx, err = tplCtx.WithTemplateHolder(ctx, &tmplHolder)
 	require.NoError(t, err)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
@@ -235,26 +245,28 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	// Get the template base of unexisting template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
-	_, err = ctx.WithTemplateHolder(&tmplHolder)
+	_, err = tplCtx.WithTemplateHolder(ctx, &tmplHolder)
 	require.EqualError(t, err, "workflowtemplates.argoproj.io \"unknown-workflow-template\" not found")
 }
 
 func TestResolveTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
-	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
+	err := createWorkflowTemplate(ctx, wfClientset, anotherWorkflowTemplateYaml)
 	require.NoError(t, err)
 
-	err = createWorkflowTemplate(wfClientset, someWorkflowTemplateYaml)
+	err = createWorkflowTemplate(ctx, wfClientset, someWorkflowTemplateYaml)
 	require.NoError(t, err)
 
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	// Get the template of template name.
 	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
-	ctx, tmpl, _, err := ctx.ResolveTemplate(&tmplHolder)
+	tplCtx, tmpl, _, err := tplCtx.ResolveTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
-	wftmpl, ok := ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	wftmpl, ok := tplCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay", tmpl.Name)
@@ -262,10 +274,10 @@ func TestResolveTemplate(t *testing.T) {
 	var tmplGetter wfv1.TemplateHolder
 	// Get the template of template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	ctx, tmpl, _, err = ctx.ResolveTemplate(&tmplHolder)
+	tplCtx, tmpl, _, err = tplCtx.ResolveTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 
-	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = tplCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "whalesay", tmpl.Name)
@@ -273,10 +285,10 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of local nested template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "local-whalesay"}}
-	ctx, tmpl, _, err = ctx.ResolveTemplate(&tmplHolder)
+	tplCtx, tmpl, _, err = tplCtx.ResolveTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 
-	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = tplCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "local-whalesay", tmpl.Name)
@@ -284,10 +296,10 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of nested template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "another-whalesay"}}
-	ctx, tmpl, _, err = ctx.ResolveTemplate(&tmplHolder)
+	tplCtx, tmpl, _, err = tplCtx.ResolveTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 
-	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = tplCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "another-whalesay", tmpl.Name)
@@ -297,10 +309,10 @@ func TestResolveTemplate(t *testing.T) {
 	tmplHolder = wfv1.WorkflowStep{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay-with-arguments"},
 	}
-	ctx, tmpl, _, err = ctx.ResolveTemplate(&tmplHolder)
+	tplCtx, tmpl, _, err = tplCtx.ResolveTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 
-	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = tplCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "whalesay-with-arguments", tmpl.Name)
@@ -309,24 +321,26 @@ func TestResolveTemplate(t *testing.T) {
 	tmplHolder = wfv1.WorkflowStep{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "nested-whalesay-with-arguments"},
 	}
-	ctx, tmpl, _, err = ctx.ResolveTemplate(&tmplHolder)
+	tplCtx, tmpl, _, err = tplCtx.ResolveTemplate(ctx, &tmplHolder)
 	require.NoError(t, err)
 
-	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = tplCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "nested-whalesay-with-arguments", tmpl.Name)
 }
 
 func TestWithTemplateBase(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
 	anotherWftmpl := unmarshalWftmpl(anotherWorkflowTemplateYaml)
 
 	// Get the template base of existing template name.
-	newCtx := ctx.WithTemplateBase(anotherWftmpl)
+	newCtx := tplCtx.WithTemplateBase(anotherWftmpl)
 	wftmpl, ok := newCtx.tmplBase.(*wfv1.WorkflowTemplate)
 	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "another-workflow-template", wftmpl.Name)
@@ -335,14 +349,69 @@ func TestWithTemplateBase(t *testing.T) {
 func TestOnWorkflowTemplate(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := logging.TestContext(t.Context())
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil, log)
 
-	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
+	err := createWorkflowTemplate(ctx, wfClientset, anotherWorkflowTemplateYaml)
 	require.NoError(t, err)
 
 	// Get the template base of existing template name.
-	newCtx, err := ctx.WithWorkflowTemplate("another-workflow-template")
+	newCtx, err := tplCtx.WithWorkflowTemplate(ctx, "another-workflow-template")
 	require.NoError(t, err)
 	tmpl := newCtx.tmplBase.GetTemplateByName("whalesay")
 	assert.NotNil(t, tmpl)
+}
+
+// TestGetTemplateFromRefWithPodMetadataAndMissingTemplate tests the bug where
+// GetTemplateFromRef causes a nil pointer dereference when:
+// 1. A WorkflowTemplate has podMetadata defined
+// 2. A templateRef references a template name that doesn't exist in that WorkflowTemplate
+func TestGetTemplateFromRefWithPodMetadataAndMissingTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wfClientset := fakewfclientset.NewSimpleClientset()
+
+	// Create a WorkflowTemplate with podMetadata but without the template "nonexistent"
+	workflowTemplateWithPodMetadata := `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-podmetadata
+spec:
+  podMetadata:
+    labels:
+      example-label: example-value
+    annotations:
+      example-annotation: example-value
+  templates:
+  - name: existing-template
+    container:
+      image: alpine:3.23
+      command: [echo, hello]
+`
+
+	err := createWorkflowTemplate(ctx, wfClientset, workflowTemplateWithPodMetadata)
+	require.NoError(t, err)
+
+	// Create a base workflow template to use as context
+	baseWftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
+	log := logging.RequireLoggerFromContext(ctx)
+	tplCtx := NewContextFromClientSet(
+		wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault),
+		wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(),
+		baseWftmpl,
+		nil,
+		log,
+	)
+
+	// Try to get a template that doesn't exist from a WorkflowTemplate that HAS podMetadata
+	tmplRef := wfv1.TemplateRef{
+		Name:     "template-with-podmetadata",
+		Template: "nonexistent-template",
+	}
+
+	_, err = tplCtx.GetTemplateFromRef(ctx, &tmplRef)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "template nonexistent-template not found in workflow template template-with-podmetadata")
 }

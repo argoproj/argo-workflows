@@ -1,12 +1,13 @@
 package template
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 )
 
 // Replace takes a json-formatted string and performs variable replacement.
-func Replace(s string, replaceMap map[string]string, allowUnresolved bool) (string, error) {
+func Replace(ctx context.Context, s string, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	if !json.Valid([]byte(s)) {
 		return "", errors.New("cannot do template replacements with invalid JSON")
 	}
@@ -15,11 +16,11 @@ func Replace(s string, replaceMap map[string]string, allowUnresolved bool) (stri
 	if err != nil {
 		return "", err
 	}
-	interReplaceMap := make(map[string]interface{})
+	interReplaceMap := make(map[string]any)
 	for k, v := range replaceMap {
 		interReplaceMap[k] = v
 	}
-	replacedString, err := t.Replace(interReplaceMap, allowUnresolved)
+	replacedString, err := t.Replace(ctx, interReplaceMap, allowUnresolved)
 	if err != nil {
 		return s, err
 	}

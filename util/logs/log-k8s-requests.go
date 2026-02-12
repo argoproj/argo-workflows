@@ -1,13 +1,14 @@
 package logs
 
 import (
+	"context"
 	"net/http"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/util/k8s"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var (
@@ -16,9 +17,12 @@ var (
 
 type k8sLogRoundTripper struct {
 	roundTripper http.RoundTripper
+	//nolint: containedctx
+	ctx context.Context
 }
 
 func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	logger := logging.RequireLoggerFromContext(m.ctx)
 	now := time.Now()
 	x, err := m.roundTripper.RoundTrip(r)
 	latency := time.Since(now)
@@ -26,20 +30,20 @@ func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	if x != nil {
 		verb, kind := k8s.ParseRequest(r)
 		if latency > extraLongThrottleLatency {
-			log.Warnf("Waited for %v, request: %s:%s", latency, verb, r.URL.String())
+			logger.WithFields(logging.Fields{"latency": latency, "verb": verb, "url": r.URL.String()}).Warn(m.ctx, "Waited for K8S request")
 		}
-		log.Debugf("%s %s %d", verb, kind, x.StatusCode)
+		logger.WithFields(logging.Fields{"verb": verb, "kind": kind, "status": x.StatusCode}).Debug(m.ctx, "K8S request")
 	}
 	return x, err
 }
 
-func AddK8SLogTransportWrapper(config *rest.Config) *rest.Config {
+func AddK8SLogTransportWrapper(ctx context.Context, config *rest.Config) *rest.Config {
 	wrap := config.WrapTransport
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
 		if wrap != nil {
 			rt = wrap(rt)
 		}
-		return &k8sLogRoundTripper{roundTripper: rt}
+		return &k8sLogRoundTripper{roundTripper: rt, ctx: ctx}
 	}
 	return config
 }

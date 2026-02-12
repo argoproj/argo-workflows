@@ -2,10 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
-	"github.com/argoproj/pkg/cli"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -17,9 +16,12 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/sync"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
+
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -93,8 +95,8 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 			return cmd.Help()
 		},
 	}
-
 	command.AddCommand(NewCompletionCommand())
+	command.AddCommand(NewConvertCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewLintCommand())
@@ -119,24 +121,33 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.AddCommand(cron.NewCronWorkflowCommand())
 	command.AddCommand(clustertemplate.NewClusterTemplateCommand())
 	command.AddCommand(executorplugin.NewRootCommand())
+	command.AddCommand(sync.NewSyncCommand())
 
 	client.AddKubectlFlagsToCmd(command)
 	client.AddAPIClientFlagsToCmd(command)
 	// global log level
 	var logLevel string
+	var logFormat string
 	var glogLevel int
 	var verbose bool
 	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
-		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
+		cmdutil.PrintVersionMismatchWarning(cmd.Context(), argo.GetVersion(), grpcutil.LastSeenServerVersion)
 	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {
 			logLevel = "debug"
 			glogLevel = 6
 		}
-		cli.SetLogLevel(logLevel)
+		ctx, log, err := cmdutil.CmdContextWithLogger(cmd, logLevel, logFormat)
+		if err != nil {
+			logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create argo pre-run logger")
+			os.Exit(1)
+		}
+
 		cmdutil.SetGLogLevel(glogLevel)
-		log.WithField("version", argo.GetVersion()).Debug("CLI version")
+		command.SetContext(ctx)
+
+		log.WithField("version", argo.GetVersion()).Debug(ctx, "CLI version")
 
 		// Disable printing of usage string on errors, except for argument validation errors
 		// (i.e. when the "Args" function returns an error).
@@ -148,7 +159,14 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
+	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
+	cctx, log, err := cmdutil.CmdContextWithLogger(command, logLevel, logFormat)
+	if err != nil {
+		logging.InitLogger().WithError(err).WithFatal().Error(cctx, "Failed to create argo logger")
+		os.Exit(1)
+	}
+	command.SetContext(cctx)
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
@@ -156,14 +174,14 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
-		log.Fatal(err)
+		log.WithError(err).WithFatal().Error(cctx, "Failed to bind flags to env vars")
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.PersistentFlags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(err)
+				log.WithError(err).WithFatal().Error(cctx, "Failed to set flag")
 			}
 		}
 	})

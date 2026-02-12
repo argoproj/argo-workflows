@@ -23,7 +23,6 @@ const (
 // The value of Item can be a map, string, bool, or number
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=object
 type Item struct {
 	Value json.RawMessage `json:"-" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
 }
@@ -44,11 +43,11 @@ func (i *Item) GetType() Type {
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		return Bool
 	}
-	var list []interface{}
+	var list []any
 	if err := json.Unmarshal(i.Value, &list); err == nil {
 		return List
 	}
-	var object map[string]interface{}
+	var object map[string]any
 	if err := json.Unmarshal(i.Value, &object); err == nil {
 		return Map
 	}
@@ -72,7 +71,7 @@ func (i *Item) String() string {
 }
 
 func (i Item) Format(s fmt.State, _ rune) {
-	_, _ = fmt.Fprintf(s, "%s", i.String()) //nolint
+	_, _ = fmt.Fprintf(s, "%s", i.String())
 }
 
 func (i Item) MarshalJSON() ([]byte, error) {

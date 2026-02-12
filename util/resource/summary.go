@@ -15,10 +15,9 @@ type Summary struct {
 
 func (s Summary) age() time.Duration {
 	if s.ContainerState.Terminated != nil {
-		return s.ContainerState.Terminated.FinishedAt.Time.Sub(s.ContainerState.Terminated.StartedAt.Time)
-	} else {
-		return 0
+		return s.ContainerState.Terminated.FinishedAt.Sub(s.ContainerState.Terminated.StartedAt.Time)
 	}
+	return 0
 }
 
 // map[containerName]Summary

@@ -5,6 +5,8 @@ package e2e
 import (
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -19,11 +21,13 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 	b.ResetTimer()
 
 	// Uncomment the following line to log queries to stdout
-	//db.LC().SetLevel(db.LogLevelDebug)
+	// db.LC().SetLevel(db.LogLevelDebug)
+
+	ctx := logging.TestContext(b.Context())
 
 	b.Run("ListWorkflows", func(b *testing.B) {
 		for range b.N {
-			wfs, err := suite.Persistence.WorkflowArchive.ListWorkflows(sutils.ListOptions{
+			wfs, err := suite.Persistence.WorkflowArchive.ListWorkflows(ctx, sutils.ListOptions{
 				Limit: 100,
 			})
 			if err != nil {
@@ -39,7 +43,7 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 			b.Fatal(err)
 		}
 		for range b.N {
-			wfs, err := suite.Persistence.WorkflowArchive.ListWorkflows(sutils.ListOptions{
+			wfs, err := suite.Persistence.WorkflowArchive.ListWorkflows(ctx, sutils.ListOptions{
 				Limit:             100,
 				LabelRequirements: requirements,
 			})
@@ -52,7 +56,7 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 
 	b.Run("CountWorkflows", func(b *testing.B) {
 		for range b.N {
-			wfCount, err := suite.Persistence.WorkflowArchive.CountWorkflows(sutils.ListOptions{})
+			wfCount, err := suite.Persistence.WorkflowArchive.CountWorkflows(ctx, sutils.ListOptions{})
 			if err != nil {
 				b.Fatal(err)
 			}

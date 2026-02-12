@@ -4,7 +4,7 @@ metadata:
   name: hello-world-multiple-schedules
 spec:
   schedules: # v3.6 and after
-    - "*/3 * * * *"
+    - "*/3 * * * 1-5"
     - "*/2 * * * *"
   timezone: "America/Los_Angeles"   # Default to local machine timezone
   startingDeadlineSeconds: 0

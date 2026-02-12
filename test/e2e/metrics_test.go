@@ -1,4 +1,4 @@
-//go:build api
+//go:build metrics
 
 package e2e
 
@@ -16,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const baseUrlMetrics = "https://localhost:9090/metrics"
+const baseURLMetrics = "https://localhost:9090/metrics"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -31,13 +31,19 @@ func (s *MetricsSuite) BeforeTest(suiteName, testName string) {
 func (s *MetricsSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
-			BaseURL:  baseUrlMetrics,
+			BaseURL:  baseURLMetrics,
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(s.T(), true),
+				httpexpect.NewDebugPrinter(s.T(), false),
 			},
 			Client: httpClient,
 		})
+}
+
+// Helper method to create a metric baseline tracker from expected increases map
+func (s *MetricsSuite) captureBaseline(expectedIncreases map[string]float64) *fixtures.MetricBaseline {
+	baseline := fixtures.NewMetricBaseline(s.T(), func() *httpexpect.Expect { return s.e(s.T()) })
+	return baseline.CaptureBaseline(expectedIncreases)
 }
 
 func (s *MetricsSuite) TestMetricsEndpoint() {
@@ -61,6 +67,14 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 }
 
 func (s *MetricsSuite) TestRetryMetrics() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`runs_exit_status_counter{exit_code="1",status="Failed"}`: 3, // initial attempt + 2 retries
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		Workflow(`@testdata/workflow-retry-metrics.yaml`).
 		When().
@@ -69,15 +83,21 @@ func (s *MetricsSuite) TestRetryMetrics() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`runs_exit_status_counter{exit_code="1",status="Failed"} 3`)
+
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		})
 }
 
 func (s *MetricsSuite) TestDAGMetrics() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`argo_workflows_result_counter{status="Succeeded"}`: 5, // for the 5 DAG tasks: A, B, C, D, and the root task
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		Workflow(`@testdata/workflow-dag-metrics.yaml`).
 		When().
@@ -86,83 +106,21 @@ func (s *MetricsSuite) TestDAGMetrics() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`argo_workflows_result_counter{status="Succeeded"} 5`)
-		})
-}
 
-func (s *MetricsSuite) TestDeprecatedCronSchedule() {
-	s.Given().
-		CronWorkflow(`@testdata/cronworkflow-deprecated-schedule.yaml`).
-		When().
-		CreateCronWorkflow().
-		Wait(1 * time.Minute). // This pattern is used in cron_test.go too
-		Then().
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="cronworkflow schedule",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
-func (s *MetricsSuite) TestDeprecatedMutex() {
-	s.Given().
-		Workflow(`@testdata/synchronization-deprecated-mutex.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="synchronization mutex",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
-func (s *MetricsSuite) TestDeprecatedPodPriority() {
-	s.Given().
-		Workflow(`@testdata/workflow-deprecated-podpriority.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeErrored). // Fails as kubernetes we test on do not support this1
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="workflow podpriority",namespace="argo"}`) // Count unimportant and unknown
-		})
-}
-
-func (s *MetricsSuite) TestDeprecatedSemaphore() {
-	s.Given().
-		Workflow(`@testdata/synchronization-deprecated-semaphore.yaml`).
-		When().
-		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		DeleteConfigMap("my-config").
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`deprecated_feature{feature="synchronization semaphore",namespace="argo"}`) // Count unimportant and unknown
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		})
 }
 
 func (s *MetricsSuite) TestFailedMetric() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`argo_workflows_task_failure`: 1,
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		Workflow(`@testdata/template-status-failed-conditional-metric.yaml`).
 		When().
@@ -171,49 +129,67 @@ func (s *MetricsSuite) TestFailedMetric() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`argo_workflows_task_failure 1`)
+
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		})
 }
 
 func (s *MetricsSuite) TestCronCountersForbid() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`cronworkflows_triggered_total{name="test-cron-metric-forbid",namespace="argo"}`:                                         1, // 2nd run was Forbid
+		`cronworkflows_concurrencypolicy_triggered{concurrency_policy="Forbid",name="test-cron-metric-forbid",namespace="argo"}`: 1,
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		CronWorkflow(`@testdata/cronworkflow-metrics-forbid.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Wait(time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`cronworkflows_triggered_total{name="test-cron-metric-forbid",namespace="argo"} 1`). // 2nd run was Forbid
-				Contains(`cronworkflows_concurrencypolicy_triggered{concurrency_policy="Forbid",name="test-cron-metric-forbid",namespace="argo"} 1`)
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		})
 }
 
 func (s *MetricsSuite) TestCronCountersReplace() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`cronworkflows_triggered_total{name="test-cron-metric-replace",namespace="argo"}`:                                          2, // Two triggers
+		`cronworkflows_concurrencypolicy_triggered{concurrency_policy="Replace",name="test-cron-metric-replace",namespace="argo"}`: 1, // One replace action
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		CronWorkflow(`@testdata/cronworkflow-metrics-replace.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForNewWorkflow(fixtures.ToBeRunning).
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`cronworkflows_triggered_total{name="test-cron-metric-replace",namespace="argo"} 2`).
-				Contains(`cronworkflows_concurrencypolicy_triggered{concurrency_policy="Replace",name="test-cron-metric-replace",namespace="argo"} 1`)
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		})
 }
 
 func (s *MetricsSuite) TestPodPendingMetric() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`pod_pending_count{namespace="argo",reason="Unschedulable"}`: 1,
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		Workflow(`@testdata/workflow-pending-metrics.yaml`).
 		When().
@@ -232,11 +208,9 @@ func (s *MetricsSuite) TestPodPendingMetric() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowRunning, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`pod_pending_count{namespace="argo",reason="Unschedulable"} 1`)
+
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		}).
 		When().
 		DeleteWorkflow().
@@ -244,6 +218,21 @@ func (s *MetricsSuite) TestPodPendingMetric() {
 }
 
 func (s *MetricsSuite) TestTemplateMetrics() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`total_count{namespace="argo",phase="Running"}`:                                                           1,
+		`total_count{namespace="argo",phase="Succeeded"}`:                                                         1,
+		`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="New"}`:       1,
+		`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Running"}`:   1,
+		`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Succeeded"}`: 1,
+		`workflowtemplate_runtime_count{cluster_scope="false",name="basic",namespace="argo"}`:                     1,
+		`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="0"}`:             0, // Should not increase
+		`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="+Inf"}`:          1,
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		Workflow(`@testdata/templateref-metrics.yaml`).
 		WorkflowTemplate(`@testdata/basic-workflowtemplate.yaml`).
@@ -254,22 +243,26 @@ func (s *MetricsSuite) TestTemplateMetrics() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`total_count{namespace="argo",phase="Running"}`). // Count for this depends on other tests
-				Contains(`total_count{namespace="argo",phase="Succeeded"}`).
-				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="New"} 1`).
-				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Running"} 1`).
-				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Succeeded"} 1`).
-				Contains(`workflowtemplate_runtime_count{cluster_scope="false",name="basic",namespace="argo"} 1`).
-				Contains(`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="0"} 0`).
-				Contains(`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="+Inf"} 1`)
+
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
 		})
 }
 
 func (s *MetricsSuite) TestClusterTemplateMetrics() {
+	// Define expected increases once
+	expectedIncreases := map[string]float64{
+		`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="New"}`:       1,
+		`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Running"}`:   1,
+		`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Succeeded"}`: 1,
+		`workflowtemplate_runtime_count{cluster_scope="true",name="basic",namespace="argo"}`:                     1,
+		`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="0"}`:             0, // Should not increase
+		`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="+Inf"}`:          1,
+	}
+
+	// Capture baseline metrics for all expected metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
 	s.Given().
 		Workflow(`@testdata/clustertemplateref-metrics.yaml`).
 		ClusterWorkflowTemplate(`@testdata/basic-clusterworkflowtemplate.yaml`).
@@ -280,16 +273,59 @@ func (s *MetricsSuite) TestClusterTemplateMetrics() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			s.e(s.T()).GET("").
-				Expect().
-				Status(200).
-				Body().
-				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="New"} 1`).
-				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Running"} 1`).
-				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Succeeded"} 1`).
-				Contains(`workflowtemplate_runtime_count{cluster_scope="true",name="basic",namespace="argo"} 1`).
-				Contains(`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="0"} 0`).
-				Contains(`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="+Inf"} 1`)
+
+			// Check that metrics increased by the expected amounts
+			baseline.ExpectIncrease()
+		})
+}
+
+func (s *MetricsSuite) TestClientRateLimiterLatencyMetric() {
+	// The client_rate_limiter_latency histogram is recorded on every K8s API request.
+	// We check that running a workflow increases the _count metric.
+	// We use ExpectAtLeastIncrease since we don't know the exact number of API calls,
+	// but we know running a workflow triggers multiple K8s API calls.
+	expectedIncreases := map[string]float64{
+		`client_rate_limiter_latency_count`: 1, // At least 1 API call
+	}
+
+	// Capture baseline metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
+	s.Given().
+		Workflow(`@testdata/basic-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+
+			// Check that the client rate limiter latency metric increased by at least 1
+			baseline.ExpectAtLeastIncrease()
+		})
+}
+
+func (s *MetricsSuite) TestResourceRateLimiterLatencyMetric() {
+	// The resource_rate_limiter_latency histogram is recorded every time a pod is created.
+	// We check that running a workflow with a pod increases the _count metric.
+	expectedIncreases := map[string]float64{
+		`resource_rate_limiter_latency_count`: 1, // One pod created
+	}
+
+	// Capture baseline metrics
+	baseline := s.captureBaseline(expectedIncreases)
+
+	s.Given().
+		Workflow(`@testdata/basic-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+
+			// Check that the resource rate limiter latency metric increased
+			baseline.ExpectIncrease()
 		})
 }
 

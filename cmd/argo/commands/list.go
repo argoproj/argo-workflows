@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	argotime "github.com/argoproj/pkg/time"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -18,6 +17,7 @@ import (
 	cmdcommon "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/printer"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -48,9 +48,7 @@ func (f listFlags) displayFields() string {
 	switch f.output.String() {
 	case "name":
 		return nameFields
-	case "json", "yaml":
-		return ""
-	case "wide":
+	case "json", "yaml", "wide":
 		return ""
 	default:
 		return defaultFields
@@ -94,13 +92,14 @@ func NewListCommand() *cobra.Command {
 `,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
 			if !allNamespaces {
-				listArgs.namespace = client.Namespace()
+				listArgs.namespace = client.Namespace(ctx)
 			}
 			workflows, err := listWorkflows(ctx, serviceClient, listArgs)
 			if err != nil {
@@ -162,7 +161,7 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	listOpts.FieldSelector = flags.fields
 	var workflows wfv1.Workflows
 	for {
-		log.WithField("listOpts", listOpts).Debug()
+		logging.RequireLoggerFromContext(ctx).WithField("listOpts", listOpts).Debug(ctx, "Listing workflows")
 		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 			Namespace:   flags.namespace,
 			ListOptions: listOpts,
@@ -179,7 +178,7 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 	workflows = workflows.
 		Filter(func(wf wfv1.Workflow) bool {
-			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
+			return strings.HasPrefix(wf.Name, flags.prefix)
 		})
 	if flags.createdSince != "" && flags.finishedBefore != "" {
 		startTime, err := argotime.ParseSince(flags.createdSince)

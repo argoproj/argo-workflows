@@ -3,9 +3,7 @@ kind: Kustomization
 
 resources:
   - ../base
-  - argo-mysql-config-secret.yaml
-  - mysql-deployment.yaml
-  - mysql-service.yaml
+  - ../../base/crds/full
 
-patches:
-  - path: overlays/workflow-controller-configmap.yaml
+components:
+  - ../../components/mysql

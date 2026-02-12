@@ -47,7 +47,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, wait.Backoff{
 			Steps:    100,
-			Duration: time.Duration(20 * time.Second),
+			Duration: 20 * time.Second,
 		}, strategy)
 	})
 }

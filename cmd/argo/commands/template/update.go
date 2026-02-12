@@ -32,7 +32,8 @@ func NewUpdateCommand() *cobra.Command {
 `,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return updateWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
+			ctx := cmd.Context()
+			return updateWorkflowTemplates(ctx, args, &cliUpdateOpts)
 		},
 	}
 	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
@@ -53,18 +54,18 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 		return err
 	}
 
-	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
+	workflowTemplates := generateWorkflowTemplates(ctx, filePaths, cliOpts.strict)
 
 	for _, wftmpl := range workflowTemplates {
 		if wftmpl.Namespace == "" {
-			wftmpl.Namespace = client.Namespace()
+			wftmpl.Namespace = client.Namespace(ctx)
 		}
 		current, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
 			Name:      wftmpl.Name,
 			Namespace: wftmpl.Namespace,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
+			return fmt.Errorf("failed to get existing workflow template %q to update: %w", wftmpl.Name, err)
 		}
 		wftmpl.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
@@ -72,7 +73,7 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to update workflow template: %v", err)
+			return fmt.Errorf("failed to update workflow template: %w", err)
 		}
 		printWorkflowTemplate(updated, cliOpts.output.String())
 	}

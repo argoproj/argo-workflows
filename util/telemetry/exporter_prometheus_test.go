@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // testScopeName is the name that the metrics running under test will have
@@ -24,12 +26,13 @@ func TestDisablePrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
 	m.RunPrometheusServer(ctx, false)
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
+	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -44,17 +47,16 @@ func TestPrometheusServer(t *testing.T) {
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		m.RunPrometheusServer(ctx, false)
-		wg.Done()
-	}()
+	})
 	time.Sleep(1 * time.Second)
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -78,17 +80,16 @@ func TestDummyPrometheusServer(t *testing.T) {
 		Port:    DefaultPrometheusServerPort,
 		Secure:  false,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		m.RunPrometheusServer(ctx, true)
-		wg.Done()
-	}()
+	})
 	time.Sleep(1 * time.Second)
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath), nil)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 

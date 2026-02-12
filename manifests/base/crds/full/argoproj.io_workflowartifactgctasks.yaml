@@ -17,14 +17,30 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: WorkflowArtifactGCTask specifies the Artifacts that need to be
+          deleted as well as the status of deletion
         properties:
           apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
+            description: |-
+              ArtifactGCSpec specifies the Artifacts that need to be deleted.
+              All nested field descriptions have been dropped due to Kubernetes size limitations.
             properties:
               artifactsByNode:
                 additionalProperties:
@@ -429,6 +445,20 @@ spec:
                               type: string
                             useSDKCreds:
                               type: boolean
+                          required:
+                          - key
+                          type: object
+                        plugin:
+                          properties:
+                            configuration:
+                              type: string
+                            connectionTimeoutSeconds:
+                              format: int32
+                              type: integer
+                            key:
+                              type: string
+                            name:
+                              type: string
                           required:
                           - key
                           type: object
@@ -934,8 +964,11 @@ spec:
                             type: object
                           mode:
                             format: int32
+                            maximum: 511
+                            minimum: 0
                             type: integer
                           name:
+                            pattern: ^[-a-zA-Z0-9_{}.]+$
                             type: string
                           optional:
                             type: boolean
@@ -993,6 +1026,20 @@ spec:
                             type: object
                           path:
                             type: string
+                          plugin:
+                            properties:
+                              configuration:
+                                type: string
+                              connectionTimeoutSeconds:
+                                format: int32
+                                type: integer
+                              key:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - key
+                            type: object
                           raw:
                             properties:
                               data:
@@ -1108,24 +1155,36 @@ spec:
                 type: object
             type: object
           status:
+            description: ArtifactGCStatus describes the result of the deletion
             properties:
               artifactResultsByNode:
                 additionalProperties:
+                  description: ArtifactResultNodeStatus describes the result of the
+                    deletion on a given node
                   properties:
                     artifactResults:
                       additionalProperties:
+                        description: ArtifactResult describes the result of attempting
+                          to delete a given Artifact
                         properties:
                           error:
+                            description: Error is an optional error message which
+                              should be set if Success==false
                             type: string
                           name:
+                            description: Name is the name of the Artifact
                             type: string
                           success:
+                            description: Success describes whether the deletion succeeded
                             type: boolean
                         required:
                         - name
                         type: object
+                      description: ArtifactResults maps Artifact name to result of
+                        the deletion
                       type: object
                   type: object
+                description: ArtifactResultsByNode maps Node name to result
                 type: object
             type: object
         required:

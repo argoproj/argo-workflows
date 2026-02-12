@@ -23,24 +23,39 @@ jobs:
   build-linux:
     name: Build & push linux
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-latest
+    # Available runners are listable here if you have access https://github.com/organizations/argoproj/settings/actions/runners
+    # Current oracle runners are:
+    # # amd64
+    # oracle-vm-2cpu-8gb-x86-64
+    # oracle-vm-4cpu-16gb-x86-64
+    # oracle-vm-8cpu-32gb-x86-64
+    # oracle-vm-16cpu-64gb-x86-64
+    # oracle-vm-24cpu-96gb-x86-64
+    # oracle-vm-32cpu-128gb-x86-64
+
+    # # arm64
+    # oracle-vm-2cpu-8gb-arm64
+    # oracle-vm-4cpu-16gb-arm64
+    # oracle-vm-8cpu-32gb-arm64
+    # oracle-vm-16cpu-64gb-arm64
+    # oracle-vm-24cpu-96gb-arm64
+    # oracle-vm-32cpu-128gb-arm64
+    # Unfortunately there are no more minimal labels on the runners to select by label
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'oracle-vm-16cpu-64gb-arm64' || 'oracle-vm-16cpu-64gb-x86-64' }}
     strategy:
       matrix:
         platform: [ linux/amd64, linux/arm64 ]
-        target: [ workflow-controller, argocli, argoexec ]
+        target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
         with:
           version: v0.10.4
 
       - name: Cache Docker layers
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         id: cache
         with:
           path: /tmp/.buildx-cache
@@ -49,13 +64,13 @@ jobs:
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
       - name: Docker Login
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
@@ -77,7 +92,13 @@ jobs:
           GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
           GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+
+          # Special handling for argoexec-nonroot to create argoexec:tag-nonroot-platform instead
+          if [ "$TARGET" = "argoexec-nonroot" ]; then
+            image_name="${DOCKERIO_ORG}/argoexec:${tag}-nonroot-${tag_suffix}"
+          else
+            image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+          fi
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
@@ -89,7 +110,6 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --provenance=false \
-            --tag $image_name \
             --tag quay.io/$image_name .
 
   build-windows:
@@ -97,15 +117,15 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Docker Login
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
@@ -134,8 +154,6 @@ jobs:
               -f Dockerfile.windows \
               .
 
-            docker push $image_name
-
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
 
@@ -144,25 +162,25 @@ jobs:
   push-images:
     name: Push manifest with all images
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-latest
+    runs-on: oracle-vm-4cpu-16gb-x86-64
     needs: [ build-linux, build-windows ]
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Docker Login
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
         with:
           cosign-release: 'v2.2.3'
 
@@ -182,19 +200,20 @@ jobs:
             tag="latest"
           fi
 
-          targets="workflow-controller argoexec argocli"
+          targets="workflow-controller argoexec argoexec-nonroot argocli"
           for target in $targets; do
-            image_name="${docker_org}/${target}:${tag}"
-
-            if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
+            if [ "$target" = "argoexec-nonroot" ]; then
+              # Special handling for argoexec-nonroot: create argoexec:tag-nonroot manifest
+              image_name="${docker_org}/argoexec:${tag}-nonroot"
+              docker manifest create quay.io/$image_name quay.io/${docker_org}/argoexec:${tag}-nonroot-linux-arm64 quay.io/${docker_org}/argoexec:${tag}-nonroot-linux-amd64
+            elif [ "$target" = "argoexec" ]; then
+              image_name="${docker_org}/${target}:${tag}"
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
+              image_name="${docker_org}/${target}:${tag}"
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
-            docker manifest push $image_name
             docker manifest push quay.io/$image_name
 
             cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
@@ -204,21 +223,21 @@ jobs:
   test-images-linux-amd64:
     name: Try pulling linux/amd64
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-latest
+    runs-on: oracle-vm-4cpu-16gb-x86-64
     needs: [ push-images ]
     strategy:
       matrix:
         platform: [ linux/amd64 ]
-        target: [ workflow-controller, argocli, argoexec ]
+        target: [ workflow-controller, argocli, argoexec, argoexec-nonroot ]
     steps:
       - name: Docker Login
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
@@ -235,8 +254,11 @@ jobs:
             tag="latest"
           fi
 
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
-          docker pull $image_name
+          if [ "$TARGET" = "argoexec-nonroot" ]; then
+            image_name="${DOCKERIO_ORG}/argoexec:${tag}-nonroot"
+          else
+            image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
+          fi
           docker pull quay.io/$image_name
 
   test-images-windows:
@@ -246,13 +268,13 @@ jobs:
     needs: [ push-images ]
     steps:
       - name: Docker Login
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
@@ -270,35 +292,110 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
-            docker pull $image_name
             docker pull quay.io/$image_name
           done
+
+  build-ui:
+    name: Build UI
+    if: github.repository == 'argoproj/argo-workflows'
+    runs-on: oracle-vm-16cpu-64gb-x86-64
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: "20" # change in all GH Workflows
+      - name: Restore node packages cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+      - name: Build UI
+        run: |
+          yarn --cwd ui install
+          yarn --cwd ui build
+      - name: Upload UI artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ui-dist
+          path: ui/dist/
+          if-no-files-found: error
+
+  build-clis:
+    name: Build CLI ${{ matrix.goos }}-${{ matrix.goarch }}
+    if: github.repository == 'argoproj/argo-workflows'
+    needs: [ build-ui ]
+    runs-on: oracle-vm-8cpu-32gb-x86-64
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: ppc64le
+          - goos: linux
+            goarch: riscv64
+          - goos: linux
+            goarch: s390x
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+      - name: Download UI artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: ui-dist
+          path: ui/dist/
+      - name: Set VERSION
+        run: |
+          if [ ${GITHUB_REF##*/} = main ]; then
+           echo "VERSION=latest" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          fi
+      - name: Restore Go build cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-${{ matrix.goos }}-${{ matrix.goarch }}-
+      - name: Build CLI for ${{ matrix.goos }}-${{ matrix.goarch }}
+        run: make dist/argo-${{ matrix.goos }}-${{ matrix.goarch }}.gz STATIC_FILES=true VERSION=$VERSION
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: argo-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/argo-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}.gz
+          if-no-files-found: error
 
   publish-release:
     permissions:
       contents: write  # for softprops/action-gh-release to create GitHub release
-    runs-on: ubuntu-latest
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     if: github.repository == 'argoproj/argo-workflows'
-    needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    needs: [ push-images, test-images-linux-amd64, test-images-windows, build-clis ]
     env:
       NODE_OPTIONS: --max-old-space-size=4096
       COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
       COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          node-version: "20" # change in all GH Workflows
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version: "1.23"
-      - name: Restore node packages cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
-        with:
-          path: ui/node_modules
-          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+          go-version: "1.25"
       - name: Install cosign
-        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
         with:
           cosign-release: 'v2.2.3'
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
@@ -311,12 +408,19 @@ jobs:
       - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
       - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
       - run: mkdir -p dist
+      - name: Download CLI artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: argo-*
+          path: dist/
+          merge-multiple: true
       - run: generator -o dist -p .
       - run: yarn --cwd ui install
       - run: generator -o dist -p ui
       - run: bom generate --image quay.io/argoproj/workflow-controller:$VERSION -o dist/workflow-controller.spdx
       - run: bom generate --image quay.io/argoproj/argocli:$VERSION -o dist/argocli.spdx
       - run: bom generate --image quay.io/argoproj/argoexec:$VERSION -o dist/argoexec.spdx
+      - run: bom generate --image quay.io/argoproj/argoexec:$VERSION-nonroot -o dist/argoexec-nonroot.spdx
       # pack the boms into one file to make it easy to download
       - run: tar -zcf dist/sbom.tar.gz dist/*.spdx
       - run: make release-notes VERSION=$VERSION
@@ -325,10 +429,11 @@ jobs:
       - name: Print image tag (please check it is not `:latest`)
         run: |
           grep image: dist/manifests/install.yaml
-      - run: go mod download
-      - run: make clis STATIC_FILES=true VERSION=$VERSION
       - name: Print version (please check it is not dirty)
-        run: dist/argo-linux-amd64 version
+        run: |
+          gunzip -k dist/argo-linux-amd64.gz
+          chmod +x dist/argo-linux-amd64
+          dist/argo-linux-amd64 version
       - run: make checksums
       - name: Sign checksums and create public key for release assets
         run: |
@@ -341,7 +446,7 @@ jobs:
       # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
       # of this action.
       # Instead, delete the release so it is re-created.
-      - uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+      - uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}

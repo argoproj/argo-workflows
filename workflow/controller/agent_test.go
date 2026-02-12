@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -11,6 +10,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -46,7 +46,6 @@ spec:
        url: "{{inputs.parameters.url}}"
 
 `)
-	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -89,9 +88,10 @@ status:
     `, &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -114,10 +114,11 @@ status:
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -136,37 +137,38 @@ status:
 		for _, pod := range pods.Items {
 			assert.NotNil(t, pod)
 			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-			assert.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
+			assert.Equal(t, "testID", pod.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "virtual-node", pod.Spec.NodeName)
 		}
 	})
 }
 
 func TestAssessAgentPodStatus(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Run("Failed", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
 		}
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodeFailed, nodeStatus)
-		assert.Equal(t, "", msg)
+		assert.Empty(t, msg)
 	})
 	t.Run("Running", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodRunning},
 		}
 
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
-		assert.Equal(t, "", msg)
+		assert.Empty(t, msg)
 	})
 	t.Run("Success", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
 		}
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
-		assert.Equal(t, "", msg)
+		assert.Empty(t, msg)
 	})
 
 }

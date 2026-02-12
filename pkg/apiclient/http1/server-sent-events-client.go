@@ -5,14 +5,16 @@ import (
 	"context"
 	"encoding/json"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // serverSentEventsClient provides a RecvEvent func to make getting Server-Sent Events (SSE)
 // simple and consistent
 type serverSentEventsClient struct {
+	//nolint: containedctx
 	ctx    context.Context
 	reader *bufio.Reader
 }
@@ -33,23 +35,24 @@ func (c serverSentEventsClient) Context() context.Context {
 	return c.ctx
 }
 
-func (c serverSentEventsClient) SendMsg(interface{}) error {
+func (c serverSentEventsClient) SendMsg(any) error {
 	panic("implement me")
 }
 
-func (c serverSentEventsClient) RecvMsg(interface{}) error {
+func (c serverSentEventsClient) RecvMsg(any) error {
 	panic("implement me")
 }
 
 const prefixLength = len("data: ")
 
-func (f serverSentEventsClient) RecvEvent(v interface{}) error {
+func (c serverSentEventsClient) RecvEvent(v any) error {
+	log := logging.RequireLoggerFromContext(c.ctx)
 	for {
-		line, err := f.reader.ReadBytes('\n')
+		line, err := c.reader.ReadBytes('\n')
 		if err != nil {
 			return err
 		}
-		log.Debugln(string(line))
+		log.Debug(c.ctx, string(line))
 		// each line must be prefixed with `data: `, if not we just ignore it
 		// maybe empty line for example
 		if len(line) <= prefixLength {
@@ -57,7 +60,7 @@ func (f serverSentEventsClient) RecvEvent(v interface{}) error {
 		}
 		// the actual data itself always has a `{"result": v}` field
 		x := struct {
-			Result interface{} `json:"result"`
+			Result any `json:"result"`
 		}{
 			Result: v,
 		}

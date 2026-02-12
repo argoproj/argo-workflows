@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/expr-lang/expr"
@@ -8,8 +9,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface{}, error) {
-	sourcedData, err := processSource(data.Source, processor)
+func ProcessData(ctx context.Context, data *wfv1.Data, processor wfv1.DataSourceProcessor) (any, error) {
+	sourcedData, err := processSource(ctx, data.Source, processor)
 	if err != nil {
 		return nil, fmt.Errorf("unable to process data source: %w", err)
 	}
@@ -20,12 +21,12 @@ func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface
 	return transformedData, nil
 }
 
-func processSource(source wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
-	var data interface{}
+func processSource(ctx context.Context, source wfv1.DataSource, processor wfv1.DataSourceProcessor) (any, error) {
+	var data any
 	var err error
 	switch {
 	case source.ArtifactPaths != nil:
-		data, err = processor.ProcessArtifactPaths(source.ArtifactPaths)
+		data, err = processor.ProcessArtifactPaths(ctx, source.ArtifactPaths)
 		if err != nil {
 			return nil, fmt.Errorf("unable to source artifact paths: %w", err)
 		}
@@ -36,15 +37,14 @@ func processSource(source wfv1.DataSource, processor wfv1.DataSourceProcessor) (
 	return data, nil
 }
 
-func processTransformation(data interface{}, transformation *wfv1.Transformation) (interface{}, error) {
+func processTransformation(data any, transformation *wfv1.Transformation) (any, error) {
 	if transformation == nil {
 		return data, nil
 	}
 
 	var err error
 	for i, step := range *transformation {
-		switch {
-		case step.Expression != "":
+		if step.Expression != "" {
 			data, err = processExpression(step.Expression, data)
 		}
 		if err != nil {
@@ -55,8 +55,8 @@ func processTransformation(data interface{}, transformation *wfv1.Transformation
 	return data, nil
 }
 
-func processExpression(expression string, data interface{}) (interface{}, error) {
-	env := map[string]interface{}{"data": data}
+func processExpression(expression string, data any) (any, error) {
+	env := map[string]any{"data": data}
 	program, err := expr.Compile(expression, expr.Env(env))
 	if err != nil {
 		return nil, err

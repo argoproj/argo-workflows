@@ -7,12 +7,11 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
-	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
-	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
-	log "github.com/sirupsen/logrus"
+	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -26,30 +25,28 @@ import (
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	authTypes "github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type ContextKey string
 
 const (
-	DynamicKey     ContextKey = "dynamic.Interface"
-	WfKey          ContextKey = "workflow.Interface"
-	SensorKey      ContextKey = "sensor.Interface"
-	EventSourceKey ContextKey = "eventsource.Interface"
-	KubeKey        ContextKey = "kubernetes.Interface"
-	ClaimsKey      ContextKey = "types.Claims"
+	DynamicKey ContextKey = "dynamic.Interface"
+	WfKey      ContextKey = "workflow.Interface"
+	EventsKey  ContextKey = "events.Interface"
+	KubeKey    ContextKey = "kubernetes.Interface"
+	ClaimsKey  ContextKey = "types.Claims"
 )
 
-//go:generate mockery --name=Gatekeeper
-
 type Gatekeeper interface {
-	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
+	ContextWithRequest(ctx context.Context, req any) (context.Context, error)
 	Context(ctx context.Context) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
@@ -90,7 +87,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		ctx, err = s.ContextWithRequest(ctx, req)
 		if err != nil {
 			return nil, err
@@ -100,20 +97,19 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 }
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, NewAuthorizingServerStream(ss, s))
 	}
 }
 
-func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
+func (s *gatekeeper) ContextWithRequest(ctx context.Context, req any) (context.Context, error) {
 	clients, claims, err := s.getClients(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic)
 	ctx = context.WithValue(ctx, WfKey, clients.Workflow)
-	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource)
-	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)
+	ctx = context.WithValue(ctx, EventsKey, clients.Events)
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
@@ -131,20 +127,16 @@ func GetWfClient(ctx context.Context) workflow.Interface {
 	return ctx.Value(WfKey).(workflow.Interface)
 }
 
-func GetEventSourceClient(ctx context.Context) eventsource.Interface {
-	return ctx.Value(EventSourceKey).(eventsource.Interface)
-}
-
-func GetSensorClient(ctx context.Context) sensor.Interface {
-	return ctx.Value(SensorKey).(sensor.Interface)
+func GetEventsClient(ctx context.Context) events.Interface {
+	return ctx.Value(EventsKey).(events.Interface)
 }
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaims(ctx context.Context) *types.Claims {
-	config, _ := ctx.Value(ClaimsKey).(*types.Claims)
+func GetClaims(ctx context.Context) *authTypes.Claims {
+	config, _ := ctx.Value(ClaimsKey).(*authTypes.Claims)
 	return config
 }
 
@@ -170,7 +162,7 @@ func getAuthHeaders(md metadata.MD) []string {
 	return authorizations
 }
 
-func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
+func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
 	// Required for GetMode() with Server auth when no auth header specified
@@ -204,6 +196,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
 		return s.clients, claims, nil
 	case SSO:
+		logger := logging.RequireLoggerFromContext(ctx)
 		claims, err := s.ssoIf.Authorize(authorization)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
@@ -211,21 +204,20 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		if s.ssoIf.IsRBACEnabled() {
 			clients, err := s.rbacAuthorization(ctx, claims, req)
 			if err != nil {
-				log.WithError(err).Error("failed to perform RBAC authorization")
+				logger.WithError(err).Error(ctx, "failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
 			return clients, claims, nil
-		} else {
-			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
-			return s.clients, claims, nil
 		}
+		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+		logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
+		return s.clients, claims, nil
 	default:
 		panic("this should never happen")
 	}
 }
 
-func getNamespace(req interface{}) string {
+func getNamespace(req any) string {
 	if req == nil {
 		return ""
 	}
@@ -241,7 +233,7 @@ func precedence(serviceAccount *corev1.ServiceAccount) int {
 	return i
 }
 
-func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
+func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace string) (*corev1.ServiceAccount, error) {
 	list, err := s.cache.ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
@@ -273,7 +265,7 @@ func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(req any) bool {
 	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
 		return false
 	}
@@ -281,7 +273,7 @@ func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
 	return len(namespace) != 0 && s.ssoNamespace != namespace
 }
 
-func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
+func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *authTypes.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
 	authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount)
 	if err != nil {
 		return nil, err
@@ -295,10 +287,11 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *ty
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Claims, req any) (*servertypes.Clients, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "no service account rule matches") {
 		return nil, err
 	}
 	delegatedAccount := loginAccount
@@ -306,14 +299,24 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		ssoDelegationAllowed = true
 		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err != nil {
-			log.WithError(err).Info("Error while SSO Delegation")
+			logger.WithError(err).Info(ctx, "Error while SSO Delegation")
 		} else if precedence(namespaceAccount) > precedence(loginAccount) {
 			delegatedAccount = namespaceAccount
 			ssoDelegated = true
 		}
 	}
+	if delegatedAccount == nil {
+		return nil, fmt.Errorf("no service account rule matches")
+	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
+	logger.WithFields(logging.Fields{
+		"serviceAccount":       delegatedAccount.Name,
+		"loginServiceAccount":  loginAccount.Name,
+		"subject":              claims.Subject,
+		"email":                claims.Email,
+		"ssoDelegationAllowed": ssoDelegationAllowed,
+		"ssoDelegated":         ssoDelegated,
+	}).Info(ctx, "selected SSO RBAC service account for user")
 	return s.getClientsForServiceAccount(ctx, claims, delegatedAccount)
 }
 
@@ -326,9 +329,9 @@ func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, service
 	return "Bearer " + string(secret.Data["token"]), nil
 }
 
-func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
+func addClaimsLogFields(claims *authTypes.Claims, fields logging.Fields) logging.Fields {
 	if fields == nil {
-		fields = log.Fields{}
+		fields = logging.Fields{}
 	}
 	fields["subject"] = claims.Subject
 	if claims.Email != "" {
@@ -351,24 +354,19 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create workflow client: %w", err)
 	}
-	eventSourceClient, err := eventsource.NewForConfig(restConfig)
+	eventsClient, err := events.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create event source client: %w", err)
-	}
-	sensorClient, err := sensor.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create sensor client: %w", err)
+		return nil, nil, fmt.Errorf("failure to create events client: %w", err)
 	}
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
 	}
 	return restConfig, &servertypes.Clients{
-		Dynamic:     dynamicClient,
-		Workflow:    wfClient,
-		Sensor:      sensorClient,
-		EventSource: eventSourceClient,
-		Kubernetes:  kubeClient,
+		Dynamic:    dynamicClient,
+		Workflow:   wfClient,
+		Events:     eventsClient,
+		Kubernetes: kubeClient,
 	}, nil
 }
 

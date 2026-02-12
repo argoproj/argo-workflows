@@ -13,9 +13,50 @@ permissions:
 
 jobs:
   title-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    outputs:
+      type: ${{ steps.semantic-pr-check.outputs.type }}
     steps:
       - name: Check PR Title's semantic conformance
-        uses: amannn/action-semantic-pull-request@e9fabac35e210fea40ca5b14c0da95a099eff26f # v5.4.0
+        id: semantic-pr-check
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  feature-pr-handling:
+    needs: title-check
+    runs-on: ubuntu-24.04
+    if: needs.title-check.outputs.type == 'feat'
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: true
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 50
+
+      - name: Ensure ./.features/pending/*.md addition(s)
+        id: changed-files
+        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # v47.0.1
+        with:
+          files: |
+            .features/pending/*.md
+
+      - name: No ./.features/*.md addition
+        if: steps.changed-files.outputs.added_files_count == 0
+        run: |
+          echo "No feature description was added to the ./.features/ directory for this feature PR."
+          echo "Please add a .md file to the ./.features/ directory."
+          echo "See docs/running-locally.md for more details."
+          false
+
+      - name: Validate ./.features/*.md changes
+        if: steps.changed-files.outputs.added_files_count > 0
+        run: |
+          echo "A feature description was added to the ./.features/ directory."
+          make features-validate \
+            || { echo "New ./.features/*.md file failed validation."; exit 1; }

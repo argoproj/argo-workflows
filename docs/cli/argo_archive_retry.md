@@ -45,7 +45,7 @@ argo archive retry [WORKFLOW...] [flags]
       --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for retry
       --log                          log the workflow until it completes
-      --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+      --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.parameters.myparam.value=abc
   -o, --output string                Output format. One of: name|json|yaml|wide
   -p, --parameter stringArray        input parameter to override on the original workflow spec
       --restart-successful           indicates to restart successful nodes matching the --node-field-selector
@@ -75,6 +75,7 @@ argo archive retry [WORKFLOW...] [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

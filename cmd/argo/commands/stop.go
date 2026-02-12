@@ -61,18 +61,19 @@ func NewStopCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			stopArgs.namespace = client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			stopArgs.namespace = client.Namespace(ctx)
 
 			return stopWorkflows(ctx, serviceClient, stopArgs, args)
 		},
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
-	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	command.Flags().StringVarP(&stopArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&stopArgs.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&stopArgs.dryRun, "dry-run", false, "If true, only print the workflows that would be stopped, without stopping them.")
@@ -83,7 +84,7 @@ func NewStopCommand() *cobra.Command {
 func stopWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, stopArgs stopOps, args []string) error {
 	selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 	if err != nil {
-		return fmt.Errorf("unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
+		return fmt.Errorf("unable to parse node field selector '%s': %w", stopArgs.nodeFieldSelector, err)
 	}
 	var wfs wfv1.Workflows
 	if stopArgs.hasSelector() {

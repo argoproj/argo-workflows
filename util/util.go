@@ -33,10 +33,10 @@ func Close(c Closer) {
 func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, name, key string) ([]byte, error) {
 	secretsIf := clientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(err), err
+		return !errorsutil.IsTransientErr(ctx, err), err
 	})
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)
@@ -113,10 +113,10 @@ func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 
 func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
 	const tag = "metadata.name="
-	if starts := strings.Index(selector, tag); starts > -1 {
-		suffix := selector[starts+len(tag):]
-		if ends := strings.Index(suffix, ","); ends > -1 {
-			return strings.TrimSpace(suffix[:ends])
+	if _, after, ok := strings.Cut(selector, tag); ok {
+		suffix := after
+		if before, _, ok := strings.Cut(suffix, ","); ok {
+			return strings.TrimSpace(before)
 		}
 		return strings.TrimSpace(suffix)
 	}

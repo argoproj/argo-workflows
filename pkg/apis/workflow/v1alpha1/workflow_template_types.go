@@ -24,7 +24,7 @@ func (w WorkflowTemplates) Len() int {
 }
 
 func (w WorkflowTemplates) Less(i, j int) bool {
-	return strings.Compare(w[j].ObjectMeta.Name, w[i].ObjectMeta.Name) > 0
+	return strings.Compare(w[j].Name, w[i].Name) > 0
 }
 
 func (w WorkflowTemplates) Swap(i, j int) {
@@ -54,6 +54,11 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow template.
 func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
+}
+
+// GetPodMetadata returns the PodMetadata of workflow template.
+func (wftmpl *WorkflowTemplate) GetPodMetadata() *Metadata {
+	return wftmpl.Spec.PodMetadata
 }
 
 // GetWorkflowSpec returns the WorkflowSpec of workflow template.

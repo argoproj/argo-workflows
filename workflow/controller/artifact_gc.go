@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"slices"
-	"sort"
+	"strings"
+	"time"
 
-	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -27,7 +29,7 @@ const artifactGCComponent = "artifact-gc"
 // artifactGCEnabled is a feature flag to globally disabled artifact GC in case of emergency
 var artifactGCEnabled, _ = env.GetBool("ARGO_ARTIFACT_GC_ENABLED", true)
 
-func (woc *wfOperationCtx) addArtifactGCFinalizer() {
+func (woc *wfOperationCtx) addArtifactGCFinalizer(ctx context.Context) {
 	if !artifactGCEnabled {
 		return
 	}
@@ -43,7 +45,7 @@ func (woc *wfOperationCtx) addArtifactGCFinalizer() {
 			return // we already verified it's not required for this workflow
 		}
 		if woc.HasArtifactGC() {
-			woc.log.Info("adding artifact GC finalizer")
+			woc.log.Info(ctx, "adding artifact GC finalizer")
 			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 			woc.wf.SetFinalizers(finalizers)
 			woc.wf.Status.ArtifactGCStatus.NotSpecified = false
@@ -62,7 +64,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	// based on current state of Workflow, which Artifact GC Strategies can be processed now?
 	strategies := woc.artifactGCStrategiesReady()
 	for strategy := range strategies {
-		woc.log.Debugf("processing Artifact GC Strategy %s", strategy)
+		woc.log.WithField("strategy", strategy).Debug(ctx, "processing Artifact GC Strategy")
 		err := woc.processArtifactGCStrategy(ctx, strategy)
 		if err != nil {
 			return err
@@ -134,12 +136,12 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 
 	var err error
 
-	woc.log.Debugf("processing Artifact GC Strategy %s", strategy)
+	woc.log.WithField("strategy", strategy).Debug(ctx, "processing Artifact GC Strategy")
 
 	// Search for artifacts
 	artifactSearchResults := woc.findArtifactsToGC(strategy)
 	if len(artifactSearchResults) == 0 {
-		woc.log.Debugf("No Artifact Search Results returned from strategy %s", strategy)
+		woc.log.WithField("strategy", strategy).Debug(ctx, "No Artifact Search Results returned from strategy")
 		return nil
 	}
 
@@ -176,8 +178,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		// get the Template for the Artifact
 		node, err := woc.wf.Status.Nodes.Get(artifactSearchResult.NodeID)
 		if err != nil {
-			woc.log.Errorf("Was unable to obtain node for %s", artifactSearchResult.NodeID)
-			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status??", strategy, artifactSearchResult.NodeID)
+			woc.log.WithField("nodeID", artifactSearchResult.NodeID).Error(ctx, "Was unable to obtain node")
+			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status", strategy, artifactSearchResult.NodeID)
 		}
 		templateName := util.GetTemplateFromNode(*node)
 		if templateName == "" {
@@ -187,7 +189,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if !found {
 			template = woc.wf.GetTemplateByName(templateName)
 			if template == nil {
-				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found??", strategy, templateName, node)
+				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found", strategy, templateName, node)
 			}
 			templatesByName[templateName] = template
 		}
@@ -205,7 +207,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 
 		for templateName, artifacts := range templatesToArtList {
 			template := templatesByName[templateName]
-			woc.addTemplateArtifactsToTasks(podName, &tasks, template, artifacts)
+			woc.addTemplateArtifactsToTasks(ctx, podName, &tasks, template, artifacts)
 		}
 
 		if len(tasks) > 0 {
@@ -219,7 +221,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			// create the pod
 			podAccessInfo, found := podNames[podName]
 			if !found {
-				return fmt.Errorf("can't find podInfo for podName %q??", podName)
+				return fmt.Errorf("can't find podInfo for podName %q", podName)
 			}
 
 			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName, templatesToArtList, templatesByName)
@@ -245,23 +247,21 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podInf
 	_, _ = h.Write([]byte(podInfo.serviceAccount))
 	// we should be able to always get the same result regardless of the order of our Labels or Annotations
 	// so sort alphabetically
-	sortedLabels := maps.Keys(podInfo.podMetadata.Labels)
-	sort.Strings(sortedLabels)
+	sortedLabels := slices.Sorted(maps.Keys(podInfo.podMetadata.Labels))
 	for _, label := range sortedLabels {
 		labelValue := podInfo.podMetadata.Labels[label]
 		_, _ = h.Write([]byte(label))
 		_, _ = h.Write([]byte(labelValue))
 	}
 
-	sortedAnnotations := maps.Keys(podInfo.podMetadata.Annotations)
-	sort.Strings(sortedAnnotations)
+	sortedAnnotations := slices.Sorted(maps.Keys(podInfo.podMetadata.Annotations))
 	for _, annotation := range sortedAnnotations {
 		annotationValue := podInfo.podMetadata.Annotations[annotation]
 		_, _ = h.Write([]byte(annotation))
 		_, _ = h.Write([]byte(annotationValue))
 	}
 
-	abbreviatedName := ""
+	var abbreviatedName string
 	switch strategy {
 	case wfv1.ArtifactGCOnWorkflowCompletion:
 		abbreviatedName = "wfcomp"
@@ -284,7 +284,7 @@ func (woc *wfOperationCtx) artifactGCPodLabel(podName string) string {
 	return fmt.Sprintf("%d", hashedPod.Sum32())
 }
 
-func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template, artifactSearchResults wfv1.ArtifactSearchResults) {
+func (woc *wfOperationCtx) addTemplateArtifactsToTasks(ctx context.Context, podName string, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template, artifactSearchResults wfv1.ArtifactSearchResults) {
 	if len(artifactSearchResults) == 0 {
 		return
 	}
@@ -343,7 +343,7 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]
 		artifactNodeSpec.Artifacts[artifactSearchResult.Name] = artifactSearchResult.Artifact
 
 	}
-	woc.log.Debugf("list of artifacts pertaining to template %s to WorkflowArtifactGCTask %q: %+v", template.Name, currentTask.Name, artifactsByNode)
+	woc.log.WithFields(logging.Fields{"template": template.Name, "task": currentTask.Name, "artifacts": artifactsByNode}).Debug(ctx, "list of artifacts pertaining to template")
 
 }
 
@@ -369,9 +369,9 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 		return nil, err
 	}
 	if foundTask != nil {
-		woc.log.Debugf("Artifact GC Task %s already exists", task.Name)
+		woc.log.WithField("task", task.Name).Debug(ctx, "Artifact GC Task already exists")
 	} else {
-		woc.log.Infof("Creating Artifact GC Task %s", task.Name)
+		woc.log.WithField("task", task.Name).Info(ctx, "Creating Artifact GC Task")
 
 		task, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Create(ctx, task, metav1.CreateOptions{})
 		if err != nil {
@@ -385,9 +385,7 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask,
 	podInfo podInfo, podName string, templatesToArtList templatesToArtifacts, templatesByName map[string]*wfv1.Template) (*corev1.Pod, error) {
 
-	woc.log.
-		WithField("strategy", strategy).
-		Infof("creating pod to delete artifacts: %s", podName)
+	woc.log.WithFields(logging.Fields{"strategy": strategy, "podName": podName}).Info(ctx, "creating pod to delete artifacts")
 
 	// Pod is owned by WorkflowArtifactGCTasks, so it will die automatically when all of them have died
 	ownerReferences := make([]metav1.OwnerReference, len(tasks))
@@ -401,7 +399,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	for templateName, artifacts := range templatesToArtList {
 		template, found := templatesByName[templateName]
 		if !found {
-			return nil, fmt.Errorf("can't find template with name %s???", templateName)
+			return nil, fmt.Errorf("can't find template with name %q", templateName)
 		}
 
 		if template.ArchiveLocation.HasLocation() {
@@ -415,6 +413,54 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	}
 
 	volumes, volumeMounts := createSecretVolumesAndMountsFromArtifactLocations(artifactLocations)
+
+	pluginNames := make(map[wfv1.ArtifactPluginName]bool, 0)
+	for _, artifactLocation := range artifactLocations {
+		if artifactLocation != nil && artifactLocation.Plugin != nil && artifactLocation.Plugin.Name != "" {
+			pluginNames[artifactLocation.Plugin.Name] = true
+		}
+	}
+	woc.log.WithFields(logging.Fields{"pluginNames": pluginNames}).Info(ctx, "artifact GC plugin names")
+	drivers, err := woc.controller.Config.GetArtifactDrivers(slices.Collect(maps.Keys(pluginNames)))
+	if err != nil {
+		return nil, err
+	}
+	initContainers := make([]corev1.Container, 0)
+	artifactDriverTmpl := wfv1.Template{
+		Name: "artifact-driver",
+	}
+
+	// If we want to run the sidecars, we need a copy of argoexec,
+	// so we run the standard init container to copy it into the
+	// /var/run/argo volume
+	if len(drivers) > 0 {
+		initCtr := woc.standardInitContainer(ctx, &artifactDriverTmpl)
+		initCtr.VolumeMounts = []corev1.VolumeMount{volumeMountVarArgo}
+		// Required for the init container to work
+		initCtr.Env = append(initCtr.Env, corev1.EnvVar{Name: common.EnvVarTemplate, Value: "{}"})
+		initCtr.Env = append(initCtr.Env, corev1.EnvVar{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)})
+
+		initContainers = append(initContainers, *initCtr)
+		volumes = append(volumes, volumeVarArgo, volumeTmpDir)
+		volumeMounts = append(volumeMounts, volumeMountVarArgo)
+	}
+	artifactPluginSidecars := make([]corev1.Container, len(drivers))
+
+	for i, driver := range drivers {
+		woc.log.WithFields(logging.Fields{"driver": driver}).Info(ctx, "artifact GC driver")
+		volumes = append(volumes, driver.Name.Volume())
+		volumeMounts = append(volumeMounts, driver.Name.VolumeMount())
+		ctr, err := woc.artifactSidecarGCContainer(ctx, &artifactDriverTmpl, driver)
+		if err != nil {
+			return nil, err
+		}
+		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo)
+		artifactPluginSidecars[i] = *ctr
+	}
+	artifactPluginSidecarNames := make([]string, len(artifactPluginSidecars))
+	for i, sidecar := range artifactPluginSidecars {
+		artifactPluginSidecarNames[i] = sidecar.Name
+	}
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -431,35 +477,47 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			OwnerReferences: ownerReferences,
 		},
 		Spec: corev1.PodSpec{
-			Volumes:         volumes,
+			Volumes: volumes,
+
 			SecurityContext: common.MinimalPodSC(),
-			Containers: []corev1.Container{
-				{
-					Name:            common.MainContainerName,
-					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-					Args:            append([]string{"artifact", "delete"}, woc.getExecutorLogOpts()...),
-					Env: []corev1.EnvVar{
-						{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
-					},
-					// if this pod is breached by an attacker we:
-					// * prevent installation of any new packages
-					// * modification of the file-system
-					SecurityContext: common.MinimalCtrSC(),
-					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
-					Resources: corev1.ResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("100m"),
-							"memory": resource.MustParse("64Mi"),
-						},
-						Requests: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("50m"),
-							"memory": resource.MustParse("32Mi"),
+			InitContainers:  initContainers,
+			Containers: append(artifactPluginSidecars, corev1.Container{
+				Name:            common.MainContainerName,
+				Image:           woc.controller.executorImage(),
+				ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+				Args:            append([]string{"artifact", "delete"}, woc.getExecutorLogOpts(ctx)...),
+				Env: []corev1.EnvVar{
+					{
+						Name: common.EnvVarPodName,
+						ValueFrom: &corev1.EnvVarSource{
+							FieldRef: &corev1.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.name",
+							},
 						},
 					},
-					VolumeMounts: volumeMounts,
+					{Name: common.EnvVarTemplate, Value: "{}"},
+					{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)},
+					{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
+					{Name: common.EnvVarArtifactPluginNames, Value: strings.Join(artifactPluginSidecarNames, ",")},
 				},
-			},
+				// if this pod is breached by an attacker we:
+				// * prevent installation of any new packages
+				// * modification of the file-system
+				SecurityContext: common.MinimalCtrSC(),
+				// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
+				Resources: corev1.ResourceRequirements{
+					Limits: map[corev1.ResourceName]resource.Quantity{
+						"cpu":    resource.MustParse("100m"),
+						"memory": resource.MustParse("64Mi"),
+					},
+					Requests: map[corev1.ResourceName]resource.Quantity{
+						"cpu":    resource.MustParse("50m"),
+						"memory": resource.MustParse("32Mi"),
+					},
+				},
+				VolumeMounts: volumeMounts,
+			}),
 			AutomountServiceAccountToken: ptr.To(true),
 			RestartPolicy:                corev1.RestartPolicyNever,
 		},
@@ -477,25 +535,20 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	if podInfo.serviceAccount != "" {
 		pod.Spec.ServiceAccountName = podInfo.serviceAccount
 	}
-	for label, labelVal := range podInfo.podMetadata.Labels {
-		pod.ObjectMeta.Labels[label] = labelVal
-	}
-	for annotation, annotationVal := range podInfo.podMetadata.Annotations {
-		pod.ObjectMeta.Annotations[annotation] = annotationVal
-	}
+	maps.Copy(pod.Labels, podInfo.podMetadata.Labels)
+	maps.Copy(pod.Annotations, podInfo.podMetadata.Annotations)
 
 	if v := woc.controller.Config.InstanceID; v != "" {
 		pod.Labels[common.EnvVarInstanceID] = v
 	}
 
-	_, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			woc.log.Warningf("Artifact GC Pod %s already exists?", pod.Name)
-		} else {
+		if !apierr.IsAlreadyExists(err) {
 			return nil, fmt.Errorf("failed to create pod: %w", err)
 		}
+		woc.log.WithField("name", pod.Name).Warn(ctx, "Artifact GC Pod already exists")
 	}
 	return pod, nil
 }
@@ -503,7 +556,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 // go through any GC pods that are already running and may have completed
 func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
 	// check if any previous Artifact GC Pods completed
-	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
+	pods, err := woc.controller.PodController.GetPodsByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}
@@ -527,7 +580,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 			woc.log.WithField("pod", pod.Name).
 				WithField("phase", phase).
 				WithField("message", pod.Status.Message).
-				Info("reconciling artifact-gc pod")
+				Info(ctx, "reconciling artifact-gc pod")
 
 			err = woc.processCompletedArtifactGCPod(ctx, pod)
 			if err != nil {
@@ -539,7 +592,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		}
 	}
 
-	removeFinalizer := false
+	var removeFinalizer bool
 	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
 	if forceFinalizerRemoval {
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
@@ -548,7 +601,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		removeFinalizer = woc.allArtifactsDeleted()
 	}
 	if removeFinalizer {
-		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", forceFinalizerRemoval)
+		woc.log.WithField("forceFinalizerRemoval", forceFinalizerRemoval).Info(ctx, "no remaining artifacts to GC, removing artifact GC finalizer")
 		woc.wf.Finalizers = slices.DeleteFunc(woc.wf.Finalizers,
 			func(x string) bool { return x == common.FinalizerArtifactGC })
 		woc.updated = true
@@ -593,11 +646,11 @@ func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) w
 }
 
 func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod) error {
-	woc.log.Infof("processing completed Artifact GC Pod %q", pod.Name)
+	woc.log.WithField("podName", pod.Name).Info(ctx, "processing completed Artifact GC Pod")
 
 	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
 	if !found {
-		return fmt.Errorf("Artifact GC Pod %q doesn't have annotation %q?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
+		return fmt.Errorf("artifact gc pod %q missing annotation %q", pod.Name, common.AnnotationKeyArtifactGCStrategy)
 	}
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
@@ -615,16 +668,16 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	}
 
 	for _, task := range taskList.Items {
-		allArtifactsSucceeded, err := woc.processCompletedWorkflowArtifactGCTask(&task, strategy)
+		allArtifactsSucceeded, err := woc.processCompletedWorkflowArtifactGCTask(ctx, &task, strategy)
 		if err != nil {
 			return err
 		}
 		if allArtifactsSucceeded && pod.Status.Phase == corev1.PodSucceeded {
 			// now we can delete it, if it succeeded (otherwise we leave it up to be inspected)
-			woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", task.Name)
+			woc.log.WithField("name", task.Name).Debug(ctx, "deleting WorkflowArtifactGCTask")
 			err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
 			if err != nil {
-				woc.log.Errorf("error deleting WorkflowArtifactGCTask: %s: %v", task.Name, err)
+				woc.log.WithField("name", task.Name).WithError(err).Error(ctx, "error deleting WorkflowArtifactGCTask")
 			}
 		}
 
@@ -634,15 +687,15 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 
 // process the Status in the WorkflowArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
 // return true if all artifacts succeeded, else false
-func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) (bool, error) {
-	woc.log.Debugf("processing WorkflowArtifactGCTask %s", artifactGCTask.Name)
+func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Context, artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) (bool, error) {
+	woc.log.WithField("name", artifactGCTask.Name).Debug(ctx, "processing WorkflowArtifactGCTask")
 
 	foundGCFailure := false
 	for nodeName, nodeResult := range artifactGCTask.Status.ArtifactResultsByNode {
 		// find this node result in the Workflow Status
 		wfNode, err := woc.wf.Status.Nodes.Get(nodeName)
 		if err != nil {
-			woc.log.Errorf("Was unable to obtain node for %s", nodeName)
+			woc.log.WithField("node", nodeName).WithError(err).Error(ctx, "Was unable to obtain node for")
 			return false, fmt.Errorf("node named %q returned by WorkflowArtifactGCTask %q wasn't found in Workflow %q Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
 		if wfNode.Outputs == nil {
@@ -657,7 +710,7 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask
 			}
 
 			wfNode.Outputs.Artifacts[i].Deleted = artifactResult.Success
-			woc.wf.Status.Nodes.Set(nodeName, *wfNode)
+			woc.wf.Status.Nodes.Set(ctx, nodeName, *wfNode)
 
 			if artifactResult.Error != nil {
 				woc.addArtGCCondition(fmt.Sprintf("%s (artifactGCTask: %s)", *artifactResult.Error, artifactGCTask.Name))
@@ -710,15 +763,11 @@ func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, 
 		if len(artifactGC.PodMetadata.Labels) > 0 && podInfo.podMetadata.Labels == nil {
 			podInfo.podMetadata.Labels = make(map[string]string)
 		}
-		for labelKey, labelValue := range artifactGC.PodMetadata.Labels {
-			podInfo.podMetadata.Labels[labelKey] = labelValue
-		}
+		maps.Copy(podInfo.podMetadata.Labels, artifactGC.PodMetadata.Labels)
 		if len(artifactGC.PodMetadata.Annotations) > 0 && podInfo.podMetadata.Annotations == nil {
 			podInfo.podMetadata.Annotations = make(map[string]string)
 		}
-		for annotationKey, annotationValue := range artifactGC.PodMetadata.Annotations {
-			podInfo.podMetadata.Annotations[annotationKey] = annotationValue
-		}
+		maps.Copy(podInfo.podMetadata.Annotations, artifactGC.PodMetadata.Annotations)
 	}
 
 }

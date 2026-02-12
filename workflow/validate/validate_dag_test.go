@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var dagCycle = `
@@ -16,7 +19,7 @@ spec:
   templates:
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, hello]
   - name: cycle
     dag:
@@ -33,7 +36,7 @@ spec:
 `
 
 func TestDAGCycle(t *testing.T) {
-	err := validate(dagCycle)
+	err := validate(logging.TestContext(t.Context()), dagCycle)
 	require.ErrorContains(t, err, "cycle")
 }
 
@@ -47,7 +50,7 @@ spec:
   templates:
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, hello]
   - name: entry
     dag:
@@ -60,7 +63,7 @@ spec:
 `
 
 func TestAnyWithoutExpandingTask(t *testing.T) {
-	err := validate(dagAnyWithoutExpandingTask)
+	err := validate(logging.TestContext(t.Context()), dagAnyWithoutExpandingTask)
 	require.ErrorContains(t, err, "does not contain any items")
 }
 
@@ -80,7 +83,7 @@ spec:
 `
 
 func TestDAGUndefinedTemplate(t *testing.T) {
-	err := validate(dagUndefinedTemplate)
+	err := validate(logging.TestContext(t.Context()), dagUndefinedTemplate)
 	require.ErrorContains(t, err, "undefined")
 }
 
@@ -97,7 +100,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -139,7 +142,7 @@ spec:
       - name: id
       - name: hostnodename
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -208,7 +211,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -250,7 +253,7 @@ spec:
   templates:
   - name: first
     container:
-      image: alpine:3.7
+      image: alpine:3.23
     outputs:
       parameters:
       - name: hosts
@@ -259,7 +262,7 @@ spec:
         globalName: global
   - name: second
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{workflow.outputs.parameters.global}}"]
   - name: unresolved
     dag:
@@ -281,7 +284,7 @@ spec:
   templates:
   - name: first
     container:
-      image: alpine:3.7
+      image: alpine:3.23
     outputs:
       parameters:
       - name: hosts
@@ -290,7 +293,7 @@ spec:
         globalName: global
   - name: second
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{workflow.outputs.parameters.global}}"]
   - name: unresolved
     dag:
@@ -303,18 +306,19 @@ spec:
 `
 
 func TestDAGVariableResolution(t *testing.T) {
-	err := validate(dagUnresolvedVar)
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, dagUnresolvedVar)
 	require.ErrorContains(t, err, "failed to resolve {{tasks.A.outputs.parameters.unresolvable}}")
 
-	err = validate(dagResolvedVar)
+	err = validate(ctx, dagResolvedVar)
 	require.NoError(t, err)
 
-	err = validate(dagResolvedVarNotAncestor)
+	err = validate(ctx, dagResolvedVarNotAncestor)
 	require.ErrorContains(t, err, "templates.unresolved.tasks.C missing dependency 'B' for parameter 'message'")
 
-	err = validate(dagResolvedGlobalVar)
+	err = validate(ctx, dagResolvedGlobalVar)
 	require.NoError(t, err)
-	err = validate(dagResolvedGlobalVarReversed)
+	err = validate(ctx, dagResolvedGlobalVarReversed)
 	require.NoError(t, err)
 }
 
@@ -328,7 +332,7 @@ spec:
   templates:
   - name: generate
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, generate]
     outputs:
       artifacts:
@@ -343,7 +347,7 @@ spec:
       - name: passthrough
         path: /tmp/passthrough
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -372,7 +376,7 @@ spec:
 `
 
 func TestDAGArtifactResolution(t *testing.T) {
-	err := validate(dagResolvedArt)
+	err := validate(logging.TestContext(t.Context()), dagResolvedArt)
 	require.NoError(t, err)
 }
 
@@ -389,7 +393,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -425,7 +429,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -461,7 +465,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -504,7 +508,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -561,7 +565,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -606,21 +610,22 @@ spec:
 `
 
 func TestDAGStatusReference(t *testing.T) {
-	err := validate(dagStatusReference)
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, dagStatusReference)
 	require.NoError(t, err)
 
-	err = validate(dagStatusNoFutureReferenceSimple)
+	err = validate(ctx, dagStatusNoFutureReferenceSimple)
 	// Can't reference the status of steps that have not run yet
 	require.ErrorContains(t, err, "failed to resolve {{tasks.B.status}}")
 
-	err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
+	err = validate(ctx, dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
 	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
 	require.ErrorContains(t, err, "failed to resolve {{tasks.B.status}}")
 
-	err = validate(dagStatusPastReferenceChain)
+	err = validate(ctx, dagStatusPastReferenceChain)
 	require.NoError(t, err)
 
-	err = validate(dagStatusOnlyDirectAncestors)
+	err = validate(ctx, dagStatusOnlyDirectAncestors)
 	// Can't reference steps that are not direct ancestors of node
 	// Here Node E references the status of Node B, even though it is not its descendent
 	require.ErrorContains(t, err, "failed to resolve {{tasks.B.status}}")
@@ -652,12 +657,12 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestDAGNonExistantTarget(t *testing.T) {
-	err := validate(dagNonexistantTarget)
+	err := validate(logging.TestContext(t.Context()), dagNonexistantTarget)
 	require.ErrorContains(t, err, "target 'DOESNTEXIST' is not defined")
 
 }
@@ -692,12 +697,12 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestDAGTargetSubstitution(t *testing.T) {
-	err := validate(dagTargetSubstitution)
+	err := validate(logging.TestContext(t.Context()), dagTargetSubstitution)
 	require.NoError(t, err)
 }
 
@@ -726,12 +731,12 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestDAGTargetMissingInputParam(t *testing.T) {
-	err := validate(dagTargetMissingInputParam)
+	err := validate(logging.TestContext(t.Context()), dagTargetMissingInputParam)
 	require.Error(t, err)
 }
 
@@ -757,12 +762,12 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 
 func TestDependsAndDependencies(t *testing.T) {
-	err := validate(dagDependsAndDependencies)
+	err := validate(logging.TestContext(t.Context()), dagDependsAndDependencies)
 	require.ErrorContains(t, err, "templates.dag-target cannot use both 'depends' and 'dependencies' in the same DAG template")
 }
 
@@ -789,12 +794,12 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 
 func TestDependsAndContinueOn(t *testing.T) {
-	err := validate(dagDependsAndContinueOn)
+	err := validate(logging.TestContext(t.Context()), dagDependsAndContinueOn)
 	require.ErrorContains(t, err, "templates.dag-target cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'")
 }
 
@@ -831,14 +836,14 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
           - exit 0
     - name: fail
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
@@ -846,7 +851,7 @@ spec:
 `
 
 func TestDAGDependsDigit(t *testing.T) {
-	err := validate(dagDependsDigit)
+	err := validate(logging.TestContext(t.Context()), dagDependsDigit)
 	require.ErrorContains(t, err, "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 }
 
@@ -883,14 +888,14 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
           - exit 0
     - name: fail
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
@@ -898,7 +903,7 @@ spec:
 `
 
 func TestDAGDependenciesDigit(t *testing.T) {
-	err := validate(dagDependenciesDigit)
+	err := validate(logging.TestContext(t.Context()), dagDependenciesDigit)
 	require.ErrorContains(t, err, "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 }
 
@@ -919,7 +924,7 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
@@ -927,7 +932,7 @@ spec:
 `
 
 func TestDAGWithDigitNameNoDepends(t *testing.T) {
-	err := validate(dagWithDigitNoDepends)
+	err := validate(logging.TestContext(t.Context()), dagWithDigitNoDepends)
 	require.NoError(t, err)
 }
 
@@ -955,7 +960,7 @@ spec:
         arguments:
           parameters:
           - name: item
-            value: '{{item}}'
+            value: '{{item}}' 
           - name: input
             value: '{{tasks.fanout.outputs.parameters.output}}'
         withParam: "{{tasks.fanout.outputs.parameters.output}}"
@@ -1017,7 +1022,7 @@ spec:
 `
 
 func TestDAGOutputsResolveTaskAggregatedOutputs(t *testing.T) {
-	err := validate(dagOutputsResolveTaskAggregatedOutputs)
+	err := validate(logging.TestContext(t.Context()), dagOutputsResolveTaskAggregatedOutputs)
 	require.NoError(t, err)
 }
 
@@ -1054,7 +1059,7 @@ spec:
 `
 
 func TestDAGMissingParamValueInTask(t *testing.T) {
-	err := validate(dagMissingParamValueInTask)
+	err := validate(logging.TestContext(t.Context()), dagMissingParamValueInTask)
 	require.ErrorContains(t, err, ".valueFrom only allows: default, configMapKeyRef and supplied")
 }
 
@@ -1087,7 +1092,7 @@ spec:
 `
 
 func TestDAGArgParamValueFromConfigMapInTask(t *testing.T) {
-	err := validate(dagArgParamValueFromConfigMapInTask)
+	err := validate(logging.TestContext(t.Context()), dagArgParamValueFromConfigMapInTask)
 	require.NoError(t, err)
 }
 
@@ -1117,6 +1122,105 @@ spec:
 `
 
 func TestFailDAGArgParamValueFromPathInTask(t *testing.T) {
-	err := validate(failDagArgParamValueFromPathInTask)
+	err := validate(logging.TestContext(t.Context()), failDagArgParamValueFromPathInTask)
 	require.ErrorContains(t, err, "valueFrom only allows: default, configMapKeyRef and supplied")
+}
+
+var dagWithItemTemplateRefTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: 363-test-tmp
+  namespace: default
+spec:
+  templates:
+    - name: 363-test-tmp
+      nodeSelector:
+        nodegroup: arm-spot
+      inputs:
+        parameters:
+          - name: path
+          - name: service
+          - name: build_arg
+          - name: run_on
+          - name: arch
+          - name: docker_org
+      container:
+        image: alpine
+        command:
+          - sh
+          - -c
+          - |
+            echo "path: {{inputs.parameters.path}}"
+            echo "service: {{inputs.parameters.service}}"
+            echo "build_arg: {{inputs.parameters.build_arg}}"
+            echo "run_on: {{inputs.parameters.run_on}}"
+            echo "arch: {{inputs.parameters.arch}}"
+            echo "docker_org: {{inputs.parameters.docker_org}}"
+`
+
+var dagWithItemTemplateRefWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: 363-test-
+  namespace: default
+spec:
+  activeDeadlineSeconds: 10800
+  entrypoint: main
+  serviceAccountName: ci
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: withitems
+            templateRef:
+              name: 363-test-tmp
+              template: 363-test-tmp
+            arguments:
+              parameters:
+                - name: path
+                  value: "{{item.path}}"
+                - name: service
+                  value: "{{item.service}}"
+                - name: build_arg
+                  value: "{{item.arg}}"
+                - name: run_on
+                  value: "{{item.run_on}}"
+                - name: arch
+                  value: "{{item.arch}}"
+                - name: docker_org
+                  value: "{{item.docker_org}}"
+            withItems:
+              - {
+                  path: "services",
+                  service: "id",
+                  arg: "",
+                  run_on: "arm-spot",
+                  arch: "arm64",
+                  docker_org: "pipekit13",
+                }
+              - {
+                  path: "services",
+                  service: "events-handler",
+                  arg: "",
+                  run_on: "arm-spot",
+                  arch: "arm64",
+                  docker_org: "pipekit13",
+                }
+`
+
+func TestDagWithItemTemplateRefTmpl(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagWithItemTemplateRefWf)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(dagWithItemTemplateRefTmpl)
+
+	err := createWorkflowTemplate(ctx, wftmpl)
+	require.NoError(t, err)
+
+	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	require.NoError(t, err)
+
+	_ = deleteWorkflowTemplate(ctx, wftmpl.Name)
 }

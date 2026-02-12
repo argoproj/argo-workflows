@@ -3,9 +3,10 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -13,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var (
@@ -55,25 +57,34 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
-	return apiclient.NewClientFromOpts(
+	var proxy func(*http.Request) (*url.URL, error)
+	if overrides.ClusterInfo.ProxyURL != "" {
+		proxyURL, err := url.Parse(overrides.ClusterInfo.ProxyURL)
+		if err != nil {
+			return nil, nil, err
+		}
+		proxy = http.ProxyURL(proxyURL)
+	}
+	return apiclient.NewClientFromOptsWithContext(ctx,
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,
 			InstanceID:     instanceID,
 			AuthSupplier: func() string {
-				authString, err := GetAuthString()
+				authString, err := GetAuthString(ctx)
 				if err != nil {
-					log.Fatal(err)
+					logger := logging.RequireLoggerFromContext(ctx)
+					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
 				}
 				return authString
 			},
-			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
+			ClientConfigSupplier: GetConfig,
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
-			Context:              ctx,
+			Proxy:                proxy,
 		})
 }
 
-func Namespace() string {
+func Namespace(ctx context.Context) string {
 	if Offline {
 		return ""
 	}
@@ -86,12 +97,13 @@ func Namespace() string {
 	}
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
-		log.Fatal(err)
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.WithFatal().WithError(err).Error(ctx, "Failed to get namespace")
 	}
 	return namespace
 }
 
-func GetAuthString() (string, error) {
+func GetAuthString(ctx context.Context) (string, error) {
 	token, ok := os.LookupEnv("ARGO_TOKEN")
 	if ok {
 		return token, nil
@@ -102,7 +114,7 @@ func GetAuthString() (string, error) {
 	}
 	version := argo.GetVersion()
 	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
-	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
+	authString, err := kubeconfig.GetAuthString(ctx, restConfig, explicitPath)
 	if err != nil {
 		return "", err
 	}

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +48,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	err := TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	require.NoError(t, err)
 
@@ -142,7 +144,7 @@ func TestWaitForTermination(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	err := WaitForTermination(ctx, mock, []string{"container-name"}, time.Duration(10)*time.Second)
 	require.NoError(t, err)
 
@@ -178,7 +180,7 @@ func TestKillGracefully(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	err := KillGracefully(ctx, mock, []string{"container-name"}, time.Second)
 	require.EqualError(t, err, "timeout after 1s")
 }

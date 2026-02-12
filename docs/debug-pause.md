@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The `debug pause` feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state. Currently this feature is only supported when using the [Emissary Executor](workflow-executors.md#emissary-emissary)
+The `debug pause` feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state. Currently this feature is only supported when using the [Emissary Executor](workflow-executors.md#emissary-executor)
 
 In order to pause a container env variables are used:
 
@@ -57,7 +57,7 @@ spec:
 argo submit -n argo --watch pause-after.yaml
 ```
 
-Create a shell in the container of interest of create a ephemeral container in the pod, in this example ephemeral containers are used.
+Create a shell in the container of interest or create an ephemeral container in the pod; in this example ephemeral containers are used.
 
 ```bash
 kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-processes

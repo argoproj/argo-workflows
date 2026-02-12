@@ -9,40 +9,35 @@ import (
 )
 
 // WorkflowPhaseCallback is the function prototype to provide this gauge with the phase of the pods
-type WorkflowPhaseCallback func() map[string]int64
+type WorkflowPhaseCallback func(ctx context.Context) map[string]int64
 
 type workflowPhaseGauge struct {
 	callback WorkflowPhaseCallback
-	gauge    *telemetry.Instrument
+	observe  func(ctx context.Context, o metric.Observer, val int64, workflowStatus string)
 }
 
 func addWorkflowPhaseGauge(_ context.Context, m *Metrics) error {
-	const nameWorkflowPhaseGauge = `gauge`
-	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
-		nameWorkflowPhaseGauge,
-		"number of Workflows currently accessible by the controller by status",
-		"{workflow}",
-		telemetry.WithAsBuiltIn(),
-	)
+	err := m.CreateBuiltinInstrument(telemetry.InstrumentGauge)
 	if err != nil {
 		return err
 	}
 
 	if m.callbacks.WorkflowPhase != nil {
+		inst := m.GetInstrument(telemetry.InstrumentGauge.Name())
 		wfpGauge := workflowPhaseGauge{
 			callback: m.callbacks.WorkflowPhase,
-			gauge:    m.AllInstruments[nameWorkflowPhaseGauge],
+			observe:  m.ObserveGauge,
 		}
-		return m.AllInstruments[nameWorkflowPhaseGauge].RegisterCallback(m.Metrics, wfpGauge.update)
+		return inst.RegisterCallback(m.Metrics, wfpGauge.update)
 	}
 	return nil
 	// TODO init all phases?
 }
 
-func (p *workflowPhaseGauge) update(_ context.Context, o metric.Observer) error {
-	phases := p.callback()
+func (p *workflowPhaseGauge) update(ctx context.Context, o metric.Observer) error {
+	phases := p.callback(ctx)
 	for phase, val := range phases {
-		p.gauge.ObserveInt(o, val, telemetry.InstAttribs{{Name: telemetry.AttribWorkflowStatus, Value: phase}})
+		p.observe(ctx, o, val, phase)
 	}
 	return nil
 }

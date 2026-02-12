@@ -1,18 +1,20 @@
 package common
 
 import (
+	"context"
+	"maps"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 // labelsToPropagate includes the labels of a CronWorkflow which are to be
 // propagated to the Workflow to be scheduled.
-var labelsToPropagate []string = []string{
+var labelsToPropagate = []string{
 	"workflows.argoproj.io/creator",
 	"workflows.argoproj.io/creator-email",
 	"workflows.argoproj.io/creator-preferred-username",
@@ -29,16 +31,18 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return toWorkflow(*cronWf, meta)
 }
 
-func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
-	cronWfLabels := cronWf.ObjectMeta.GetLabels()
+func ConvertCronWorkflowToWorkflowWithProperties(ctx context.Context, cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
+	log := logging.RequireLoggerFromContext(ctx)
+	cronWfLabels := cronWf.GetLabels()
 	wfLabels := make(map[string]string)
 	for _, k := range labelsToPropagate {
 		v, ok := cronWfLabels[k]
 		if ok {
 			wfLabels[k] = v
-			log.WithField("key", k).
-				WithField("value", v).
-				Debug("propagated the label of the cron workflow to the workflow to be scheduled.")
+			log.WithFields(logging.Fields{
+				"key":   k,
+				"value": v,
+			}).Debug(ctx, "propagated the label of the cron workflow to the workflow to be scheduled.")
 		}
 	}
 
@@ -79,26 +83,22 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowKind,
-			APIVersion: cronWf.TypeMeta.APIVersion,
+			APIVersion: cronWf.APIVersion,
 		},
 		ObjectMeta: objectMeta,
 		Spec:       cronWf.Spec.WorkflowSpec,
 	}
 
-	if instanceId, ok := cronWf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID]; ok {
-		wf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID] = instanceId
+	if instanceID, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
 	}
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
 	if cronWf.Spec.WorkflowMetadata != nil {
-		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
-			wf.Labels[key] = label
-		}
+		maps.Copy(wf.Labels, cronWf.Spec.WorkflowMetadata.Labels)
 
 		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
-			for key, annotation := range cronWf.Spec.WorkflowMetadata.Annotations {
-				wf.Annotations[key] = annotation
-			}
+			maps.Copy(wf.Annotations, cronWf.Spec.WorkflowMetadata.Annotations)
 		}
 
 		wf.Finalizers = append(wf.Finalizers, cronWf.Spec.WorkflowMetadata.Finalizers...)

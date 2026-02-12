@@ -1,4 +1,5 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, https://argo-workflows.readthedocs.io/en/latest/] # https://docs.readthedocs.io/en/stable/canonical-urls.html#how-to-specify-the-canonical-url, https://www.mkdocs.org/user-guide/configuration/#environment-variables
 repo_url: https://github.com/argoproj/argo-workflows
 edit_uri: https://github.com/argoproj/argo-workflows/edit/main/docs
 strict: true
@@ -33,6 +34,7 @@ markdown_extensions:
   - md_in_html
   - pymdownx.details
   - pymdownx.snippets
+  - pymdownx.tilde
   - pymdownx.superfences:
       custom_fences:
         # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
@@ -49,11 +51,13 @@ plugins:
   - search # re-include the default: https://www.mkdocs.org/user-guide/configuration/#plugins,
 validation:
   omitted_files: warn
-  absolute_links: warn
+  absolute_links: relative_to_docs
   unrecognized_links: warn
+  anchors: warn
 exclude_docs: |
   /proposals/
   /requirements.txt
+  /tested-kubernetes-versions.md
 
 nav:
   - Home: README.md
@@ -87,6 +91,7 @@ nav:
           - walk-through/exit-handlers.md
           - walk-through/timeouts.md
           # template types
+          - walk-through/annotations.md
           - walk-through/suspending.md
           - walk-through/kubernetes-resources.md
           # container configuration
@@ -114,6 +119,7 @@ nav:
           - key-only-artifacts.md
           - artifact-repository-ref.md
           - conditional-artifacts-parameters.md
+          - artifact-plugin.md
       - Access Control:
           - service-accounts.md
           - workflow-rbac.md
@@ -127,6 +133,7 @@ nav:
           - template-defaults.md
           - enhanced-depends-logic.md
           - node-field-selector.md
+          - pod-restarts.md
       - Status:
           - resource-duration.md
           - estimated-duration.md
@@ -156,8 +163,9 @@ nav:
           - workflow-submitting-workflow.md
           - async-pattern.md
           - client-libraries.md
+          - go-sdk-guide.md
           - swagger.md
-      - Plugins:
+      - Executor Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
@@ -197,8 +205,10 @@ nav:
           - argo cluster-template list: cli/argo_cluster-template_list.md
           - argo cluster-template update: cli/argo_cluster-template_update.md
           - argo completion: cli/argo_completion.md
+          - argo convert: cli/argo_convert.md
           - argo cp: cli/argo_cp.md
           - argo cron: cli/argo_cron.md
+          - argo cron: cli/argo_cron_backfill.md
           - argo cron create: cli/argo_cron_create.md
           - argo cron delete: cli/argo_cron_delete.md
           - argo cron get: cli/argo_cron_get.md
@@ -222,6 +232,11 @@ nav:
           - argo stop: cli/argo_stop.md
           - argo submit: cli/argo_submit.md
           - argo suspend: cli/argo_suspend.md
+          - argo sync: cli/argo_sync.md
+          - argo sync create: cli/argo_sync_create.md
+          - argo sync delete: cli/argo_sync_delete.md
+          - argo sync get: cli/argo_sync_get.md
+          - argo sync update: cli/argo_sync_update.md
           - argo template: cli/argo_template.md
           - argo template create: cli/argo_template_create.md
           - argo template delete: cli/argo_template_delete.md
@@ -255,6 +270,7 @@ nav:
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md
+          - synchronization-config.md
           - parallelism.md
       - Argo Server:
           - argo-server.md
@@ -275,6 +291,7 @@ nav:
       - running-locally.md
       - doc-changes.md
       - public-api.md
+      - artifact-plugin.md
       - static-code-analysis.md
       - stress-testing.md
       - releasing.md

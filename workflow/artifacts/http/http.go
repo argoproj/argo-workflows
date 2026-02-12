@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,20 +22,21 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Response, error) {
+func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv1.Artifact) (http.Response, error) {
 	var req *http.Request
 	var url string
 	var err error
-	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
+	switch {
+	case inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil:
 		url = inputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
-	} else if inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil {
+	case inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil:
 		url = inputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
@@ -44,7 +46,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
 		}
-	} else {
+	default:
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
 
@@ -54,7 +56,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 	if err != nil {
 		return http.Response{}, err
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
@@ -64,7 +66,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 }
 
 // Load reads the artifact from the HTTP URL
-func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	lf, err := os.Create(path)
 	if err != nil {
 		return err
@@ -72,7 +74,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer func() {
 		_ = lf.Close()
 	}()
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return err
 	}
@@ -83,8 +85,8 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
-func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	res, err := h.retrieveContent(inputArtifact)
+func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +94,7 @@ func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser
 }
 
 // Save writes the artifact to the URL
-func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	cleanPath := filepath.Clean(path)
 	f, err := os.Open(cleanPath)
 	if err != nil {
@@ -102,14 +104,14 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 	var url string
 	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
 		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
 		if err != nil {
 			return err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
 	} else {
 		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
 		if err != nil {
 			return err
 		}
@@ -139,14 +141,14 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 }
 
 // Delete is unsupported for the http artifacts
-func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+func (h *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 
-func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (h *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (h *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (h *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }

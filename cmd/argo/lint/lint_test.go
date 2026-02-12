@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -18,6 +17,7 @@ import (
 	wftemplatemocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate/mocks"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var lintFileData = []byte(`
@@ -67,11 +67,11 @@ spec:
 `)
 
 func TestLintFile(t *testing.T) {
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
 	require.NoError(t, err)
@@ -80,7 +80,8 @@ func TestLintFile(t *testing.T) {
 	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	res, err := Lint(context.Background(), &LintOptions{
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &LintOptions{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
 			WorkflowsClient: wfServiceClientMock,
@@ -96,11 +97,11 @@ func TestLintFile(t *testing.T) {
 }
 
 func TestLintMultipleKinds(t *testing.T) {
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
 
 	fmtr, err := GetFormatter("simple")
 	require.NoError(t, err)
@@ -110,7 +111,8 @@ func TestLintMultipleKinds(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	res, err := Lint(context.Background(), &LintOptions{
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &LintOptions{
 		Files: []string{file.Name()},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -128,11 +130,11 @@ func TestLintMultipleKinds(t *testing.T) {
 }
 
 func TestLintWithOutput(t *testing.T) {
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	require.NoError(t, err)
+	file.Close()
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
@@ -154,7 +156,8 @@ func TestLintWithOutput(t *testing.T) {
 	mw := &mocks.MockWriter{}
 	mw.On("Write", mock.Anything).Return(0, nil)
 
-	res, err := Lint(context.Background(), &LintOptions{
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &LintOptions{
 		Files: []string{file.Name(), "-"},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -197,7 +200,8 @@ func TestLintStdin(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	res, err := Lint(context.Background(), &LintOptions{
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &LintOptions{
 		Files: []string{"-"},
 		ServiceClients: ServiceClients{
 			WorkflowsClient:         wfServiceClientMock,
@@ -219,7 +223,7 @@ func TestLintDeviceFile(t *testing.T) {
 		t.Skip("device files not accessible in windows")
 	}
 
-	file, err := os.CreateTemp("", "*.yaml")
+	file, err := os.CreateTemp(t.TempDir(), "*.yaml")
 	fd := file.Fd()
 	require.NoError(t, err)
 	err = os.WriteFile(file.Name(), lintFileData, 0o600)
@@ -235,7 +239,8 @@ func TestLintDeviceFile(t *testing.T) {
 
 	deviceFileName := fmt.Sprintf("/dev/fd/%d", fd)
 
-	res, err := Lint(context.Background(), &LintOptions{
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &LintOptions{
 		Files: []string{deviceFileName},
 		ServiceClients: ServiceClients{
 			WorkflowsClient: wfServiceClientMock,
@@ -290,12 +295,12 @@ func TestGetFormatter(t *testing.T) {
 				if test.expectedErr != nil {
 					require.EqualError(t, err, test.expectedErr.Error())
 					return
-				} else {
-					require.NoError(t, err)
 				}
+				require.NoError(t, err)
 			}
 
-			r, err := Lint(context.Background(), &LintOptions{Formatter: fmtr})
+			ctx := logging.TestContext(t.Context())
+			r, err := Lint(ctx, &LintOptions{Formatter: fmtr})
 			require.NoError(t, err)
 			assert.Equal(t, test.expectedOutput, r.Msg())
 		})

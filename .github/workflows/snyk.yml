@@ -16,32 +16,32 @@ jobs:
   golang:
     name: Scan Go deps
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - run: mkdir -p ui/dist/app/ && touch ui/dist/app/placeholder
       - name: Run Snyk to check for Go vulnerabilities
-        uses: snyk/actions/golang@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        uses: snyk/actions/golang@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
         with:
           args: --severity-threshold=high
 
   node:
     name: Scan Node deps
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: "20" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install
       - name: Run Snyk to check for Node vulnerabilities
-        uses: snyk/actions/node@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
         with:
           args: --file=ui/package.json --severity-threshold=high
-

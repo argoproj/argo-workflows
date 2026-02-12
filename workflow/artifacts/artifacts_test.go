@@ -1,8 +1,10 @@
-package executor
+package artifacts
 
 import (
 	"context"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,7 +56,7 @@ func TestNewDriverS3(t *testing.T) {
 		}},
 	}
 
-	got, err := newDriver(context.TODO(), art, &mockResourceInterface{})
+	got, err := newDriver(logging.TestContext(t.Context()), art, &mockResourceInterface{})
 	require.NoError(t, err)
 
 	artDriver := got.(*s3.ArtifactDriver)

@@ -13,30 +13,28 @@ func MetaNamespaceLabelIndex(namespace, label string) string {
 }
 
 func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
-	return func(obj interface{}) ([]string, error) {
+	return func(obj any) ([]string, error) {
 		v, err := meta.Accessor(obj)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		if value, exists := v.GetLabels()[common.LabelKeyPhase]; exists {
 			return []string{value}, nil
-		} else {
-			// If the object doesn't have a phase set, consider it pending
-			return []string{string(v1alpha1.NodePending)}, nil
 		}
+		// If the object doesn't have a phase set, consider it pending
+		return []string{string(v1alpha1.NodePending)}, nil
 	}
 }
 
 func MetaNamespaceLabelIndexFunc(label string) cache.IndexFunc {
-	return func(obj interface{}) ([]string, error) {
+	return func(obj any) ([]string, error) {
 		v, err := meta.Accessor(obj)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		if value, exists := v.GetLabels()[label]; exists {
 			return []string{MetaNamespaceLabelIndex(v.GetNamespace(), value)}, nil
-		} else {
-			return nil, nil
 		}
+		return nil, nil
 	}
 }

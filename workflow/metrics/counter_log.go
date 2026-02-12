@@ -2,44 +2,62 @@ package metrics
 
 import (
 	"context"
+	"sync/atomic"
+	"unsafe"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
-
-	log "github.com/sirupsen/logrus"
 )
 
-type logMetric struct {
-	counter *telemetry.Instrument
+type logMetricsHelper struct {
+	addLogMessages func(ctx context.Context, val int64, logLevel string)
+}
+
+var globalLogMetrics unsafe.Pointer // *logMetricsHelper
+
+// init registers the metrics hook at package initialization time
+func init() {
+	// Register the global hook immediately
+	logging.AddGlobalHook(&globalLogMetric{})
+}
+
+type globalLogMetric struct{}
+
+func (g *globalLogMetric) Levels() []logging.Level {
+	return []logging.Level{logging.Debug, logging.Info, logging.Warn, logging.Error}
+}
+
+func (g *globalLogMetric) Fire(ctx context.Context, level logging.Level, _ string, _ logging.Fields) {
+	// Get the metrics helper atomically
+	helperPtr := (*logMetricsHelper)(atomic.LoadPointer(&globalLogMetrics))
+
+	// Only fire if we have real metrics
+	if helperPtr != nil && helperPtr.addLogMessages != nil {
+		helperPtr.addLogMessages(ctx, 1, logLevelName(level))
+	}
+}
+
+func logLevelName(level logging.Level) string {
+	switch level {
+	case logging.Warn:
+		return "warning"
+	default:
+		return string(level)
+	}
 }
 
 func addLogCounter(ctx context.Context, m *Metrics) error {
-	const nameLogMessages = `log_messages`
-	err := m.CreateInstrument(telemetry.Int64Counter,
-		nameLogMessages,
-		"Total number of log messages.",
-		"{message}",
-		telemetry.WithAsBuiltIn(),
-	)
-	lm := logMetric{
-		counter: m.AllInstruments[nameLogMessages],
+	err := m.CreateBuiltinInstrument(telemetry.InstrumentLogMessages)
+
+	// Set the global metrics helper atomically
+	helper := &logMetricsHelper{
+		addLogMessages: m.AddLogMessages,
 	}
-	log.AddHook(lm)
-	for _, level := range lm.Levels() {
-		m.AddInt(ctx, nameLogMessages, 0, telemetry.InstAttribs{
-			{Name: telemetry.AttribLogLevel, Value: level.String()},
-		})
+	atomic.StorePointer(&globalLogMetrics, unsafe.Pointer(helper))
+
+	for _, level := range []logging.Level{logging.Debug, logging.Info, logging.Warn, logging.Error} {
+		m.AddLogMessages(ctx, 0, logLevelName(level))
 	}
 
 	return err
-}
-
-func (m logMetric) Levels() []log.Level {
-	return []log.Level{log.InfoLevel, log.WarnLevel, log.ErrorLevel}
-}
-
-func (m logMetric) Fire(entry *log.Entry) error {
-	(*m.counter).AddInt(entry.Context, 1, telemetry.InstAttribs{
-		{Name: telemetry.AttribLogLevel, Value: entry.Level.String()},
-	})
-	return nil
 }

@@ -21,7 +21,7 @@ We do some hackerey here too:
 * Change "argo-workflows" into "argo_workflows".
 */
 func secondarySwaggerGen() {
-	definitions := make(map[string]interface{})
+	definitions := make(map[string]any)
 	for n, d := range wfv1.GetOpenAPIDefinitions(func(path string) spec.Ref {
 		return spec.Ref{
 			Ref: jsonreference.MustCreateRef("#/definitions/" + strings.ReplaceAll(path, "/", ".")),
@@ -31,7 +31,7 @@ func secondarySwaggerGen() {
 		println(n)
 		definitions[n] = d.Schema
 	}
-	swagger := map[string]interface{}{
+	swagger := map[string]any{
 		"definitions": definitions,
 	}
 	f, err := os.Create("pkg/apiclient/_.secondary.swagger.json")

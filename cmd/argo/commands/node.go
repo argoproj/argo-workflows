@@ -56,21 +56,22 @@ func NewNodeCommand() *cobra.Command {
 				}
 				res, err := json.Marshal(outputParams)
 				if err != nil {
-					return fmt.Errorf("unable to parse output parameter set request: %s", err)
+					return fmt.Errorf("unable to parse output parameter set request: %w", err)
 				}
 				outputParameters = string(res)
 			}
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 
 			selector, err := fields.ParseSelector(setArgs.nodeFieldSelector)
 			if err != nil {
-				return fmt.Errorf("Unable to parse node field selector '%s': %s", setArgs.nodeFieldSelector, err)
+				return fmt.Errorf("unable to parse node field selector '%s': %w", setArgs.nodeFieldSelector, err)
 			}
 
 			_, err = serviceClient.SetWorkflow(ctx, &workflowpkg.WorkflowSetRequest{
@@ -88,7 +89,7 @@ func NewNodeCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVar(&setArgs.nodeFieldSelector, "node-field-selector", "", "Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&setArgs.nodeFieldSelector, "node-field-selector", "", "Selector of node to set, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	command.Flags().StringVar(&setArgs.phase, "phase", "", "Phase to set the node to, eg: --phase Succeeded")
 	command.Flags().StringArrayVarP(&setArgs.outputParameters, "output-parameter", "p", []string{}, "Set a \"supplied\" output parameter of node, eg: --output-parameter parameter-name=\"Hello, world!\"")
 	command.Flags().StringVarP(&setArgs.message, "message", "m", "", "Set the message of a node, eg: --message \"Hello, world!\"")

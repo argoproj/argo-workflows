@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -13,10 +12,13 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx := logging.TestContext(context.Background())
+	logger := logging.RequireLoggerFromContext(ctx)
+
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -56,7 +58,7 @@ spec:
 	flag.IntVar(&n, "n", 1, "number of workflows")
 	flag.Parse()
 
-	log.Printf("running %d workflows\n", n)
+	logger.WithField("workflowCount", n).Info(ctx, "running workflows")
 
 	for i := 0; i < n; i++ {
 		wf.SetName(fmt.Sprintf("stress-%d", i))
@@ -64,6 +66,6 @@ spec:
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("%s\n", wf.GetName())
+		logger.WithField("workflowName", wf.GetName()).Info(ctx, "created workflow")
 	}
 }

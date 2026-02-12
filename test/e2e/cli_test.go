@@ -199,7 +199,8 @@ func (s *CLISuite) TestSubmitInvalidWf() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic-invalid.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.Error(t, err)
-			assert.Contains(t, output, "yaml file at index 0 is not valid:")
+			assert.Contains(t, output, "yaml file is not valid")
+			assert.Contains(t, output, "index=0")
 		})
 }
 
@@ -351,7 +352,7 @@ func (s *CLISuite) TestLogs() {
 
 func toLines(x string) []string {
 	var y []string
-	for _, s := range strings.Split(x, "\n") {
+	for s := range strings.SplitSeq(x, "\n") {
 		println("s=", s)
 		if s != "" && !strings.Contains(s, "argo=true") {
 			y = append(y, s)
@@ -705,6 +706,12 @@ func (s *CLISuite) TestWorkflowLint() {
 			assert.Contains(t, output, "no linting errors found")
 		})
 	})
+	s.Run("LintFileEmptyTemplateSteps", func() {
+		s.Given().RunCli([]string{"lint", "smoke/empty-template-steps.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "no linting errors found")
+		})
+	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
@@ -715,6 +722,12 @@ func (s *CLISuite) TestWorkflowLint() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
 			assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
+		})
+	})
+	s.Run("LintFileMisreferenceTemplate", func() {
+		s.Given().RunCli([]string{"lint", "expectedfailures/misreference-template-name.yaml"}, func(t *testing.T, output string, err error) {
+			require.EqualError(t, err, "exit status 1")
+			assert.Contains(t, output, "templates.steps-with-misreference.steps[1].hello2 template name 'hell0' undefined")
 		})
 	})
 	s.Run("LintFileWithTemplate", func() {
@@ -1329,11 +1342,17 @@ func (s *CLISuite) TestCronCommands() {
 
 	// All files in this directory are CronWorkflows, expect success
 	s.Run("AllCron", func() {
+		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 		s.Given().
 			RunCli([]string{"cron", "lint", "cron"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "no linting errors found!")
 			})
+		s.Given().RunCli([]string{"template", "delete", "job"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 	})
 
 	s.Run("Create", func() {
@@ -1392,7 +1411,6 @@ func (s *CLISuite) TestCronCommands() {
 			assert.Contains(t, output, "5 5 5 * *")
 			assert.Contains(t, output, "Replace")
 			assert.Contains(t, output, "whalesay")
-			assert.NotContains(t, output, "argosay")
 		})
 	})
 	s.Run("Create Parameter Override", func() {
@@ -1405,14 +1423,14 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Name Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "basic-cron-wf-overridden-name", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-name")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-name")
 		})
 	})
 
 	s.Run("Create GenerateName Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--generate-name", "basic-cron-wf-overridden-generate-name-", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-generate-name-")
+			assert.Contains(t, strings.ReplaceAll(output, " ", ""), "Name:basic-cron-wf-overridden-generate-name-")
 		})
 	})
 
@@ -1480,6 +1498,43 @@ func (s *CLISuite) TestCronCommands() {
 		s.Given().RunCli([]string{"cron", "create", "cron/multiple-schedules.yaml"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 			assert.Contains(t, output, "Schedules:                     * * * * *,*/2 * * * *")
+		})
+	})
+}
+
+func (s *CLISuite) TestCronWorkflowsBackfillCommands() {
+	s.Run("Backfill", func() {
+		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Name:")
+			assert.Contains(t, output, "Namespace:")
+			assert.Contains(t, output, "Created:")
+		})
+		s.Given().RunCli([]string{"cron", "create", "cron/cron-daily-job.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Schedules:                     0 2 * * *")
+		})
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Wed, 21 Oct 2024 16:28:00 GMT", "--argname", "date"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "There is no suitable scheduling time.")
+		})
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Sat, 24 Oct 2024 15:28:00 GMT", "--argname", "date", "--parallel", "true"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Backfill task for Cronworkflow daily-job")
+			assert.Contains(t, output, "Backfill Period :")
+			assert.Contains(t, output, "Start Time : Wed, 21 Oct 2024 15:28:00 GMT")
+			assert.Contains(t, output, "End Time : Sat, 24 Oct 2024 15:28:00 GMT")
+			assert.Contains(t, output, "Total Backfill Schedule: 3")
+		})
+		s.Given().RunCli([]string{"watch", "@latest"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "2024-10-22 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-23 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-24 02:00:00 +0000 GMT")
+			require.Contains(t, output, "Status:              Succeeded")
+		})
+		s.Given().RunCli([]string{"delete", "--prefix", "backfill-wf"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
 		})
 	})
 }
@@ -1634,11 +1689,11 @@ func (s *CLISuite) workflowCopyArtifactTests(workflowFileName string) {
 		Given().
 		RunCli([]string{"cp", "@latest", ".", "--path", "/{templateName}/{artifactName}/"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			//Assert everything was stored
+			// Assert everything was stored
 			assert.Contains(t, output, "Created \"main.log\"")
 			assert.Contains(t, output, "Created \"bye_world.tgz\"")
 			assert.Contains(t, output, "Created \"hello_world.tgz\"")
-			//Assert filepaths are correct
+			// Assert filepaths are correct
 			statStrip := func(f os.FileInfo, err error) error {
 				return err
 			}
@@ -1760,6 +1815,96 @@ func (s *CLISuite) TestArchive() {
 				assert.Contains(t, output, "deleted")
 			})
 	})
+}
+
+func (s *CLISuite) TestConfigMapSyncCLI() {
+	s.Given().
+		RunCli([]string{"sync", "create", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap", "--limit", "1000"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Sync limit created")
+			assert.Contains(t, output, "Key: test-key")
+			assert.Contains(t, output, "Type: configmap")
+			assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+			assert.Contains(t, output, "Namespace: argo")
+			assert.Contains(t, output, "Limit: 1000")
+		})
+
+	s.Run("Get ConfigMap sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "get", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-key")
+				assert.Contains(t, output, "Type: configmap")
+				assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 1000")
+			})
+	})
+
+	s.Run("Update ConfigMap sync configs", func() {
+		s.Given().
+			RunCli([]string{"sync", "update", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap", "--limit", "2000"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-key")
+				assert.Contains(t, output, "Type: configmap")
+				assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 2000")
+			})
+	})
+
+	s.Run("Delete ConfigMap sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "delete", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit deleted")
+			})
+	})
+
+}
+
+func (s *CLISuite) TestDBSyncCLI() {
+	s.Given().
+		RunCli([]string{"sync", "create", "test-db-limit-key", "--type", "database", "--limit", "1000"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Sync limit created")
+			assert.Contains(t, output, "Key: test-db-limit-key")
+			assert.Contains(t, output, "Type: database")
+			assert.Contains(t, output, "Namespace: argo")
+			assert.Contains(t, output, "Limit: 1000")
+		})
+
+	s.Run("Get Database sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "get", "test-db-limit-key", "--type", "database"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-db-limit-key")
+				assert.Contains(t, output, "Type: database")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 1000")
+			})
+	})
+
+	s.Run("Update Database sync configs", func() {
+		s.Given().
+			RunCli([]string{"sync", "update", "test-db-limit-key", "--type", "database", "--limit", "2000"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit updated")
+				assert.Contains(t, output, "Key: test-db-limit-key")
+				assert.Contains(t, output, "Type: database")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 2000")
+			})
+	})
+
+	s.Run("Delete Database sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "delete", "test-db-limit-key", "--type", "database"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit deleted")
+			})
+	})
+
 }
 
 func (s *CLISuite) TestArchiveLabel() {
@@ -1890,6 +2035,62 @@ func (s *CLISuite) TestPluginStruct() {
 			require.NoError(t, yaml.UnmarshalStrict([]byte(output), &wf))
 			assert.NotNil(t, wf.Spec.Templates[0].Plugin)
 		})
+}
+
+func (s *CLISuite) TestWorkflowConvert() {
+	s.Run("ConvertCronWorkflowSchedule", func() {
+		s.Given().RunCli([]string{"convert", "testdata/convert/convert-legacy-cron.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Check that schedule (singular) has been converted to schedules (plural)
+			assert.Contains(t, output, "schedules:")
+			assert.Contains(t, output, "- 0 0 * * *")
+			assert.NotContains(t, output, "schedule: \"0 0 * * *\"")
+		})
+	})
+	s.Run("ConvertSynchronization", func() {
+		s.Given().RunCli([]string{"convert", "testdata/convert/convert-legacy-sync.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Check that semaphore (singular) has been converted to semaphores (plural)
+			assert.Contains(t, output, "semaphores:")
+			// Check that mutex (singular) has been converted to mutexes (plural)
+			assert.Contains(t, output, "mutexes:")
+			// Verify workflow-level conversions
+			assert.Contains(t, output, "name: my-config")
+			assert.Contains(t, output, "name: test-mutex")
+			// Verify template-level conversions
+			assert.Contains(t, output, "name: template-config")
+			assert.Contains(t, output, "name: template-mutex")
+		})
+	})
+	s.Run("ConvertJSON", func() {
+		s.Given().RunCli([]string{"convert", "-o", "json", "testdata/convert/convert-legacy-cron.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Parse as JSON to verify it's valid JSON
+			var cronWf wfv1.CronWorkflow
+			lines := strings.Split(strings.TrimSpace(output), "\n")
+			require.NotEmpty(t, lines)
+			err = json.Unmarshal([]byte(lines[0]), &cronWf)
+			require.NoError(t, err)
+			// Verify conversion happened - legacy schedule field should be converted to schedules array
+			assert.Len(t, cronWf.Spec.Schedules, 1)
+			assert.Equal(t, "0 0 * * *", cronWf.Spec.Schedules[0])
+		})
+	})
+	s.Run("ConvertStdin", func() {
+		s.Given().RunCliStdin([]string{"convert", "-"}, "testdata/convert/convert-legacy-cron.yaml", func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "schedules:")
+			assert.Contains(t, output, "- 0 0 * * *")
+		})
+	})
+	s.Run("ConvertPreservesNonLegacy", func() {
+		// Test that files already in the new format pass through unchanged (except for default/empty fields)
+		s.Given().RunCli([]string{"convert", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Should successfully parse and output the workflow
+			assert.Contains(t, output, "kind: Workflow")
+		})
+	})
 }
 
 func TestCLISuite(t *testing.T) {

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 var basicMetric = `
@@ -39,35 +39,35 @@ spec:
             valueFrom:
               path: /tmp/rand_int.txt
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
 `
 
 func TestBasicMetric(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(basicMetric)
-	ctx := context.Background()
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	// Schedule first pod and mark completed
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	// Process first metrics
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	metricName := wf.Spec.Templates[0].Metrics.Prometheus[0].Name
 	assert.True(t, controller.metrics.CustomMetricExists(metricName))
 	attribs := attribute.NewSet(attribute.String("name", "random-int"))
-	_, err = testExporter.GetFloat64GaugeValue(metricName, &attribs)
+	_, err = testExporter.GetFloat64GaugeValue(ctx, metricName, &attribs)
 	require.NoError(t, err)
 }
 
@@ -121,34 +121,34 @@ spec:
 
 func TestGaugeMetric(t *testing.T) {
 	wf := v1alpha1.MustUnmarshalWorkflow(gaugeMetric)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
 	// Schedule first pod and mark completed
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 	// Process first metrics
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("name", "random-int"))
 
-	valAdd, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[0].Name, &attribs)
+	valAdd, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InEpsilon(t, float64(10.0), valAdd, 0.001)
 
-	valSub, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[1].Name, &attribs)
+	valSub, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[1].Name, &attribs)
 	require.NoError(t, err)
 	assert.InEpsilon(t, float64(-5.0), valSub, 0.001)
 
-	valSet, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[2].Name, &attribs)
+	valSet, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[2].Name, &attribs)
 	require.NoError(t, err)
 	assert.InEpsilon(t, float64(50.0), valSet, 0.001)
 
-	valDefault, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[3].Name, &attribs)
+	valDefault, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[3].Name, &attribs)
 	require.NoError(t, err)
 	assert.InEpsilon(t, float64(15.0), valDefault, 0.001)
 }
@@ -187,26 +187,26 @@ spec:
 
 func TestCounterMetric(t *testing.T) {
 	wf := v1alpha1.MustUnmarshalWorkflow(counterMetric)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
 	// Schedule first pod and mark completed
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 	// Process first metrics
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("name", "flakey"))
 
-	valTotal, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[0].Name, &attribs)
+	valTotal, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), valTotal, 0.001)
 
-	valError, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[1].Name, &attribs)
+	valError, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[1].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), valError, 0.001)
 }
@@ -265,20 +265,20 @@ status:
 `
 
 func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testMetricEmissionSameOperationCreationAndFailure)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet()
 
-	valError, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Templates[1].Metrics.Prometheus[0].Name, &attribs)
+	valError, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Templates[1].Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), valError, 0.001)
 }
@@ -334,10 +334,10 @@ spec:
 
 func TestRetryStrategyMetric(t *testing.T) {
 	wf := v1alpha1.MustUnmarshalWorkflow(testRetryStrategyMetric)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
-	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	// Ensure no metrics have been emitted yet
@@ -350,16 +350,16 @@ func TestRetryStrategyMetric(t *testing.T) {
 	podNode := woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"]
 	podNode.Phase = v1alpha1.NodeSucceeded
 	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet()
 
-	valWfError, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Templates[0].Metrics.Prometheus[0].Name, &attribs)
+	valWfError, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Templates[0].Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1.0), valWfError, 0.001)
 
-	valTplError, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Templates[1].Metrics.Prometheus[0].Name, &attribs)
+	valTplError, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Templates[1].Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1.0), valTplError, 0.001)
 }
@@ -386,7 +386,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -424,7 +424,7 @@ spec:
       command:
       - python
       - -c
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
     inputs: {}
@@ -445,14 +445,14 @@ spec:
 `
 
 func TestDAGTmplMetrics(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(dagTmplMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -462,7 +462,7 @@ func TestDAGTmplMetrics(t *testing.T) {
 	tmpl := woc.wf.GetTemplateByName("random-int")
 	assert.NotNil(t, tmpl)
 
-	val, err := testExporter.GetFloat64HistogramData(tmpl.Metrics.Prometheus[0].Name, &attribs)
+	val, err := testExporter.GetFloat64HistogramData(ctx, tmpl.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InEpsilon(t, float64(5.0), val.Sum, 0.001)
 	assert.Equal(t, uint64(1), val.Count)
@@ -470,7 +470,7 @@ func TestDAGTmplMetrics(t *testing.T) {
 	attribs = attribute.NewSet(attribute.String("name", "flakey"), attribute.String("status", "Failed"))
 	tmpl = woc.wf.GetTemplateByName("flakey")
 	assert.NotNil(t, tmpl)
-	valErrCount, err := testExporter.GetFloat64CounterValue(tmpl.Metrics.Prometheus[0].Name, &attribs)
+	valErrCount, err := testExporter.GetFloat64CounterValue(ctx, tmpl.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), valErrCount, 0.001)
 }
@@ -505,30 +505,30 @@ spec:
 `
 
 func TestRealtimeWorkflowMetric(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetric)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("label", "foobar"), attribute.String("workflowName", "test-foobar"))
-	value, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	value, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
-	value1, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	value1, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	t.Logf("%v new %v old", value1, value)
 	assert.Greater(t, value1, value)
 
 	woc.markWorkflowSuccess(ctx)
-	value2, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	value2, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)
-	value3, err := testExporter.GetFloat64GaugeValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	value3, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	// Duration should be same after workflow complete
 	assert.InEpsilon(t, value2, value3, 0.001)
@@ -568,19 +568,19 @@ spec:
 `
 
 func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetricWithGlobalParameters)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("label", "foobar"), attribute.String("workflowName", "test-foobar"))
-	_, err = testExporter.GetFloat64GaugeValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	_, err = testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 }
 
@@ -669,19 +669,19 @@ status:
 `
 
 func TestProcessedRetryNode(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testProcessedRetryNode)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
 	attribs := attribute.NewSet(attribute.String("work_unit", "metrics-eg::A"), attribute.String("workflow_result", "Succeeded"))
-	value, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Templates[1].Metrics.Prometheus[0].Name, &attribs)
+	value, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Templates[1].Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), value, 0.001)
 }
@@ -815,18 +815,18 @@ status:
 `
 
 func TestControllerRestartWithRunningWorkflow(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(suspendWfWithMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	attribs := attribute.NewSet(attribute.String("name", "model_a"))
-	_, err = testExporter.GetFloat64GaugeValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	_, err = testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 }
 
@@ -856,27 +856,27 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 
 func TestRuntimeMetrics(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(runtimeWfMetrics)
-	ctx := context.Background()
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx) // create step node
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded) // pod is successful - manually workflow is succeeded
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx) // node status of previous context
 
 	attribs := attribute.NewSet(attribute.String("playground_id_workflow_counter", "test"), attribute.String("status", "Succeeded"))
-	value, err := testExporter.GetFloat64CounterValue(woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
+	value, err := testExporter.GetFloat64CounterValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), value, 0.001)
 }

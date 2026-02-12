@@ -1,20 +1,24 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -74,17 +78,31 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 }
 
 // Save is unsupported for git output artifacts
-func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
-	return errors.New("git output artifacts unsupported")
+func (g *ArtifactDriver) Save(ctx context.Context, path string, artifact *wfv1.Artifact) error {
+	return argoerrors.New(argoerrors.CodeBadRequest, "git output artifacts unsupported")
 }
 
 // Delete is unsupported for git artifacts
-func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+func (g *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 
-func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
+
+	// Azure DevOps requires multi_ack* capabilities which go-git does not currently support
+	// Workaround: removing these from UnsupportedCapabilities allows clones to work (see https://github.com/go-git/go-git/pull/613)
+	var newCaps []capability.Capability
+	if strings.Contains(a.Repo, "dev.azure.com") {
+		for _, c := range transport.UnsupportedCapabilities {
+			if c == capability.MultiACK || c == capability.MultiACKDetailed {
+				continue
+			}
+			newCaps = append(newCaps, c)
+		}
+		transport.UnsupportedCapabilities = newCaps
+	}
+
 	sshUser := GetUser(a.Repo)
 	closer, auth, err := g.auth(sshUser)
 	if err != nil {
@@ -107,9 +125,8 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	}
 
 	r, err := git.PlainClone(path, false, cloneOptions)
-	switch err {
-	case transport.ErrEmptyRemoteRepository:
-		log.Info("Cloned an empty repository")
+	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
+		logging.RequireLoggerFromContext(ctx).Info(ctx, "Cloned an empty repository")
 		r, err := git.PlainInit(path, false)
 		if err != nil {
 			return fmt.Errorf("failed to plain init: %w", err)
@@ -125,9 +142,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			return fmt.Errorf("failed to create branch %q: %w", branchName, err)
 		}
 		return nil
-	case nil:
-		// fallthrough ...
-	default:
+	} else if err != nil {
 		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}
 	if len(a.Fetch) > 0 {
@@ -188,15 +203,15 @@ func isFetchErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
 }
 
-func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+func (g *ArtifactDriver) OpenStream(ctx context.Context, a *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, g)
+	return common.LoadToStream(ctx, a, g)
 }
 
-func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (g *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (g *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	return false, argoerrors.New(argoerrors.CodeNotImplemented, "IsDirectory currently unimplemented for Git")
 }

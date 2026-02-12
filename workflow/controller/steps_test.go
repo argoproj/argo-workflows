@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -10,14 +9,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
 func TestStepsFailedRetries(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps-failed-retries.yaml")
-	woc := newWoc(*wf)
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
@@ -59,7 +59,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/message"]
 
@@ -67,15 +67,15 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkipped(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkipped)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -113,18 +113,107 @@ spec:
 `
 
 func TestStepsWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(stepsWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+var stepsWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-params-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-param
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "[1234, \"foo\\tbar\", true, []]"
+`
+
+func TestExpandStepGroupWithParam(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithParam)
+	woc := newWoc(ctx, *wf)
+
+	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	require.NoError(t, err)
+	require.Len(t, expanded, 4)
+
+	expectedExpandedTasks := []struct {
+		Name      string
+		Parameter string
+	}{
+		{
+			Name:      "use-with-param(0:1234)",
+			Parameter: "1234",
+		},
+		{
+			Name:      `use-with-param(1:foo\tbar)`,
+			Parameter: "foo\tbar",
+		},
+		{
+			Name:      "use-with-param(2:true)",
+			Parameter: "true",
+		},
+		{
+			Name:      "use-with-param(3:[])",
+			Parameter: "[]",
+		},
+	}
+
+	for i, expected := range expectedExpandedTasks {
+		assert.Equal(t, expected.Name, expanded[i].Name)
+		require.Len(t, expanded[i].Arguments.Parameters, 1)
+		assert.Equal(t, expected.Parameter, expanded[i].Arguments.Parameters[0].Value.String())
+	}
+}
+
+var stepsWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-items-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-items
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+          - Hello"Argo
+`
+
+func TestExpandStepGroupWithItems(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithItems)
+	woc := newWoc(ctx, *wf)
+
+	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	require.NoError(t, err)
+	require.Len(t, expanded, 1)
+
+	assert.Equal(t, `Hello"Argo`, expanded[0].Arguments.Parameters[0].Value.String())
 }
 
 func TestResourceDurationMetric(t *testing.T) {
@@ -221,7 +310,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -238,7 +327,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -302,15 +391,15 @@ status:
 `
 
 func TestOptionalArgumentAndParameter(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(optionalArgumentAndParameter)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -432,15 +521,15 @@ status:
     artifact-passing-subpath-rx7f4-511855021: true`
 
 func TestOptionalArgumentUseSubPathInLoop(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenOptionalAndSubpath)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)

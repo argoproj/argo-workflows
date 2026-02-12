@@ -31,7 +31,7 @@ func NewCreateCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if parametersFile != "" {
-				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				err := util.ReadParametersFile(cmd.Context(), parametersFile, &submitOpts)
 				if err != nil {
 					return err
 				}
@@ -57,11 +57,12 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		return err
 	}
 
-	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
+	cronWorkflows := generateCronWorkflows(ctx, filePaths, cliOpts.strict)
 
 	for _, cronWf := range cronWorkflows {
 		if cliOpts.schedule != "" {
-			cronWf.Spec.Schedule = cliOpts.schedule
+			// This option replaces the schedule
+			cronWf.Spec.Schedules = []string{cliOpts.schedule}
 		}
 
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
@@ -73,23 +74,23 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		// We have only copied the workflow spec to the cron workflow but not the metadata
 		// that includes name and generateName. Here we copy the metadata to the cron
 		// workflow's metadata and remove the unnecessary and mutually exclusive part.
-		if generateName := newWf.ObjectMeta.GenerateName; generateName != "" {
-			cronWf.ObjectMeta.GenerateName = generateName
-			cronWf.ObjectMeta.Name = ""
+		if generateName := newWf.GenerateName; generateName != "" {
+			cronWf.GenerateName = generateName
+			cronWf.Name = ""
 		}
-		if name := newWf.ObjectMeta.Name; name != "" {
-			cronWf.ObjectMeta.Name = name
-			cronWf.ObjectMeta.GenerateName = ""
+		if name := newWf.Name; name != "" {
+			cronWf.Name = name
+			cronWf.GenerateName = ""
 		}
 		if cronWf.Namespace == "" {
-			cronWf.Namespace = client.Namespace()
+			cronWf.Namespace = client.Namespace(ctx)
 		}
 		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    cronWf.Namespace,
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to create cron workflow: %v", err)
+			return fmt.Errorf("failed to create cron workflow: %w", err)
 		}
 		fmt.Print(getCronWorkflowGet(ctx, created))
 	}

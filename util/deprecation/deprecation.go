@@ -24,22 +24,13 @@ var (
 type Type int
 
 const (
-	Schedule Type = iota
-	Mutex
-	Semaphore
-	PodPriority
+	Undefined Type = iota
 )
 
 func (t *Type) asString() string {
 	switch *t {
-	case Schedule:
-		return `cronworkflow schedule`
-	case Mutex:
-		return `synchronization mutex`
-	case Semaphore:
-		return `synchronization semaphore`
-	case PodPriority:
-		return `workflow podpriority`
+	case Undefined:
+		return `undefined`
 	default:
 		return `unknown`
 	}

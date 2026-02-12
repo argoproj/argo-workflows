@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"zombiezen.com/go/sqlite"
@@ -14,9 +13,11 @@ import (
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -88,8 +89,8 @@ func NewSQLiteStore(instanceService instanceid.Service) (*SQLiteStore, error) {
 	return &SQLiteStore{conn: conn, instanceService: instanceService}, nil
 }
 
-func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
-	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter)
+func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, nameFilter, createdAfter, finishedBefore string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter, createdAfter, finishedBefore)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err = sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
+	query, args, err = persist.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ where instanceid = ?
 			w := wfv1.Workflow{}
 			err := json.Unmarshal([]byte(wf), &w)
 			if err != nil {
-				log.WithFields(log.Fields{"workflow": wf}).Errorln("unable to unmarshal workflow from database")
+				logging.RequireLoggerFromContext(ctx).WithError(err).WithField("workflow", wf).Error(ctx, "unable to unmarshal workflow from database")
 			} else {
 				workflows = append(workflows, w)
 			}
@@ -129,8 +130,8 @@ where instanceid = ?
 	}, nil
 }
 
-func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (int64, error) {
-	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter)
+func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, nameFilter, createdAfter, finishedBefore string, listOptions metav1.ListOptions) (int64, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter, createdAfter, finishedBefore)
 	if err != nil {
 		return 0, err
 	}
@@ -141,7 +142,7 @@ where instanceid = ?
 
 	options.Limit = 0
 	options.Offset = 0
-	query, args, err = sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
+	query, args, err = persist.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
 	if err != nil {
 		return 0, err
 	}
@@ -162,7 +163,7 @@ where instanceid = ?
 	return total, nil
 }
 
-func (s *SQLiteStore) Add(obj interface{}) error {
+func (s *SQLiteStore) Add(obj any) error {
 	wf, ok := obj.(*wfv1.Workflow)
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
@@ -175,7 +176,7 @@ func (s *SQLiteStore) Add(obj interface{}) error {
 	return err
 }
 
-func (s *SQLiteStore) Update(obj interface{}) error {
+func (s *SQLiteStore) Update(obj any) error {
 	wf, ok := obj.(*wfv1.Workflow)
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
@@ -188,7 +189,7 @@ func (s *SQLiteStore) Update(obj interface{}) error {
 	return err
 }
 
-func (s *SQLiteStore) Delete(obj interface{}) error {
+func (s *SQLiteStore) Delete(obj any) error {
 	wf, ok := obj.(*wfv1.Workflow)
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
@@ -198,7 +199,7 @@ func (s *SQLiteStore) Delete(obj interface{}) error {
 	return sqlitex.Execute(s.conn, deleteWorkflowQuery, &sqlitex.ExecOptions{Args: []any{string(wf.UID)}})
 }
 
-func (s *SQLiteStore) Replace(list []interface{}, resourceVersion string) error {
+func (s *SQLiteStore) Replace(list []any, resourceVersion string) error {
 	wfs := make([]*wfv1.Workflow, 0, len(list))
 	for _, obj := range list {
 		wf, ok := obj.(*wfv1.Workflow)
@@ -219,7 +220,7 @@ func (s *SQLiteStore) Resync() error {
 	return nil
 }
 
-func (s *SQLiteStore) List() []interface{} {
+func (s *SQLiteStore) List() []any {
 	panic("not implemented")
 }
 
@@ -227,11 +228,11 @@ func (s *SQLiteStore) ListKeys() []string {
 	panic("not implemented")
 }
 
-func (s *SQLiteStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (s *SQLiteStore) Get(obj any) (item any, exists bool, err error) {
 	panic("not implemented")
 }
 
-func (s *SQLiteStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (s *SQLiteStore) GetByKey(key string) (item any, exists bool, err error) {
 	panic("not implemented")
 }
 

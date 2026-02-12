@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +9,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const stepWf = `
@@ -81,7 +81,7 @@ spec:
 
   - name: flip-coin
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import random
@@ -90,7 +90,7 @@ spec:
 
   - name: heads
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo \"it was heads\""]
 `
@@ -112,9 +112,23 @@ spec:
       args: ["hello world"]
 `
 
+const httpWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-
+spec:
+  entrypoint: http-template
+  templates:
+  - name: http-template
+    http:
+      url: http://dummy.rest.api/endpoint
+`
+
 func TestSetTemplateDefault(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
+	ctx := logging.TestContext(t.Context())
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
 			TemplateDefaults: &wfv1.Template{
@@ -127,8 +141,8 @@ func TestSetTemplateDefault(t *testing.T) {
 	}
 	t.Run("tmplDefaultInConfig", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
-		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow(context.Background())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -154,8 +168,8 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow(context.Background())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -184,8 +198,8 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow(context.Background())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -225,8 +239,8 @@ func TestSetTemplateDefault(t *testing.T) {
 				Env:             envs,
 			},
 		}
-		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow(context.Background())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -255,5 +269,22 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Len(t, tmpl2.Container.Env, 1)
 		assert.Equal(t, "test", tmpl2.Container.Env[0].Name)
 		assert.Nil(t, tmpl2.Script)
+	})
+	t.Run("HTTPTmplDefaultWf", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(httpWf)
+		wf.Spec.TemplateDefaults = &wfv1.Template{
+			Container: &apiv1.Container{
+				ImagePullPolicy: apiv1.PullIfNotPresent,
+			},
+		}
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		err := woc.setExecWorkflow(ctx)
+		require.NoError(t, err)
+		tmpl := woc.execWf.Spec.Templates[0]
+		err = woc.mergedTemplateDefaultsInto(&tmpl)
+		require.NoError(t, err)
+		assert.NotNil(t, tmpl)
+		assert.Equal(t, wfv1.TemplateTypeHTTP, tmpl.GetType())
+		assert.Nil(t, tmpl.Container)
 	})
 }

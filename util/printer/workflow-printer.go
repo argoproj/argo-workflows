@@ -8,10 +8,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/argoproj/pkg/humanize"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/humanize"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -31,7 +31,7 @@ func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) err
 		printCostOptimizationNudges(workflows, out)
 	case "name":
 		for _, wf := range workflows {
-			_, _ = fmt.Fprintln(out, wf.ObjectMeta.Name)
+			_, _ = fmt.Fprintln(out, wf.Name)
 		}
 	case "json":
 		output, err := json.MarshalIndent(workflows, "", "  ")
@@ -74,17 +74,17 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		_, _ = fmt.Fprint(w, "\n")
 	}
 	for _, wf := range wfList {
-		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
+		ageStr := humanize.RelativeDurationShort(wf.CreationTimestamp.Time, time.Now())
 		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
 		messageStr := wf.Status.Message
 		if opts.Namespace {
-			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
+			_, _ = fmt.Fprintf(w, "%s\t", wf.Namespace)
 		}
 		var priority int
 		if wf.Spec.Priority != nil {
 			priority = int(*wf.Spec.Priority)
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority, messageStr)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s", wf.Name, WorkflowStatus(&wf), ageStr, durationStr, priority, messageStr)
 		if opts.Output == "wide" {
 			pending, running, completed := countPendingRunningCompletedNodes(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
@@ -140,11 +140,12 @@ func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
-		if node.Fulfilled() {
+		switch {
+		case node.Fulfilled():
 			completed++
-		} else if node.Phase == wfv1.NodeRunning {
+		case node.Phase == wfv1.NodeRunning:
 			running++
-		} else {
+		default:
 			pending++
 		}
 	}
@@ -186,7 +187,7 @@ func WorkflowStatus(wf *wfv1.Workflow) string {
 			return "Failed (Terminated)"
 		}
 	case wfv1.WorkflowUnknown, wfv1.WorkflowPending:
-		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
+		if !wf.CreationTimestamp.IsZero() {
 			return "Pending"
 		}
 		return "Unknown"

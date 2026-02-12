@@ -100,10 +100,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             label = n.templateName ? `${n.templateName}:${label}` : label;
         }
 
+        const icon = n?.memoizationStatus?.hit ? icons['Memoized'] : icons[phase] || icons.Pending;
+
         return {
             label,
             genre: n.type,
-            icon: icons[phase] || icons.Pending,
+            icon: icon,
             progress: phase === 'Running' && progress(n),
             classNames: phase,
             tags: new Set([getNodeLabelTemplateName(n)])

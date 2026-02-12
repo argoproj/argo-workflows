@@ -1,9 +1,80 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "dependencyDashboard": true,
+  "labels": [
+    "type/dependencies"
+  ],
+  "baseBranchPatterns": [
+    "main",
+    "release-3.7",
+    "release-4.0"
+  ],
   "nix": {
     "enabled": true
   },
-  "includePaths": [
-    "**/dev/nix/flake.nix"
-  ]
+  "packageRules": [
+    {
+      "description": "Disable argo updates (maintained separately)",
+      "matchPackageNames": [
+        "argoproj/argo-ui",
+        "argoproj/argosay",
+        "github.com/argoproj/pkg"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Only allow patch updates on release branches",
+      "matchBaseBranches": [
+        "release-3.7",
+        "release-4.0"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Use conservative lock file updates on release branches",
+      "matchBaseBranches": [
+        "release-3.7",
+        "release-4.0"
+      ],
+      "rangeStrategy": "in-range-only"
+    },
+    {
+      "description": "Automerge patch updates on main",
+      "matchBaseBranches": [
+        "main"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Disable lock file maintenance on release branches",
+      "matchBaseBranches": [
+        "release-3.7",
+        "release-4.0"
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "enabled": false
+    }
+  ],
+  "platformAutomerge": true,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "postUpdateOptions": [
+    "yarnDedupeFewer",
+    "gomodTidy",
+    "gomodUpdateImportPaths"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,11 +13,10 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
-
-//go:generate mockery --name=Interface
 
 type Interface interface {
 	// Resolve Figures out the correct repository to for a workflow.
@@ -58,7 +56,7 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 		if err != nil {
 			return nil, fmt.Errorf(`error getting config map for artifact repository ref "%v": %w`, r, err)
 		}
-		log.WithField("artifactRepositoryRef", r).Info("resolved artifact repository")
+		logging.RequireLoggerFromContext(ctx).WithField("artifactRepositoryRef", r).Info(ctx, "resolved artifact repository")
 		return resolvedRef, nil
 	}
 	return nil, fmt.Errorf(`failed to find any artifact repository for artifact repository ref "%v"`, ref)
@@ -87,10 +85,10 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 	var cm *v1.ConfigMap
 	namespace := ref.Namespace
 	configMap := ref.GetConfigMapOr("artifact-repositories")
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		var err error
 		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(namespace).Get(ctx, configMap, metav1.GetOptions{})
-		return !errorsutil.IsTransientErrQuiet(err), err
+		return !errorsutil.IsTransientErrQuiet(ctx, err), err
 	})
 	if err != nil {
 		return nil, err

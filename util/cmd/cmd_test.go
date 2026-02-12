@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestMakeParseLabels(t *testing.T) {
@@ -45,7 +45,7 @@ func TestMakeParseLabels(t *testing.T) {
 
 	errorCases := []struct {
 		name   string
-		labels interface{}
+		labels any
 	}{
 		{
 			name:   "non-string",
@@ -112,10 +112,11 @@ func TestIsURL(t *testing.T) {
 
 func TestPrintVersionMismatchWarning(t *testing.T) {
 	tests := []struct {
-		name          string
-		clientVersion *wfv1.Version
-		serverVersion string
-		expectedLog   string
+		name           string
+		clientVersion  *wfv1.Version
+		serverVersion  string
+		expectedLog    string
+		expectedFields logging.Fields
 	}{
 		{
 			name: "server version not set",
@@ -123,14 +124,16 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 				Version: "v3.1.0",
 				GitTag:  "v3.1.0",
 			},
-			serverVersion: "",
+			serverVersion:  "",
+			expectedFields: nil,
 		},
 		{
 			name: "client version is untagged",
 			clientVersion: &wfv1.Version{
 				Version: "v3.1.0",
 			},
-			serverVersion: "v3.1.1",
+			serverVersion:  "v3.1.1",
+			expectedFields: nil,
 		},
 		{
 			name: "version mismatch",
@@ -139,20 +142,35 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 				GitTag:  "v3.1.0",
 			},
 			serverVersion: "v3.1.1",
-			expectedLog:   "CLI version (v3.1.0) does not match server version (v3.1.1). This can lead to unexpected behavior.",
+			expectedLog:   "CLI version does not match server version. This can lead to unexpected behavior.",
+			expectedFields: logging.Fields{
+				"clientVersion": "v3.1.0",
+				"serverVersion": "v3.1.1",
+			},
 		},
 	}
-	hook := &logtest.Hook{}
-	log.AddHook(hook)
-	defer log.StandardLogger().ReplaceHooks(nil)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			PrintVersionMismatchWarning(*tt.clientVersion, tt.serverVersion)
+			// Create a test hook to capture log messages
+			hook := logging.NewTestHook()
+			logger := logging.NewTestLogger(logging.Info, logging.Text, hook)
+			ctx := logging.WithLogger(logging.TestContext(t.Context()), logger)
+
+			defer hook.Reset()
+			PrintVersionMismatchWarning(ctx, *tt.clientVersion, tt.serverVersion)
+
 			if tt.expectedLog != "" {
-				assert.Equal(t, tt.expectedLog, hook.LastEntry().Message)
+				lastEntry := hook.LastEntry()
+				require.NotNil(t, lastEntry)
+				assert.Equal(t, tt.expectedLog, lastEntry.Msg)
+				assert.Equal(t, logging.Warn, lastEntry.Level)
 			} else {
 				assert.Nil(t, hook.LastEntry())
 			}
+
+			// Reset hook for next test
+			hook.Reset()
 		})
 	}
 }

@@ -85,7 +85,7 @@ metadata:
     # Details of the expression language are available in
     # https://expr-lang.org/docs/language-definition.
     workflows.argoproj.io/rbac-rule: "'admin' in groups"
-    # The precedence is used to determine which service account to use whe
+    # The precedence is used to determine which service account to use when
     # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
     # Numerically higher values have higher precedence (not lower, which maybe
     # counter-intuitive to you).
@@ -119,7 +119,6 @@ See [Service Account Secrets](service-account-secrets.md) for detailed instructi
 You can optionally configure RBAC SSO per namespace.
 Typically, an organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
 
-The feature is currently in beta.
 To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in your argo-server deployment.
 
 ### Recommended usage
@@ -212,3 +211,42 @@ sso:
     - ".*argo-wf.*"
     - ".*argo-workflow.*"
 ```
+
+## Custom TLS Configuration
+
+> v 3.8 and after
+
+You can configure custom TLS settings for OIDC provider connections. This is useful when your OIDC provider uses self-signed certificates or custom Certificate Authorities.
+
+### Custom CA Certificate
+
+You can specify a custom CA certificate in several ways:
+
+**Default system CA path** - The system automatically loads CA certificates from paths specified by the `SSL_CERT_DIR` and `SSL_CERT_FILE` environment variables. See the [Go documentation](https://pkg.go.dev/crypto/x509#SystemCertPool) for more details.
+
+**Explicit configuration** - You can also explicitly specify custom CA certificates:
+
+- **Inline PEM content** - Provide the CA certificate content directly in the configuration:
+
+```yaml
+sso:
+  # Custom PEM encoded CA certificate file contents
+  rootCA: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDXTCCAkWgAwIBAgIJAKoK/heBjcOuMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+    ...
+    -----END CERTIFICATE-----
+```
+
+### Skip TLS Verification
+
+For development or testing environments, you can disable TLS certificate verification:
+
+```yaml
+sso:
+  # Skip TLS certificate verification (not recommended for production)
+  insecureSkipVerify: true
+```
+
+!!! Warning
+Using `insecureSkipVerify: true` disables TLS certificate verification and should only be used in development environments. For production, always use proper CA certificates.

@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -15,11 +14,9 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 
-	pkgrand "github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -27,6 +24,8 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
 )
 
 const (
@@ -36,7 +35,10 @@ const (
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
 
-//go:generate mockery --name=Interface
+// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L14-L16
+// Used to check final redirects are not susceptible to open redirects.
+// Matches //, /\ and both of these with whitespace in between (eg / / or / \).
+var invalidRedirectRegex = regexp.MustCompile(`[/\\](?:[\s\v]*|\.{1,2})[/\\]`)
 
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
@@ -63,6 +65,7 @@ type sso struct {
 	customClaimName   string
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
+	logger            logging.Logger
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -84,11 +87,12 @@ func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface,
 	return oidc.NewProvider(ctx, issuer)
 }
 
-func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
-	return newSso(providerFactoryOIDC, c, secretsIf, baseHRef, secure)
+func New(ctx context.Context, c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+	return newSso(ctx, providerFactoryOIDC, c, secretsIf, baseHRef, secure)
 }
 
 func newSso(
+	ctx context.Context,
 	factory providerFactory,
 	c Config,
 	secretsIf corev1.SecretInterface,
@@ -104,13 +108,21 @@ func newSso(
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
-	ctx := context.Background()
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
-	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}
+
+	// Create http client
+	httpClientConfig := HTTPClientConfig{
+		InsecureSkipVerify: c.InsecureSkipVerify,
+		RootCA:             c.RootCA,
+	}
+	httpClient, err := createHTTPClient(httpClientConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
+	}
+
 	oidcContext := oidc.ClientContext(ctx, httpClient)
 	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
 	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
@@ -158,9 +170,8 @@ func newSso(
 	if err != nil {
 		if isSecretAlreadyExists {
 			return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
-		} else {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
 		}
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	clientID := clientIDObj.Data[c.ClientID.Key]
@@ -195,11 +206,12 @@ func newSso(
 		}
 	}
 
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
-	log.WithFields(lf).Info("SSO configuration")
+	logger := logging.RequireLoggerFromContext(ctx).WithFields(lf)
+	logger.Info(ctx, "SSO configuration")
 
 	return &sso{
 		config:            config,
@@ -215,27 +227,31 @@ func newSso(
 		userInfoPath:      c.UserInfoPath,
 		issuer:            c.Issuer,
 		filterGroupsRegex: filterGroupsRegex,
+		logger:            logger,
 	}, nil
 }
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	redirectUrl := r.URL.Query().Get("redirect")
+	finalRedirectURL := r.URL.Query().Get("redirect")
+	if !isValidFinalRedirectURL(finalRedirectURL) {
+		finalRedirectURL = s.baseHRef
+	}
 	state, err := pkgrand.RandString(10)
 	if err != nil {
-		log.WithError(err).Error("failed to create state")
-		w.WriteHeader(500)
+		s.logger.WithError(err).Error(r.Context(), "failed to create state")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    redirectUrl,
+		Value:    finalRedirectURL,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
 
-	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
 	http.Redirect(w, r, s.config.AuthCodeURL(state, redirectOption), http.StatusFound)
 }
 
@@ -245,35 +261,35 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(state)
 	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
-		log.WithError(err).Error("failed to get cookie")
-		w.WriteHeader(400)
+		s.logger.WithError(err).Error(r.Context(), "failed to get cookie")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
 	// Use sso.httpClient in order to respect TLSOptions
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
 	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
-		log.WithError(err).Error("failed to get oauth2Token by using code from the oauth2 server")
-		w.WriteHeader(401)
+		s.logger.WithError(err).Error(r.Context(), "failed to get oauth2Token by using code from the oauth2 server")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
-		log.Error("failed to extract id_token from the response")
-		w.WriteHeader(401)
+		s.logger.Error(r.Context(), "failed to extract id_token from the response")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		log.WithError(err).Error("failed to verify the id token issued")
-		w.WriteHeader(401)
+		s.logger.WithError(err).Error(r.Context(), "failed to verify the id token issued")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	c := &types.Claims{}
 	if err := idToken.Claims(c); err != nil {
-		log.WithError(err).Error("failed to get claims from the id token")
-		w.WriteHeader(401)
+		s.logger.WithError(err).Error(r.Context(), "failed to get claims from the id token")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	// Default to groups claim but if customClaimName is set
@@ -282,16 +298,16 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if s.customClaimName != "" {
 		groups, err = c.GetCustomGroup(s.customClaimName)
 		if err != nil {
-			log.Warn(err)
+			s.logger.Warn(r.Context(), err.Error())
 		}
 	}
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
-		groups, err = c.GetUserInfoGroups(s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		groups, err = c.GetUserInfoGroups(ctx, s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
-			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
-			w.WriteHeader(401)
+			s.logger.WithField("userInfoPath", s.userInfoPath).WithError(err).Error(r.Context(), "failed to get groups claim from the given userInfoPath")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 	}
@@ -326,12 +342,12 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
-		log.WithError(err).Errorf("failed to encrypt and serialize the jwt token")
-		w.WriteHeader(401)
+		s.logger.WithError(err).Error(r.Context(), "failed to encrypt and serialize the jwt token")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	value := Prefix + raw
-	log.Debugf("handing oauth2 callback %v", value)
+	s.logger.WithField("value", value).Debug(r.Context(), "handing oauth2 callback")
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",
@@ -340,39 +356,55 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		Secure:   s.secure,
 	})
-	redirect := s.baseHRef
 
-	proto := "http"
-	if s.secure {
-		proto = "https"
-	}
-	prefix := fmt.Sprintf("%s://%s%s", proto, r.Host, s.baseHRef)
+	finalRedirectURL := cookie.Value
+	if !isValidFinalRedirectURL(cookie.Value) {
+		finalRedirectURL = s.baseHRef
 
-	if strings.HasPrefix(cookie.Value, prefix) {
-		redirect = cookie.Value
 	}
-	http.Redirect(w, r, redirect, 302)
+	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
+}
+
+// isValidFinalRedirectURL checks whether the final redirect URL is safe.
+//
+// We only allow path-absolute-URL strings (e.g. /foo/bar), as defined in the
+// WHATWG URL standard and RFC 3986:
+// https://url.spec.whatwg.org/#path-absolute-url-string
+// https://datatracker.ietf.org/doc/html/rfc3986#section-4.2
+//
+// It's not sufficient to only refer to RFC3986 for this validation logic
+// because modern browsers will convert back slashes (\) to forward slashes (/)
+// and will interprete percent-encoded bytes.
+//
+// We used to use absolute redirect URLs and would validate the scheme and host
+// match the request scheme and host, but this led to problems when Argo is
+// behind a TLS termination proxy, since the redirect URL would have the scheme
+// "https" while the request scheme would be "http"
+// (see https://github.com/argoproj/argo-workflows/issues/13031).
+func isValidFinalRedirectURL(redirect string) bool {
+	// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L47
+	return strings.HasPrefix(redirect, "/") && !strings.HasPrefix(redirect, "//") && !invalidRedirectRegex.MatchString(redirect)
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse encrypted token %v", err)
+		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)
 	}
 	c := &types.Claims{}
 	if err := tok.Claims(s.privateKey, c); err != nil {
-		return nil, fmt.Errorf("failed to parse claims: %v", err)
+		return nil, fmt.Errorf("failed to parse claims: %w", err)
 	}
 
 	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
-		return nil, fmt.Errorf("failed to validate claims: %v", err)
+		return nil, fmt.Errorf("failed to validate claims: %w", err)
 	}
 
 	return c, nil
 }
 
-func (s *sso) getRedirectUrl(r *http.Request) string {
+func (s *sso) getRedirectURL(r *http.Request) string {
 	if s.config.RedirectURL != "" {
 		return s.config.RedirectURL
 	}

@@ -98,6 +98,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const namespace = match.params.namespace;
     const name = match.params.name;
 
+    const isFirstRender = useRef(true);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -138,7 +139,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
                 const paramClone = {...param};
-                if (paramClone.enum) {
+                if (paramClone.enum && !paramClone.value) {
                     paramClone.value = paramClone.default;
                 }
                 return paramClone;
@@ -163,6 +164,10 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
@@ -389,7 +394,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     useEffect(() => {
         (async () => {
             try {
-                const wf = await services.workflows.get(namespace, name);
+                // Pass uid if available from URL query params
+                const wf = await services.workflows.get(namespace, name, uid || undefined);
                 setUid(wf.metadata.uid);
                 setWorkflow(wf);
                 setError(null);
@@ -429,7 +435,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        openLinkWithKey(processURL(link.url, object));
+        openLinkWithKey(processURL(link.url, object), link.target);
     }
 
     function setParameter(key: string, value: string) {

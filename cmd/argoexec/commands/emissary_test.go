@@ -13,7 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 func TestEmissary(t *testing.T) {
@@ -71,12 +73,10 @@ func TestEmissary(t *testing.T) {
 			err := os.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
 			require.NoError(t, err)
 			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				err := run("sleep 3")
 				assert.EqualError(t, err, fmt.Sprintf("exit status %d", 128+signal))
-			}()
+			})
 			wg.Wait()
 		}
 	})
@@ -197,6 +197,10 @@ func TestEmissary(t *testing.T) {
 
 func run(script string) error {
 	cmd := NewEmissaryCommand()
+	_, _, err := cmdutil.CmdContextWithLogger(cmd, string(logging.Info), string(logging.Text))
+	if err != nil {
+		return err
+	}
 	containerName = "main"
 	return cmd.RunE(cmd, append([]string{"sh", "-c"}, script))
 }

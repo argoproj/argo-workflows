@@ -1,0 +1,25 @@
+{
+  // Dev container definition for building the image used by .devcontainer/devcontainer.json.
+  // Docs: https://containers.dev/guide/prebuild#how-to
+  "name": "Argo Workflows (builder)",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "../..",
+    // Override this hardcoded param from the devcontainer CLI because it bloats
+    // the image and we export the cache to a separate image:
+    // https://github.com/devcontainers/cli/blob/2fafdcc8a8dee5a922616325f3726043f1ea92c3/src/spec-node/singleContainer.ts#L208
+    "args": { "BUILDKIT_INLINE_CACHE": "0" }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.25.6"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/python:1": {}
+  }
+}

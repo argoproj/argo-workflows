@@ -5,7 +5,7 @@ import "testing"
 func TestEvalBool(t *testing.T) {
 	type args struct {
 		input string
-		env   interface{}
+		env   any
 	}
 	tests := []struct {
 		name    string
@@ -17,7 +17,7 @@ func TestEvalBool(t *testing.T) {
 			name: "test parse expression error",
 			args: args{
 				input: "invalid expression",
-				env:   map[string]interface{}{},
+				env:   map[string]any{},
 			},
 			want:    false,
 			wantErr: true,
@@ -26,7 +26,7 @@ func TestEvalBool(t *testing.T) {
 			name: "test eval expression false",
 			args: args{
 				input: " FOO == 1 ",
-				env:   map[string]interface{}{"FOO": 2},
+				env:   map[string]any{"FOO": 2},
 			},
 			want:    false,
 			wantErr: false,
@@ -35,7 +35,7 @@ func TestEvalBool(t *testing.T) {
 			name: "test eval expression true",
 			args: args{
 				input: " FOO == 1 ",
-				env:   map[string]interface{}{"FOO": 1},
+				env:   map[string]any{"FOO": 1},
 			},
 			want:    true,
 			wantErr: false,
@@ -44,7 +44,7 @@ func TestEvalBool(t *testing.T) {
 			name: "test override builtins",
 			args: args{
 				input: "split == 1",
-				env:   map[string]interface{}{"split": 1},
+				env:   map[string]any{"split": 1},
 			},
 			want:    true,
 			wantErr: false,
@@ -53,10 +53,21 @@ func TestEvalBool(t *testing.T) {
 			name: "test override builtins",
 			args: args{
 				input: "join == 1",
-				env:   map[string]interface{}{"join": 1},
+				env:   map[string]any{"join": 1},
 			},
 			want:    true,
 			wantErr: false,
+		},
+		{
+			name: "test null expression",
+			args: args{
+				input: "steps[\"prepare\"].outputs != null",
+				env: map[string]any{"steps": map[string]any{
+					"prepare": map[string]any{"outputs": "msg"},
+				}},
+			},
+			want:    false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

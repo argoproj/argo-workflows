@@ -1,4 +1,4 @@
-package executor
+package artifacts
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/plugin"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
@@ -32,13 +33,14 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 	return logging.New(drv), nil
 
 }
+
 func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string
 		var sessionToken string
 		var serverSideCustomerKey string
-		var kmsKeyId string
+		var kmsKeyID string
 		var kmsEncryptionContext string
 		var enableEncryption bool
 		var caKey string
@@ -78,7 +80,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			}
 
 			enableEncryption = art.S3.EncryptionOptions.EnableEncryption
-			kmsKeyId = art.S3.EncryptionOptions.KmsKeyId
+			kmsKeyID = art.S3.EncryptionOptions.KmsKeyId
 			kmsEncryptionContext = art.S3.EncryptionOptions.KmsEncryptionContext
 		}
 
@@ -100,7 +102,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			Region:                art.S3.Region,
 			RoleARN:               art.S3.RoleARN,
 			UseSDKCreds:           art.S3.UseSDKCreds,
-			KmsKeyId:              kmsKeyId,
+			KmsKeyID:              kmsKeyID,
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
@@ -126,7 +128,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			driver.Password = passwordBytes
 		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.OAuth2.ClientIDSecret != nil && art.HTTP.Auth.OAuth2.ClientSecretSecret != nil && art.HTTP.Auth.OAuth2.TokenURLSecret != nil {
-			clientId, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)
+			clientID, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -138,7 +140,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			client = http.CreateOauth2Client(clientId, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
+			client = http.CreateOauth2Client(ctx, clientID, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
 		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.ClientCert.ClientCertSecret != nil && art.HTTP.Auth.ClientCert.ClientKeySecret != nil {
 			clientCert, err := ri.GetSecret(ctx, art.HTTP.Auth.ClientCert.ClientCertSecret.Name, art.HTTP.Auth.ClientCert.ClientCertSecret.Key)
@@ -223,12 +225,12 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			accessKey = string(accessKeyBytes)
+			accessKey = accessKeyBytes
 			secretKeyBytes, err := ri.GetSecret(ctx, art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			secretKey = string(secretKeyBytes)
+			secretKey = secretKeyBytes
 		}
 
 		driver := oss.ArtifactDriver{
@@ -248,7 +250,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			serviceAccountKey := string(serviceAccountKeyBytes)
+			serviceAccountKey := serviceAccountKeyBytes
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
@@ -272,6 +274,16 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			UseSDKCreds: art.Azure.UseSDKCreds,
 		}
 		return &driver, nil
+	}
+
+	if art.Plugin != nil {
+		// Get the socket path from the driver configuration
+		// This would typically come from the workflow controller configuration
+		driver, err := plugin.NewDriver(ctx, art.Plugin.Name, art.Plugin.Name.SocketPath(), art.Plugin.ConnectionTimeout())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create plugin driver for %s: %w", art.Plugin.Name, err)
+		}
+		return driver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

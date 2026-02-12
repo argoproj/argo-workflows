@@ -5,12 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
 	"strings"
 
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
@@ -19,7 +16,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 )
 
@@ -44,30 +41,16 @@ func isSubPath(path string, normalizedMountPath string) bool {
 	return strings.HasPrefix(path, normalizedMountPath+"/")
 }
 
-type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
-
-type WebsocketRoundTripper struct {
-	Dialer *websocket.Dialer
-	Do     RoundTripCallback
-}
-
-func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	conn, resp, err := d.Dialer.Dial(r.URL.String(), r.Header)
-	if err == nil {
-		defer util.Close(conn)
-	}
-	return resp, d.Do(conn, resp, err)
-}
-
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
-func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
+func ExecPodContainer(ctx context.Context, restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
+	log := logging.RequireLoggerFromContext(ctx)
 	defer func() {
-		log.WithField("namespace", namespace).
-			WithField("pod", pod).
-			WithField("container", container).
-			WithField("command", command).
-			WithError(err).
-			Debug("exec container command")
+		log.WithFields(logging.Fields{
+			"namespace": namespace,
+			"pod":       pod,
+			"container": container,
+			"command":   command,
+		}).WithError(err).Debug(ctx, "exec container command")
 	}()
 
 	clientset, err := kubernetes.NewForConfig(restConfig)
@@ -89,7 +72,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 		execRequest = execRequest.Param("command", cmd)
 	}
 
-	log.Info(execRequest.URL())
+	log.Info(ctx, execRequest.URL().String())
 	exec, err = remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -130,29 +113,34 @@ func overwriteWithArguments(argParam, inParam *wfv1.Parameter) {
 	}
 }
 
-func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
+func substituteAndGetConfigMapValue(ctx context.Context, inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
+	log := logging.RequireLoggerFromContext(ctx)
 	if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 		if configMapStore != nil {
+			replaceMap := make(map[string]any)
+			for k, v := range globalParams {
+				replaceMap[k] = v
+			}
+
 			// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
 			// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
-			cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+			cmName, err := substituteConfigMapKeyRefParam(ctx, inParam.ValueFrom.ConfigMapKeyRef.Name, replaceMap)
 			if err != nil {
-				log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
+				log.WithError(err).Error(ctx, "unable to substitute name for ConfigMapKeyRef")
 				return err
 			}
-			cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+			cmKey, err := substituteConfigMapKeyRefParam(ctx, inParam.ValueFrom.ConfigMapKeyRef.Key, replaceMap)
 			if err != nil {
-				log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
+				log.WithError(err).Error(ctx, "unable to substitute key for ConfigMapKeyRef")
 				return err
 			}
 
 			cmValue, err := GetConfigMapValue(configMapStore, namespace, cmName, cmKey)
 			if err != nil {
-				if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
-					inParam.Value = inParam.ValueFrom.Default
-				} else {
+				if inParam.ValueFrom.Default == nil || !errors.IsCode(errors.CodeNotFound, err) {
 					return errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}
+				inParam.Value = inParam.ValueFrom.Default
 			} else {
 				inParam.Value = wfv1.AnyStringPtr(cmValue)
 			}
@@ -170,7 +158,7 @@ func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parame
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
+func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -185,7 +173,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		overwriteWithArguments(argParam, &inParam)
 
 		// substitute configmap string and get value from store
-		err := substituteAndGetConfigMapValue(&inParam, globalParams, namespace, configMapStore)
+		err := substituteAndGetConfigMapValue(ctx, &inParam, globalParams, namespace, configMapStore)
 		if err != nil {
 			return nil, err
 		}
@@ -216,35 +204,31 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 	}
 
-	return SubstituteParams(newTmpl, globalParams, localParams)
+	return SubstituteParams(ctx, newTmpl, globalParams, localParams)
 }
 
-// substituteConfigMapKeyRefParam check if ConfigMapKeyRef's key is a param and perform the substitution.
-func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string, error) {
-	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
-		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
-		k = strings.Trim(k, " ")
-
-		v, ok := globalParams[k]
-		if !ok {
-			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
-			log.WithError(err).Error()
-			return "", err
-		}
-		return v, nil
+// substituteConfigMapKeyRefParam performs template substitution for ConfigMapKeyRef
+func substituteConfigMapKeyRefParam(ctx context.Context, in string, replaceMap map[string]any) (string, error) {
+	tmpl, err := template.NewTemplate(in)
+	if err != nil {
+		return "", err
 	}
-	return in, nil
+	replacedString, err := tmpl.Replace(ctx, replaceMap, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to substitute configMapKeyRef: %w", err)
+	}
+	return replacedString, nil
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
-func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
+func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
-	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
+	globalReplacedTmplStr, err := template.Replace(ctx, string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +238,6 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		return nil, errors.InternalWrapError(err)
 	}
 	// Now replace the rest of substitutions (the ones that can be made) in the template
-	replaceMap = make(map[string]string)
 	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
 		if inParam.Value == nil && inParam.ValueFrom == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
@@ -284,7 +267,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 	}
 
-	s, err := template.Replace(globalReplacedTmplStr, replaceMap, true)
+	s, err := template.Replace(ctx, globalReplacedTmplStr, replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -309,9 +292,8 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 		return fmt.Sprintf("%T (%s)", tmplHolder, x)
 	} else if x := tmplHolder.GetTemplateRef(); x != nil {
 		return fmt.Sprintf("%T (%s/%s#%v)", tmplHolder, x.Name, x.Template, x.ClusterScope)
-	} else {
-		return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 	}
+	return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 }
 
 func GenerateOnExitNodeName(parentNodeName string) string {

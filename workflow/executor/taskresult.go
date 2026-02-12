@@ -15,11 +15,24 @@ import (
 )
 
 func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	err := we.createTaskResult(ctx, result)
-	if apierr.IsAlreadyExists(err) {
-		return we.patchTaskResult(ctx, result)
+	if !we.taskResultCreated {
+		err := we.createTaskResult(ctx, result)
+		if apierr.IsAlreadyExists(err) {
+			return we.patchTaskResult(ctx, result)
+		}
+		if err != nil {
+			return err
+		}
+	} else {
+		err := we.patchTaskResult(ctx, result)
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				return we.createTaskResult(ctx, result)
+			}
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
@@ -28,7 +41,7 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 		return err
 	}
 	_, err = we.taskResultClient.Patch(ctx,
-		we.nodeId,
+		we.nodeID,
 		types.MergePatchType,
 		data,
 		metav1.PatchOptions{},
@@ -46,7 +59,7 @@ func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels ma
 		return err
 	}
 	_, err = we.taskResultClient.Patch(ctx,
-		we.nodeId,
+		we.nodeID,
 		types.MergePatchType,
 		data,
 		metav1.PatchOptions{},
@@ -61,7 +74,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 			Kind:       workflow.WorkflowTaskResultKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: we.nodeId,
+			Name: we.nodeID,
 		},
 		NodeResult: result,
 	}
@@ -83,5 +96,6 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		taskResult,
 		metav1.CreateOptions{},
 	)
+	we.taskResultCreated = err == nil || apierr.IsAlreadyExists(err)
 	return err
 }

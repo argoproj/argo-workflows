@@ -1,6 +1,8 @@
 package common
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -8,15 +10,17 @@ import (
 
 const (
 	// Container names used in the workflow pod
-	MainContainerName = "main"
-	InitContainerName = "init"
-	WaitContainerName = "wait"
+	MainContainerName           = "main"
+	InitContainerName           = "init"
+	WaitContainerName           = "wait"
+	ArtifactPluginSidecarPrefix = "artifact-plugin-"
+	ArtifactPluginInitPrefix    = InitContainerName + "-artifact-"
 
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// AnnotationKeyServiceAccountTokenName is used to name the secret that containers the service account token name.
-	// It is intentially named similar to ` `kubernetes.io/service-account.name`.
+	// It is intentionally named similar to ` `kubernetes.io/service-account.name`.
 	AnnotationKeyServiceAccountTokenName = workflow.WorkflowFullName + "/service-account-token.name"
 
 	// AnnotationKeyNodeID is the ID of the node.
@@ -53,6 +57,16 @@ const (
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
+	// AnnotationKeyLastSeenVersion stores the last seen version of the workflow when it was last successfully processed by the controller
+	AnnotationKeyLastSeenVersion = workflow.WorkflowFullName + "/last-seen-version"
+
+	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
+	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
+
+	// AnnotationKeyPodGCStrategy is listed as an annotation on the Pod
+	// the strategy for the pod, in case the pod is orphaned from its workflow
+	AnnotationKeyPodGCStrategy = workflow.WorkflowFullName + "/pod-gc-strategy"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
@@ -60,6 +74,11 @@ const (
 	LabelKeyCreator                  = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail             = workflow.WorkflowFullName + "/creator-email"
 	LabelKeyCreatorPreferredUsername = workflow.WorkflowFullName + "/creator-preferred-username"
+	// Who action on this workflow.
+	LabelKeyActor                  = workflow.WorkflowFullName + "/actor"
+	LabelKeyActorEmail             = workflow.WorkflowFullName + "/actor-email"
+	LabelKeyActorPreferredUsername = workflow.WorkflowFullName + "/actor-preferred-username"
+	LabelKeyAction                 = workflow.WorkflowFullName + "/action"
 	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
@@ -71,6 +90,8 @@ const (
 	// * `Persisted` - has been archived and retrieved from db
 	// See also `LabelKeyCompleted`.
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
+	// LabelKeyReApplyFailed is the pod metadata label to indicate if the pod re-apply failed
+	LabelKeyReApplyFailed = workflow.WorkflowFullName + "/reapply"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
@@ -86,7 +107,7 @@ const (
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
 	// LabelKeyWorkflowEventBinding is a label applied to Workflows that are submitted from a WorkflowEventBinding
 	LabelKeyWorkflowEventBinding = workflow.WorkflowFullName + "/workflow-event-binding"
-	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
+	// LabelKeyClusterWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
@@ -97,6 +118,9 @@ const (
 
 	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
 	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
+
+	// LabelKeyCronWorkflowBackfill is a label applied to the cron workflow when the workflow is created by backfill
+	LabelKeyCronWorkflowBackfill = workflow.WorkflowFullName + "/backfill"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -119,6 +143,8 @@ const (
 
 	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
 	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
+	// EnvVarArtifactPluginNames is the env var for artifact GC pods containing the names of the artifact plugins
+	EnvVarArtifactPluginNames = "ARGO_ARTIFACT_PLUGIN_NAMES"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID
@@ -240,11 +266,18 @@ const (
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
-	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
-	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
+	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
+	ServiceAccountTokenVolumeName = "exec-sa-token"
 	SecretVolMountPath            = "/argo/secret"
 	EnvConfigMountPath            = "/argo/config"
 	EnvVarTemplateOffloaded       = "offloaded"
+	// EnvVarContainerArgsFile is set when container args are offloaded to a file
+	EnvVarContainerArgsFile = "ARGO_CONTAINER_ARGS_FILE"
+
+	// MaxEnvVarLen is the maximum size in bytes for environment variables and arguments
+	// before they are offloaded to a ConfigMap or file. This limit is based on
+	// Kubernetes' etcd value size limit and Linux exec() argument size limits.
+	MaxEnvVarLen = 131072 // 128KB
 
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
@@ -264,9 +297,21 @@ var AnnotationKeyKillCmd = func(containerName string) string { return workflow.W
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
-func UnstructuredHasCompletedLabel(obj interface{}) bool {
+func UnstructuredHasCompletedLabel(obj any) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
 	return false
+}
+
+func IsArtifactPluginSidecar(containerName string) bool {
+	return strings.HasPrefix(containerName, ArtifactPluginSidecarPrefix)
+}
+
+func IsArgoSidecar(containerName string) bool {
+	return containerName == WaitContainerName || IsArtifactPluginSidecar(containerName)
+}
+
+func IsArtifactPluginInit(containerName string) bool {
+	return strings.HasPrefix(containerName, ArtifactPluginInitPrefix)
 }

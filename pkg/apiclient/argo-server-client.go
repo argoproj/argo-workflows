@@ -12,10 +12,12 @@ import (
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
 const (
@@ -29,15 +31,15 @@ type argoServerClient struct {
 
 var _ Client = &argoServerClient{}
 
-func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
+func newArgoServerClient(ctx context.Context, opts ArgoServerOpts, auth string) (context.Context, Client, error) {
 	conn, err := newClientConn(opts)
 	if err != nil {
 		return nil, nil, err
 	}
-	return newContext(auth), &argoServerClient{conn}, nil
+	return newContext(ctx, auth), &argoServerClient{conn}, nil
 }
 
-func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
+func (a *argoServerClient) NewWorkflowServiceClient(_ context.Context) workflowpkg.WorkflowServiceClient {
 	return workflowpkg.NewWorkflowServiceClient(a.ClientConn)
 }
 
@@ -61,12 +63,16 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 	return infopkg.NewInfoServiceClient(a.ClientConn), nil
 }
 
+func (a *argoServerClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
+	return syncpkg.NewSyncServiceClient(a.ClientConn), nil
+}
+
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if opts.Secure {
 		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
 	}
-	conn, err := grpc.Dial(opts.URL,
+	conn, err := grpc.NewClient(opts.URL,
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)),
 		creds,
 		grpc.WithUnaryInterceptor(grpcutil.GetVersionHeaderClientUnaryInterceptor),
@@ -77,9 +83,11 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func newContext(auth string) context.Context {
+func newContext(ctx context.Context, auth string) context.Context {
+
+	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	if auth == "" {
-		return context.Background()
+		return ctx
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", auth))
+	return metadata.NewOutgoingContext(bgCtx, metadata.Pairs("authorization", auth))
 }

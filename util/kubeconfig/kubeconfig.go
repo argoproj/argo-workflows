@@ -1,6 +1,7 @@
 package kubeconfig
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -42,7 +43,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BasicAuthScheme))
 		username, password, ok := decodeBasicAuthToken(token)
 		if !ok {
-			return nil, errors.New("Error parsing Basic Authentication")
+			return nil, errors.New("error parsing basic authentication")
 		}
 		return GetBasicRestConfig(username, password)
 	}
@@ -50,7 +51,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BearerAuthScheme))
 		return GetBearerRestConfig(token)
 	}
-	return nil, errors.New("Unsupported authentication scheme")
+	return nil, errors.New("unsupported authentication scheme")
 }
 
 // convert a basic token (username, password) into a REST config
@@ -113,14 +114,14 @@ func restConfigWithoutAuth() (*restclient.Config, error) {
 }
 
 // Return the AuthString include Auth type(Basic or Bearer)
-func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
+func GetAuthString(ctx context.Context, in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 	// Checking Basic Auth
 	if in.Username != "" {
 		token, err := GetBasicAuthToken(in)
 		return BasicAuthScheme + " " + token, err
 	}
 
-	token, err := GetBearerToken(in, explicitKubeConfigPath)
+	token, err := GetBearerToken(ctx, in, explicitKubeConfigPath)
 	return BearerAuthScheme + " " + token, err
 }
 
@@ -133,7 +134,7 @@ func GetBasicAuthToken(in *restclient.Config) (string, error) {
 }
 
 // convert the REST config into a bearer token
-func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
+func GetBearerToken(ctx context.Context, in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 	if len(in.BearerToken) > 0 {
 		return in.BearerToken, nil
 	}
@@ -150,7 +151,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		var cluster *clientauthenticationapi.Cluster
 		if in.ExecProvider.ProvideClusterInfo {
 			var err error
-			cluster, err = ConfigToExecCluster(in)
+			cluster, err = ConfigToExecCluster(ctx, in)
 			if err != nil {
 				return "", err
 			}
@@ -168,7 +169,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		if err != nil {
 			return "", err
 		}
-		req, err := http.NewRequest("GET", in.Host, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, in.Host, nil)
 		if err != nil {
 			return "", err
 		}
@@ -200,15 +201,15 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 I am following this example: https://github.com/kubernetes/client-go/blob/v0.20.4/rest/transport.go#L99 and https://github.com/kubernetes/client-go/blob/v0.20.4/rest/exec.go */
 
 // ConfigToExecCluster creates a clientauthentication.Cluster with the corresponding fields from the provided Config
-func ConfigToExecCluster(config *restclient.Config) (*clientauthenticationapi.Cluster, error) {
+func ConfigToExecCluster(ctx context.Context, config *restclient.Config) (*clientauthenticationapi.Cluster, error) {
 	caData, err := dataFromSliceOrFile(config.CAData, config.CAFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load CA bundle for execProvider: %v", err)
+		return nil, fmt.Errorf("failed to load CA bundle for execProvider: %w", err)
 	}
 
 	var proxyURL string
 	if config.Proxy != nil {
-		req, err := http.NewRequest("", config.Host, nil)
+		req, err := http.NewRequestWithContext(ctx, "", config.Host, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create proxy URL request for execProvider: %w", err)
 		}
@@ -259,11 +260,11 @@ func decodeBasicAuthToken(auth string) (username, password string, ok bool) {
 		return
 	}
 	cs := string(c)
-	s := strings.IndexByte(cs, ':')
-	if s < 0 {
+	before, after, ok0 := strings.Cut(cs, ":")
+	if !ok0 {
 		return
 	}
-	return cs[:s], cs[s+1:], true
+	return before, after, true
 }
 
 func ReloadKubeConfig(explicitPath string) clientcmd.ClientConfig {
@@ -280,7 +281,7 @@ func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentTo
 		if timestr != "" {
 			t, err := time.Parse(time.RFC3339, timestr)
 			if err != nil {
-				return "", fmt.Errorf("Invalid expiry date in Kubeconfig. %v", err)
+				return "", fmt.Errorf("invalid expiry date in Kubeconfig. %w", err)
 			}
 			if time.Now().After(t) {
 				err = RefreshAuthToken(restConfig)

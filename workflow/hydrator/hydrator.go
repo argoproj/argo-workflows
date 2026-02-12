@@ -1,16 +1,17 @@
 package hydrator
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
@@ -19,9 +20,9 @@ type Interface interface {
 	// whether or not the workflow in hydrated
 	IsHydrated(wf *wfv1.Workflow) bool
 	// hydrate the workflow - doing nothing if it is already hydrated
-	Hydrate(wf *wfv1.Workflow) error
+	Hydrate(ctx context.Context, wf *wfv1.Workflow) error
 	// dehydrate the workflow - doing nothing if already dehydrated
-	Dehydrate(wf *wfv1.Workflow) error
+	Dehydrate(ctx context.Context, wf *wfv1.Workflow) error
 	// hydrate the workflow using the provided nodes
 	HydrateWithNodes(wf *wfv1.Workflow, nodes wfv1.Nodes)
 }
@@ -33,7 +34,7 @@ func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
 var alwaysOffloadNodeStatus = os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
 
 func init() {
-	log.WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug("Hydrator config")
+	logging.InitLogger().WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(context.Background(), "Hydrator config")
 }
 
 type hydrator struct {
@@ -69,35 +70,37 @@ var readRetry = wait.Backoff{Steps: 5, Duration: 100 * time.Millisecond, Factor:
 // 5	31.00
 var writeRetry = wait.Backoff{Steps: 5, Duration: 1 * time.Second, Factor: 2}
 
-func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
-	err := packer.DecompressWorkflow(wf)
+func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
+	log := logging.RequireLoggerFromContext(ctx)
+	err := packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
 		return err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
 		var offloadedNodes wfv1.Nodes
 		err := waitutil.Backoff(readRetry, func() (bool, error) {
-			offloadedNodes, err = h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			return !errorsutil.IsTransientErr(err), err
+			offloadedNodes, err = h.offloadNodeStatusRepo.Get(ctx, string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			return !errorsutil.IsTransientErr(ctx, err), err
 		})
 		if err != nil {
 			return err
 		}
 		h.HydrateWithNodes(wf, offloadedNodes)
-		log.WithField("Workflow Size", wf.Size()).Info("Workflow hydrated")
+		log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow hydrated")
 	}
 
 	return nil
 }
 
-func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
+func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	if !h.IsHydrated(wf) {
 		return nil
 	}
+	log := logging.RequireLoggerFromContext(ctx)
 	var err error
-	log.WithField("Workflow Size", wf.Size()).Info("Workflow to be dehydrated")
+	log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
 	if !alwaysOffloadNodeStatus {
-		err = packer.CompressWorkflowIfNeeded(wf)
+		err = packer.CompressWorkflowIfNeeded(ctx, wf)
 		if err == nil {
 			wf.Status.OffloadNodeStatusVersion = ""
 			return nil
@@ -111,8 +114,8 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		}
 		offloadErr := waitutil.Backoff(writeRetry, func() (bool, error) {
 			var offloadErr error
-			offloadVersion, offloadErr = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
-			return !errorsutil.IsTransientErr(offloadErr), offloadErr
+			offloadVersion, offloadErr = h.offloadNodeStatusRepo.Save(ctx, string(wf.UID), wf.Namespace, wf.Status.Nodes)
+			return !errorsutil.IsTransientErr(ctx, offloadErr), offloadErr
 		})
 		if offloadErr != nil {
 			return fmt.Errorf("%sTried to offload but encountered error: %s", errMsg, offloadErr.Error())
@@ -121,7 +124,6 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		wf.Status.CompressedNodes = ""
 		wf.Status.OffloadNodeStatusVersion = offloadVersion
 		return nil
-	} else {
-		return err
 	}
+	return err
 }

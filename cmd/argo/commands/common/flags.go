@@ -29,9 +29,8 @@ func (e *EnumFlagValue) Set(v string) error {
 	if slices.Contains(e.AllowedValues, v) {
 		e.Value = v
 		return nil
-	} else {
-		return errors.New(e.Usage())
 	}
+	return errors.New(e.Usage())
 }
 
 func (e *EnumFlagValue) Type() string {

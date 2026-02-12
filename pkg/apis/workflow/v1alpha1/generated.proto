@@ -59,13 +59,17 @@ message ArtGCStatus {
 // Artifact indicates an artifact to place at a specified path
 message Artifact {
   // name of the artifact. must be unique within a template's inputs/outputs.
+  // +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$`
   optional string name = 1;
 
   // Path is the container path to the artifact
   optional string path = 2;
 
-  // mode bits to use on this file, must be a value between 0 and 0777
-  // set when loading input artifacts.
+  // mode bits to use on this file, must be a value between 0 and 0777.
+  // Set when loading input artifacts. It is recommended to set the mode value
+  // to ensure the artifact has the expected permissions in your container.
+  // +kubebuilder:validation:Minimum=0
+  // +kubebuilder:validation:Maximum=511
   optional int32 mode = 3;
 
   // From allows an artifact to reference an artifact from a previous step
@@ -129,6 +133,7 @@ message ArtifactGCStatus {
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
+// +kubebuilder:validation:XValidation:rule="(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1",message="at most one artifact location can be specified"
 message ArtifactLocation {
   // ArchiveLogs indicates if the container logs should be archived
   optional bool archiveLogs = 1;
@@ -159,6 +164,9 @@ message ArtifactLocation {
 
   // Azure contains Azure Storage artifact location details
   optional AzureArtifact azure = 10;
+
+  // Plugin contains plugin artifact location details
+  optional PluginArtifact plugin = 11;
 }
 
 // ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
@@ -198,6 +206,9 @@ message ArtifactRepository {
 
   // Azure stores artifact in an Azure Storage account
   optional AzureArtifactRepository azure = 7;
+
+  // Plugin stores artifact in a plugin-specific artifact repository
+  optional PluginArtifactRepository plugin = 8;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -289,7 +300,7 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
-// AzureArtifact is the location of a an Azure Storage artifact
+// AzureArtifact is the location of an Azure Storage artifact
 message AzureArtifact {
   optional AzureBlobContainer azureBlobContainer = 1;
 
@@ -333,6 +344,11 @@ message Backoff {
   // However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
   // This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
   optional string maxDuration = 3;
+
+  // Cap is a limit on revised values of the duration parameter. If a
+  // multiplication by the factor parameter would make the duration
+  // exceed the cap then the duration is set to the cap
+  optional string cap = 4;
 }
 
 // BasicAuth describes the secret selectors required for basic authentication
@@ -347,7 +363,7 @@ message BasicAuth {
 // Cache is the configuration for the type of cache to be used
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
-  optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
+  optional k8s.io.api.core.v1.LocalObjectReference configMap = 1;
 }
 
 // ClientCertAuth holds necessary information for client authentication via certificates
@@ -442,6 +458,7 @@ message ContinueOn {
 // Counter is a Counter prometheus metric
 message Counter {
   // Value is the value of the metric
+  // +kubebuilder:validation:MinLength=1
   optional string value = 1;
 }
 
@@ -477,9 +494,6 @@ message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
 
-  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
-  optional string schedule = 2;
-
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
   optional string concurrencyPolicy = 3;
 
@@ -488,6 +502,7 @@ message CronWorkflowSpec {
 
   // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
   // original scheduled time if it is missed.
+  // +kubebuilder:validation:Minimum=0
   optional int64 startingDeadlineSeconds = 5;
 
   // SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
@@ -506,6 +521,8 @@ message CronWorkflowSpec {
   optional StopStrategy stopStrategy = 10;
 
   // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
+  // +kubebuilder:validation:MinItems=1
+  // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/?-]+\s+){4}[0-9*,/?-]+)$`
   repeated string schedules = 11;
 
   // v3.6 and after: When is an expression that determines if a run should be scheduled.
@@ -515,33 +532,48 @@ message CronWorkflowSpec {
 // CronWorkflowStatus is the status of a CronWorkflow
 message CronWorkflowStatus {
   // Active is a list of active workflows stemming from this CronWorkflow
+  // +optional
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
 
   // LastScheduleTime is the last time the CronWorkflow was scheduled
+  // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
 
   // Conditions is a list of conditions the CronWorkflow may have
+  // +optional
   repeated Condition conditions = 3;
 
   // v3.6 and after: Succeeded counts how many times child workflows succeeded
+  // +optional
   optional int64 succeeded = 4;
 
   // v3.6 and after: Failed counts how many times child workflows failed
+  // +optional
   optional int64 failed = 5;
 
   // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
+  // +optional
   optional string phase = 6;
 }
 
 // DAGTask represents a node in the graph during DAG execution
+// Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
+// +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.dependencies)",message="cannot use both 'depends' and 'dependencies'"
+// +kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.continueOn)",message="cannot use 'continueOn' when using 'depends'"
+// +kubebuilder:validation:XValidation:rule="!(has(self.depends) || has(self.dependencies)) || !self.name.matches('^[0-9]')",message="task name cannot begin with a digit when using 'depends' or 'dependencies'"
 message DAGTask {
   // Name is the name of the target
+  // +kubebuilder:validation:MaxLength=128
+  // +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
   optional string name = 1;
 
   // Name of template to execute
   optional string template = 2;
 
   // Inline is the template. Template must be empty if this is declared (and vice-versa).
+  // Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively,
+  // so we need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Template inline = 14;
 
   // Arguments are the parameter and artifact arguments to the template
@@ -554,6 +586,10 @@ message DAGTask {
   repeated string dependencies = 5;
 
   // WithItems expands a task into multiple parallel tasks from the items in the list
+  // Note: The structure of WithItems is free-form, so we need
+  // "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+  // +kubebuilder:validation:Schemaless
+  // +kubebuilder:pruning:PreserveUnknownFields
   repeated Item withItems = 6;
 
   // WithParam expands a task into multiple parallel tasks from the value in the parameter,
@@ -573,7 +609,8 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use Hooks[exit].Template instead.
+  //
+  // Deprecated: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
@@ -590,8 +627,11 @@ message DAGTemplate {
   optional string target = 1;
 
   // Tasks are a list of DAG tasks
+  // MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
   // +patchStrategy=merge
   // +patchMergeKey=name
+  // +kubebuilder:validation:MinItems=1
+  // +kubebuilder:validation:MaxItems=200
   repeated DAGTask tasks = 2;
 
   // This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
@@ -655,9 +695,13 @@ message GCSBucket {
 }
 
 // Gauge is a Gauge prometheus metric
+// +kubebuilder:validation:XValidation:rule="!has(self.realtime) || !self.realtime || !self.value.contains('resourcesDuration.')",message="'resourcesDuration.*' metrics cannot be used in real-time gauges"
 message Gauge {
   // Value is the value to be used in the operation with the metric's current value. If no operation is set,
   // value is the value of the metric
+  // MaxLength is an artificial limit to limit CEL validation costs - see note at top of file
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:MaxLength=256
   optional string value = 1;
 
   // Realtime emits this metric in real time if applicable
@@ -668,7 +712,7 @@ message Gauge {
   optional string operation = 3;
 }
 
-// GitArtifact is the location of an git artifact
+// GitArtifact is the location of a git artifact
 message GitArtifact {
   // Repo is the git repository
   optional string repo = 1;
@@ -848,6 +892,7 @@ message Header {
 // Histogram is a Histogram prometheus metric
 message Histogram {
   // Value is the value of the metric
+  // +kubebuilder:validation:MinLength=1
   optional string value = 3;
 
   // Buckets is a list of bucket divisors for the histogram
@@ -857,8 +902,10 @@ message Histogram {
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
+  // MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
   // +patchStrategy=merge
   // +patchMergeKey=name
+  // +kubebuilder:validation:MaxItems=500
   repeated Parameter parameters = 1;
 
   // Artifact are a list of artifacts passed as inputs
@@ -871,7 +918,6 @@ message Inputs {
 // The value of Item can be a map, string, bool, or number
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
 }
@@ -917,6 +963,9 @@ message Link {
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
   optional string url = 3;
+
+  // Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. "_blank", "_self". If the target is _blank, it will open in a new tab.
+  optional string target = 4;
 }
 
 message ManifestFrom {
@@ -949,7 +998,7 @@ message Memoize {
   optional string maxAge = 3;
 }
 
-// Pod metdata
+// Pod metadata
 message Metadata {
   map<string, string> annotations = 1;
 
@@ -958,6 +1007,7 @@ message Metadata {
 
 // MetricLabel is a single label for a prometheus metric
 message MetricLabel {
+  // +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
   optional string key = 1;
 
   optional string value = 2;
@@ -966,6 +1016,8 @@ message MetricLabel {
 // Metrics are a list of metrics emitted from a Workflow/Template
 message Metrics {
   // Prometheus is a list of prometheus metrics to be emitted
+  // MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
+  // +kubebuilder:validation:MaxItems=100
   repeated Prometheus prometheus = 1;
 }
 
@@ -976,6 +1028,9 @@ message Mutex {
 
   // Namespace is the namespace of the mutex, default: [namespace of workflow]
   optional string namespace = 2;
+
+  // Database specifies this is database controlled if this is set true
+  optional bool database = 3;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -1116,6 +1171,18 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
+
+  // TaskResultSynced is used to determine if the node's output has been received
+  optional bool taskResultSynced = 28;
+
+  // FailedPodRestarts tracks the number of times the pod for this node was restarted
+  // due to infrastructure failures before the main container started.
+  optional int32 failedPodRestarts = 29;
+
+  // RestartingPodUID tracks the UID of the pod that is currently being restarted.
+  // This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
+  // Cleared when the replacement pod starts running.
+  optional string restartingPodUID = 30;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -1221,28 +1288,32 @@ message Outputs {
   // +patchMergeKey=name
   repeated Artifact artifacts = 2;
 
-  // Result holds the result (stdout) of a script template
+  // Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
   optional string result = 3;
 
   // ExitCode holds the exit code of a script template
   optional string exitCode = 4;
 }
 
-// +kubebuilder:validation:Type=array
+// swagger:ignore
 message ParallelSteps {
+  // Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
+  // There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
+  // See the custom Unmarshaller below and ./hack/manifests/crd.go
   repeated WorkflowStep steps = 1;
 }
 
 // Parameter indicate a passed string parameter to a service template with an optional default value
 message Parameter {
   // Name is the parameter name
+  // +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
   optional string default = 2;
 
   // Value is the literal value to use for the parameter.
-  // If specified in the context of an input parameter, the value takes precedence over any passed values
+  // If specified in the context of an input parameter, any passed values take precedence over the specified value
   optional string value = 3;
 
   // ValueFrom is the source for the output parameter's value
@@ -1253,6 +1324,7 @@ message Parameter {
   optional string globalName = 5;
 
   // Enum holds a list of string values to choose from, for the actual value of the parameter
+  // +kubebuilder:validation:MinItems=1
   repeated string enum = 6;
 
   // Description is the parameter description
@@ -1261,7 +1333,32 @@ message Parameter {
 
 // Plugin is an Object with exactly one key
 message Plugin {
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Object object = 1;
+}
+
+// PluginArtifact is the location of a plugin artifact
+message PluginArtifact {
+  // Name is the name of the artifact driver plugin
+  optional string name = 1;
+
+  // Configuration is the plugin defined configuration for the artifact driver plugin
+  optional string configuration = 2;
+
+  // ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout
+  optional int32 connectionTimeoutSeconds = 3;
+
+  // Key is the path in the artifact repository where the artifact resides
+  optional string key = 4;
+}
+
+// PluginArtifactRepository defines the controller configuration for a plugin artifact repository
+message PluginArtifactRepository {
+  optional string name = 1;
+
+  optional string keyFormat = 2;
+
+  optional string configuration = 3;
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1279,12 +1376,14 @@ message PodGC {
 // Prometheus is a prometheus metric to be emitted
 message Prometheus {
   // Name is the name of the metric
+  // +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$`
   optional string name = 1;
 
   // Labels is a list of metric labels
   repeated MetricLabel labels = 2;
 
   // Help is a string that describes the metric
+  // +kubebuilder:validation:MinLength=1
   optional string help = 3;
 
   // When is a conditional statement that decides when to emit the metric
@@ -1307,13 +1406,16 @@ message RawArtifact {
 }
 
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
+// +kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
 message ResourceTemplate {
   // Action is the action to perform to the resource.
   // Must be one of: get, create, apply, delete, replace, patch
+  // +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
   optional string action = 1;
 
   // MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
   // Must be one of: strategic, merge, json
+  // +kubebuilder:validation:Enum=strategic;merge;json
   optional string mergeStrategy = 2;
 
   // Manifest contains the kubernetes manifest
@@ -1387,7 +1489,8 @@ message S3ArtifactRepository {
   optional string keyFormat = 2;
 
   // KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-  // DEPRECATED. Use KeyFormat instead
+  //
+  // Deprecated: Use KeyFormat instead.
   optional string keyPrefix = 3;
 }
 
@@ -1449,6 +1552,7 @@ message ScriptTemplate {
   optional k8s.io.api.core.v1.Container container = 1;
 
   // Source contains the source code of the script to execute
+  // +optional
   optional string source = 2;
 }
 
@@ -1463,11 +1567,14 @@ message SemaphoreHolding {
 
 // SemaphoreRef is a reference of Semaphore
 message SemaphoreRef {
-  // ConfigMapKeyRef is configmap selector for Semaphore configuration
+  // ConfigMapKeyRef is a configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
 
   // Namespace is the namespace of the configmap, default: [namespace of workflow]
   optional string namespace = 2;
+
+  // SyncDatabaseRef is a database reference for Semaphore configuration
+  optional SyncDatabaseRef database = 3;
 }
 
 message SemaphoreStatus {
@@ -1479,6 +1586,7 @@ message SemaphoreStatus {
 }
 
 // Sequence expands a workflow step into numeric range
+// +kubebuilder:validation:XValidation:rule="!(has(self.count) && has(self.end))",message="only one of count or end can be defined"
 message Sequence {
   // Count is number of elements in the sequence (default: 0). Not to be used with end
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString count = 1;
@@ -1562,14 +1670,12 @@ message SuspendTemplate {
   optional string duration = 1;
 }
 
+message SyncDatabaseRef {
+  optional string key = 1;
+}
+
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
-  optional SemaphoreRef semaphore = 1;
-
-  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
-  optional Mutex mutex = 2;
-
   // v3.6 and after: Semaphores holds the list of Semaphores configuration
   repeated SemaphoreRef semaphores = 3;
 
@@ -1608,6 +1714,8 @@ message TarStrategy {
 // Template is a reusable and composable unit of execution in a workflow
 message Template {
   // Name is the name of the template
+  // +kubebuilder:validation:MaxLength=128
+  // +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
   optional string name = 1;
 
   // Inputs describe what inputs parameters and artifacts are supplied to this template
@@ -1624,13 +1732,14 @@ message Template {
   // Overrides the affinity set at the workflow level (if any)
   optional k8s.io.api.core.v1.Affinity affinity = 8;
 
-  // Metdata sets the pods's metadata, i.e. annotations and labels
+  // Metadata sets the pods's metadata, i.e. annotations and labels
   optional Metadata metadata = 9;
 
   // Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
   optional bool daemon = 10;
 
   // Steps define a series of sequential/parallel workflow steps
+  // +kubebuilder:validation:MinItems=1
   repeated ParallelSteps steps = 11;
 
   // Container is the main container image to run in the pod
@@ -1658,6 +1767,9 @@ message Template {
   optional HTTP http = 42;
 
   // Plugin is a plugin template
+  // Note: the structure of a plugin template is free-form, so we need to have
+  // "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Plugin plugin = 43;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
@@ -1693,6 +1805,7 @@ message Template {
   // Parallelism limits the max total parallel pods that can execute at the same time within the
   // boundaries of this template invocation. If additional steps/dag templates are invoked, the
   // pods created by those templates will not be counted towards this total.
+  // +kubebuilder:validation:Minimum=1
   optional int64 parallelism = 23;
 
   // FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
@@ -1712,9 +1825,6 @@ message Template {
 
   // PriorityClassName to apply to workflow pods.
   optional string priorityClassName = 26;
-
-  // Priority to apply to workflow pods.
-  optional int32 priority = 27;
 
   // ServiceAccountName to apply to workflow pods
   optional string serviceAccountName = 28;
@@ -1752,6 +1862,9 @@ message Template {
   // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
+
+  // Annotations is a list of annotations to add to the template at runtime
+  map<string, string> annotations = 44;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1933,8 +2046,13 @@ message WorkflowMetadata {
 // WorkflowSpec is the specification of a Workflow.
 message WorkflowSpec {
   // Templates is a list of workflow templates used in a workflow
+  // MaxItems is an artificial limit to limit CEL validation costs - see note at top of file
   // +patchStrategy=merge
   // +patchMergeKey=name
+  // +kubebuilder:validation:MaxItems=200
+  // +kubebuilder:validation:XValidation:rule="self.all(t, (has(t.container) ? 1 : 0) + (has(t.script) ? 1 : 0) + (has(t.dag) ? 1 : 0) + (has(t.steps) ? 1 : 0) + (has(t.resource) ? 1 : 0) + (has(t.suspend) ? 1 : 0) + (has(t.containerSet) ? 1 : 0) + (has(t.data) ? 1 : 0) + (has(t.http) ? 1 : 0) + (has(t.plugin) ? 1 : 0) <= 1)",message="template must have at most one template type"
+  // +kubebuilder:validation:XValidation:rule="self.all(t, !(has(t.timeout) && t.timeout != \"\" && (has(t.steps) || has(t.dag))))",message="timeout cannot be applied to steps or dag templates"
+  // +kubebuilder:validation:XValidation:rule="self.all(t, !(has(t.activeDeadlineSeconds) && (has(t.steps) || has(t.dag))))",message="activeDeadlineSeconds is only valid for leaf templates"
   repeated Template templates = 1;
 
   // Entrypoint is a template reference to the starting point of the workflow.
@@ -1966,6 +2084,7 @@ message WorkflowSpec {
   repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow
+  // +kubebuilder:validation:Minimum=1
   optional int64 parallelism = 7;
 
   // ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
@@ -2041,10 +2160,6 @@ message WorkflowSpec {
 
   // PriorityClassName to apply to workflow pods.
   optional string podPriorityClassName = 23;
-
-  // Priority to apply to workflow pods.
-  // DEPRECATED: Use PodPriorityClassName instead.
-  optional int32 podPriority = 24;
 
   // +patchStrategy=merge
   // +patchMergeKey=ip
@@ -2169,14 +2284,21 @@ message WorkflowStatus {
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
+// Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
 message WorkflowStep {
   // Name of the step
+  // +kubebuilder:validation:MaxLength=128
+  // +kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$`
   optional string name = 1;
 
   // Template is the name of the template to execute as the step
   optional string template = 2;
 
   // Inline is the template. Template must be empty if this is declared (and vice-versa).
+  // Note: This struct is defined recursively, since the inline template can potentially contain
+  // steps/DAGs that also has an "inline" field. Kubernetes doesn't allow recursive types, so we
+  // need "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Template inline = 13;
 
   // Arguments hold arguments to the template
@@ -2186,6 +2308,10 @@ message WorkflowStep {
   optional TemplateRef templateRef = 4;
 
   // WithItems expands a step into multiple parallel steps from the items in the list
+  // Note: The structure of WithItems is free-form, so we need
+  // "x-kubernetes-preserve-unknown-fields: true" in the validation schema.
+  // +kubebuilder:validation:Schemaless
+  // +kubebuilder:pruning:PreserveUnknownFields
   repeated Item withItems = 5;
 
   // WithParam expands a step into multiple parallel steps from the value in the parameter,
@@ -2205,7 +2331,8 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use Hooks[exit].Template instead.
+  //
+  // Deprecated: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Hooks holds the lifecycle hook which is invoked at lifecycle of

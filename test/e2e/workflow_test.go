@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -50,7 +49,7 @@ spec:
       parameters:
         - name: item
     container:
-      image: centos:latest
+      image: argoproj/argosay:v2
       imagePullPolicy: Always
       command:
         - sh
@@ -66,11 +65,11 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed, time.Minute*11).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
 			for _, node := range status.Nodes {
-				if node.Type == wfv1.NodeTypePod {
-					assert.Equal(t, wfv1.NodeFailed, node.Phase)
+				if node.Type == v1alpha1.NodeTypePod {
+					assert.Equal(t, v1alpha1.NodeFailed, node.Phase)
 					assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
 				}
 			}
@@ -147,8 +146,8 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted, time.Minute*1).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "a")

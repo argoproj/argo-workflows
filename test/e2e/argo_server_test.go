@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,10 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/gavv/httpexpect/v2"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -23,13 +22,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-const baseUrl = "http://localhost:2746"
+const baseURL = "http://localhost:2746"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -49,7 +49,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 func (s *ArgoServerSuite) e() *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
-			BaseURL:  baseUrl,
+			BaseURL:  baseURL,
 			Reporter: httpexpect.NewRequireReporter(s.T()),
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(s.T(), true),
@@ -63,6 +63,47 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
+}
+func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
+	return httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  baseURL,
+			Reporter: httpexpect.NewFatalReporter(b),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(b, true),
+			},
+			Client: httpClient,
+		}).
+		Builder(func(req *httpexpect.Request) {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
+				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
+			}
+		})
+}
+
+// Readiness probe is defined in the base manifest:
+// https://github.com/argoproj/argo-workflows/blob/1e2a87f2afdebbcd0e55069df5a945f5faca9d45/manifests/base/argo-server/argo-server-deployment.yaml#L30-L36
+func (s *ArgoServerSuite) TestReadinessProbe() {
+	s.Run("HTTP/1.1 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/1.1").
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/1.1", response.Raw().Proto) //nolint:bodyclose
+	})
+
+	s.Run("HTTP/2 GET", func() {
+		response := s.e().GET("/").
+			WithProto("HTTP/2.0").
+			WithClient(http2Client).
+			Expect().
+			Status(200).
+			HasContentType("text/html")
+		s.Equal("HTTP/2.0", response.Raw().Proto) //nolint:bodyclose
+	})
 }
 
 func (s *ArgoServerSuite) TestInfo() {
@@ -164,7 +205,7 @@ spec:
 			s.e().
 				POST("/api/v1/events/argo/").
 				WithHeader("X-Github-Event", "push").
-				WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
+				WithHeader("X-Hub-Signature-256", "sha256=dd6f6b41f6d0cb9523d6459032e164e220853b683a5e87892145b0eb0b84e0cd").
 				WithBytes(data).
 				Expect().
 				Status(200)
@@ -383,7 +424,7 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 }
 
 func (s *ArgoServerSuite) createServiceAccount(name string) {
-	ctx := context.Background()
+	ctx := logging.TestContext(s.T().Context())
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
@@ -395,7 +436,7 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	ctx := context.Background()
+	ctx := logging.TestContext(s.T().Context())
 	nsName := fixtures.Namespace
 	goodSaName := "argotestgood"
 	s.createServiceAccount(goodSaName)
@@ -460,6 +501,9 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.Require().NoError(err)
 		badToken = string(secret.Data["token"])
 	})
+
+	// fake / spoofed token
+	fakeToken := "faketoken"
 
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
@@ -564,8 +608,8 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(200)
 	})
 
-	// we've now deleted the workflow, but it is still in the archive, testing the archive
-	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
+	// we've now deleted the workflow, but it is still in the archive
+	// testing the archive after deleting it makes sure that we are not dependent on a live workflow resource for authorization
 
 	// Test list archived WFs with good token
 	s.Run("ListArchivedWFsGoodToken", func() {
@@ -605,7 +649,33 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
+	// Test get wf w/ archive fallback with good token
+	s.bearerToken = goodToken
+	s.Run("GetWFsFallbackArchivedGoodToken", func() {
+		s.e().GET("/api/v1/workflows/"+nsName).
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200)
+	})
+
+	// Test get wf w/ archive fallback with bad token
+	s.bearerToken = badToken
+	s.Run("GetWFsFallbackArchivedBadToken", func() {
+		s.e().GET("/api/v1/workflows/" + nsName).
+			Expect().
+			Status(403)
+	})
+
+	// Test get wf w/ archive fallback with fake token
+	s.bearerToken = fakeToken
+	s.Run("GetWFsFallbackArchivedFakeToken", func() {
+		s.e().GET("/api/v1/workflows/" + nsName).
+			Expect().
+			Status(401)
+	})
+
 	// Test deleting archived wf with bad token
+	s.bearerToken = badToken
 	s.Run("DeleteArchivedWFsBadToken", func() {
 		s.e().DELETE("/api/v1/archived-workflows/" + uid).
 			Expect().
@@ -739,9 +809,9 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
-	var name string
+	var name, uid string
 	s.Run("Create", func() {
-		name = s.e().POST("/api/v1/workflows/argo").
+		jsonResp := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
@@ -766,8 +836,12 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 }`)).
 			Expect().
 			Status(200).
-			JSON().
-			Path("$.metadata.name").
+			JSON()
+		name = jsonResp.Path("$.metadata.name").
+			NotNull().
+			String().
+			Raw()
+		uid = jsonResp.Path("$.metadata.uid").
 			NotNull().
 			String().
 			Raw()
@@ -819,6 +893,16 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		s.e().GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
+	})
+
+	s.Run("GetByUid", func() {
+		j := s.e().GET("/api/v1/workflows/argo/"+name).
+			WithQuery("uid", uid).
+			Expect().
+			Status(200).
+			JSON()
+		j.Path("$.status.nodes").
+			NotNull()
 	})
 
 	s.Run("GetWithFields", func() {
@@ -895,6 +979,508 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 }
 
+func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
+	var bobWf *httpexpect.Value
+	s.Run("CreateArchivedBobWf", func() {
+		bobWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-bob-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidBobWf = bobWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameBobWf = bobWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	var aliceWf *httpexpect.Value
+	s.Run("CreateAlice", func() {
+		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-alice-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidAliceWf = aliceWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameAliceWf = aliceWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	s.Given().When().
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
+
+	s.Run("ListAll", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+			Expect().
+			Status(200).
+			JSON().
+			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+			Array().
+			IsEqual([]any{"Persisted", "Persisted"})
+	})
+
+	s.Run("ListNameContainsAlice", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=alice").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf})
+	})
+
+	s.Run("ListNameContainsNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=void").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ListNamePrefixBob", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ListNamePrefixBobNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			// contains bob, but bob not a prefix, `test-bob`
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ListNameExactAlice", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameAliceWf).
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf})
+	})
+
+	s.Run("ListNameExactAliceNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			// test-alice is both contained and valid prefix but no exact match
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-alice").
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ListNameDefaultExactBob", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ListNameDoubleEqualsBob", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ListNameContainsTest", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
+	})
+}
+
+func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
+	var bobWf *httpexpect.Value
+	s.Run("CreateArchivedBobWf", func() {
+		bobWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-bob-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidBobWf = bobWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameBobWf = bobWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	var aliceWf *httpexpect.Value
+	s.Run("CreateAlice", func() {
+		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+			WithBytes([]byte(`{
+				  "workflow": {
+					"metadata": {
+					  "generateName": "test-alice-",
+					  "labels": {
+						 "workflows.argoproj.io/test": "subject-1"
+					  }
+					},
+					"spec": {
+					  "templates": [
+						{
+						  "name": "run-workflow",
+						  "container": {
+							"image": "argoproj/argosay:v2",
+							"args": ["sleep", "0s"]
+						  }
+						}
+					  ],
+					  "entrypoint": "run-workflow"
+					}
+				  }
+				}`)).
+			Expect().Status(200).JSON())
+	})
+	var uidAliceWf = aliceWf.Path("$.metadata.uid").
+		NotNull().String().Raw()
+	var nameAliceWf = aliceWf.Path("$.metadata.name").
+		NotNull().String().Raw()
+
+	s.Given().When().
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
+		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
+
+	s.Run("ListAll", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+			Expect().
+			Status(200).
+			JSON().
+			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+			Array().
+			IsEqual([]any{"Persisted", "Persisted"})
+	})
+
+	s.Run("ArchiveNameContainsAlice", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=alice").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf})
+	})
+
+	s.Run("ArchiveNameContainsNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=void").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNamePrefixBob", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ArchiveNamePrefixBobNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			// contains bob, but bob not a prefix, `test-bob`
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNameExactAlice", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameAliceWf).
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf})
+	})
+
+	s.Run("ArchiveNameExactAliceNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			// test-alice is both contained and valid prefix but no exact match
+			WithQuery("listOptions.fieldSelector", "metadata.name=test-alice").
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNameDefaultExactBob", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ArchiveNameDoubleEqualsBob", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=="+nameBobWf).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ArchiveNameContainsTest", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterContainsBobTest", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("namePrefix", "test").
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterEmptyTest", func() {
+		// test-* is valid prefix but bob is not the exact name of
+		// any of the archived workflows
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=bob").
+			WithQuery("namePrefix", "test").
+			WithQuery("nameFilter", "Exact").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterEmptyTest2", func() {
+		// test-* is valid prefix but bob is not a prefix
+		// both the nameFilter and the namePrefix test for name
+		// prefix now
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("namePrefix", "bob").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	s.Run("ArchiveNamePrefixNameFilterContainsAll", func() {
+		// test-* is valid prefix but bob is not a prefix
+		// both the nameFilter and the namePrefix test for name
+		// prefix now
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name=test").
+			WithQuery("namePrefix", "test").
+			WithQuery("nameFilter", "Prefix").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf, uidAliceWf})
+	})
+
+	s.Run("ListNameNotEqualsAlice", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ListNameNotEqualsNoMatch", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name!=nomatch").
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
+	})
+
+	s.Run("ListNameNotEqualsPrecedence", func() {
+		s.e().GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ArchiveNameNotEqualsAlice", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+
+	s.Run("ArchiveNameNotEqualsNoMatch", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name!=nomatch").
+			WithQuery("nameFilter", "NotEquals").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf, uidAliceWf})
+	})
+
+	s.Run("ArchiveNameNotEqualsPrecedence", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.fieldSelector", "metadata.name!="+nameAliceWf).
+			WithQuery("nameFilter", "Contains").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items[*].metadata.uid").
+			Array().
+			IsEqualUnordered([]any{uidBobWf})
+	})
+}
+
 func (s *ArgoServerSuite) TestCronWorkflowService() {
 	s.Run("Create", func() {
 		s.e().POST("/api/v1/cron-workflows/argo").
@@ -907,7 +1493,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
       }
     },
     "spec": {
-      "schedule": "* * * * *",
+      "schedules": ["* * * * *"],
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -954,11 +1540,15 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
@@ -1008,7 +1598,7 @@ spec:
       }
     },
     "spec": {
-      "schedule": "1 * * * *",
+      "schedules": ["1 * * * *"],
       "workflowMetadata": {
         "labels": {"workflows.argoproj.io/test": "true"}
       },
@@ -1029,7 +1619,7 @@ spec:
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.spec.schedule").
+			Path("$.spec.schedules[0]").
 			IsEqual("1 * * * *")
 	})
 
@@ -1152,7 +1742,13 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+			Contains("<a href=\"./subdirectory/\">subdirectory/</a>")
+
+		resp.Header("Content-Security-Policy").
+			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			IsEqual("SAMEORIGIN")
 
 	})
 
@@ -1163,8 +1759,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
-			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+			Contains("<a href=\"./sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"./sub-file-2\">sub-file-2</a>")
 
 	})
 
@@ -1224,8 +1820,10 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
+	ctx := logging.TestContext(s.T().Context())
+	log := logging.RequireLoggerFromContext(ctx)
 	t := s.T()
-	req, err := http.NewRequest("GET", baseUrl+url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+url, nil)
 	s.Require().NoError(err)
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
@@ -1248,7 +1846,7 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		log.WithField("line", line).Debug()
+		log.WithField("line", line).Debug(ctx, "")
 		// make sure we have this enabled
 		if line == "" {
 			continue
@@ -1314,6 +1912,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
 	var name string
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
 	s.Given().
 		Workflow(`
 metadata:
@@ -1325,7 +1931,8 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2`).
+        image: argoproj/argosay:v2
+        args: [echo, "hello \\u0001F44D"]`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1334,7 +1941,7 @@ spec:
 			uid = metadata.UID
 			name = metadata.Name
 		})
-	var failedUid types.UID
+	var failedUID types.UID
 	var failedName string
 	s.Given().
 		Workflow(`
@@ -1355,7 +1962,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			failedUid = metadata.UID
+			failedUID = metadata.UID
 			failedName = metadata.Name
 		})
 	s.Given().
@@ -1478,6 +2085,10 @@ spec:
 			Path("$.metadata.name").
 			NotNull()
 		j.
+			Path("$.spec.templates[0].container.args[1]").
+			// make sure unicode escape wasn't mangled
+			IsEqual("hello \\u0001F44D")
+		j.
 			Path(fmt.Sprintf("$.metadata.labels[\"%s\"]", common.LabelKeyWorkflowArchivingStatus)).
 			IsEqual("Persisted")
 		s.e().GET("/api/v1/workflows/argo/" + name).
@@ -1495,14 +2106,14 @@ spec:
 	})
 
 	s.Run("Retry", func() {
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUID).
 			WithBytes([]byte(`{"namespace": "argo"}`)).
 			Expect().
 			Status(200).
 			JSON().
 			Path("$.metadata.name").
 			NotNull()
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUID).
 			WithBytes([]byte(`{"namespace": "argo"}`)).
 			Expect().
 			Status(409)
@@ -1769,7 +2380,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       }
     },
     "spec": {
-      "schedule": "* * * * *",
+      "schedules": ["* * * * *"],
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -2077,6 +2688,242 @@ func (s *ArgoServerSuite) TestRateLimitHeader() {
 		resp.Header("X-RateLimit-Remaining").NotEmpty()
 		resp.Header("X-RateLimit-Reset").NotEmpty()
 		resp.Header("Retry-After").IsEmpty()
+	})
+}
+
+func (s *ArgoServerSuite) TestPostgresNullBytes() {
+	// only meaningful for postgres, but shouldn't fail  for mysql.
+	var uid types.UID
+	_ = uid
+
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: archie-
+  labels:
+    foo: 1
+spec:
+  entrypoint: run-archie
+  templates:
+    - name: run-archie
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "hello \u0000"]`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		})
+
+	j := s.e().GET("/api/v1/archived-workflows/{uid}", uid).
+		Expect().
+		Status(200).
+		JSON()
+	j.
+		Path("$.spec.templates[0].container.args[1]").
+		IsEqual("hello \u0000")
+
+}
+
+func (s *ArgoServerSuite) TestSyncConfigmapService() {
+	syncNamespace := "argo"
+	configmapName := "test-sync-cm"
+	syncKey := "test-key"
+
+	s.Run("CreateSyncLimitConfigmap", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				CmName: configmapName,
+				Key:    syncKey,
+				Limit:  100,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey).
+			HasValue("limit", 100)
+	})
+
+	s.Run("CreateSyncLimit-cm-exist", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				CmName: configmapName,
+				Key:    syncKey + "-exist",
+				Limit:  100,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey+"-exist").
+			HasValue("limit", 100)
+	})
+
+	s.Run("GetSyncLimitConfigmap", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey).
+			HasValue("limit", 100)
+	})
+
+	s.Run("UpdateSyncLimitConfigmap", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				CmName: configmapName,
+				Limit:  200,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("cmName", configmapName).
+			HasValue("key", syncKey).
+			HasValue("limit", 200)
+	})
+
+	s.Run("InvalidSizeLimit", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				CmName: configmapName + "-invalid",
+				Key:    syncKey,
+				Limit:  0,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).
+			Expect().
+			Status(400)
+	})
+
+	s.Run("KeyDoesNotExistConfigmap", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("DeleteSyncLimitConfigmap", func() {
+		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(200)
+
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("cmName", configmapName).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("UpdateNonExistentLimit", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				CmName: configmapName,
+				Limit:  200,
+				Type:   syncpkg.SyncConfigType_CONFIGMAP,
+			}).Expect().
+			Status(404)
+	})
+}
+
+func (s *ArgoServerSuite) TestSyncDatabaseService() {
+	syncNamespace := "argo"
+	syncKey := "test-sync-db"
+
+	s.Run("CreateSyncLimitDatabase", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:   syncKey,
+				Limit: 100,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("limit", 100)
+	})
+
+	s.Run("CreateSyncLimitDatabaseAgain", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:   syncKey,
+				Limit: 100,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(409)
+	})
+
+	s.Run("GetSyncLimitDatabase", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("limit", 100)
+	})
+
+	s.Run("UpdateSyncLimitDatabase", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				Limit: 200,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(200).
+			JSON().Object().
+			HasValue("key", syncKey).
+			HasValue("namespace", syncNamespace).
+			HasValue("limit", 200)
+	})
+
+	s.Run("InvalidSizeLimitDatabase", func() {
+		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
+			WithJSON(syncpkg.CreateSyncLimitRequest{
+				Key:   syncKey + "-invalid",
+				Limit: 0,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).
+			Expect().
+			Status(400)
+	})
+
+	s.Run("KeyDoesNotExistDatabase", func() {
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("DeleteSyncLimitDatabase", func() {
+		s.e().DELETE("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(200)
+
+		s.e().GET("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey).
+			WithQuery("type", int(syncpkg.SyncConfigType_DATABASE)).
+			Expect().
+			Status(404)
+	})
+
+	s.Run("UpdateNonExistentLimitDatabase", func() {
+		s.e().PUT("/api/v1/sync/{namespace}/{key}", syncNamespace, syncKey+"-non-existent").
+			WithJSON(syncpkg.UpdateSyncLimitRequest{
+				Limit: 200,
+				Type:  syncpkg.SyncConfigType_DATABASE,
+			}).Expect().
+			Status(404)
 	})
 }
 

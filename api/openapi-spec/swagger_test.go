@@ -1,4 +1,4 @@
-package openapi_spec
+package openapi_spec //nolint:staticcheck
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type obj = map[string]interface{}
+type obj = map[string]any
 
 func TestSwagger(t *testing.T) {
 	swagger := obj{}

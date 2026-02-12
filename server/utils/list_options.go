@@ -13,13 +13,14 @@ import (
 )
 
 type ListOptions struct {
-	Namespace, Name            string
-	NamePrefix, NameFilter     string
-	MinStartedAt, MaxStartedAt time.Time
-	LabelRequirements          labels.Requirements
-	Limit, Offset              int
-	ShowRemainingItemCount     bool
-	StartedAtAscending         bool
+	Namespace, Name              string
+	NamePrefix, NameFilter       string
+	MinStartedAt, MaxStartedAt   time.Time
+	CreatedAfter, FinishedBefore time.Time
+	LabelRequirements            labels.Requirements
+	Limit, Offset                int
+	ShowRemainingItemCount       bool
+	StartedAtAscending           bool
 }
 
 func (l ListOptions) WithLimit(limit int) ListOptions {
@@ -52,7 +53,7 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
-func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter string) (ListOptions, error) {
+func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, createdAfter, finishedBefore string) (ListOptions, error) {
 	if options.Continue == "" {
 		options.Continue = "0"
 	}
@@ -75,34 +76,54 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter str
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
+	createdAfterTime := time.Time{}
+	finishedBeforeTime := time.Time{}
+
+	if createdAfter != "" {
+		createdAfterTime, err = time.Parse(time.RFC3339, createdAfter)
+		if err != nil {
+			return ListOptions{}, ToStatusError(err, codes.Internal)
+		}
+	}
+	if finishedBefore != "" {
+		finishedBeforeTime, err = time.Parse(time.RFC3339, finishedBefore)
+		if err != nil {
+			return ListOptions{}, ToStatusError(err, codes.Internal)
+		}
+	}
 	showRemainingItemCount := false
-	for _, selector := range strings.Split(options.FieldSelector, ",") {
+	for selector := range strings.SplitSeq(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
 		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
+		if after, ok := strings.CutPrefix(selector, "metadata.namespace="); ok {
 			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
 			// of the new 'namespace' query parameter, which is what the UI uses
-			fieldSelectedNamespace := strings.TrimPrefix(selector, "metadata.namespace=")
+			fieldSelectedNamespace := after
 			switch namespace {
 			case "":
 				namespace = fieldSelectedNamespace
 			case fieldSelectedNamespace:
-				break
+				// namespace matches, nothing to do
 			default:
 				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
-		} else if strings.HasPrefix(selector, "metadata.name=") {
-			name = strings.TrimPrefix(selector, "metadata.name=")
-		} else if strings.HasPrefix(selector, "spec.startedAt>") {
-			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name!="); ok {
+			name = after
+			nameFilter = "NotEquals"
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name=="); ok {
+			name = after
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name="); ok {
+			name = after
+		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt>"); ok {
+			minStartedAt, err = time.Parse(time.RFC3339, after)
 			if err != nil {
 				// startedAt is populated by us, it should therefore be valid.
 				return ListOptions{}, ToStatusError(err, codes.Internal)
 			}
-		} else if strings.HasPrefix(selector, "spec.startedAt<") {
-			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
+		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt<"); ok {
+			maxStartedAt, err = time.Parse(time.RFC3339, after)
 			if err != nil {
 				// no need to use sutils here
 				return ListOptions{}, ToStatusError(err, codes.Internal)
@@ -126,6 +147,8 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter str
 		Name:                   name,
 		NamePrefix:             namePrefix,
 		NameFilter:             nameFilter,
+		CreatedAfter:           createdAfterTime,
+		FinishedBefore:         finishedBeforeTime,
 		MinStartedAt:           minStartedAt,
 		MaxStartedAt:           maxStartedAt,
 		LabelRequirements:      requirements,
