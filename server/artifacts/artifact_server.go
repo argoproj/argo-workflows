@@ -226,7 +226,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}).Info(ctx, "Successfully uploaded artifact")
 
 	// Return the artifact location as JSON
-	response := map[string]interface{}{
+	response := map[string]any{
 		"name":     artifactName,
 		"key":      newKey,
 		"location": outputArtifact.ArtifactLocation,
