@@ -444,7 +444,8 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-from-template
 spec:
-  schedule: "* * * * *"
+  schedules: 
+  - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 59
   successfulJobsHistoryLimit: 4
