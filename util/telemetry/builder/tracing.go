@@ -128,24 +128,6 @@ func buildChildrenMap(spans *spansList) map[string][]string {
 	return childrenMap
 }
 
-var spanStartTmpl = template.Must(template.New("start").Funcs(funcMap).Parse(`// {{.MethodName}} starts a {{.DisplayName}} span
-func (t *Tracing) {{.MethodName}}({{.Params}}) (context.Context, trace.Span) {
-    parent := trace.SpanFromContext(ctx)
-    if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
-        parentName := roParent.Name()
-{{if .Parents -}}
-        if {{range $i, $p := .Parents}}{{if $i}} && {{end}}parentName != "{{$p}}"{{end}} {
-            logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "{{.MethodName}}", "expectedParents": "{{.ParentsStr}}", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
-        }
-{{else -}}
-        logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "{{.MethodName}}", "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
-{{end -}}
-    }
-    {{.Attribs}}
-    return {{.Call}}
-}
-`))
-
 func spanKind(kind string) string {
 	// kind is already validated by here
 	if kind == "" {
@@ -158,29 +140,78 @@ func (s *span) typeName() string {
 	return fmt.Sprintf("%s%s", spanType, s.Name)
 }
 
+type startFuncData struct {
+	MethodName        string
+	DisplayName       string
+	Params            string
+	RuntimeParents    []string
+	JoinedParents     string
+	ParentCondition   string
+	DeterministicRoot bool
+	Deterministic     bool
+	WithAttributes    string
+	ReturnCall        string
+}
+
+var startFuncTmpl = template.Must(template.New("startFunc").Parse(`// {{.MethodName}} starts a {{.DisplayName}} span
+func (t *Tracing) {{.MethodName}}({{.Params}}) (context.Context, trace.Span) {
+parent := trace.SpanFromContext(ctx)
+if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
+parentName := roParent.Name()
+{{if .RuntimeParents -}}
+if {{.ParentCondition}} {
+logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": {{printf "%q" .MethodName}}, "expectedParents": {{printf "%q" .JoinedParents}}, "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+}
+{{- else -}}
+logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": {{printf "%q" .MethodName}}, "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
+{{- end}}
+}
+{{if .DeterministicRoot}}ctx = WithTraceID(ctx, traceID)
+{{end -}}
+{{if .Deterministic}}ctx = WithSpanID(ctx, spanID)
+{{end -}}
+{{.WithAttributes}}return {{.ReturnCall}}
+}
+
+`))
+
 func generateStart(f io.Writer, s *span, attributes *attributesList) error {
 	methodName := fmt.Sprintf("Start%s", s.Name)
 
-	params := buildParameterList([]string{"ctx context.Context"}, &s.common, spanType, attributes)
-	methodCall := fmt.Sprintf("t.tracer.Start(ctx, \"%s\"", toLowerCamelCase(s.Name)) // TODO best practice
+	baseParams := []string{"ctx context.Context"}
+	if s.Deterministic {
+		if s.Root {
+			baseParams = append(baseParams, "traceID trace.TraceID")
+		}
+		baseParams = append(baseParams, "spanID trace.SpanID")
+	}
+	params := buildParameterList(baseParams, &s.common, spanType, attributes)
 
-	// Convert parents to their runtime (lowerCamelCase) names
-	var runtimeParents []string
-	for _, p := range s.Parents {
-		runtimeParents = append(runtimeParents, toLowerCamelCase(p))
+	runtimeParents := make([]string, len(s.Parents))
+	for i, p := range s.Parents {
+		runtimeParents[i] = toLowerCamelCase(p)
 	}
 
-	return spanStartTmpl.Execute(f, map[string]any{
-		"MethodName":  methodName,
-		"DisplayName": s.displayName(),
-		"Params":      strings.Join(params, ", "),
-		"Attribs":     buildTracingWithAttributes(&s.Attributes, attributes),
-		"Call":        buildTracingCall(methodCall, &s.common, spanKind(s.Kind)),
-		"Parents":     runtimeParents,
-		"ParentsStr":  strings.Join(runtimeParents, ", "),
+	conds := make([]string, len(runtimeParents))
+	for i, p := range runtimeParents {
+		conds[i] = fmt.Sprintf("parentName != %q", p)
+	}
+
+	methodCall := fmt.Sprintf("t.tracer.Start(ctx, %q", toLowerCamelCase(s.Name))
+
+	return startFuncTmpl.Execute(f, startFuncData{
+		MethodName:        methodName,
+		DisplayName:       s.displayName(),
+		Params:            strings.Join(params, ", "),
+		RuntimeParents:    runtimeParents,
+		JoinedParents:     strings.Join(runtimeParents, ", "),
+		ParentCondition:   strings.Join(conds, " && "),
+		DeterministicRoot: s.Deterministic && s.Root,
+		Deterministic:     s.Deterministic,
+		WithAttributes:    buildTracingWithAttributes(&s.Attributes, attributes),
+		ReturnCall:        buildTracingCall(methodCall, &s.common, spanKind(s.Kind)),
 	})
 }
-
 func buildTracingWithAttributes(allowed *allowedAttributeList, attributes *attributesList) string {
 	requiredAttrs := getRequiredAttributes(allowed)
 	var b strings.Builder
