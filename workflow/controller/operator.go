@@ -4280,6 +4280,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		}
 		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
 		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
+		setWfTemplateLabel(woc.wf)
 	case woc.controller.Config.WorkflowRestrictions.MustUseReference():
 		err := fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		woc.markWorkflowError(ctx, err)
@@ -4506,6 +4507,21 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	}
 
 	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
+}
+
+func setWfTemplateLabel(wf *wfv1.Workflow) {
+	if wf.Spec.WorkflowTemplateRef == nil {
+		return
+	}
+	if wf.Labels == nil {
+		wf.Labels = map[string]string{}
+	}
+
+	if wf.Spec.WorkflowTemplateRef.ClusterScope {
+		wf.Labels[common.LabelKeyClusterWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+	} else {
+		wf.Labels[common.LabelKeyWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+	}
 }
 
 // getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.
