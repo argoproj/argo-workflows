@@ -27,9 +27,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
-	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/wfcontext"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -177,7 +177,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		logger.WithError(err).Error(ctx, "malformed cron workflow: could not convert from unstructured")
 		return true
 	}
-	ctx = wfctx.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
+	ctx = wfcontext.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
 	cronWorkflowOperationCtx := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 
