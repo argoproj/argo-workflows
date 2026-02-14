@@ -2232,9 +2232,9 @@ func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKe
 		"--insecure-skip-verify",
 	}
 
-	finalArgs := append(baseArgs, args...)
+	baseArgs = append(baseArgs, args...)
 
-	s.Given().RunCli(finalArgs, func(t *testing.T, output string, err error) {
+	s.Given().RunCli(baseArgs, func(t *testing.T, output string, err error) {
 	})
 
 	select {
@@ -2249,7 +2249,7 @@ func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
 
-func generateCert(caCert *x509.Certificate, caKey interface{}, isCA bool, commonName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func generateCert(caCert *x509.Certificate, caKey any, isCA bool, commonName string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, nil, err
@@ -2304,7 +2304,7 @@ func generateCert(caCert *x509.Certificate, caKey interface{}, isCA bool, common
 	return cert, priv, nil
 }
 
-func pemEncode(data interface{}, typeStr string) []byte {
+func pemEncode(data any, typeStr string) []byte {
 	var bytes []byte
 	switch d := data.(type) {
 	case *x509.Certificate:
